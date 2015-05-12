@@ -950,4 +950,8 @@ public  class ComplexNDArrayTestsC extends BaseNd4jTest  {
         }
     }
 
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

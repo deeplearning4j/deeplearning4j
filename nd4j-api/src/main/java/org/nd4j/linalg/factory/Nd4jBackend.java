@@ -19,13 +19,8 @@
 
 package org.nd4j.linalg.factory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
+import java.io.IOException;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +29,8 @@ import org.springframework.core.io.Resource;
 /**
  * An ND4j backend.
  *
+ * @author eronwright
+ *
  */
 public abstract class Nd4jBackend {
 
@@ -41,6 +38,9 @@ public abstract class Nd4jBackend {
     public static final int BACKEND_PRIORITY_GPU = 100;
 
     private static final Logger log = LoggerFactory.getLogger(Nd4jBackend.class);
+
+    private Properties props;
+
 
     /**
      * Gets a priority number for the backend.
@@ -68,6 +68,9 @@ public abstract class Nd4jBackend {
      * @return
      */
     public abstract Resource getConfigurationResource();
+
+
+
 
     /**
      * Loads the best available backend.
@@ -108,6 +111,14 @@ public abstract class Nd4jBackend {
         }
 
         throw new NoAvailableBackendException();
+    }
+
+    public Properties getProperties() throws IOException {
+        if(props != null)
+            return props;
+        props = new Properties();
+        props.load(getConfigurationResource().getInputStream());
+        return props;
     }
 
     @SuppressWarnings("serial")

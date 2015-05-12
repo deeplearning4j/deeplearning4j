@@ -39,6 +39,8 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         super(backend);
     }
 
+
+
     public DoubleDataBufferTest(String name, Nd4jBackend backend) {
         super(name, backend);
     }

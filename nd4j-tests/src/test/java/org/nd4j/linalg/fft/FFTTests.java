@@ -27,8 +27,10 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.jblas.NDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +41,6 @@ import static org.junit.Assert.assertEquals;
  */
 public  class FFTTests extends BaseNd4jTest {
 
-    private static Logger log = LoggerFactory.getLogger(FFTTests.class);
 
     public FFTTests(String name) {
         super(name);
@@ -71,7 +72,6 @@ public  class FFTTests extends BaseNd4jTest {
     @Test
     public void testWithOffset() {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        Nd4j.factory().setOrder('f');
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
         INDArray swapped = n.swapAxes(n.shape().length - 1, 1);
         INDArray firstSlice = swapped.slice(0).slice(0);
@@ -200,10 +200,10 @@ public  class FFTTests extends BaseNd4jTest {
         }
     }
 
-
-
-
-
+    @Override
+    public char ordering() {
+        return 'f';
+    }
 }
 
 

@@ -53,6 +53,17 @@ public abstract class BaseNd4jTest extends TestCase {
 
     }
 
+    /**
+     * The ordering for this test
+     * This test will only be invoked for
+     * the given test  and ignored for others
+     *
+     * @return the ordering for this test
+     */
+    public char ordering() {
+        return 'a';
+    }
+
     @Before
     public void before() {
         Nd4j nd4j = new Nd4j();

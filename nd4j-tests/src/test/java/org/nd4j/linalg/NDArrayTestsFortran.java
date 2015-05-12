@@ -742,7 +742,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testRowVectorMultipleIndices() {
         INDArray linear = Nd4j.create(1, 4);
         linear.putScalar(new int[]{0, 1}, 1);
-        assertEquals(linear.getDouble(0,1),1,1e-1);
+        assertEquals(linear.getDouble(0, 1), 1, 1e-1);
     }
 
 
@@ -750,9 +750,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testDim1() {
-        INDArray sum = Nd4j.linspace(1,2, 2).reshape(2,1);
+        INDArray sum = Nd4j.linspace(1,2, 2).reshape(2, 1);
         INDArray same = sum.dup();
-        assertEquals(same.sum(1),sum);
+        assertEquals(same.sum(1), sum);
     }
 
 
@@ -1029,7 +1029,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        INDArray vector = Nd4j.linspace(1,5,5);
+        INDArray vector = Nd4j.linspace(1, 5, 5);
         vector.assign(1);
         assertEquals(Nd4j.ones(5),vector);
         INDArray twos = Nd4j.ones(2,2);
@@ -1038,7 +1038,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(rand,twos);
 
         INDArray tensor = Nd4j.rand((long) 3,3,3,3);
-        INDArray ones = Nd4j.ones(3,3,3);
+        INDArray ones = Nd4j.ones(3, 3, 3);
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);
         assertEquals(tensor,ones);
@@ -1102,9 +1102,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4,4);
-        NDArrayIndex index = NDArrayIndex.interval(0,2);
-        INDArray get = arange.get(index,index);
+        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
+        NDArrayIndex index = NDArrayIndex.interval(0, 2);
+        INDArray get = arange.get(index, index);
         LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
         assertEquals(Nd4j.create(new double[]{1,5,2,6}),linearViewNDArray);
         System.out.println(linearViewNDArray);
@@ -1119,8 +1119,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray ones = Nd4j.ones(2,2).mul(0.25);
         INDArray mul = get.mul(ones);
         INDArray assertion = Nd4j.create(new double[][]{
-                {0.25,1.25},
-                {0.5,1.5}
+                {0.25, 1.25},
+                {0.5, 1.5}
         });
         assertEquals(assertion, mul);
 
@@ -1278,10 +1278,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertTrue(nFlattened.isVector());
 
 
-
-
     }
 
-
-
+    @Override
+    public char ordering() {
+        return 'f';
+    }
 }

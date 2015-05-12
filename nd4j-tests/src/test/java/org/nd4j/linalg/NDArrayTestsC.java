@@ -193,7 +193,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray matrix = Nd4j.linspace(1,6,6).reshape(2,3);
         INDArray matrixGet = matrix.getColumns(new int[]{1, 2});
         INDArray matrixAssertion = Nd4j.create(new double[][]{{2, 3}, {5, 6}});
-        assertEquals(matrixAssertion,matrixGet);
+        assertEquals(matrixAssertion, matrixGet);
     }
 
     @Test
@@ -961,7 +961,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testDim1() {
-        INDArray sum = Nd4j.linspace(1,2, 2).reshape(2,1);
+        INDArray sum = Nd4j.linspace(1,2, 2).reshape(2, 1);
         INDArray same = sum.dup();
         assertEquals(same.sum(1),sum);
     }
@@ -1248,7 +1248,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray other = ndv.reshape(2, 3);
         assertEquals(ndv.linearView(),other.linearView());
 
-        INDArray otherVec = Nd4j.create(new float[]{1,2,3,4,5,6});
+        INDArray otherVec = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6});
         assertEquals(ndv,otherVec);
     }
 
@@ -1388,8 +1388,8 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray arr2 = Nd4j.create(5,5);
         INDArray slice1 = arr2.slice(0);
         INDArray slice2 = arr2.slice(1);
-        INDArray arr3 = Nd4j.create(2,5);
-        INDArray vstack = Nd4j.vstack(slice1,slice2);
+        INDArray arr3 = Nd4j.create(2, 5);
+        INDArray vstack = Nd4j.vstack(slice1, slice2);
         assertEquals(arr3,vstack);
 
         INDArray col1 = arr2.getColumn(0);
@@ -1404,7 +1404,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        INDArray vector = Nd4j.linspace(1,5,5);
+        INDArray vector = Nd4j.linspace(1, 5, 5);
         vector.assign(1);
         assertEquals(Nd4j.ones(5),vector);
         INDArray twos = Nd4j.ones(2,2);
@@ -1413,7 +1413,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         assertEquals(rand,twos);
 
         INDArray tensor = Nd4j.rand((long) 3,3,3,3);
-        INDArray ones = Nd4j.ones(3,3,3);
+        INDArray ones = Nd4j.ones(3, 3, 3);
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);
         assertEquals(tensor,ones);
@@ -1477,9 +1477,9 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4,4);
-        NDArrayIndex index = NDArrayIndex.interval(0,2);
-        INDArray get = arange.get(index,index);
+        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
+        NDArrayIndex index = NDArrayIndex.interval(0, 2);
+        INDArray get = arange.get(index, index);
         LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
         assertEquals(Nd4j.create(new double[]{1,5,2,6}),linearViewNDArray);
         System.out.println(linearViewNDArray);
@@ -1657,10 +1657,10 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         assertTrue(nFlattened.isVector());
 
 
-
-
     }
 
-
-
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

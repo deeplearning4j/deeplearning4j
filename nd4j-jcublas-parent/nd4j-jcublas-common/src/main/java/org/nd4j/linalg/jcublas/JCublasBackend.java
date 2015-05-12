@@ -26,6 +26,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
+import java.io.IOException;
+import java.util.Properties;
+
 /**
  *
  */
@@ -34,6 +37,7 @@ public class JCublasBackend extends Nd4jBackend {
     private static final Logger log = LoggerFactory.getLogger(JCublasBackend.class);
 
     private final static String LINALG_PROPS = "/nd4j-jcublas.properties";
+
 
     @Override
     public boolean isAvailable() {
@@ -63,4 +67,6 @@ public class JCublasBackend extends Nd4jBackend {
     public Resource getConfigurationResource() {
         return new ClassPathResource(LINALG_PROPS);
     }
+
+
 }
