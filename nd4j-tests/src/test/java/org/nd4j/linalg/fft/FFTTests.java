@@ -62,7 +62,8 @@ public  class FFTTests extends BaseNd4jTest {
     @Test
     public void testColumnVector() {
         Nd4j.EPS_THRESHOLD = 1e-1;
-        IComplexNDArray n = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(Nd4j.complexLinSpace(1,8,8),8));
+        IComplexNDArray complexLinSpace = Nd4j.complexLinSpace(1,8,8);
+        IComplexNDArray n = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(complexLinSpace,8));
         IComplexNDArray assertion = Nd4j.createComplex(new double[]
                 {36., 0., -4., 9.65685425, -4., 4, -4., 1.65685425, -4., 0., -4., -1.65685425, -4., -4., -4., -9.65685425
                 }, new int[]{8});

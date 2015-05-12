@@ -121,8 +121,8 @@ public class LinearIndex extends BaseTransformOp {
     private void addToIndex() {
         if(!wholeArray)
             return;
-        if(wholeArray)
-            indices[internalCount] = getLinearIndex();
+        int idx =  getLinearIndex();
+        indices[internalCount] = idx;
         internalCount++;
         numProcessed++;
     }

@@ -2629,7 +2629,7 @@ public abstract class BaseNDArray implements INDArray {
         if(isScalar() && i > 0)
             throw new IllegalArgumentException("Illegal index for scalar " + i);
 
-        int realStride = secondaryStride();
+        int realStride = majorStride();
         int idx = offset + i * realStride;
 
         if (data != null && idx >= data.length())

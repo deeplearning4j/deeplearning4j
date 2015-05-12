@@ -32,6 +32,11 @@ public class LinearViewNDArray  extends BaseNDArray {
     private INDArray wrapped;
     private int[] indices;
 
+    /**
+     * Create the linear view
+     * from the given array
+     * @param wrapped the array to wrap
+     */
     public LinearViewNDArray(INDArray wrapped) {
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
@@ -41,6 +46,7 @@ public class LinearViewNDArray  extends BaseNDArray {
         this.indices = index.getIndices();
         this.data = wrapped.data();
         this.offset = wrapped.offset();
+        this.ordering = wrapped.ordering();
 
     }
 

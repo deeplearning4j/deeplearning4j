@@ -43,11 +43,13 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
         indices = new int[wrapped.length()];
+        this.ordering = wrapped.ordering();
+        this.data = wrapped.data();
+        this.offset = wrapped.offset();
         LinearIndex index = new LinearIndex(wrapped,Nd4j.createComplex(wrapped.shape()),true);
         Nd4j.getExecutioner().iterateOverAllRows(index);
         this.indices = index.getIndices();
-        this.data = wrapped.data();
-        this.offset = wrapped.offset();
+
 
     }
 
@@ -135,7 +137,7 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         StringBuffer sb = new StringBuffer();
         sb.append("[");
         for(int i = 0; i < wrapped.length(); i++) {
-            sb.append(getDouble(i));
+            sb.append(getComplex(i));
             if(i < wrapped.length()  - 1) {
                 sb.append(",");
             }
@@ -144,5 +146,7 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         sb.append("]");
         return sb.toString();
     }
+
+
 
 }

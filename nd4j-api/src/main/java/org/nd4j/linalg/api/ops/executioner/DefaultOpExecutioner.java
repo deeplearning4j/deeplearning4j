@@ -86,10 +86,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 for(int i = 0; i < original.rows(); i++) {
                     IComplexNDArray row = original.slice(i);
                     IComplexNDArray zRow = originalZ.slice(i);
-                    IComplexNDArray rowRaveled = row.ravel();
-                    IComplexNDArray zRowRaveled = zRow.ravel();
-                    op.setX(rowRaveled);
-                    op.setZ(zRowRaveled);
+                    op.setX(row);
+                    op.setZ(zRow);
                     if(y != null)
                         op.setY(y.slice(i));
                     exec(op);
