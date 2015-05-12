@@ -123,6 +123,8 @@ If you *cd* into */tmp* and open *iris_svmlight.txt*, you'll see something like 
 Deeplearning4j also works with a command-line interface. A net can be trained with the following script, drawing on the vectorized input you just created with Canova:
 
       ./bin/deeplearning4j train -input input/file/path/tmp/iris_svmlight.txt -output output/file/path/output.txt -runtime hadoop -model modelConfig.java
+      
+The configuration of the net itself may need to be adjusted within the file that contains its instantiation and parameters. Examples of these configurations can be seen on the pages describing [restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html) as well as the [Mnist tutorial](http://deeplearning4j.org/mnist-tutorial.html). 
 
 ## Execution
 
