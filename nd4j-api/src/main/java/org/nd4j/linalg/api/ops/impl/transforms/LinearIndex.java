@@ -149,6 +149,18 @@ public class LinearIndex extends BaseTransformOp {
     }
 
     @Override
+    public void exec() {
+      for(int i = 0; i < x.length(); i++) {
+          addToIndex();
+      }
+    }
+
+    @Override
+    public boolean isPassThrough() {
+        return true;
+    }
+
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 

@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.complex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -49,6 +50,8 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         LinearIndex index = new LinearIndex(wrapped,Nd4j.createComplex(wrapped.shape()),true);
         Nd4j.getExecutioner().iterateOverAllRows(index);
         this.indices = index.getIndices();
+        if(!ArrayUtil.allUnique(this.indices))
+            throw new IllegalStateException("Illegal indices. You may want to double check linear view striding is working properly");
 
 
     }

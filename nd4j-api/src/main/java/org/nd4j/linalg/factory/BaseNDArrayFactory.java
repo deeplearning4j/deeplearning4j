@@ -172,7 +172,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         }
 
-        INDArray ret = create(data);
+        INDArray ret = Nd4j.create(data.length);
+        for(int i = 0; i < ret.length(); i++)
+            ret.putScalar(i,data[i]);
         return ret;
     }
 

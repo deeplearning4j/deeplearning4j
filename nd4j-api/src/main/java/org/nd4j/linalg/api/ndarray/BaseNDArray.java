@@ -1321,9 +1321,10 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
+
         //needed to copy data
         if (newStrides == null)
-            newStrides = this instanceof IComplexNDArray ? Nd4j.getComplexStrides(newShape) : Nd4j.getStrides(newShape);
+            newStrides = this instanceof IComplexNDArray ? Nd4j.getComplexStrides(newShape,ordering()) : Nd4j.getStrides(newShape,ordering());
         if (this instanceof IComplexNDArray)
             return Nd4j.createComplex(newCopy.data(), newShape, newStrides, offset);
         return Nd4j.create(newCopy.data(), newShape, newStrides, offset);
@@ -1675,7 +1676,7 @@ public abstract class BaseNDArray implements INDArray {
             this.ordering = Nd4j.order();
 
         this.length = ArrayUtil.prod(this.shape);
-        if (this.stride == null || !isValid()) {
+        if (this.stride == null) {
             this.stride = Nd4j.getStrides(shape, ordering);
         }
 
@@ -3737,6 +3738,8 @@ public abstract class BaseNDArray implements INDArray {
                 newStride,
                 offset,
                 ordering);
+
+
         return value;
 
     }

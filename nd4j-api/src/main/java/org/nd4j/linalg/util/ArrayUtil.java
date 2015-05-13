@@ -29,14 +29,32 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author Adam Gibson
  */
 public class ArrayUtil {
 
+
+    /**
+     * Returns true if all of the elements in the
+     * given int array are unique
+     * @param toTest the array to test
+     * @return true if all o fthe items
+     * are unique false otherwise
+     */
+    public static boolean allUnique(int[] toTest) {
+        Set<Integer> set = new HashSet<>();
+        for(int i : toTest) {
+            if(!set.contains(i))
+                set.add(i);
+            else
+                return false;
+        }
+
+        return true;
+    }
 
     /**
      * Credit to mikio braun from jblas
@@ -455,6 +473,39 @@ public class ArrayUtil {
         return result;
     }
 
+
+    /**
+     * Create a copy of the given array
+     * starting at the given index with the given length.
+     *
+     * The intent here is for striding.
+     *
+     * For example in slicing, you want the major stride to be first.
+     * You achieve this by taking the last index
+     * of the matrix's stride and putting
+     * this as the first stride of the new ndarray
+     * for slicing.
+     *
+     * All of the elements except the copied elements are
+     * initialized as the given value
+     * @param valueStarting  the starting value
+     * @param copy the array to copy
+     * @param idxFrom the index to start at in the from array
+     * @param idxAt the index to start at in the return array
+     * @param length the length of the array to create
+     * @return the given array
+     */
+    public static int[] valueStartingAt(int valueStarting,int[] copy,int idxFrom,int idxAt,int length) {
+        int[] ret = new int[length];
+        Arrays.fill(ret,valueStarting);
+        for(int i = 0; i < length; i++) {
+            if(i + idxFrom >= copy.length || i + idxAt >= ret.length)
+                break;
+            ret[i + idxAt] = copy[i + idxFrom];
+        }
+
+        return ret;
+    }
 
     /**
      * Returns the array with the item in index

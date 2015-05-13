@@ -22,8 +22,12 @@ package org.nd4j.linalg;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jblas.JblasBackend;
 
 import java.util.UUID;
@@ -53,6 +57,21 @@ public abstract class BaseNd4jTest extends TestCase {
 
     }
 
+    @Before
+    public void before() {
+        Nd4j nd4j = new Nd4j();
+        nd4j.initWithBackend(backend);
+        Nd4j.factory().setOrder(ordering());
+    }
+
+    @After
+    public void after() {
+        Nd4j nd4j = new Nd4j();
+        nd4j.initWithBackend(backend);
+        Nd4j.factory().setOrder(ordering());
+    }
+
+
     /**
      * The ordering for this test
      * This test will only be invoked for
@@ -64,17 +83,21 @@ public abstract class BaseNd4jTest extends TestCase {
         return 'a';
     }
 
-    @Before
-    public void before() {
-        Nd4j nd4j = new Nd4j();
-        nd4j.initWithBackend(backend);
+
+
+
+    @Test
+    public void testNewLinearView() {
+        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
+        NDArrayIndex index = NDArrayIndex.interval(0, 2);
+        INDArray get = arange.get(index, index);
+        LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
+        assertEquals(Nd4j.create(new double[]{1,5,2,6}),linearViewNDArray);
+
     }
 
-    @After
-    public void after() {
-        Nd4j nd4j = new Nd4j();
-        nd4j.initWithBackend(backend);
-    }
+
+
 
     @Override
     public String getName() {

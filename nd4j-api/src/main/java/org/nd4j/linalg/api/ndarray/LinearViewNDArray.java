@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 /**
@@ -47,6 +48,10 @@ public class LinearViewNDArray  extends BaseNDArray {
         this.data = wrapped.data();
         this.offset = wrapped.offset();
         this.ordering = wrapped.ordering();
+
+        if(!ArrayUtil.allUnique(this.indices))
+            throw new IllegalStateException("Illegal indices. You may want to double check linear view striding is working properly");
+
 
     }
 
