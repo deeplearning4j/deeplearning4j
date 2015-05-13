@@ -54,6 +54,7 @@ public abstract class BaseLayer implements Layer {
     protected ConvexOptimizer optimizer;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     
+    
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
     }

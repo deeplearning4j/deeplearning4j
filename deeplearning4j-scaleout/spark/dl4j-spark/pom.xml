@@ -131,8 +131,12 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.binary.version}</artifactId>
             <version>${spark.version}</version>
-            <exclusions>
 
+            <exclusions>
+                <exclusion>
+                    <artifactId>slf4j-log4j12</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>servlet-api</artifactId>
