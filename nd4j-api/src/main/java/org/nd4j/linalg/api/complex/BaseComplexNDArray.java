@@ -1305,6 +1305,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @return the swapped axes view
      */
     public IComplexNDArray swapAxes(int dimension, int with) {
+        //special case: transpose for inverse dimensions
+        if (isVector()) {
+            return transpose();
+        }
+
         int[] shape = ArrayUtil.range(0, shape().length);
         shape[dimension] = with;
         shape[with] = dimension;
@@ -1756,11 +1761,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             this.ordering = Nd4j.order();
 
         this.length = ArrayUtil.prod(this.shape);
-        if (this.stride == null) {
-            if (ordering == NDArrayFactory.FORTRAN)
-                this.stride = ArrayUtil.calcStridesFortran(this.shape, 2);
-            else
-                this.stride = ArrayUtil.calcStrides(this.shape, 2);
+        if (this.stride == null || !isValid()) {
+            this.stride = Nd4j.getComplexStrides(shape, ordering);
         }
 
         //recalculate stride: this should only happen with row vectors
@@ -2481,12 +2483,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return this;
     }
 
-    private void put(int i, float element) {
-        int idx = linearIndex(i);
-        data.put(idx, element);
-        data.put(idx + 1, 0.0);
-    }
-
     public void put(int i, IComplexNumber element) {
         int idx = linearIndex(i);
         data.put(idx, element.realComponent().doubleValue());
@@ -3099,8 +3095,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray rsubi(IComplexNumber n, INDArray result) {
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
+        IComplexNDArray thiLinear = linearView();
+
         for (int i = 0; i < length; i++)
-            cResultLinear.putScalar(i, n.sub(getComplex(i)));
+            cResultLinear.putScalar(i, n.sub(thiLinear.getComplex(i)));
         return cResult;
     }
 
@@ -3113,8 +3111,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray divi(IComplexNumber n, INDArray result) {
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
+        IComplexNDArray thisLinear = linearView();
         for (int i = 0; i < length; i++)
-            cResultLinear.putScalar(i, getComplex(i).div(n));
+            cResultLinear.putScalar(i, thisLinear.getComplex(i).div(n));
         return cResult;
     }
 
@@ -3127,8 +3126,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray muli(IComplexNumber n, INDArray result) {
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
+        IComplexNDArray thiLinear = linearView();
         for (int i = 0; i < length; i++)
-            cResultLinear.putScalar(i, getComplex(i).mul(n));
+            cResultLinear.putScalar(i, thiLinear.getComplex(i).mul(n));
         return cResult;
     }
 
@@ -3141,6 +3141,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray subi(IComplexNumber n, INDArray result) {
         IComplexNDArray cResult = (IComplexNDArray) result;
         IComplexNDArray cResultLinear = cResult.linearView();
+
         IComplexNDArray linear = linearView();
         for (int i = 0; i < length; i++)
             cResultLinear.putScalar(i, linear.getComplex(i).sub(n));
@@ -3156,6 +3157,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray addi(IComplexNumber n, INDArray result) {
         IComplexNDArray linear = linearView();
         IComplexNDArray cResult = (IComplexNDArray) result.linearView();
+
         for (int i = 0; i < length(); i++) {
             cResult.putScalar(i, linear.getComplex(i).add(n));
         }
@@ -3422,11 +3424,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return result;
 
     }
-
-
-
-
-
 
 
     /**

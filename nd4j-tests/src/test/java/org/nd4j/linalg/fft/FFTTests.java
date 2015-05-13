@@ -27,14 +27,9 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.jblas.NDArray;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
 
 /**
  * Base class for FFTs
@@ -62,6 +57,8 @@ public  class FFTTests extends BaseNd4jTest {
     @Test
     public void testColumnVector() {
         Nd4j.EPS_THRESHOLD = 1e-1;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         IComplexNDArray complexLinSpace = Nd4j.complexLinSpace(1,8,8);
         IComplexNDArray n = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(complexLinSpace,8));
         IComplexNDArray assertion = Nd4j.createComplex(new double[]

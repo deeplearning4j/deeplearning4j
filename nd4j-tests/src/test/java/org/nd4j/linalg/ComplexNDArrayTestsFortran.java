@@ -31,16 +31,13 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-
-import static org.junit.Assert.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Tests for a complex ndarray
@@ -183,7 +180,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
             }
         }
 
-        Nd4j.factory().setOrder('f');
         INDArray fortran = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         assertEquals(arr, fortran);
 
@@ -196,7 +192,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
             }
         }
 
-        Nd4j.factory().setOrder('c');
 
 
 
@@ -267,22 +262,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
     }
 
 
-    @Test
-    public void testTensorStrides() {
-        Nd4j.factory().setOrder('c');
-        INDArray arr = Nd4j.createComplex(106, 1, 3, 3);
-        //(144, 144, 48, 16)
-        int[] assertion = ArrayUtil.of(18, 18, 6, 2);
-        int[] arrShape = arr.stride();
-        assertTrue(Arrays.equals(assertion, arrShape));
-        Nd4j.factory().setOrder('f');
-        arr = Nd4j.createComplex(106,1,3,3);
-        //(16, 1696, 1696, 5088)
-        assertion = ArrayUtil.of(2, 212, 212, 636);
-        arrShape = arr.stride();
-        assertTrue(Arrays.equals(assertion, arrShape));
-
-    }
 
 
 
@@ -307,9 +286,8 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
 
     @Test
     public void testSwapAxesFortranOrder() {
-        Nd4j.factory().setOrder('f');
 
-        IComplexNDArray n = Nd4j.createComplex(Nd4j.linspace(1, 30, 30)).reshape(new int[]{3, 5, 2});
+        IComplexNDArray n = Nd4j.createComplex(Nd4j.linspace(1, 30, 30)).reshape(3, 5, 2);
         IComplexNDArray slice = n.swapAxes(2, 1);
         IComplexNDArray assertion = Nd4j.createComplex(new double[]{1, 0, 4, 0, 7, 0, 10, 0, 13, 0});
         IComplexNDArray test = slice.slice(0).slice(0);
@@ -317,43 +295,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
     }
 
 
-    @Test
-    public void testSwapAxes() {
-        IComplexNDArray n = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3}, new int[]{3, 1}));
-        IComplexNDArray swapped = n.swapAxes(1, 0);
-        assertEquals(n.transpose(), swapped);
-        //vector despite being transposed should have same linear index
-        assertEquals(swapped.getScalar(0), n.getScalar(0));
-        assertEquals(swapped.getScalar(1), n.getScalar(1));
-        assertEquals(swapped.getScalar(2), n.getScalar(2));
-
-        IComplexNDArray n2 = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new int[]{2, 2, 2}));
-        IComplexNDArray assertion = n2.permute(new int[]{2, 1, 0});
-        IComplexNDArray validate = Nd4j.createComplex(Nd4j.create(new double[]{0, 4, 2, 6, 1, 5, 3, 7}, new int[]{2, 2, 2}));
-        assertEquals(validate, assertion);
-
-
-        IComplexNDArray v1 = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{8, 1}));
-        IComplexNDArray swap = v1.swapAxes(1, 0);
-        IComplexNDArray transposed = v1.transpose();
-        assertEquals(swap, transposed);
-
-
-        transposed.put(1, Nd4j.scalar(9));
-        swap.put(1, Nd4j.scalar(9));
-        assertEquals(transposed, swap);
-        assertEquals(transposed.getScalar(1).element(), swap.getScalar(1).element());
-
-
-        IComplexNDArray row = n2.slice(0).getRow(1);
-        row.put(1, Nd4j.scalar(9));
-
-        IComplexNumber n3 = (IComplexNumber) row.getScalar(1).element();
-
-        assertEquals(9, n3.realComponent().doubleValue(), 1e-1);
-
-
-    }
 
 
     @Test
@@ -511,7 +452,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
     @Test
     public void testMmul() {
         Nd4j.dtype = Type.FLOAT;
-        Nd4j.factory().setOrder('f');
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();
         IComplexNDArray n = Nd4j.createComplex((Nd4j.create(data, new int[]{10})));
         IComplexNDArray transposed = n.transpose();
@@ -593,7 +533,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
 
         IComplexNDArray multiRow = Nd4j.createComplex(fourTwoTwo);
         IComplexNDArray test = Nd4j.createComplex(Nd4j.create(new double[]{7, 8}, new int[]{1, 2}));
-        IComplexNDArray multiRowSlice1 = multiRow.slice(0);
         IComplexNDArray multiRowSlice = multiRow.slice(1);
         IComplexNDArray testMultiRow = multiRowSlice.getRow(1);
 
@@ -607,7 +546,6 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
         INDArray fourTwoTwo = Nd4j.linspace(1, 16, 16).reshape(4, 2, 2);
 
         IComplexNDArray multiRow = Nd4j.createComplex(fourTwoTwo);
-        multiRow.toString();
         assertEquals(fourTwoTwo, multiRow.getReal());
 
 
@@ -831,24 +769,15 @@ public  class ComplexNDArrayTestsFortran extends BaseNd4jTest  {
         assertEquals(4, n4.realComponent().doubleValue(), 1e-1);
     }
 
-    @Test
-    public void testEndsForSlices() {
-        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2}));
-        int[] endsForSlices = arr.endsForSlices();
-        assertEquals(true, Arrays.equals(new int[]{0, 12, 24, 36}, endsForSlices));
-    }
-
 
     @Test
     public void testWrap() {
         IComplexNDArray c = Nd4j.createComplex(Nd4j.linspace(1, 4, 4).reshape(2, 2));
-        IComplexNDArray wrapped = c;
-        assertEquals(true, Arrays.equals(new int[]{2, 2}, wrapped.shape()));
+        assertEquals(true, Arrays.equals(new int[]{2, 2}, c.shape()));
 
         IComplexNDArray vec = Nd4j.createComplex(Nd4j.linspace(1, 4, 4));
-        IComplexNDArray wrappedVector = vec;
-        assertEquals(true, wrappedVector.isVector());
-        assertEquals(true, Shape.shapeEquals(new int[]{4}, wrappedVector.shape()));
+        assertEquals(true, vec.isVector());
+        assertEquals(true, Shape.shapeEquals(new int[]{4}, vec.shape()));
 
     }
 

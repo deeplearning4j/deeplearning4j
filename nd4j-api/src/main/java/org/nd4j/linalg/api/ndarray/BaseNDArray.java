@@ -20,17 +20,6 @@
 package org.nd4j.linalg.api.ndarray;
 
 
-import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
-import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
-
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -38,21 +27,9 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
-import org.nd4j.linalg.api.ops.impl.accum.Mean;
+import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
-import org.nd4j.linalg.api.ops.impl.accum.Norm1;
-import org.nd4j.linalg.api.ops.impl.accum.Norm2;
-import org.nd4j.linalg.api.ops.impl.accum.NormMax;
-import org.nd4j.linalg.api.ops.impl.accum.Prod;
-import org.nd4j.linalg.api.ops.impl.accum.StandardDeviation;
-import org.nd4j.linalg.api.ops.impl.accum.Sum;
-import org.nd4j.linalg.api.ops.impl.accum.Variance;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
@@ -61,11 +38,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.EqualTo;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThan;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.NotEqualTo;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
@@ -76,6 +49,12 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.ref.WeakReference;
+import java.util.*;
+
+import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
+import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
 
 
 
@@ -99,11 +78,11 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseNDArray implements INDArray {
 
 
+    protected static final Logger log = LoggerFactory.getLogger(BaseNDArray.class);
     /**
      *
      */
     private static final long serialVersionUID = 3285982317165542614L;
-
     protected int[] shape;
     protected int[] stride;
     protected int offset = 0;
@@ -112,11 +91,8 @@ public abstract class BaseNDArray implements INDArray {
     protected int rows, columns;
     protected int length;
     protected INDArray linearView,secondaryLinearView;
-
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
-
-    protected static final Logger log = LoggerFactory.getLogger(BaseNDArray.class);
 
     public BaseNDArray() {
     }
@@ -389,7 +365,6 @@ public abstract class BaseNDArray implements INDArray {
         this(shape, calcStrides(shape), offset);
     }
 
-
     public BaseNDArray(int[] shape, char ordering) {
         this(shape, 0, ordering);
     }
@@ -405,6 +380,7 @@ public abstract class BaseNDArray implements INDArray {
         this(newRows, newColumns, Nd4j.order());
     }
 
+
     /**
      * Create an ndarray from the specified slices.
      * This will go through and merge all of the
@@ -417,7 +393,6 @@ public abstract class BaseNDArray implements INDArray {
     public BaseNDArray(List<INDArray> slices, int[] shape) {
         this(slices, shape, Nd4j.order());
     }
-
 
     /**
      * Create an ndarray from the specified slices.
@@ -466,15 +441,17 @@ public abstract class BaseNDArray implements INDArray {
         }
     }
 
+
     /**
      * Constructor for stride and offset
+     *
      * @param buffer
      * @param shape
      * @param offset
      * @param ordering
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
-        this(buffer,shape,Nd4j.getStrides(shape,ordering),offset,ordering);
+        this(buffer, shape, Nd4j.getStrides(shape, ordering), offset, ordering);
     }
 
     /**
@@ -498,6 +475,20 @@ public abstract class BaseNDArray implements INDArray {
             ix += indexes[i] * stride[i];
         }
         return ix;
+    }
+
+    /**
+     * Returns whether the ndarray is valid or not
+     * @return true if the ndarray is valid
+     * false otherwise
+     */
+    public boolean isValid() {
+        try {
+            linearIndex(length() - 1);
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -1684,12 +1675,10 @@ public abstract class BaseNDArray implements INDArray {
             this.ordering = Nd4j.order();
 
         this.length = ArrayUtil.prod(this.shape);
-        if (this.stride == null) {
-            if (ordering == NDArrayFactory.FORTRAN)
-                this.stride = ArrayUtil.calcStridesFortran(shape);
-            else
-                this.stride = ArrayUtil.calcStrides(this.shape);
+        if (this.stride == null || !isValid()) {
+            this.stride = Nd4j.getStrides(shape, ordering);
         }
+
 
         //recalculate stride: this should only happen with row vectors
         if (this.stride.length != this.shape.length) {
@@ -2133,6 +2122,7 @@ public abstract class BaseNDArray implements INDArray {
                 switchedOrder = true;
             }
         }
+
         INDArray result = Nd4j.create(shape, other.data().dataType());
         synchronized (Nd4j.factory()) {
             if (switchedOrder && order != NDArrayFactory.FORTRAN)
