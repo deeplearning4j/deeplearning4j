@@ -14,7 +14,7 @@ Contents
 * <a href="#grams">N-grams & Skip-grams</a>
 * <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
-* <a href="#dbn">Fine-tuning DBNs (with code!)</a>
+* <a href="#code">A Code Example</a>
 * <a href="#next">Next Steps</a>
 
 ###<a name="intro">Introduction to Word2Vec</a>
@@ -261,7 +261,7 @@ You can shut down your Word2vec application and try to delete them.
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
-### <a name="dbn">Fine-tuning DBNs</a>
+### <a name="code">A Code Example</a>
 
 Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
 
