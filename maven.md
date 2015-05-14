@@ -5,7 +5,7 @@ layout: default
 
 # Maven for Python Programmers
 
-[Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers, analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder. 
+[Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers. While there is no Python tool that matches Maven feature for feature, it is analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder. 
 
 It is also the single most convenient way to get up and running with Deeplearning4j, which offers a [Scala API](http://nd4j.org/scala.html) whose syntax will strike many Python programmers as eerily familiar, while offering them powerful concurrent features. 
 
@@ -23,7 +23,11 @@ To quote *Maven: The Complete Reference*:
 
 Like Deeplearning4j, Maven relies on convention over configuration, which means that it provides default values that allow it to run without the programmer having to specify each parameter for each new project. 
 
-If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose Maven when creating a new project in the IDE, and will then take you through the wizard (we comment more thoroughly on the process [here](http://nd4j.org/getstarted.html#maven)). That is, you can make the build happen from within IntelliJ, without going anywhere else. 
+If you have both IntelliJ and Maven installed, IntelliJ will allow you to choose Maven when creating a new project in the IDE, and will then take you through the wizard (we comment more thoroughly on the process [in our Getting Started page](http://nd4j.org/getstarted.html#maven)). That is, you can make the build happen from within IntelliJ, without going anywhere else. 
+
+Alternatively, you can use Maven from your project's root directory in the command prompt to freshly install it:
+
+		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
 Several useful books have been written about Apache Maven. They are available on the website of Sonatype, the company that supports the open-source project. 
 
