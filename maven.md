@@ -5,7 +5,7 @@ layout: default
 
 # Maven for Python Programmers
 
-[Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers. While there is no Python tool that matches Maven feature for feature, it is analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder. 
+[Maven](https://en.wikipedia.org/wiki/Apache_Maven) is the most commonly used build automation tool for Java programmers. While there is no Python tool that matches Maven feature for feature, it is analogous to a package management system like [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)) in Python, or PyBuilder, or [Distutils](http://docs.activestate.com/activepython/3.2/diveintopython3/html/packaging.html). 
 
 It is also the single most convenient way to get up and running with Deeplearning4j, which offers a [Scala API](http://nd4j.org/scala.html) whose syntax will strike many Python programmers as eerily familiar, while offering them powerful concurrent features. 
 
