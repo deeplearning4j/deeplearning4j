@@ -11,7 +11,7 @@ The goal here isn't to classify faces (yet), but to teach the CRBM to reconstruc
 
 We're training the net on the [Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/results.html) (LFW) dataset created by UMass/Amherst. LFW contains 13,233 images of 5,749 different faces, so it's fairly large. The dataset is an important and widely used tool in building nets useful for computer vision.
 
-Our network, which you can see [here](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example), learned faces based on a compressed version of those images. The process took about five minutes to run on a reasonably powerful laptop. The results look like this:
+Our net, which you can see [here](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/lfw/FacesDemo.java), learned faces based on a compressed version of those images. The process took about five minutes to run on a reasonably powerful laptop. The results look like this:
 
 ![Alt text](../img/LFW_reconstruction.jpg)
 
@@ -27,10 +27,8 @@ Here's some of the code used to run LFW on DL4J:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/lfw/FacesDemo.java?slice=28:50"></script>
 
-To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either click "run" on the MultiThreadedLFW Java file in IntelliJ (see our [Getting Started page](../gettingstarted.html)), or type this into your command line:
-
-    java -cp "lib/*" org.deeplearning4j.example.lfw.MultiThreadedLFW
+To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either click "run" on the FacesDemo.java file in IntelliJ (see our [Getting Started page](../gettingstarted.html)).
 
 After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
 
-For a deeper dive into our LFW code, see this [Github page](https://github.com/agibsonccc/java-deeplearning/tree/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/lfw).
+For a deeper dive into our LFW code, see this [Github page](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/lfw/FacesDemo.java).
