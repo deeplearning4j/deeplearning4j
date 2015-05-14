@@ -59,6 +59,6 @@ Finally, we are building the basic applications of Numpy, including ND-Array, in
 
 ### Scala
 
-We have paid special attention to [Scala](http://deeplearning4j.org/scala.html) in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the dominant language in data science. Writing numerical computing, vectorization and deep-learning libraries for the JVM moves the community toward that goal.
+We have paid special attention to [Scala](http://deeplearning4j.org/scala.html) in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the dominant language in data science. Writing numerical computing, vectorization and deep-learning libraries for the JVM with a [Scala API](http://nd4j.org/scala.html) moves the community toward that goal. 
 
 To really understand the differences between DL4J and other frameworks, you may just have to [try us out](http://deeplearning4j.org/quickstart.html).
