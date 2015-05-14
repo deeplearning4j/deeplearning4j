@@ -11,13 +11,13 @@ Deeplearning4j is not the first open-source deep-learning project, but it is dis
 
 Most academic researchers in deep learning rely on [**Pylearn2**](http://deeplearning.net/software/pylearn2/) and [Theano](http://deeplearning.net/software/theano/), which are written in Python. Pylearn2 is a machine-learning library, while Theano is a library that handles multidimensional arrays, like Numpy. Both are powerful tools widely used for research purposes and serving a large community. They are well suited to data exploration and explicitly state that they are intended for research. 
 
-Pylearn2 is a normal (non-distributed) framework that includes everything necessary to conduct experiments with multilayer Perceptrons, RBMs, Stacked Denoising Autoencoders and Convolutional nets. We recommend it for precisely those use cases. In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible. 
+Pylearn2 is a normal (non-distributed) framework that includes everything necessary to conduct experiments with multilayer Perceptrons, RBMs, Stacked Denoising Autoencoders and Convolutional nets. We recommend it for precisely those use cases. In contrast, Deeplearning4j intends to be the equivalent of Scikit-learn in the deep-learning space. It aims to automate as many knobs as possible in a scalable fashion on parallel GPUs or CPUs, integrating as needed with Hadoop and Spark. 
 
 ### Torch
 
 [**Torch7**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. It is purported to be used by large tech companies that devote in-house teams to deep learning. Lua is a multi-paradigm language developed in Brazil in the early 1990s. 
 
-Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. 
+Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community. 
 
 ### Caffe
 
@@ -59,6 +59,6 @@ Finally, we are building the basic applications of Numpy, including ND-Array, in
 
 ### Scala
 
-We have paid special attention to Scala in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the language dominating data-science in the future. Writing numerical computing, vectorization and deep-learning libraries for the JVM moves the community toward that goal.
+We have paid special attention to [Scala](http://deeplearning4j.org/scala.html) in building Deeplearning4j and ND4J, because we believe Scala has the potential to become the dominant language in data science. Writing numerical computing, vectorization and deep-learning libraries for the JVM moves the community toward that goal.
 
 To really understand the differences between DL4J and other frameworks, you may just have to [try us out](http://deeplearning4j.org/quickstart.html).
