@@ -347,7 +347,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             IComplexNDArray ndArray = (IComplexNDArray) op.z();
             ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
         } else
-            op.z().putScalar(c, op.op(op.x().getDouble(c)));
+            op.z().linearView().putScalar(c, op.op(op.x().linearView().getDouble(c)));
     }
 
 
