@@ -403,7 +403,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new int[]{3, 2});
         INDArray column2 = arr.getColumn(0);
         assertEquals(true, Shape.shapeEquals(new int[]{3, 1}, column2.shape()));
-        INDArray column = Nd4j.create(new double[]{1, 2, 3}, new int[]{3});
+        INDArray column = Nd4j.create(new double[]{1, 2, 3}, new int[]{1,3});
         arr.putColumn(0, column);
 
         INDArray firstColumn = arr.getColumn(0);
@@ -411,7 +411,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(column, firstColumn);
 
 
-        INDArray column1 = Nd4j.create(new double[]{4, 5, 6}, new int[]{3});
+        INDArray column1 = Nd4j.create(new double[]{4, 5, 6}, new int[]{1,3});
         arr.putColumn(1, column1);
         assertEquals(true, Shape.shapeEquals(new int[]{3, 1}, arr.getColumn(1).shape()));
         INDArray testRow1 = arr.getColumn(1);
@@ -427,12 +427,12 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
         INDArray n = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
         INDArray column23 = n.getColumn(0);
-        INDArray column12 = Nd4j.create(new double[]{1, 2}, new int[]{2});
+        INDArray column12 = Nd4j.create(new double[]{1, 2}, new int[]{1,2});
         assertEquals(column23, column12);
 
 
         INDArray column0 = n.getColumn(1);
-        INDArray column01 = Nd4j.create(new double[]{3, 4}, new int[]{2});
+        INDArray column01 = Nd4j.create(new double[]{3, 4}, new int[]{1,2});
         assertEquals(column0, column01);
 
 
@@ -688,24 +688,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(assertion, log);
     }
 
-    @Test
-    public void testIrisStatsDouble() throws IOException {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        ClassPathResource res = new ClassPathResource("/iris.txt");
-        File file = res.getFile();
-        INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
-        INDArray mean = Nd4j.create(new double[]{5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672});
-        INDArray std = Nd4j.create(new double[]{0.8280661279778629, 0.4335943113621737, 1.7644204199522617, 0.7631607417008414});
 
-        INDArray testSum = Nd4j.create(new double[]{876.4999990463257, 458.1000003814697, 563.7999982833862, 179.7999987155199});
-        INDArray sum = data.sum(0);
-        INDArray test = data.mean(0);
-        INDArray testStd = data.std(0);
-        assertEquals(sum, testSum);
-        assertEquals(mean, test);
-        assertEquals(std, testStd);
-
-    }
 
     @Test
     public void testSmallSum() {
@@ -716,25 +699,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testIrisStats() throws IOException {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        ClassPathResource res = new ClassPathResource("/iris.txt");
-        File file = res.getFile();
-        INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
-        INDArray sum = data.sum(0);
-        INDArray mean = Nd4j.create(new double[]{5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672});
-        INDArray std = Nd4j.create(new double[]{0.8280661279778629, 0.4335943113621737, 1.7644204199522617, 0.7631607417008414});
-
-        INDArray testSum = Nd4j.create(new double[]{876.4999990463257, 458.1000003814697, 563.7999982833862, 179.7999987155199});
-        assertEquals(testSum, sum);
-
-        INDArray testMean = data.mean(0);
-        assertEquals(mean, testMean);
-
-        INDArray testStd = data.std(0);
-        assertEquals(std, testStd);
-    }
 
 
 
@@ -751,7 +715,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new int[]{2, 2, 2});
         INDArray permuted = toPermute.permute(2, 1, 0);
         INDArray permutedSlice = permuted.slice(1);
-        INDArray assertion = Nd4j.create(new float[]{0,2,1,3,4,6,5,7}).linearView();
+        INDArray assertion = Nd4j.create(new float[]{0,2,4,6,1,3,5,7}).linearView();
         assertEquals(permuted.linearView(), assertion);
 
     }
@@ -1061,6 +1025,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         }
 
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
+        INDArray slice1 = fourD.slice(0);
+        INDArray slice2 = fourD.slice(1);
+
         INDArray broadCasted3 = fourD.broadcast(1, 1, 36, 36);
         assertTrue(Arrays.equals(new int[]{1, 2, 36, 36}, broadCasted3.shape()));
     }

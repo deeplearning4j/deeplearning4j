@@ -294,7 +294,6 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
     @Test
     public void testTensorStrides() {
-        Nd4j.factory().setOrder('c');
         INDArray arr = Nd4j.createComplex(106, 1, 3, 3);
         //(144, 144, 48, 16)
         int[] assertion = ArrayUtil.of(18, 18, 6, 2);

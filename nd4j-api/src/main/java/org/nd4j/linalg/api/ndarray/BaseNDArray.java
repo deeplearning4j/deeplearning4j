@@ -609,9 +609,9 @@ public abstract class BaseNDArray implements INDArray {
             if(isMatrix()) {
                 if(dimension == 0) {
                     return Nd4j.create(data,
-                            new int[]{1, shape[dimension]}
-                            ,  new int[]{stride[dimension], 1},
-                            calcoffset(index));
+                            new int[]{shape[dimension],1}
+                            ,  new int[]{stride[dimension],1},
+                            offset + index * stride[stride.length - 1]);
                 }
                 else if(dimension == 1) {
                     return Nd4j.create(data,
@@ -655,10 +655,23 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
+        int arrOffset = offset + index * stride[0];
+        if(arrOffset >= length()) {
+            int numDecremented = 0;
+            int startIndex = index;
+            while(startIndex >= slices()) {
+                numDecremented++;
+                startIndex -= slices();
+            }
+
+            arrOffset = offset + ((startIndex * stride[0]) + (numDecremented * stride[1]));
+
+        }
+
         return Nd4j.create(data,
                 new int[]{1, shape[dimension]}
                 , new int[]{1,stride[dimension]},
-                offset + index * stride[stride.length - 1]);
+                arrOffset);
 
     }
 
@@ -1159,9 +1172,7 @@ public abstract class BaseNDArray implements INDArray {
             int ix = linearIndex(indices[1]);
             return data.getDouble(ix);
         }
-        else if(isMatrix() && ordering() == NDArrayFactory.C) {
-            return data.getDouble(offset + (stride[0] * indices[1]));
-        }
+
         else {
             int ix = offset;
             for (int i = 0; i < indices.length; i++)
@@ -2827,6 +2838,7 @@ public abstract class BaseNDArray implements INDArray {
                     }
                 }
             }
+
             else {
                 int firstNon1 = getFirstNonOneStrideIdx();
                 int count = 0;
@@ -2853,10 +2865,8 @@ public abstract class BaseNDArray implements INDArray {
 
 
     protected int calcoffset(int index) {
-        if(index == 0 || shape.length > 2) {
-            return offset + index * majorStride();
-        }
-
+        if(stride[stride.length - 1] == 1 && NDArrayFactory.FORTRAN == ordering())
+            return offset + index;
         return offset + index * majorStride();
     }
 
