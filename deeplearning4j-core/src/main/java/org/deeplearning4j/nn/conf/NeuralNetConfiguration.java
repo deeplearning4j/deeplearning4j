@@ -788,8 +788,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public MultiLayerConfiguration build() {
-            if(layerwise.size() != hiddenLayerSizes.length + 1)
-                throw new IllegalStateException("Number of hidden layers mut be equal to hidden layer sizes + 1");
 
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++) {
