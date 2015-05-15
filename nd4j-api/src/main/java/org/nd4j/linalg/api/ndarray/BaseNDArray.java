@@ -1443,7 +1443,7 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
-                return Nd4j.create(data, newShape, new int[]{1,stride[0]}, offset);
+                return Nd4j.create(data, newShape, new int[]{stride[0],1}, offset);
 
             }
         }

@@ -109,6 +109,15 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     }
 
+    @Test
+    public void testOtherReshape() {
+        INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
+
+        INDArray slice = nd.slice(1, 0);
+
+        INDArray vector = slice.reshape(1,2);
+        assertEquals(Nd4j.create(new double[]{2,5}),vector);
+    }
 
 
     @Test
@@ -758,7 +767,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
          *
          */
         int[] offsets = {
-           0,6,12,18,2,8,14,20,4,10,16,22
+                0,6,12,18,2,8,14,20,4,10,16,22
         };
 
         for(int i = 0; i < arr.vectorsAlongDimension(2); i++) {
