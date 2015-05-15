@@ -57,11 +57,23 @@ public abstract class BaseNd4jTest extends TestCase {
 
     }
 
+    @Override
+    protected void tearDown() throws Exception {
+        after();
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        before();
+    }
+
     @Before
     public void before() {
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
+        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
+        Nd4j.MAX_SLICES_TO_PRINT = -1;
     }
 
     @After
@@ -69,6 +81,8 @@ public abstract class BaseNd4jTest extends TestCase {
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
         Nd4j.factory().setOrder(ordering());
+        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
+        Nd4j.MAX_SLICES_TO_PRINT = -1;
     }
 
 
@@ -86,15 +100,6 @@ public abstract class BaseNd4jTest extends TestCase {
 
 
 
-    @Test
-    public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(Nd4j.create(new double[]{1,5,2,6}),linearViewNDArray);
-
-    }
 
 
 

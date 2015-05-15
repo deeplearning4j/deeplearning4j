@@ -1,6 +1,8 @@
 package org.nd4j.linalg;
 
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -30,6 +32,16 @@ public class BaseComplexNDArrayTests extends BaseNd4jTest {
 
     public BaseComplexNDArrayTests(String name, Nd4jBackend backend) {
         super(name, backend);
+    }
+
+    @Before
+    public void before() {
+        super.before();
+    }
+
+    @After
+    public void after() {
+        super.after();
     }
 
 

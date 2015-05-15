@@ -276,17 +276,38 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 }
             }
 
-            INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
-            INDArray linear = ret.linearView();
+            if(op.x().isMatrix() || op.x().isVector()) {
+                int[] shape = ArrayUtil.removeIndex(op.x().shape(), dimension);
+                if(shape.length < 2)
+                    shape = new int[]{1,shape[0]};
+                INDArray ret = Nd4j.create(shape);
+                INDArray linear = ret.linearView();
 
-            for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                Number result = execAndReturn((Accumulation) op2).currentResult();
-                linear.putScalar(i,result.doubleValue());
+                for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    Number result = execAndReturn((Accumulation) op2).currentResult();
+                    linear.putScalar(i,result.doubleValue());
+
+                }
+
+                return ret;
+            }
+            else {
+                INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
+                INDArray linear = ret.linearView();
+
+                for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    Number result = execAndReturn((Accumulation) op2).currentResult();
+                    linear.putScalar(i,result.doubleValue());
+
+                }
+
+                return ret;
 
             }
 
-            return ret;
+
 
         }
 

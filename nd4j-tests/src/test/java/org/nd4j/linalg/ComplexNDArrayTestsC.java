@@ -68,8 +68,15 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
         super(name, backend);
     }
 
+    @Before
+    public void before() {
+       super.before();
+    }
 
-
+    @After
+    public void after() {
+        super.after();
+    }
 
     @Test
     public void testConstruction() {
@@ -382,8 +389,6 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
     @Test
     public void testSlice() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
         IComplexNDArray slices = Nd4j.createComplex(2,3);
         slices.put(0,0,1);
         slices.put(0,1,2);
@@ -413,8 +418,8 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
         assertEquals(secondSlice, secondSliceTest);
 
 
-        INDArray slice0 = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new int[]{3, 2});
-        INDArray slice2 = Nd4j.create(new double[]{7, 8, 9, 10, 11, 12}, new int[]{3, 2});
+        INDArray slice0 = Nd4j.create(new double[]{1, 13,5,17,9,21}, new int[]{3, 2});
+        INDArray slice2 = Nd4j.create(new double[]{2,14,6,18,10,22}, new int[]{3, 2});
 
 
         IComplexNDArray testSliceComplex = arr2.slice(0);

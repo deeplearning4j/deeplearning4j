@@ -334,11 +334,11 @@ public class NormalDistribution extends BaseDistribution {
         INDArray linear = ret.linearView();
         if (means != null)
             for (int i = 0; i < linear.length(); i++) {
-                ret.putScalar(i, standardDeviation * random.nextGaussian() + means.linearView().getDouble(i));
+                linear.putScalar(i, standardDeviation * random.nextGaussian() + means.linearView().getDouble(i));
             }
         else
             for (int i = 0; i < linear.length(); i++) {
-                ret.putScalar(i, standardDeviation * random.nextGaussian() + mean);
+                linear.putScalar(i, standardDeviation * random.nextGaussian() + mean);
             }
         return ret;
     }

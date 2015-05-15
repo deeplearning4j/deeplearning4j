@@ -25,6 +25,10 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Collects the linear indexes
  * for a given vector.
@@ -37,6 +41,7 @@ public class LinearIndex extends BaseTransformOp {
     private int internalCount = 0;
     private int[] indices;
     private boolean wholeArray = false;
+    private Set<Integer> encountered = new HashSet<>();
 
     public LinearIndex(INDArray x, INDArray z,boolean wholeArray) {
         super(x, z);
@@ -122,6 +127,10 @@ public class LinearIndex extends BaseTransformOp {
         if(!wholeArray)
             return;
         int idx =  getLinearIndex();
+        if(!encountered.contains(idx))
+            encountered.add(idx);
+        else
+            throw new IllegalStateException("Please checking striding. Index: " + idx + " already encountered ");
         indices[internalCount] = idx;
         internalCount++;
         numProcessed++;
@@ -150,9 +159,9 @@ public class LinearIndex extends BaseTransformOp {
 
     @Override
     public void exec() {
-      for(int i = 0; i < x.length(); i++) {
-          addToIndex();
-      }
+        for(int i = 0; i < x.length(); i++) {
+            addToIndex();
+        }
     }
 
     @Override

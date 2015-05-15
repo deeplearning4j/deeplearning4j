@@ -278,9 +278,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape) {
         super(new float[ArrayUtil.prod(shape) * 2]);
+        if(!Shape.isVector(shape))
+            throw new IllegalArgumentException("Unable to initialize, must tbe a vector");
         init(shape);
         for (int i = 0; i < length; i++)
-            put(i, newData[i].asDouble());
+            putScalar(i, newData[i].asDouble());
 
     }
 
@@ -1695,6 +1697,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         }
+    }
+    @Override
+    public int elementStride() {
+        return 2;
     }
 
 
@@ -3284,14 +3290,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray transposei() {
-        if (isRowVector())
-            return Nd4j.createComplex(data, shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()), offset);
-        else if (isColumnVector())
-            return Nd4j.createComplex(data, new int[]{1, shape[0]}, offset);
-
-        IComplexNDArray ret = permute(ArrayUtil.range(shape.length, 0));
-        return ret;
-
+      return Nd4j.createComplex(super.transposei());
     }
 
     /**
@@ -3524,6 +3523,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
         return min;
     }
+
 
 
     /**

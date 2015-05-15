@@ -186,7 +186,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 dx.length(),
                 da,
                 dx.data().asFloat(),
-                dx.linearView().offset(),
+                dx.offset(),
                 dx.linearView().majorStride(),
                 dy.data().asFloat(),
                 dy.offset(),

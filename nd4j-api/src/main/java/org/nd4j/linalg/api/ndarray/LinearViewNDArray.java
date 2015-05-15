@@ -42,18 +42,22 @@ public class LinearViewNDArray  extends BaseNDArray {
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
         indices = new int[wrapped.length()];
-        LinearIndex index = new LinearIndex(wrapped,wrapped.dup(),true);
-        Nd4j.getExecutioner().iterateOverAllRows(index);
-        this.indices = index.getIndices();
         this.data = wrapped.data();
         this.offset = wrapped.offset();
         this.ordering = wrapped.ordering();
+        this.length = wrapped.length();
 
+
+        LinearIndex index = new LinearIndex(wrapped,wrapped.dup(),true);
+        Nd4j.getExecutioner().iterateOverAllRows(index);
+        this.indices = index.getIndices();
         if(!ArrayUtil.allUnique(this.indices))
             throw new IllegalStateException("Illegal indices. You may want to double check linear view striding is working properly");
 
 
     }
+
+
 
     @Override
     public boolean isCleanedUp() {
@@ -77,7 +81,7 @@ public class LinearViewNDArray  extends BaseNDArray {
 
     @Override
     public int majorStride() {
-        return wrapped.majorStride();
+        return 1;
     }
 
     @Override

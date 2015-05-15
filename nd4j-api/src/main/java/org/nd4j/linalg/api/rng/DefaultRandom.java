@@ -109,7 +109,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i, nextGaussian());
+            linear.putScalar(i, nextGaussian());
         }
         return ret;
     }
@@ -129,7 +129,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i, nextFloat());
+            linear.putScalar(i, nextFloat());
         }
         return ret;
     }
@@ -139,7 +139,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i, nextInt());
+            linear.putScalar(i, nextInt());
         }
         return ret;
     }
@@ -149,7 +149,7 @@ public class DefaultRandom implements Random, RandomGenerator {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i, nextInt(n));
+            linear.putScalar(i, nextInt(n));
         }
         return ret;
     }

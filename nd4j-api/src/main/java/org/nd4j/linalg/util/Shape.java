@@ -162,6 +162,13 @@ public class Shape {
         return false;
     }
 
+    /**
+     * Returns true if the given shape is of length 1
+     * or provided the shape length is 2:
+     * element 0 is 1
+     * @param shape the shape to check
+     * @return true if the above conditions hold,false otherwise
+     */
     public static boolean isRowVectorShape(int[] shape) {
         return
                 (shape.length == 2
@@ -170,6 +177,13 @@ public class Shape {
 
     }
 
+    /**
+     * Returns true if the given shape is length 2 and
+     * the size at element 1 is 1
+     * @param shape the shape to check
+     * @return true if the above listed conditions
+     * hold false otherwise
+     */
     public static boolean isColumnVectorShape(int[] shape) {
         return
                 (shape.length == 2

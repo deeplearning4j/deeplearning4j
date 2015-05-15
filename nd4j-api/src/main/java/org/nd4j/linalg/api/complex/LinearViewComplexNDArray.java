@@ -47,6 +47,7 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         this.ordering = wrapped.ordering();
         this.data = wrapped.data();
         this.offset = wrapped.offset();
+        this.length = wrapped.length();
         LinearIndex index = new LinearIndex(wrapped,Nd4j.createComplex(wrapped.shape()),true);
         Nd4j.getExecutioner().iterateOverAllRows(index);
         this.indices = index.getIndices();

@@ -37,6 +37,14 @@ public interface INDArray extends Serializable  {
 
 
     /**
+     * Element stride (one element to the next,
+     * also called the defualt stride: 1 for normal
+     * 2 for complex)
+     * @return
+     */
+    int elementStride();
+
+    /**
      * Returns true if the ndarray has already been freed
      * @return
      */

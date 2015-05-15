@@ -20,6 +20,8 @@
 package org.nd4j.linalg;
 
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
@@ -60,7 +62,15 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
 
 
+    @Before
+    public void before() {
+        super.before();
+    }
 
+    @After
+    public void after() {
+        super.after();
+    }
 
 
 

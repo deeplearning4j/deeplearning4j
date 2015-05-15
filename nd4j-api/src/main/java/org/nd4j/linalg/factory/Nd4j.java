@@ -249,7 +249,6 @@ public class Nd4j {
      * @return the operation executioner instance
      */
     public static OpExecutioner getExecutioner() {
-
         return OP_EXECUTIONER_INSTANCE;
     }
 
@@ -1715,7 +1714,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(int columns, char order) {
-        INDArray ret = INSTANCE.create(columns);
+        INDArray ret = INSTANCE.create(new int[]{1,columns},Nd4j.getStrides(new int[]{1,columns},order));
         logCreationIfNecessary(ret);
         return ret;
     }

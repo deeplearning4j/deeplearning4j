@@ -43,7 +43,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,14 +73,13 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Before
     public void before() {
-        Nd4j.factory().setOrder('f');
+        super.before();
     }
 
     @After
     public void after() {
-        Nd4j.factory().setOrder('f');
+        super.after();
     }
-
 
 
     @Test
@@ -316,10 +314,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testSlices() {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
         for (int i = 0; i < arr.slices(); i++) {
-            assertEquals(2, arr.slice(i).slice(1).slices());
+            INDArray slice  = arr.slice(i).slice(1);
+            int slices = slice.slices();
+            assertEquals(1, slices);
         }
 
     }
+
+
 
 
     @Test
@@ -580,9 +582,11 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testCopyMatrix() {
+
         INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
         INDArray copy = Nd4j.create(28, 28);
         Nd4j.getBlasWrapper().copy(twoByThree.linearView(), copy.linearView());
+        assertEquals(twoByThree,copy);
     }
 
 
@@ -599,12 +603,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         Nd4j.getBlasWrapper().axpy(1, twoByThree, twoByThree);
     }
 
-    @Test
-    public void testPrintAfterSum() {
-        INDArray arr = Nd4j.rand(2, 1);
-        INDArray sum = Nd4j.sum(arr, 1);
-        System.out.println(sum);
-    }
+
 
 
     @Test
@@ -630,6 +629,20 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testMMul() {
+        INDArray arr = Nd4j.create(new double[][]{
+                {1,2,3},{4,5,6}
+        });
+
+        INDArray assertion = Nd4j.create(new double[][]{
+                {14,32},{32,77}
+        });
+
+        INDArray test = arr.mmul(arr.transpose());
+        assertEquals(assertion,test);
+
+    }
 
     @Test
     public void testPutSlice() {
@@ -737,25 +750,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
         INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new int[]{2, 2, 2});
         INDArray permuted = toPermute.permute(2, 1, 0);
-        INDArray assertion = Nd4j.create(new float[]{0, 4, 2, 6, 1, 5, 3, 7}, new int[]{2, 2, 2});
-        assertEquals(permuted, assertion);
+        INDArray permutedSlice = permuted.slice(1);
+        INDArray assertion = Nd4j.create(new float[]{0,2,1,3,4,6,5,7}).linearView();
+        assertEquals(permuted.linearView(), assertion);
 
     }
 
 
 
-
-
-    @Test
-    public void testLinearIndex() {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{8});
-        for (int i = 0; i < n.length(); i++) {
-            int linearIndex = n.linearIndex(i);
-            assertEquals(i, linearIndex);
-            double d = n.getDouble(i);
-            assertEquals(i + 1, d, 1e-1);
-        }
-    }
 
     @Test
     public void testSliceConstructor() throws Exception {
@@ -769,6 +771,19 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testSlice() {
+        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1,13}
+                ,{5,17}
+                ,{9,21}
+        });
+
+        INDArray firstSlice = arr.slice(0);
+        assertEquals(assertion,firstSlice);
+
+    }
 
 
 
@@ -840,11 +855,29 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(n2Assertion, nRsubi);
     }
 
+    @Test
+    public void testSliceOffset() {
+        INDArray B = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
+        INDArray bSlice0 = B.slice(0).slice(0);
+        INDArray bSlice1 = B.slice(1);
+
+        assertEquals(6,bSlice0.stride()[0]);
+        assertEquals(1,bSlice1.offset());
+
+        INDArray slice2 = B.slice(2);
+        assertEquals(2, slice2.offset());
+
+        INDArray bSlice1Slice1 = bSlice1.slice(1);
+        INDArray bSlice1Slice1Slice1 = bSlice1Slice1.slice(1);
+        assertEquals(4, bSlice1Slice1.offset());
+    }
 
     @Test
     public void testConcat() {
         INDArray A = Nd4j.linspace(1, 8, 8).reshape(2, 2, 2);
         INDArray B = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
+        INDArray bSlice0 = B.slice(0).slice(0);
+        INDArray bSlice1 = B.slice(1);
         INDArray concat = Nd4j.concat(0, A, B);
         assertTrue(Arrays.equals(new int[]{5, 2, 2}, concat.shape()));
 

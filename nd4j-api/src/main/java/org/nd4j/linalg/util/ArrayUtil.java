@@ -537,6 +537,13 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape, int startNum) {
+       if(Shape.isColumnVectorShape(shape)) {
+           int[] ret = new int[2];
+           Arrays.fill(ret,startNum);
+           return ret;
+
+       }
+
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
         int st = startNum;
@@ -567,8 +574,23 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStrides(int[] shape, int startValue) {
+        if(Shape.isColumnVectorShape(shape)) {
+            int[] ret = new int[2];
+            Arrays.fill(ret,startValue);
+            return ret;
+
+        }
+
+        if(Shape.isRowVectorShape(shape)) {
+            int[] ret = new int[2];
+            ret[0] = 1;
+            ret[1] = shape[0];
+            return ret;
+        }
+
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
+
         int st = startValue;
         for (int j = dimensions - 1; j >= 0; j--) {
             stride[j] = st;
