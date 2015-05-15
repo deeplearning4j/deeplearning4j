@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -238,16 +239,16 @@ public abstract class BaseNDArray implements INDArray {
      * @param shape  the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
-
+        int[] thisShape = Ints.concat(new int[]{slices.size()},slices.get(0).shape());
         DataBuffer ret = slices.get(0).data().dataType() == (DataBuffer.Type.FLOAT) ?
-                Nd4j.createBuffer(new float[ArrayUtil.prod(shape)]) :
-                Nd4j.createBuffer(new double[ArrayUtil.prod(shape)]);
+                Nd4j.createBuffer(new float[ArrayUtil.prod(thisShape)]) :
+                Nd4j.createBuffer(new double[ArrayUtil.prod(thisShape)]);
 
         this.stride = stride;
         this.ordering = ordering;
         this.data = ret;
 
-        init(shape);
+        init(thisShape);
 
         for (int i = 0; i < slices(); i++) {
             putSlice(i, slices.get(i));
@@ -656,6 +657,71 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         int arrOffset = offset + index * stride[0];
+
+        /**
+         * The offset is greater than the dimensions.
+         * When doing vector along dimension
+         * you will often run in to situations
+         * where you need to go back up the slices.
+         *
+         * This will perform a reset of the offset
+         * to be relative to the index of the vector
+         * and set it to the apporopriate offset.
+         *
+         * An example of this situation:
+         * Shape: 4 x 3 x2
+         * Stride: 6 x 2 x 1
+         *
+         * The array has 4 slices.
+         *
+         * In order to iterate through the array properly,
+         * we will need to reset the offset. This situation
+         * will always occur when iterating along the final dimension.
+         * Given an array:
+         *
+         * ([[[  1.,   2.],
+         [  3.,   4.],
+         [  5.,   6.]],
+
+         [[  7.,   8.],
+         [  9.,  10.],
+         [ 11.,  12.]],
+
+         [[ 13.,  14.],
+         [ 15.,  16.],
+         [ 17.,  18.]],
+
+         [[ 19.,  20.],
+         [ 21.,  22.],
+         [ 23.,  24.]]])
+
+
+         Iterating along dimension 2 gives us:
+
+         1,2
+         7,8
+         13,14
+         19,20
+         3,4
+         9,10,
+         15,16
+         21,22,
+         5,6,
+         11,12
+         17,18
+         23,24
+
+         You will notice that we iterate through the array by going up and down.
+
+         This allows us to continuously iterate through an array seamlessly
+         even along the last dimension.
+
+         This algorithm adjusts the offsets wrt the index such that the
+         index is placed properly when "going up" the array.
+
+
+         *
+         */
         if(arrOffset >= length()) {
             int numDecremented = 0;
             int startIndex = index;
@@ -675,27 +741,6 @@ public abstract class BaseNDArray implements INDArray {
 
     }
 
-    private int getLastNonOneStrideIdx() {
-        for(int j = stride().length - 1; j >= 0; j--) {
-            if(stride[j] == 1)
-                continue;
-            return j;
-        }
-
-        return elementStride();
-
-    }
-
-    private int getLastNonOneStride() {
-        for(int j = stride().length - 1; j >= 0; j--) {
-            if(stride[j] == 1)
-                continue;
-            return stride[j];
-        }
-
-        return elementStride();
-
-    }
 
     private int getFirstNonOneStrideIdx() {
         for(int j = 0; j < stride().length; j++) {
@@ -1390,7 +1435,7 @@ public abstract class BaseNDArray implements INDArray {
 
         else if (Shape.isVector(newShape) && isVector()) {
             if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
-                return Nd4j.create(data, newShape, new int[]{1,stride[0]}, offset);
+                return Nd4j.create(data, newShape, stride, offset);
             }
             //handle case where row vector is reshaped to row vector
             else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {
@@ -1728,6 +1773,14 @@ public abstract class BaseNDArray implements INDArray {
 
         int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
 
+        if(ordering() == NDArrayFactory.C && shape[0] == 1)
+            return Nd4j.create(
+                    data
+                    , Arrays.copyOf(shape, shape.length)
+                    , ArrayUtil.reverseCopy(stride)
+                    , offset, ordering
+            );
+
         return Nd4j.create(
                 data
                 , Arrays.copyOf(shape, shape.length)
@@ -1774,7 +1827,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         //default row vector
-        else if (this.shape.length == 1) {
+        if (this.shape.length == 1) {
             init(new int[]{1,this.shape[0]});
         }
 
@@ -2222,21 +2275,18 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray mmul(INDArray other) {
         ensureNotCleanedUp();
         int[] shape = {rows(), other.columns()};
-        char order = Nd4j.factory().order();
-        boolean switchedOrder = false;
-        synchronized (Nd4j.factory()) {
-            if (order != NDArrayFactory.FORTRAN) {
-                Nd4j.factory().setOrder(NDArrayFactory.FORTRAN);
-                switchedOrder = true;
-            }
-        }
+        INDArray result = Nd4j.create(shape, NDArrayFactory.FORTRAN);
 
-        INDArray result = Nd4j.create(shape, other.data().dataType());
-        synchronized (Nd4j.factory()) {
-            if (switchedOrder && order != NDArrayFactory.FORTRAN)
-                Nd4j.factory().setOrder(NDArrayFactory.C);
+        if(ordering() == NDArrayFactory.FORTRAN && other.ordering() == NDArrayFactory.FORTRAN) {
+            return mmuli(other, result);
         }
-        return mmuli(other, result);
+        else {
+            INDArray newThis = Nd4j.create(shape(),NDArrayFactory.FORTRAN);
+            newThis.assign(this);
+            INDArray newOther = Nd4j.create(other.shape(),NDArrayFactory.FORTRAN);
+            newOther.assign(other);
+            return newThis.mmuli(newOther,result);
+        }
     }
 
     /**
@@ -2802,10 +2852,7 @@ public abstract class BaseNDArray implements INDArray {
                     //enforce 1 x m
                     if(Shape.isRowVectorShape(sliceShape)) {
                         sliceShape = new int[] {1,sliceShape[0]};
-                        if(ordering() == NDArrayFactory.FORTRAN)
-                            retStride = ArrayUtil.of(retStride[0],1);
-                        else if(ordering() == NDArrayFactory.C)
-                            retStride = ArrayUtil.of(1,retStride[0]);
+                        retStride = ArrayUtil.of(retStride[0],1);
 
                     }
 
@@ -3913,39 +3960,24 @@ public abstract class BaseNDArray implements INDArray {
         checkArrangeArray(rearrange);
         int[] newShape = doPermuteSwap(shape, rearrange);
 
-        if(ordering() == NDArrayFactory.C) {
-            int[] newStride = doPermuteSwap(stride, rearrange);
-
-            INDArray value = Nd4j.create(
-                    data(),
-                    newShape,
-                    newStride,
-                    offset,
-                    ordering);
-
-
-            return value;
+        if(isVector() || isMatrix()) {
+            if(Arrays.equals(rearrange,ArrayUtil.reverseCopy(ArrayUtil.range(0,2))))
+                return transpose();
+            return this;
         }
 
-        else {
-            if(isVector() || isMatrix()) {
-                if(Arrays.equals(rearrange,ArrayUtil.reverseCopy(ArrayUtil.range(0,2))))
-                    return transpose();
-                return this;
-            }
+        int[] newStride = doPermuteSwap(stride, rearrange);
 
-            int[] newStride = doPermuteSwap(stride, rearrange);
-
-            INDArray value = Nd4j.create(
-                    data(),
-                    newShape,
-                    newStride,
-                    offset,
-                    ordering);
+        INDArray value = Nd4j.create(
+                data(),
+                newShape,
+                newStride,
+                offset,
+                ordering);
 
 
-            return value;
-        }
+        return value;
+
 
     }
 
