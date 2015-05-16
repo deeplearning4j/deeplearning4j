@@ -495,7 +495,11 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray linearViewColumnOrder() {
         ensureNotCleanedUp();
-        return Nd4j.create(data, new int[]{length, 1}, offset());
+        return create(data, new int[]{length, 1}, offset());
+    }
+
+    protected INDArray create(DataBuffer data,int[] shape,int offset) {
+        return Nd4j.create(data,shape,offset);
     }
 
     protected void ensureNotCleanedUp() {
@@ -609,20 +613,20 @@ public abstract class BaseNDArray implements INDArray {
                 throw new IllegalArgumentException("Index greater than possible number of vectors along dimension " + dimension);
             if(isMatrix()) {
                 if(dimension == 0) {
-                    return Nd4j.create(data,
+                    return create(data,
                             new int[]{shape[dimension],1}
                             ,  new int[]{stride[dimension],1},
                             offset + index * stride[stride.length - 1]);
                 }
                 else if(dimension == 1) {
-                    return Nd4j.create(data,
+                    return create(data,
                             new int[]{1, shape[dimension]}
                             , new int[]{stride[dimension],1},
                             calcoffset(index));
                 }
             }
 
-            return Nd4j.create(data,
+            return create(data,
                     new int[]{1, shape[dimension]}
                     , stride[dimension] != 1 ? new int[]{stride[dimension], 1} : new int[]{1,stride[dimension]},
                     calcoffset(index));
@@ -632,24 +636,24 @@ public abstract class BaseNDArray implements INDArray {
         if(isMatrix()) {
             if(dimension == 0) {
                 if(ordering() == NDArrayFactory.C)
-                    return Nd4j.create(data,
+                    return create(data,
                             new int[]{shape[dimension],1}
                             ,  new int[]{stride[dimension],1},
                             offset + index * stride[stride.length - 1]);
                 else
-                    return Nd4j.create(data,
+                    return create(data,
                             new int[]{shape[dimension],1}
                             ,  new int[]{stride[dimension],1},
                             calcoffset(index));
             }
             else if(dimension == 1) {
                 if(ordering() == NDArrayFactory.C)
-                    return Nd4j.create(data,
+                    return create(data,
                             new int[]{1, shape[dimension]}
                             , ArrayUtil.of(1,stride[dimension]),
                             calcoffset(index));
                 //fortran ordering
-                return Nd4j.create(data,
+                return create(data,
                         new int[]{1, shape[dimension]}
                         , new int[]{stride[dimension],1},
                         calcoffset(index));
@@ -734,7 +738,7 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        return Nd4j.create(data,
+        return create(data,
                 new int[]{1, shape[dimension]}
                 , new int[]{1,stride[dimension]},
                 arrOffset);
@@ -1183,7 +1187,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray dup() {
         ensureNotCleanedUp();
-        INDArray ret = Nd4j.create(data.dup(), shape(),stride(),offset());
+        INDArray ret = create(data.dup(), shape(),stride(),offset());
         return ret;
     }
 
@@ -1435,7 +1439,7 @@ public abstract class BaseNDArray implements INDArray {
 
         else if (Shape.isVector(newShape) && isVector()) {
             if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
-                return Nd4j.create(data, newShape, stride, offset);
+                return create(data, newShape, stride, offset);
             }
             //handle case where row vector is reshaped to row vector
             else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {
@@ -1443,7 +1447,7 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
-                return Nd4j.create(data, newShape, new int[]{stride[0],1}, offset);
+                return create(data, newShape, new int[]{stride[0],1}, offset);
 
             }
         }
@@ -1459,18 +1463,36 @@ public abstract class BaseNDArray implements INDArray {
         //create a new copy of the ndarray
         if (shape().length > 1 || this.ordering != ordering || newShape.length != shape().length) {
             if(this instanceof IComplexNDArray)
-                return  Nd4j.create(data,newShape,newStrides,offset,ordering);
-            newCopy = Nd4j.create(data,newShape,newStrides,offset,ordering);
+                return  create(data,newShape,newStrides,offset,ordering);
+            newCopy = create(data, newShape, newStrides, offset, ordering);
             return newCopy;
         }
 
-
-        if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(newCopy.data(), newShape, newStrides, offset);
-        return Nd4j.create(newCopy.data(), newShape, newStrides, offset);
+        return create(newCopy.data(), newShape, newStrides, offset);
 
 
     }
+
+    protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, int offset, char ordering) {
+        return create(data,newShape,newStrides,offset,ordering);
+    }
+
+    protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, int offset) {
+        return create(data,newShape,newStrides,offset);
+    }
+
+    protected INDArray create(int[] shape) {
+        return create(shape,getStrides(shape, ordering),0);
+    }
+
+    protected INDArray create(int[] shape,int[] strides,int offset) {
+        return create(shape,strides,offset);
+    }
+
+    protected int[] getStrides(int[] shape,char ordering) {
+        return Nd4j.getStrides(shape,ordering);
+    }
+
 
     /**
      * Return the new strides based on the shape and ordering or null
@@ -1756,7 +1778,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         int n = shape.length;
         if (shape.length < 1)
-            return Nd4j.create(Nd4j.createBuffer(shape));
+            return create(Nd4j.createBuffer(shape));
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
         if (shape.length != n)
@@ -1774,19 +1796,23 @@ public abstract class BaseNDArray implements INDArray {
         int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
 
         if(ordering() == NDArrayFactory.C && shape[0] == 1)
-            return Nd4j.create(
+            return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
                     , ArrayUtil.reverseCopy(stride)
                     , offset, ordering
             );
 
-        return Nd4j.create(
+        return create(
                 data
                 , Arrays.copyOf(shape, shape.length)
                 , stride
                 , offset, ordering
         );
+    }
+
+    protected INDArray create(DataBuffer buffer) {
+        return create(buffer);
     }
 
     @Override
@@ -1843,10 +1869,7 @@ public abstract class BaseNDArray implements INDArray {
 
         //recalculate stride: this should only happen with row vectors
         if (this.stride.length != this.shape.length) {
-            if (ordering == NDArrayFactory.FORTRAN)
-                this.stride = ArrayUtil.calcStridesFortran(this.shape);
-            else
-                this.stride = ArrayUtil.calcStrides(this.shape);
+            this.stride = getStrides(shape,ordering());
         }
 
     }
@@ -2275,18 +2298,22 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray mmul(INDArray other) {
         ensureNotCleanedUp();
         int[] shape = {rows(), other.columns()};
-        INDArray result = Nd4j.create(shape, NDArrayFactory.FORTRAN);
+        INDArray result = create(shape, NDArrayFactory.FORTRAN);
 
         if(ordering() == NDArrayFactory.FORTRAN && other.ordering() == NDArrayFactory.FORTRAN) {
             return mmuli(other, result);
         }
         else {
-            INDArray newThis = Nd4j.create(shape(),NDArrayFactory.FORTRAN);
+            INDArray newThis = create(shape(),NDArrayFactory.FORTRAN);
             newThis.assign(this);
-            INDArray newOther = Nd4j.create(other.shape(),NDArrayFactory.FORTRAN);
+            INDArray newOther = create(other.shape(),NDArrayFactory.FORTRAN);
             newOther.assign(other);
             return newThis.mmuli(newOther,result);
         }
+    }
+
+    protected INDArray create(int[] shape, char ordering) {
+        return create(shape,ordering);
     }
 
     /**
@@ -2443,7 +2470,7 @@ public abstract class BaseNDArray implements INDArray {
             /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
              * allocating a temporary object on the side and copy the result later.
              */
-            INDArray temp = Nd4j.create(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape()));
+            INDArray temp = create(resultArray.shape(), getStrides(shape,NDArrayFactory.FORTRAN));
 
             if (otherArray.columns() == 1) {
                 if (data.dataType() == (DataBuffer.Type.DOUBLE))
@@ -2477,6 +2504,10 @@ public abstract class BaseNDArray implements INDArray {
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(resultArray);
         return resultArray;
+    }
+
+    private INDArray create(int[] shape, int[] stride) {
+        return Nd4j.create(shape,stride);
     }
 
     /**
@@ -2810,9 +2841,9 @@ public abstract class BaseNDArray implements INDArray {
         //slice of a vector is a scalar
         else if (shape.length == 1) {
             if (size(0) == 1)
-                return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);
+                return create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);
             else
-                return Nd4j.create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice * stride[0]);
+                return create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice * stride[0]);
 
 
         }
@@ -2825,7 +2856,7 @@ public abstract class BaseNDArray implements INDArray {
         else {
             int offset = calcoffset(slice);
             if (size(0) == 1) {
-                INDArray slice2 = Nd4j.create(data,
+                INDArray slice2 = create(data,
                         Arrays.copyOfRange(shape, 1, shape.length),
                         sliceStride(slice),
                         offset, ordering);
@@ -2840,7 +2871,7 @@ public abstract class BaseNDArray implements INDArray {
                         retStride = ArrayUtil.of(retStride[0],1);
                     }
 
-                    INDArray slice2 = Nd4j.create(data,
+                    INDArray slice2 = create(data,
                             sliceShape,
                             retStride,
                             offset, ordering);
@@ -2856,7 +2887,7 @@ public abstract class BaseNDArray implements INDArray {
 
                     }
 
-                    INDArray slice2 = Nd4j.create(data,
+                    INDArray slice2 = create(data,
                             sliceShape,
                             retStride,
                             offset, ordering);
@@ -2944,7 +2975,7 @@ public abstract class BaseNDArray implements INDArray {
         if (slice == shape.length - 1)
             return slice(dimension);
 
-        INDArray slice2 = Nd4j.create(data,
+        INDArray slice2 = create(data,
                 ArrayUtil.removeIndex(shape, dimension),
                 ArrayUtil.removeIndex(stride, dimension),
                 offset + slice * stride[dimension], ordering);
@@ -3050,7 +3081,7 @@ public abstract class BaseNDArray implements INDArray {
                 newShape[i] = oldShape[i];
         }
 
-        INDArray result = Nd4j.create(newShape);
+        INDArray result = create(newShape);
         //nd copy
         if (isScalar()) {
             for (int i = 0; i < result.length(); i++) {
@@ -3061,7 +3092,7 @@ public abstract class BaseNDArray implements INDArray {
             if (Shape.isColumnVectorShape(newShape))
                 return transpose();
             else if (Shape.isMatrix(newShape)) {
-                INDArray ret = Nd4j.create(newShape);
+                INDArray ret = create(newShape);
                 for (int i = 0; i < ret.rows(); i++) {
                     ret.putRow(i, this);
                 }
@@ -3157,28 +3188,33 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
+
+
+
+
     /**
+     *
      * Return transposed version of this matrix.
      */
     @Override
     public INDArray transposei() {
         if (isRowVector())
-            return Nd4j.create(data, shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()), offset);
+            return create(data, shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()), offset);
         else if (isColumnVector())
-            return Nd4j.create(data, new int[]{1,shape[0]}, offset);
+            return create(data, new int[]{1,shape[0]}, offset);
         if(isMatrix()) {
             if(this instanceof IComplexNDArray) {
-                IComplexNDArray arr = Nd4j.createComplex(columns(), rows());
-                IComplexNDArray arrThis = (IComplexNDArray) this;
+                INDArray arr = create(new int[]{columns(), rows()});
+                INDArray arrThis =  this;
                 for(int i = 0; i < arr.rows(); i++) {
                     for(int j = 0; j < arr.columns(); j++)
-                        arr.put(i,j,arrThis.getComplex(j, i));
+                        arr.put(i,j,arrThis.getDouble(j, i));
                 }
 
                 return arr;
             }
             else {
-                INDArray arr = Nd4j.create(columns(),rows());
+                INDArray arr = create(columns(),rows());
                 for(int i = 0; i < arr.rows(); i++) {
                     for(int j = 0; j < arr.columns(); j++)
                         arr.put(i,j,getDouble(j,i));
@@ -3189,7 +3225,7 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        INDArray arr = Nd4j.create(ArrayUtil.reverseCopy(shape()));
+        INDArray arr = create(ArrayUtil.reverseCopy(shape()));
         for(int i = 0; i < arr.slices(); i++) {
             arr.putSlice(i,arr.slice(i).transpose());
         }
@@ -3389,7 +3425,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray ravel() {
 
         ensureNotCleanedUp();
-        INDArray ret = Nd4j.create(length, ordering);
+        INDArray ret = create(new int[]{1,length}, ordering);
 
         int dimension = shape.length == 2 ? 1 : shape.length - 1;
         int count = 0;
@@ -3464,7 +3500,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray getRows(int[] rindices) {
         ensureNotCleanedUp();
-        INDArray rows = Nd4j.create(rindices.length, columns());
+        INDArray rows = create(new int[]{rindices.length, columns()});
         for (int i = 0; i < rindices.length; i++) {
             rows.putRow(i, getRow(rindices[i]));
         }
@@ -3492,7 +3528,7 @@ public abstract class BaseNDArray implements INDArray {
         int[] shape = Indices.shape(shape(), indexes);
         //no stride will help here, need to do manually
         if (!Indices.isContiguous(indexes)) {
-            INDArray ret = Nd4j.create(shape);
+            INDArray ret = create(shape);
             if (ret.isVector() && isVector()) {
                 int[] indices = indexes[0].indices();
                 for (int i = 0; i < ret.length(); i++) {
@@ -3528,7 +3564,7 @@ public abstract class BaseNDArray implements INDArray {
 
         //This means upsampling.
         if (ArrayUtil.prod(shape) > length()) {
-            INDArray ret = Nd4j.create(shape);
+            INDArray ret = create(shape);
             NDArrayIndex slices = indexes[0];
             int[] indices = slices.indices();
             if(indexes.length == 1) {
@@ -3570,11 +3606,15 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray getColumns(int[] cindices) {
         ensureNotCleanedUp();
-        INDArray rows = Nd4j.create(rows(), cindices.length);
+        INDArray rows = create(rows(), cindices.length);
         for (int i = 0; i < cindices.length; i++) {
             rows.putColumn(i, getColumn(cindices[i]));
         }
         return rows;
+    }
+
+    protected INDArray create(int rows, int length) {
+        return create(new int[]{rows,length});
     }
 
     /**
@@ -3780,7 +3820,7 @@ public abstract class BaseNDArray implements INDArray {
             INDArray ret = Nd4j.valueArrayOf(shape, getDouble(0));
             return ret;
         } else if (isColumnVector() && Shape.isMatrix(shape)) {
-            INDArray ret = Nd4j.create(shape);
+            INDArray ret = create(shape);
             for (int i = 0; i < ret.columns(); i++)
                 ret.putColumn(i, this.dup());
 
@@ -3789,7 +3829,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         else if(isRowVector()) {
-            INDArray ret = Nd4j.create(shape);
+            INDArray ret = create(shape);
             for(int i = 0; i < ret.rows(); i++)
                 ret.putRow(i,this.dup());
             return ret;
@@ -3823,7 +3863,7 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        INDArray ret = Nd4j.create(retShape);
+        INDArray ret = create(retShape);
         INDArray linear = ret.linearView();
         INDArray thisLinear = linearView();
         int bufferIdx = 0;
@@ -3968,7 +4008,7 @@ public abstract class BaseNDArray implements INDArray {
 
         int[] newStride = doPermuteSwap(stride, rearrange);
 
-        INDArray value = Nd4j.create(
+        INDArray value = create(
                 data(),
                 newShape,
                 newStride,
@@ -4131,6 +4171,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
+
     /**
      * Returns a scalar (individual element)
      * of a scalar ndarray
@@ -4223,7 +4264,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
-        return Nd4j.createComplex(this).rdivi(n, result);
+        return create(this).rdivi(n, result);
 
     }
 
@@ -4235,7 +4276,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return Nd4j.createComplex(this).rsubi(n, result);
+        return create(this).rsubi(n, result);
     }
 
     @Override
@@ -4246,7 +4287,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return Nd4j.createComplex(this).divi(n, result);
+        return create(this).divi(n, result);
 
     }
 
@@ -4258,7 +4299,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return Nd4j.createComplex(this).muli(n, result);
+        return create(this).muli(n, result);
 
     }
 
@@ -4270,7 +4311,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return Nd4j.createComplex(this).subi(n, result);
+        return create(this).subi(n, result);
 
     }
 
@@ -4282,7 +4323,11 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return Nd4j.createComplex(this).addi(n, result);
+        return create(this).addi(n, result);
 
+    }
+
+    protected INDArray create(BaseNDArray baseNDArray) {
+        return baseNDArray;
     }
 }

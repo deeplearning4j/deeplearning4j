@@ -677,7 +677,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(float[] data) {
-        return create(data, new int[]{1,data.length});
+        return create(data, new int[]{1, data.length});
     }
 
     /**
@@ -689,7 +689,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(double[] data) {
         assert data.length % 2 == 0 : "Length of data must be even. A complex ndarray is made up of pairs of real and imaginary components";
-        return createComplex(data, new int[]{1,data.length / 2});
+        return createComplex(data, new int[]{1, data.length / 2});
     }
 
     /**
@@ -700,7 +700,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int columns) {
-        return create(new int[]{1,columns});
+        return create(new int[]{1, columns});
     }
 
     /**
@@ -711,7 +711,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int columns) {
-        return createComplex(new int[]{1,columns});
+        return createComplex(new int[]{1, columns});
     }
 
     /**
@@ -746,7 +746,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray zeros(int columns) {
-        return zeros(new int[]{1,columns});
+        return zeros(new int[]{1, columns});
     }
 
     /**
@@ -820,6 +820,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return ones;
     }
 
+    @Override
+    public IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering) {
+        return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),shape,complexStrides,offset,ordering);
+    }
+
     /**
      * Creates an ndarray with the specified value
      * as the  only value in the ndarray
@@ -833,6 +838,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray create = create(shape);
         create.assign(value);
         return create;
+    }
+
+    @Override
+    public INDArray create(int[] shape, int[] stride, int offset, char ordering) {
+        return create(Nd4j.createBuffer(ArrayUtil.prod(shape)),shape,stride,offset,ordering);
     }
 
     /**

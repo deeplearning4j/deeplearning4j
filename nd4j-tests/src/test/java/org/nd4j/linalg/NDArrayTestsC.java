@@ -153,6 +153,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     }
 
+
     @Test
     public void testConcatScalars() {
         INDArray first = Nd4j.arange(0,1).reshape(1,1);
@@ -165,9 +166,14 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     }
 
+
+    @Test
+    public void testDiag() {
+
+    }
+
     @Test
     public void testReadWriteDouble() throws Exception {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray write = Nd4j.linspace(1,4,4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);

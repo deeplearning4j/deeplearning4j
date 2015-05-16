@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jcuda.jcublas-7.0</artifactId>
+            <artifactId>nd4j-jcublas-7.0</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

@@ -1272,4 +1272,8 @@ public interface NDArrayFactory {
     INDArray create(double[] data, char order);
 
     INDArray create(double[] data, int[] ints, int[] ints1, char order, int offset);
+
+    INDArray create(int[] shape, int[] stride, int offset, char ordering);
+
+    IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering);
 }
