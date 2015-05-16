@@ -1,28 +1,26 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.factory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
+import java.io.IOException;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +28,8 @@ import org.springframework.core.io.Resource;
 
 /**
  * An ND4j backend.
+ *
+ * @author eronwright
  *
  */
 public abstract class Nd4jBackend {
@@ -39,9 +39,12 @@ public abstract class Nd4jBackend {
 
     private static final Logger log = LoggerFactory.getLogger(Nd4jBackend.class);
 
+    private Properties props;
+
+
     /**
      * Gets a priority number for the backend.
-     * 
+     *
      * Backends are loaded in priority order (highest first).
      * @return a priority number.
      */
@@ -53,8 +56,21 @@ public abstract class Nd4jBackend {
      */
     public abstract boolean isAvailable();
 
+    /**
+     * Returns true if the backend can
+     * run on the os or not
+     * @return
+     */
+    public abstract boolean canRun();
 
+    /**
+     * Get the configuration resource
+     * @return
+     */
     public abstract Resource getConfigurationResource();
+
+
+
 
     /**
      * Loads the best available backend.
@@ -65,10 +81,11 @@ public abstract class Nd4jBackend {
         List<Nd4jBackend> backends = new ArrayList<>(1);
         ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
         try {
+
             Iterator<Nd4jBackend> backendIterator = loader.iterator();
-            while (backendIterator.hasNext()) {
+            while(backendIterator.hasNext())
                 backends.add(backendIterator.next());
-            }
+
         } catch (ServiceConfigurationError serviceError) {
             // a fatal error due to a syntax or provider construction error.
             // backends mustn't throw an exception during construction.
@@ -94,6 +111,14 @@ public abstract class Nd4jBackend {
         }
 
         throw new NoAvailableBackendException();
+    }
+
+    public Properties getProperties() throws IOException {
+        if(props != null)
+            return props;
+        props = new Properties();
+        props.load(getConfigurationResource().getInputStream());
+        return props;
     }
 
     @SuppressWarnings("serial")

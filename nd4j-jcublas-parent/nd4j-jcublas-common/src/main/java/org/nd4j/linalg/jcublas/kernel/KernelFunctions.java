@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.jcublas.kernel;
@@ -48,7 +51,7 @@ import static jcuda.driver.JCudaDriver.cuLaunchKernel;
  */
 public class KernelFunctions {
 
-    public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
+    public final static String NAME_SPACE = "org.nd4j.linalg.jcuda.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String REDUCE = NAME_SPACE + ".reducefunctions";
@@ -113,7 +116,11 @@ public class KernelFunctions {
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         CUstream stream = ContextHolder.getInstance().getStream();
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
-        KernelFunctionLoader.launcher(functionName,dataType).forFunction(functionName + "_" + dataType)
+       KernelLauncher launcher = KernelFunctionLoader.launcher(functionName, dataType);
+        if(launcher == null)
+            throw new IllegalArgumentException("Launcher for function " + functionName + " and data type " + dataType + " does not exist!");
+
+        launcher.forFunction(functionName + "_" + dataType)
                 .setBlockSize(threadsPerBlock,1,1)
                 .setGridSize(blocks,1,1).setStream(stream)
                 .setSharedMemSize(sharedMemSize)

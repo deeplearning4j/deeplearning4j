@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.api.ops;
@@ -39,17 +42,29 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void setX(INDArray x) {
+        if(x == null)
+            throw new IllegalArgumentException("X must not be null");
         this.x = x;
+        numProcessed = 0;
+        this.n = x.length();
     }
 
     @Override
     public void setZ(INDArray z) {
+        if(z == null)
+            throw new IllegalArgumentException("Z must not be null");
         this.z = z;
+        numProcessed = 0;
+        this.n = z.length();
     }
 
     @Override
     public void setY(INDArray y) {
+        if(y == null)
+            throw new IllegalArgumentException("Y must not be null");
         this.y = y;
+        numProcessed = 0;
+        this.n = y.length();
     }
 
     /**

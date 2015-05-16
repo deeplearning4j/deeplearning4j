@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.jcublas.kernel;
@@ -42,7 +45,7 @@ import java.util.Properties;
  */
 public class KernelFunctionLoader {
 
-    public final static String NAME_SPACE = "org.nd4j.linalg.jcublas";
+    public final static String NAME_SPACE = "org.nd4j.linalg.jcuda.jcublas";
     public final static String DOUBLE = NAME_SPACE + ".double.functions";
     public final static String FLOAT = NAME_SPACE + ".float.functions";
     public final static String IMPORTS_FLOAT = NAME_SPACE + ".float.imports";
@@ -86,17 +89,35 @@ public class KernelFunctionLoader {
     }
 
 
+    /**
+     * Get the launcher for a function
+     * @param functionName the function to get the launcher for
+     * @param dataType the data type to launch with
+     * @return the launcher for the given
+     * function and data type
+     */
     public  static KernelLauncher launcher(String functionName,String dataType) {
         return KernelFunctionLoader.getInstance().get(functionName,dataType);
     }
-    
+
+
+    /**
+     * Returns whether the function has a kernel or not
+     * @param functionName the name of the function
+     * @return true if the function has a kernel
+     * false othr wise
+     */
+    public boolean exists(String functionName) {
+        return get(functionName,"double") != null || get(functionName,"float") != null;
+    }
+
 
     public KernelLauncher get(String functionName,String dataType) {
         String name = functionName + "_" + dataType;
         
         KernelLauncher launcher = launchers.get(name);
         if(launcher == null) {
-            throw new IllegalArgumentException("Unable to find " + name);
+            return null;
         }
         return launcher;
     }

@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.api.ops.executioner;
@@ -46,7 +49,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types");
             for (int c = 0; c < op.n(); c++) {
                 apply(t, c);
-
             }
         } else if (op instanceof Accumulation) {
             Accumulation accumulation = (Accumulation) op;
@@ -69,7 +71,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(op.x().isRowVector()) {
             //reset the op in case
             op.setX(op.x());
-            op.setY(op.y());
+            if(op.y() != null)
+                op.setY(op.y());
             op.setZ(op.z());
             exec(op);
         }
@@ -83,10 +86,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 for(int i = 0; i < original.rows(); i++) {
                     IComplexNDArray row = original.slice(i);
                     IComplexNDArray zRow = originalZ.slice(i);
-                    IComplexNDArray rowRaveled = row.ravel();
-                    IComplexNDArray zRowRaveled = zRow.ravel();
-                    op.setX(rowRaveled);
-                    op.setZ(zRowRaveled);
+                    op.setX(row);
+                    op.setZ(zRow);
                     if(y != null)
                         op.setY(y.slice(i));
                     exec(op);
@@ -99,7 +100,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 INDArray originalZ = op.z();
                 INDArray y = op.y();
 
-                for(int i = 0; i < op.x().rows(); i++) {
+                for(int i = 0; i < original.rows(); i++) {
                     INDArray row = original.getRow(i);
                     INDArray zRow = originalZ.getRow(i);
                     op.setX(row);
@@ -275,17 +276,38 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 }
             }
 
-            INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
-            INDArray linear = ret.linearView();
+            if(op.x().isMatrix() || op.x().isVector()) {
+                int[] shape = ArrayUtil.removeIndex(op.x().shape(), dimension);
+                if(shape.length < 2)
+                    shape = new int[]{1,shape[0]};
+                INDArray ret = Nd4j.create(shape);
+                INDArray linear = ret.linearView();
 
-            for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                Number result = execAndReturn((Accumulation) op2).currentResult();
-                linear.putScalar(i,result.doubleValue());
+                for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    Number result = execAndReturn((Accumulation) op2).currentResult();
+                    linear.putScalar(i,result.doubleValue());
+
+                }
+
+                return ret;
+            }
+            else {
+                INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
+                INDArray linear = ret.linearView();
+
+                for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    Number result = execAndReturn((Accumulation) op2).currentResult();
+                    linear.putScalar(i,result.doubleValue());
+
+                }
+
+                return ret;
 
             }
 
-            return ret;
+
 
         }
 
@@ -325,7 +347,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             IComplexNDArray ndArray = (IComplexNDArray) op.z();
             ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
         } else
-            op.z().putScalar(c, op.op(op.x().getDouble(c)));
+            op.z().linearView().putScalar(c, op.op(op.x().linearView().getDouble(c)));
     }
 
 
@@ -350,7 +372,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
             else
                 op.z().linearView().putScalar(c, op.op(op.x().linearView().getDouble(c), op.y().linearView().getDouble(c)));
 
-        } else {
+        }
+
+        else {
 
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {

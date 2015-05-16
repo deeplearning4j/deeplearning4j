@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.factory;
@@ -49,6 +52,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     /**
+     *
+     * Initialize with the given data type and ordering
+     * The ndarray factory will use this for
      * @param dtype the data type
      * @param order the ordering
      */
@@ -166,7 +172,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         }
 
-        INDArray ret = create(data);
+        INDArray ret = Nd4j.create(data.length);
+        for(int i = 0; i < ret.length(); i++)
+            ret.putScalar(i,data[i]);
         return ret;
     }
 
@@ -669,7 +677,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(float[] data) {
-        return create(data, new int[]{1,data.length});
+        return create(data, new int[]{1, data.length});
     }
 
     /**
@@ -681,7 +689,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public IComplexNDArray createComplex(double[] data) {
         assert data.length % 2 == 0 : "Length of data must be even. A complex ndarray is made up of pairs of real and imaginary components";
-        return createComplex(data, new int[]{1,data.length / 2});
+        return createComplex(data, new int[]{1, data.length / 2});
     }
 
     /**
@@ -692,7 +700,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int columns) {
-        return create(new int[]{1,columns});
+        return create(new int[]{1, columns});
     }
 
     /**
@@ -703,7 +711,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(int columns) {
-        return createComplex(new int[]{1,columns});
+        return createComplex(new int[]{1, columns});
     }
 
     /**
@@ -738,7 +746,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray zeros(int columns) {
-        return zeros(new int[]{columns});
+        return zeros(new int[]{1, columns});
     }
 
     /**
@@ -749,7 +757,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexZeros(int columns) {
-        return createComplex(new int[]{columns});
+        return createComplex(new int[]{1,columns});
     }
 
     /**
@@ -812,6 +820,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return ones;
     }
 
+    @Override
+    public IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering) {
+        return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),shape,complexStrides,offset,ordering);
+    }
+
     /**
      * Creates an ndarray with the specified value
      * as the  only value in the ndarray
@@ -825,6 +838,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray create = create(shape);
         create.assign(value);
         return create;
+    }
+
+    @Override
+    public INDArray create(int[] shape, int[] stride, int offset, char ordering) {
+        return create(Nd4j.createBuffer(ArrayUtil.prod(shape)),shape,stride,offset,ordering);
     }
 
     /**
@@ -874,7 +892,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray ones(int columns) {
-        return ones(new int[]{columns});
+        return ones(new int[]{1,columns});
     }
 
     /**
@@ -909,7 +927,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
         if (toConcat[0].isScalar()) {
-            int[] outputShape = dimension == 0 ? new int[]{toConcat.length, 1} : new int[]{toConcat.length};
+            int[] outputShape = dimension == 0 ? new int[]{toConcat.length, 1} : new int[]{1,toConcat.length};
             INDArray ret = Nd4j.create(outputShape);
             for (int i = 0; i < ret.length(); i++) {
                 ret.putScalar(i, toConcat[i].getDouble(0));
@@ -1796,7 +1814,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(float[] data, char order) {
-        return create(Nd4j.createBuffer(data), new int[]{data.length}, ArrayUtil.calcStrides(new int[]{data.length}), order, 0);
+        int[] shape = new int[]{1,data.length};
+        return create(Nd4j.createBuffer(data),shape,Nd4j.getStrides(shape), order, 0);
     }
 
     @Override
