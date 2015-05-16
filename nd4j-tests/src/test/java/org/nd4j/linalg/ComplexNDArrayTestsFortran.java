@@ -178,7 +178,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
         IComplexNumber d2 = column.getComplex(1);
 
-        assertEquals(Nd4j.createDouble(3, 0), d2);
+        assertEquals(Nd4j.createDouble(4, 0), d2);
 
 
     }

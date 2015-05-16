@@ -728,8 +728,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         for (int i = 0; i < 5; i++)
             testList.add(Nd4j.scalar(i + 1));
 
-        INDArray test = Nd4j.create(testList, new int[]{testList.size()});
-        INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{5});
+        INDArray test = Nd4j.create(testList, new int[]{1,testList.size()});
+        INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{5,1,1});
         assertEquals(expected, test);
     }
 

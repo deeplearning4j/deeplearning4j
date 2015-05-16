@@ -1577,6 +1577,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return put(new int[]{i, j}, element);
     }
 
+    @Override
+    protected IComplexNDArray create(BaseNDArray baseNDArray) {
+        return Nd4j.createComplex(baseNDArray);
+    }
+
+
+    protected IComplexNDArray createScalar(double d) {
+        return Nd4j.createComplex(Nd4j.scalar(d));
+    }
+
 
     /**
      * Returns the specified slice of this matrix.
@@ -1710,36 +1720,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element) {
-        if (isVector()) {
-            assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-            int[] assign = indices[0].indices();
-            for (int i = 0; i < element.length(); i++) {
-                putScalar(assign[i], element.getComplex(i));
-            }
-
-            return this;
-
-        }
-
-        if (element.isVector())
-            slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
-        else if(isMatrix() && element.isMatrix()) {
-            NDArrayIndex[] columns = Arrays.copyOfRange(indices,1,indices.length);
-            for(int i = 0; i < element.rows(); i++) {
-                slice(i).put(columns,element.slice(i));
-            }
-        }
-
-        else {
-            NDArrayIndex[] indicesSub = Arrays.copyOfRange(indices,1,indices.length);
-
-            for (int i = 0; i < element.slices(); i++) {
-                slice(i).put(indicesSub,element.slice(i));
-            }
-        }
-
-
-
+         super.put(indices,element);
         return this;
     }
 
@@ -2323,8 +2304,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray mmul(INDArray other) {
-        int[] shape = {rows(), other.columns()};
-        return mmuli(other, Nd4j.createComplex(shape));
+       return (IComplexNDArray) super.mmul(other);
     }
 
     /**
