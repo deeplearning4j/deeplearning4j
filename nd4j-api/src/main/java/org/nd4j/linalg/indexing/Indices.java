@@ -20,6 +20,7 @@
 package org.nd4j.linalg.indexing;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -32,6 +33,19 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Indices {
+
+
+    /**
+     * Calculate the linear indices for an
+     * ndarray
+     * @param arr the array to calculate for
+     * @return the array for the linear indices
+     */
+    public static int[] linearIndices(INDArray arr) {
+        LinearIndex index = new LinearIndex(arr,arr.dup(),true);
+        Nd4j.getExecutioner().iterateOverAllRows(index);
+        return index.getIndices();
+    }
 
     /**
      * The offsets (begin index) for each index

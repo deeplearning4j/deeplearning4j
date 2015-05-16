@@ -154,6 +154,7 @@
         <module>nd4j-java</module>
         <module>nd4j-jocl-parent</module>
         <module>nd4j-tests</module>
+        <module>nd4j-perf</module>
     </modules>
 
     <properties>

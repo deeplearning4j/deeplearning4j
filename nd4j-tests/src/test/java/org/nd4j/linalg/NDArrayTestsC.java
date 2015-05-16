@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -107,6 +108,17 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
         INDArray test = arr.mmul(arr.transpose());
         assertEquals(assertion,test);
+
+    }
+
+
+    @Test
+    public void testLinearIndices() {
+        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,3,2);
+        int[] indices = Indices.linearIndices(arr);
+        for(int i = 0; i < arr.length(); i++) {
+            assertEquals(indices[i],i);
+        }
 
     }
 

@@ -41,6 +41,7 @@ import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.Shape;
@@ -731,6 +732,16 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray test = Nd4j.create(testList, new int[]{1,testList.size()});
         INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{5,1,1});
         assertEquals(expected, test);
+    }
+
+    @Test
+    public void testLinearIndices() {
+        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,3,2);
+        int[] indices = Indices.linearIndices(arr);
+        for(int i = 0; i < arr.length(); i++) {
+            assertEquals(indices[i],i);
+        }
+
     }
 
 
