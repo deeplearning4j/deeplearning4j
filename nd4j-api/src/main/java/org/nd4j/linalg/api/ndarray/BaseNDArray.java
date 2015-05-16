@@ -3390,7 +3390,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 return shape[0];
         }
-        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
+        throw new IllegalStateException("Unable to get number of cols for a non 2d matrix");
     }
 
     /**
@@ -3416,7 +3416,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 return shape[0];
         }
-        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
+        throw new IllegalStateException("Unable to get number of rows for a non 2d matrix");
     }
 
 
