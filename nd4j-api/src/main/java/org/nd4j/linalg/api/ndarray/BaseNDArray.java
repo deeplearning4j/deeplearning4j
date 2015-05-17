@@ -1798,7 +1798,7 @@ public abstract class BaseNDArray implements INDArray {
 
         int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
 
-        if(ordering() == NDArrayFactory.C && shape[0] == 1)
+        if(ordering() == NDArrayFactory.C )
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)

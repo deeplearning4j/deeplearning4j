@@ -12,7 +12,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
  *
  * @author Adam Gibson
  */
-public class BaseNDArrayTests extends BaseNd4jTest {
+public abstract class BaseNDArrayTests extends BaseNd4jTest {
     public BaseNDArrayTests() {
     }
 

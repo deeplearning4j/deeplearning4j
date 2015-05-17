@@ -47,11 +47,12 @@ public class TestMultipleThreads {
 				@Override
 				public void run() {
 					try {
-						int total = 100;
+						int total = 10;
 						int right = 0;
 						for(int x = 0; x< total; x++) {
 							INDArray actual = array.dup().mmul(array).mmul(array).div(array).div(array);
-							if(expected.equals(actual)) right++;						
+							if(expected.equals(actual)) right++;
+							System.out.println("Another one right");
 						}
 						
 						if(total == right)

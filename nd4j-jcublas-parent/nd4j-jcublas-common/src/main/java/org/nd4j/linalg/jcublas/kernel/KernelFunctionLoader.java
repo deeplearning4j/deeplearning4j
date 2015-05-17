@@ -114,10 +114,13 @@ public class KernelFunctionLoader {
 
     public KernelLauncher get(String functionName,String dataType) {
         String name = functionName + "_" + dataType;
-        
+
         KernelLauncher launcher = launchers.get(name);
         if(launcher == null) {
-            return null;
+            name = functionName + "_strided" + "_" + dataType;
+            launcher = launchers.get(name);
+            if(launcher == null)
+                return null;
         }
         return launcher;
     }

@@ -38,13 +38,14 @@ import java.util.UUID;
  */
 public abstract class BaseNd4jTest extends TestCase {
     protected Nd4jBackend backend;
+    public final static String DEFAULT_BACKED = "org.nd4j.linalg.defaultbackend";
 
     public BaseNd4jTest() {
-        this("",new JblasBackend());
+        this("",getDefaultBackend());
     }
 
     public BaseNd4jTest(String name) {
-       this(name,new JblasBackend());
+       this(name,getDefaultBackend());
     }
 
     public BaseNd4jTest(String name, Nd4jBackend backend) {
@@ -56,6 +57,24 @@ public abstract class BaseNd4jTest extends TestCase {
         this(backend.getClass().getName() + UUID.randomUUID().toString(),backend);
 
     }
+
+
+    /**
+     * Get the default backend (jblas)
+     * The default backend can be overridden by also passing:
+     * -Dorg.nd4j.linalg.defaultbackend=your.backend.classname
+     * @return the default backend based on the
+     * given command line arguments
+     */
+    public static Nd4jBackend getDefaultBackend() {
+        String clazz = System.getProperty(DEFAULT_BACKED,JblasBackend.class.getName());
+        try {
+            return (Nd4jBackend) Class.forName(clazz).newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     @Override
     protected void tearDown() throws Exception {

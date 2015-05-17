@@ -124,7 +124,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
         if (data.length != length)
             throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
-
         getFloatBuffer().put(data);
     }
 
@@ -253,10 +252,8 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         
         this.length = n;
         this.elementSize = Sizeof.FLOAT;
-        hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer = ByteBuffer.allocate(length * elementSize);
         hostBuffer.order(ByteOrder.nativeOrder());
-        hostPointer = Pointer.to(hostBuffer);
-        
         setData(arr);
     }
 }

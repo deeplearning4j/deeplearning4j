@@ -92,6 +92,16 @@ public class ContextHolder {
            numDevices = 1;
     }
 
+
+    /**
+     * Synchronized the stream.
+     * This should be run after
+     * every operation.
+     */
+    public static void syncStream() {
+        JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+    }
+
     /**
      * Get the device number for a particular host thread
      * @return the device for the given host thread
@@ -324,9 +334,7 @@ public class ContextHolder {
             cuCtxDestroy(ctx);
         }
 
-        for(cublasHandle handle : handleMap.values()) {
-            JCublas2.cublasDestroy(handle);
-        }
+   
 
     }
 

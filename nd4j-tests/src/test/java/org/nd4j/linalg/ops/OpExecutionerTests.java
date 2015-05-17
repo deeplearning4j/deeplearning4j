@@ -20,11 +20,9 @@
 
 package org.nd4j.linalg.ops;
 
-import org.junit.After;
-import org.junit.Before;
+
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
@@ -64,10 +62,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         super(name);
     }
 
-    @After
-    public void after() {
-        Nd4j.factory().setOrder('f');
-    }
+
 
     @Test
     public void testCosineSimilarity() {
@@ -204,7 +199,6 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testDescriptiveStatsDouble() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray x = Nd4j.linspace(1, 5, 5);
 
@@ -293,7 +287,6 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testStridedLog() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
@@ -304,7 +297,6 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testStridedExp() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray slice = arr.slice(0);
@@ -325,7 +317,6 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testDimensionSoftMax() {
-        Nd4j.factory().setOrder('c');
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         SoftMax max = new SoftMax(linspace);
         Nd4j.getExecutioner().exec(max, 1);

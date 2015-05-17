@@ -18,7 +18,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
-public class BaseComplexNDArrayTests extends BaseNd4jTest {
+public abstract class BaseComplexNDArrayTests extends BaseNd4jTest {
     public BaseComplexNDArrayTests() {
     }
 

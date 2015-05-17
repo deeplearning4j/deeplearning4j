@@ -112,29 +112,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
     }
 
 
-    @Test
-    public void testLinearIndices() {
-        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4,3,2);
-        int[] indices = Indices.linearIndices(arr);
-        for(int i = 0; i < arr.length(); i++) {
-            assertEquals(indices[i],i);
-        }
 
-        INDArray arr2 = Nd4j.linspace(1, 9, 9).reshape(3,3);
-        indices = Indices.linearIndices(arr2);
-        for(int i = 0; i < arr2.length(); i++) {
-            assertEquals(indices[i],i);
-        }
-
-        arr2 = Nd4j.rand(5,1,1);
-        indices = Indices.linearIndices(arr2);
-        for(int i = 0; i < arr2.length(); i++) {
-            assertEquals(indices[i],i);
-        }
-
-
-
-    }
 
     @Test
     public void testOtherReshape() {
@@ -167,14 +145,11 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
     @Test
     public void testExecSubArray() {
         INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
-        System.out.println(nd);
 
         INDArray sub = nd.subArray(new int[]{0,1}, new int[]{2,2}, new int[]{3,1});
-        System.out.println(sub);
-
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
         assertEquals(Nd4j.create(new double[][]{
-                {4,5},{7,8}
+                {4,7},{5,8}
         }),sub);
 
     }

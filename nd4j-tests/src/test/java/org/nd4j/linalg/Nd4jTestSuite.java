@@ -28,6 +28,7 @@ import org.reflections.Reflections;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -136,7 +137,7 @@ public class Nd4jTestSuite {
 
         for(Class<? extends BaseNd4jTest> clazz : testClasses) {
             //skip unwanted backends
-            if(!classesToRun.isEmpty() && !classesToRun.contains(clazz.getName()))
+            if(!classesToRun.isEmpty() && !classesToRun.contains(clazz.getName()) || Modifier.isAbstract(clazz.getModifiers()))
                 continue;
 
             for(Nd4jBackend backend : nd4jBackends) {
@@ -151,15 +152,20 @@ public class Nd4jTestSuite {
                     for(Method method : methods) {
                        if(!methodsToRun.isEmpty() && !methodsToRun.contains(method.getName()))
                            continue;
-                        BaseNd4jTest test = constructor.newInstance(method.getName(),backend);
-                        //backout if the test ordering and backend ordering dont line up
-                        //unless the ordering is a (the default) which means all
-                        char ordering = test.ordering();
-                        char backendOrdering = backendProps.getProperty(Nd4j.ORDER_KEY).charAt(0);
-                        if(ordering == backendOrdering || ordering == 'a')
-                            testSuite.addTest(test);
-                        else
-                            break;
+                        try {
+                            BaseNd4jTest test = constructor.newInstance(method.getName(),backend);
+                            //backout if the test ordering and backend ordering dont line up
+                            //unless the ordering is a (the default) which means all
+                            char ordering = test.ordering();
+                            char backendOrdering = backendProps.getProperty(Nd4j.ORDER_KEY).charAt(0);
+                            if(ordering == backendOrdering || ordering == 'a')
+                                testSuite.addTest(test);
+                            else
+                                break;
+                        }catch(InstantiationException e) {
+                            throw new RuntimeException("Failed to construct backend " + backend.getClass() + " with method " + method.getName() + " with class " + clazz.getName(),e);
+                        }
+
                     }
 
                 }
