@@ -17,6 +17,7 @@ Append parameters onto this class by linking them up as follows:
 	new NeuralNetConfiguration.Builder().iterations(100).layer(new RBM()).nIn(784).nOut(10)
 
 Parameters:
+
 - **activationFunction**: *string*, activation function on each hidden layer node,
 	- default="sigmoid"
 	- Options:
@@ -28,9 +29,9 @@ Parameters:
 	- default = false
 - **batch****: *int*, amount of data to input into the neural net
 	- default = 0
-- **constrainGradientToUnitNorm****: *boolean*, helps gradient converge and makes loss smaller and smoother
+- **constrainGradientToUnitNorm**: *boolean*, helps gradient converge and makes loss smaller and smoother
 	- default = false
-- **convolutionType****: *ConvolutionDownSampleLayer.ConvolutionType class*, convolution layer type
+- **convolutionType**: *ConvolutionDownSampleLayer.ConvolutionType class*, convolution layer type
 	- default = ConvolutionDownSampleLayer.ConvolutionType.MAX
 - **corruptionLevel**: *double*, how much to corrupt the input data
 	- default = 0.3
