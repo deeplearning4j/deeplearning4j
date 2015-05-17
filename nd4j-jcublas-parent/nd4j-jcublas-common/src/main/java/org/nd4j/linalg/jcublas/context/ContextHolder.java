@@ -33,6 +33,8 @@ import jcuda.driver.CUresult;
 import jcuda.driver.CUstream;
 import jcuda.driver.CUstream_flags;
 import jcuda.driver.JCudaDriver;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaStream_t;
 
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -55,6 +57,7 @@ public class ContextHolder {
     private Map<Integer, CUcontext> deviceIDContexts = new HashMap<>();
     private Map<String,Integer> threadNameToDeviceNumber = new HashMap<>();
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
+    private Table<CUcontext,String,cudaStream_t> cudaStreams = HashBasedTable.create();
     private Map<String, cublasHandle> handleMap = new HashMap<>();
     private int numDevices = 0;
     private static ContextHolder INSTANCE;
@@ -68,8 +71,15 @@ public class ContextHolder {
      * @return the instance for the context holder.
      */
     public static ContextHolder getInstance() {
-        if(INSTANCE == null)
+        if(INSTANCE == null) {
             INSTANCE = new ContextHolder();
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    INSTANCE.destroy();
+                }
+            }));
+        }
         return INSTANCE;
     }
 
@@ -120,8 +130,30 @@ public class ContextHolder {
      * and the given device
      * @return the context for the given device and thread
      */
-    public  synchronized CUcontext getContext() {
+    public   CUcontext getContext() {
         return getContext(getDeviceForThread());
+    }
+
+    /**
+     * Get the stream for the current thread
+     * based on the device for the thread
+     * @return the stream for the device and
+     * thread
+     */
+    public synchronized cudaStream_t getCudaStream() {
+        Thread currentThread = Thread.currentThread();
+        CUcontext ctx = getContext(getDeviceForThread());
+        cudaStream_t stream = cudaStreams.get(ctx, currentThread.getName());
+
+        if(stream == null) {
+            stream = new cudaStream_t();
+            checkResult(JCudaDriver.cuCtxSetCurrent(ctx));
+            JCuda.cudaStreamCreate(stream);
+            checkResult(JCuda.cudaStreamCreate(stream));
+            cudaStreams.put(ctx, currentThread.getName(), stream);
+        }
+
+        return stream;
     }
 
 
@@ -280,5 +312,22 @@ public class ContextHolder {
         return deviceIDContexts;
     }
 
+    public void destroy() {
+
+        for(cudaStream_t stream : cudaStreams.values()) {
+            JCuda.cudaStreamDestroy(stream);
+        }
+        for(CUstream stream : contextStreams.values()) {
+            cuStreamDestroy(stream);
+        }
+        for(CUcontext ctx : deviceIDContexts.values()) {
+            cuCtxDestroy(ctx);
+        }
+
+        for(cublasHandle handle : handleMap.values()) {
+            JCublas2.cublasDestroy(handle);
+        }
+
+    }
 
 }

@@ -46,9 +46,8 @@ public class TestMultipleThreads {
 			executors.execute(new Runnable() {
 				@Override
 				public void run() {
-					try
-					{
-						int total = 10;
+					try {
+						int total = 100;
 						int right = 0;
 						for(int x = 0; x< total; x++) {
 							INDArray actual = array.dup().mmul(array).mmul(array).div(array).div(array);
