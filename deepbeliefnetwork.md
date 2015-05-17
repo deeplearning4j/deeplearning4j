@@ -17,30 +17,24 @@ See the [parameters common to all multilayer networks](../multinetwork.html).
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain. In composing a deep-belief network, a typical value is one.
 
-### Initiating a deep-belief network
+### Initiating a Deep-Belief Network
 
 Here's how you set up a single-thread deep-belief network: 
 
-To create it, you instantiate your NeuralNetConfiguration as well as an object of the class DBN.
+To create it, you instantiate a more general class, the multi-layer neural net, and tell it how many RBMs to stack upon each other:
 
-<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=26:37"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/reconstruct/DBNExample.java?slice=28:38"></script>
 
-That creates a deep-belief network with the specified hidden-layer sizes (three hidden layers); the number of inputs being 784; outputs 10; momentum and learning rate; the specified random number generator; sets reconstruction cross entropy as the l;oss function; and implements no regularization.
+That creates a deep-belief network with the specified hidden-layer sizes (three hidden layers); the number of inputs being 784; outputs 10; momentum and learning rate; the specified random number generator; sets root-means-squared cross entropy as the loss function; and implements no regularization. The hidden layer sizes are 600, 500 and 400 nodes, as you move forward through the net. 
 
-Next, you iterate through the dataset with the MNISTDataFetcher.
+Next, you iterate through the dataset with the MNISTDataFetcher, and then evaluate the performance of your classifier.
 
-<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=39:44"></script>
-
-Finally, you evaluate the performance of your DBN:
-
-<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/edit/master/src/main/java/org/deeplearning4j/mnist/MnistExample.java?slice=46:56"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/reconstruct/DBNExample.java?slice=41:59"></script>
 
 This will print out the f1 score of the prediction.
 
-Note that the eval class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. 
+Note that the *eval* class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. 
 
-The f1 score will be a percentage. It's basically the probability that your guesses are correct. Eighty-six percent is industry standard; a solid deep-learning network should be capable of scores in the high 90s.
-
-If you run into trouble, try modifying the hidden-layer sizes, and tweaking other parameters such as learning rate and momentum to get the f1 score up.
+The f1 score will be a percentage. It's basically the probability that your guesses are correct. Eighty-six percent is industry standard; a deep-learning network that has trained well on a large number of examples should be capable of scores in the high 90s. If you run into trouble, try modifying the hidden-layer sizes, and tweaking other parameters such as learning rate and momentum to get the f1 score up.
 
 Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly. To read about another type of deep net, the deep autoencoder, [click here](../deepautoencoder.html). 
