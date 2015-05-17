@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
+    <file url="file://$PROJECT_DIR$" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-cli" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-cli/deeplearning4j-cli-api" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-core" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-aws" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-nlp" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-akka" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-api" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-zookeeper" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/cdh4" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/deeplearning4j-nlp-yarn" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/spark" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/spark/dl4j-spark" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-scaleout/spark/dl4j-spark-nlp" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/deeplearning4j-ui" charset="UTF-8" />
+  </component>
+</project>
+

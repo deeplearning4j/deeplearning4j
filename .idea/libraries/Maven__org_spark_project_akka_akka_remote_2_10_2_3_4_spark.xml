@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.spark-project.akka:akka-remote_2.10:2.3.4-spark">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/spark-project/akka/akka-remote_2.10/2.3.4-spark/akka-remote_2.10-2.3.4-spark.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/spark-project/akka/akka-remote_2.10/2.3.4-spark/akka-remote_2.10-2.3.4-spark-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/spark-project/akka/akka-remote_2.10/2.3.4-spark/akka-remote_2.10-2.3.4-spark-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
