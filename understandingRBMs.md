@@ -17,7 +17,7 @@ As it iterates over MNIST, an RBM is fed one numeral-image at a time *without kn
 
 Each time the RBM guesses wrong, it is told to go back and try again, until it discovers the pixels that best indicate the numeral they’re a part of -- the signals that improve its capacity to classify. The connections among nodes that led it to the wrong conclusion are punished, or discounted. They grow weaker as the net searches for a path toward greater accuracy and less error.
 
-### Invisible cities
+### Invisible Cities
 
 Since it's a stretch to even imagine an entity that cannot identify numbers, one way to explain how RBMs work is through analogy.
 
@@ -39,17 +39,17 @@ Likewise, if you start from Market in San Francisco, even if you don’t know yo
 
 ![Alt text](../img/oldSF.png)
 
-The simple feature of hitting Market St (which is on an early hidden layer of the deep-belief net) leads to another feature, both more complex and more rare, of hitting both Market and Van Ness, which would be represented on a later node layer aggregating the two features.
+The simple feature of hitting Market Street (which is on an early hidden layer of the deep-belief net) leads to another feature, both more complex and more rare, of hitting both Market and Van Ness, which would be represented on a later node layer aggregating the two features. 
 
 But maybe you are not in San Francisco at all. Market and Van Ness is not the only node as you move deeper in. 
 
-The hidden nodes in subsequent layers of the DBN should allow for states (data conditions) that could only occur in other cities: e.g. the combination of Market and FDR Drive puts you with high probability in New York; the combination of Market with Shilshole avenue in Seattle. (Likewise, starting from a curve feature at the input node, you could end up with a vertical bar indicating 5 or another curve pointing you toward an 8.)
+The hidden nodes in subsequent layers of the DBN should allow for states (data conditions) that could only occur in other cities: e.g. the combination of Market and FDR Drive places you with high probability in New York; the combination of Market with Shilshole avenue in Seattle. (Likewise, starting from a curve feature at the input node, you could end up intersecting with a vertical bar indicating a 5, or with another curve pointing you toward an 8.)
 
 So maybe from your initial Market Street data point, you would have a 50 percent chance of ending up with Van Ness as well; a 10 percent chance of getting FDR; and a 20 percent chance of Shilshole. But from the deeper node of Market + Van Ness, you have a *99 percent chance* of ending up classified as San Francisco. The same goes for New York and Seattle, respectively. 
 
 Likewise, while many numeral-images — 1, 4, 5 and 7 — contain more or less vertical bars, only three of them also contain horizontal bars. And of those, only the 4 allows the two bars to cross forming four 90 degree angles. Thus, enlarging the groups of features per node as you move deeper also raises the likelihood that those increasingly rare feature-groups correlate with a single numeral-image. 
 
-### Markov chains
+### Markov Chains
 
 RBMs tie all their nodes together in an algorithm called a Markov Chain. Markov Chains are essentially logical circuits that connect two or more states via probabilities. A sequence of coin flips, a series of die rolls, [Rozencrantz and Guildenstern marching toward their fate](https://en.wikipedia.org/wiki/Rosencrantz_and_Guildenstern_Are_Dead). 
 
