@@ -9,7 +9,14 @@ The following table attempts to show the neural nets most useful for different p
 
 ![Alt text](../img/neural_net_table.png) 
 
-Here you can read about and/or start using our implementations of [deep-belief networks](../deepbeliefnetwork.html), [deep autoencoders](../deepautoencoder.html), [stacked denoising autoencoders](../stackeddenoisingautoencoder.html), [convolutional nets](../convolutionalnets.html) and [recursive neural tensor networks](../recursiveneuraltensornetwork.html). 
+Start here for additional information on common structures and some code snipets:
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
+* [Deep-Belief Nets](../deepbeliefnetwork.html)
+* [Deep Autoencoders](../deepautoencoder.html)
+* [Denoising Autencoders](../denoisingautoencoder.html)
+* [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html)
+* [Convolutional Nets](../convolutionalnets.html)
+* [Recursive Neural Tensor Networks](../recursiveneuraltensornetwork.html).
 
 ###[further reading](http://deeplearning4j.org/deeplearningpapers.html)
 
