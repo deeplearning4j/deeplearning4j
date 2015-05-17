@@ -4,7 +4,7 @@ layout: default
 ---
 
 # NeuralNetConfiguration Class:
-## *DL4J Neural Net Builder Basics*
+*DL4J Neural Net Builder Basics*
 
 For almost any neural net you build in DL4J the foundation is the NeuralNetConfiguration constructor. This object provides significant flexibility on building out almost any type of neural network structure you want to implement. Parameter combinations and configurations for this class define different types of neural nets such as RBMs or Convolutional to name a few. Below provides a brief overview of getting started with this class and key configuration parameters (aka attributes). 
 
@@ -27,7 +27,7 @@ Parameters:
 		- create customized functions with nd4j.getExecutioner
 - **applySparsity**: *boolean*, use when binary hidden nets are active
 	- default = false
-- **batch****: *int*, amount of data to input into the neural net
+- **batch**: *int*, amount of data to input into the neural net
 	- default = 0
 - **constrainGradientToUnitNorm**: *boolean*, helps gradient converge and makes loss smaller and smoother
 	- default = false
