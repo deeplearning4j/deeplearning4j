@@ -12,12 +12,12 @@ Quick Start Guide
 This Quick Start guide assumes that you have the following already installed:
 
 1. Java
-2. Integrated Development Environment (IDE)
-3. Maven
-4. Canova
-5. Github
+2. An Integrated Development Environment (IDE) like IntelliJ
+3. Maven (Java's automated build tool)
+4. Canova (An ML Vectorization lib)
+5. Github (Optional)
  
-If you need to install any of the above, please check the [Getting Started guide](http://nd4j.org/getstarted.html).
+If you need to install any of the above, please read how in this [Getting Started guide](http://nd4j.org/getstarted.html).
 
 Installing From Maven Central 
 =========================================
@@ -34,7 +34,7 @@ Include an [ND4J](http://nd4j.org/) backend in this dependency in your deeplearn
        <version>${nd4j.version}</version>
      </dependency>
 
-These are the [backends](http://nd4j.org/gpu_native_backends.html) you can choose from:
+These are the BLAS [backends](http://nd4j.org/gpu_native_backends.html) you can choose from:
 
      //Ensure that Cuda (for GPUs) is properly set up in your LD_LIBRARY_PATH
      
@@ -46,7 +46,7 @@ These are the [backends](http://nd4j.org/gpu_native_backends.html) you can choos
      
      nd4j-netlib-blas
     
-Versions can be found on [Maven Central](http://search.maven.org/#search%7Cga%7C2%7Cnd4j). When you know which backend you want, search for it on Maven; click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your pom.xml.
+Versions can be found on [Maven Central](http://search.maven.org/#search%7Cga%7C2%7Cnd4j). When you know which backend you want, search for it on Maven; click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ.
 
 For core algorithms, you can simply add this snippet to your deeplearning4j pom.xml file:
 
@@ -56,7 +56,7 @@ For core algorithms, you can simply add this snippet to your deeplearning4j pom.
          <version>${deeplearning4j.version}</version>
      </dependency>
      
-For Natural-Language Process (NLP):
+For Natural-Language Processing (NLP):
 
      <dependency>
          <groupId>org.deeplearning4j</groupId>
@@ -87,5 +87,5 @@ Installing From Source
 
 YOU DON'T HAVE TO DO THIS IF YOU'RE JUST USING THE SOFTWARE FROM MAVEN CENTRAL, OR THE DOWNLOADS.
 
-1. Download [Maven](http://maven.apache.org/download.cgi) and set it up in your path.
+1. Download [Maven](http://maven.apache.org/download.cgi) and [set it up in your path](http://cli.learncodethehardway.org/book/ex21.html).
 2. Run setup.sh on Unix or setup.bat on Windows. (The .sh and .bat files are in the root of the Deeplearning4j [git repo](https://github.com/deeplearning4j/deeplearning4j). To download that, set up [Github](http://nd4j.org/getstarted.html#github) and do a *git clone*. If you've already cloned the repo, do a *git pull*.)
