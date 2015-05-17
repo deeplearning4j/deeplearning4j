@@ -71,13 +71,13 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ###<a name="source">Working With Source</a>
 
-We highly recommend downloading the [Deeplearning4j JAR files from Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), rather than working with source, unless you plan on making significant commits to the project (which are always welcome, of course). To download from Maven, please follow the [intructions on the ND4J site](http://nd4j.org/getstarted.html#maven).
+We highly recommend downloading the [Deeplearning4j JAR files from Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), rather than working with source, unless you plan on making significant commits to the project (which are always welcome, of course). To download from Maven, please follow the [instructions on the ND4J site](http://nd4j.org/getstarted.html#maven).
 
-For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then git clone the repository, and run this command for Maven:
+For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then *git clone* the repository, and run this command for Maven:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-If you want to run Deeplearning4j examples after installing from trunk, you should git clone ND4J, Canova and Deeplearning4j, respectively, and then install all from source using Maven with this command:
+If you want to run Deeplearning4j examples after installing from trunk, you should *git clone* ND4J, Canova and Deeplearning4j, respectively, and then install all from source, in that order, using Maven with this command:
 
       mvn clean install -DskipTests
 
@@ -89,7 +89,7 @@ Following these steps, you should be able to run the 0.0.3.3 examples.
 
 ###<a name="eclipse">Eclipse</a> 
 
-After running a git clone, enter this command
+After running a *git clone*, enter this command
 
       mvn eclipse:eclipse 
   
@@ -102,7 +102,7 @@ which will import the source and set everything up.
 * Deeplearning4j includes an **autocomplete function**. If you are unsure which commands are available, press any letter and a drop-down list like this will appear:
 ![Alt text](../img/dl4j_autocomplete.png)
 * Here's the Javadoc for all [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
-* Some problems you encounter using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's watershed [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also instructive. While we've partially documented DL4J, many parts of the code are essentially a raw domain-specific language for deep learning. 
+* Some problems encountered using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's excellent [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also highly instructive. While we've partially documented DL4J, many parts of the code are essentially a raw, domain-specific language for deep learning.
 
 ### <a name="next">Next Steps: MNIST and Running Examples</a>
 
