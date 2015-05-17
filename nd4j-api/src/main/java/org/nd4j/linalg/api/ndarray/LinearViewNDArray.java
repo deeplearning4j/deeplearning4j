@@ -20,10 +20,9 @@
 package org.nd4j.linalg.api.ndarray;
 
 
-import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
-import org.nd4j.linalg.util.ArrayUtil;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -32,7 +31,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  */
 public class LinearViewNDArray  extends BaseNDArray {
     private INDArray wrapped;
-    private int[] indices;
+    private List<INDArray> vectors;
 
     /**
      * Create the linear view
@@ -42,18 +41,28 @@ public class LinearViewNDArray  extends BaseNDArray {
     public LinearViewNDArray(INDArray wrapped) {
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
-        indices = new int[wrapped.length()];
         this.data = wrapped.data();
         this.offset = wrapped.offset();
         this.ordering = wrapped.ordering();
         this.length = wrapped.length();
-        this.indices = Indices.linearIndices(wrapped);
-        if(!ArrayUtil.allUnique(this.indices))
-            throw new IllegalStateException("Illegal indices. You may want to double check linear view striding is working properly");
-
+        vectors = new ArrayList<>();
+        collectRows(wrapped);
 
     }
 
+
+    protected void collectRows(INDArray slice) {
+        if(slice.isRowVector()) {
+            vectors.add(slice);
+        }
+        else if(isMatrix()) {
+            for(int i = 0; i < slice.rows(); i++)
+                vectors.add(slice.getRow(i));
+        }
+        else
+            for(int i = 0; i < slice.slices(); i++)
+                collectRows(slice.slice(i));
+    }
 
 
     @Override
@@ -108,7 +117,15 @@ public class LinearViewNDArray  extends BaseNDArray {
 
     @Override
     public INDArray putScalar(int i, double value) {
-        wrapped.data().put(indices[i],value);
+        int vectorSize = wrapped.size(-1);
+        int vectorIdx = Indices.rowNumber(i,wrapped);
+
+        INDArray currVector = vectors.get(vectorIdx);
+        int offset = vectorSize * vectorIdx;
+
+
+        int idx =  i - offset;
+        currVector.putScalar(idx,value);
         return this;
     }
 
@@ -120,9 +137,19 @@ public class LinearViewNDArray  extends BaseNDArray {
 
     @Override
     public double getDouble(int i) {
-        return data.getDouble(indices[i]);
-    }
+        if(wrapped.isVector())
+            return wrapped.getDouble(i);
+        int vectorSize = wrapped.size(-1);
+        int vectorIdx = Indices.rowNumber(i,wrapped);
 
+        INDArray currVector = vectors.get(vectorIdx);
+        int offset = vectorSize * vectorIdx;
+
+
+        int idx =  i - offset;
+
+        return currVector.getDouble(idx);
+    }
 
     @Override
     public String toString() {

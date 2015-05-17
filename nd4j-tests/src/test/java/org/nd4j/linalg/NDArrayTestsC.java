@@ -114,11 +114,25 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testLinearIndices() {
-        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,3,2);
+        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4,3,2);
         int[] indices = Indices.linearIndices(arr);
         for(int i = 0; i < arr.length(); i++) {
             assertEquals(indices[i],i);
         }
+
+        INDArray arr2 = Nd4j.linspace(1, 9, 9).reshape(3,3);
+        indices = Indices.linearIndices(arr2);
+        for(int i = 0; i < arr2.length(); i++) {
+            assertEquals(indices[i],i);
+        }
+
+        arr2 = Nd4j.rand(5,1,1);
+        indices = Indices.linearIndices(arr2);
+        for(int i = 0; i < arr2.length(); i++) {
+            assertEquals(indices[i],i);
+        }
+
+
 
     }
 
@@ -864,7 +878,6 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testAddMatrix() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray five = Nd4j.ones(5);
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5, 2);

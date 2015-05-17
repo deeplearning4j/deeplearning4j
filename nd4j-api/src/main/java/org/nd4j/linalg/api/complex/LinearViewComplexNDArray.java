@@ -23,7 +23,11 @@ package org.nd4j.linalg.api.complex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -31,8 +35,8 @@ import org.nd4j.linalg.util.ArrayUtil;
  * @author Adam Gibson
  */
 public class LinearViewComplexNDArray extends BaseComplexNDArray {
-    private INDArray wrapped;
-    private int[] indices;
+    private IComplexNDArray wrapped;
+    private List<INDArray> vectors;
 
     /**
      * Create the view based on
@@ -43,19 +47,30 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
     public LinearViewComplexNDArray(IComplexNDArray wrapped) {
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
-        indices = new int[wrapped.length()];
-        this.ordering = wrapped.ordering();
         this.data = wrapped.data();
         this.offset = wrapped.offset();
+        this.ordering = wrapped.ordering();
         this.length = wrapped.length();
-        LinearIndex index = new LinearIndex(wrapped,Nd4j.createComplex(wrapped.shape()),true);
-        Nd4j.getExecutioner().iterateOverAllRows(index);
-        this.indices = index.getIndices();
-        if(!ArrayUtil.allUnique(this.indices))
-            throw new IllegalStateException("Illegal indices. You may want to double check linear view striding is working properly");
-
+        vectors = new ArrayList<>();
+        collectRows(wrapped);
 
     }
+
+
+    protected void collectRows(INDArray slice) {
+        if(slice.isRowVector()) {
+            vectors.add(slice);
+        }
+        else if(isMatrix()) {
+            for(int i = 0; i < slice.rows(); i++)
+                vectors.add(slice.getRow(i));
+        }
+        else
+            for(int i = 0; i < slice.slices(); i++)
+                collectRows(slice.slice(i));
+    }
+
+
 
     @Override
     public boolean isCleanedUp() {
@@ -108,20 +123,47 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
 
     @Override
     public IComplexNumber getComplex(int i) {
-        return data.getComplex(indices[i]);
+        if(wrapped.isVector())
+            return wrapped.getComplex(i);
+        int vectorSize = wrapped.size(-1);
+        int vectorIdx = Indices.rowNumber(i,wrapped);
+
+        IComplexNDArray currVector = (IComplexNDArray) vectors.get(vectorIdx);
+        int offset = vectorSize * vectorIdx;
+
+
+        int idx =  i - offset;
+
+        return currVector.getComplex(idx);
     }
 
 
 
     @Override
     public IComplexNDArray putScalar(int i, double value) {
-        wrapped.data().put(indices[i],value);
+        int vectorSize = wrapped.size(-1);
+        int vectorIdx = Indices.rowNumber(i, wrapped);
+
+        INDArray currVector = vectors.get(vectorIdx);
+        int offset = vectorSize * vectorIdx;
+
+
+        int idx =  i - offset;
+        currVector.putScalar(idx, value);
         return this;
     }
 
     @Override
     public IComplexNDArray putScalar(int i, IComplexNumber value) {
-        data.put(indices[i],value);
+        int vectorSize = wrapped.size(-1);
+        int vectorIdx = Indices.rowNumber(i,wrapped);
+
+        IComplexNDArray currVector = (IComplexNDArray) vectors.get(vectorIdx);
+        int offset = vectorSize * vectorIdx;
+
+
+        int idx =  i - offset;
+        currVector.putScalar(idx, value);
         return this;
     }
 
@@ -132,7 +174,18 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
 
     @Override
     public double getDouble(int i) {
-        return data.getDouble(indices[i]);
+        if(wrapped.isVector())
+            return wrapped.getDouble(i);
+        int vectorSize = wrapped.size(-1);
+        int vectorIdx = Indices.rowNumber(i,wrapped);
+
+        INDArray currVector = vectors.get(vectorIdx);
+        int offset = vectorSize * vectorIdx;
+
+
+        int idx =  i - offset;
+
+        return currVector.getDouble(idx);
     }
 
 

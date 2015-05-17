@@ -68,7 +68,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void iterateOverAllRows(Op op) {
-        if(op.x().isRowVector()) {
+        //column and row vectors should be treated the same
+        if(op.x().isVector()) {
             //reset the op in case
             op.setX(op.x());
             if(op.y() != null)
@@ -77,7 +78,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             exec(op);
         }
         //execute row wise
-        else if(op.x().isMatrix() || op.x().isColumnVector()) {
+        else if(op.x().isMatrix()) {
             if(op.x() instanceof IComplexNDArray) {
                 IComplexNDArray original = (IComplexNDArray) op.x();
                 IComplexNDArray originalZ = (IComplexNDArray) op.z();
@@ -130,7 +131,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void iterateOverAllColumns(Op op) {
-        if(op.x().isRowVector()) {
+        if(op.x().isVector()) {
             exec(op);
         }
         //execute row wise

@@ -605,9 +605,12 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray vectorAlongDimension(int index, int dimension) {
+        if(dimension < 0)
+            dimension = stride.length + dimension;
         int vectorsAlongDimension = vectorsAlongDimension(dimension);
         if (index >= vectorsAlongDimension)
             throw new IllegalArgumentException("Index greater than possible number of vectors along dimension " + dimension);
+
         if(ordering() == NDArrayFactory.FORTRAN) {
             if (index >= vectorsAlongDimension)
                 throw new IllegalArgumentException("Index greater than possible number of vectors along dimension " + dimension);
@@ -670,7 +673,7 @@ public abstract class BaseNDArray implements INDArray {
          *
          * This will perform a reset of the offset
          * to be relative to the index of the vector
-         * and set it to the apporopriate offset.
+         * and set it to the appropriate offset.
          *
          * An example of this situation:
          * Shape: 4 x 3 x2
@@ -2052,6 +2055,13 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     @Override
+    public int stride(int dimension) {
+        if(dimension < 0)
+            return stride[stride.length + dimension];
+        return stride[dimension];
+    }
+
+    @Override
     public INDArray rdiviColumnVector(INDArray columnVector) {
         return doColumnWise(columnVector, 't');
     }
@@ -2805,8 +2815,11 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        if(isScalar() && i > 0)
+        if(isScalar() && i > 1)
             throw new IllegalArgumentException("Illegal index for scalar " + i);
+
+        else if(isScalar() && i <= 1)
+            return offset;
 
         int realStride = majorStride();
         int idx = offset + i * realStride;
@@ -3163,6 +3176,9 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public double getDouble(int i) {
+        if(i >= length())
+            throw new IllegalArgumentException("Unable to get linear index >= " + length());
+
         int idx = linearIndex(i);
         if (idx < 0)
             throw new IllegalStateException("Illegal index " + i);
@@ -3222,7 +3238,7 @@ public abstract class BaseNDArray implements INDArray {
                 INDArray arr = create(columns(),rows());
                 for(int i = 0; i < arr.rows(); i++) {
                     for(int j = 0; j < arr.columns(); j++)
-                        arr.put(i,j,getDouble(j,i));
+                        arr.put(i,j,getDouble(j, i));
                 }
 
                 return arr;
@@ -3771,17 +3787,17 @@ public abstract class BaseNDArray implements INDArray {
                 return length;
             else
                 throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
-        } else if (isVector()) {
+        }
+        else if (isVector()) {
             if (dimension == 0)
                 return length;
             else if (dimension == 1)
                 return 1;
         }
 
-        if(dimension < 0) {
-            int length = shape.length + dimension;
-            return shape[length];
-        }
+
+        if(dimension < 0)
+            return shape[shape.length + dimension];
 
         return shape[dimension];
     }

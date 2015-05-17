@@ -37,6 +37,13 @@ public interface INDArray extends Serializable  {
 
 
     /**
+     * Calculate the stride along a particular dimension
+     * @param dimension the dimension to get the stride for
+     * @return the stride for a particular dimension
+     */
+    int stride(int dimension);
+
+    /**
      * Element stride (one element to the next,
      * also called the defualt stride: 1 for normal
      * 2 for complex)

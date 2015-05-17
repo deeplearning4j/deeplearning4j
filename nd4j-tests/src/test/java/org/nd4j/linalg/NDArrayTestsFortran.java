@@ -594,7 +594,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testAddMatrix() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray five = Nd4j.ones(5);
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5, 2);
@@ -734,15 +733,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(expected, test);
     }
 
-    @Test
-    public void testLinearIndices() {
-        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,3,2);
-        int[] indices = Indices.linearIndices(arr);
-        for(int i = 0; i < arr.length(); i++) {
-            assertEquals(indices[i],i);
-        }
 
-    }
 
 
     @Test

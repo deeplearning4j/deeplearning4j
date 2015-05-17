@@ -44,6 +44,7 @@ public class Nd4jTestSuite {
     //the system property for what backends should run
     public final static String CLASSES_TO_LOAD = "org.nd4j.linalg.tests.classestorun";
     public final static String BACKENDS_TO_LOAD = "org.nd4j.linalg.tests.backendstorun";
+    public final static String METHODS_TO_RUN = "org.nd4j.linalg.tests.methods";
 
 
     /**
@@ -57,6 +58,28 @@ public class Nd4jTestSuite {
     public static List<String> backendsToRun() {
         List<String> ret = new ArrayList<>();
         String val = System.getProperty(BACKENDS_TO_LOAD, "");
+        if(val.isEmpty())
+            return ret;
+
+        String[] clazzes = val.split(",");
+
+        for(String s : clazzes)
+            ret.add(s);
+        return ret;
+
+    }
+
+    /**
+     * Based on the jvm arguments, an empty list is returned
+     * if all backends should be run.
+     * If only certain backends should run, please
+     * pass a csv to the jvm as follows:
+     * -Dorg.nd4j.linalg.tests.backendstorun=your.class1,your.class2
+     * @return the list of backends to run
+     */
+    public static List<String> methodsToRun() {
+        List<String> ret = new ArrayList<>();
+        String val = System.getProperty(METHODS_TO_RUN, "");
         if(val.isEmpty())
             return ret;
 
@@ -105,6 +128,7 @@ public class Nd4jTestSuite {
         //this is relative to the jvm args as described above
         List<String> classesToRun = testClassesToRun();
         List<String> backendsToRun = backendsToRun();
+        List<String> methodsToRun = methodsToRun();
 
         while(backendIterator.hasNext()) {
             nd4jBackends.add(backendIterator.next());
@@ -125,6 +149,8 @@ public class Nd4jTestSuite {
                     Constructor<BaseNd4jTest> constructor = (Constructor<BaseNd4jTest>) clazz.getConstructor(String.class,Nd4jBackend.class);
                     Method[]  methods = clazz.getDeclaredMethods();
                     for(Method method : methods) {
+                       if(!methodsToRun.isEmpty() && !methodsToRun.contains(method.getName()))
+                           continue;
                         BaseNd4jTest test = constructor.newInstance(method.getName(),backend);
                         //backout if the test ordering and backend ordering dont line up
                         //unless the ordering is a (the default) which means all
