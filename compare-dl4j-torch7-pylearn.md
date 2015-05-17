@@ -21,7 +21,7 @@ Torch7, while powerful, [was not designed to be widely accessible](https://news.
 
 ### Caffe
 
-Caffe is a well-known and widely used machine-vision library. It is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art.  
+Caffe is a well-known and widely used machine-vision library. It is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* and many, seemingly trivial, features that make deep learning run more smoothely on multiple GPU clusters in parallel. 
 
 ### Licensing
 
