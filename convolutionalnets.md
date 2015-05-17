@@ -5,7 +5,9 @@ layout: default
 
 # Convolutional Nets
 
-Convolutional nets perform object recognition with images. They can identify faces, individuals, street signs, eggplants, platypuses, and many other aspects of visual data. Convolutional nets overlap with text analysis via optical character recognition, but they are also useful when analyzing words as discrete textual units, as well as sound. The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to the power of deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
+Convolutional nets perform object recognition with images. They can identify faces, individuals, street signs, eggplants, platypuses, and many other aspects of visual data. Convolutional nets overlap with text analysis via optical character recognition, but they are also useful when analyzing words as discrete textual units, as well as sound. 
+
+The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to the power of deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
 Convolutional nets take slices of the feature space, say, of an image, and learn them one by one. By learning different portions of a feature space, convolutional nets allow for easily scalable and robust feature engineering.
 
