@@ -9,73 +9,68 @@ For almost any neural net you build in DL4J the foundation is the NeuralNetConfi
 
 How to start constructing the class in Java:
 
-``` 
 	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-``` 
 
 Append parameters onto this class by linking them up as follows:
 
-```
 	new NeuralNetConfiguration.Builder().iterations(100).layer(new RBM()).nIn(784).nOut(10)
-```
 
-```
 Parameters:
- 
-	activationFunction: *string*, activation function on each hidden layer node, default="sigmoid" 
+
+	**activationFunction**: *string*, activation function on each hidden layer node, default="sigmoid" 
 		Options:
 			"sigmoid"
 			"tahn"
 			"reclu"
 			nd4j.getExecutioner allows for creating customized activation function
 
-	applySparsity: *boolean*, use when binary hidden nets are active,default=false
+	**applySparsity**: *boolean*, use when binary hidden nets are active,default=false
 
-	batch: *int*, amount of data to input into the neural net, default=0
+	**batch****: *int*, amount of data to input into the neural net, default=0
 
-	constrainGradientToUnitNorm: *boolean*, helps gradient converge and makes loss smaller and smoother, default = false
+	**constrainGradientToUnitNorm****: *boolean*, helps gradient converge and makes loss smaller and smoother, default = false
 
-	convolutionType: *ConvolutionDownSampleLayer.ConvolutionType class*, convolution layer type, default = ConvolutionDownSampleLayer.ConvolutionType.MAX
+	**convolutionType****: *ConvolutionDownSampleLayer.ConvolutionType class*, convolution layer type, default = ConvolutionDownSampleLayer.ConvolutionType.MAX
 
-	corruptionLevel: *double*, how much to corrupt the input data, default = 0.3
+	**corruptionLevel**: *double*, how much to corrupt the input data, default = 0.3
 	
-	dist: *Distribution class*, distribution to use for weight initialization, default = new NormalDistribution(1e-3,1)
+	**dist**: *Distribution class*, distribution to use for weight initialization, default = new NormalDistribution(1e-3,1)
 	
-	dropOut: *double*, randomly drop a certain amount of active units/nodes to zero (no activation), default = 0
+	**dropOut**: *double*, randomly drop a certain amount of active units/nodes to zero (no activation), default = 0
 	
-	featureMapSize: *int[]*, size of feature space sample - similar to kernal, default = {2,2}
+	**featureMapSize**: *int[]*, size of feature space sample - similar to kernal, default = {2,2}
 	
-	filterSize: *int[]* ,creates tensor data structure for layers = feature maps x number of channels x  feature map space (rows & cols of input data matrix), default = {2,2,2,2}
-		ex: 5, 1, numRows, numColumns
+	**filterSize**: *int[]* ,creates tensor data structure for layers = feature maps x number of channels x  feature map space (rows & cols of input data matrix), default = {2,2,2,2}
+		ex**: 5, 1, numRows, numColumns
 		rows = batch or total data samples & columns = number of features per data sample passed in
 
-	hiddenLayerSizes: *int[]*, number of nodes in the layers 
+	**hiddenLayerSizes**: *int[]*, number of nodes in the layers 
 		one layer format = new int[]{32} = initiate array of ints with 32 nodes (spaces)
 		multiple layers format = new int[]{32,20,40,32} = layer 1 is 32 nodes, layer 2 is 20 nodes, etc
 
-	hiddenUnit: *RBM.HiddenUnit*, type of RBM hidden units/nodes, default = RBM.HiddenUnit.BINARY
+	**hiddenUnit**: *RBM.HiddenUnit*, type of RBM hidden units/nodes, default = RBM.HiddenUnit.BINARY
 
-	inputPreProcessor: (*int*, *class*) {layer number, data processor class} transform/process input data shape to layer
+	**inputPreProcessor**: (*int*, *class*) {layer number, data processor class} transform/process input data shape to layer
 		ex. (0,new ConvolutionInputPreProcessor(numRows,numColumns))
 		transform 2d to 4d tensor
 		rows = batch & columns = number of data points passed in
 
-	iterations: *int*, num training iteractions
+	**iterations**: *int*, num training iteractions
 	
-	k: *int*, used with RBMs, default = 1
+	**k**: *int*, used with RBMs, default = 1
 	
-	kernal: *int[]* size of kernal (used in convolutions), default = 5
+	**kernal**: *int[]* size of kernal (used in convolutions), default = 5
 	
-	l1: *double*, L1 regularization, default = 0.0
+	**l1**: *double*, L1 regularization, default = 0.0
 	
- 	l2: *double*, L2 regularization, default = 0.0
+ 	**l2**: *double*, L2 regularization, default = 0.0
 	
-	layer: *Layer class*, sets layer structure
+	**layer**: *Layer class*, sets layer structure
 	
-	list: *int*, number of layers (does not count input layer)
+	**list**: *int*, number of layers (does not count input layer)
 	
-	lossFunction: *LossFunctions class*, error transformation function on net output, default = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY
-		Options:
+	**lossFunction**: *LossFunctions class*, error transformation function on net output, default = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY
+		Options**:
 		    MSE
 	        EXPLL
 	        XENT
@@ -85,57 +80,57 @@ Parameters:
 	        RECONSTRUCTION_CROSSENTROPY
 	        NEGATIVELOGLIKELIHOOD
 
-	lr: *double*, default = 1e-1f
+	**lr**: *double*, default = 1e-1f
 
-	minimize: *boolean*, setting objective to minimize or maximize, default = false
+	**minimize**: *boolean*, setting objective to minimize or maximize, default = false
 	
-	momentum: *double*, diminsh the fluctuations of weight changes by ch, default = 0.5
+	**momentum**: *double*, diminsh the fluctuations of weight changes by ch, default = 0.5
 	
-	momentumAfter: *Map<Integer, Double>* (n iterations, momentum), momentum after n iterations
+	**momentumAfter**: *Map<Integer, Double>* (n iterations, momentum), momentum after n iterations
 
-	nIn: *int*, number of input data points
+	**nIn**: *int*, number of input data points
 	
-	nOut: *int*, number of output nodes 
+	**nOut**: *int*, number of output nodes 
 	
-	numIterations: *int* number of iterations to train the net, default = 1000
+	**numIterations**: *int* number of iterations to train the net, default = 1000
 	
-	numLineSearchIterations: *int*, default = 100
+	**numLineSearchIterations**: *int*, default = 100
 	
-	optimizationAlgo: *OptimizationAlgorithm class*, backprop method, default = OptimizationAlgorithm.CONJUGATE_GRADIENT
-		Options:
+	**optimizationAlgo**: *OptimizationAlgorithm class*, backprop method, default = OptimizationAlgorithm.CONJUGATE_GRADIENT
+		Options**:
 			GRADIENT_DESCENT
 			CONJUGATE_GRADIENT
 			HESSIAN_FREE
 			LBFGS
 			ITERATION_GRADIENT_DESCENT
 
-	override: (*int*, *class*) {layer number, data processor class}, override with specific layer configuation
+	**override**: (*int*, *class*) {layer number, data processor class}, override with specific layer configuation
 
-	preProcessor: (*int*, *class*) {layer number, data processor class}, transform/process output data shape from layer
-		ex1: (0, new ConvolutionPostProcessor()) 
+	**preProcessor**: (*int*, *class*) {layer number, data processor class}, transform/process output data shape from layer
+		ex1**: (0, new ConvolutionPostProcessor()) 
  		
-	renderWeightsEveryNumEpochs: *int*, default = -1
+	**renderWeightsEveryNumEpochs**: *int*, default = -1
 	
-	resetAdaGradIterations: *int*, reset AdaGrad historical gradient after n iteractions, default = -1
+	**resetAdaGradIterations**: *int*, reset AdaGrad historical gradient after n iteractions, default = -1
 
-	rng: *Random class*, used for sampling, default = new DefaultRandom()
+	**rng**: *Random class*, used for sampling, default = new DefaultRandom()
 	
-	stride: *int[]*, size for subsampling type layers, default = {2,2}
+	**stride**: *int[]*, size for subsampling type layers, default = {2,2}
 
-	sparsity: *double*, default = 0
+	**sparsity**: *double*, default = 0
 	
-	stepFunction: *StepFunction class*, default = new GradientStepFunction()
+	**stepFunction**: *StepFunction class*, default = new GradientStepFunction()
 
-	useAdaGrad: *boolean*, applies AdaGrad learning rate adaption in backprop method, default=true
+	**useAdaGrad**: *boolean*, applies AdaGrad learning rate adaption in backprop method, default=true
 
-	useRegularization: *boolean*, applies regularization to net, default=false
+	**useRegularization**: *boolean*, applies regularization to net, default=false
 
-	variables: *List<String>*, gradient keys used for ensuring order when getting and setting gardient, default = new ArrayList<>()
+	**variables**: *List<String>*, gradient keys used for ensuring order when getting and setting gardient, default = new ArrayList<>()
 
-	visibleUnit: *RBM.VisibleUnit*, type of RBM visible units/nodes, default = RBM.VisibleUnit.BINARY
+	**visibleUnit**: *RBM.VisibleUnit*, type of RBM visible units/nodes, default = RBM.VisibleUnit.BINARY
 
-	weightInit: *WeightInit class*, how to initialize the weights, default = WeightInit.VI
-		Options:
+	**weightInit**: *WeightInit class*, how to initialize the weights, default = WeightInit.VI
+		Options**:
 			WeightInit.VI: variance normalized initialization (Glorot)
 			WeightInit.ZERO: straight zeros
 			WeightInit.SIZE:
@@ -143,5 +138,4 @@ Parameters:
 			WeightInit.NORMALIZED:
 			WeightInit.UNIFORM:
 
-	weightShape: *int[]*
-``` 
+	**weightShape**: *int[]*
