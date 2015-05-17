@@ -5,29 +5,31 @@ layout: default
 
 # Understanding RBMs
 
-[Restricted Boltzmann machines](../restrictedboltzmannmachine.html) are at the heart of many deep-learning nets, so their mechanism deserves a bit more attention. 
+[Restricted Boltzmann machines](../restrictedboltzmannmachine.html) are at the heart of many deep-learning nets as well as neural nets' renaissance, so their mechanism deserves a bit more attention. 
 
 To walk through the process of how an RBM works, we’ll use the example of [MNIST](../rbm-mnist-tutorial.html), a collection of images representing the handwritten numerals zero through nine, which RBMs are typically trained to recognize and classify in order to prove that they function at all.
 
-Each RBM has just two "node" layers, a visible layer and a hidden one. The first, visible, layer receives input; that is, the data you feed into the net to be learned. You can think of the RBM's input nodes as receptacles into which random samples of data are placed. They’re data boxes, each holding a data point, which in the initial layer would be a sampling of pixels. 
+Each RBM has just two "node" layers, a visible layer and a hidden one. The first, visible, layer receives input; that is, the data you feed into the net to be learned. You can think of the RBM's input nodes as receptacles into which random samples of data are placed. They’re boxes, each holding a data point, which in the initial layer would be a sampling of pixels. 
 
-To the RBM, each image is nothing more than a collection of pixels that it must classify. The only way to classify images is by their features, the distinguishing characteristics of the pixels. Those are generally dark hues and light ones lined up along edges, curves, corners, peaks and intersections — the stuff that handwritten numerals and their backgrounds are made of, their constituent parts.
+To the RBM, each image is nothing more than a collection of pixels that it must classify. The only way to classify images is by their features, the distinctive characteristics of the pixels. Those are generally dark hues and light ones lined up along edges, curves, corners, peaks and intersections — the stuff that handwritten numerals and their backgrounds are made of, their constituent parts.
 
 As it iterates over MNIST, an RBM is fed one numeral-image at a time *without knowing what it is*. In a sense, the RBM is behind a veil of ignorance, and its entire purpose is to learn what numeral it is dealing with behind the veil by randomly sampling pixels from the numeral’s unseen image, and testing which ones lead it to correctly identify the number. (There is a benchmark dataset, the test set, that knows the answers, and against which the RBM-in-training contrasts its own, provisional conclusions.)
 
-Each time the RBM guesses wrong, it is told to go back and try again, until it discovers the pixels that best indicate the numeral they’re a part of. The connections among nodes that led it to the wrong conclusion are punished, or discounted. They grow weaker as the net searches for a path toward greater accuracy and less error.
+Each time the RBM guesses wrong, it is told to go back and try again, until it discovers the pixels that best indicate the numeral they’re a part of -- the signals that improve its capacity to classify. The connections among nodes that led it to the wrong conclusion are punished, or discounted. They grow weaker as the net searches for a path toward greater accuracy and less error.
 
 ### Invisible cities
 
 Since it's a stretch to even imagine an entity that cannot identify numbers, one way to explain how RBMs work is through analogy.
 
-Imagine each numeral-image like an invisible city, one of nine whose names you know: San Francisco, New York, New Orleans, Seattle… An RBM starts reaching into the invisible city, touching various points on its streets and crossings. If it brought back a “Washington St.,” one of the most common street names in America, it would know little about the city it sought to identify. This would be akin to sampling an image and bringing back pixels from its black background, rather than an edge that formed one of the numeral’s lines or kinks. The backdrop tells you almost nothing useful of the data structure you must classify. Those indistinguishable pixels are Washington Street.
+Imagine each numeral-image like an invisible city, one of ten whose names you know: San Francisco, New York, New Orleans, Seattle… An RBM starts by reaching into the invisible city, touching various points on its streets and crossings. If it brought back a “Washington St.,” one of the most common street names in America, it would know little about the city it sought to identify. This would be akin to sampling an image and bringing back pixels from its black background, rather than an edge that formed one of the numeral’s lines or kinks. The backdrop tells you almost nothing useful of the data structure you must classify. Those indistinguishable pixels are Washington St.
 
 Let's take Market St instead… New York, New Orleans, Seattle and San Francisco all have Market Streets of different lengths and orientations. An invisible city that returns many samples labeled Market Street is more likely to be San Francisco or Seattle, which have longer Market Streets, than New York or New Orleans.
 
-In the same manner, 2s, 3s, 5s, 6s, 8s and 9s all have curves, But an unknown numeral-image with a curve as a feature is less likely to be a 1, 4 or 7. So an RBM, with time, will learn that curves are decent indicators of some numbers and not others. They will learn to weight the path connecting the curve node to a 2 or 3 label more heavily than the path extending toward a 1 or 4. 
+By analogy, 2s, 3s, 5s, 6s, 8s and 9s all have curves, but an unknown numeral-image with a curve as a feature is less likely to be a 1, 4 or 7. So an RBM, with time, will learn that curves are decent indicators of some numbers and not others. They will learn to weight the path connecting the curve node to a 2 or 3 label more heavily than the path extending toward a 1 or 4. 
 
-In fact, the process is slightly more complex, because RBMs can be stacked to gradually aggregate groups of features, layer upon layer. These stacks are called deep-belief nets, and deep-belief nets are valuable because each RBM within them deals with more and more complex ensembles of features until they group enough together to recognize the whole: Line, chin, jaw, lower face, whole face, individual's name. 
+In fact, the process is slightly more complex, because RBMs can be stacked to gradually aggregate groups of features, layer upon layer. These stacks are called deep-belief nets, and deep-belief nets are valuable because each RBM within them deals with more and more complex ensembles of features until they group enough together to recognize the whole: pixel (input), line, chin, jaw, lower face, visage, name of person (label). 
+
+![Alt text](../img/feature_hierarchy.png)
 
 But let's stick with the city and take just two features together. If an urban data sample shows an intersection of Market and an avenue named Van Ness, then the likelihood that it is San Francisco is high. Likewise, if data samples from the numeral-image show a vertical bar meeting a partial circle that opens to the left, then we very likely have a 5 and nothing else. 
 
