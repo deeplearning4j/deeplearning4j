@@ -136,7 +136,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public BaseCudaDataBuffer(int length, int elementSize) {
         this.length = length;
         this.elementSize = elementSize;
-        hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer = ByteBuffer.allocate(length * elementSize);
         hostBuffer.order(ByteOrder.nativeOrder());
         hostPointer = Pointer.to(hostBuffer);
     }

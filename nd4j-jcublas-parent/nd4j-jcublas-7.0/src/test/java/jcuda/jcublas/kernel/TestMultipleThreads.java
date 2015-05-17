@@ -34,7 +34,7 @@ public class TestMultipleThreads {
 	
 	@Test
 	public void testMultipleThreads() throws InterruptedException {
-		int numThreads = 50;
+		int numThreads = 10;
 		final INDArray array = Nd4j.rand(3000, 3000);
 		final INDArray expected = array.dup().mmul(array).mmul(array).div(array).div(array);
 		final AtomicInteger correct = new AtomicInteger();
@@ -48,9 +48,9 @@ public class TestMultipleThreads {
 				public void run() {
 					try
 					{
-						int total = 10000;
+						int total = 10;
 						int right = 0;
-						for(int x = 0; x<total; x++) {
+						for(int x = 0; x< total; x++) {
 							INDArray actual = array.dup().mmul(array).mmul(array).div(array).div(array);
 							if(expected.equals(actual)) right++;						
 						}
