@@ -88,4 +88,4 @@ Installing From Source
 YOU DON'T HAVE TO DO THIS IF YOU'RE JUST USING THE SOFTWARE FROM MAVEN CENTRAL, OR THE DOWNLOADS.
 
 1. Download [Maven](http://maven.apache.org/download.cgi) and set it up in your path.
-2. Run setup.sh on Unix and setup.bat on Windows. (These are in the root of the deeplearning4j [git repo](https://github.com/deeplearning4j/deeplearning4j). To get that, set up [Github](http://nd4j.org/getstarted.html#github) and do a *git clone*. If you've already cloned the repo, do a *git pull*.)
+2. Run setup.sh on Unix or setup.bat on Windows. (The .sh and .bat files are in the root of the Deeplearning4j [git repo](https://github.com/deeplearning4j/deeplearning4j). To download that, set up [Github](http://nd4j.org/getstarted.html#github) and do a *git clone*. If you've already cloned the repo, do a *git pull*.)
