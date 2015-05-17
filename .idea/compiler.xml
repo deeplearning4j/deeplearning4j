@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <option name="DEFAULT_COMPILER" value="Javac" />
+    <resourceExtensions />
+    <wildcardResourcePatterns>
+      <entry name="!?*.java" />
+      <entry name="!?*.form" />
+      <entry name="!?*.class" />
+      <entry name="!?*.groovy" />
+      <entry name="!?*.scala" />
+      <entry name="!?*.flex" />
+      <entry name="!?*.kt" />
+      <entry name="!?*.clj" />
+    </wildcardResourcePatterns>
+    <annotationProcessing>
+      <profile default="true" name="Default" enabled="false">
+        <processorPath useClasspath="true" />
+      </profile>
+      <profile default="false" name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="cdh4" />
+        <module name="deeplearning4j-aws" />
+        <module name="deeplearning4j-cli-api" />
+        <module name="deeplearning4j-core" />
+        <module name="deeplearning4j-nlp" />
+        <module name="deeplearning4j-nlp-yarn" />
+        <module name="deeplearning4j-scaleout-akka" />
+        <module name="deeplearning4j-scaleout-api" />
+        <module name="deeplearning4j-scaleout-zookeeper" />
+        <module name="deeplearning4j-ui" />
+        <module name="dl4j-spark" />
+        <module name="dl4j-spark-nlp" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="cdh4" target="1.7" />
+      <module name="deeplearning4j-aws" target="1.7" />
+      <module name="deeplearning4j-scaleout-api" target="1.7" />
+      <module name="dl4j-spark-nlp" target="1.7" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
+
