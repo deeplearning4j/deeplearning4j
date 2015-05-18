@@ -3406,7 +3406,7 @@ public abstract class BaseNDArray implements INDArray {
             else
                 return shape[0];
         }
-        throw new IllegalStateException("Unable to get number of of rows for a non 2d matrix");
+        throw new IllegalStateException("Unable to get number of of columns for a non 2d matrix");
     }
 
     /**
@@ -3783,7 +3783,7 @@ public abstract class BaseNDArray implements INDArray {
     public int size(int dimension) {
         ensureNotCleanedUp();
         if (isScalar()) {
-            if (dimension == 0 || dimension == 1)
+            if (dimension == 0 || dimension == 1 || dimension < 0)
                 return length;
             else
                 throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
