@@ -4289,7 +4289,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result) {
-        return create(this).rdivi(n, result);
+        return Nd4j.createComplex(this).rdivi(n, result);
 
     }
 
@@ -4301,7 +4301,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return create(this).rsubi(n, result);
+        return Nd4j.createComplex(this).rsubi(n, result);
     }
 
     @Override
@@ -4312,7 +4312,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return create(this).divi(n, result);
+        return Nd4j.createComplex(this).divi(n, result);
 
     }
 
@@ -4324,7 +4324,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return create(this).muli(n, result);
+        return Nd4j.createComplex(this).muli(n, result);
 
     }
 
@@ -4336,7 +4336,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return create(this).subi(n, result);
+        return Nd4j.createComplex(this).subi(n, result);
 
     }
 
@@ -4348,7 +4348,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
         ensureNotCleanedUp();
-        return create(this).addi(n, result);
+        return Nd4j.createComplex(this).addi(n, result);
 
     }
 
