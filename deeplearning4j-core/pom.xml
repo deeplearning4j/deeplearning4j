@@ -143,5 +143,11 @@
 			<artifactId>json</artifactId>
 			<version>20131018</version>
 		</dependency>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>dl4j-test-resources</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
