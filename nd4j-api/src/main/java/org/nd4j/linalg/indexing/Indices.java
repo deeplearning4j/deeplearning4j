@@ -1,22 +1,27 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.indexing;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -29,6 +34,89 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Indices {
+    /**
+     * Compute the linear offset
+     * for an index in an ndarray.
+     *
+     * For c ordering this is just the index itself.
+     * For fortran ordering, the following algorithm is used.
+     *
+     * Assuming an ndarray is a list of vectors.
+     * The index of the vector relative to the given index is calculated.
+     *
+     * vectorAlongDimension is then used along the last dimension
+     * using the computed index.
+     *
+     * The offset + the computed column wrt the index: (index % the size of the last dimension)
+     * will render the given index in fortran ordering
+     * @param index the index
+     * @param arr the array
+     * @return the linear offset
+     */
+    public static int rowNumber(int index,INDArray arr) {
+        double otherTest = Double.valueOf(index) / Double.valueOf(arr.size(-1));
+        int test = (int) Math.floor(otherTest);
+        int vectors = arr.vectorsAlongDimension(-1);
+        if(test >= vectors)
+            return vectors - 1;
+        return test;
+    }
+
+    /**
+     * Compute the linear offset
+     * for an index in an ndarray.
+     *
+     * For c ordering this is just the index itself.
+     * For fortran ordering, the following algorithm is used.
+     *
+     * Assuming an ndarray is a list of vectors.
+     * The index of the vector relative to the given index is calculated.
+     *
+     * vectorAlongDimension is then used along the last dimension
+     * using the computed index.
+     *
+     * The offset + the computed column wrt the index: (index % the size of the last dimension)
+     * will render the given index in fortran ordering
+     * @param index the index
+     * @param arr the array
+     * @return the linear offset
+     */
+    public static int linearOffset(int index,INDArray arr) {
+        if(arr.ordering() == NDArrayFactory.C) {
+            double otherTest = Double.valueOf(index) % Double.valueOf(arr.size(-1));
+            int test = (int) Math.floor(otherTest);
+            INDArray vec = arr.vectorAlongDimension(test,-1);
+            int otherDim = arr.vectorAlongDimension(test,-1).offset() + index;
+            return otherDim;
+        }
+        else {
+            int majorStride = arr.stride(-2);
+            int vectorsAlongDimension = arr.vectorsAlongDimension(-1);
+            double rowCalc = (double) (index * majorStride) / (double) arr.length();
+            int floor = (int) Math.floor(rowCalc);
+
+            INDArray arrVector = arr.vectorAlongDimension(floor, -1);
+
+            int columnIndex = index % arr.size(-1);
+            int retOffset = arrVector.linearIndex(columnIndex);
+            return retOffset;
+
+
+
+        }
+    }
+
+    /**
+     * Calculate the linear indices for an
+     * ndarray
+     * @param arr the array to calculate for
+     * @return the array for the linear indices
+     */
+    public static int[] linearIndices(INDArray arr) {
+        LinearIndex index = new LinearIndex(arr,arr.dup(),true);
+        Nd4j.getExecutioner().iterateOverAllRows(index);
+        return index.getIndices();
+    }
 
     /**
      * The offsets (begin index) for each index
@@ -285,15 +373,8 @@ public class Indices {
                 int[] currIndices = indices[i].indices();
                 if (currIndices.length < 1)
                     continue;
-                int end = currIndices[currIndices.length - 1];
-                if (end > shape[i])
-                    end = shape[i] - 1;
-                int begin = currIndices[0];
-
-                ret[i] = indices[i].isInterval() ? Math.abs(end - begin) + 1 :
-                        indices[i].indices().length;
+                ret[i] = indices[i].indices().length;
                 ret[i] -= offsets[i];
-
             }
 
         }

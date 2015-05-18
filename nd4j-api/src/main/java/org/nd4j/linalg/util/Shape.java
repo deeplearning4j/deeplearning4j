@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.util;
@@ -159,6 +162,13 @@ public class Shape {
         return false;
     }
 
+    /**
+     * Returns true if the given shape is of length 1
+     * or provided the shape length is 2:
+     * element 0 is 1
+     * @param shape the shape to check
+     * @return true if the above conditions hold,false otherwise
+     */
     public static boolean isRowVectorShape(int[] shape) {
         return
                 (shape.length == 2
@@ -167,6 +177,13 @@ public class Shape {
 
     }
 
+    /**
+     * Returns true if the given shape is length 2 and
+     * the size at element 1 is 1
+     * @param shape the shape to check
+     * @return true if the above listed conditions
+     * hold false otherwise
+     */
     public static boolean isColumnVectorShape(int[] shape) {
         return
                 (shape.length == 2

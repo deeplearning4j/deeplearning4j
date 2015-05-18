@@ -1,3 +1,22 @@
+/*
+ *
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ *
+ */
+
 package org.nd4j.linalg.jcublas.util;
 
 import static jcuda.driver.JCudaDriver.cuMemGetInfo;
@@ -20,11 +39,14 @@ import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
 
 /**
  * Wraps the generation of kernel parameters
- * , creating, copying and destroying any cuda device allocations
+ * , creating, copying
+ * and destroying any cuda device allocations
+ *
  * @author bam4d
  *
  */
@@ -109,13 +131,14 @@ public class KernelParamsWrapper implements AutoCloseable {
 		arrayToPointer = new HashMap<>();
 		pointersToFree = new HashSet<>();
 		resultPointers = new HashSet<>();
-		for(int i = 0; i<kernelParams.length; i++) {
+
+		for(int i = 0; i < kernelParams.length; i++) {
 			Object arg = kernelParams[i];
 
 			// If the instance is a JCudaBuffer we should assign it to the device
 			if(arg instanceof JCudaBuffer) {
 
-				JCudaBuffer buffer = (JCudaBuffer)arg;
+				JCudaBuffer buffer = (JCudaBuffer) arg;
 				CublasPointer pointerToFree = new CublasPointer(buffer);
 				kernelParameters[i] = pointerToFree;
 				pointersToFree.add(pointerToFree);
@@ -123,7 +146,7 @@ public class KernelParamsWrapper implements AutoCloseable {
 				// If we have an INDArray we should assign the buffer to the device and set an appropriate pointer
 			} else if(arg instanceof INDArray) {
 
-				INDArray array = (INDArray)arg;
+				INDArray array = (INDArray) arg;
 				CublasPointer pointerToFree = new CublasPointer(array);
 				kernelParameters[i] = pointerToFree;
 				pointersToFree.add(pointerToFree);
@@ -145,7 +168,8 @@ public class KernelParamsWrapper implements AutoCloseable {
 			if(resultPointers.contains(cublasPointer)) {
 				if(resultOp != null) {
 					setResultForOp(resultOp, cublasPointer);
-				} else {
+				}
+                else {
 					cublasPointer.copyToHost();
 				}
 			}
@@ -167,7 +191,13 @@ public class KernelParamsWrapper implements AutoCloseable {
 		if (devicePointer.getBuffer().dataType() == DataBuffer.Type.DOUBLE) {
 			double[] data = new double[2];
 			Pointer get = Pointer.to(data);
-			JCuda.cudaMemcpy(get, devicePointer, 2 * Sizeof.DOUBLE, cudaMemcpyKind.cudaMemcpyDeviceToHost);
+			JCuda.cudaMemcpyAsync(
+                    get
+                    , devicePointer
+                    , 2 * Sizeof.DOUBLE
+                    , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                    , ContextHolder.getInstance().getCudaStream());
+
 			if(acc instanceof Accumulation) {
 				Accumulation acc2 = (Accumulation) acc;
 				acc2.setCurrentResult(data[0]);
@@ -178,7 +208,12 @@ public class KernelParamsWrapper implements AutoCloseable {
 		else {
 			float[] data = new float[2];
 			Pointer get = Pointer.to(data);
-			JCuda.cudaMemcpy(get, devicePointer, 2 * Sizeof.FLOAT, cudaMemcpyKind.cudaMemcpyDeviceToHost);
+			JCuda.cudaMemcpyAsync(
+                    get
+                    , devicePointer, 2 * Sizeof.FLOAT
+                    , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                    , ContextHolder.getInstance().getCudaStream());
+
 			if(acc instanceof Accumulation) {
 				Accumulation acc2 = (Accumulation) acc;
 				acc2.setCurrentResult(data[0]);

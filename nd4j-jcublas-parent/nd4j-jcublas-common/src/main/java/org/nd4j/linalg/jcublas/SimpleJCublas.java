@@ -1,32 +1,36 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.jcublas;
 
 
 
-import jcublas.JCublas2;
 import jcuda.*;
 import jcuda.driver.JCudaDriver;
+import jcuda.jcublas.JCublas2;
+import jcuda.jcublas.cublasOperation;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaDeviceProp;
 import jcuda.runtime.cudaError;
 import jcuda.runtime.cudaMemcpyKind;
-import jcuda.utils.KernelLauncher;
 
+import jcuda.utils.KernelLauncher;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -40,8 +44,10 @@ import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
+import javax.naming.Context;
+
 /**
- * Simple abstraction for jcublas operations
+ * Simple abstraction for jcuda.jcublas operations
  *
  * @author mjk
  * @author Adam Gibson
@@ -93,7 +99,6 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
-        JCublas2.setLogLevel(LogLevel.LOG_DEBUG);
         JCublas2.setExceptionsEnabled(true);
 
 
@@ -147,7 +152,7 @@ public class SimpleJCublas {
 
         JCublas2.cublasDgemv(
                 ContextHolder.getInstance().getHandle(),
-                'N',
+                cublasOperation.CUBLAS_OP_N,
                 A.rows(),
                 A.columns(),
                 Pointer.to(new double[]{alpha}),
@@ -189,17 +194,17 @@ public class SimpleJCublas {
 
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
-                'N',
+                cublasOperation.CUBLAS_OP_N,
                 A.rows(),
                 A.columns(),
                 Pointer.to(new double[]{alpha}),
                 cAPointer,
                 A.rows(),
                 cBPointer,
-                1,
+                A.majorStride(),
                 Pointer.to(new double[]{beta}),
                 cCPointer,
-                1);
+                C.majorStride());
 
         sync();
 
@@ -236,7 +241,7 @@ public class SimpleJCublas {
 
         JCublas2.cublasZgemv(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
+                cublasOperation.CUBLAS_OP_N, //trans
                 A.rows(),  // m
                 A.rows(), // n
                 PointerUtil.getPointer(alpha),
@@ -245,7 +250,7 @@ public class SimpleJCublas {
                 cBPointer, // x
                 B.secondaryStride(), // ldb
                 PointerUtil.getPointer(beta),  // beta
-                cCPointer, // y
+                cCPointer, // ydoin
                 C.secondaryStride()); // ldc
 
         sync();
@@ -283,7 +288,7 @@ public class SimpleJCublas {
 
         JCublas2.cublasCgemv(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
+                cublasOperation.CUBLAS_OP_N, //trans
                 A.rows(),  // m
                 A.columns(), // n
                 PointerUtil.getPointer(alpha),
@@ -331,8 +336,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasZgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,
@@ -380,8 +385,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasCgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,
@@ -431,8 +436,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasDgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,
@@ -476,8 +481,8 @@ public class SimpleJCublas {
 
         JCublas2.cublasSgemm(
                 ContextHolder.getInstance().getHandle(),
-                'n', //trans
-                'n',
+                cublasOperation.CUBLAS_OP_N, //trans
+                cublasOperation.CUBLAS_OP_N,
                 C.rows(),  // m
                 C.columns(), // n
                 A.columns(), //k,
@@ -707,31 +712,31 @@ public class SimpleJCublas {
      * @return
      */
     public static int iamax(INDArray x) {
-
-
-
         CublasPointer xCPointer = new CublasPointer(x);
         Pointer result;
+        sync();
         if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             float[] ret = new float[1];
             result = Pointer.to(ret);
             JCublas2.cublasIsamax(
                     ContextHolder.getInstance().getHandle(),
-                    x.length(),
+                    x.length() * x.data().getElementSize(),
                     xCPointer,
-                    x.majorStride(),result);
-
+                    1,result);
+            ContextHolder.syncStream();
+            sync();
             return (int) (ret[0]- 1);
         }
         else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             double[] ret = new double[1];
             result = Pointer.to(ret);
+            sync();
             JCublas2.cublasIdamax(
                     ContextHolder.getInstance().getHandle(),
                     x.length(),
                     xCPointer,
-                    x.majorStride(), result);
-
+                    1, result);
+            sync();
             return (int) (ret[0] - 1);
         }
 
@@ -1346,7 +1351,13 @@ public class SimpleJCublas {
         CublasPointer xCPointer = new CublasPointer(x);
         CublasPointer yCPointer = new CublasPointer(y);
 
-        JCublas2.cublasDaxpy(ContextHolder.getInstance().getHandle(),x.length(), Pointer.to(new double[]{alpha}), xCPointer, x.majorStride(), yCPointer, y.majorStride());
+        JCublas2.cublasDaxpy(
+                ContextHolder.getInstance().getHandle(),x.length()
+                , Pointer.to(new double[]{alpha})
+                , xCPointer
+                , x.majorStride()
+                , yCPointer
+                , y.majorStride());
 
         sync();
 

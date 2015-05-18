@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.jcublas.buffer;
@@ -21,6 +24,7 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,6 +41,7 @@ import jcuda.cuDoubleComplex;
 import jcuda.driver.CUdeviceptr;
 import jcuda.driver.CUresult;
 import jcuda.jcublas.JCublas;
+import jcuda.jcublas.JCublas2;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 
@@ -47,7 +52,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +65,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
-	protected transient Pointer hostPointer;
-	protected transient ByteBuffer hostBuffer;
-	protected transient Map<String,DevicePointerInfo> pointersToContexts = new ConcurrentHashMap<>();
+    protected transient ByteBuffer hostBuffer;
+    protected transient Map<String,DevicePointerInfo> pointersToContexts = new ConcurrentHashMap<>();
     protected AtomicBoolean modified = new AtomicBoolean(false);
     protected int length;
     protected int elementSize;
@@ -70,47 +76,45 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected AtomicBoolean freed = new AtomicBoolean(false);
     static AtomicLong allocated = new AtomicLong();
     static AtomicLong totalAllocated = new AtomicLong();
-    
+
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
-    
+
     /**
      * Provides information about a device pointer 
      * @author bam4d
      *
      */
     private static class DevicePointerInfo {
-    	final private CUdeviceptr pointer;
-    	final private long length;
-    	
-    	public CUdeviceptr getPointer() { 
-    		return pointer;
-    	}
-    	
-    	public long getLength() {
-    		return length;
-    	}
-    	
-    	public DevicePointerInfo(CUdeviceptr pointer, long length) {
-    		this.pointer = pointer;
-    		this.length = length;
-    	}
+        final private Pointer pointer;
+        final private long length;
+
+        public Pointer getPointer() {
+            return pointer;
+        }
+
+        public long getLength() {
+            return length;
+        }
+
+        public DevicePointerInfo(Pointer pointer, long length) {
+            this.pointer = pointer;
+            this.length = length;
+        }
     }
-    
+
     @Override
     public void setHostBuffer(ByteBuffer hostBuffer) {
-    	this.hostBuffer = hostBuffer;
-    	this.hostPointer = Pointer.to(hostBuffer);
-    	hostBuffer.order(ByteOrder.nativeOrder());
+        this.hostBuffer = hostBuffer;
     }
-    
+
     @Override
     public ByteBuffer getHostBuffer() {
-    	return hostBuffer;
+        return hostBuffer;
     }
-    
+
     @Override
     public Pointer getHostPointer() {
-    	return hostPointer;
+        return Pointer.to(hostBuffer);
     }
 
     @Override
@@ -132,9 +136,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public BaseCudaDataBuffer(int length, int elementSize) {
         this.length = length;
         this.elementSize = elementSize;
-        hostBuffer = ByteBuffer.allocate(length*elementSize);
+        hostBuffer = ByteBuffer.allocate(getElementSize() * length());
         hostBuffer.order(ByteOrder.nativeOrder());
-        hostPointer = Pointer.to(hostBuffer);
     }
 
     @Override
@@ -154,36 +157,46 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void put(int i, IComplexNumber result) {
-        
+
         modified.set(true);
         if (dataType() == DataBuffer.Type.FLOAT) {
-            JCublas.cublasSetVector(
+            JCublas2.cublasSetVector(
                     length(),
-                    new cuComplex[]{CudaComplexConversion.toComplex(result.asFloat())}
-                    , i
+                    getElementSize(),
+                    PointerUtil.getPointer(CudaComplexConversion.toComplex(result.asFloat()))
                     , 1
-                    , hostPointer
+                    , getHostPointer()
                     , 1);
-        } else {
-            JCublas.cublasSetVector(
+        }
+        else {
+            JCublas2.cublasSetVector(
                     length(),
-                    new cuDoubleComplex[]{CudaComplexConversion.toComplexDouble(result.asDouble())}
-                    , i
+                    getElementSize(),
+                    PointerUtil.getPointer(CudaComplexConversion.toComplexDouble(result.asDouble()))
                     , 1
-                    , hostPointer
+                    , getHostPointer()
                     , 1);
         }
     }
 
     @Override
     public float[] asFloat() {
-        return hostBuffer.asFloatBuffer().array();
+        FloatBuffer buff = hostBuffer.asFloatBuffer();
+        try {
+            return hostBuffer.asFloatBuffer().array();
+        }catch (UnsupportedOperationException e) {
+
+            float[] ret = new float[length];
+            for(int i = 0; i < length; i++)
+                ret[i] = buff.get(i);
+            return ret;
+        }
     }
 
     @Override
     public double[] asDouble() {
         //
-    	double[] ret = new double[length()];
+        double[] ret = new double[length()];
         DoubleBuffer buf = getDoubleBuffer();
         for(int i = 0; i < length(); i++) {
             ret[i] = buf.get(i);
@@ -197,45 +210,46 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     @Override
-	public CUdeviceptr getDevicePointer() {
+    public Pointer getDevicePointer() {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
 
-    	if(devicePointerInfo == null) {
-    		CUdeviceptr devicePointer = new CUdeviceptr();
-    		int devicePointerLength = getElementSize() * length();
-    		allocated.addAndGet(devicePointerLength);
-    		totalAllocated.addAndGet(devicePointerLength);
-    		log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
-    		
-    		devicePointerInfo = new DevicePointerInfo(devicePointer, devicePointerLength);
-    		checkResult(JCuda.cudaMalloc(devicePointer, devicePointerLength));
+        if(devicePointerInfo == null) {
+            int devicePointerLength = getElementSize() * length();
+            allocated.addAndGet(devicePointerLength);
+            totalAllocated.addAndGet(devicePointerLength);
+            log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
+            Pointer hostPointer = new Pointer();
+            devicePointerInfo = new DevicePointerInfo(hostPointer, devicePointerLength);
+            checkResult(JCuda.cudaHostAlloc(hostPointer, elementSize * length, JCuda.cudaHostAllocPortable));
             pointersToContexts.put(Thread.currentThread().getName(),devicePointerInfo);
-    		freed.set(false);
-    	}
-    	
-    	return devicePointerInfo.getPointer();
+            freed.set(false);
+        }
+
+        return devicePointerInfo.getPointer();
     }
 
 
     @Override
     public void set(Pointer pointer) {
-        
+
         modified.set(true);
 
         if (dataType() == DataBuffer.Type.DOUBLE) {
-            JCublas.cublasDcopy(
+            JCublas2.cublasDcopy(
+                    ContextHolder.getInstance().getHandle(),
                     length(),
                     pointer,
                     1,
-                    hostPointer,
+                    getHostPointer(),
                     1
             );
         } else {
-            JCublas.cublasScopy(
+            JCublas2.cublasScopy(
+                    ContextHolder.getInstance().getHandle(),
                     length(),
                     pointer,
                     1,
-                    hostPointer,
+                    getHostPointer(),
                     1
             );
         }
@@ -250,7 +264,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param to the buffer to copy data to
      */
     protected void copyTo(JCudaBuffer to) {
-        
+
         for(int i = 0; i < length(); i++) {
             to.put(i,getDouble(i));
         }
@@ -287,19 +301,20 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from, int inc) {
-        
+
         modified.set(true);
 
         int offset = getElementSize() * index;
         if (offset >= length() * getElementSize())
             throw new IllegalArgumentException("Illegal offset " + offset + " with index of " + index + " and length " + length());
-        JCublas.cublasSetVector(
+
+        JCublas2.cublasSetVectorAsync(
                 length
                 , getElementSize()
                 , from
                 , inc
-                , hostPointer.withByteOffset(offset)
-                , 1);
+                , getHostPointer().withByteOffset(offset)
+                , 1, ContextHolder.getInstance().getCudaStream());
 
     }
 
@@ -310,13 +325,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, int length, Pointer from) {
-        
         set(index, length, from, 1);
     }
 
     @Override
     public void assign(DataBuffer data) {
-        
         JCudaBuffer buf = (JCudaBuffer) data;
         set(0, buf.getHostPointer());
     }
@@ -325,7 +338,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     protected java.nio.FloatBuffer getFloatBuffer(long offset) {
-        return getHostBuffer(offset*Sizeof.FLOAT).asFloatBuffer();
+        return getHostBuffer(offset * Sizeof.FLOAT).asFloatBuffer();
     }
 
     protected java.nio.FloatBuffer getFloatBuffer() {
@@ -333,7 +346,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     protected java.nio.DoubleBuffer getDoubleBuffer(long offset) {
-        return getHostBuffer(offset*Sizeof.DOUBLE).asDoubleBuffer();
+        return getHostBuffer(offset * Sizeof.DOUBLE).asDoubleBuffer();
     }
 
     protected java.nio.DoubleBuffer getDoubleBuffer() {
@@ -353,38 +366,42 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param from  the element to get data from
      */
     protected void set(int index, Pointer from) {
-        
         set(index, 1, from);
     }
-    
-    public static void checkResult(int cuResult)
-    {
-        if (cuResult != CUresult.CUDA_SUCCESS)
-        {
+
+    public static void checkResult(int cuResult) {
+        if (cuResult != CUresult.CUDA_SUCCESS) {
             throw new CudaException(CUresult.stringFor(cuResult));
         }
     }
-    
+
     @Override
     public boolean freeDevicePointer() {
-    	DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
-    	if(devicePointerInfo != null && !freed.get()) {
-			allocated.addAndGet(-devicePointerInfo.getLength());
-	        log.trace("freeing {} bytes, total: {}", devicePointerInfo.getLength(), allocated.get());
-	        checkResult(JCuda.cudaFree(devicePointerInfo.getPointer()));
-	        devicePointerInfo = null;
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
+        if(devicePointerInfo != null && !freed.get()) {
+            allocated.addAndGet(-devicePointerInfo.getLength());
+            log.trace("freeing {} bytes, total: {}", devicePointerInfo.getLength(), allocated.get());
+            checkResult(JCuda.cudaFreeHost(devicePointerInfo.getPointer()));
+            devicePointerInfo = null;
             freed.set(true);
             pointersToContexts.remove(Thread.currentThread().getName());
-			return true;	
-    	} 
-    	return false;
+            return true;
+        }
+        return false;
     }
-    
+
     @Override
     public void copyToHost() {
-    	DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
-        if(devicePointerInfo != null)
-    		checkResult(JCuda.cudaMemcpy(hostPointer, devicePointerInfo.getPointer(), devicePointerInfo.getLength(), cudaMemcpyKind.cudaMemcpyDeviceToHost));
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
+        if(devicePointerInfo != null) {
+            checkResult(
+                    JCuda.cudaMemcpyAsync(
+                            getHostPointer()
+                            , devicePointerInfo.getPointer()
+                            , devicePointerInfo.getLength()
+                            , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                            , ContextHolder.getInstance().getCudaStream()));
+        }
     }
 
 
@@ -431,7 +448,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public int getInt(int ix) {
-        
+
 
         return 0;
     }
@@ -453,56 +470,17 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void assign(int[] indices, double[] data, boolean contiguous) {
         assign(indices, data, contiguous, 1);
     }
-    
-    private ByteBuffer getHostBuffer(long byteOffset)
-    {
+
+    private ByteBuffer getHostBuffer(long byteOffset) {
         if (hostBuffer == null)
-        {
             return null;
-        }
+
         if (!(hostBuffer instanceof ByteBuffer))
-        {
             return null;
-        }
+
         //hostBuffer.limit((int)(byteOffset + hostBuffer.capacity()));
-        hostBuffer.position((int)byteOffset);
+        hostBuffer.position((int) byteOffset);
         return hostBuffer;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        BaseCudaDataBuffer that = (BaseCudaDataBuffer) o;
-
-        if (length != that.length) return false;
-        if (elementSize != that.elementSize) return false;
-        if (isPersist != that.isPersist) return false;
-        if (hostPointer != null ? !hostPointer.equals(that.hostPointer) : that.hostPointer != null) return false;
-        if (hostBuffer != null ? !hostBuffer.equals(that.hostBuffer) : that.hostBuffer != null) return false;
-        if (pointersToContexts != null ? !pointersToContexts.equals(that.pointersToContexts) : that.pointersToContexts != null)
-            return false;
-        if (modified != null ? !modified.equals(that.modified) : that.modified != null) return false;
-        if (referencing != null ? !referencing.equals(that.referencing) : that.referencing != null) return false;
-        if (ref != null ? !ref.equals(that.ref) : that.ref != null) return false;
-        return !(freed != null ? !freed.equals(that.freed) : that.freed != null);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = (int) (hostPointer != null ? hostPointer.hashCode() : 0);
-        result = 31 * result + (hostBuffer != null ? hostBuffer.hashCode() : 0);
-        result = 31 * result + (pointersToContexts != null ? pointersToContexts.hashCode() : 0);
-        result = 31 * result + (modified != null ? modified.hashCode() : 0);
-        result = 31 * result + length;
-        result = 31 * result + elementSize;
-        result = 31 * result + (referencing != null ? referencing.hashCode() : 0);
-        result = 31 * result + (ref != null ? ref.hashCode() : 0);
-        result = 31 * result + (isPersist ? 1 : 0);
-        result = 31 * result + (freed != null ? freed.hashCode() : 0);
-        return result;
     }
 
     @Override
@@ -514,32 +492,35 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             DataBuffer buffer = buffers[i];
             if (buffer instanceof JCudaBuffer) {
                 JCudaBuffer buff = (JCudaBuffer) buffer;
-                
+
                 try(CublasPointer buffPointer = new CublasPointer(buff)) {
-                
-	                if (buff.dataType() == DataBuffer.Type.DOUBLE) {
-	                	
-	                    JCublas.cublasDcopy(
-	                            buff.length()
-	                            , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
-	                            , strides[i]
-	                            , getDevicePointer().withByteOffset(count * buff.getElementSize())
-	                            , 1);
-	                    
-	                    
-	                    count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
-	                } else {
-	                    JCublas.cublasScopy(buff.length()
-	                            , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
-	                            , strides[i]
-	                            , getDevicePointer().withByteOffset(count * buff.getElementSize())
-	                            , 1);
-	                    
-	                    count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
-	                }
+
+                    if (buff.dataType() == DataBuffer.Type.DOUBLE) {
+
+                        JCublas2.cublasDcopy(
+                                ContextHolder.getInstance().getHandle(),
+                                buff.length()
+                                , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
+                                , strides[i]
+                                , getDevicePointer().withByteOffset(count * buff.getElementSize())
+                                , 1);
+
+
+                        count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
+                    } else {
+                        JCublas2.cublasScopy(
+                                ContextHolder.getInstance().getHandle(),
+                                buff.length()
+                                , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
+                                , strides[i]
+                                , getDevicePointer().withByteOffset(count * buff.getElementSize())
+                                , 1);
+
+                        count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
+                    }
                 } catch (Exception e) {
-            		throw new RuntimeException("Could not run cublas command", e);
-            	}
+                    throw new RuntimeException("Could not run cublas command", e);
+                }
             } else
                 throw new IllegalArgumentException("Only jcuda data buffers allowed");
         }
@@ -549,7 +530,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(DataBuffer... buffers) {
-        
+
 
         int[] offsets = new int[buffers.length];
         int[] strides = new int[buffers.length];
@@ -562,14 +543,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void assign(int[] offsets, int[] strides, DataBuffer... buffers) {
         assign(offsets, strides, length(), buffers);
     }
-    
+
     @Override
-	public void destroy() {
-		freeDevicePointer();
-		hostBuffer = null;
-		hostPointer = null;
-		
-	}
+    public void destroy() {
+        freeDevicePointer();
+        hostBuffer = null;
+
+    }
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws IOException {
@@ -604,17 +584,31 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             double[] d = new double[length];
             for(int i = 0; i < d.length; i++)
                 d[i] = stream.readDouble();
-            BaseCudaDataBuffer  buf = (BaseCudaDataBuffer) KernelFunctions.alloc(d);
-            hostPointer = buf.hostPointer;
         }
         else if(dataType() == DataBuffer.Type.FLOAT) {
             float[] f = new float[length];
             for(int i = 0; i < f.length; i++)
                 f[i] = stream.readFloat();
             BaseCudaDataBuffer  buf = (BaseCudaDataBuffer) KernelFunctions.alloc(f);
-            hostPointer = buf.hostPointer;
+            setHostBuffer(buf.getHostBuffer());
         }
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof DataBuffer))
+            return false;
+        DataBuffer buffer = (DataBuffer) obj;
+        if(buffer.length() != length())
+            return false;
+        if(elementSize != buffer.getElementSize())
+            return false;
 
+        for(int i = 0; i < length(); i++) {
+            double diff = Math.abs(getDouble(i)  - buffer.getDouble(i));
+            if(diff > Nd4j.EPS_THRESHOLD)
+                return false;
+        }
+        return true;
+    }
 }

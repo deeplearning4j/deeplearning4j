@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.jblas;
@@ -121,19 +124,19 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     x.length(),
                     x.data().asDouble(),
                     x.offset(),
-                    x.majorStride(),
+                    1,
                     y.data().asDouble(),
                     y.offset(),
-                    y.majorStride());
+                    1);
         else
             JavaBlas.rcopy(
                     x.length(),
                     x.data().asFloat(),
                     x.offset(),
-                    x.majorStride(),
+                    1,
                     y.data().asFloat(),
                     y.offset(),
-                    y.majorStride());
+                   1);
 
         return y;
     }
@@ -183,7 +186,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 dx.length(),
                 da,
                 dx.data().asFloat(),
-                dx.linearView().offset(),
+                dx.offset(),
                 dx.linearView().majorStride(),
                 dy.data().asFloat(),
                 dy.offset(),

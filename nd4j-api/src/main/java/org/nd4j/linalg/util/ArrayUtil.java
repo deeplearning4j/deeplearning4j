@@ -1,17 +1,20 @@
 /*
- * Copyright 2015 Skymind,Inc.
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
  */
 
 package org.nd4j.linalg.util;
@@ -26,14 +29,32 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * @author Adam Gibson
  */
 public class ArrayUtil {
 
+
+    /**
+     * Returns true if all of the elements in the
+     * given int array are unique
+     * @param toTest the array to test
+     * @return true if all o fthe items
+     * are unique false otherwise
+     */
+    public static boolean allUnique(int[] toTest) {
+        Set<Integer> set = new HashSet<>();
+        for(int i : toTest) {
+            if(!set.contains(i))
+                set.add(i);
+            else
+                return false;
+        }
+
+        return true;
+    }
 
     /**
      * Credit to mikio braun from jblas
@@ -454,6 +475,39 @@ public class ArrayUtil {
 
 
     /**
+     * Create a copy of the given array
+     * starting at the given index with the given length.
+     *
+     * The intent here is for striding.
+     *
+     * For example in slicing, you want the major stride to be first.
+     * You achieve this by taking the last index
+     * of the matrix's stride and putting
+     * this as the first stride of the new ndarray
+     * for slicing.
+     *
+     * All of the elements except the copied elements are
+     * initialized as the given value
+     * @param valueStarting  the starting value
+     * @param copy the array to copy
+     * @param idxFrom the index to start at in the from array
+     * @param idxAt the index to start at in the return array
+     * @param length the length of the array to create
+     * @return the given array
+     */
+    public static int[] valueStartingAt(int valueStarting,int[] copy,int idxFrom,int idxAt,int length) {
+        int[] ret = new int[length];
+        Arrays.fill(ret,valueStarting);
+        for(int i = 0; i < length; i++) {
+            if(i + idxFrom >= copy.length || i + idxAt >= ret.length)
+                break;
+            ret[i + idxAt] = copy[i + idxFrom];
+        }
+
+        return ret;
+    }
+
+    /**
      * Returns the array with the item in index
      * removed, if the array is empty it will return the array itself
      *
@@ -483,6 +537,13 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStridesFortran(int[] shape, int startNum) {
+       if(Shape.isColumnVectorShape(shape)) {
+           int[] ret = new int[2];
+           Arrays.fill(ret,startNum);
+           return ret;
+
+       }
+
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
         int st = startNum;
@@ -513,8 +574,23 @@ public class ArrayUtil {
      * @return the strides for a matrix of n dimensions
      */
     public static int[] calcStrides(int[] shape, int startValue) {
+        if(Shape.isColumnVectorShape(shape)) {
+            int[] ret = new int[2];
+            Arrays.fill(ret,startValue);
+            return ret;
+
+        }
+
+        if(Shape.isRowVectorShape(shape)) {
+            int[] ret = new int[2];
+            ret[0] = 1;
+            ret[1] = shape[0];
+            return ret;
+        }
+
         int dimensions = shape.length;
         int[] stride = new int[dimensions];
+
         int st = startValue;
         for (int j = dimensions - 1; j >= 0; j--) {
             stride[j] = st;
