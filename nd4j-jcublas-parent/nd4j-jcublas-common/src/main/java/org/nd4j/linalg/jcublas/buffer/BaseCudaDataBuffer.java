@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategies;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
@@ -84,7 +85,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @author bam4d
      *
      */
-    private static class DevicePointerInfo {
+    public static class DevicePointerInfo {
         final private Pointer pointer;
         final private long length;
 
@@ -218,9 +219,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             allocated.addAndGet(devicePointerLength);
             totalAllocated.addAndGet(devicePointerLength);
             log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
-            Pointer hostPointer = new Pointer();
-            devicePointerInfo = new DevicePointerInfo(hostPointer, devicePointerLength);
-            checkResult(JCuda.cudaHostAlloc(hostPointer, elementSize * length, JCuda.cudaHostAllocPortable));
+            int device = ContextHolder.getInstance().getDeviceForThread();
+            devicePointerInfo = (DevicePointerInfo) ContextHolder.getInstance().getConf(device).getMemoryStrategy().alloc(this);
             pointersToContexts.put(Thread.currentThread().getName(),devicePointerInfo);
             freed.set(false);
         }
@@ -381,7 +381,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         if(devicePointerInfo != null && !freed.get()) {
             allocated.addAndGet(-devicePointerInfo.getLength());
             log.trace("freeing {} bytes, total: {}", devicePointerInfo.getLength(), allocated.get());
-            checkResult(JCuda.cudaFreeHost(devicePointerInfo.getPointer()));
+           ContextHolder.getInstance().getConf(ContextHolder.getInstance().getDeviceForThread()).getMemoryStrategy().free(this);
             devicePointerInfo = null;
             freed.set(true);
             pointersToContexts.remove(Thread.currentThread().getName());
@@ -610,5 +610,14 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 return false;
         }
         return true;
+    }
+
+    @Override
+    public Map<String, DevicePointerInfo> getPointersToContexts() {
+        return pointersToContexts;
+    }
+
+    public void setPointersToContexts(Map<String, DevicePointerInfo> pointersToContexts) {
+        this.pointersToContexts = pointersToContexts;
     }
 }

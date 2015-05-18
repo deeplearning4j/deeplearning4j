@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 import jcuda.Pointer;
 
@@ -78,7 +79,5 @@ public interface JCudaBuffer extends DataBuffer {
     void set(Pointer pointer);
 
 
-
-
-
+    Map<String, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
 }

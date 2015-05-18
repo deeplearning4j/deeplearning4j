@@ -1,6 +1,7 @@
-package org.nd4j.linalg.jcublas.buffer.allocation;
+package org.nd4j.linalg.api.buffer.allocation;
 
-import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+
+import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
  *
@@ -16,13 +17,13 @@ public interface MemoryStrategy {
      * Allocate memory for the given buffer
      * @param buffer the buffer to allocate for
      */
-    void alloc(JCudaBuffer buffer);
+    Object alloc(DataBuffer buffer);
 
     /**
      * Free the buffer wrt the
      * allocation strategy
      * @param buffer the buffer to free
      */
-    void free(JCudaBuffer buffer);
+    void free(DataBuffer buffer);
 
 }

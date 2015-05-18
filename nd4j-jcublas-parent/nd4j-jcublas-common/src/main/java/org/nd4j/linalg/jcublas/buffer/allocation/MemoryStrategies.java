@@ -1,6 +1,7 @@
 package org.nd4j.linalg.jcublas.buffer.allocation;
 
 
+import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.context.GpuInformation;
 
@@ -20,7 +21,7 @@ public class MemoryStrategies {
      * Memory modes for the host memory
      *  (Credit to Marco from jcuda)
      */
-    enum MemoryMode {
+    public  enum MemoryMode {
         /**
          * Pinned host memory, allocated with cudaHostAlloc
          */
@@ -38,18 +39,47 @@ public class MemoryStrategies {
     }
 
 
+    /**
+     * Get the mode for the device
+     * based on the device information
+     * @param device the device to get the mode for
+     * @return the default mode for the device
+     * based on the device characteristics
+     */
     public static MemoryMode getMode(int device) {
         GpuInformation info = ContextHolder.getInstance().getInfoFor(device);
+        //pinned is preferred
         if(info.getCanMapHostMemory() > 0) {
-
+            return MemoryMode.PINNED;
         }
 
-
-        return MemoryMode.PAGEABLE_ARRAY;
+        return MemoryMode.PAGEABLE_DIRECT_BUFFER;
     }
 
+
+    /**
+     * Get the strategy for a given mdoe
+     * @param mode the mode to get the strategy for
+     * @return the strategy for the given mode
+     */
+    public static MemoryStrategy getStrategy(MemoryMode mode) {
+        switch(mode) {
+            case PINNED: return new PinnedMemoryStrategy();
+            case PAGEABLE_ARRAY: return new PageableArrayMemoryStrategy();
+            case PAGEABLE_DIRECT_BUFFER: return new PageableDirectBufferMemoryStrategy();
+            default: throw new IllegalStateException("Illegal strategy for mode " + mode);
+        }
+
+    }
+
+    /**
+     * Get the configured memory strategy for the device
+     * @param device the device
+     *               to get the memory strategy for
+     * @return the memory strategy
+     */
     public static MemoryStrategy getStrategy(int device) {
-        return null;
+        return getStrategy(getMode(device));
     }
 
     /**

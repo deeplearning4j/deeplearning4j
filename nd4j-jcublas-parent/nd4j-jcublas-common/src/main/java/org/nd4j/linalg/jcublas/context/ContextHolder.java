@@ -37,6 +37,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.springframework.core.io.ClassPathResource;
 
 import static jcuda.driver.JCudaDriver.*;
@@ -63,11 +64,13 @@ public class ContextHolder {
     private Map<String, cublasHandle> handleMap = new HashMap<>();
     private List<Integer> bannedDevices;
     private int numDevices = 0;
+    private Map<Integer,DeviceConfiguration> confs = new HashMap<>();
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
 
     private ContextHolder(){
         getNumDevices();
+        configure();
     }
 
     /**
@@ -99,6 +102,37 @@ public class ContextHolder {
         return INSTANCE;
     }
 
+    /**
+     * Configure the given information
+     * based on the device
+     */
+    public void configure() {
+         for(int i = 0; i < numDevices; i++) {
+             ClassPathResource confFile = new ClassPathResource("devices/" + i);
+             if(confFile.exists()) {
+                Properties props = new Properties();
+                 try {
+                     props.load(confFile.getInputStream());
+                     confs.put(i,new DeviceConfiguration(i,props));
+                 } catch (IOException e) {
+                    throw new RuntimeException(e);
+                 }
+
+             }
+             else
+                confs.put(i,new DeviceConfiguration(i));
+
+         }
+    }
+
+    /**
+     * Get the configuration the given device
+     * @param device the device to get the configuration for
+     * @return the device configuration
+     */
+    public DeviceConfiguration getConf(int device) {
+        return confs.get(device);
+    }
 
     private void getNumDevices() {
         int count[] = new int[1];
