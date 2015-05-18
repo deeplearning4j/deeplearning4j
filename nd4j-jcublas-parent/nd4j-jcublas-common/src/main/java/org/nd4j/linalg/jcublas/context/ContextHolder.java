@@ -19,8 +19,8 @@
 
 package org.nd4j.linalg.jcublas.context;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 import com.google.common.collect.*;
 
@@ -37,6 +37,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 
 import org.nd4j.linalg.factory.Nd4j;
+import org.springframework.core.io.ClassPathResource;
 
 import static jcuda.driver.JCudaDriver.*;
 
@@ -59,9 +60,11 @@ public class ContextHolder {
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
     private Table<CUcontext,String,cudaStream_t> cudaStreams = HashBasedTable.create();
     private Map<String, cublasHandle> handleMap = new HashMap<>();
+    private List<Integer> bannedDevices;
     private int numDevices = 0;
     private static ContextHolder INSTANCE;
-    
+    public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
+
     private ContextHolder(){
         getNumDevices();
     }
@@ -73,6 +76,18 @@ public class ContextHolder {
     public static ContextHolder getInstance() {
         if(INSTANCE == null) {
             INSTANCE = new ContextHolder();
+            Properties props = new Properties();
+            try {
+                props.load(new ClassPathResource("/cudafunctions.properties").getInputStream());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            //set the properties to be accessible globally
+            for(String pair : props.stringPropertyNames())
+                System.getProperties().put(pair,props.getProperty(pair));
+
+
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -89,7 +104,20 @@ public class ContextHolder {
         cuDeviceGetCount(count);
         numDevices = count[0];
         if(numDevices < 1)
-           numDevices = 1;
+            numDevices = 1;
+        bannedDevices = new ArrayList<>();
+        String props = System.getProperty(DEVICES_TO_USE, "-1");
+        String[] split = props.split(",");
+        //Should only be used in multi device scenarios; otherwise always use one device
+        if(split.length > 1)
+            for(String s : split) {
+                Integer i = Integer.parseInt(s);
+                if(i >= 0)
+                    bannedDevices.add(Integer.parseInt(s));
+
+            }
+
+
     }
 
 
@@ -112,6 +140,9 @@ public class ContextHolder {
             Integer device =  threadNameToDeviceNumber.get(Thread.currentThread().getName());
             if(device == null) {
                 device = Nd4j.getRandom().nextInt(numDevices);
+                //reroute banned devices
+                while(bannedDevices.contains(device))
+                    device = Nd4j.getRandom().nextInt(numDevices);
                 threadNameToDeviceNumber.put(Thread.currentThread().getName(),device);
                 return device;
             }
@@ -174,25 +205,25 @@ public class ContextHolder {
      * thread
      */
     public synchronized CUstream getStream() {
-    	Thread currentThread = Thread.currentThread();
-    	CUcontext ctx = getContext(getDeviceForThread());
-    	CUstream stream = contextStreams.get(ctx, currentThread.getName());
-    	
-    	if(stream == null) {
-    		stream = new CUstream();
-    		checkResult(JCudaDriver.cuCtxSetCurrent(ctx));
-    		checkResult(JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT));
-    		contextStreams.put(ctx, currentThread.getName(), stream);
-    	}
-    	
-    	return stream;
+        Thread currentThread = Thread.currentThread();
+        CUcontext ctx = getContext(getDeviceForThread());
+        CUstream stream = contextStreams.get(ctx, currentThread.getName());
+
+        if(stream == null) {
+            stream = new CUstream();
+            checkResult(JCudaDriver.cuCtxSetCurrent(ctx));
+            checkResult(JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT));
+            contextStreams.put(ctx, currentThread.getName(), stream);
+        }
+
+        return stream;
     }
 
-	private void checkResult(int result) {
-		if (result != CUresult.CUDA_SUCCESS) {
-		    throw new CudaException("Failed to create a stream: "+ CUresult.stringFor(result));
-		}
-	}
+    private void checkResult(int result) {
+        if (result != CUresult.CUDA_SUCCESS) {
+            throw new CudaException("Failed to create a stream: "+ CUresult.stringFor(result));
+        }
+    }
 
     /**
      * Retrieve a context for use with the current thread
@@ -201,7 +232,7 @@ public class ContextHolder {
      * @return the t
      */
     public  synchronized CUcontext getContext(int deviceToUse) {
-        
+
         CUcontext ctx = deviceIDContexts.get(deviceToUse);
         if(ctx == null) {
             ctx = new CUcontext();

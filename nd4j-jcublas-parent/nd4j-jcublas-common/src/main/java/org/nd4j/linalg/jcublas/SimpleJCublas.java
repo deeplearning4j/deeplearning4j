@@ -117,6 +117,7 @@ public class SimpleJCublas {
             System.err.println(deviceProperties.toFormattedString());
             return;
         }
+
         int[] version = new int[1];
         JCudaDriver.cuCtxGetApiVersion(ContextHolder.getInstance().getContext(), version);
 
