@@ -39,6 +39,7 @@ public class IrisUtils {
         List<String> outcomeTypes = new ArrayList<>();
         double[][] outcomes = new double[lines.size()][3];
         int putCount = 0;
+
         for(int i = from; i < to; i++) {
             String line = lines.get(i);
             String[] split = line.split(",");
