@@ -952,7 +952,7 @@ public class KernelLauncher {
 
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
-            
+
             if (arg instanceof Pointer)
             {
                 Pointer argPointer = (Pointer)arg;
@@ -972,7 +972,7 @@ public class KernelLauncher {
                 Short value = (Short)arg;
                 Pointer pointer = Pointer.to(new short[]{value});
                 kernelParameters[i] = pointer;
-               // logger.info("argument " + i + " type is Short");
+                // logger.info("argument " + i + " type is Short");
             }
             else if (arg instanceof Integer)
             {
@@ -1047,7 +1047,7 @@ public class KernelLauncher {
         ));
 
         syncContext();
-
+        JCudaDriver.cuStreamSynchronize(stream);
 
     }
 
@@ -1056,9 +1056,9 @@ public class KernelLauncher {
      * Syncs the current context for the thread.
      */
     public void syncContext() {
-    	checkResult(JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext()));
-    	checkResult(JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0));
-    	checkResult(JCudaDriver.cuCtxSynchronize());
+        checkResult(JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext()));
+        checkResult(JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0));
+        checkResult(JCudaDriver.cuCtxSynchronize());
     }
 
     /**
@@ -1070,7 +1070,7 @@ public class KernelLauncher {
      */
     public static void checkResult(int cuResult) {
         if (cuResult != CUresult.CUDA_SUCCESS)
-        throw new CudaException(CUresult.stringFor(cuResult));
+            throw new CudaException(CUresult.stringFor(cuResult));
 
     }
 

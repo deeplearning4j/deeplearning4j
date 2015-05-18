@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -50,10 +51,13 @@ public class TestMultipleThreads {
 						int total = 10;
 						int right = 0;
 						for(int x = 0; x< total; x++) {
+                            StopWatch watch = new StopWatch();
+                            watch.start();
 							INDArray actual = array.dup().mmul(array).mmul(array).div(array).div(array);
+                            watch.stop();
+                            System.out.println("MMUL took " + watch.getTime());
 							if(expected.equals(actual)) right++;
-							System.out.println("Another one right");
-						}
+					}
 						
 						if(total == right)
 							correct.incrementAndGet();
