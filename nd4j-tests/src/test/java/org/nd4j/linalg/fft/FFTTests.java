@@ -71,7 +71,6 @@ public  class FFTTests extends BaseNd4jTest {
 
     @Test
     public void testWithOffset() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
         INDArray swapped = n.swapAxes(n.shape().length - 1, 1);
         INDArray firstSlice = swapped.slice(0).slice(0);

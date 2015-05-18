@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +35,7 @@ public class TestMultipleThreads {
 	
 	@Test
 	public void testMultipleThreads() throws InterruptedException {
-		int numThreads = 50;
+		int numThreads = 10;
 		final INDArray array = Nd4j.rand(3000, 3000);
 		final INDArray expected = array.dup().mmul(array).mmul(array).div(array).div(array);
 		final AtomicInteger correct = new AtomicInteger();
@@ -46,14 +47,17 @@ public class TestMultipleThreads {
 			executors.execute(new Runnable() {
 				@Override
 				public void run() {
-					try
-					{
-						int total = 10000;
+					try {
+						int total = 10;
 						int right = 0;
-						for(int x = 0; x<total; x++) {
+						for(int x = 0; x< total; x++) {
+                            StopWatch watch = new StopWatch();
+                            watch.start();
 							INDArray actual = array.dup().mmul(array).mmul(array).div(array).div(array);
-							if(expected.equals(actual)) right++;						
-						}
+                            watch.stop();
+                            System.out.println("MMUL took " + watch.getTime());
+							if(expected.equals(actual)) right++;
+					}
 						
 						if(total == right)
 							correct.incrementAndGet();

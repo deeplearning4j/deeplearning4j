@@ -20,14 +20,12 @@
 package org.nd4j.linalg;
 
 
-import static org.junit.Assert.assertNotEquals;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,7 +44,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 /**
  * NDArrayTests
@@ -593,7 +590,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testAddMatrix() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray five = Nd4j.ones(5);
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5, 2);
@@ -732,6 +728,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{5,1,1});
         assertEquals(expected, test);
     }
+
+
 
 
     @Test

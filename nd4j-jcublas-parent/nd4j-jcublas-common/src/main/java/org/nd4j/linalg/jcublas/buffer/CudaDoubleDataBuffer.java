@@ -236,8 +236,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         this.elementSize = Sizeof.DOUBLE;
         hostBuffer = ByteBuffer.allocate(length*elementSize);
         hostBuffer.order(ByteOrder.nativeOrder());
-        hostPointer = Pointer.to(hostBuffer);
-        
         setData(arr);
     }
 

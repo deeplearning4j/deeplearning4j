@@ -26,6 +26,7 @@ import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 
 /**
  * Wraps the allocation
@@ -66,11 +67,12 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	public CublasPointer(JCudaBuffer buffer) {
 		super(buffer.getDevicePointer());
 		this.buffer = buffer;
-		SimpleJCublas.checkResult(JCuda.cudaMemcpy(
-				buffer.getDevicePointer()
-                , buffer.getHostPointer()
-                , buffer.length() * buffer.getElementSize()
-                , cudaMemcpyKind.cudaMemcpyHostToDevice));
+		SimpleJCublas.checkResult(
+				JCuda.cudaMemcpyAsync(
+                        buffer.getDevicePointer()
+                        , buffer.getHostPointer()
+                        , buffer.length() * buffer.getElementSize()
+                        , cudaMemcpyKind.cudaMemcpyHostToDevice, ContextHolder.getInstance().getCudaStream()));
 	}
 	
 	/**
@@ -86,11 +88,12 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 		buffer = (JCudaBuffer)array.data();
 		
 		// Copy the data to the device
-		SimpleJCublas.checkResult(JCuda.cudaMemcpy(
+		SimpleJCublas.checkResult(
+                JCuda.cudaMemcpyAsync(
                 buffer.getDevicePointer()
                 , buffer.getHostPointer()
                 , buffer.getElementSize() * buffer.length()
-                , cudaMemcpyKind.cudaMemcpyHostToDevice));
+                , cudaMemcpyKind.cudaMemcpyHostToDevice, ContextHolder.getInstance().getCudaStream()));
 	}
 
 }

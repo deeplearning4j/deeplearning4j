@@ -44,6 +44,8 @@ import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
 
+import javax.naming.Context;
+
 /**
  * Simple abstraction for jcuda.jcublas operations
  *
@@ -189,7 +191,7 @@ public class SimpleJCublas {
         CublasPointer cCPointer = new CublasPointer(C);
 
 
-        
+
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
                 cublasOperation.CUBLAS_OP_N,
@@ -199,10 +201,10 @@ public class SimpleJCublas {
                 cAPointer,
                 A.rows(),
                 cBPointer,
-                1,
+                A.majorStride(),
                 Pointer.to(new double[]{beta}),
                 cCPointer,
-                1);
+                C.majorStride());
 
         sync();
 
@@ -710,31 +712,31 @@ public class SimpleJCublas {
      * @return
      */
     public static int iamax(INDArray x) {
-
-
-
         CublasPointer xCPointer = new CublasPointer(x);
         Pointer result;
+        sync();
         if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             float[] ret = new float[1];
             result = Pointer.to(ret);
             JCublas2.cublasIsamax(
                     ContextHolder.getInstance().getHandle(),
-                    x.length(),
+                    x.length() * x.data().getElementSize(),
                     xCPointer,
-                    x.majorStride(),result);
-
+                    1,result);
+            ContextHolder.syncStream();
+            sync();
             return (int) (ret[0]- 1);
         }
         else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             double[] ret = new double[1];
             result = Pointer.to(ret);
+            sync();
             JCublas2.cublasIdamax(
                     ContextHolder.getInstance().getHandle(),
                     x.length(),
                     xCPointer,
-                    x.majorStride(), result);
-
+                    1, result);
+            sync();
             return (int) (ret[0] - 1);
         }
 
@@ -1349,7 +1351,13 @@ public class SimpleJCublas {
         CublasPointer xCPointer = new CublasPointer(x);
         CublasPointer yCPointer = new CublasPointer(y);
 
-        JCublas2.cublasDaxpy(ContextHolder.getInstance().getHandle(),x.length(), Pointer.to(new double[]{alpha}), xCPointer, x.majorStride(), yCPointer, y.majorStride());
+        JCublas2.cublasDaxpy(
+                ContextHolder.getInstance().getHandle(),x.length()
+                , Pointer.to(new double[]{alpha})
+                , xCPointer
+                , x.majorStride()
+                , yCPointer
+                , y.majorStride());
 
         sync();
 

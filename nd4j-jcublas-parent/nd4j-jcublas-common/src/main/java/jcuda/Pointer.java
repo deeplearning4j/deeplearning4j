@@ -475,8 +475,7 @@ public class Pointer extends NativePointerObject
      *
      * @param other The other Pointer
      */
-    protected Pointer(Pointer other)
-    {
+    protected Pointer(Pointer other) {
         super(other.getNativePointer());
         this.buffer = other.buffer;
         this.pointers = other.pointers;

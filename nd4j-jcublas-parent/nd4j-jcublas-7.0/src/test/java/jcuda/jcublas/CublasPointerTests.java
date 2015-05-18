@@ -34,7 +34,7 @@ public class CublasPointerTests {
 	@Test
 	public void testAllocateAndCopyBackToHost() throws Exception {
 		
-		INDArray test = Nd4j.rand(5,5).linearView();
+		INDArray test = Nd4j.rand(5,5);
 		
 		CublasPointer p = new CublasPointer(test);
 		CublasPointer p1 = new CublasPointer((JCudaBuffer)test.data());
@@ -55,13 +55,13 @@ public class CublasPointerTests {
 	 */
 	@Test
 	public void testColumnOffsettingCopyBackToHost() throws Exception {
-		for(int i = 0; i<100; i++) {
+		for(int i = 0; i < 100; i++) {
 			INDArray test = Nd4j.rand(i,i);
 			
 			INDArray testDupe = test.dup();
 			
 			// Create an offsetted set of pointers and copy to and from device, this should copy back to the same offset it started at.
-			for(int x = 0; x< i; x++) {
+			for(int x = 0; x < i; x++) {
 				INDArray test2 = test.getRow(x);
 				CublasPointer p1 = new CublasPointer(test2);
 				p1.copyToHost();

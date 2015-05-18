@@ -952,7 +952,7 @@ public class KernelLauncher {
 
         for (int i = 0; i < args.length; i++) {
             Object arg = args[i];
-            
+
             if (arg instanceof Pointer)
             {
                 Pointer argPointer = (Pointer)arg;
@@ -972,7 +972,7 @@ public class KernelLauncher {
                 Short value = (Short)arg;
                 Pointer pointer = Pointer.to(new short[]{value});
                 kernelParameters[i] = pointer;
-               // logger.info("argument " + i + " type is Short");
+                // logger.info("argument " + i + " type is Short");
             }
             else if (arg instanceof Integer)
             {
@@ -1047,7 +1047,7 @@ public class KernelLauncher {
         ));
 
         syncContext();
-
+        JCudaDriver.cuStreamSynchronize(stream);
 
     }
 
@@ -1056,9 +1056,9 @@ public class KernelLauncher {
      * Syncs the current context for the thread.
      */
     public void syncContext() {
-    	checkResult(JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext()));
-    	checkResult(JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0));
-    	checkResult(JCudaDriver.cuCtxSynchronize());
+        checkResult(JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext()));
+        checkResult(JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0));
+        checkResult(JCudaDriver.cuCtxSynchronize());
     }
 
     /**
@@ -1068,12 +1068,10 @@ public class KernelLauncher {
      * @param cuResult The result
      * @throws CudaException if the result is not CUresult.CUDA_SUCCESS
      */
-    public static void checkResult(int cuResult)
-    {
+    public static void checkResult(int cuResult) {
         if (cuResult != CUresult.CUDA_SUCCESS)
-        {
             throw new CudaException(CUresult.stringFor(cuResult));
-        }
+
     }
 
 
@@ -1095,38 +1093,33 @@ public class KernelLauncher {
      */
     private static String preparePtxFile(
             String cuFileName, boolean forceRebuild, String ... nvccArguments)
-            throws IOException
-    {
+            throws IOException {
         logger.info("Preparing PTX for \n"+cuFileName);
 
         File cuFile = new File(cuFileName);
         if (!cuFile.exists())
-        {
-            throw new CudaException("Input file not found: "+cuFileName);
-        }
+
+            throw new CudaException("Input file not found: " + cuFileName);
+
 
         // Replace the file extension with "ptx"
         String ptxFileName = null;
         int lastIndex = cuFileName.lastIndexOf('.');
         if (lastIndex == -1)
-        {
             ptxFileName = cuFileName + ".ptx";
-        }
+
         else
-        {
             ptxFileName = cuFileName.substring(0, lastIndex)+".ptx";
-        }
+
 
         // Return if the file already exists and should not be rebuilt
         File ptxFile = new File(ptxFileName);
-        if (ptxFile.exists() && !forceRebuild)
-        {
+        if (ptxFile.exists() && !forceRebuild) {
             long cuLastModified = cuFile.lastModified();
             long ptxLastModified = ptxFile.lastModified();
             if (cuLastModified < ptxLastModified)
-            {
                 return ptxFileName;
-            }
+
         }
 
         // Build the command line
@@ -1147,25 +1140,23 @@ public class KernelLauncher {
         String outputMessage =
                 new String(toByteArray(process.getInputStream()));
         int exitValue = 0;
-        try
-        {
+        try {
             exitValue = process.waitFor();
         }
-        catch (InterruptedException e)
-        {
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new CudaException(
                     "Interrupted while waiting for nvcc output", e);
         }
 
         logger.info("nvcc process exitValue "+exitValue);
-        if (exitValue != 0)
-        {
+        if (exitValue != 0) {
             logger.error("errorMessage:\n"+errorMessage);
             logger.error("outputMessage:\n"+outputMessage);
             throw new CudaException(
                     "Could not create .ptx file: "+errorMessage);
         }
+
         return ptxFileName;
     }
 

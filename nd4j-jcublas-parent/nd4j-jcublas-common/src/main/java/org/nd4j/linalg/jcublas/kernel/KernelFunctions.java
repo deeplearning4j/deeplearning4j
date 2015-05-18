@@ -108,7 +108,7 @@ public class KernelFunctions {
      * @param blocks           the number of blocks to launch the kernel
      * @param threadsPerBlock  the number of threads per block
      * @param kernelParameters the parameters
-     * @param dataType         the data type ot use
+     * @param dataType         the data type to use
      */
     public static  void invoke(int blocks, int threadsPerBlock, String functionName,String dataType,Object...kernelParameters) {
 

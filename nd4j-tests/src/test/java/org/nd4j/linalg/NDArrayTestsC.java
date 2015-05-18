@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -110,6 +111,9 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     }
 
+
+
+
     @Test
     public void testOtherReshape() {
         INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
@@ -141,14 +145,11 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
     @Test
     public void testExecSubArray() {
         INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
-        System.out.println(nd);
 
         INDArray sub = nd.subArray(new int[]{0,1}, new int[]{2,2}, new int[]{3,1});
-        System.out.println(sub);
-
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
         assertEquals(Nd4j.create(new double[][]{
-                {4,5},{7,8}
+                {4,7},{5,8}
         }),sub);
 
     }
@@ -852,7 +853,6 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testAddMatrix() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray five = Nd4j.ones(5);
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5, 2);
