@@ -74,7 +74,7 @@ public class LayerFactories {
             return org.deeplearning4j.nn.api.Layer.Type.RECURRENT;
         else if(layerFactory instanceof RecursiveAutoEncoderLayerFactory)
             return org.deeplearning4j.nn.api.Layer.Type.RECURSIVE;
-        else if(layerFactory instanceof OutputLayer || layerFactory instanceof PretrainLayerFactory)
+        else if(layerFactory instanceof DefaultLayerFactory || layerFactory instanceof PretrainLayerFactory)
             return org.deeplearning4j.nn.api.Layer.Type.FEED_FORWARD;
 
         throw new IllegalArgumentException("Unknown layer type");
