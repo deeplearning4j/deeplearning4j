@@ -787,10 +787,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /**
+         * Build the multi layer network
+         * based on this neural network and
+         * overr ridden parameters
+         * @return the configuration to build
+         */
         public MultiLayerConfiguration build() {
-            if(layerwise.size() != hiddenLayerSizes.length + 1)
-                throw new IllegalStateException("Number of hidden layers mut be equal to hidden layer sizes + 1");
-
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++) {
                 if(confOverrides.get(i) != null)
