@@ -55,6 +55,7 @@ import static jcuda.driver.JCudaDriver.*;
 public class ContextHolder {
 
     private Map<Integer,CUdevice> devices = new HashMap<>();
+    private Map<Integer,GpuInformation> info = new HashMap<>();
     private Map<Integer, CUcontext> deviceIDContexts = new HashMap<>();
     private Map<String,Integer> threadNameToDeviceNumber = new HashMap<>();
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
@@ -295,6 +296,7 @@ public class ContextHolder {
     private void createContext(CUcontext context,int deviceNumber) {
         CUdevice device = new CUdevice();
         int result = cuDeviceGet(device, deviceNumber);
+        info.put(deviceNumber,new GpuInformation(device));
         if (result != CUresult.CUDA_SUCCESS) {
             throw new CudaException(
                     "Failed to obtain a device: "+
@@ -333,6 +335,15 @@ public class ContextHolder {
         }
 
         return device;
+    }
+
+    /**
+     * Get the information for a particular device
+     * @param cUdevice the device to get the info for
+     * @return the information for a particular device
+     */
+    public  GpuInformation getInfoFor(int cUdevice) {
+        return info.get(cUdevice);
     }
 
     /**
