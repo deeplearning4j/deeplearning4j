@@ -93,6 +93,16 @@ public class Point implements INDArray {
 		this.array = array;
 	}
 
+	@Override
+	public int stride(int dimension) {
+		return array.stride(dimension);
+	}
+
+	@Override
+	public int elementStride() {
+		return array.elementStride();
+	}
+
 	public boolean isCleanedUp() {
 		return cleanedUp;
 	}
