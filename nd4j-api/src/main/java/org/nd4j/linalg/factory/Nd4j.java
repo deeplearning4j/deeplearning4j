@@ -175,7 +175,9 @@ public class Nd4j {
      *
      * @return the current random generator
      */
-    public static org.nd4j.linalg.api.rng.Random getRandom() {
+    public static synchronized  org.nd4j.linalg.api.rng.Random getRandom() {
+        if(random == null)
+            throw new IllegalStateException("Illegal random not found");
         return random;
     }
 
