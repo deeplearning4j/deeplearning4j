@@ -29,7 +29,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
                         , ContextHolder.getInstance().getCudaStream()));
 
 
-        return buf2.getHostPointer();
+        return buf2.getDevicePointer();
     }
 
     @Override
@@ -40,7 +40,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
                 JCuda.cudaHostAlloc(
                         hostPointer
                         , buffer.getElementSize() * buffer.length()
-                        , JCuda.cudaHostAllocDefault));
+                        , JCuda.cudaHostAllocMapped));
         return devicePointerInfo;
     }
 
