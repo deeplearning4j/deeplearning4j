@@ -39,7 +39,7 @@ Parameters:
 	- default = new NormalDistribution(1e-3,1)
 - **dropOut**: *double*, randomly drop a certain amount of active units/nodes to zero (no activation)
 	- default = 0
-- **featureMapSize**: *int[]*, size of feature space sample - similar to kernal
+- **featureMapSize**: *int[]*, size of feature space sample - similar to kernel
 	- default = {2,2}
 - **filterSize**: *int[]* ,creates tensor data structure for layers = feature maps x number of channels x  feature map space (rows & cols of input data matrix)
 	- default = {2,2,2,2}
@@ -57,7 +57,7 @@ Parameters:
 - **iterations**: *int*, num training iteractions
 - **k**: *int*, number steps of a Markov chain to compute a guess as part of the contrastive divergence in RBM layerwise pre-training
 	- default = 1
-- **kernal**: *int[]* size of kernal (used in convolutions)
+- **kernel**: *int[]* size of kernel (used in convolutions)
 	- default = 5
 - **l1**: *double*, L1 regularization
 	- default = 0.0
