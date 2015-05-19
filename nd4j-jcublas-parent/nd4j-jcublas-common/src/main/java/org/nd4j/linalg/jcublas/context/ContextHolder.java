@@ -467,16 +467,14 @@ public class ContextHolder {
     public synchronized  void destroy() {
         if(shutdown.get())
             return;
-     
+
         for(cudaStream_t stream : cudaStreams.values()) {
             JCuda.cudaStreamDestroy(stream);
         }
         for(CUstream stream : contextStreams.values()) {
             cuStreamDestroy(stream);
         }
-        for(CUcontext ctx : deviceIDContexts.values()) {
-            cuCtxDestroy(ctx);
-        }
+     
 
         shutdown.set(true);
 
