@@ -22,6 +22,7 @@ package org.nd4j.linalg.jcublas.context;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.*;
 
@@ -74,6 +75,7 @@ public class ContextHolder {
     public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
     private boolean confCalled = false;
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
+    private AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private ContextHolder(){
         getNumDevices();
@@ -459,7 +461,14 @@ public class ContextHolder {
         return deviceIDContexts;
     }
 
-    public synchronized void destroy() {
+    /**
+     * Shutdown this instance
+     */
+    public synchronized  void destroy() {
+        if(shutdown.get())
+            return;
+        for(CUcontext context : deviceIDContexts.values())
+            JCudaDriver.cuCtxDestroy(context);
 
         for(cudaStream_t stream : cudaStreams.values()) {
             JCuda.cudaStreamDestroy(stream);
@@ -470,6 +479,8 @@ public class ContextHolder {
         for(CUcontext ctx : deviceIDContexts.values()) {
             cuCtxDestroy(ctx);
         }
+
+        shutdown.set(true);
 
 
 
