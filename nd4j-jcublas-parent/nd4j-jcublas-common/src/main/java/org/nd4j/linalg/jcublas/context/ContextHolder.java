@@ -39,6 +39,8 @@ import jcuda.runtime.cudaStream_t;
 import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import static jcuda.driver.JCudaDriver.*;
@@ -69,6 +71,7 @@ public class ContextHolder {
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
     private boolean confCalled = false;
+    private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
 
     private ContextHolder(){
         getNumDevices();
@@ -175,6 +178,8 @@ public class ContextHolder {
         int count[] = new int[1];
         cuDeviceGetCount(count);
         numDevices = count[0];
+        log.debug("Found " + numDevices + " gpus");
+
         if(numDevices < 1)
             numDevices = 1;
         bannedDevices = new ArrayList<>();
