@@ -165,6 +165,10 @@ public class ContextHolder {
         confCalled = true;
     }
 
+    public void setNumDevices(int numDevices) {
+        this.numDevices = numDevices;
+    }
+
     /**
      * Get the configuration the given device
      * @param device the device to get the configuration for
@@ -180,7 +184,7 @@ public class ContextHolder {
         int count[] = new int[1];
         cuDeviceGetCount(count);
         numDevices = count[0];
-        System.out.println("Found " + numDevices + " gpus");
+        log.debug("Found " + numDevices + " gpus");
 
         if(numDevices < 1)
             numDevices = 1;
