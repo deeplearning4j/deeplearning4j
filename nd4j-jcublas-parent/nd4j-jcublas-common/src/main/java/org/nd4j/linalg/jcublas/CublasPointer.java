@@ -67,7 +67,6 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	public CublasPointer(JCudaBuffer buffer) {
 		super(buffer.getDevicePointer());
 		this.buffer = buffer;
-		buffer.copyToHost();
 		SimpleJCublas.checkResult(
 				JCuda.cudaMemcpyAsync(
                         buffer.getDevicePointer()
