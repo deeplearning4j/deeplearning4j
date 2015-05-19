@@ -112,6 +112,10 @@ public class ContextHolder {
     }
 
 
+    public int deviceNum() {
+        return numDevices;
+    }
+
     /**
      * Get the configuration for the current
      * device and thread

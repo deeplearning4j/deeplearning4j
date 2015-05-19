@@ -49,7 +49,7 @@ public class TestMultipleThreads {
 		final INDArray expected = array.dup().mmul(array).mmul(array).div(array).div(array);
 		final AtomicInteger correct = new AtomicInteger();
 		final CountDownLatch latch = new CountDownLatch(numThreads);
-		System.out.println("Running on " + ContextHolder.getInstance().getDevices().size());
+		System.out.println("Running on " + ContextHolder.getInstance().deviceNum());
 		ExecutorService executors = Executors.newCachedThreadPool();
 		
 		for(int x = 0; x< numThreads; x++) {
