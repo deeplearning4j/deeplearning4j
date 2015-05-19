@@ -36,6 +36,7 @@ import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 
+import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.springframework.core.io.ClassPathResource;
@@ -67,10 +68,10 @@ public class ContextHolder {
     private Map<Integer,DeviceConfiguration> confs = new HashMap<>();
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
+    private boolean confCalled = false;
 
     private ContextHolder(){
         getNumDevices();
-        configure();
     }
 
     /**
@@ -80,6 +81,8 @@ public class ContextHolder {
     public static ContextHolder getInstance() {
         if(INSTANCE == null) {
             INSTANCE = new ContextHolder();
+            INSTANCE.configure();
+
             Properties props = new Properties();
             try {
                 props.load(new ClassPathResource("/cudafunctions.properties").getInputStream());
@@ -99,30 +102,64 @@ public class ContextHolder {
                 }
             }));
         }
+
+
+
         return INSTANCE;
     }
+
+
+    /**
+     * Get the configuration for the current
+     * device and thread
+     * @return the current configuration for
+     * the given device and thread
+     */
+    public  DeviceConfiguration getConf() {
+        return getConf(getDeviceForThread());
+    }
+
+
+    /**
+     * Get the memory strategy for the current thread
+     * and device
+     * @return
+     */
+    public  MemoryStrategy getMemoryStrategy() {
+        return getConf().getMemoryStrategy();
+    }
+
 
     /**
      * Configure the given information
      * based on the device
      */
     public void configure() {
-         for(int i = 0; i < numDevices; i++) {
-             ClassPathResource confFile = new ClassPathResource("devices/" + i);
-             if(confFile.exists()) {
-                Properties props = new Properties();
-                 try {
-                     props.load(confFile.getInputStream());
-                     confs.put(i,new DeviceConfiguration(i,props));
-                 } catch (IOException e) {
-                    throw new RuntimeException(e);
-                 }
+        if(confCalled)
+            return;
 
-             }
-             else
+        if(numDevices == 0) {
+            getNumDevices();
+        }
+
+        for(int i = 0; i < numDevices; i++) {
+            ClassPathResource confFile = new ClassPathResource("devices/" + i);
+            if(confFile.exists()) {
+                Properties props = new Properties();
+                try {
+                    props.load(confFile.getInputStream());
+                    confs.put(i,new DeviceConfiguration(i,props));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+            else
                 confs.put(i,new DeviceConfiguration(i));
 
-         }
+        }
+
+        confCalled = true;
     }
 
     /**
@@ -141,6 +178,8 @@ public class ContextHolder {
         if(numDevices < 1)
             numDevices = 1;
         bannedDevices = new ArrayList<>();
+
+
         String props = System.getProperty(DEVICES_TO_USE, "-1");
         String[] split = props.split(",");
         //Should only be used in multi device scenarios; otherwise always use one device
@@ -275,6 +314,7 @@ public class ContextHolder {
                 initialize(ctx,device);
                 CUdevice currDevice = createDevice(ctx, device);
                 devices.put(device,currDevice);
+                info.put(device, new GpuInformation(currDevice));
                 deviceIDContexts.put(device,ctx);
             }
 
@@ -330,7 +370,6 @@ public class ContextHolder {
     private void createContext(CUcontext context,int deviceNumber) {
         CUdevice device = new CUdevice();
         int result = cuDeviceGet(device, deviceNumber);
-        info.put(deviceNumber,new GpuInformation(device));
         if (result != CUresult.CUDA_SUCCESS) {
             throw new CudaException(
                     "Failed to obtain a device: "+
@@ -377,6 +416,7 @@ public class ContextHolder {
      * @return the information for a particular device
      */
     public  GpuInformation getInfoFor(int cUdevice) {
+        getContext(cUdevice);
         return info.get(cUdevice);
     }
 

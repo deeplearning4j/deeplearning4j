@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jcuda.CudaException;
@@ -77,6 +78,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected AtomicBoolean freed = new AtomicBoolean(false);
     static AtomicLong allocated = new AtomicLong();
     static AtomicLong totalAllocated = new AtomicLong();
+    protected AtomicInteger referenceCount = new AtomicInteger(0);
 
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
 
@@ -219,9 +221,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             allocated.addAndGet(devicePointerLength);
             totalAllocated.addAndGet(devicePointerLength);
             log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
-            int device = ContextHolder.getInstance().getDeviceForThread();
-            devicePointerInfo = (DevicePointerInfo) ContextHolder.getInstance().getConf(device).getMemoryStrategy().alloc(this);
-            pointersToContexts.put(Thread.currentThread().getName(),devicePointerInfo);
+            Pointer hostPointer = new Pointer();
+            devicePointerInfo = new DevicePointerInfo(hostPointer, devicePointerLength);
+            checkResult(JCuda.cudaHostAlloc(hostPointer, elementSize * length, JCuda.cudaHostAllocPortable));
+            pointersToContexts.put(Thread.currentThread().getName(), devicePointerInfo);
             freed.set(false);
         }
 
@@ -381,11 +384,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         if(devicePointerInfo != null && !freed.get()) {
             allocated.addAndGet(-devicePointerInfo.getLength());
             log.trace("freeing {} bytes, total: {}", devicePointerInfo.getLength(), allocated.get());
-           ContextHolder.getInstance().getConf(ContextHolder.getInstance().getDeviceForThread()).getMemoryStrategy().free(this);
-            devicePointerInfo = null;
+            ContextHolder.getInstance().getConf(ContextHolder.getInstance().getDeviceForThread()).getMemoryStrategy().free(this);
             freed.set(true);
             pointersToContexts.remove(Thread.currentThread().getName());
             return true;
+
+
         }
         return false;
     }
@@ -394,13 +398,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void copyToHost() {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
         if(devicePointerInfo != null) {
-            checkResult(
-                    JCuda.cudaMemcpyAsync(
-                            getHostPointer()
-                            , devicePointerInfo.getPointer()
-                            , devicePointerInfo.getLength()
-                            , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                            , ContextHolder.getInstance().getCudaStream()));
+            ContextHolder.getInstance().getMemoryStrategy().alloc(this);
+
         }
     }
 

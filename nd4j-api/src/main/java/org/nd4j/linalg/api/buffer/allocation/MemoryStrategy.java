@@ -13,6 +13,17 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
  */
 public interface MemoryStrategy {
 
+
+
+
+    /**
+     * Copy data to native or gpu
+     * @param copy the buffer to copy
+     * @return a pointer representing
+     * the copied data
+     */
+    Object copyToHost(DataBuffer copy);
+
     /**
      * Allocate memory for the given buffer
      * @param buffer the buffer to allocate for

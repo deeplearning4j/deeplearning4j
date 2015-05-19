@@ -58,7 +58,7 @@ public class MemoryStrategies {
 
 
     /**
-     * Get the strategy for a given mdoe
+     * Get the strategy for a given mode
      * @param mode the mode to get the strategy for
      * @return the strategy for the given mode
      */
