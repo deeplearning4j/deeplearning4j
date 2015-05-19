@@ -52,6 +52,7 @@ import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.dim3;
 
+import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -626,16 +627,10 @@ public class KernelLauncher {
      * Sync the context for the current thread.
      */
     public static  void setContext() {
-        int status = JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
-        if(status != CUresult.CUDA_SUCCESS) {
-            throw new IllegalStateException("Unable to set context");
-        }
-
-
-        checkResult(JCudaDriver.cuCtxSynchronize());
-        checkResult(JCuda.cudaDeviceSynchronize());
-
-
+        JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
+        JCuda.cudaSetDevice(ContextHolder.getInstance().getDeviceForThread());
+        JCudaDriver.cuCtxSynchronize();
+        JCuda.cudaDeviceSynchronize();
     }
 
     /**
@@ -651,8 +646,7 @@ public class KernelLauncher {
      * @throws CudaException If the specified function can not 
      * be obtained from the module of this KernelLauncher.
      */
-    public KernelLauncher forFunction(String functionName)
-    {
+    public KernelLauncher forFunction(String functionName) {
         KernelLauncher kernelLauncher = new KernelLauncher();
         kernelLauncher.module = this.module;
         kernelLauncher.initFunction(functionName);
@@ -669,8 +663,8 @@ public class KernelLauncher {
     private void initModule(byte moduleData[])
     {
         module = new CUmodule();
-        checkResult(cuModuleLoadDataEx(module, Pointer.to(moduleData),
-                0, new int[0], Pointer.to(new int[0])));
+        cuModuleLoadDataEx(module, Pointer.to(moduleData),
+                0, new int[0], Pointer.to(new int[0]));
     }
 
     /**
@@ -946,7 +940,7 @@ public class KernelLauncher {
      * was given, or one of the internal functions for setting
      * up and executing the kernel failed.
      */
-    public synchronized void call(Object ... args) {
+    public  void call(Object ... args) {
 
         Pointer kernelParameters[] = new Pointer[args.length];
 
@@ -1037,17 +1031,16 @@ public class KernelLauncher {
             }
         }
 
-        setContext();
 
-        checkResult(cuLaunchKernel(function,
+        cuLaunchKernel(function,
                 gridSize.x, gridSize.y, gridSize.z,
                 blockSize.x, blockSize.y, blockSize.z,
                 sharedMemSize, stream,
                 Pointer.to(kernelParameters), null
-        ));
+        );
 
-        syncContext();
-        JCudaDriver.cuStreamSynchronize(stream);
+        ContextHolder.syncStream();
+        SimpleJCublas.sync();
 
     }
 
@@ -1056,23 +1049,11 @@ public class KernelLauncher {
      * Syncs the current context for the thread.
      */
     public void syncContext() {
-        checkResult(JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext()));
-        checkResult(JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(),0));
-        checkResult(JCudaDriver.cuCtxSynchronize());
+        JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
+        JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(), 0);
+        JCudaDriver.cuCtxSynchronize();
     }
 
-    /**
-     * If the given result is not CUresult.CUDA_SUCCESS, then this method
-     * throws a CudaException with the error message for the given result.
-     *
-     * @param cuResult The result
-     * @throws CudaException if the result is not CUresult.CUDA_SUCCESS
-     */
-    public static void checkResult(int cuResult) {
-        if (cuResult != CUresult.CUDA_SUCCESS)
-            throw new CudaException(CUresult.stringFor(cuResult));
-
-    }
 
 
     /**
@@ -1206,6 +1187,19 @@ public class KernelLauncher {
         return baos.toByteArray();
     }
 
+    @Override
+    public String toString() {
+        return "KernelLauncher{" +
+                "deviceNumber=" + deviceNumber +
+                ", context=" + context +
+                ", module=" + module +
+                ", function=" + function +
+                ", blockSize=" + blockSize +
+                ", gridSize=" + gridSize +
+                ", sharedMemSize=" + sharedMemSize +
+                ", stream=" + stream +
+                '}';
+    }
 }
 
 

@@ -55,7 +55,7 @@ public class CublasPointerTests {
 	 */
 	@Test
 	public void testColumnOffsettingCopyBackToHost() throws Exception {
-		for(int i = 0; i < 100; i++) {
+		for(int i = 1; i < 100; i++) {
 			INDArray test = Nd4j.rand(i,i);
 			
 			INDArray testDupe = test.dup();

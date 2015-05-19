@@ -116,7 +116,7 @@ public class KernelFunctions {
         //dot<<<blocksPerGrid,threadsPerBlock>>>( dev_a, dev_b,dev_partial_c );
         CUstream stream = ContextHolder.getInstance().getStream();
         int sharedMemSize = threadsPerBlock * (dataType.equals("float") ? Sizeof.FLOAT : Sizeof.DOUBLE);
-       KernelLauncher launcher = KernelFunctionLoader.launcher(functionName, dataType);
+        KernelLauncher launcher = KernelFunctionLoader.launcher(functionName, dataType);
         if(launcher == null)
             throw new IllegalArgumentException("Launcher for function " + functionName + " and data type " + dataType + " does not exist!");
 
@@ -126,6 +126,7 @@ public class KernelFunctions {
                 .setSharedMemSize(sharedMemSize)
                 .call(kernelParameters);
 
+        ContextHolder.syncStream();
     }
 
 

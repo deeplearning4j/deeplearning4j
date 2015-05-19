@@ -61,7 +61,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         float[] d2 = d.asFloat();
-        assertArrayEquals(d1, d2, 1e-1f);
+        assertArrayEquals(getFailureMessage(),d1, d2, 1e-1f);
 
     }
 
@@ -70,7 +70,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         float[] d1 = new float[]{1, 2, 3, 4};
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
-        assertEquals(d, d2);
+        assertEquals(getFailureMessage(), d, d2);
     }
 
     @Test
@@ -80,7 +80,7 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         d.put(0, 0.0);
         float[] result = new float[]{0, 2, 3, 4};
         d1 = d.asFloat();
-        assertArrayEquals(d1, result, 1e-1f);
+        assertArrayEquals(getFailureMessage(), d1, result, 1e-1f);
     }
 
 
@@ -89,12 +89,12 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(0, 3);
         float[] data = new float[]{1, 2, 3};
-        assertArrayEquals(get, data, 1e-1f);
+        assertArrayEquals(getFailureMessage(), get, data, 1e-1f);
 
 
         float[] get2 = buffer.asFloat();
         float[] allData = buffer.getFloatsAt(0, buffer.length());
-        assertArrayEquals(get2, allData, 1e-1f);
+        assertArrayEquals(getFailureMessage(),get2, allData, 1e-1f);
 
 
     }
@@ -105,27 +105,30 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();
         float[] get = buffer.getFloatsAt(1, 3);
         float[] data = new float[]{2, 3, 4};
-        assertArrayEquals(get, data, 1e-1f);
+        assertArrayEquals(getFailureMessage(),get, data, 1e-1f);
 
 
         float[] allButLast = new float[]{2, 3, 4, 5};
 
         float[] allData = buffer.getFloatsAt(1, buffer.length());
-        assertArrayEquals(allButLast, allData, 1e-1f);
+        assertArrayEquals(getFailureMessage(),allButLast, allData, 1e-1f);
 
 
     }
+
 
 
     @Test
     public void testAssign() {
-        INDArray oneTwo = Nd4j.create(new double[]{1, 2});
-        INDArray threeFour = Nd4j.create(new double[]{3, 4});
-        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4);
-        INDArray test = Nd4j.create(4);
-        test.data().assign(oneTwo.data(), threeFour.data());
-        assertEquals(oneThroughFour, test);
+        DataBuffer assertion = Nd4j.createBuffer(new double[]{1, 2, 3});
+        DataBuffer one = Nd4j.createBuffer(new double[]{1});
+        DataBuffer twoThree = Nd4j.createBuffer(new double[]{2,3});
+        DataBuffer blank = Nd4j.createBuffer(new double[]{0, 0, 0});
+        blank.assign(one,twoThree);
+        assertEquals(assertion, blank);
     }
+
+
 
     @Override
     public char ordering() {

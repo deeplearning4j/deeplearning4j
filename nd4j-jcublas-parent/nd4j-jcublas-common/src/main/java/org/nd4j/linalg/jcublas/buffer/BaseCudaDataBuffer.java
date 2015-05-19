@@ -19,10 +19,8 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.driver.CUresult;
 import jcuda.jcublas.JCublas2;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -31,7 +29,6 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
@@ -74,6 +71,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected boolean isPersist = false;
     protected AtomicBoolean freed = new AtomicBoolean(false);
     protected AtomicInteger referenceCount = new AtomicInteger(0);
+    private Pointer hostPointer;
 
     /**
      * Base constructor
@@ -90,11 +88,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         hostBuffer.order(ByteOrder.nativeOrder());
     }
 
-    public static void checkResult(int cuResult) {
-        if (cuResult != CUresult.CUDA_SUCCESS) {
-            throw new CudaException(CUresult.stringFor(cuResult));
-        }
-    }
+
 
     @Override
     public ByteBuffer getHostBuffer() {
@@ -108,7 +102,16 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public Pointer getHostPointer() {
-        return Pointer.to(hostBuffer);
+        if(hostPointer == null)
+            hostPointer = Pointer.to(hostBuffer);
+        return hostPointer;
+    }
+
+    @Override
+    public Pointer getHostPointer(int offset) {
+        if(hostPointer == null)
+            hostPointer = Pointer.to(hostBuffer);
+        return hostPointer.withByteOffset(offset * getElementSize());
     }
 
     @Override
@@ -191,7 +194,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     @Override
-    public Pointer getDevicePointer() {
+    public Pointer getDevicePointer(int stride, int offset) {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
 
         if(devicePointerInfo == null) {
@@ -199,7 +202,12 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             allocated.addAndGet(devicePointerLength);
             totalAllocated.addAndGet(devicePointerLength);
             log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
-            devicePointerInfo = (DevicePointerInfo) ContextHolder.getInstance().getConf().getMemoryStrategy().alloc(this);
+            devicePointerInfo = (DevicePointerInfo)
+                    ContextHolder.getInstance()
+                    .getConf()
+                    .getMemoryStrategy()
+                    .alloc(this,stride,offset);
+
             pointersToContexts.put(Thread.currentThread().getName(), devicePointerInfo);
             freed.set(false);
         }
@@ -295,6 +303,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                 , getHostPointer().withByteOffset(offset)
                 , 1, ContextHolder.getInstance().getCudaStream());
 
+        ContextHolder.syncStream();
+
     }
 
     /**
@@ -370,13 +380,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void copyToHost() {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
         if (devicePointerInfo != null) {
-            checkResult(JCuda.cudaMemcpyAsync(
-                            getHostPointer()
-                            , devicePointerInfo.getPointer()
-                            , devicePointerInfo.getLength()
-                            , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                            , ContextHolder.getInstance().getCudaStream()));
+            ContextHolder.syncStream();
+
+            JCublas2.cublasGetVectorAsync(
+                    length()
+                    , getElementSize()
+                    , devicePointerInfo.getPointer()
+                    , 1
+                    , getHostPointer(devicePointerInfo.getOffset())
+                    , devicePointerInfo.getStride()
+                    , ContextHolder.getInstance().getCudaStream());
+            ContextHolder.syncStream();
+
+
         }
+
     }
 
     @Override
@@ -452,47 +470,24 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     @Override
     public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
-        //
+        if (offsets.length != strides.length || strides.length != buffers.length)
+            throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
+        int length = 0;
+        for (int i = 0; i < buffers.length; i++)
+            length += buffers[i].length();
+
+        if (length != n)
+            throw new IllegalArgumentException("Buffers must fill up specified length " + n);
 
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
-            DataBuffer buffer = buffers[i];
-            if (buffer instanceof JCudaBuffer) {
-                JCudaBuffer buff = (JCudaBuffer) buffer;
-
-                try (CublasPointer buffPointer = new CublasPointer(buff)) {
-
-                    if (buff.dataType() == DataBuffer.Type.DOUBLE) {
-
-                        JCublas2.cublasDcopy(
-                                ContextHolder.getInstance().getHandle(),
-                                buff.length()
-                                , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
-                                , strides[i]
-                                , getDevicePointer().withByteOffset(count * buff.getElementSize())
-                                , 1);
-
-
-                        count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
-                    } else {
-                        JCublas2.cublasScopy(
-                                ContextHolder.getInstance().getHandle(),
-                                buff.length()
-                                , buffPointer.withByteOffset(buff.getElementSize() * offsets[i])
-                                , strides[i]
-                                , getDevicePointer().withByteOffset(count * buff.getElementSize())
-                                , 1);
-
-                        count += (buff.length() - 1 - offsets[i]) / strides[i] + 1;
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException("Could not run cublas command", e);
-                }
-            } else
-                throw new IllegalArgumentException("Only jcuda data buffers allowed");
+            for (int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
+                put(count++, buffers[i].getDouble(j));
+            }
         }
-        copyToHost();
-        freeDevicePointer();
+
+        if (count != n)
+            throw new IllegalArgumentException("Strides and offsets didn't match up to length " + n);
     }
 
     @Override
@@ -586,6 +581,20 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         this.pointersToContexts = pointersToContexts;
     }
 
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("[");
+        for(int i = 0; i < length(); i++) {
+            sb.append(getDouble(i));
+            if(i < length() - 1)
+                sb.append(",");
+        }
+        sb.append("]");
+        return sb.toString();
+
+    }
+
     /**
      * Provides information about a device pointer
      *
@@ -594,10 +603,24 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public static class DevicePointerInfo {
         final private Pointer pointer;
         final private long length;
+        final private int stride;
+        final private int offset;
 
-        public DevicePointerInfo(Pointer pointer, long length) {
+        public DevicePointerInfo(Pointer pointer, long length,int stride,int offset) {
             this.pointer = pointer;
             this.length = length;
+            this.stride = stride;
+            this.offset = offset;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
+
+
+
+        public int getStride() {
+            return stride;
         }
 
         public Pointer getPointer() {

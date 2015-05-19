@@ -27,8 +27,11 @@ public interface MemoryStrategy {
     /**
      * Allocate memory for the given buffer
      * @param buffer the buffer to allocate for
+     * @param stride the stride
+     * @param offset the offset used for the buffer
+     *               on allocation
      */
-    Object alloc(DataBuffer buffer);
+    Object alloc(DataBuffer buffer, int stride, int offset);
 
     /**
      * Free the buffer wrt the

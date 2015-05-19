@@ -300,10 +300,8 @@ public class JCudaDriver
      * @throws CudaException If exceptions have been enabled and
      * the given result code is not CUresult.CUDA_SUCCESS
      */
-    private static int checkResult(int result)
-    {
-        if (exceptionsEnabled && result != CUresult.CUDA_SUCCESS)
-        {
+    private static int checkResult(int result) {
+        if (exceptionsEnabled && result != CUresult.CUDA_SUCCESS) {
             throw new CudaException(CUresult.stringFor(result));
         }
         return result;

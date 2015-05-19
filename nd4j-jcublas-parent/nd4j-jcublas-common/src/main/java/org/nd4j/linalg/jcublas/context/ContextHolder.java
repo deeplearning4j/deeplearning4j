@@ -222,6 +222,8 @@ public class ContextHolder {
      */
     public static void syncStream() {
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+        JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+
     }
 
     /**
@@ -360,21 +362,11 @@ public class ContextHolder {
      * context.
      */
     private void initialize(CUcontext context,int deviceNumber) {
-        int result = cuInit(0);
-        if (result != CUresult.CUDA_SUCCESS) {
-            throw new CudaException(
-                    "Failed to initialize the driver: "+
-                            CUresult.stringFor(result));
-        }
+        cuInit(0);
 
         // Try to obtain the current context
-        result = cuCtxGetCurrent(context);
-        if (result != CUresult.CUDA_SUCCESS)
-        {
-            throw new CudaException(
-                    "Failed to obtain the current context: "+
-                            CUresult.stringFor(result));
-        }
+        cuCtxGetCurrent(context);
+
 
         // If the context is 'null', then a new context
         // has to be created.
@@ -475,6 +467,8 @@ public class ContextHolder {
             cuStreamDestroy(stream);
         }
 
+        for(cublasHandle handle : handleMap.values())
+            JCublas2.cublasDestroy(handle);
 
         shutdown.set(true);
 

@@ -22,6 +22,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 import jcuda.CudaException;
 import jcuda.Pointer;
 import jcuda.Sizeof;
+import jcuda.jcublas.JCublas;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaError;
 import jcuda.runtime.cudaMemcpyKind;
@@ -29,7 +30,9 @@ import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
@@ -66,6 +69,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     
     @Override
     public Op exec(Op op) {
+        if(op.x() instanceof LinearViewNDArray || op.x() instanceof LinearViewComplexNDArray)
+            return super.exec(op);
+
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t);
@@ -350,13 +356,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
 
-	    INDArray result = null;
-	   
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-            result = Nd4j.create(2);
-        } else {
-            result = Nd4j.create(2);
-        }
+	    INDArray result = Nd4j.create(2);
+
 
         if (op.y() != null) {
 
@@ -375,6 +376,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultOp(op, result)) {
 	            invokeFunction(op, kParams.getKernelParameters());
+                kParams.close();
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -394,8 +396,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultOp(op, result)) {
-	            
-	            invokeFunction(op, kParams.getKernelParameters());
+                invokeFunction(op, kParams.getKernelParameters());
+                kParams.close();
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -410,7 +412,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
         int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
-        KernelFunctions.invoke(blocks,threads,functionName,getType(op),kernelParams);
+        KernelFunctions.invoke(
+                blocks
+                ,threads
+                ,functionName
+                ,getType(op)
+                ,kernelParams);
 
     }
     
@@ -438,11 +445,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
-	            
-	            invokeFunction(op, kParams.getKernelParameters());
+                invokeFunction(op, kParams.getKernelParameters());
             } catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
+
 
 
         } else {
@@ -461,9 +468,14 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
 	            invokeFunction(op, kParams.getKernelParameters());
-            } catch(Exception e) {
+                kParams.close();
+            }
+
+            catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
+
+
 
 
         }
@@ -507,6 +519,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         	
         	try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
         		invokeFunction(op, kParams.getKernelParameters());
+                kParams.close();
         	} catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -525,6 +538,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
         		invokeFunction(op, kParams.getKernelParameters());
+                kParams.close();
         	} catch(Exception e) {
             	throw new RuntimeException("Could not execute kernel", e);
             }
@@ -535,14 +549,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     }
     
-    public static int checkResult(int result)
-    {
-        if (result != cudaError.cudaSuccess)
-        {
-            throw new CudaException(cudaError.stringFor(result));
-        }
-        return result;
-    }
+
 
 
 }

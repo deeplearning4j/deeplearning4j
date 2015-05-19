@@ -52,12 +52,17 @@ public interface JCudaBuffer extends DataBuffer {
      * @return the pointer for this buffer
      */
     Pointer getHostPointer();
-    
+
     /**
-     * Get a device pointer for this buffer
-     * @return
+     * Get the host pointer with the given offset
+     * note that this will automatically
+     * multiply the specified offset
+     * by the element size
+     * @param offset the offset (NOT MULTIPLIED BY ELEMENT SIZE) to index in to the pointer at
+     * @return the pointer at the given byte offset
      */
-    Pointer getDevicePointer();
+    Pointer getHostPointer(int offset);
+
 
     /**
      * Frees the device pointer if it exists
@@ -69,7 +74,16 @@ public interface JCudaBuffer extends DataBuffer {
      * copies all the allocated device memory to the host memory
      */
     void copyToHost();
-    
+
+    /**
+     * Get the device pointer with the given offset and stride
+     * @param stride the stride for the device pointer
+     * @param offset the offset for the device pointer
+     * @return the device pointer with the given
+     * offset and stride
+     */
+    Pointer getDevicePointer(int stride, int offset);
+
     /**
      * Sets the data for this pointer
      * from the data in this pointer

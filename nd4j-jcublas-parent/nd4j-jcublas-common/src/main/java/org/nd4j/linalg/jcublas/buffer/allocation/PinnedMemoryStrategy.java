@@ -20,27 +20,30 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
         Map<String,BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
-        BaseCudaDataBuffer.checkResult(
-                JCuda.cudaMemcpyAsync(
-                        buf2.getHostPointer()
-                        , devicePointerInfo.getPointer()
-                        , devicePointerInfo.getLength()
-                        , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                        , ContextHolder.getInstance().getCudaStream()));
+        JCuda.cudaMemcpyAsync(
+                buf2.getHostPointer()
+                , devicePointerInfo.getPointer()
+                , devicePointerInfo.getLength()
+                , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                , ContextHolder.getInstance().getCudaStream());
 
 
         return buf2.getHostPointer();
     }
 
     @Override
-    public Object alloc(DataBuffer buffer) {
+    public Object alloc(DataBuffer buffer,int stride,int offset) {
         Pointer hostPointer = new Pointer();
-        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = new BaseCudaDataBuffer.DevicePointerInfo(hostPointer, buffer.length());
-        BaseCudaDataBuffer.checkResult(
-                JCuda.cudaHostAlloc(
-                        hostPointer
-                        , buffer.getElementSize() * buffer.length()
-                        , JCuda.cudaHostAllocMapped));
+        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = new BaseCudaDataBuffer.DevicePointerInfo(
+                hostPointer
+                , buffer.length() * buffer.getElementSize()
+                ,stride
+                ,offset);
+
+        JCuda.cudaHostAlloc(
+                hostPointer
+                , buffer.getElementSize() * buffer.length()
+                , JCuda.cudaHostAllocDefault);
         return devicePointerInfo;
     }
 
@@ -49,7 +52,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
         Map<String,BaseCudaDataBuffer.DevicePointerInfo> pointers = buf2.getPointersToContexts();
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName());
-        BaseCudaDataBuffer.checkResult(JCuda.cudaFreeHost(devicePointerInfo.getPointer()));
+        JCuda.cudaFreeHost(devicePointerInfo.getPointer());
 
 
     }

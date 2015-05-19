@@ -26,30 +26,29 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
 
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
         if(devicePointerInfo != null) {
-            BaseCudaDataBuffer.checkResult(
                     JCuda.cudaMemcpyAsync(
                             buf2.getHostPointer()
                             , devicePointerInfo.getPointer()
                             , devicePointerInfo.getLength()
                             , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                            , ContextHolder.getInstance().getCudaStream()));
+                            , ContextHolder.getInstance().getCudaStream());
         }
 
         return buf2.getHostPointer();
     }
 
     @Override
-    public Object alloc(DataBuffer buffer) {
+    public Object alloc(DataBuffer buffer,int stride,int offset) {
         Pointer hostData = new Pointer();
         JCuda.cudaMalloc(hostData,buffer.length() * buffer.getElementSize());
-        return new BaseCudaDataBuffer.DevicePointerInfo(hostData,buffer.getElementSize() * buffer.length());
+        return new BaseCudaDataBuffer.DevicePointerInfo(hostData,buffer.getElementSize() * buffer.length(),stride,offset);
     }
 
     @Override
     public void free(DataBuffer buffer) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName());
-        BaseCudaDataBuffer.checkResult(JCuda.cudaFree(devicePointerInfo.getPointer()));
+        JCuda.cudaFree(devicePointerInfo.getPointer());
 
     }
 }

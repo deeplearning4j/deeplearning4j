@@ -87,7 +87,7 @@ public class LinearViewNDArray  extends BaseNDArray {
 
     @Override
     public int majorStride() {
-        return 1;
+        return wrapped.majorStride();
     }
 
     @Override
@@ -149,6 +149,20 @@ public class LinearViewNDArray  extends BaseNDArray {
         int idx =  i - offset;
 
         return currVector.getDouble(idx);
+    }
+
+
+
+
+    @Override
+    public boolean equals(Object o) {
+        return wrapped.equals(o);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return wrapped.hashCode();
     }
 
     @Override

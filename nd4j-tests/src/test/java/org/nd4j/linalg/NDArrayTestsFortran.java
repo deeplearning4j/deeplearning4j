@@ -40,13 +40,14 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * NDArrayTests
+ * NDArrayTests for fortran ordering
  *
  * @author Adam Gibson
  */
@@ -100,7 +101,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testReadWrite() throws Exception {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray write = Nd4j.linspace(1,4,4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
@@ -127,7 +127,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testReadWriteDouble() throws Exception {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray write = Nd4j.linspace(1, 4, 4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
@@ -231,7 +230,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testDivide() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray two = Nd4j.create(new float[]{2, 2, 2, 2});
         INDArray div = two.div(two);
         assertEquals(Nd4j.ones(4), div);
@@ -246,10 +244,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testSigmoid() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
         INDArray sigmoid = Transforms.sigmoid(n, false);
+        ContextHolder.syncStream();
         assertEquals(assertion, sigmoid);
     }
 
@@ -267,7 +265,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testCosineSim() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
 
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
@@ -283,15 +280,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testScal() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        double assertion = 2;
+        float assertion = 2;
         INDArray answer = Nd4j.create(new double[]{2, 4, 6, 8});
         INDArray scal = Nd4j.getBlasWrapper().scal(assertion, answer);
         assertEquals(answer, scal);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
-        double assertion2 = 5.0;
+        float assertion2 = 5.0f;
         INDArray answer2 = Nd4j.create(new double[]{10, 20});
         INDArray scal2 = Nd4j.getBlasWrapper().scal(assertion2, row1);
         assertEquals(answer2, scal2);
@@ -582,7 +578,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
         INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
         INDArray copy = Nd4j.create(28, 28);
-        Nd4j.getBlasWrapper().copy(twoByThree.linearView(), copy.linearView());
+        Nd4j.getBlasWrapper().copy(twoByThree, copy);
         assertEquals(twoByThree,copy);
     }
 
@@ -677,7 +673,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testLogDouble() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray linspace = Nd4j.linspace(1, 6, 6);
         INDArray log = Transforms.log(linspace);
         INDArray assertion = Nd4j.create(new double[]{0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906, 1.6094379124341005, 1.791759469228055});
@@ -877,9 +872,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testAddScalar() {
-        INDArray div = Nd4j.valueArrayOf(new int[]{4}, 4);
+        INDArray div = Nd4j.valueArrayOf(new int[]{1,4}, 4);
         INDArray rdiv = div.add(1);
-        INDArray answer = Nd4j.valueArrayOf(new int[]{4}, 5);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{1,4}, 5);
         assertEquals(answer, rdiv);
     }
 
@@ -887,14 +882,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testRdivScalar() {
         INDArray div = Nd4j.valueArrayOf(2, 4);
         INDArray rdiv = div.rdiv(1);
-        INDArray answer = Nd4j.valueArrayOf(new int[]{4}, 0.25);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{1,4}, 0.25);
         assertEquals(rdiv, answer);
     }
 
     @Test
     public void testRDivi() {
-        INDArray n2 = Nd4j.valueArrayOf(new int[]{2}, 4);
-        INDArray n2Assertion = Nd4j.valueArrayOf(new int[]{2}, 0.5);
+        INDArray n2 = Nd4j.valueArrayOf(new int[]{1,2}, 4);
+        INDArray n2Assertion = Nd4j.valueArrayOf(new int[]{1,2}, 0.5);
         INDArray nRsubi = n2.rdivi(2);
         assertEquals(n2Assertion, nRsubi);
     }
@@ -946,8 +941,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
         NDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
-        INDArray ones = Nd4j.ones(2,2).mul(0.25);
-        INDArray mul = get.mul(ones);
+        INDArray zeroPointTwoFive = Nd4j.ones(2,2).mul(0.25);
+        INDArray mul = get.mul(zeroPointTwoFive);
         INDArray assertion = Nd4j.create(new double[][]{
                 {0.25, 1.25},
                 {0.5, 1.5}

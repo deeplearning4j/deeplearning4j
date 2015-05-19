@@ -2584,7 +2584,7 @@ public abstract class BaseNDArray implements INDArray {
             return other.muli(getDouble(0), result);
         }
 
-        Nd4j.getExecutioner().exec(new MulOp(this, other, result, length()));
+        Nd4j.getExecutioner().exec(new MulOp(linearView(), other.linearView(), result.linearView(), length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
