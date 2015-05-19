@@ -51,6 +51,8 @@ import java.util.*;
  */
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
+
+    private String customLossFunction;
     private double sparsity = 0;
     private boolean useAdaGrad = true;
     private double lr = 1e-1;
@@ -119,7 +121,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public NeuralNetConfiguration() {}
 
 
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, int numLineSearchIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, boolean constrainGradientToUnitNorm, Random rng, Distribution dist, StepFunction stepFunction, Layer layer, List<String> variables, int nIn, int nOut, String activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, int k, int[] weightShape, int[] filterSize, int[] stride, int kernel, int batchSize, boolean minimize, ConvolutionDownSampleLayer.ConvolutionType convolutionType) {
+    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, int numLineSearchIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, boolean constrainGradientToUnitNorm, Random rng, Distribution dist, StepFunction stepFunction, Layer layer, List<String> variables, int nIn, int nOut, String activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, int k, int[] weightShape, int[] filterSize, int[] stride, int kernel, int batchSize, boolean minimize, ConvolutionDownSampleLayer.ConvolutionType convolutionType,String customLossFunction) {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
@@ -155,6 +157,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.batchSize = batchSize;
         this.minimize = minimize;
         this.convolutionType = convolutionType;
+        this.customLossFunction = customLossFunction;
     }
 
     public NeuralNetConfiguration(double sparsity,
@@ -189,7 +192,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int batchSize,
                                   int numLineSearchIterations,
                                   boolean minimize,
-                                  Layer layer,ConvolutionDownSampleLayer.ConvolutionType convolutionType,double l1) {
+                                  Layer layer,ConvolutionDownSampleLayer.ConvolutionType convolutionType,double l1,String customLossFunction) {
+        this.customLossFunction = customLossFunction;
         this.minimize = minimize;
         this.convolutionType = convolutionType;
         this.numLineSearchIterations = numLineSearchIterations;
@@ -236,6 +240,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
+        this.customLossFunction = neuralNetConfiguration.customLossFunction;
         this.minimize = neuralNetConfiguration.minimize;
         this.layer = neuralNetConfiguration.layer;
         this.numLineSearchIterations = neuralNetConfiguration.numLineSearchIterations;
@@ -274,6 +279,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.dist = new NormalDistribution(0.01,1);
 
         this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
+    }
+
+    public String getCustomLossFunction() {
+        return customLossFunction;
+    }
+
+    public void setCustomLossFunction(String customLossFunction) {
+        this.customLossFunction = customLossFunction;
     }
 
     /**
@@ -934,8 +947,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int batchSize = 0;
         private int numLineSearchIterations = 100;
         private boolean minimize = false;
+        private String customLossFunction;
+
         private ConvolutionDownSampleLayer.ConvolutionType convolutionType = ConvolutionDownSampleLayer.ConvolutionType.MAX;
         private double l1 = 0.0;
+
+
+        public Builder customLossFunction(String customLossFunction) {
+            this.customLossFunction = customLossFunction;
+            return this;
+        }
 
         public Builder l1(double l1) {
             this.l1 = l1;
@@ -1108,7 +1129,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  rng,
                     dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
-                    ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1);
+                    ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1,customLossFunction);
             ret.useAdaGrad = this.adagrad;
             ret.stepFunction = stepFunction;
             return ret;
