@@ -39,6 +39,7 @@ import jcuda.runtime.cudaStream_t;
 
 import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.JCublasBackend;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +86,7 @@ public class ContextHolder {
     public static ContextHolder getInstance() {
         if(INSTANCE == null) {
             INSTANCE = new ContextHolder();
+
             INSTANCE.configure();
 
             Properties props = new Properties();
@@ -264,7 +266,7 @@ public class ContextHolder {
      * and the given device
      * @return the context for the given device and thread
      */
-    public   CUcontext getContext() {
+    public  CUcontext getContext() {
         return getContext(getDeviceForThread());
     }
 
