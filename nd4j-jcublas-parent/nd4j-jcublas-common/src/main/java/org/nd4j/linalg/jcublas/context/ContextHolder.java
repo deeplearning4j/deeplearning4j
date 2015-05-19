@@ -180,7 +180,7 @@ public class ContextHolder {
         int count[] = new int[1];
         cuDeviceGetCount(count);
         numDevices = count[0];
-        log.debug("Found " + numDevices + " gpus");
+        System.out.println("Found " + numDevices + " gpus");
 
         if(numDevices < 1)
             numDevices = 1;
