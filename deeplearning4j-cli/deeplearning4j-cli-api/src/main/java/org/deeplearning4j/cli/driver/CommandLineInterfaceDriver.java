@@ -33,11 +33,10 @@ public class CommandLineInterfaceDriver {
 
 	public static void main(String [ ] args) {
 
+        log.info(String.valueOf(args.length));
+        log.info(String.valueOf("train".equals(args[0])));
+        log.info("boolean above is whether the first arg is train");
 		if ( args.length < 1 ) {
-            System.out.println(args.length);
-            System.out.println("args length less than 1");
-            System.out.println("train".equals(args[0]));
-            System.out.println("boolean above is whether the first arg is train");
             printUsage();
 
         }
@@ -50,7 +49,7 @@ public class CommandLineInterfaceDriver {
 			log.info("[DONE] - Test Mode");
 		}
 		else
-            System.out.println("args length greater than 1; args[0] not equal to 'train'");
+            log.info("args length greater than 1; args[0] not equal to 'train'");
 			printUsage();
 
 
