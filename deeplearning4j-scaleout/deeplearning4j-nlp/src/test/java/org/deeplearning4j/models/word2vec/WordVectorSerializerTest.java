@@ -18,6 +18,13 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.junit.Before;
@@ -25,13 +32,6 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 9/21/14.
@@ -42,24 +42,26 @@ public class WordVectorSerializerTest {
 
     @Before
     public void before() throws Exception {
-        if(textFile == null)
+        if(textFile == null) {
             textFile = new ClassPathResource("vec.txt").getFile();
-        if(binaryFile == null)
+        }
+        if(binaryFile == null) {
             binaryFile = new ClassPathResource("vec.bin").getFile();
+        }
         FileUtils.deleteDirectory(new File("word2vec-index"));
 
     }
 
     @Test
     public void testLoaderText() throws IOException {
-        Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile.getAbsolutePath(), false);
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile, false);
         assertEquals(5,vec.vocab().numWords());
         assertTrue(vec.vocab().numWords() > 0);
     }
 
     @Test
     public void testLoaderBinary() throws  IOException {
-        Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile.getAbsolutePath(), true);
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         assertEquals(2,vec.vocab().numWords());
 
     }
@@ -70,9 +72,10 @@ public class WordVectorSerializerTest {
         String url = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz";
         String path = "GoogleNews-vectors-negative300.bin.gz";
         File toDl = new File(path);
-        if(!toDl.exists())
+        if(!toDl.exists()) {
             FileUtils.copyURLToFile(new URL(url),toDl);
-        Word2Vec vec = WordVectorSerializer.loadGoogleModel(toDl.getAbsolutePath(), true);
+        }
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(toDl, true);
         assertEquals(3000000,vec.vocab().numWords());
 
     }
