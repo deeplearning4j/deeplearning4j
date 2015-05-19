@@ -37,10 +37,6 @@ public class TestMultipleThreads {
 
 
 
-    @Test
-	public void testGpuRouting() {
-
-    }
 
 	@Test
 	public void testMultipleThreads() throws InterruptedException {
