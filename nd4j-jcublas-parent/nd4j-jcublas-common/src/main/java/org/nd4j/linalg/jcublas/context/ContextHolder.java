@@ -175,6 +175,7 @@ public class ContextHolder {
     }
 
     private void getNumDevices() {
+        JCudaDriver.setExceptionsEnabled(true);
         JCudaDriver.cuInit(0);
         int count[] = new int[1];
         cuDeviceGetCount(count);
