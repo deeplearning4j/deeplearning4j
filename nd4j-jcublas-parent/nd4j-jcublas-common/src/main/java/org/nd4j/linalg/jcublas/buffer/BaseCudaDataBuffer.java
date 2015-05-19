@@ -199,9 +199,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             allocated.addAndGet(devicePointerLength);
             totalAllocated.addAndGet(devicePointerLength);
             log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
-            Pointer hostPointer = new Pointer();
-            devicePointerInfo = new DevicePointerInfo(hostPointer, devicePointerLength);
-            ContextHolder.getInstance().getConf().getMemoryStrategy().alloc(this);
+            devicePointerInfo = (DevicePointerInfo) ContextHolder.getInstance().getConf().getMemoryStrategy().alloc(this);
             pointersToContexts.put(Thread.currentThread().getName(), devicePointerInfo);
             freed.set(false);
         }
@@ -314,6 +312,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         JCudaBuffer buf = (JCudaBuffer) data;
         set(0, buf.getHostPointer());
     }
+
+
     protected ByteBuffer getBuffer() {
         return getBuffer(0);
     }
@@ -370,8 +370,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void copyToHost() {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
         if (devicePointerInfo != null) {
-            checkResult(
-                    JCuda.cudaMemcpyAsync(
+            checkResult(JCuda.cudaMemcpyAsync(
                             getHostPointer()
                             , devicePointerInfo.getPointer()
                             , devicePointerInfo.getLength()
