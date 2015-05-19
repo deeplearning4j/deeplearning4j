@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Collection;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -33,14 +35,8 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.scaleout.perform.models.word2vec.Word2VecPerformer;
 import org.deeplearning4j.spark.text.BaseSparkTest;
 import org.deeplearning4j.spark.text.TextPipeline;
-import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
 import org.junit.Test;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
-
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * Created by agibsonccc on 1/31/15.
@@ -60,7 +56,7 @@ public class Word2VecTest extends BaseSparkTest {
         Word2Vec word2Vec = new Word2Vec();
         sc.getConf().set(Word2VecPerformer.NEGATIVE, String.valueOf(0));
         Pair<VocabCache,WeightLookupTable> table = word2Vec.train(corpus);
-        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>(table.getSecond(), table.getFirst()));
+        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), table.getFirst()));
         Collection<String> words = vectors.wordsNearest("day", 20);
         assertTrue(words.contains("week"));
     }
@@ -72,8 +68,9 @@ public class Word2VecTest extends BaseSparkTest {
      */
     @Override
     public JavaSparkContext getContext() {
-        if(sc != null)
+        if(sc != null) {
             return sc;
+        }
         // set to test mode
         SparkConf sparkConf = new SparkConf().set(org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecPerformer.NUM_WORDS,"5")
                 .set(Word2VecPerformerVoid.ITERATIONS,"5")
