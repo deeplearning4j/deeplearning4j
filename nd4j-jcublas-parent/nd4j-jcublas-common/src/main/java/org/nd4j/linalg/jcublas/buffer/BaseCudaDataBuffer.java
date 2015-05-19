@@ -19,6 +19,26 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import jcuda.CudaException;
+import jcuda.Pointer;
+import jcuda.Sizeof;
+import jcuda.driver.CUresult;
+import jcuda.jcublas.JCublas2;
+import jcuda.runtime.JCuda;
+import jcuda.runtime.cudaMemcpyKind;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -34,32 +54,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jcuda.CudaException;
-import jcuda.Pointer;
-import jcuda.Sizeof;
-import jcuda.cuComplex;
-import jcuda.cuDoubleComplex;
-import jcuda.driver.CUdeviceptr;
-import jcuda.driver.CUresult;
-import jcuda.jcublas.JCublas;
-import jcuda.jcublas.JCublas2;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
-
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexDouble;
-import org.nd4j.linalg.api.complex.IComplexFloat;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.CublasPointer;
-import org.nd4j.linalg.jcublas.buffer.allocation.MemoryStrategies;
-import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
-import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Base class for a data buffer
  *
@@ -67,6 +61,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
+    static AtomicLong allocated = new AtomicLong();
+    static AtomicLong totalAllocated = new AtomicLong();
+    private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
     protected transient ByteBuffer hostBuffer;
     protected transient Map<String,DevicePointerInfo> pointersToContexts = new ConcurrentHashMap<>();
     protected AtomicBoolean modified = new AtomicBoolean(false);
@@ -76,43 +73,37 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
     protected AtomicBoolean freed = new AtomicBoolean(false);
-    static AtomicLong allocated = new AtomicLong();
-    static AtomicLong totalAllocated = new AtomicLong();
     protected AtomicInteger referenceCount = new AtomicInteger(0);
 
-    private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
-
     /**
-     * Provides information about a device pointer 
-     * @author bam4d
+     * Base constructor
      *
+     * @param length      the length of the buffer
+     * @param elementSize the size of each element
      */
-    public static class DevicePointerInfo {
-        final private Pointer pointer;
-        final private long length;
-
-        public Pointer getPointer() {
-            return pointer;
-        }
-
-        public long getLength() {
-            return length;
-        }
-
-        public DevicePointerInfo(Pointer pointer, long length) {
-            this.pointer = pointer;
-            this.length = length;
-        }
+    public BaseCudaDataBuffer(int length, int elementSize) {
+        if (length <= 0 || elementSize <= 0)
+            throw new IllegalArgumentException("Length was " + length + " but should have been > 0. Element size was " + elementSize + " but should have been >= 4");
+        this.length = length;
+        this.elementSize = elementSize;
+        hostBuffer = ByteBuffer.allocateDirect(getElementSize() * length());
+        hostBuffer.order(ByteOrder.nativeOrder());
     }
 
-    @Override
-    public void setHostBuffer(ByteBuffer hostBuffer) {
-        this.hostBuffer = hostBuffer;
+    public static void checkResult(int cuResult) {
+        if (cuResult != CUresult.CUDA_SUCCESS) {
+            throw new CudaException(CUresult.stringFor(cuResult));
+        }
     }
 
     @Override
     public ByteBuffer getHostBuffer() {
         return hostBuffer;
+    }
+
+    @Override
+    public void setHostBuffer(ByteBuffer hostBuffer) {
+        this.hostBuffer = hostBuffer;
     }
 
     @Override
@@ -128,21 +119,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public boolean isPersist() {
         return isPersist;
-    }
-
-    /**
-     * Base constructor
-     *
-     * @param length      the length of the buffer
-     * @param elementSize the size of each element
-     */
-    public BaseCudaDataBuffer(int length, int elementSize) {
-        if(length <= 0 || elementSize <= 0)
-            throw new IllegalArgumentException("Length was " + length + " but should have been > 0. Element size was " + elementSize + " but should have been >= 4");
-        this.length = length;
-        this.elementSize = elementSize;
-        hostBuffer = ByteBuffer.allocate(getElementSize() * length());
-        hostBuffer.order(ByteOrder.nativeOrder());
     }
 
     @Override
@@ -374,16 +350,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         set(index, 1, from);
     }
 
-    public static void checkResult(int cuResult) {
-        if (cuResult != CUresult.CUDA_SUCCESS) {
-            throw new CudaException(CUresult.stringFor(cuResult));
-        }
-    }
-
     @Override
     public boolean freeDevicePointer() {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
-        if(devicePointerInfo != null && !freed.get()) {
+        if (devicePointerInfo != null && !freed.get()) {
             allocated.addAndGet(-devicePointerInfo.getLength());
             log.trace("freeing {} bytes, total: {}", devicePointerInfo.getLength(), allocated.get());
             ContextHolder.getInstance().getConf(ContextHolder.getInstance().getDeviceForThread()).getMemoryStrategy().free(this);
@@ -399,7 +369,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     @Override
     public void copyToHost() {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
-        if(devicePointerInfo != null) {
+        if (devicePointerInfo != null) {
             checkResult(
                     JCuda.cudaMemcpyAsync(
                             getHostPointer()
@@ -409,7 +379,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                             , ContextHolder.getInstance().getCudaStream()));
         }
     }
-
 
     @Override
     public double[] getDoublesAt(int offset, int length) {
@@ -431,9 +400,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return length;
     }
 
-
-
-
     @Override
     public void put(int i, float element) {
         throw new UnsupportedOperationException();
@@ -451,7 +417,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         throw new UnsupportedOperationException();
     }
 
-
     @Override
     public int getInt(int ix) {
 
@@ -459,13 +424,10 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         return 0;
     }
 
-
-
     @Override
     public void flush() {
         throw new UnsupportedOperationException();
     }
-
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous) {
@@ -499,7 +461,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             if (buffer instanceof JCudaBuffer) {
                 JCudaBuffer buff = (JCudaBuffer) buffer;
 
-                try(CublasPointer buffPointer = new CublasPointer(buff)) {
+                try (CublasPointer buffPointer = new CublasPointer(buff)) {
 
                     if (buff.dataType() == DataBuffer.Type.DOUBLE) {
 
@@ -576,7 +538,6 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     }
 
-
     private void readObject(java.io.ObjectInputStream stream)
             throws IOException, ClassNotFoundException {
         length = stream.readInt();
@@ -590,29 +551,28 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             double[] d = new double[length];
             for(int i = 0; i < d.length; i++)
                 d[i] = stream.readDouble();
-        }
-        else if(dataType() == DataBuffer.Type.FLOAT) {
+        } else if (dataType() == DataBuffer.Type.FLOAT) {
             float[] f = new float[length];
-            for(int i = 0; i < f.length; i++)
+            for (int i = 0; i < f.length; i++)
                 f[i] = stream.readFloat();
-            BaseCudaDataBuffer  buf = (BaseCudaDataBuffer) KernelFunctions.alloc(f);
+            BaseCudaDataBuffer buf = (BaseCudaDataBuffer) KernelFunctions.alloc(f);
             setHostBuffer(buf.getHostBuffer());
         }
     }
 
     @Override
     public boolean equals(Object obj) {
-        if(!(obj instanceof DataBuffer))
+        if (!(obj instanceof DataBuffer))
             return false;
         DataBuffer buffer = (DataBuffer) obj;
-        if(buffer.length() != length())
+        if (buffer.length() != length())
             return false;
-        if(elementSize != buffer.getElementSize())
+        if (elementSize != buffer.getElementSize())
             return false;
 
-        for(int i = 0; i < length(); i++) {
-            double diff = Math.abs(getDouble(i)  - buffer.getDouble(i));
-            if(diff > Nd4j.EPS_THRESHOLD)
+        for (int i = 0; i < length(); i++) {
+            double diff = Math.abs(getDouble(i) - buffer.getDouble(i));
+            if (diff > Nd4j.EPS_THRESHOLD)
                 return false;
         }
         return true;
@@ -625,5 +585,28 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
 
     public void setPointersToContexts(Map<String, DevicePointerInfo> pointersToContexts) {
         this.pointersToContexts = pointersToContexts;
+    }
+
+    /**
+     * Provides information about a device pointer
+     *
+     * @author bam4d
+     */
+    public static class DevicePointerInfo {
+        final private Pointer pointer;
+        final private long length;
+
+        public DevicePointerInfo(Pointer pointer, long length) {
+            this.pointer = pointer;
+            this.length = length;
+        }
+
+        public Pointer getPointer() {
+            return pointer;
+        }
+
+        public long getLength() {
+            return length;
+        }
     }
 }
