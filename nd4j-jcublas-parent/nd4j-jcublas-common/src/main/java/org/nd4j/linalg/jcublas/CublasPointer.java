@@ -67,12 +67,14 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	public CublasPointer(JCudaBuffer buffer) {
 		super(buffer.getDevicePointer());
 		this.buffer = buffer;
+		buffer.copyToHost();
 		SimpleJCublas.checkResult(
 				JCuda.cudaMemcpyAsync(
                         buffer.getDevicePointer()
                         , buffer.getHostPointer()
                         , buffer.length() * buffer.getElementSize()
-                        , cudaMemcpyKind.cudaMemcpyHostToDevice, ContextHolder.getInstance().getCudaStream()));
+                        , cudaMemcpyKind.cudaMemcpyHostToDevice
+						, ContextHolder.getInstance().getCudaStream()));
 	}
 	
 	/**
@@ -86,14 +88,15 @@ public class CublasPointer extends Pointer implements AutoCloseable {
 	public CublasPointer(INDArray array) {
 		super( ((JCudaBuffer)array.data()).getDevicePointer().withByteOffset(array.offset() * (array.data()).getElementSize()));
 		buffer = (JCudaBuffer)array.data();
-		
+
 		// Copy the data to the device
 		SimpleJCublas.checkResult(
                 JCuda.cudaMemcpyAsync(
                 buffer.getDevicePointer()
                 , buffer.getHostPointer()
                 , buffer.getElementSize() * buffer.length()
-                , cudaMemcpyKind.cudaMemcpyHostToDevice, ContextHolder.getInstance().getCudaStream()));
+                , cudaMemcpyKind.cudaMemcpyHostToDevice
+						, ContextHolder.getInstance().getCudaStream()));
 	}
 
 }

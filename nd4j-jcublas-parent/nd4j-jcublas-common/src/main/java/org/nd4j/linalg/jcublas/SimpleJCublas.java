@@ -122,6 +122,9 @@ public class SimpleJCublas {
     }
 
 
+    /**
+     * Sync the device
+     */
     public static void sync() {
         checkResult(JCuda.cudaDeviceSynchronize());
         KernelLauncher.setContext();
