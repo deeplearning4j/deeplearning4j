@@ -358,7 +358,7 @@ public class ContextHolder {
      * context.
      */
     private void initialize(CUcontext context,int deviceNumber) {
-        int result = cuInit(deviceNumber);
+        int result = cuInit(0);
         if (result != CUresult.CUDA_SUCCESS) {
             throw new CudaException(
                     "Failed to initialize the driver: "+
