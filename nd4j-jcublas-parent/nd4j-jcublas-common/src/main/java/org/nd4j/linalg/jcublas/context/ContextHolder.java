@@ -459,7 +459,7 @@ public class ContextHolder {
         return deviceIDContexts;
     }
 
-    public void destroy() {
+    public synchronized void destroy() {
 
         for(cudaStream_t stream : cudaStreams.values()) {
             JCuda.cudaStreamDestroy(stream);
