@@ -141,7 +141,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             throw new IllegalArgumentException("Length was " + length + " but should have been > 0. Element size was " + elementSize + " but should have been >= 4");
         this.length = length;
         this.elementSize = elementSize;
-        hostBuffer = ByteBuffer.allocate(getElementSize() * length());
+        hostBuffer = ByteBuffer.allocateDirect(getElementSize() * length());
         hostBuffer.order(ByteOrder.nativeOrder());
     }
 
