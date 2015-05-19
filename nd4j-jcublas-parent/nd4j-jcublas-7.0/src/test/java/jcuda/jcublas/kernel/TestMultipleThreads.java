@@ -45,7 +45,7 @@ public class TestMultipleThreads {
 	@Test
 	public void testMultipleThreads() throws InterruptedException {
 		int numThreads = 10;
-		final INDArray array = Nd4j.rand(3000, 3000);
+		final INDArray array = Nd4j.rand(300, 300);
 		final INDArray expected = array.dup().mmul(array).mmul(array).div(array).div(array);
 		final AtomicInteger correct = new AtomicInteger();
 		final CountDownLatch latch = new CountDownLatch(numThreads);
