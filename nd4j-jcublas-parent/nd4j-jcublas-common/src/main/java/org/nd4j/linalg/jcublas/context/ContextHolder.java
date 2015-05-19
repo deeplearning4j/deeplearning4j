@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.context;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.*;
 
@@ -58,16 +59,16 @@ import static jcuda.driver.JCudaDriver.*;
  */
 public class ContextHolder {
 
-    private Map<Integer,CUdevice> devices = new HashMap<>();
-    private Map<Integer,GpuInformation> info = new HashMap<>();
-    private Map<Integer, CUcontext> deviceIDContexts = new HashMap<>();
-    private Map<String,Integer> threadNameToDeviceNumber = new HashMap<>();
+    private Map<Integer,CUdevice> devices = new ConcurrentHashMap<>();
+    private Map<Integer,GpuInformation> info = new ConcurrentHashMap<>();
+    private Map<Integer, CUcontext> deviceIDContexts = new ConcurrentHashMap<>();
+    private Map<String,Integer> threadNameToDeviceNumber = new ConcurrentHashMap<>();
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
     private Table<CUcontext,String,cudaStream_t> cudaStreams = HashBasedTable.create();
-    private Map<String, cublasHandle> handleMap = new HashMap<>();
+    private Map<String, cublasHandle> handleMap = new ConcurrentHashMap<>();
     private List<Integer> bannedDevices;
     private int numDevices = 0;
-    private Map<Integer,DeviceConfiguration> confs = new HashMap<>();
+    private Map<Integer,DeviceConfiguration> confs = new ConcurrentHashMap<>();
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
     private boolean confCalled = false;
