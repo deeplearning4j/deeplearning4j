@@ -33,10 +33,14 @@ public class CommandLineInterfaceDriver {
 
 	public static void main(String [ ] args) {
 
-		if ( args.length < 1 )
-			printUsage();
+		if ( args.length < 1 ) {
+            System.out.println(args.length);
+            System.out.println("args length less than 1");
+            System.out.println("train".equals(args[0]));
+            System.out.println("boolean above is whether the first arg is train");
+            printUsage();
 
-
+        }
 		else if ("train".equals( args[0])) {
 
 			String[] vec_params = Arrays.copyOfRange(args, 1, args.length);
@@ -46,7 +50,7 @@ public class CommandLineInterfaceDriver {
 			log.info("[DONE] - Test Mode");
 		}
 		else
-
+            System.out.println("args length greater than 1; args[0] not equal to 'train'");
 			printUsage();
 
 
