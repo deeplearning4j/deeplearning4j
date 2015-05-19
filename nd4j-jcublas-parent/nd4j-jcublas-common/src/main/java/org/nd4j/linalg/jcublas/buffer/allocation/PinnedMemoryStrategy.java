@@ -36,7 +36,11 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
     public Object alloc(DataBuffer buffer) {
         Pointer hostPointer = new Pointer();
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = new BaseCudaDataBuffer.DevicePointerInfo(hostPointer, buffer.length());
-        BaseCudaDataBuffer.checkResult(JCuda.cudaHostAlloc(hostPointer, buffer.getElementSize() * buffer.length(), JCuda.cudaHostAllocPortable));
+        BaseCudaDataBuffer.checkResult(
+                JCuda.cudaHostAlloc(
+                        hostPointer
+                        , buffer.getElementSize() * buffer.length()
+                        , JCuda.cudaHostAllocDefault));
         return devicePointerInfo;
     }
 
