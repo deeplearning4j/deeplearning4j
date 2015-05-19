@@ -3294,7 +3294,7 @@ public class Nd4j {
     /**
      * Initializes nd4j
      */
-    public void initContext() {
+    public synchronized void initContext() {
         try {
             Nd4jBackend backend = Nd4jBackend.load();
             initWithBackend(backend);

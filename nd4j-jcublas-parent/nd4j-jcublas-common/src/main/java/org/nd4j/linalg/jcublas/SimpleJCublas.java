@@ -99,9 +99,8 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
+
         JCublas2.setExceptionsEnabled(true);
-
-
 
         try {
             KernelFunctionLoader.getInstance().load();
