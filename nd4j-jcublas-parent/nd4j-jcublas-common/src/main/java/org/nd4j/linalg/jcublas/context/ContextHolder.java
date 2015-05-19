@@ -229,6 +229,9 @@ public class ContextHolder {
         if(numDevices > 1) {
             Integer device =  threadNameToDeviceNumber.get(Thread.currentThread().getName());
             if(device == null) {
+                org.nd4j.linalg.api.rng.Random random = Nd4j.getRandom();
+                if(random == null)
+                    throw new IllegalStateException("Unable to load random class");
                 device = Nd4j.getRandom().nextInt(numDevices);
                 //reroute banned devices
                 while(bannedDevices != null && bannedDevices.contains(device))
