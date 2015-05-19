@@ -29,7 +29,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
                         , ContextHolder.getInstance().getCudaStream()));
 
 
-        return buf2.getDevicePointer();
+        return buf2.getHostPointer();
     }
 
     @Override
