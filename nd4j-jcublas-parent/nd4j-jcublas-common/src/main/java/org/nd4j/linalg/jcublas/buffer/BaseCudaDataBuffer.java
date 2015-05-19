@@ -137,6 +137,8 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
      * @param elementSize the size of each element
      */
     public BaseCudaDataBuffer(int length, int elementSize) {
+        if(length <= 0 || elementSize <= 0)
+            throw new IllegalArgumentException("Length was " + length + " but should have been > 0. Element size was " + elementSize + " but should have been >= 4");
         this.length = length;
         this.elementSize = elementSize;
         hostBuffer = ByteBuffer.allocate(getElementSize() * length());
@@ -398,8 +400,13 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     public void copyToHost() {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
         if(devicePointerInfo != null) {
-            ContextHolder.getInstance().getMemoryStrategy().alloc(this);
-
+            checkResult(
+                    JCuda.cudaMemcpyAsync(
+                            getHostPointer()
+                            , devicePointerInfo.getPointer()
+                            , devicePointerInfo.getLength()
+                            , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                            , ContextHolder.getInstance().getCudaStream()));
         }
     }
 

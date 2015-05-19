@@ -474,7 +474,7 @@ public class ContextHolder {
         for(CUstream stream : contextStreams.values()) {
             cuStreamDestroy(stream);
         }
-     
+
 
         shutdown.set(true);
 
