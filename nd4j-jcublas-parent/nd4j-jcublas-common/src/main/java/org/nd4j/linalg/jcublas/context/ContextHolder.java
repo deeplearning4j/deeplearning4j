@@ -230,7 +230,7 @@ public class ContextHolder {
             if(device == null) {
                 device = Nd4j.getRandom().nextInt(numDevices);
                 //reroute banned devices
-                while(bannedDevices.contains(device))
+                while(bannedDevices != null && bannedDevices.contains(device))
                     device = Nd4j.getRandom().nextInt(numDevices);
                 threadNameToDeviceNumber.put(Thread.currentThread().getName(),device);
                 return device;
