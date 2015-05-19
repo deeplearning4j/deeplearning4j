@@ -127,5 +127,9 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         assertEquals(oneThroughFour, test);
     }
 
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
 }

@@ -127,5 +127,8 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         assertEquals(oneThroughFour, test);
     }
 
-
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }
