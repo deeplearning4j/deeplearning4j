@@ -296,7 +296,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     public BaseNDArray(DataBuffer data, int[] shape) {
-        this(data, shape, Nd4j.getStrides(shape,Nd4j.order()), 0, Nd4j.order());
+        this(data, shape, Nd4j.getStrides(shape, Nd4j.order()), 0, Nd4j.order());
     }
 
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
@@ -499,7 +499,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected INDArray create(DataBuffer data,int[] shape,int offset) {
-        return Nd4j.create(data,shape,offset);
+        return Nd4j.create(data, shape, offset);
     }
 
     protected void ensureNotCleanedUp() {
@@ -889,7 +889,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray putScalar(int[] indexes, int value) {
         ensureNotCleanedUp();
-        return putScalar(indexes,(double) value);
+        return putScalar(indexes, (double) value);
     }
 
     /**
@@ -1493,7 +1493,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected int[] getStrides(int[] shape,char ordering) {
-        return Nd4j.getStrides(shape,ordering);
+        return Nd4j.getStrides(shape, ordering);
     }
 
 
@@ -3163,8 +3163,10 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public double getDouble(int i) {
-        if(i >= length())
+        if(i >= length()) {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
+
+        }
 
         int idx = linearIndex(i);
         if (idx < 0)
@@ -3174,7 +3176,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public double getDouble(int i, int j) {
-        return getDouble(new int[]{i,j});
+        return getDouble(new int[]{i, j});
     }
 
     @Override
@@ -3550,6 +3552,23 @@ public abstract class BaseNDArray implements INDArray {
                     INDArray newSlice = slice(0);
                     NDArrayIndex[] putIndices = Arrays.copyOfRange(indexes, 1, indexes.length);
                     return newSlice.get(putIndices);
+                }
+                else if(indexes.length == 2 && isMatrix()) {
+                    for (int i = 0; i < ret.slices(); i++) {
+                        int sliceToGetFrom = indexes[0].indices()[i];
+                        if(sliceToGetFrom >= slices())
+                            break;
+
+                        INDArray slice = slice(sliceToGetFrom);
+                        INDArray retSlice = ret.slice(i);
+                        int[] finalIndices = indexes[1].indices();
+                        for(int j = 0; j < retSlice.length(); j++) {
+                            if(j >= retSlice.length() || finalIndices[j] >= slice.length())
+                                break;
+                            retSlice.putScalar(j, slice.getDouble(finalIndices[j]));
+                        }
+
+                    }
                 }
                 else {
                     for (int i = 0; i < ret.slices(); i++) {
