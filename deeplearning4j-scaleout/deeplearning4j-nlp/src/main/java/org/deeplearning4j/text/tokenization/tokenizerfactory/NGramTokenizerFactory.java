@@ -29,8 +29,13 @@ import java.io.InputStream;
  */
 public class NGramTokenizerFactory implements TokenizerFactory {
     private TokenPreProcess preProcess;
-    private Integer minN;
-    private Integer maxN;
+    private Integer minN = 1;
+    private Integer maxN = 1;
+
+    public NGramTokenizerFactory(Integer minN, Integer maxN) {
+        this.minN = minN;
+        this.maxN = maxN;
+    }
 
     @Override
     public Tokenizer create(String toTokenize) {
