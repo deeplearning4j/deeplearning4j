@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class NGramTokenizerTest {
     @Test
     public void testNGramTokenizer() throws Exception {
         String toTokenize = "Mary had a little lamb.";
-        TokenizerFactory factory = new NGramTokenizerFactory(1, 2);
+        TokenizerFactory factory = new NGramTokenizerFactory(new DefaultTokenizerFactory(), 1, 2);
         Tokenizer tokenizer = factory.create(toTokenize);
         Tokenizer tokenizer2 = factory.create(new ByteArrayInputStream(toTokenize.getBytes()));
 //        while (tokenizer.hasMoreTokens()) {
