@@ -15,48 +15,45 @@ import org.slf4j.LoggerFactory;
  */
 public class CommandLineInterfaceDriver {
 
-	private static Logger log = LoggerFactory.getLogger(CommandLineInterfaceDriver.class);
+    private static Logger log = LoggerFactory.getLogger(CommandLineInterfaceDriver.class);
 
     /**
      * Print the usage for the command.
      */
-	public static void printUsage() {
+    public static void printUsage() {
         log.info( "Usage: " );
-		log.info( "\tdl4j [command] [params] " );
-		log.info( "Commands: " );
-		log.info( "\ttrain\tbuild a deep learning model " );
-		log.info( "\ttest\ttest a deep learning model " );
-		log.info( "\tpredict\tscore new records against a deep learning model " );
-		log.info( "" );
+        log.info( "\tdl4j [command] [params] " );
+        log.info( "Commands: " );
+        log.info( "\ttrain\tbuild a deep learning model " );
+        log.info( "\ttest\ttest a deep learning model " );
+        log.info( "\tpredict\tscore new records against a deep learning model " );
+        log.info( "" );
 
-	}
+    }
 
-	public static void main(String [ ] args) {
+    public static void main(String [ ] args) {
 
-        log.info(String.valueOf(args.length));
-        log.info(String.valueOf("train".equals(args[0])));
-        log.info("boolean above is whether the first arg is train");
-		if ( args.length < 1 ) {
+        if ( args.length < 1 )
             printUsage();
 
+
+        else if ("train".equals( args[0])) {
+
+            String[] vec_params = Arrays.copyOfRange(args, 1, args.length);
+
+            Train train = new Train(vec_params);
+            train.exec();
+            log.info("[DONE] - Test Mode");
         }
-		else if ("train".equals( args[0])) {
+        else
 
-			String[] vec_params = Arrays.copyOfRange(args, 1, args.length);
-
-			Train train = new Train(vec_params);
-			train.exec();
-			log.info("[DONE] - Test Mode");
-		}
-		else
-            log.info("args length greater than 1; args[0] not equal to 'train'");
-			printUsage();
+            printUsage();
 
 
 
 
 
 
-	}
+    }
 
 }
