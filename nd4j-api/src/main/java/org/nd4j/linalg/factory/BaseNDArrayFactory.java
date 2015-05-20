@@ -903,7 +903,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexOnes(int columns) {
-        IComplexNDArray base = createComplex(new int[]{columns});
+        IComplexNDArray base = createComplex(new int[]{1,columns});
         base.assign(1);
         return base;
     }

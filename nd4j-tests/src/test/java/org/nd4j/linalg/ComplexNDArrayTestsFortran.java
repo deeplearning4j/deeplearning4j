@@ -228,6 +228,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
                 Nd4j.createComplexNumber(9,0),
 
         });
+
         IComplexNDArray testSlice1 = Nd4j.createComplex(new IComplexNumber[]{
                 Nd4j.createComplexNumber(2,0),
                 Nd4j.createComplexNumber(4,0),

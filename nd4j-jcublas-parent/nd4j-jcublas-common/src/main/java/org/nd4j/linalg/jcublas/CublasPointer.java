@@ -75,7 +75,7 @@ public class CublasPointer  implements AutoCloseable {
      */
     public CublasPointer(JCudaBuffer buffer) {
         this.buffer = buffer;
-        this.devicePointer = buffer.getDevicePointer(1,0,buffer.length());
+        this.devicePointer = buffer.getDevicePointer(1, 0, buffer.length());
         // Copy the data to the device
         JCublas2.cublasSetVectorAsync(
                 buffer.length()
@@ -88,6 +88,8 @@ public class CublasPointer  implements AutoCloseable {
         ContextHolder.syncStream();
     }
 
+
+
     /**
      * Creates a CublasPointer for a given INDArray.
      *
@@ -99,13 +101,13 @@ public class CublasPointer  implements AutoCloseable {
      * @param array
      */
     public CublasPointer(INDArray array) {
-        buffer = (JCudaBuffer)array.data();
+        buffer = (JCudaBuffer) array.data();
         this.devicePointer = buffer
-                .getDevicePointer(array.majorStride(),array.offset(),array.length());
+                .getDevicePointer(array.majorStride(),array.offset(),array instanceof IComplexNDArray ? 2 * array.length() : array.length());
 
         // Copy the data to the device
         JCublas2.cublasSetVectorAsync(
-                array.length()
+                array instanceof IComplexNDArray ? array.length() * 2 : array.length()
                 , array.data().getElementSize()
                 , buffer.getHostPointer().withByteOffset(array.offset() * array.data().getElementSize())
                 , array.majorStride()
@@ -116,5 +118,8 @@ public class CublasPointer  implements AutoCloseable {
         ContextHolder.syncStream();
 
     }
+
+
+
 
 }

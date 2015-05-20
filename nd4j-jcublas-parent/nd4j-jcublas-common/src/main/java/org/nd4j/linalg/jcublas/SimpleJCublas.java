@@ -558,11 +558,11 @@ public class SimpleJCublas {
 
         JCudaBuffer buff = (JCudaBuffer) x.data();
         if (x.majorStride() == 2 && y.majorStride() == 2)
-            JCuda.cudaMemcpy(
+            JCuda.cudaMemcpyAsync(
                     yCPointer.getDevicePointer()
                     , xCPointer.getDevicePointer()
                     , x.length() * buff.getElementSize() * 2
-                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice, ContextHolder.getInstance().getCudaStream());
         else
             Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
 
