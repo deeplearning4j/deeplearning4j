@@ -21,9 +21,7 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.StringTokenizer;
 
 /**
  * @author sonali
@@ -36,9 +34,10 @@ public class NGramTokenizer implements Tokenizer {
     private Tokenizer tokenizer;
 
     public NGramTokenizer(Tokenizer tokenizer,Integer minN, Integer maxN) {
+        this.tokens = new ArrayList<>();
         while (tokenizer.hasMoreTokens()) {
-            System.out.println(tokenizer.nextToken());
-            this.tokens.add(tokenizer.nextToken());
+            String nextToken = tokenizer.nextToken();
+            this.tokens.add(nextToken);
         }
         if (maxN != 1) {
             this.originalTokens = this.tokens;
