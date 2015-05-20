@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # params:
-# java -cp ./target/canova-cli-0.0.0.2-SNAPSHOT.jar org.canova.cli.driver.CommandLineInterfaceDriver a b c
+# java -cp ./target/deeplearning4j-cli-api-0.0.3.3.3.alpha1.jar org.deeplearning4j.cli.driver.CommandLineInterfaceDriver a b c
 
 jar_name="./target/dl4j-jar-with-dependencies.jar"
 main_class_name="org.deeplearning4j.cli.driver.CommandLineInterfaceDriver"
