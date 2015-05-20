@@ -43,7 +43,7 @@ To install ND4J, there are a couple of approaches, and more information can be f
 
 #### Install from Maven Central
 
-1. Search for nd4j in the [Maven Central Repository](http://mvnrepository.com/) to find the available nd4j jars.
+1. Search for nd4j in the [Maven Central Repository](http://mvnrepository.com/search?q=nd4j) to find the available nd4j jars.
 2. Include the appropriate dependency in your pom.xml.
 
 #### Install from source
