@@ -38,6 +38,7 @@ public class NGramTokenizerFactory implements TokenizerFactory {
             throw new IllegalArgumentException("Unable to proceed; no sentence to tokenize");
         }
         Tokenizer ret = new NGramTokenizer(toTokenize, minN, maxN);
+        ret.setTokenPreProcessor(preProcess);
         return null;
     }
 
