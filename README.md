@@ -53,7 +53,7 @@ Compile the project:
 
     $ cd deeplearning4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-Add the local compiled file dependency to your pom.xml file:
+Add the local compiled file dependencies to your pom.xml file like the following example:
 
     <dependency>
         <groupId>org.deeplearning4j</groupId>
