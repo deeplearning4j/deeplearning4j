@@ -38,7 +38,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public Object alloc(DataBuffer buffer,int stride,int offset) {
+    public Object alloc(DataBuffer buffer,int stride,int offset,int length) {
         Pointer hostData = new Pointer();
         JCuda.cudaMalloc(hostData,buffer.length() * buffer.getElementSize());
         return new BaseCudaDataBuffer.DevicePointerInfo(hostData,buffer.getElementSize() * buffer.length(),stride,offset);

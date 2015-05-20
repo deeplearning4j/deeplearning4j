@@ -247,8 +247,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
         INDArray sigmoid = Transforms.sigmoid(n, false);
-        ContextHolder.syncStream();
         assertEquals(assertion, sigmoid);
+
     }
 
     @Test
@@ -587,7 +587,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testAddMatrix() {
         INDArray five = Nd4j.ones(5);
-        five.addi(five);
+        five.addi(five.dup());
         INDArray twos = Nd4j.valueArrayOf(5, 2);
         assertEquals(twos, five);
 
@@ -704,9 +704,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
         INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new int[]{2, 2, 2});
-        INDArray permuted = toPermute.permute(2, 1, 0);
+        INDArray permuted = toPermute.permute(2, 1, 0).linearView();
         INDArray assertion = Nd4j.create(new float[]{0,2,4,6,1,3,5,7}).linearView();
-        assertEquals(permuted.linearView(), assertion);
+        INDArray permutedLinear = permuted.linearView();
+        assertEquals(permutedLinear, assertion);
 
     }
 

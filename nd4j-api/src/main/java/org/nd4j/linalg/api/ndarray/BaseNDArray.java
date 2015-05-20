@@ -1936,7 +1936,7 @@ public abstract class BaseNDArray implements INDArray {
         }
         assertColumnVector(columnVector);
         for (int i = 0; i < columns(); i++) {
-            INDArray slice = slice(i, 0);
+            INDArray slice = getColumn(i);
             switch (operation) {
 
                 case 'a':
@@ -2679,22 +2679,9 @@ public abstract class BaseNDArray implements INDArray {
             return other.addi(getDouble(0), result);
         }
 
-        if (result == this) {
-            if (data.dataType() == DataBuffer.Type.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(1.0, other.linearView(), result.linearView());
 
+        Nd4j.getExecutioner().exec(new AddOp(linearView(), other.linearView(), result.linearView()));
 
-            else
-                Nd4j.getBlasWrapper().axpy(1.0f, other.linearView(), result.linearView());
-
-        } else if (result == other) {
-            if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                Nd4j.getBlasWrapper().axpy(1.0, this.linearView(), result.linearView());
-            else
-                Nd4j.getBlasWrapper().axpy(1.0f, this.linearView(), result.linearView());
-        } else {
-            Nd4j.getExecutioner().exec(new AddOp(linearView(), other.linearView(), result.linearView()));
-        }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);

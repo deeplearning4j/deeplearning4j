@@ -81,8 +81,9 @@ public interface JCudaBuffer extends DataBuffer {
      * @param offset the offset for the device pointer
      * @return the device pointer with the given
      * offset and stride
+     * @param length the length of the pointer
      */
-    Pointer getDevicePointer(int stride, int offset);
+    Pointer getDevicePointer(int stride, int offset,int length);
 
     /**
      * Sets the data for this pointer

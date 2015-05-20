@@ -27,6 +27,7 @@ import jcuda.driver.CUstream;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
+import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;

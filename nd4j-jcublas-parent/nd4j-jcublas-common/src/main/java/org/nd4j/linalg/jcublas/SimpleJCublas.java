@@ -123,7 +123,6 @@ public class SimpleJCublas {
      * Sync the device
      */
     public static void sync() {
-        JCudaDriver.cuCtxSynchronize();
         JCuda.cudaDeviceSynchronize();
         ContextHolder.syncStream();
     }
@@ -765,7 +764,6 @@ public class SimpleJCublas {
                 xBPointer.getDevicePointer(),
                 1);
 
-        ((JCudaBuffer)A.data()).copyToHost();
         sync();
 
         xBPointer.copyToHost();

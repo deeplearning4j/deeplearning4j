@@ -75,7 +75,7 @@ public class CublasPointer  implements AutoCloseable {
      */
     public CublasPointer(JCudaBuffer buffer) {
         this.buffer = buffer;
-        this.devicePointer = buffer.getDevicePointer(1,0);
+        this.devicePointer = buffer.getDevicePointer(1,0,buffer.length());
         // Copy the data to the device
         JCublas2.cublasSetVectorAsync(
                 buffer.length()
@@ -101,7 +101,7 @@ public class CublasPointer  implements AutoCloseable {
     public CublasPointer(INDArray array) {
         buffer = (JCudaBuffer)array.data();
         this.devicePointer = buffer
-                .getDevicePointer(array.majorStride(),array.offset());
+                .getDevicePointer(array.majorStride(),array.offset(),array.length());
 
         // Copy the data to the device
         JCublas2.cublasSetVectorAsync(

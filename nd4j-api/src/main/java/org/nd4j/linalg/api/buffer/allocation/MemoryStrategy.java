@@ -30,8 +30,9 @@ public interface MemoryStrategy {
      * @param stride the stride
      * @param offset the offset used for the buffer
      *               on allocation
+     * @param length length
      */
-    Object alloc(DataBuffer buffer, int stride, int offset);
+    Object alloc(DataBuffer buffer, int stride, int offset,int length);
 
     /**
      * Free the buffer wrt the

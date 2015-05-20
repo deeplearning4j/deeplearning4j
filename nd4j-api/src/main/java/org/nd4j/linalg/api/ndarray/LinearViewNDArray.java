@@ -154,11 +154,7 @@ public class LinearViewNDArray  extends BaseNDArray {
 
 
 
-    @Override
-    public boolean equals(Object o) {
-        return wrapped.equals(o);
 
-    }
 
     @Override
     public int hashCode() {

@@ -13,7 +13,7 @@ public class PageableArrayMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public Object alloc(DataBuffer buffer,int stride,int offset) {
+    public Object alloc(DataBuffer buffer,int stride,int offset,int length) {
        throw new UnsupportedOperationException();
     }
 

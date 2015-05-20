@@ -194,11 +194,11 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     }
 
     @Override
-    public Pointer getDevicePointer(int stride, int offset) {
+    public Pointer getDevicePointer(int stride, int offset,int length) {
         DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
 
         if(devicePointerInfo == null) {
-            int devicePointerLength = getElementSize() * length();
+            int devicePointerLength = getElementSize() * length;
             allocated.addAndGet(devicePointerLength);
             totalAllocated.addAndGet(devicePointerLength);
             log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
@@ -206,7 +206,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     ContextHolder.getInstance()
                     .getConf()
                     .getMemoryStrategy()
-                    .alloc(this,stride,offset);
+                    .alloc(this,stride,offset,length);
 
             pointersToContexts.put(Thread.currentThread().getName(), devicePointerInfo);
             freed.set(false);
@@ -383,7 +383,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             ContextHolder.syncStream();
 
             JCublas2.cublasGetVectorAsync(
-                    length()
+                    (int) devicePointerInfo.getLength()
                     , getElementSize()
                     , devicePointerInfo.getPointer()
                     , 1
