@@ -24,11 +24,15 @@ package org.deeplearning4j.nn.weights;
  */
 public enum WeightInit {
     /*
-        Variance normalized initialization (VI) (Glorot)
-        Sparse initialization (SI) (Martens)
-        Zeros: straight zeros
-        Sample weights from a distribution
+        Distribution: Sample weights from a distribution based on shape of input
+        Normalized: Normalize sample weights
+        Size: Sample weights from bound uniform distribution using shape for min and max
+        Uniform: Sample weights from bound uniform distribution (specify min and max)
+        VI: Sample weights from variance normalized initialization (Glorot)
+        Zeros: Generate weights as zeros
+
+        TBD: Sparse initialization (SI) (Martens)
      */
-    VI,ZERO, SIZE, DISTRIBUTION,NORMALIZED,UNIFORM
+    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO
 
 }
