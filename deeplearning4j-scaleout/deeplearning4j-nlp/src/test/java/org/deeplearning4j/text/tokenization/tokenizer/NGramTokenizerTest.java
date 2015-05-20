@@ -24,7 +24,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import java.io.ByteArrayInputStream;
 
 /**
  * @author sonali
@@ -36,9 +35,11 @@ public class NGramTokenizerTest {
         String toTokenize = "Mary had a little lamb.";
         TokenizerFactory factory = new NGramTokenizerFactory(new DefaultTokenizerFactory(), 1, 2);
         Tokenizer tokenizer = factory.create(toTokenize);
-        Tokenizer tokenizer2 = factory.create(new ByteArrayInputStream(toTokenize.getBytes()));
-//        while (tokenizer.hasMoreTokens()) {
-//            assertEquals(tokenizer.nextToken(), tokenizer2.nextToken());
-//        }
+        Tokenizer tokenizer2 = factory.create(toTokenize);
+        while (tokenizer.hasMoreTokens()) {
+            assertEquals(tokenizer.nextToken(), tokenizer2.nextToken());
+        }
+        int stringCount = factory.create(toTokenize).countTokens();
+        assertEquals(9, stringCount);
     }
 }
