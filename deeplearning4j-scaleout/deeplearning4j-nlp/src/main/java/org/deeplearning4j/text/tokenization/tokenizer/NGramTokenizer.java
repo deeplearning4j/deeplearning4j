@@ -33,10 +33,9 @@ public class NGramTokenizer implements Tokenizer {
     private List<String> originalTokens;
     private int index;
     private TokenPreProcess preProcess;
-    private StringTokenizer tokenizer;
+    private Tokenizer tokenizer;
 
-    public NGramTokenizer(String tokens, Integer minN, Integer maxN) {
-        tokenizer = new StringTokenizer(tokens);
+    public NGramTokenizer(Tokenizer tokenizer,Integer minN, Integer maxN) {
         while (tokenizer.hasMoreTokens()) {
             System.out.println(tokenizer.nextToken());
             this.tokens.add(tokenizer.nextToken());
