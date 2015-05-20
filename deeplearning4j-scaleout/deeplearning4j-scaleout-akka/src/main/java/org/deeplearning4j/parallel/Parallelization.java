@@ -41,8 +41,10 @@ public class Parallelization {
     }
 
 
-
-
+    /**
+     * Parallelize a collection of runnables
+     * @param runnables
+     */
     public static void runInParallel(Collection<Runnable> runnables) {
         ExecutorService exec = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().availableProcessors(),
