@@ -12,6 +12,10 @@ import org.nd4j.linalg.jcublas.context.ContextHolder;
 import java.util.Map;
 
 /**
+ * Pinned memory:
+ * http://devblogs.nvidia.com/parallelforall/how-optimize-data-transfers-cuda-cc/
+ *
+ *
  * @author Adam Gibson
  */
 public class PinnedMemoryStrategy implements MemoryStrategy {
@@ -44,6 +48,7 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
                 hostPointer
                 , buffer.getElementSize() * length
                 , JCuda.cudaHostAllocDefault);
+
         return devicePointerInfo;
     }
 
@@ -53,7 +58,5 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         Map<String,BaseCudaDataBuffer.DevicePointerInfo> pointers = buf2.getPointersToContexts();
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName());
         JCuda.cudaFreeHost(devicePointerInfo.getPointer());
-
-
     }
 }

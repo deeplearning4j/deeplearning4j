@@ -390,6 +390,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
                     , getHostPointer(devicePointerInfo.getOffset())
                     , devicePointerInfo.getStride()
                     , ContextHolder.getInstance().getCudaStream());
+
             ContextHolder.syncStream();
 
 

@@ -42,6 +42,7 @@ public class CublasPointer  implements AutoCloseable {
      */
     final JCudaBuffer buffer;
     final Pointer devicePointer;
+    private boolean closed = false;
 
     /**
      * frees the underlying
@@ -49,7 +50,10 @@ public class CublasPointer  implements AutoCloseable {
      */
     @Override
     public void close() throws Exception {
-        buffer.freeDevicePointer();
+        if(!closed) {
+            buffer.freeDevicePointer();
+            closed = true;
+        }
     }
 
     public JCudaBuffer getBuffer() {

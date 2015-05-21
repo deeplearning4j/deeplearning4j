@@ -447,7 +447,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
         for (int i = 0; i < 5; i++)
             testList.add(Nd4j.complexScalar(i + 1));
 
-        IComplexNDArray test = Nd4j.createComplex(testList, new int[]{testList.size()});
+        IComplexNDArray test = Nd4j.createComplex(testList, new int[]{1,testList.size()});
         IComplexNDArray expected = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4, 5}, new int[]{1,5}));
         assertEquals(expected, test);
     }
@@ -486,17 +486,6 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     }
 
 
-    @Test
-    public void testTwoByTwoMmul() {
-        Nd4j.factory().setOrder('f');
-        IComplexNDArray oneThroughFour = Nd4j.createComplex(Nd4j.linspace(1, 4, 4).reshape(2, 2));
-        IComplexNDArray fiveThroughEight = Nd4j.createComplex(Nd4j.linspace(5, 8, 4).reshape(2, 2));
-
-        IComplexNDArray solution = Nd4j.createComplex(Nd4j.create(new double[][]{{23, 31}, {34, 46}}));
-        IComplexNDArray test = oneThroughFour.mmul(fiveThroughEight);
-        assertEquals(solution, test);
-
-    }
 
     @Test
     public void testCopy() {
