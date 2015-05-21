@@ -6,7 +6,7 @@ layout: default
 # NeuralNetConfiguration Class:
 *DL4J Neural Net Builder Basics*
 
-For almost any neural net you build in DL4J the foundation is the NeuralNetConfiguration constructor. This object provides significant flexibility on building out almost any type of neural network structure you want to implement. Parameter combinations and configurations for this class define different types of neural nets such as RBMs or Convolutional to name a few. Below provides a brief overview of getting started with this class and key configuration parameters (aka attributes). 
+For almost any neural net you build in DL4J the foundation is the NeuralNetConfiguration constructor. This object provides significant flexibility on building out almost any type of neural network layer you want to implement. Parameter combinations and configurations for this class define different types of layers such as RBMs, DBNs, CNNs, Auto, etc. Below are a list of parameters with default settings: 
 
 How to start constructing the class in Java:
 
@@ -31,23 +31,20 @@ Parameters:
 	- default = 0
 - **constrainGradientToUnitNorm**: *boolean*, helps gradient converge and makes loss smaller and smoother
 	- default = false
-- **convolutionType**: *ConvolutionDownSampleLayer.ConvolutionType class*, convolution layer type
-	- default = ConvolutionDownSampleLayer.ConvolutionType.MAX
+- **convolutionType**: *ConvolutionLayer.ConvolutionType class*, convolution layer type
+	- default = ConvolutionLayer.ConvolutionType.MAX
 - **corruptionLevel**: *double*, how much to corrupt the input data
 	- default = 0.3
 - **dist**: *Distribution class*, distribution to use for weight initialization
 	- default = new NormalDistribution(1e-3,1)
 - **dropOut**: *double*, randomly drop a certain amount of active units/nodes to zero (no activation)
 	- default = 0
-- **featureMapSize**: *int[]*, size of feature space sample - similar to kernel
+- **featureMapSize**: *int[]*, kernel convolution size (also refered to as receptive field)
 	- default = {2,2}
-- **filterSize**: *int[]* ,creates tensor data structure for layers = feature maps x number of channels x  feature map space (rows & cols of input data matrix)
+- **filterSize**: *int[]* ,creates tensor data structure for subsampling layers = number of feature maps x number of channels x feature map space (rows & cols of input data matrix)
 	- default = {2,2,2,2}
 	- ex: 5, 1, numRows, numColumns
 	- rows = batch or total data samples & columns = number of features per data sample
-- **hiddenLayerSizes**: *int[]*, number of nodes in the layers
-	- one layer format = new int[]{32} = initiate array of ints with 32 nodes (spaces)
-	- multiple layers format = new int[]{32,20,40,32} = layer 1 is 32 nodes, layer 2 is 20 nodes, etc
 - **hiddenUnit**: *RBM.HiddenUnit*, type of RBM hidden units/nodes
 	- default = RBM.HiddenUnit.BINARY
 - **inputPreProcessor**: (*int*, *class*) {layer number, data processor class} transform/process input data shape to layer
@@ -64,7 +61,6 @@ Parameters:
 - **l2**: *double*, L2 regularization
 	- default = 0.0
 - **layer**: *Layer class*, sets layer structure
-- **list**: *int*, number of layers (does not count input layer)
 - **lossFunction**: *LossFunctions class*, error transformation function on net output
 	- default = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY
 	- Options:
@@ -97,7 +93,6 @@ Parameters:
 		- HESSIAN_FREE
 		- LBFGS
 		- ITERATION_GRADIENT_DESCENT
-- **override**: (*int*, *class*) {layer number, data processor class}, override with specific layer configuation
 - **preProcessor**: (*int*, *class*) {layer number, data processor class}, transform/process output data shape from layer
 	- ex1: .preProcessor(0, new ConvolutionPostProcessor())
 - **renderWeightsEveryNumEpochs**: *int*, default = -1
@@ -121,12 +116,12 @@ Parameters:
 - **weightInit**: *WeightInit class*, how to initialize the weights
 	- default = WeightInit.VI
 	- Options:
-		- WeightInit.VI: variance normalized initialization (Glorot)
-		- WeightInit.ZERO: straight zeros
-		- WeightInit.SIZE:
-		- WeightInit.DISTRIBUTION: sample weights from distribution
-		- WeightInit.NORMALIZED:
-		- WeightInit.UNIFORM:
+		- WeightInit.DISTRIBUTION: Sample weights from a distribution based on shape of input
+		- WeightInit.NORMALIZED: Sample weights from normalized distribution
+		- WeightInit.SIZE:Sample weights from bound uniform distribution using shape for min and max
+		- WeightInit.UNIFORM: Sample weights from bound uniform distribution (specify min and max)
+		- WeightInit.VI: Sample weights from variance normalized initialization (Glorot)
+		- WeightInit.ZERO: sGenerate weights as zeros
 - **weightShape**: *int[]*
 
 For more information on this class, checkout [Javadocs](http://deeplearning4j.org/doc/).
