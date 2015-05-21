@@ -18,7 +18,7 @@ In the process, these networks learn to recognize correlations between certain r
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data in the form of an image, a deep-learning network may decide, for example, that the input data is 90 percent likely to represent a person. 
 
 ---
-### How to Start
+### Where to Start
 
 Two key classes help you get started building any type of neural net you need.
 
