@@ -1,6 +1,5 @@
 package org.deeplearning4j.cli.driver;
 
-import java.util.Arrays;
 
 import org.deeplearning4j.cli.subcommands.Train;
 import org.kohsuke.args4j.Argument;
@@ -25,9 +24,12 @@ public class CommandLineInterfaceDriver {
 
 	@Argument(required=true,index=0,metaVar="action",usage="subcommands, e.g., {train|test|predict}",handler=SubCommandHandler.class)
 	@SubCommands({
-			@SubCommand(name="vectorize",impl=Train.class)
+			@SubCommand(name="train",impl=Train.class)
 	})
 	private org.deeplearning4j.cli.subcommands.SubCommand subCommand;
+
+
+
     /**
      * Print the usage for the command.
      */

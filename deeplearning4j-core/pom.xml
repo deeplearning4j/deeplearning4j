@@ -31,6 +31,11 @@
 
 	<dependencyManagement>
 		<dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
 			<dependency>
 				<groupId>org.nd4j</groupId>
 				<artifactId>nd4j-api</artifactId>
@@ -45,7 +50,7 @@
 			<dependency>
 				<groupId>org.jblas</groupId>
 				<artifactId>jblas</artifactId>
-				<version>1.2.3</version>
+				<version>1.2.4</version>
 				<scope>test</scope>
 			</dependency>
             <dependency>
@@ -149,5 +154,11 @@
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+
 	</dependencies>
 </project>
