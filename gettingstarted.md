@@ -106,7 +106,7 @@ which will import the source and set everything up.
 
 ### <a name="next">Next Steps: MNIST Example & Building NNs</a>
 
-In order to get started building neural nets, checkout the [Neural Nets Overview](http://deeplearning4j.org/overview.html) for more information.
+In order to get started building neural nets, checkout the [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for more information.
 
 Take a look at the [MNIST tutorial](../mnist-tutorial.html) to get running quickly and checkout [custom datasets](../customdatasets.html) for other datasets to explore.
 
