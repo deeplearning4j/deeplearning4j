@@ -1,6 +1,5 @@
 package org.deeplearning4j.cli.driver;
 
-import java.util.Arrays;
 
 import org.deeplearning4j.cli.subcommands.Train;
 import org.kohsuke.args4j.Argument;
