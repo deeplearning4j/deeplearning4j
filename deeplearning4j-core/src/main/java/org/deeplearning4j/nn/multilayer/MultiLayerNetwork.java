@@ -1411,6 +1411,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
             Layer layer = getLayers()[i];
+
             int range = layer.numParams();
             INDArray get = params.get(NDArrayIndex.interval(idx, range + idx));
             if(get.length() < 1)
