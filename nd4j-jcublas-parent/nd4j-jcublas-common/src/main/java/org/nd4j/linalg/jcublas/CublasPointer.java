@@ -106,23 +106,47 @@ public class CublasPointer  implements AutoCloseable {
      */
     public CublasPointer(INDArray array) {
         buffer = (JCudaBuffer) array.data();
-        this.devicePointer = buffer
-                .getDevicePointer(array.majorStride(),array.offset(),array instanceof IComplexNDArray ? 2 * array.length() : array.length());
+        if(array instanceof IComplexNDArray) {
+           IComplexNDArray arr2 = (IComplexNDArray) array;
+            this.devicePointer = buffer
+                    .getDevicePointer(array.majorStride(),array.offset(),2 * array.length());
 
-        // Copy the data to the device
-        JCublas2.cublasSetVectorAsync(
-                array instanceof IComplexNDArray ? array.length() * 2 : array.length()
-                , array.data().getElementSize()
-                , buffer.getHostPointer().withByteOffset(array.offset() * array.data().getElementSize())
-                , array.majorStride()
-                , devicePointer
-                , 1
-                , ContextHolder.getInstance().getCudaStream());
+            // Copy the data to the device
+            JCublas2.cublasSetVectorAsync(
+                    array instanceof IComplexNDArray ? array.length() * 2 : array.length()
+                    , array.data().getElementSize()
+                    , buffer.getHostPointer().withByteOffset(arr2.blasOffset() * array.data().getElementSize())
+                    , array.majorStride()
+                    , devicePointer
+                    , 1
+                    , ContextHolder.getInstance().getCudaStream());
+
+        }
+        else {
+            this.devicePointer = buffer
+                    .getDevicePointer(array.majorStride(),array.offset(),array instanceof IComplexNDArray ? 2 * array.length() : array.length());
+
+            // Copy the data to the device
+            JCublas2.cublasSetVectorAsync(
+                    array instanceof IComplexNDArray ? array.length() * 2 : array.length()
+                    , array.data().getElementSize()
+                    , buffer.getHostPointer().withByteOffset(array.offset() * array.data().getElementSize())
+                    , array.majorStride()
+                    , devicePointer
+                    , 1
+                    , ContextHolder.getInstance().getCudaStream());
+
+        }
+
 
         ContextHolder.syncStream();
 
     }
 
+
+    public boolean isClosed() {
+        return closed;
+    }
 
 
 

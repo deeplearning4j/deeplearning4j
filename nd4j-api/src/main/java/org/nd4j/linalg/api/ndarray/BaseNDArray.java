@@ -304,18 +304,18 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     public BaseNDArray(double[] data, int[] shape, char ordering) {
-        this(new DoubleBuffer(data), shape, ordering);
+        this(Nd4j.createBuffer(data), shape, ordering);
     }
 
     public BaseNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        this(new DoubleBuffer(data), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(data), shape, stride, offset, ordering);
     }
 
     public BaseNDArray(float[] data, char order) {
-        this(new FloatBuffer(data), order);
+        this(Nd4j.createBuffer(data), order);
     }
 
-    public BaseNDArray(FloatBuffer floatBuffer, char order) {
+    public BaseNDArray(DataBuffer floatBuffer, char order) {
         this(floatBuffer, new int[]{floatBuffer.length()}, Nd4j.getStrides(new int[]{floatBuffer.length()}), 0, order);
     }
 

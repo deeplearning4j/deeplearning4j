@@ -606,12 +606,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         final private long length;
         final private int stride;
         final private int offset;
+        private boolean freed = false;
 
         public DevicePointerInfo(Pointer pointer, long length,int stride,int offset) {
             this.pointer = pointer;
             this.length = length;
             this.stride = stride;
             this.offset = offset;
+        }
+
+        public boolean isFreed() {
+            return freed;
+        }
+
+        public void setFreed(boolean freed) {
+            this.freed = freed;
         }
 
         public int getOffset() {

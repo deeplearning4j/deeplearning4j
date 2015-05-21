@@ -586,7 +586,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
     @Test
     public void testGetComplex() {
-        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(new DoubleBuffer(new double[]{
+        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(Nd4j.createBuffer(new double[]{
                 1,2,3,4,5
         })));
 

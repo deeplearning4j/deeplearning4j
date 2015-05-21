@@ -292,7 +292,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray slice = arr.slice(0);
         Log exp = new Log(slice);
         opExecutioner.exec(exp);
-        assertEquals(Nd4j.create(new FloatBuffer(new float[]{0.f, 1.09861229f, 1.60943791f})), slice);
+        assertEquals(Nd4j.create(Nd4j.createBuffer(new float[]{0.f, 1.09861229f, 1.60943791f})), slice);
     }
 
     @Test
@@ -302,7 +302,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray slice = arr.slice(0);
         Exp exp = new Exp(slice);
         opExecutioner.exec(exp);
-        assertEquals(Nd4j.create(new FloatBuffer(new float[]{2.7182817459106445f, 20.08553695678711f, 148.4131622314453f})), slice);
+        assertEquals(Nd4j.create(Nd4j.createBuffer(new float[]{2.7182817459106445f, 20.08553695678711f, 148.4131622314453f})), slice);
     }
 
     @Test
