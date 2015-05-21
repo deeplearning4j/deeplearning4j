@@ -18,21 +18,22 @@
 
 package org.deeplearning4j.cli.subcommands;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.canova.api.formats.input.InputFormat;
 import org.canova.api.records.reader.RecordReader;
 import org.canova.api.split.FileSplit;
 import org.canova.api.split.InputSplit;
 import org.deeplearning4j.datasets.canova.RecordReaderDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -43,6 +44,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,294 +61,221 @@ import org.slf4j.LoggerFactory;
 public class Train extends BaseSubCommand {
 
 
-	public static final String EXECUTION_RUNTIME_MODE_KEY = "execution.runtime";
-	public static final String EXECUTION_RUNTIME_MODE_DEFAULT = "local";
+    public static final String EXECUTION_RUNTIME_MODE_KEY = "execution.runtime";
+    public static final String EXECUTION_RUNTIME_MODE_DEFAULT = "local";
 
-	public static final String OUTPUT_FILENAME_KEY = "output.directory";
-	public static final String INPUT_DATA_FILENAME_KEY = "input.directory";
+    public static final String OUTPUT_FILENAME_KEY = "output.directory";
+    public static final String INPUT_DATA_FILENAME_KEY = "input.directory";
 
-	public static final String INPUT_FORMAT_KEY = "input.format";
-	public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.canova.api.formats.input.impl.SVMLightInputFormat";
+    public static final String INPUT_FORMAT_KEY = "input.format";
+    public static final String DEFAULT_INPUT_FORMAT_CLASSNAME = "org.canova.api.formats.input.impl.SVMLightInputFormat";
 
-	@Option(name = "-conf", usage = "configuration file for training", required = true )
-	public String configurationFile = "";
 
-	public Properties configProps = null;
-	public String outputVectorFilename = "";
-	
-	private static Logger log = LoggerFactory.getLogger(Train.class);
 
+    @Option(name = "-conf", usage = "configuration file for training", required = true )
+    public String configurationFile = "";
 
-	// NOTE: disabled this setup for now for development purposes
+    public Properties configProps = null;
 
-	@Option(name = "-input", usage = "input data",aliases = "-i", required = true)
-	private String input = "input.txt";
+    private static Logger log = LoggerFactory.getLogger(Train.class);
 
 
-	@Option(name = "-output", usage = "location for saving model", aliases = "-o")
-	private String outputDirectory = "output.txt";
+    // NOTE: disabled this setup for now for development purposes
 
-	@Option(name = "-runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)
-	private String runtime = "local";
+    @Option(name = "-input", usage = "input data",aliases = "-i", required = true)
+    private String input = "input.txt";
 
-	@Option(name = "-properties", usage = "configuration for distributed systems", aliases = "-p", required = false)
-	private String properties;
 
-	public Train(String[] args) {
-		super(args);
+    @Option(name = "-output", usage = "location for saving model", aliases = "-o")
+    private String outputDirectory = "output.txt";
+    @Option(name = "-model",usage = "location for configuration of model",aliases = "-m")
+    private String modelPath;
+    @Option(name = "-type",usage = "type of network (layer or multi layer)")
+    private String type = "multi";
 
-		CmdLineParser parser = new CmdLineParser(this);
-		try {
-			parser.parseArgument(args);
-		} catch (CmdLineException e) {
-			//this.validCommandLineParameters = false;
-			parser.printUsage(System.err);
-			//log.error("Unable to parse args", e);
-		}
+    @Option(name = "-runtime", usage = "runtime- local, Hadoop, Spark, etc.", aliases = "-r", required = false)
+    private String runtime = "local";
 
+    @Option(name = "-properties", usage = "configuration for distributed systems", aliases = "-p", required = false)
+    private String properties;
+    @Option(name = "-savemode",usage = "output: (binary | txt)")
+    private String saveMode = "txt";
 
-	}
 
-	/**
-	 * TODO:
-	 * 		-	lots of things to do here
-	 * 		-	runtime: if we're running on a cluster, then we have a different workflow / tracking setup
-	 *
-	 *
-	 */
-	@Override
-	public void exec() {
 
-		if ("hadoop".equals(this.runtime.trim().toLowerCase())) {
 
-			this.execOnHadoop();
+    public Train(String[] args) {
+        super(args);
+    }
 
-		} else if ("spark".equals(this.runtime.trim().toLowerCase())) {
+    /**
+     * TODO:
+     * 		-	lots of things to do here
+     * 		-	runtime: if we're running on a cluster, then we have a different workflow / tracking setup
+     *
+     *
+     */
+    @Override
+    public void execute() {
 
-			this.execOnSpark();
+        if ("hadoop".equals(this.runtime.trim().toLowerCase()))
+            this.execOnHadoop();
 
-		} else {
+        else if ("spark".equals(this.runtime.trim().toLowerCase()))
+            this.execOnSpark();
 
-			this.execLocal();
+        else
 
-		}
+            this.execLocal();
 
-	}
 
-	public void execLocal() {
 
-		log.warn( "[dl4j] - executing local ... " );
-		log.warn( "using training input: " + this.input );
+    }
 
-		File inputFile = new File( this.input );
-		InputSplit split = new FileSplit( inputFile );
-		InputFormat inputFormat = this.createInputFormat();
+    /**
+     * Execute local training
+     */
+    public void execLocal() {
 
-		RecordReader reader = null;
+        log.warn( "[dl4j] - executing local ... " );
+        log.warn( "using training input: " + this.input );
 
-		try {
-			reader = inputFormat.createReader(split);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+        File inputFile = new File( this.input );
+        InputSplit split = new FileSplit( inputFile );
+        InputFormat inputFormat = this.createInputFormat();
 
-		//FileSplit csv = new FileSplit(new ClassPathResource("csv-example.csv").getFile());
-		//recordReader.initialize(csv);
-		DataSetIterator iter = new RecordReaderDataSetIterator( reader , 20 );
-		DataSet next = iter.next();
-		//assertEquals(34,next.numExamples());
+        RecordReader reader = null;
 
-		log.warn( "[dl4j:exec] examples in dataset: " + next.numExamples() );
-    	/*
-        LayerFactory layerFactory = LayerFactories.getFactory(OutputLayer.class);
-    	
-        OutputLayer l = layerFactory.create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
-    	
-        //DataSet next = iter.next();
-        //SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        //trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        SplitTestAndTrain trainTest = next.splitTestAndTrain(0);
-        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        
-        l.fit( trainTest.getTrain() );        
-        */
-	}
+        try {
+            reader = inputFormat.createReader(split);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-	public void execOnSpark() {
+        if(type.equals("multi")) {
+            try {
+                MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File(modelPath)));
+                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getConf(0).getBatchSize());
 
-		log.warn( "DL4J: Execution on spark from CLI not yet supported" );
-
-	}
-
-	public void execOnHadoop() {
-
-		log.warn( "DL4J: Execution on hadoop from CLI not yet supported" );
-
-	}
-
-	public InputFormat createInputFormat() {
-
-		//log.warn( "> Loading Input Format: " + (String) this.configProps.get( INPUT_FORMAT ) );
-
-		String clazz = (String) this.configProps.get( INPUT_FORMAT_KEY );
-
-		if ( null == clazz ) {
-			clazz = DEFAULT_INPUT_FORMAT_CLASSNAME;
-		}
-
-		try {
-			Class<? extends InputFormat> inputFormatClazz = (Class<? extends InputFormat>) Class.forName(clazz);
-			return inputFormatClazz.newInstance();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-
-	}
-
-
-	public void loadConfigFile() throws Exception, IOException {
-
-		this.configProps = new Properties();
-
-		//log.warn( "Loading Conf file: " + this.configurationFile );
-
-		//Properties prop = new Properties();
-		InputStream in = null;
-		try {
-			in = new FileInputStream( this.configurationFile );
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			this.configProps.load(in);
-			in.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		//this.debugLoadedConfProperties();
-
-		// get runtime - EXECUTION_RUNTIME_MODE_KEY
-
-		if (null != this.configProps.get( EXECUTION_RUNTIME_MODE_KEY )) {
-
-			this.runtime = (String) this.configProps.get(EXECUTION_RUNTIME_MODE_KEY);
-
-		} else {
-
-			this.runtime = EXECUTION_RUNTIME_MODE_DEFAULT;
-
-		}
-
-
-		// get output directory
-
-		if (null != this.configProps.get( OUTPUT_FILENAME_KEY )) {
-
-			this.outputDirectory = (String) this.configProps.get(OUTPUT_FILENAME_KEY);
-
-		} else {
-
-			// default
-			this.outputDirectory = "/tmp/dl4_model_default.txt";
-			//throw new Exception("no output location!");
-
-		}
-
-		// get input data
-
-		if ( null != this.configProps.get( INPUT_DATA_FILENAME_KEY )) {
-
-			//log.warn( "\nLOADED INPUT SRC\n\n" );
-			this.input = (String) this.configProps.get(INPUT_DATA_FILENAME_KEY);
-
-		} else {
-
-			// default
-			//this.input = "/tmp/dl4_model_default.txt";
-			throw new Exception("no input file to train on!");
-
-		}		
-			
-	/*
-		
-		if (null == this.configProps.get( OUTPUT_FILENAME_KEY )) {
-			
-			Date date = new Date() ;
-			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss") ;
-			this.outputVectorFilename = "/tmp/canova_vectors_" + dateFormat.format(date) + ".txt";
-						
-		} else {
-			
-			// what if its only a directory?
-			
-			this.outputVectorFilename = (String) this.configProps.get( OUTPUT_FILENAME_KEY );
-			
-			if ( (new File( this.outputVectorFilename ).exists()) == false ) {
-				
-				// file path does not exist
-				
-				File yourFile = new File( this.outputVectorFilename );
-				if(!yourFile.exists()) {
-				    yourFile.createNewFile();
-				} 
-				
-			} else {
-				
-				if ( new File( this.outputVectorFilename ).isDirectory() ) {
-					
-					
-					Date date = new Date() ;
-					SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss") ;
-					//File file = new File(dateFormat.format(date) + ".tsv") ;
-					
-					this.outputVectorFilename += "/canova_vectors_" + dateFormat.format(date) + ".txt";
-					
-					
-				} else {
-					
-					// if a file that exists
-					
-					
-					(new File( this.outputVectorFilename )).delete();
-					
-					log.warn( "File path already exists, deleting the old file before proceeding..." );
-					
-					
-				}
-				
-				
-			}
-			*/
-		//log.warn( "Writing vectorized output to: " + this.outputVectorFilename + "\n\n" );
-
-		//}
-
-
-	}
-
-
-	public void debugLoadedConfProperties() {
-
-		Properties props = this.configProps; //System.getProperties();
-		Enumeration e = props.propertyNames();
-
-		log.warn("\n-- DL4J Configuration --");
-
-		while (e.hasMoreElements()) {
-			String key = (String) e.nextElement();
-			log.warn(key + " - " + props.getProperty(key));
-		}
-
-		log.warn("-- DL4J Configuration --\n");
-	}
-
-
-
+                MultiLayerNetwork network = new MultiLayerNetwork(conf);
+                network.fit(iter);
+                if(saveMode.equals("binary")) {
+                    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(this.outputDirectory));
+                    DataOutputStream dos = new DataOutputStream(bos);
+                    Nd4j.write(network.params(),dos);
+                }
+                else {
+                    Nd4j.writeTxt(network.params(),outputDirectory,",");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            try {
+                NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(FileUtils.readFileToString(new File(modelPath)));
+                LayerFactory factory = LayerFactories.getFactory(conf);
+                Layer l = factory.create(conf);
+                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getBatchSize());
+                while(iter.hasNext()) {
+                    l.fit(iter.next().getFeatureMatrix());
+                }
+
+                if(saveMode.equals("binary")) {
+                    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(this.outputDirectory));
+                    DataOutputStream dos = new DataOutputStream(bos);
+                    Nd4j.write(l.params(),dos);
+                }
+                else {
+                    Nd4j.writeTxt(l.params(),outputDirectory,",");
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+    public void execOnSpark() {
+        log.warn( "DL4J: Execution on spark from CLI not yet supported" );
+    }
+
+    public void execOnHadoop() {
+        log.warn( "DL4J: Execution on hadoop from CLI not yet supported" );
+    }
+
+    /**
+     * Create an input format
+     * @return the input format to be created
+     */
+    public InputFormat createInputFormat() {
+
+        //log.warn( "> Loading Input Format: " + (String) this.configProps.get( INPUT_FORMAT ) );
+
+        String clazz = (String) this.configProps.get( INPUT_FORMAT_KEY );
+
+        if ( null == clazz ) {
+            clazz = DEFAULT_INPUT_FORMAT_CLASSNAME;
+        }
+
+        try {
+            Class<? extends InputFormat> inputFormatClazz = (Class<? extends InputFormat>) Class.forName(clazz);
+            return inputFormatClazz.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+
+    public void loadConfigFile() throws Exception {
+
+        this.configProps = new Properties();
+
+        InputStream in = null;
+        try {
+            in = new FileInputStream( this.configurationFile );
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        try {
+            this.configProps.load(in);
+            in.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+
+
+        // get runtime - EXECUTION_RUNTIME_MODE_KEY
+        if (this.configProps.get( EXECUTION_RUNTIME_MODE_KEY ) != null)
+            this.runtime = (String) this.configProps.get(EXECUTION_RUNTIME_MODE_KEY);
+
+        else
+            this.runtime = EXECUTION_RUNTIME_MODE_DEFAULT;
+
+        // get output directory
+        if (null != this.configProps.get( OUTPUT_FILENAME_KEY ))
+            this.outputDirectory = (String) this.configProps.get(OUTPUT_FILENAME_KEY);
+
+        else
+            // default
+            this.outputDirectory = "/tmp/dl4_model_default.txt";
+        //throw new Exception("no output location!");
+
+
+
+        // get input data
+
+        if ( null != this.configProps.get( INPUT_DATA_FILENAME_KEY ))
+            this.input = (String) this.configProps.get(INPUT_DATA_FILENAME_KEY);
+
+        else
+            throw new RuntimeException("no input file to train on!");
+
+    }
 }

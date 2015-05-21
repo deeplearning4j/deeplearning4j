@@ -49,7 +49,7 @@ public class Test extends BaseSubCommand {
     }
 
     @Override
-    public void exec() {
+    public void execute() {
 
     }
 }
