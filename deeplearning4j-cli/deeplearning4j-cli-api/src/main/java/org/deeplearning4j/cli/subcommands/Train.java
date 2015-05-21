@@ -103,6 +103,9 @@ public class Train extends BaseSubCommand {
 
 
 
+    public Train() {
+        this(new String[1]);
+    }
 
     public Train(String[] args) {
         super(args);
@@ -117,6 +120,11 @@ public class Train extends BaseSubCommand {
      */
     @Override
     public void execute() {
+        try {
+            loadConfigFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         if ("hadoop".equals(this.runtime.trim().toLowerCase()))
             this.execOnHadoop();
