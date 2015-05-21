@@ -3348,7 +3348,7 @@ public class Nd4j {
             for (String key : props.stringPropertyNames())
                 System.setProperty(key, props.getProperty(key));
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
-            String otherAlloc = System.getProperty(ALLOC,props.getProperty(ALLOC));
+            String otherAlloc = System.getProperty(ALLOC,props.getProperty(ALLOC,"heap"));
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
             alloc = otherAlloc.equals("heap") ? DataBuffer.AllocationMode.HEAP : DataBuffer.AllocationMode.DIRECT;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));

@@ -2874,7 +2874,7 @@ public abstract class BaseNDArray implements INDArray {
                     //enforce 1 x m
                     if(Shape.isRowVectorShape(sliceShape)) {
                         sliceShape = new int[] {1,sliceShape[0]};
-                        retStride = ArrayUtil.of(retStride[0],1);
+                        retStride = ArrayUtil.of(1,retStride[0]);
                     }
 
                     INDArray slice2 = create(data,
