@@ -8,9 +8,9 @@ layout: default
 
 For almost any neural net you build in DL4J the foundation is the NeuralNetConfiguration constructor. This object provides significant flexibility on building out almost any type of neural network layer you want to implement. Parameter combinations and configurations for this class define different types of layers such as RBMs, DBNs, CNNs, Auto, etc. Below are a list of parameters with default settings: 
 
-How to start constructing the class in Java:
+How to start constructing the class in Java for single layer:
 
-	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+	NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 
 Append parameters onto this class by linking them up as follows:
 
