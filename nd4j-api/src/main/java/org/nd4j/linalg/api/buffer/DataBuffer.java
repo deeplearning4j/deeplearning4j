@@ -34,11 +34,33 @@ import java.util.Collection;
  */
 public interface DataBuffer extends Serializable {
 
-	public static enum Type {
-	    DOUBLE,
-	    FLOAT,
-	    INT
-	}
+    enum Type {
+        DOUBLE,
+        FLOAT,
+        INT
+    }
+
+    /**
+     * Direct (off heap) and heap allocation
+     *
+     * Each has their trade offs.
+     *
+     * One allows for storing unlimited array sizes, faster i/o with native
+     * applications
+     *
+     * heap is backed by an array and can be useful depending on the api
+     */
+    enum AllocationMode {
+        DIRECT,
+        HEAP
+    }
+
+
+    /**
+     * Allocation mode for buffers
+     * @return the allocation mode for the buffer
+     */
+    AllocationMode allocationMode();
 
     /**
      * Mark this buffer as persistent
@@ -389,7 +411,7 @@ public interface DataBuffer extends Serializable {
      */
     void assign(int[] offsets, int[] strides, DataBuffer... buffers);
 
-    
+
     /**
      * release all resources for this buffer
      */

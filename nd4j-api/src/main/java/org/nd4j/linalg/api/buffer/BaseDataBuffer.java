@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteOrder;
@@ -44,18 +45,102 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
+    protected AllocationMode allocationMode;
+    protected double[] doubleData;
+    protected int[] intData;
+    protected float[] floatData;
 
+    /**
+     *
+     * @param buf
+     * @param length
+     */
+    protected BaseDataBuffer(ByteBuf buf,int length) {
+        allocationMode = Nd4j.alloc;
+        this.dataBuffer = buf;
+        this.length = length;
+    }
+
+    /**
+     *
+     * @param data
+     * @param copy
+     */
     public BaseDataBuffer(float[] data, boolean copy) {
-        dataBuffer = Unpooled.copyFloat(data);
+        allocationMode = Nd4j.alloc;
+        if(allocationMode == AllocationMode.HEAP) {
+            if(copy) {
+                floatData = ArrayUtil.copy(data);
+            }
+            else {
+                this.floatData = data;
+            }
+        }
+        else {
+            dataBuffer = Unpooled.copyFloat(data);
+        }
+        length = data.length;
 
     }
+
+    /**
+     *
+     * @param data
+     * @param copy
+     */
     public BaseDataBuffer(double[] data, boolean copy) {
-        dataBuffer = Unpooled.copyDouble(data);
+        allocationMode = Nd4j.alloc;
+        if(allocationMode == AllocationMode.HEAP) {
+            if(copy) {
+                doubleData = ArrayUtil.copy(data);
+            }
+            else {
+                this.doubleData = data;
+            }
+        }
+        else {
+            dataBuffer = Unpooled.copyDouble(data);
+        }
+        length = data.length;
 
     }
 
+    /**
+     *
+     * @param data
+     * @param copy
+     */
     public BaseDataBuffer(int[] data, boolean copy) {
-        dataBuffer = Unpooled.copyInt(data);
+        allocationMode = Nd4j.alloc;
+        if(allocationMode == AllocationMode.HEAP) {
+            if(copy) {
+                intData = ArrayUtil.copy(data);
+            }
+            else {
+                this.intData = data;
+            }
+        }
+        else {
+            dataBuffer = Unpooled.copyInt(data);
+        }
+        length = data.length;
+    }
+
+    public BaseDataBuffer(double[] data) {
+        this(data,Nd4j.copyOnOps);
+    }
+
+    public BaseDataBuffer(int[] data) {
+        this(data,Nd4j.copyOnOps);
+    }
+
+    public BaseDataBuffer(float[] data) {
+        this(data,Nd4j.copyOnOps);
+    }
+
+    @Override
+    public AllocationMode allocationMode() {
+        return allocationMode;
     }
 
     @Override
@@ -75,9 +160,20 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     protected BaseDataBuffer(int length) {
         this.length = length;
+        allocationMode = Nd4j.alloc;
+
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
-        dataBuffer = Unpooled.directBuffer(length);
-        dataBuffer.order(ByteOrder.nativeOrder());
+        if(allocationMode == AllocationMode.HEAP) {
+            if(dataType() == Type.DOUBLE)
+                doubleData = new double[length];
+            else if(dataType() == Type.FLOAT)
+                floatData = new float[length];
+        }
+        else {
+            dataBuffer = allocationMode == AllocationMode.DIRECT ? Unpooled.directBuffer(length * getElementSize()) : Unpooled.buffer(length * getElementSize());
+            dataBuffer.order(ByteOrder.nativeOrder());
+        }
+
     }
 
 
@@ -111,22 +207,37 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void setData(int[] data) {
-        for(int i = 0; i < data.length; i++) {
-            dataBuffer.setInt(i, data[i]);
+        if(intData != null)
+            this.intData = data;
+        else {
+            for (int i = 0; i < data.length; i++) {
+                dataBuffer.setInt(i, data[i]);
+            }
         }
 
     }
 
     @Override
     public void setData(float[] data) {
-        for(int i = 0; i < data.length; i++)
-            dataBuffer.setFloat(i, data[i]);
+        if(floatData != null) {
+            this.floatData = data;
+        }
+        else {
+            for(int i = 0; i < data.length; i++)
+                dataBuffer.setFloat(i, data[i]);
+        }
+
     }
 
     @Override
     public void setData(double[] data) {
-        for(int i = 0; i < data.length; i++)
-            dataBuffer.setDouble(i, data[i]);
+        if(doubleData != null) {
+            this.doubleData = data;
+        }
+        else {
+            for(int i = 0; i < data.length; i++)
+                dataBuffer.setDouble(i, data[i]);
+        }
     }
 
 
@@ -191,8 +302,49 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public DataBuffer dup() {
-        return null;
+        if(floatData != null) {
+            return create(floatData);
+        }
+        else if(doubleData != null) {
+            return create(doubleData);
+        }
+        else if(intData != null) {
+            return create(intData);
+        }
+
+        return create(dataBuffer.copy(),length);
     }
+
+    /**
+     * Create the data buffer
+     * with respect to the given byte buffer
+     * @param data the buffer to create
+     * @return the data buffer based on the given buffer
+     */
+    public abstract DataBuffer create(double[] data);
+    /**
+     * Create the data buffer
+     * with respect to the given byte buffer
+     * @param data the buffer to create
+     * @return the data buffer based on the given buffer
+     */
+    public abstract DataBuffer create(float[] data);
+
+    /**
+     * Create the data buffer
+     * with respect to the given byte buffer
+     * @param data the buffer to create
+     * @return the data buffer based on the given buffer
+     */
+    public abstract DataBuffer create(int[] data);
+
+    /**
+     * Create the data buffer
+     * with respect to the given byte buffer
+     * @param buf the buffer to create
+     * @return the data buffer based on the given buffer
+     */
+    public abstract DataBuffer create(ByteBuf buf,int length);
 
     @Override
     public double[] getDoublesAt(int offset, int inc, int length) {
@@ -248,26 +400,59 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float[] asFloat() {
+        if(allocationMode == AllocationMode.HEAP) {
+            if(floatData != null) {
+                return floatData;
+            }
+        }
         return dataBuffer.nioBuffer().asFloatBuffer().array();
     }
 
     @Override
     public double[] asDouble() {
+        if(allocationMode == AllocationMode.HEAP) {
+            if(doubleData != null) {
+                return doubleData;
+            }
+        }
         return dataBuffer.nioBuffer().asDoubleBuffer().array();
     }
 
     @Override
     public int[] asInt() {
+        if(allocationMode == AllocationMode.HEAP) {
+            if(intData != null) {
+                return intData;
+            }
+        }
         return dataBuffer.nioBuffer().asIntBuffer().array();
     }
 
     @Override
     public double getDouble(int i) {
+        if(doubleData != null) {
+            return doubleData[i];
+        }
+        else if(floatData != null) {
+            return (double) floatData[i];
+        }
+        else if(intData != null) {
+            return (double) intData[i];
+        }
         return dataBuffer.getDouble(i);
     }
 
     @Override
     public float getFloat(int i) {
+        if(doubleData != null) {
+            return (float) doubleData[i];
+        }
+        else if(floatData != null) {
+            return floatData[i];
+        }
+        else if(intData != null) {
+            return (float) intData[i];
+        }
         return dataBuffer.getFloat(i);
     }
 
@@ -278,12 +463,32 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int i, float element) {
-        dataBuffer.setFloat(i, element);
+        if(doubleData != null) {
+            doubleData[i] = element;
+        }
+        else if(floatData != null) {
+            floatData[i] = element;
+        }
+        else if(intData != null) {
+            intData[i] = (int) element;
+        }
+        else
+            dataBuffer.setFloat(i, element);
     }
 
     @Override
     public void put(int i, double element) {
-        dataBuffer.setDouble(i,element);
+        if(doubleData != null) {
+            doubleData[i] = element;
+        }
+        else if(floatData != null) {
+            floatData[i] = (float) element;
+        }
+        else if(intData != null) {
+            intData[i] = (int) element;
+        }
+        else
+            dataBuffer.setDouble(i,element);
     }
 
     @Override
@@ -341,6 +546,34 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void destroy() {
+        this.dataBuffer.clear();
         this.dataBuffer = null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BaseDataBuffer that = (BaseDataBuffer) o;
+
+        if (length != that.length) return false;
+        if (isPersist != that.isPersist) return false;
+        if (dataBuffer != null ? !dataBuffer.equals(that.dataBuffer) : that.dataBuffer != null) return false;
+        if (referencing != null ? !referencing.equals(that.referencing) : that.referencing != null) return false;
+        if (ref != null ? !ref.equals(that.ref) : that.ref != null) return false;
+        return allocationMode == that.allocationMode;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = length;
+        result = 31 * result + (dataBuffer != null ? dataBuffer.hashCode() : 0);
+        result = 31 * result + (referencing != null ? referencing.hashCode() : 0);
+        result = 31 * result + (ref != null ? ref.hashCode() : 0);
+        result = 31 * result + (isPersist ? 1 : 0);
+        result = 31 * result + (allocationMode != null ? allocationMode.hashCode() : 0);
+        return result;
     }
 }

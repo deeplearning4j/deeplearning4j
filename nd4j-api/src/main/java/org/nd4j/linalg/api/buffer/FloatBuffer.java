@@ -20,6 +20,8 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import io.netty.buffer.ByteBuf;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Data buffer for floats
@@ -37,10 +39,40 @@ public class FloatBuffer extends BaseDataBuffer {
         super(length);
     }
 
+
+
+    public FloatBuffer(ByteBuf buf,int length) {
+        super(buf,length);
+    }
+
+    public FloatBuffer(float[] data) {
+        this(data, Nd4j.copyOnOps);
+    }
+
+    public FloatBuffer(int[] data) {
+        this(data,Nd4j.copyOnOps);
+    }
+
+    public FloatBuffer(double[] data) {
+        this(data,Nd4j.copyOnOps);
+    }
+
+    public FloatBuffer(int[] data, boolean copyOnOps) {
+       super(data, copyOnOps);
+    }
+
+    public FloatBuffer(double[] data, boolean copyOnOps) {
+        super(data,copyOnOps);
+    }
+
+    @Override
+    public DataBuffer create(ByteBuf buf,int length) {
+        return new FloatBuffer(buf,length);
+    }
+
     public FloatBuffer(float[] floats, boolean copy) {
         super(floats, copy);
     }
-
 
     @Override
     public int getElementSize() {
@@ -55,6 +87,21 @@ public class FloatBuffer extends BaseDataBuffer {
         return DataBuffer.Type.FLOAT;
     }
 
+
+    @Override
+    public DataBuffer create(double[] data) {
+        return new FloatBuffer(data);
+    }
+
+    @Override
+    public DataBuffer create(float[] data) {
+        return new FloatBuffer(data);
+    }
+
+    @Override
+    public DataBuffer create(int[] data) {
+        return new FloatBuffer(data);
+    }
 
 
 }

@@ -20,6 +20,8 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * Int buffer
  *
@@ -30,6 +32,42 @@ public class IntBuffer extends BaseDataBuffer {
 
     public IntBuffer(int length) {
         super(length);
+    }
+
+    public IntBuffer(int[] data) {
+        super(data);
+    }
+
+    public IntBuffer(double[] data) {
+        super(data);
+    }
+
+    public IntBuffer(float[] data) {
+        super(data);
+    }
+
+    @Override
+    public DataBuffer create(double[] data) {
+        return new IntBuffer(data);
+    }
+
+    @Override
+    public DataBuffer create(float[] data) {
+       return new IntBuffer(data);
+    }
+
+    @Override
+    public DataBuffer create(int[] data) {
+       return new IntBuffer(data);
+    }
+
+    public IntBuffer(ByteBuf buf,int length) {
+        super(buf,length);
+    }
+
+    @Override
+    public DataBuffer create(ByteBuf buf,int length) {
+        return new IntBuffer(buf,length);
     }
 
     public IntBuffer(int[] data, boolean copy) {

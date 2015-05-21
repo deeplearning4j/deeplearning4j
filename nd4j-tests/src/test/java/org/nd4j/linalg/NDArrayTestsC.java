@@ -56,6 +56,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
 
     public NDArrayTestsC() {
+        System.out.println();
     }
 
     public NDArrayTestsC(String name) {

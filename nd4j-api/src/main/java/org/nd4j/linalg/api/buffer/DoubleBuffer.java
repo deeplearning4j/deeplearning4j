@@ -20,6 +20,9 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import io.netty.buffer.ByteBuf;
+import org.nd4j.linalg.factory.Nd4j;
+
 /**
  * Double buffer implementation of data buffer
  *
@@ -32,6 +35,35 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length);
     }
 
+    public DoubleBuffer(ByteBuf buf,int length) {
+        super(buf,length);
+    }
+
+    public DoubleBuffer(double[] data) {
+        super(data);
+    }
+
+    public DoubleBuffer(int[] data) {
+        this(data, Nd4j.copyOnOps);
+    }
+
+    public DoubleBuffer(int[] data, boolean copyOnOps) {
+        super(data, copyOnOps);
+    }
+
+    public DoubleBuffer(float[] data) {
+        this(data, Nd4j.copyOnOps);
+    }
+
+    public DoubleBuffer(float[] data, boolean copyOnOps) {
+        super(data,copyOnOps);
+    }
+
+    @Override
+    public DataBuffer create(ByteBuf buf,int length) {
+        return new DoubleBuffer(buf,length);
+    }
+
     public DoubleBuffer(double[] doubles, boolean copy) {
         super(doubles, copy);
     }
@@ -42,22 +74,6 @@ public class DoubleBuffer extends BaseDataBuffer {
         return DataBuffer.Type.DOUBLE;
     }
 
-    @Override
-    public float[] asFloat() {
-        return dataBuffer.nioBuffer().asFloatBuffer().array();
-    }
-
-    @Override
-    public double[] asDouble() {
-        return dataBuffer.nioBuffer().asDoubleBuffer().array();
-
-    }
-
-    @Override
-    public int[] asInt() {
-        return dataBuffer.nioBuffer().asIntBuffer().array();
-
-    }
 
 
 
@@ -71,23 +87,20 @@ public class DoubleBuffer extends BaseDataBuffer {
         return (int) getDouble(i);
     }
 
-
     @Override
-    public void put(int i, float element) {
-        put(i, (double) element);
-
+    public DataBuffer create(double[] data) {
+        return new DoubleBuffer(data);
     }
 
     @Override
-    public void put(int i, double element) {
-        dataBuffer.setDouble(i, element);
+    public DataBuffer create(float[] data) {
+        return new DoubleBuffer(data);
     }
 
     @Override
-    public void put(int i, int element) {
-        put(i, (double) element);
+    public DataBuffer create(int[] data) {
+        return new DoubleBuffer(data);
     }
-
 
     @Override
     public int getInt(int ix) {
