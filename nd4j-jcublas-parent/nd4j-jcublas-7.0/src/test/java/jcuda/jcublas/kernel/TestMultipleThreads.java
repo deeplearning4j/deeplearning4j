@@ -30,17 +30,22 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.context.ContextHolder;
 
 public class TestMultipleThreads {
-	
+
+
+
+
+
 	@Test
 	public void testMultipleThreads() throws InterruptedException {
 		int numThreads = 10;
-		final INDArray array = Nd4j.rand(3000, 3000);
+		final INDArray array = Nd4j.rand(300, 300);
 		final INDArray expected = array.dup().mmul(array).mmul(array).div(array).div(array);
 		final AtomicInteger correct = new AtomicInteger();
 		final CountDownLatch latch = new CountDownLatch(numThreads);
-		
+		System.out.println("Running on " + ContextHolder.getInstance().deviceNum());
 		ExecutorService executors = Executors.newCachedThreadPool();
 		
 		for(int x = 0; x< numThreads; x++) {

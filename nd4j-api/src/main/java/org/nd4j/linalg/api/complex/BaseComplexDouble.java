@@ -550,13 +550,13 @@ public abstract class BaseComplexDouble implements IComplexDouble {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof BaseComplexDouble)) return false;
+        if (!(o instanceof IComplexNumber)) return false;
 
-        BaseComplexDouble that = (BaseComplexDouble) o;
+        IComplexNumber that = (IComplexNumber) o;
 
-        if (Math.abs(that.real - real) > Nd4j.EPS_THRESHOLD)
+        if (Math.abs(that.realComponent().doubleValue() - real) > Nd4j.EPS_THRESHOLD)
             return false;
-        if(Math.abs(that.imag - imag) > Nd4j.EPS_THRESHOLD)
+        if(Math.abs(that.imaginaryComponent().doubleValue() - imag) > Nd4j.EPS_THRESHOLD)
             return false;
 
         return true;

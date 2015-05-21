@@ -47,7 +47,7 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
 import javax.naming.Context;
 
 /**
- * Simple abstraction for jcuda.jcublas operations
+ * Simple abstraction for jcublas operations
  *
  * @author mjk
  * @author Adam Gibson
@@ -85,12 +85,7 @@ public class SimpleJCublas {
 
 
 
-    static int checkResult(int result) {
-        if (result != cudaError.cudaSuccess)
-            throw new CudaException(cudaError.stringFor(result));
 
-        return result;
-    }
 
 
     /**
@@ -99,9 +94,10 @@ public class SimpleJCublas {
     public static void init() {
         if (init)
             return;
+
         JCublas2.setExceptionsEnabled(true);
-
-
+        JCudaDriver.setExceptionsEnabled(true);
+        JCuda.setExceptionsEnabled(true);
 
         try {
             KernelFunctionLoader.getInstance().load();
@@ -111,24 +107,24 @@ public class SimpleJCublas {
 
         // Check if the device supports mapped host memory
         cudaDeviceProp deviceProperties = new cudaDeviceProp();
-        checkResult(JCuda.cudaGetDeviceProperties(deviceProperties, 0));
+        JCuda.cudaGetDeviceProperties(deviceProperties, 0);
         if (deviceProperties.canMapHostMemory == 0) {
             System.err.println("This device can not map host memory");
             System.err.println(deviceProperties.toFormattedString());
             return;
         }
 
-        int[] version = new int[1];
-        JCudaDriver.cuCtxGetApiVersion(ContextHolder.getInstance().getContext(), version);
-
 
         init = true;
     }
 
 
+    /**
+     * Sync the device
+     */
     public static void sync() {
-        checkResult(JCuda.cudaDeviceSynchronize());
-        KernelLauncher.setContext();
+        JCuda.cudaDeviceSynchronize();
+        ContextHolder.syncStream();
     }
 
     /**
@@ -157,12 +153,12 @@ public class SimpleJCublas {
                 A.rows(),
                 A.columns(),
                 Pointer.to(new double[]{alpha}),
-                cAPointer,
+                cAPointer.getDevicePointer(),
                 A.rows(),
-                cBPointer,
+                cBPointer.getDevicePointer(),
                 1,
                 Pointer.to(new double[]{beta}),
-                cCPointer,
+                cCPointer.getDevicePointer(),
                 1);
 
         cCPointer.copyToHost();
@@ -185,12 +181,12 @@ public class SimpleJCublas {
     public static INDArray gemv(INDArray A, INDArray B, INDArray C, float alpha, float beta) {
 
         DataTypeValidation.assertFloat(A, B, C);
-        sync();
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
         CublasPointer cCPointer = new CublasPointer(C);
 
+        sync();
 
 
         JCublas2.cublasSgemv(
@@ -198,14 +194,14 @@ public class SimpleJCublas {
                 cublasOperation.CUBLAS_OP_N,
                 A.rows(),
                 A.columns(),
-                Pointer.to(new double[]{alpha}),
-                cAPointer,
+                Pointer.to(new float[]{alpha}),
+                cAPointer.getDevicePointer(),
                 A.rows(),
-                cBPointer,
-                A.majorStride(),
-                Pointer.to(new double[]{beta}),
-                cCPointer,
-                C.majorStride());
+                cBPointer.getDevicePointer(),
+                1,
+                Pointer.to(new float[]{beta}),
+                cCPointer.getDevicePointer(),
+                1);
 
         sync();
 
@@ -246,13 +242,13 @@ public class SimpleJCublas {
                 A.rows(),  // m
                 A.rows(), // n
                 PointerUtil.getPointer(alpha),
-                cAPointer, // A
+                cAPointer.getDevicePointer(), // A
                 A.rows(),  // lda
-                cBPointer, // x
-                B.secondaryStride(), // ldb
+                cBPointer.getDevicePointer(), // x
+                1, // ldb
                 PointerUtil.getPointer(beta),  // beta
-                cCPointer, // ydoin
-                C.secondaryStride()); // ldc
+                cCPointer.getDevicePointer(), // ydoin
+                1); // ldc
 
         sync();
 
@@ -293,13 +289,13 @@ public class SimpleJCublas {
                 A.rows(),  // m
                 A.columns(), // n
                 PointerUtil.getPointer(alpha),
-                cAPointer, // A
+                cAPointer.getDevicePointer(), // A
                 A.rows(),  // lda
-                cBPointer, // x
-                B.secondaryStride(), // ldb
+                cBPointer.getDevicePointer(), // x
+                1, // ldb
                 PointerUtil.getPointer(beta),  // beta
-                cCPointer, // y
-                C.secondaryStride()); // ldc
+                cCPointer.getDevicePointer(), // y
+                1); // ldc
 
         sync();
 
@@ -343,12 +339,12 @@ public class SimpleJCublas {
                 C.columns(), // n
                 A.columns(), //k,
                 PointerUtil.getPointer(alpha),
-                cAPointer, // A
+                cAPointer.getDevicePointer(), // A
                 A.rows(),  // lda
-                cBPointer, // x
+                cBPointer.getDevicePointer(), // x
                 B.rows(), // ldb
                 PointerUtil.getPointer(beta),  // beta
-                cCPointer, // y
+                cCPointer.getDevicePointer(), // y
                 C.rows()); // ldc
 
         sync();
@@ -392,12 +388,12 @@ public class SimpleJCublas {
                 C.columns(), // n
                 A.columns(), //k,
                 PointerUtil.getPointer(alpha),
-                cAPointer, // A
+                cAPointer.getDevicePointer(), // A
                 A.rows(),  // lda
-                cBPointer, // x
+                cBPointer.getDevicePointer(), // x
                 B.rows(), // ldb
                 PointerUtil.getPointer(beta),  // beta
-                cCPointer, // y
+                cCPointer.getDevicePointer(), // y
                 C.rows()); // ldc
 
         sync();
@@ -443,12 +439,12 @@ public class SimpleJCublas {
                 C.columns(), // n
                 A.columns(), //k,
                 Pointer.to(new double[]{alpha}),
-                cAPointer, // A
+                cAPointer.getDevicePointer(), // A
                 A.rows(),  // lda
-                cBPointer, // x
+                cBPointer.getDevicePointer(), // x
                 B.rows(), // ldb
                 Pointer.to(new double[]{beta}),
-                cCPointer, // y
+                cCPointer.getDevicePointer(), // y
                 C.rows()); // incy
 
         sync();
@@ -488,12 +484,12 @@ public class SimpleJCublas {
                 C.columns(), // n
                 A.columns(), //k,
                 Pointer.to(new float[]{alpha}),
-                cAPointer, // A
+                cAPointer.getDevicePointer(), // A
                 A.rows(),  // lda
-                cBPointer, // x
+                cBPointer.getDevicePointer(), // x
                 B.rows(), // ldb
                 Pointer.to(new float[]{beta}),
-                cCPointer, // y
+                cCPointer.getDevicePointer(), // y
                 C.rows()); // incy
         sync();
 
@@ -526,7 +522,7 @@ public class SimpleJCublas {
             JCublas2.cublasSnrm2(
                     ContextHolder.getInstance().getHandle()
                     ,A.length()
-                    ,cAPointer,
+                    ,cAPointer.getDevicePointer(),
                     2
                     , result);
             return ret[0];
@@ -537,7 +533,7 @@ public class SimpleJCublas {
             JCublas2.cublasDnrm2(
                     ContextHolder.getInstance().getHandle()
                     ,A.length(),
-                    cAPointer
+                    cAPointer.getDevicePointer()
                     ,2
                     , result);
             return ret[0];
@@ -562,11 +558,11 @@ public class SimpleJCublas {
 
         JCudaBuffer buff = (JCudaBuffer) x.data();
         if (x.majorStride() == 2 && y.majorStride() == 2)
-            JCuda.cudaMemcpy(
-                    yCPointer
-                    , xCPointer
+            JCuda.cudaMemcpyAsync(
+                    yCPointer.getDevicePointer()
+                    , xCPointer.getDevicePointer()
                     , x.length() * buff.getElementSize() * 2
-                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice);
+                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice, ContextHolder.getInstance().getCudaStream());
         else
             Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
 
@@ -592,12 +588,12 @@ public class SimpleJCublas {
         if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             cuComplex complex = cuComplex.cuCmplx(0,0);
             Pointer resultPointer = PointerUtil.getPointer(complex);
-            JCublas2.cublasIsamax(ContextHolder.getInstance().getHandle(),x.length(), xCPointer, 1,resultPointer);
+            JCublas2.cublasIsamax(ContextHolder.getInstance().getHandle(),x.length(), xCPointer.getDevicePointer(), 1,resultPointer);
             return (int) complex.x - 1;
         } else {
             cuDoubleComplex complex = cuDoubleComplex.cuCmplx(0,0);
             Pointer resultPointer = PointerUtil.getPointer(complex);
-            JCublas2.cublasIzamax(ContextHolder.getInstance().getHandle(),x.length(), xCPointer, 1,resultPointer);
+            JCublas2.cublasIzamax(ContextHolder.getInstance().getHandle(),x.length(), xCPointer.getDevicePointer(), 1,resultPointer);
             return (int) complex.x;
         }
 
@@ -611,7 +607,7 @@ public class SimpleJCublas {
         CublasPointer xCPointer = new CublasPointer(x);
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-        JCublas2.cublasScasum(ContextHolder.getInstance().getHandle(),x.length(), xCPointer, 1, result);
+        JCublas2.cublasScasum(ContextHolder.getInstance().getHandle(),x.length(), xCPointer.getDevicePointer(), 1, result);
         return ret[0];
     }
 
@@ -635,18 +631,18 @@ public class SimpleJCublas {
             JCublas2.cublasSswap(
                     ContextHolder.getInstance().getHandle(),
                     x.length(),
-                    xCPointer,
+                    xCPointer.getDevicePointer(),
                     1,
-                    yCPointer,
+                    yCPointer.getDevicePointer(),
                     1);
 
         } else {
             JCublas2.cublasDswap(
                     ContextHolder.getInstance().getHandle(),
                     x.length(),
-                    xCPointer,
+                    xCPointer.getDevicePointer(),
                     1,
-                    yCPointer,
+                    yCPointer.getDevicePointer(),
                     1);
 
         }
@@ -667,12 +663,12 @@ public class SimpleJCublas {
         if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             float[] ret = new float[1];
             result = Pointer.to(ret);
-            JCublas2.cublasSasum(ContextHolder.getInstance().getHandle(), x.length(), xCPointer, 1, result);
+            JCublas2.cublasSasum(ContextHolder.getInstance().getHandle(), x.length(), xCPointer.getDevicePointer(), 1, result);
             return ret[0];
         } else {
             double[] ret = new double[1];
             result = Pointer.to(ret);
-            JCublas2.cublasDasum(ContextHolder.getInstance().getHandle(), x.length(), xCPointer, 1, result);
+            JCublas2.cublasDasum(ContextHolder.getInstance().getHandle(), x.length(), xCPointer.getDevicePointer(), 1, result);
             return ret[0];
         }
 
@@ -691,13 +687,13 @@ public class SimpleJCublas {
             CublasPointer xCPointer = new CublasPointer(x);
             float[] ret = new float[1];
             result = Pointer.to(ret);
-            JCublas2.cublasSnrm2(ContextHolder.getInstance().getHandle(),x.length(), xCPointer, 1,result);
+            JCublas2.cublasSnrm2(ContextHolder.getInstance().getHandle(),x.length(), xCPointer.getDevicePointer(), 1,result);
             return ret[0];
         } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             CublasPointer xCPointer = new CublasPointer(x);
             double[] ret = new double[1];
             result = Pointer.to(ret);
-            double normal2 = JCublas2.cublasDnrm2(ContextHolder.getInstance().getHandle(),x.length(), xCPointer, 1,result);
+            double normal2 = JCublas2.cublasDnrm2(ContextHolder.getInstance().getHandle(),x.length(), xCPointer.getDevicePointer(), 1,result);
             return normal2;
         }
         throw new IllegalStateException("Illegal data type on array ");
@@ -722,7 +718,7 @@ public class SimpleJCublas {
             JCublas2.cublasIsamax(
                     ContextHolder.getInstance().getHandle(),
                     x.length() * x.data().getElementSize(),
-                    xCPointer,
+                    xCPointer.getDevicePointer(),
                     1,result);
             ContextHolder.syncStream();
             sync();
@@ -735,7 +731,7 @@ public class SimpleJCublas {
             JCublas2.cublasIdamax(
                     ContextHolder.getInstance().getHandle(),
                     x.length(),
-                    xCPointer,
+                    xCPointer.getDevicePointer(),
                     1, result);
             sync();
             return (int) (ret[0] - 1);
@@ -763,12 +759,11 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 A.length(),
                 Pointer.to(new float[]{da}),
-                xAPointer,
-                A.majorStride(),
-                xBPointer,
-                B.majorStride());
+                xAPointer.getDevicePointer(),
+                1,
+                xBPointer.getDevicePointer(),
+                1);
 
-        ((JCudaBuffer)A.data()).copyToHost();
         sync();
 
         xBPointer.copyToHost();
@@ -795,9 +790,9 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 A.length(),
                 PointerUtil.getPointer(jcuda.cuComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue())),
-                aCPointer,
+                aCPointer.getDevicePointer(),
                 1,
-                bCPointer,
+                bCPointer.getDevicePointer(),
                 1
         );
         sync();
@@ -823,10 +818,10 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 A.length(),
                 PointerUtil.getPointer(jcuda.cuDoubleComplex.cuCmplx(da.realComponent().floatValue(), da.imaginaryComponent().floatValue())),
-                aCPointer,
-                A.majorStride(),
-                bCPointer,
-                B.majorStride()
+                aCPointer.getDevicePointer(),
+                1,
+                bCPointer.getDevicePointer(),
+               1
         );
         sync();
 
@@ -852,8 +847,8 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 x.length(),
                 Pointer.to(new double[]{alpha}),
-                xCPointer,
-                x.majorStride());
+                xCPointer.getDevicePointer(),
+                1);
         sync();
 
         xCPointer.copyToHost();
@@ -881,8 +876,8 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 x.length(),
                 Pointer.to(new float[]{alpha}),
-                xCPointer,
-                x.majorStride());
+                xCPointer.getDevicePointer(),
+               1);
         sync();
 
         xCPointer.copyToHost();
@@ -906,9 +901,19 @@ public class SimpleJCublas {
         CublasPointer yCPointer = new CublasPointer(y);
 
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
-            JCublas2.cublasDcopy(ContextHolder.getInstance().getHandle(),x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
+            JCublas2.cublasDcopy(
+                    ContextHolder.getInstance().getHandle()
+                    ,x.length(),xCPointer.getDevicePointer()
+                    ,x.majorStride()
+                    ,yCPointer.getDevicePointer()
+                    ,y.majorStride());
         if(x.data().dataType() == DataBuffer.Type.FLOAT)
-            JCublas2.cublasScopy(ContextHolder.getInstance().getHandle(),x.length(),xCPointer,x.majorStride(),yCPointer,y.majorStride());
+            JCublas2.cublasScopy(ContextHolder.getInstance().getHandle()
+                    ,x.length()
+                    ,xCPointer.getDevicePointer()
+                    ,1
+                    ,yCPointer.getDevicePointer()
+                    ,1);
         sync();
 
         yCPointer.copyToHost();
@@ -936,10 +941,10 @@ public class SimpleJCublas {
             JCublas2.cublasSdot(
                     ContextHolder.getInstance().getHandle(),
                     x.length(),
-                    xCPointer,
-                    x.majorStride()
-                    , yCPointer,
-                    y.majorStride(),result);
+                    xCPointer.getDevicePointer(),
+                   1
+                    , yCPointer.getDevicePointer(),
+                    1,result);
             sync();
 
             releaseCublasPointers(xCPointer,yCPointer);
@@ -951,10 +956,10 @@ public class SimpleJCublas {
             JCublas2.cublasDdot(
                     ContextHolder.getInstance().getHandle(),
                     x.length(),
-                    xCPointer,
-                    y.majorStride()
-                    , yCPointer,
-                    y.majorStride(),result);
+                    xCPointer.getDevicePointer(),
+                    1
+                    , yCPointer.getDevicePointer(),
+                    1,result);
             sync();
 
             releaseCublasPointers(xCPointer,yCPointer);
@@ -999,10 +1004,10 @@ public class SimpleJCublas {
         JCublas2.cublasZdotc(
                 ContextHolder.getInstance().getHandle(),
                 x.length(),
-                aCPointer,
-                x.majorStride(),
-                bCPointer,
-                y.majorStride(),resultPointer);
+                aCPointer.getDevicePointer(),
+                1,
+                bCPointer.getDevicePointer(),
+                1,resultPointer);
 
         IComplexDouble ret = Nd4j.createDouble(result.x, result.y);
         sync();
@@ -1027,11 +1032,11 @@ public class SimpleJCublas {
                 A.rows(),   // m
                 A.columns(),// n
                 Pointer.to(new double[]{alpha}),      // alpha
-                aCPointer,        // d_A or x
+                aCPointer.getDevicePointer(),        // d_A or x
                 A.rows(),   // incx
-                bCPointer,        // dB or y
+                bCPointer.getDevicePointer(),        // dB or y
                 B.rows(),   // incy
-                cCPointer,        // dC or A
+                cCPointer.getDevicePointer(),        // dC or A
                 C.rows()    // lda
         );
 
@@ -1060,11 +1065,11 @@ public class SimpleJCublas {
                 A.rows(),   // m
                 A.columns(),// n
                 Pointer.to(new float[]{alpha}),      // alpha
-                aCPointer,        // d_A or x
+                aCPointer.getDevicePointer(),        // d_A or x
                 A.rows(),   // incx
-                bCPointer,        // dB or y
+                bCPointer.getDevicePointer(),        // dB or y
                 B.rows(),   // incy
-                cCPointer,        // dC or A
+                cCPointer.getDevicePointer(),        // dC or A
                 C.rows()    // lda
         );
         sync();
@@ -1094,8 +1099,8 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 x.length(),
                 PointerUtil.getPointer(jcuda.cuComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent())),
-                xCPointer,
-                x.majorStride()
+                xCPointer.getDevicePointer(),
+                1
         );
         sync();
 
@@ -1124,8 +1129,8 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 x.length(),
                 PointerUtil.getPointer(jcuda.cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent())),
-                xCPointer,
-                x.majorStride()
+                xCPointer.getDevicePointer(),
+               1
         );
         sync();
 
@@ -1153,12 +1158,23 @@ public class SimpleJCublas {
         if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
             cuDoubleComplex alpha = cuDoubleComplex.cuCmplx(0, 0);
             Pointer p = PointerUtil.getPointer(alpha);
-            JCublas2.cublasZdotu(ContextHolder.getInstance().getHandle(),x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride(),p);
+            JCublas2.cublasZdotu(
+                    ContextHolder.getInstance().getHandle()
+                    ,x.length()
+                    , xCPointer.getDevicePointer(),
+                    1
+                    , yCPointer.getDevicePointer()
+                    , 1,p);
             ret = Nd4j.createDouble(alpha.x, alpha.y);
         } else {
             cuComplex complex = cuComplex.cuCmplx(0, 0);
             Pointer p = PointerUtil.getPointer(complex);
-            JCublas2.cublasCdotu(ContextHolder.getInstance().getHandle(),x.length(), xCPointer, x.majorStride(), yCPointer, y.majorStride(),p);
+            JCublas2.cublasCdotu(ContextHolder.getInstance().getHandle()
+                    ,x.length()
+                    , xCPointer.getDevicePointer()
+                    , 1
+                    , yCPointer.getDevicePointer()
+                    , 1,p);
             ret = Nd4j.createDouble(complex.x, complex.y);
         }
         sync();
@@ -1194,11 +1210,11 @@ public class SimpleJCublas {
                 A.rows(),   // m
                 A.columns(),// n
                 PointerUtil.getPointer(alpha),      // alpha
-                aCPointer,        // d_A or x
+                aCPointer.getDevicePointer(),        // d_A or x
                 A.rows(),   // incx
-                bCPointer,        // d_B or y
+                bCPointer.getDevicePointer(),        // d_B or y
                 B.rows(),   // incy
-                cCPointer,        // d_C or A
+                cCPointer.getDevicePointer(),        // d_C or A
                 C.rows()    // lda
         );
         sync();
@@ -1235,11 +1251,11 @@ public class SimpleJCublas {
                 A.rows(),   // m
                 A.columns(),// n
                 PointerUtil.getPointer(alpha),      // alpha
-                aCPointer,        // dA or x
+                aCPointer.getDevicePointer(),        // dA or x
                 A.rows(),   // incx
-                bCPointer,        // dB or y
+                bCPointer.getDevicePointer(),        // dB or y
                 B.rows(),   // incy
-                cCPointer,        // dC or A
+                cCPointer.getDevicePointer(),        // dC or A
                 C.rows()    // lda
         );
         sync();
@@ -1276,11 +1292,11 @@ public class SimpleJCublas {
                 A.rows(),   // m
                 A.columns(),// n
                 PointerUtil.getPointer(alpha),      // alpha
-                aCPointer,        // d_A or x
+                aCPointer.getDevicePointer(),        // d_A or x
                 A.rows(),   // incx
-                bCPointer,        // d_B or y
+                bCPointer.getDevicePointer(),        // d_B or y
                 B.rows(),   // incy
-                cCPointer,        // d_C or A
+                cCPointer.getDevicePointer(),        // d_C or A
                 C.rows()    // lda
         );
 
@@ -1320,11 +1336,11 @@ public class SimpleJCublas {
                 A.rows(),   // m
                 A.columns(),// n
                 PointerUtil.getPointer(alpha),      // alpha
-                aCPointer,        // dA or x
+                aCPointer.getDevicePointer(),        // dA or x
                 A.rows(),   // incx
-                bCPointer,        // dB or y
+                bCPointer.getDevicePointer(),        // dB or y
                 B.rows(),   // incy
-                cCPointer,        // dC or A
+                cCPointer.getDevicePointer(),        // dC or A
                 C.rows()    // lda
         );
 
@@ -1355,10 +1371,10 @@ public class SimpleJCublas {
         JCublas2.cublasDaxpy(
                 ContextHolder.getInstance().getHandle(),x.length()
                 , Pointer.to(new double[]{alpha})
-                , xCPointer
-                , x.majorStride()
-                , yCPointer
-                , y.majorStride());
+                , xCPointer.getDevicePointer()
+                , 1
+                , yCPointer.getDevicePointer()
+                , 1);
 
         sync();
 
@@ -1382,7 +1398,14 @@ public class SimpleJCublas {
         CublasPointer xCPointer = new CublasPointer(x);
         CublasPointer yCPointer = new CublasPointer(y);
 
-        JCublas2.cublasSaxpy(ContextHolder.getInstance().getHandle(),x.length(), Pointer.to(new float[]{alpha}), xCPointer, x.majorStride(), yCPointer, y.majorStride());
+        JCublas2.cublasSaxpy(
+                ContextHolder.getInstance().getHandle()
+                ,x.length()
+                , Pointer.to(new float[]{alpha})
+                , xCPointer.getDevicePointer(),
+                1,
+                yCPointer.getDevicePointer()
+                , 1);
         sync();
 
         xCPointer.copyToHost();

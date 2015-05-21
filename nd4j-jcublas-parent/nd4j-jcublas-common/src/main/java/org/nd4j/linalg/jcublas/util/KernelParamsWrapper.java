@@ -21,11 +21,10 @@ package org.nd4j.linalg.jcublas.util;
 
 import static jcuda.driver.JCudaDriver.cuMemGetInfo;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.runtime.JCuda;
@@ -52,6 +51,8 @@ import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
  */
 public class KernelParamsWrapper implements AutoCloseable {
 
+    private boolean closeInvoked = false;
+
 	/**
 	 * List of processed kernel parameters ready to be passed to the kernel
 	 */
@@ -60,12 +61,12 @@ public class KernelParamsWrapper implements AutoCloseable {
 	/**
 	 * The pointers that need to be freed as part of this closable resource
 	 */
-	final Set<CublasPointer> pointersToFree;
+	final List<CublasPointer> pointersToFree;
 
 	/**
 	 * The pointers that have results that need to be passed back to host buffers
 	 */
-	final Set<CublasPointer> resultPointers;
+	final List<CublasPointer> resultPointers;
 
 	/**
 	 * The operation that should receive the result
@@ -83,7 +84,7 @@ public class KernelParamsWrapper implements AutoCloseable {
 	/**
 	 * conversion list of arrays to their assigned cublas pointer
 	 */
-	private Map<INDArray, CublasPointer> arrayToPointer;
+	private Multimap<INDArray, CublasPointer> arrayToPointer;
 
 
 
@@ -94,7 +95,7 @@ public class KernelParamsWrapper implements AutoCloseable {
 	 */
 	public KernelParamsWrapper setResultArray(INDArray array) {
 
-		CublasPointer resultPointer = arrayToPointer.get(array);
+		CublasPointer resultPointer = arrayToPointer.get(array).iterator().next();
 
 		if(resultPointer == null) {
 			throw new RuntimeException("Results array must be supplied as a kernel parameter");
@@ -128,27 +129,26 @@ public class KernelParamsWrapper implements AutoCloseable {
 	 */
 	public KernelParamsWrapper(Object... kernelParams) {
 		kernelParameters = new Object[kernelParams.length];
-		arrayToPointer = new HashMap<>();
-		pointersToFree = new HashSet<>();
-		resultPointers = new HashSet<>();
+		arrayToPointer = ArrayListMultimap.create();
+		pointersToFree = new ArrayList<>();
+		resultPointers = new ArrayList<>();
 
 		for(int i = 0; i < kernelParams.length; i++) {
 			Object arg = kernelParams[i];
 
 			// If the instance is a JCudaBuffer we should assign it to the device
 			if(arg instanceof JCudaBuffer) {
-
-				JCudaBuffer buffer = (JCudaBuffer) arg;
+                JCudaBuffer buffer = (JCudaBuffer) arg;
 				CublasPointer pointerToFree = new CublasPointer(buffer);
-				kernelParameters[i] = pointerToFree;
+				kernelParameters[i] = pointerToFree.getBuffer().getDevicePointer(1,0,buffer.length());
 				pointersToFree.add(pointerToFree);
 
 				// If we have an INDArray we should assign the buffer to the device and set an appropriate pointer
-			} else if(arg instanceof INDArray) {
-
-				INDArray array = (INDArray) arg;
+			}
+            else if(arg instanceof INDArray) {
+                INDArray array = (INDArray) arg;
 				CublasPointer pointerToFree = new CublasPointer(array);
-				kernelParameters[i] = pointerToFree;
+				kernelParameters[i] = pointerToFree.getBuffer().getDevicePointer(array.majorStride(),array.offset(),array.length());
 				pointersToFree.add(pointerToFree);
 				arrayToPointer.put(array, pointerToFree);
 
@@ -164,21 +164,27 @@ public class KernelParamsWrapper implements AutoCloseable {
 	 */
 	@Override
 	public void close() throws Exception {
-		for(CublasPointer cublasPointer : pointersToFree) {
+        ContextHolder.syncStream();
+        if(closeInvoked)
+            return;
+
+        for(CublasPointer cublasPointer : pointersToFree) {
 			if(resultPointers.contains(cublasPointer)) {
 				if(resultOp != null) {
 					setResultForOp(resultOp, cublasPointer);
 				}
-                else {
+                else
 					cublasPointer.copyToHost();
-				}
+
 			}
 			cublasPointer.close();
 		}
 
+
 		long[] free = new long[1];
 		long[] total = new long[1];
-		JCudaExecutioner.checkResult(cuMemGetInfo(free, total));
+		cuMemGetInfo(free, total);
+        closeInvoked = true;
 	}
 
 	/**
@@ -191,12 +197,16 @@ public class KernelParamsWrapper implements AutoCloseable {
 		if (devicePointer.getBuffer().dataType() == DataBuffer.Type.DOUBLE) {
 			double[] data = new double[2];
 			Pointer get = Pointer.to(data);
-			JCuda.cudaMemcpyAsync(
+            ContextHolder.syncStream();
+
+            JCuda.cudaMemcpyAsync(
                     get
-                    , devicePointer
+                    , devicePointer.getDevicePointer()
                     , 2 * Sizeof.DOUBLE
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , ContextHolder.getInstance().getCudaStream());
+
+            ContextHolder.syncStream();
 
 			if(acc instanceof Accumulation) {
 				Accumulation acc2 = (Accumulation) acc;
@@ -204,15 +214,20 @@ public class KernelParamsWrapper implements AutoCloseable {
 				acc2.setCurrentResultComplex(new ComplexDouble(data[0],data[1]));
 			}
 
-		}
+
+        }
 		else {
 			float[] data = new float[2];
 			Pointer get = Pointer.to(data);
-			JCuda.cudaMemcpyAsync(
+            ContextHolder.syncStream();
+
+            JCuda.cudaMemcpyAsync(
                     get
-                    , devicePointer, 2 * Sizeof.FLOAT
+                    , devicePointer.getDevicePointer()
+                    , 2 * Sizeof.FLOAT
                     , cudaMemcpyKind.cudaMemcpyDeviceToHost
                     , ContextHolder.getInstance().getCudaStream());
+
 
 			if(acc instanceof Accumulation) {
 				Accumulation acc2 = (Accumulation) acc;

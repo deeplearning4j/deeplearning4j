@@ -122,9 +122,13 @@ public class Transforms {
         INDArray ret = Convolution.convn(d1, d, Convolution.Type.VALID);
         NDArrayIndex[] indices = new NDArrayIndex[d1.shape().length];
         for(int i = 0; i < indices.length; i++) {
-            indices[i] = i < stride.length ?
-                    NDArrayIndex.interval(0,stride[i],d1.size(i) ,true) :
-                    NDArrayIndex.interval(0,d1.size(i) ,true);
+            if(i < stride.length) {
+                indices[i] = NDArrayIndex.interval(0,stride[i],d1.size(i) ,true);
+            }
+            else {
+                indices[i] =  NDArrayIndex.interval(0,d1.size(i) ,true);
+            }
+
         }
 
         ret = ret.get(indices);

@@ -116,10 +116,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape) {
-        if (order == FORTRAN)
-            return new JCublasComplexNDArray(data, shape, ArrayUtil.calcStridesFortran(shape));
-        else
-            return new JCublasComplexNDArray(data, shape);
+        return new JCublasComplexNDArray(data, shape,Nd4j.getComplexStrides(shape,Nd4j.order()));
     }
 
     /**
@@ -132,9 +129,6 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape) {
-        if (order == FORTRAN)
-            return new JCublasComplexNDArray(arrs, shape, ArrayUtil.calcStridesFortran(shape));
-
         return new JCublasComplexNDArray(arrs, shape);
     }
 

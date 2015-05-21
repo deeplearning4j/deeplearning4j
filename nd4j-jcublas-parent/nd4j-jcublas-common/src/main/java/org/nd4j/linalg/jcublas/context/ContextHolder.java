@@ -21,6 +21,8 @@ package org.nd4j.linalg.jcublas.context;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.*;
 
@@ -36,7 +38,12 @@ import jcuda.driver.JCudaDriver;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 
+import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.JCublasBackend;
+import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import static jcuda.driver.JCudaDriver.*;
@@ -54,16 +61,21 @@ import static jcuda.driver.JCudaDriver.*;
  */
 public class ContextHolder {
 
-    private Map<Integer,CUdevice> devices = new HashMap<>();
-    private Map<Integer, CUcontext> deviceIDContexts = new HashMap<>();
-    private Map<String,Integer> threadNameToDeviceNumber = new HashMap<>();
+    private Map<Integer,CUdevice> devices = new ConcurrentHashMap<>();
+    private Map<Integer,GpuInformation> info = new ConcurrentHashMap<>();
+    private Map<Integer, CUcontext> deviceIDContexts = new ConcurrentHashMap<>();
+    private Map<String,Integer> threadNameToDeviceNumber = new ConcurrentHashMap<>();
     private Table<CUcontext,String,CUstream> contextStreams = HashBasedTable.create();
     private Table<CUcontext,String,cudaStream_t> cudaStreams = HashBasedTable.create();
-    private Map<String, cublasHandle> handleMap = new HashMap<>();
+    private Map<String, cublasHandle> handleMap = new ConcurrentHashMap<>();
     private List<Integer> bannedDevices;
     private int numDevices = 0;
+    private Map<Integer,DeviceConfiguration> confs = new ConcurrentHashMap<>();
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
+    private boolean confCalled = false;
+    private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
+    private AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private ContextHolder(){
         getNumDevices();
@@ -76,6 +88,9 @@ public class ContextHolder {
     public static ContextHolder getInstance() {
         if(INSTANCE == null) {
             INSTANCE = new ContextHolder();
+
+            INSTANCE.configure();
+
             Properties props = new Properties();
             try {
                 props.load(new ClassPathResource("/cudafunctions.properties").getInputStream());
@@ -95,17 +110,96 @@ public class ContextHolder {
                 }
             }));
         }
+
+
+
         return INSTANCE;
     }
 
 
+    public int deviceNum() {
+        return numDevices;
+    }
+
+    /**
+     * Get the configuration for the current
+     * device and thread
+     * @return the current configuration for
+     * the given device and thread
+     */
+    public  DeviceConfiguration getConf() {
+        return getConf(getDeviceForThread());
+    }
+
+
+    /**
+     * Get the memory strategy for the current thread
+     * and device
+     * @return
+     */
+    public  MemoryStrategy getMemoryStrategy() {
+        return getConf().getMemoryStrategy();
+    }
+
+
+    /**
+     * Configure the given information
+     * based on the device
+     */
+    public void configure() {
+        if(confCalled)
+            return;
+
+        if(numDevices == 0) {
+            getNumDevices();
+        }
+
+        for(int i = 0; i < numDevices; i++) {
+            ClassPathResource confFile = new ClassPathResource("devices/" + i);
+            if(confFile.exists()) {
+                Properties props = new Properties();
+                try {
+                    props.load(confFile.getInputStream());
+                    confs.put(i,new DeviceConfiguration(i,props));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+            else
+                confs.put(i,new DeviceConfiguration(i));
+
+        }
+
+        confCalled = true;
+    }
+
+    public void setNumDevices(int numDevices) {
+        this.numDevices = numDevices;
+    }
+
+    /**
+     * Get the configuration the given device
+     * @param device the device to get the configuration for
+     * @return the device configuration
+     */
+    public DeviceConfiguration getConf(int device) {
+        return confs.get(device);
+    }
+
     private void getNumDevices() {
+        JCudaDriver.setExceptionsEnabled(true);
+        JCudaDriver.cuInit(0);
         int count[] = new int[1];
         cuDeviceGetCount(count);
         numDevices = count[0];
+        log.debug("Found " + numDevices + " gpus");
+
         if(numDevices < 1)
             numDevices = 1;
         bannedDevices = new ArrayList<>();
+
+
         String props = System.getProperty(DEVICES_TO_USE, "-1");
         String[] split = props.split(",");
         //Should only be used in multi device scenarios; otherwise always use one device
@@ -128,6 +222,8 @@ public class ContextHolder {
      */
     public static void syncStream() {
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+        JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+
     }
 
     /**
@@ -139,9 +235,12 @@ public class ContextHolder {
         if(numDevices > 1) {
             Integer device =  threadNameToDeviceNumber.get(Thread.currentThread().getName());
             if(device == null) {
+                org.nd4j.linalg.api.rng.Random random = Nd4j.getRandom();
+                if(random == null)
+                    throw new IllegalStateException("Unable to load random class");
                 device = Nd4j.getRandom().nextInt(numDevices);
                 //reroute banned devices
-                while(bannedDevices.contains(device))
+                while(bannedDevices != null && bannedDevices.contains(device))
                     device = Nd4j.getRandom().nextInt(numDevices);
                 threadNameToDeviceNumber.put(Thread.currentThread().getName(),device);
                 return device;
@@ -171,7 +270,7 @@ public class ContextHolder {
      * and the given device
      * @return the context for the given device and thread
      */
-    public   CUcontext getContext() {
+    public  CUcontext getContext() {
         return getContext(getDeviceForThread());
     }
 
@@ -240,6 +339,7 @@ public class ContextHolder {
                 initialize(ctx,device);
                 CUdevice currDevice = createDevice(ctx, device);
                 devices.put(device,currDevice);
+                info.put(device, new GpuInformation(currDevice));
                 deviceIDContexts.put(device,ctx);
             }
 
@@ -262,21 +362,11 @@ public class ContextHolder {
      * context.
      */
     private void initialize(CUcontext context,int deviceNumber) {
-        int result = cuInit(deviceNumber);
-        if (result != CUresult.CUDA_SUCCESS) {
-            throw new CudaException(
-                    "Failed to initialize the driver: "+
-                            CUresult.stringFor(result));
-        }
+        cuInit(0);
 
         // Try to obtain the current context
-        result = cuCtxGetCurrent(context);
-        if (result != CUresult.CUDA_SUCCESS)
-        {
-            throw new CudaException(
-                    "Failed to obtain the current context: "+
-                            CUresult.stringFor(result));
-        }
+        cuCtxGetCurrent(context);
+
 
         // If the context is 'null', then a new context
         // has to be created.
@@ -336,6 +426,16 @@ public class ContextHolder {
     }
 
     /**
+     * Get the information for a particular device
+     * @param cUdevice the device to get the info for
+     * @return the information for a particular device
+     */
+    public  GpuInformation getInfoFor(int cUdevice) {
+        getContext(cUdevice);
+        return info.get(cUdevice);
+    }
+
+    /**
      * Returns the available devices
      * delimited by device,thread
      * @return the available devices
@@ -353,7 +453,12 @@ public class ContextHolder {
         return deviceIDContexts;
     }
 
-    public void destroy() {
+    /**
+     * Shutdown this instance
+     */
+    public synchronized  void destroy() {
+        if(shutdown.get())
+            return;
 
         for(cudaStream_t stream : cudaStreams.values()) {
             JCuda.cudaStreamDestroy(stream);
@@ -361,9 +466,11 @@ public class ContextHolder {
         for(CUstream stream : contextStreams.values()) {
             cuStreamDestroy(stream);
         }
-        for(CUcontext ctx : deviceIDContexts.values()) {
-            cuCtxDestroy(ctx);
-        }
+
+        for(cublasHandle handle : handleMap.values())
+            JCublas2.cublasDestroy(handle);
+
+        shutdown.set(true);
 
 
 

@@ -119,13 +119,19 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        INDArray oneTwo = Nd4j.create(new double[]{1, 2});
-        INDArray threeFour = Nd4j.create(new double[]{3, 4});
-        INDArray oneThroughFour = Nd4j.linspace(1, 4, 4);
-        INDArray test = Nd4j.create(4);
-        test.data().assign(oneTwo.data(), threeFour.data());
-        assertEquals(oneThroughFour, test);
+        DataBuffer assertion = Nd4j.createBuffer(new double[]{1,2,3});
+        DataBuffer one = Nd4j.createBuffer(new double[]{1});
+        DataBuffer twoThree = Nd4j.createBuffer(new double[]{2,3});
+        DataBuffer blank = Nd4j.createBuffer(new double[]{0,0,0});
+        blank.assign(one,twoThree);
+        assertEquals(assertion,blank);
     }
 
 
+
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

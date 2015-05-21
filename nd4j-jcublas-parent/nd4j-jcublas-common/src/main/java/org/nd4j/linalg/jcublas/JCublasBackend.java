@@ -47,8 +47,7 @@ public class JCublasBackend extends Nd4jBackend {
                 throw new IllegalStateException("Please ensure cuda is installed and nvcc is in the path.");
             Class.forName("org.nd4j.linalg.jcublas.SimpleJCublas");
         } catch (Throwable e) {
-            log.warn("unable to load JCublas backend", e);
-            return false;
+            throw new RuntimeException(e);
         }
         return true;
     }

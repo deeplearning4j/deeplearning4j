@@ -118,7 +118,9 @@ public abstract class BaseNd4jTest extends TestCase {
 
 
 
-
+   public String getFailureMessage() {
+       return "Failed with backend " + backend.getClass().getName() + " and ordering " + ordering();
+   }
 
 
 

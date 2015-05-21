@@ -30,7 +30,6 @@
         <version>0.0.3.5.5.4-SNAPSHOT</version>
     </parent>
     <name>nd4j-jcublas-6.0</name>
-    <url>http://nd4j.org/</url>
 
     <properties>
         <!-- github server corresponds to entry in ~/.m2/settings.xml -->
