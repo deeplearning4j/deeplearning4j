@@ -743,7 +743,7 @@ public abstract class BaseNDArray implements INDArray {
 
         return create(data,
                 new int[]{1, shape[dimension]}
-                , new int[]{1,stride[dimension]},
+                , new int[]{1, stride[dimension]},
                 arrOffset);
 
     }
@@ -1795,6 +1795,11 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
+        //prevent off by one error
+        if(isRowVector()) {
+            offsets[0] = 0;
+
+        }
 
         int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
 
@@ -1812,6 +1817,7 @@ public abstract class BaseNDArray implements INDArray {
                 , stride
                 , offset, ordering
         );
+
     }
 
     protected INDArray create(DataBuffer buffer) {
@@ -3605,6 +3611,10 @@ public abstract class BaseNDArray implements INDArray {
                     count++;
 
                 }
+            }
+            else if(isVector()) {
+                NDArrayIndex[] subRange = Arrays.copyOfRange(indexes,1,indexes.length);
+
             }
             else {
                 NDArrayIndex[] subRange = Arrays.copyOfRange(indexes,1,indexes.length);

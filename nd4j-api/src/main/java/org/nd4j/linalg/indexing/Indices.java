@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.Shape;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -133,6 +134,10 @@ public class Indices {
             else
                 ret[i] = indices[i].offset();
         }
+        if(ret.length == 1) {
+            ret = new int[] {1,ret[0]};
+        }
+
         return ret;
     }
 
@@ -176,6 +181,9 @@ public class Indices {
      * @return the  adjusted indices
      */
     public static NDArrayIndex[] adjustIndices(int[] originalShape, NDArrayIndex... indexes) {
+        if(Shape.isVector(originalShape) && indexes.length == 1)
+            return indexes;
+
         if (indexes.length < originalShape.length)
             indexes = fillIn(originalShape, indexes);
         if (indexes.length > originalShape.length) {
@@ -386,8 +394,12 @@ public class Indices {
         }
 
 
-        return ArrayUtil.toArray(nonZeros);
+        int[] ret2 =  ArrayUtil.toArray(nonZeros);
+        if(Shape.isRowVectorShape(ret2) && ret2.length == 1) {
+            return new int[]{1,ret2[0]};
+        }
 
+        return ret2;
     }
 
     /**
