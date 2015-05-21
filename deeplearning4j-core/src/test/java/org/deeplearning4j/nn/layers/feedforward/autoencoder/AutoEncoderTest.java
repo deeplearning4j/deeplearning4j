@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,45 +43,32 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.assertEquals;
 
 public class AutoEncoderTest {
-        @Test
-        public void testAutoEncoder() throws Exception {
+    @Test
+    public void testAutoEncoder() throws Exception {
 
-                MnistDataFetcher fetcher = new MnistDataFetcher(true);
-                NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                        .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-                        .corruptionLevel(0.6)
-                        .iterations(100)
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                        .learningRate(1e-1f).nIn(784).nOut(600)
-                        .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
-                        .build();
+        MnistDataFetcher fetcher = new MnistDataFetcher(true);
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .corruptionLevel(0.6)
+                .iterations(1)
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .learningRate(1e-1f).nIn(784).nOut(600)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                .build();
 
-                IterationListener listener = new IterationListener() {
-                    @Override
-                    public void iterationDone(Model model, int iteration) {
-                        if (iteration > 0 && iteration % 20 == 0) {
-                            NeuralNetPlotter plotter = new NeuralNetPlotter();
-                            Layer l = (Layer) model;
-                            plotter.renderFilter(l.getParam(PretrainParamInitializer.WEIGHT_KEY));
 
-                            INDArray gradient = l.gradient().gradient();
-                            GradientAdjustment.updateGradientAccordingToParams(l.conf(),
-                                0,l.getOptimizer().getAdaGrad(),gradient,l.params(),l.batchSize());
+        fetcher.fetch(100);
+        DataSet d2 = fetcher.next();
 
-                        }
-                    }
-                };
-                
-                fetcher.fetch(100);
-                DataSet d2 = fetcher.next();
+        INDArray input = d2.getFeatureMatrix();
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        assertEquals(da.params(),da.params());
+        assertEquals(471784,da.params().length());
+        da.setParams(da.params());
+        da.fit(input);
+    }
 
-                INDArray input = d2.getFeatureMatrix();
-                AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(listener));
-                assertEquals(da.params(),da.params());
-                assertEquals(471784,da.params().length());
-                da.setParams(da.params());
-                da.fit(input);
-        }
+
 
 
 
