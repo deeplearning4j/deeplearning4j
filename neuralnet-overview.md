@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Neural nets overview
+# Neural Nets Overview
 
 Neural networks are a set of algorithms, modeled after the human brain, that are designed to recognize patterns. They are sensors: a form of machine perception. Deep learning is a name for a certain type of stacked neural network composed of several node layers. (A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the right stimulus; a node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net.) Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
@@ -17,4 +17,20 @@ In the process, these networks learn to recognize correlations between certain r
 
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data in the form of an image, a deep-learning network may decide, for example, that the input data is 90 percent likely to represent a person. 
 
-Next, we'll explain the simplest machine-learning network, a [Restricted Boltzmann machine](../restrictedboltzmannmachine.html), and then show you how several RBMs form a [deep-belief network](../deepbeliefnetwork.html). 
+---
+### How to Start
+
+Two key classes help you get started building any type of neural net you need.
+
+- [NeuralNetConfiguration](../neuralnet-configuration.html)
+- [MultiLayerConfiguration](../multilayer-configuration.html)
+
+Additional information regarding neural net types and standard configurations can be found for the following:
+
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
+* [Deep-Belief Nets](../deepbeliefnetwork.html)
+* [Deep Autoencoders](../deepautoencoder.html)
+* [Denoising Autencoders](../denoisingautoencoder.html)
+* [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html)
+* [Convolutional Nets](../convolutionalnets.html)
+* [Recursive Neural Tensor Networks](../recursiveneuraltensornetwork.html).
