@@ -54,7 +54,7 @@ public class Predict extends BaseSubCommand {
 
 
     @Override
-    public void exec() {
+    public void execute() {
 
     }
 

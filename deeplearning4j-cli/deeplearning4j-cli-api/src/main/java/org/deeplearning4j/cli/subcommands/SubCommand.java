@@ -25,5 +25,8 @@ package org.deeplearning4j.cli.subcommands;
  */
 public interface SubCommand {
 
-   void exec();
+   /**
+    * Execute a command
+    */
+   void execute();
 }
