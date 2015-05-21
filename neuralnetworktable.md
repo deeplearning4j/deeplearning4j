@@ -9,7 +9,7 @@ The following table attempts to show the neural nets most useful for different p
 
 ![Alt text](../img/neural_net_table.png) 
 
-Start with [Neural Nets Overview](http://deeplearning4j.org/overview.html) for additional information on common structures and some code snipets:
+Start with [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for additional information on common structures and some code snipets:
 
 ###[further reading](http://deeplearning4j.org/deeplearningpapers.html)
 
