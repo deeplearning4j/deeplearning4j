@@ -49,12 +49,35 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created by agibsonccc on 12/27/14.
  */
 public class MultiLayerTest {
 
     private static final Logger log = LoggerFactory.getLogger(MultiLayerTest.class);
+
+    @Test
+    public void testSetParams() {
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .nIn(4).nOut(3)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .activationFunction("tanh").list(2).hiddenLayerSizes(3)
+                .override(1, new ClassifierOverride()).build();
+
+
+
+        MultiLayerNetwork network3 = new MultiLayerNetwork(conf);
+        network3.init();
+        INDArray params = network3.params();
+        network3.setParameters(params);
+        INDArray params4 = network3.params();
+        assertEquals(params,params4);
+    }
 
     @Test
     public void testDbnFaces() {
