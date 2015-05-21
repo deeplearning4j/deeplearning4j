@@ -88,7 +88,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         INDArray params = network.params();
         assertEquals(numParams,params.length());
         SparkDl4jMultiLayer sparkDl4jMultiLayer = new SparkDl4jMultiLayer(sc,conf);
-        String path = new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString();
+        String path = new ClassPathResource("data/irisSvmLight.txt").getFile().toURI().toString();
         sparkDl4jMultiLayer.fit(path,4,new SVMLightRecordReader());
 
     }
