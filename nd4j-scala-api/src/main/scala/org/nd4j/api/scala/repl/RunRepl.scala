@@ -28,7 +28,7 @@ object RunRepl {
       repl.closeInterpreter()
 
     }
-    catch {case e : Exception => println("Quitting..")}
+    catch {case e : Exception => }
 
   }
 
