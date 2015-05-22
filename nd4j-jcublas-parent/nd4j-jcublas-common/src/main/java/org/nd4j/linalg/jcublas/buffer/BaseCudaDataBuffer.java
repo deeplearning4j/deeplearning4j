@@ -71,6 +71,7 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
     protected boolean isPersist = false;
     protected AtomicBoolean freed = new AtomicBoolean(false);
     protected AtomicInteger referenceCount = new AtomicInteger(0);
+    protected AllocationMode allocationMode;
     private Pointer hostPointer;
 
     /**
@@ -84,11 +85,16 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
             throw new IllegalArgumentException("Length was " + length + " but should have been > 0. Element size was " + elementSize + " but should have been >= 4");
         this.length = length;
         this.elementSize = elementSize;
+        allocationMode = Nd4j.alloc;
         hostBuffer = ByteBuffer.allocateDirect(getElementSize() * length());
         hostBuffer.order(ByteOrder.nativeOrder());
     }
 
 
+    @Override
+    public AllocationMode allocationMode() {
+        return allocationMode;
+    }
 
     @Override
     public ByteBuffer getHostBuffer() {
@@ -606,12 +612,21 @@ public abstract class BaseCudaDataBuffer implements JCudaBuffer {
         final private long length;
         final private int stride;
         final private int offset;
+        private boolean freed = false;
 
         public DevicePointerInfo(Pointer pointer, long length,int stride,int offset) {
             this.pointer = pointer;
             this.length = length;
             this.stride = stride;
             this.offset = offset;
+        }
+
+        public boolean isFreed() {
+            return freed;
+        }
+
+        public void setFreed(boolean freed) {
+            this.freed = freed;
         }
 
         public int getOffset() {

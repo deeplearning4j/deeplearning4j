@@ -198,11 +198,16 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Returns true if any of the elements are zero
+     * @param as
+     * @return
+     */
     public static boolean isZero(int[] as) {
         for (int i = 0; i < as.length; i++) {
-            if (as[i] != 0) return false;
+            if (as[i] == 0) return true;
         }
-        return true;
+        return false;
     }
 
     public static boolean anyMore(int[] target, int[] test) {
@@ -497,7 +502,7 @@ public class ArrayUtil {
      */
     public static int[] valueStartingAt(int valueStarting,int[] copy,int idxFrom,int idxAt,int length) {
         int[] ret = new int[length];
-        Arrays.fill(ret,valueStarting);
+        Arrays.fill(ret, valueStarting);
         for(int i = 0; i < length; i++) {
             if(i + idxFrom >= copy.length || i + idxAt >= ret.length)
                 break;
@@ -784,6 +789,12 @@ public class ArrayUtil {
         return ret;
     }
 
+    /**
+     * Convert a 2darray in to a flat
+     * array (row wise)
+     * @param arr the array to flatten
+     * @return a flattened representation of the array
+     */
     public static double[] flatten(double[][] arr) {
         double[] ret = new double[arr.length * arr[0].length];
         int count = 0;
@@ -793,6 +804,12 @@ public class ArrayUtil {
         return ret;
     }
 
+    /**
+     * Cast an int array to a double array
+     * @param arr the array to cast
+     * @return the elements of this
+     * array cast as an int
+     */
     public static double[][] toDouble(int[][] arr) {
         double[][] ret = new double[arr.length][arr[0].length];
         for (int i = 0; i < arr.length; i++) {
@@ -826,7 +843,7 @@ public class ArrayUtil {
 
 
     /**
-     * Combines a applyTransformToDestination of int arrays in to one flat int array
+     * Combines a apply of int arrays in to one flat int array
      *
      * @param nums the int arrays to combineDouble
      * @return one combined int array
@@ -847,7 +864,7 @@ public class ArrayUtil {
     }
 
     /**
-     * Combines a applyTransformToDestination of int arrays in to one flat int array
+     * Combines a apply of int arrays in to one flat int array
      *
      * @param nums the int arrays to combineDouble
      * @return one combined int array
@@ -868,7 +885,7 @@ public class ArrayUtil {
     }
 
     /**
-     * Combines a applyTransformToDestination of int arrays in to one flat int array
+     * Combines a apply of int arrays in to one flat int array
      *
      * @param ints the int arrays to combineDouble
      * @return one combined int array
@@ -889,7 +906,7 @@ public class ArrayUtil {
     }
 
     /**
-     * Combines a applyTransformToDestination of int arrays in to one flat int array
+     * Combines a apply of int arrays in to one flat int array
      *
      * @param ints the int arrays to combineDouble
      * @return one combined int array
@@ -941,6 +958,12 @@ public class ArrayUtil {
 
     public static float[] copy(float[] data) {
         float[] result = new float[data.length];
+        System.arraycopy(data, 0, result, 0, data.length);
+        return result;
+    }
+
+    public static double[] copy(double[] data) {
+        double[] result = new double[data.length];
         System.arraycopy(data, 0, result, 0, data.length);
         return result;
     }

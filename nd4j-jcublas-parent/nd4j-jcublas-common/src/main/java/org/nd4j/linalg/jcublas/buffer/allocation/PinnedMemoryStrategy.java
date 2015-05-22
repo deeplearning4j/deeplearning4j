@@ -57,6 +57,9 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
         Map<String,BaseCudaDataBuffer.DevicePointerInfo> pointers = buf2.getPointersToContexts();
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName());
-        JCuda.cudaFreeHost(devicePointerInfo.getPointer());
+        if(!devicePointerInfo.isFreed()) {
+            JCuda.cudaFreeHost(devicePointerInfo.getPointer());
+            devicePointerInfo.setFreed(true);
+        }
     }
 }

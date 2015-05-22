@@ -135,7 +135,7 @@ public class Indices {
                 ret[i] = indices[i].offset();
         }
         if(ret.length == 1) {
-            ret = new int[] {1,ret[0]};
+            ret = new int[] {ret[0],0};
         }
 
         return ret;

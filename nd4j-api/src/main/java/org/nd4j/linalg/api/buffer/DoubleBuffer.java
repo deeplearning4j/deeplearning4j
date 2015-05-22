@@ -20,15 +20,8 @@
 package org.nd4j.linalg.api.buffer;
 
 
-import com.google.common.primitives.Bytes;
+import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
-
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.util.Arrays;
-import java.util.UUID;
 
 /**
  * Double buffer implementation of data buffer
@@ -37,109 +30,52 @@ import java.util.UUID;
  */
 public class DoubleBuffer extends BaseDataBuffer {
 
-    private double[] buffer;
 
     public DoubleBuffer(int length) {
         super(length);
-        this.buffer = new double[length];
     }
 
-
-    public DoubleBuffer(double[] buffer) {
-        this(buffer, true);
+    public DoubleBuffer(ByteBuf buf,int length) {
+        super(buf,length);
     }
 
-    public DoubleBuffer(double[] buffer, boolean copy) {
-        super(buffer.length);
-        this.buffer = copy ? Arrays.copyOf(buffer, buffer.length) : buffer;
+    public DoubleBuffer(double[] data) {
+        super(data);
     }
 
-
-    @Override
-    public void setData(int[] data) {
-        this.buffer = ArrayUtil.toDoubles(data);
+    public DoubleBuffer(int[] data) {
+        this(data, Nd4j.copyOnOps);
     }
 
-    @Override
-    public void setData(float[] data) {
-        this.buffer = ArrayUtil.toDoubles(data);
+    public DoubleBuffer(int[] data, boolean copyOnOps) {
+        super(data, copyOnOps);
     }
 
-    @Override
-    public void setData(double[] data) {
-        this.buffer = data;
+    public DoubleBuffer(float[] data) {
+        this(data, Nd4j.copyOnOps);
+    }
+
+    public DoubleBuffer(float[] data, boolean copyOnOps) {
+        super(data,copyOnOps);
     }
 
     @Override
-    public byte[] asBytes() {
-        byte[][] ret1 = new byte[length][];
-        for (int i = 0; i < length; i++) {
-            ret1[i] = toByteArray(buffer[i]);
-        }
-
-        return Bytes.concat(ret1);
+    public DataBuffer create(ByteBuf buf,int length) {
+        return new DoubleBuffer(buf,length);
     }
+
+    public DoubleBuffer(double[] doubles, boolean copy) {
+        super(doubles, copy);
+    }
+
 
     @Override
     public DataBuffer.Type dataType() {
         return DataBuffer.Type.DOUBLE;
     }
 
-    @Override
-    public float[] asFloat() {
-        float[] ret = new float[length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = (float) buffer[i];
-        }
-        return ret;
-    }
-
-    @Override
-    public double[] asDouble() {
-        if (buffer == null) {
-            buffer = new double[length];
-            for (int i = 0; i < length; i++) {
-                buffer[i] = getDouble(i);
-            }
-            try {
-                mappings.clear();
-                memoryMappedBuffer.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return buffer;
-    }
-
-    @Override
-    public int[] asInt() {
-        int[] ret = new int[length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = (int) buffer[i];
-        }
-        return ret;
-    }
 
 
-    @Override
-    public double getDouble(int i) {
-        if (buffer != null)
-            return buffer[i];
-        else {
-            long p = i * 8;
-            int mapN = (int) (p / MAPPING_SIZE);
-            int offN = (int) (p % MAPPING_SIZE);
-            return mappings.get(mapN).getDouble(offN);
-        }
-    }
-
-
-    @Override
-    public void assign(Number value, int offset) {
-        for (int i = offset; i < length(); i++) {
-            buffer[i] = value.doubleValue();
-        }
-    }
 
     @Override
     public float getFloat(int i) {
@@ -151,64 +87,31 @@ public class DoubleBuffer extends BaseDataBuffer {
         return (int) getDouble(i);
     }
 
-
     @Override
-    public void put(int i, float element) {
-        put(i, (double) element);
-
+    public DataBuffer create(double[] data) {
+        return new DoubleBuffer(data);
     }
 
     @Override
-    public void put(int i, double element) {
-        if (buffer != null)
-            buffer[i] = element;
-        else {
-            long p = i * 8;
-            int mapN = (int) (p / MAPPING_SIZE);
-            int offN = (int) (p % MAPPING_SIZE);
-            mappings.get(mapN).putDouble(offN, element);
-        }
+    public DataBuffer create(float[] data) {
+        return new DoubleBuffer(data);
     }
 
     @Override
-    public void put(int i, int element) {
-        put(i, (double) element);
+    public DataBuffer create(int[] data) {
+        return new DoubleBuffer(data);
     }
-
 
     @Override
     public int getInt(int ix) {
-        return (int) buffer[ix];
+        return dataBuffer.getInt(ix);
     }
 
-    @Override
-    public DataBuffer dup() {
-        return new DoubleBuffer(buffer);
-    }
+
 
     @Override
     public void flush() {
-        path = UUID.randomUUID().toString();
-        if (memoryMappedBuffer != null)
-            return;
-        try {
-            memoryMappedBuffer = new RandomAccessFile(path, "rw");
-            long size = 8L * length;
-            for (long offset = 0; offset < size; offset += MAPPING_SIZE) {
-                long size2 = Math.min(size - offset, MAPPING_SIZE);
-                mappings.add(memoryMappedBuffer.getChannel().map(FileChannel.MapMode.READ_WRITE, offset, size2));
-            }
-        } catch (IOException e) {
-            try {
-                if (memoryMappedBuffer != null)
-                    memoryMappedBuffer.close();
-            } catch (IOException e1) {
-                throw new RuntimeException(e);
-            }
-            throw new RuntimeException(e);
-        }
-
-        buffer = null;
+        dataBuffer = null;
     }
 
     @Override
@@ -216,34 +119,6 @@ public class DoubleBuffer extends BaseDataBuffer {
         return 8;
     }
 
-    public void destroy() {
-        if (buffer != null)
-            buffer = null;
-        if (memoryMappedBuffer != null) {
-            try {
-                this.memoryMappedBuffer.close();
-                mappings.clear();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
 
-            }
-        }
-    }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof DoubleBuffer)) return false;
-
-        DoubleBuffer that = (DoubleBuffer) o;
-
-        if (!Arrays.equals(buffer, that.buffer)) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return buffer != null ? Arrays.hashCode(buffer) : 0;
-    }
 }

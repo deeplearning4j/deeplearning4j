@@ -19,12 +19,8 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import org.nd4j.linalg.util.ArrayUtil;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.util.UUID;
+import io.netty.buffer.ByteBuf;
 
 /**
  * Int buffer
@@ -33,60 +29,57 @@ import java.util.UUID;
  */
 public class IntBuffer extends BaseDataBuffer {
 
-    private int[] buffer;
-
-    public IntBuffer(int[] buffer, boolean copy) {
-        super(buffer.length);
-        if (!copy)
-            this.buffer = buffer;
-        else {
-            buffer = new int[buffer.length];
-            System.arraycopy(buffer, 0, this.buffer, 0, this.buffer.length);
-        }
-
-    }
-
-    public IntBuffer(int[] buffer) {
-        this(buffer, true);
-    }
 
     public IntBuffer(int length) {
         super(length);
     }
 
-    @Override
-    public void setData(int[] data) {
-        this.buffer = data;
+    public IntBuffer(int[] data) {
+        super(data);
+    }
+
+    public IntBuffer(double[] data) {
+        super(data);
+    }
+
+    public IntBuffer(float[] data) {
+        super(data);
     }
 
     @Override
-    public void setData(float[] data) {
-        this.buffer = ArrayUtil.toInts(data);
+    public DataBuffer create(double[] data) {
+        return new IntBuffer(data);
     }
 
     @Override
-    public void setData(double[] data) {
-        this.buffer = ArrayUtil.toInts(data);
+    public DataBuffer create(float[] data) {
+       return new IntBuffer(data);
     }
 
     @Override
-    public byte[] asBytes() {
-        return new byte[0];
+    public DataBuffer create(int[] data) {
+       return new IntBuffer(data);
     }
+
+    public IntBuffer(ByteBuf buf,int length) {
+        super(buf,length);
+    }
+
+    @Override
+    public DataBuffer create(ByteBuf buf,int length) {
+        return new IntBuffer(buf,length);
+    }
+
+    public IntBuffer(int[] data, boolean copy) {
+        super(data, copy);
+    }
+
 
     @Override
     public DataBuffer.Type dataType() {
         return DataBuffer.Type.INT;
     }
 
-    @Override
-    public float[] asFloat() {
-        float[] ret = new float[length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = (float) buffer[i];
-        }
-        return ret;
-    }
 
 
     @Override
@@ -94,105 +87,4 @@ public class IntBuffer extends BaseDataBuffer {
         return 4;
     }
 
-    @Override
-    public void assign(Number value, int offset) {
-        for (int i = offset; i < length(); i++) {
-            buffer[i] = value.intValue();
-        }
-    }
-
-
-    @Override
-    public double[] asDouble() {
-        double[] ret = new double[length];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = (double) buffer[i];
-        }
-        return ret;
-    }
-
-    @Override
-    public int[] asInt() {
-        return buffer;
-    }
-
-
-    @Override
-    public double getDouble(int i) {
-        return buffer[i];
-    }
-
-    @Override
-    public float getFloat(int i) {
-        return buffer[i];
-    }
-
-    @Override
-    public Number getNumber(int i) {
-        return buffer[i];
-    }
-
-    @Override
-    public void put(int i, float element) {
-        buffer[i] = (int) element;
-    }
-
-    @Override
-    public void put(int i, double element) {
-        buffer[i] = (int) element;
-    }
-
-    @Override
-    public void put(int i, int element) {
-        buffer[i] = element;
-    }
-
-    @Override
-    public int getInt(int ix) {
-        return buffer[ix];
-    }
-
-    @Override
-    public DataBuffer dup() {
-        return new IntBuffer(ArrayUtil.copy(buffer));
-    }
-
-    @Override
-    public void flush() {
-        path = UUID.randomUUID().toString();
-        if (memoryMappedBuffer != null)
-            return;
-        try {
-            memoryMappedBuffer = new RandomAccessFile(path, "rw");
-            long size = 8L * length;
-            for (long offset = 0; offset < size; offset += MAPPING_SIZE) {
-                long size2 = Math.min(size - offset, MAPPING_SIZE);
-                mappings.add(memoryMappedBuffer.getChannel().map(FileChannel.MapMode.READ_WRITE, offset, size2));
-            }
-        } catch (IOException e) {
-            try {
-                if (memoryMappedBuffer != null)
-                    memoryMappedBuffer.close();
-            } catch (IOException e1) {
-                throw new RuntimeException(e);
-            }
-            throw new RuntimeException(e);
-        }
-
-        buffer = null;
-    }
-
-    public void destroy() {
-        if (buffer != null)
-            buffer = null;
-        if (memoryMappedBuffer != null) {
-            try {
-                this.mappings.clear();
-                this.memoryMappedBuffer.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-
-            }
-        }
-    }
 }

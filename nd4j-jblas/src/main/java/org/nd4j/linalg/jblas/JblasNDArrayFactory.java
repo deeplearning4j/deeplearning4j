@@ -230,7 +230,7 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(double[] data, int[] shape, char ordering) {
-        return new NDArray(new DoubleBuffer(data), shape, ordering);
+        return new NDArray(Nd4j.createBuffer(data), shape, ordering);
     }
 
     @Override
@@ -240,12 +240,12 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(double[] data, int[] shape, int offset) {
-        return new NDArray(new DoubleBuffer(data), shape, offset);
+        return new NDArray(Nd4j.createBuffer(data), shape, offset);
     }
 
     @Override
     public INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        return new NDArray(new DoubleBuffer(data), shape, stride, offset, ordering);
+        return new NDArray(Nd4j.createBuffer(data), shape, stride, offset, ordering);
     }
 
 

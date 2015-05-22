@@ -812,29 +812,11 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(n2Assertion, nRsubi);
     }
 
-    @Test
-    public void testSliceOffset() {
-        INDArray B = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
-        INDArray bSlice0 = B.slice(0).slice(0);
-        INDArray bSlice1 = B.slice(1);
-
-        assertEquals(6,bSlice0.stride()[0]);
-        assertEquals(1,bSlice1.offset());
-
-        INDArray slice2 = B.slice(2);
-        assertEquals(2, slice2.offset());
-
-        INDArray bSlice1Slice1 = bSlice1.slice(1);
-        INDArray bSlice1Slice1Slice1 = bSlice1Slice1.slice(1);
-        assertEquals(4, bSlice1Slice1.offset());
-    }
 
     @Test
     public void testConcat() {
         INDArray A = Nd4j.linspace(1, 8, 8).reshape(2, 2, 2);
         INDArray B = Nd4j.linspace(1, 12, 12).reshape(3, 2, 2);
-        INDArray bSlice0 = B.slice(0).slice(0);
-        INDArray bSlice1 = B.slice(1);
         INDArray concat = Nd4j.concat(0, A, B);
         assertTrue(Arrays.equals(new int[]{5, 2, 2}, concat.shape()));
 

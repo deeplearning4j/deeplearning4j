@@ -153,9 +153,10 @@ public class KernelParamsWrapper implements AutoCloseable {
 				arrayToPointer.put(array, pointerToFree);
 
 				// If we don't need to copy anything to the device just copy it to the parameters
-			} else {
-				kernelParameters[i] = arg;
 			}
+			else
+				kernelParameters[i] = arg;
+
 		}
 	}
 

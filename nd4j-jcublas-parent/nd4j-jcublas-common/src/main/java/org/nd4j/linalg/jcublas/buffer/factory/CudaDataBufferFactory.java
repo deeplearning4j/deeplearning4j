@@ -73,7 +73,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createInt(double[] data) {
-        return new IntBuffer(ArrayUtil.toInts(data));
+        return new CudaIntDataBuffer(ArrayUtil.toInts(data));
     }
 
     @Override
@@ -88,7 +88,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createInt(float[] data) {
-        return new IntBuffer(ArrayUtil.toInts(data));
+        return new CudaIntDataBuffer(ArrayUtil.toInts(data));
     }
 
     @Override

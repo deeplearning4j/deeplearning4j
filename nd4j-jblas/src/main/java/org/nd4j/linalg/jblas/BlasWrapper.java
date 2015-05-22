@@ -136,7 +136,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     1,
                     y.data().asFloat(),
                     y.offset(),
-                   1);
+                    1);
 
         return y;
     }
@@ -187,10 +187,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 da,
                 dx.data().asFloat(),
                 dx.offset(),
-                dx.linearView().majorStride(),
+                1,
                 dy.data().asFloat(),
                 dy.offset(),
-                dy.linearView().majorStride());
+                1);
 
         return dy;
     }
@@ -763,24 +763,38 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
             return c;
         }
 
+        if(a.rows() != c.rows())
+            throw new IllegalArgumentException("A rows must be equal to c rows");
+        if(b.columns() != c.columns())
+            throw new IllegalArgumentException("B columns must be equal to c columns");
 
+        if(a.columns() != b.rows())
+            throw new IllegalArgumentException("A columns must be equal to b rows");
+
+
+        int m = a.rows();
+        int n = b.columns();
+        int k = a.columns();
+        int lda = a.size(0);
+        int ldb = b.size(0);
+        int ldc = c.size(0);
         NativeBlas.sgemm(
                 'N',
                 'N',
-                c.rows(),
-                c.columns(),
-                a.columns(),
+                m,
+                n,
+                k,
                 alpha,
                 a.data().asFloat(),
                 a.offset(),
-                a.rows()
+               lda
                 , b.data().asFloat(),
                 b.offset(),
-                b.rows(),
+                ldb,
                 beta,
                 c.data().asFloat(),
                 c.offset(),
-                c.rows());
+                ldc);
 
         return c;
     }

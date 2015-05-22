@@ -80,8 +80,11 @@ public class Nd4j {
     public final static String INSTRUMENTATION = "instrumentation";
     public final static String RESOURCE_MANAGER = "resourcemanager";
     public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
-
+    public final static String ALLOC = "alloc";
+    //the datatype used for allocating buffers
     public static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
+    //the allocation mode for the heap
+    public static DataBuffer.AllocationMode alloc = DataBuffer.AllocationMode.HEAP;
     public static char ORDER = 'c';
     public static IComplexNumber UNIT;
     public static IComplexNumber ZERO;
@@ -116,6 +119,7 @@ public class Nd4j {
     protected static OpFactory OP_FACTORY_INSTANCE;
     protected static org.nd4j.linalg.api.rng.Random random;
     protected static Instrumentation instrumentation;
+
 
     protected static Properties props = new Properties();
     protected static ReferenceQueue<INDArray> referenceQueue = new ReferenceQueue<>();
@@ -557,7 +561,7 @@ public class Nd4j {
      * @return the buffer to create
      */
     public static DataBuffer createBuffer(int length) {
-    	DataBuffer ret;
+        DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
         else
@@ -902,6 +906,12 @@ public class Nd4j {
         return INSTANCE.linspace(lower, upper, num);
     }
 
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param matrices the matrices to create the flattened ndarray for
+     * @return the flattened representation of
+     * these ndarrays
+     */
     public static INDArray toFlattened(Collection<INDArray> matrices) {
         INDArray ret = INSTANCE.toFlattened(matrices);
         logCreationIfNecessary(ret);
@@ -909,18 +919,35 @@ public class Nd4j {
 
     }
 
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param flatten the matrices to create the flattened ndarray for
+     * @return the flattened representation of
+     * these ndarrays
+     */
     public static IComplexNDArray complexFlatten(List<IComplexNDArray> flatten) {
         IComplexNDArray ret = INSTANCE.complexFlatten(flatten);
         logCreationIfNecessary(ret);
         return ret;
     }
-
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param flatten the matrices to create the flattened ndarray for
+     * @return the flattened representation of
+     * these ndarrays
+     */
     public static IComplexNDArray complexFlatten(IComplexNDArray... flatten) {
         IComplexNDArray ret = INSTANCE.complexFlatten(flatten);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param matrices the matrices to create the flattened ndarray for
+     * @return the flattened representation of
+     * these ndarrays
+     */
     public static INDArray toFlattened(int length, Iterator<? extends INDArray>... matrices) {
         INDArray ret = INSTANCE.toFlattened(length, matrices);
         logCreationIfNecessary(ret);
@@ -935,6 +962,12 @@ public class Nd4j {
         return INSTANCE.bilinearProducts(curr, in);
     }
 
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param matrices the matrices to create the flattened ndarray for
+     * @return the flattened representation of
+     * these ndarrays
+     */
     public static INDArray toFlattened(INDArray... matrices) {
         return INSTANCE.toFlattened(matrices);
     }
@@ -1300,7 +1333,7 @@ public class Nd4j {
      * @return a drandom matrix of the specified shape and range
      */
     public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-    	if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
+        if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
         INDArray ret = INSTANCE.rand(rows, columns, min, max, rng);
         logCreationIfNecessary(ret);
         return ret;
@@ -2693,7 +2726,7 @@ public class Nd4j {
      * @param repeat the shape to repeat
      * @return the tiled ndarray
      */
-    public static INDArray tile(INDArray tile, int[] repeat) {
+    public static INDArray tile(INDArray tile, int...repeat) {
         return tile.repmat(repeat);
     }
 
@@ -2950,7 +2983,7 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(rows, columns, stride, offset);
+        IComplexNDArray ret = INSTANCE.createComplex(new int[]{rows, columns}, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2965,7 +2998,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(rows, columns, stride, offset);
+        INDArray ret = INSTANCE.create(new int[]{rows, columns}, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2979,7 +3012,7 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset);
+        IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2993,7 +3026,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(shape, stride, offset);
+        INDArray ret = INSTANCE.create(shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
 
@@ -3008,7 +3041,7 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int rows, int columns, int[] stride, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(new int[] {rows, columns}, stride);
+        IComplexNDArray ret = INSTANCE.createComplex(new int[] {rows, columns}, stride,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3112,7 +3145,7 @@ public class Nd4j {
      * @return
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, ArrayUtil.calcStrides(shape, 2), offset, ordering);
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, Nd4j.getComplexStrides(shape,ordering), offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3315,43 +3348,35 @@ public class Nd4j {
             for (String key : props.stringPropertyNames())
                 System.setProperty(key, props.getProperty(key));
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
+            String otherAlloc = System.getProperty(ALLOC,props.getProperty(ALLOC,"heap"));
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT : DataBuffer.Type.DOUBLE;
+            alloc = otherAlloc.equals("heap") ? DataBuffer.AllocationMode.HEAP : DataBuffer.AllocationMode.DIRECT;
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
 
             ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
-            if (opExecutionerClazz == null)
-                opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(System.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
-            if (fftInstanceClazz == null)
-                fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
-            if (ndArrayFactoryClazz == null)
-                ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
-            if (convolutionInstanceClazz == null)
-                convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
-            if (dataBufferFactoryClazz == null) {
-                String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
-                dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
-            }
+            opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+            fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
+            ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
+            convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
+            String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
+            dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class.forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
 
-            if (randomClazz == null) {
-                String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
-                randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
-            }
 
-            if (instrumentationClazz == null)
-                instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
+            String rand = props.getProperty(RANDOM, DefaultRandom.class.getName());
+            randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
 
-            if (opFactoryClazz == null)
-                opFactoryClazz = (Class<? extends OpFactory>) Class.forName(System.getProperty(OP_FACTORY, DefaultOpFactory.class.getName()));
 
-            if (blasWrapperClazz == null)
-                blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
-            if (distributionFactoryClazz == null) {
-                String clazzName = props.getProperty(DISTRIBUTION, DefaultDistributionFactory.class.getName());
-                distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
+            instrumentationClazz = (Class<? extends Instrumentation>) Class.forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
 
-            }
+            opFactoryClazz = (Class<? extends OpFactory>) Class.forName(System.getProperty(OP_FACTORY, DefaultOpFactory.class.getName()));
+
+            blasWrapperClazz = (Class<? extends BlasWrapper>) Class.forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
+            String clazzName = props.getProperty(DISTRIBUTION, DefaultDistributionFactory.class.getName());
+            distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
+
+
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();

@@ -56,6 +56,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
 
     public NDArrayTestsC() {
+        System.out.println();
     }
 
     public NDArrayTestsC(String name) {
@@ -120,7 +121,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
         INDArray slice = nd.slice(1, 0);
 
-        INDArray vector = slice.reshape(1,2);
+        INDArray vector = slice.reshape(1, 2);
         assertEquals(Nd4j.create(new double[]{2,5}),vector);
     }
 
@@ -146,7 +147,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
     public void testExecSubArray() {
         INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
 
-        INDArray sub = nd.subArray(new int[]{0,1}, new int[]{2,2}, new int[]{3,1});
+        INDArray sub = nd.subArray(new int[]{0, 1}, new int[]{2, 2}, new int[]{3, 1});
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
         assertEquals(Nd4j.create(new double[][]{
                 {4,7},{5,8}
@@ -158,8 +159,8 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
     @Test
     public void testConcatScalars() {
         INDArray first = Nd4j.arange(0,1).reshape(1,1);
-        INDArray second = Nd4j.arange(0,1).reshape(1,1);
-        INDArray firstRet = Nd4j.concat(0,first,second);
+        INDArray second = Nd4j.arange(0,1).reshape(1, 1);
+        INDArray firstRet = Nd4j.concat(0, first, second);
         assertTrue(firstRet.isColumnVector());
         INDArray secondRet = Nd4j.concat(1, first, second);
         assertTrue(secondRet.isRowVector());
@@ -224,7 +225,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testGetColumns() {
-        INDArray matrix = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray matrix = Nd4j.linspace(1, 6, 6).reshape(2,3);
         INDArray matrixGet = matrix.getColumns(new int[]{1, 2});
         INDArray matrixAssertion = Nd4j.create(new double[][]{{2, 3}, {5, 6}});
         assertEquals(matrixAssertion, matrixGet);
@@ -269,11 +270,11 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
+        INDArray arange = Nd4j.arange(1, 17).reshape(4, 4);
         NDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(Nd4j.create(new double[]{1,2,5,6}),linearViewNDArray);
+        assertEquals(Nd4j.create(new double[]{1, 5,2, 6}),linearViewNDArray);
 
     }
 
@@ -386,7 +387,6 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testDivide() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray two = Nd4j.create(new float[]{2, 2, 2, 2});
         INDArray div = two.div(two);
         assertEquals(Nd4j.ones(4), div);
@@ -401,7 +401,6 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testSigmoid() {
-        Nd4j.dtype = DataBuffer.Type.FLOAT;
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
         INDArray sigmoid = Transforms.sigmoid(n, false);
@@ -698,10 +697,8 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testMmul() {
-
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();
-        INDArray n = Nd4j.create(data, new int[]{10});
+        INDArray n = Nd4j.create(data, new int[]{1, 10});
         INDArray transposed = n.transpose();
         assertEquals(true, n.isRowVector());
         assertEquals(true, transposed.isColumnVector());
@@ -717,18 +714,6 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
         INDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10, 10}, outerProduct.shape()));
-
-
-        INDArray testMatrix = Nd4j.create(data, new int[]{5, 2});
-        INDArray row1 = testMatrix.getRow(0).transpose();
-        INDArray row2 = testMatrix.getRow(1);
-        INDArray row12 = Nd4j.linspace(1, 2, 2).reshape(2, 1);
-        INDArray row22 = Nd4j.linspace(3, 4, 2).reshape(1, 2);
-
-        INDArray row122 = row12;
-        INDArray row222 = row22;
-        INDArray rowResult2 = row122.mmul(row222);
-
 
         INDArray d3 = Nd4j.create(new double[]{1, 2}).reshape(2, 1);
         INDArray d4 = Nd4j.create(new double[]{3, 4});
@@ -868,7 +853,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         INDArray ret = Nd4j.linspace(1,2,2).reshape(1, 2);
         assertTrue(ret.sum(0).isRowVector());
         assertTrue(ret.sum(1).isScalar());
-        INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2,1);
+        INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2, 1);
         assertTrue(retColumn.sum(1).isRowVector());
         assertTrue(retColumn.sum(0).isScalar());
 
@@ -955,6 +940,14 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         INDArray log = Transforms.log(linspace);
         INDArray assertion = Nd4j.create(new double[]{0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906, 1.6094379124341005, 1.791759469228055});
         assertEquals(assertion, log);
+    }
+
+    @Test
+    public void testTile() {
+        INDArray ret = Nd4j.create(new double[]{0,1,2});
+        INDArray tile = Nd4j.tile(ret, 2);
+        INDArray assertion = Nd4j.create(new double[]{0,1,2,0,1,2});
+        assertEquals(assertion,tile);
     }
 
     @Test
@@ -1446,8 +1439,8 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         INDArray ones = Nd4j.ones(2,2).mul(0.25);
         INDArray mul = get.mul(ones);
         INDArray assertion = Nd4j.create(new double[][]{
-                {0.25,0.5},
-                {1.25,1.5}
+                {0.25,1.25},
+                {0.5,1.5}
         });
         assertEquals(assertion, mul);
 
