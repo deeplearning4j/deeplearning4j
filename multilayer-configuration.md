@@ -51,3 +51,4 @@ will also work for a multilayer network.
 - **useDropConnect**: *boolean*, a generalization of dropout; a randomly selected subset of weights within the neural network set to zero.
     - default = false
 
+For more information on this class, checkout [Javadocs](http://deeplearning4j.org/doc/).
