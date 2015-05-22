@@ -198,11 +198,16 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Returns true if any of the elements are zero
+     * @param as
+     * @return
+     */
     public static boolean isZero(int[] as) {
         for (int i = 0; i < as.length; i++) {
-            if (as[i] != 0) return false;
+            if (as[i] == 0) return true;
         }
-        return true;
+        return false;
     }
 
     public static boolean anyMore(int[] target, int[] test) {

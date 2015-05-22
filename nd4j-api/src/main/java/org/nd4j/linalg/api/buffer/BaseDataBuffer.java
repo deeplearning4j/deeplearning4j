@@ -279,7 +279,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void assign(Number value) {
-        assign(value, 0);
+      for(int i = 0; i < length(); i++)
+          assign(value,i);
     }
 
 
@@ -488,7 +489,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             intData[i] = (int) element;
         }
         else
-            dataBuffer.setDouble(i,element);
+            dataBuffer.setDouble(i, element);
     }
 
     @Override
@@ -498,7 +499,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void assign(Number value, int offset) {
-        dataBuffer.setDouble(offset,value.doubleValue());
+        put(offset, value.doubleValue());
     }
 
     @Override
@@ -552,18 +553,32 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if(o instanceof DataBuffer) {
+            DataBuffer d = (DataBuffer) o;
+            if(d.length() != length())
+                return false;
+            for(int i = 0; i < length(); i++) {
+                double eps = Math.abs(getDouble(i) - d.getDouble(i));
+                if(eps > Nd4j.EPS_THRESHOLD)
+                    return false;
+            }
+        }
 
-        BaseDataBuffer that = (BaseDataBuffer) o;
+        return true;
+    }
 
-        if (length != that.length) return false;
-        if (isPersist != that.isPersist) return false;
-        if (dataBuffer != null ? !dataBuffer.equals(that.dataBuffer) : that.dataBuffer != null) return false;
-        if (referencing != null ? !referencing.equals(that.referencing) : that.referencing != null) return false;
-        if (ref != null ? !ref.equals(that.ref) : that.ref != null) return false;
-        return allocationMode == that.allocationMode;
+    @Override
+    public String toString() {
+        StringBuffer ret = new StringBuffer();
+        ret.append("[");
+        for(int i = 0; i < length(); i++) {
+             ret.append(getDouble(i));
+            if(i < length() - 1)
+                ret.append(",");
+        }
+        ret.append("]");
 
+        return ret.toString();
     }
 
     @Override

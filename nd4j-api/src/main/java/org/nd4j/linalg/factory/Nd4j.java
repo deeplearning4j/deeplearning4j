@@ -2726,7 +2726,7 @@ public class Nd4j {
      * @param repeat the shape to repeat
      * @return the tiled ndarray
      */
-    public static INDArray tile(INDArray tile, int[] repeat) {
+    public static INDArray tile(INDArray tile, int...repeat) {
         return tile.repmat(repeat);
     }
 
@@ -3356,7 +3356,7 @@ public class Nd4j {
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
 
             ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
-            opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(System.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+            opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
             fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class.forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
