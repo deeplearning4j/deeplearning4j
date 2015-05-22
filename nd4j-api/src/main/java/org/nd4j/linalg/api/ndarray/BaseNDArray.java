@@ -3683,7 +3683,7 @@ public abstract class BaseNDArray implements INDArray {
 
         int[] stride = this.stride();
         if(offsets[0] > 0 && ordering() == NDArrayFactory.C) {
-            stride = ArrayUtil.reverseCopy(Nd4j.getStrides(shape,ordering));
+            stride = ArrayUtil.reverseCopy(getStrides(shape,ordering));
         }
 
 

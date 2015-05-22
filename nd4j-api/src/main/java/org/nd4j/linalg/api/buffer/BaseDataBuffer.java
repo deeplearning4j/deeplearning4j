@@ -279,8 +279,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void assign(Number value) {
-      for(int i = 0; i < length(); i++)
-          assign(value,i);
+        for(int i = 0; i < length(); i++)
+            assign(value,i);
     }
 
 
@@ -494,7 +494,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int i, int element) {
-        dataBuffer.setIndex(i,element);
+        put(i,(double)element);
     }
 
     @Override
@@ -572,7 +572,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         StringBuffer ret = new StringBuffer();
         ret.append("[");
         for(int i = 0; i < length(); i++) {
-             ret.append(getDouble(i));
+            ret.append(getDouble(i));
             if(i < length() - 1)
                 ret.append(",");
         }
