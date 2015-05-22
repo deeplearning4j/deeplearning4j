@@ -72,7 +72,7 @@ Parameters:
 		- SQUARED_LOSS
 		- RECONSTRUCTION_CROSSENTROPY
 		- NEGATIVELOGLIKELIHOOD
-- **lr**: *double*
+- **lr**: *double*, learning rate
 	- default = 1e-1f
 - **minimize**: *boolean*, setting objective to minimize or maximize
 	- default = false
