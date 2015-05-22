@@ -10,7 +10,7 @@ To make neural nets run with Deeplearning4j, there are configuration prerequisit
 2. [Integrated Development Environment](http://nd4j.org/getstarted.html#ide-for-java) 
 3. [Maven](http://nd4j.org/getstarted.html#maven)
 4. [Canova](http://nd4j.org/getstarted.html#canova)
-5. [Github](http://nd4j.org/getstarted.html#github)
+5. [GitHub](http://nd4j.org/getstarted.html#github)
 
 After that, please read the following:
 
@@ -104,14 +104,10 @@ which will import the source and set everything up.
 * Here's the Javadoc for all [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
 * Some problems encountered using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's excellent [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also highly instructive. While we've partially documented DL4J, many parts of the code are essentially a raw, domain-specific language for deep learning.
 
-### <a name="next">Next Steps: MNIST and Running Examples</a>
+### <a name="next">Next Steps: MNIST Example & Building NNs</a>
 
-Take a look at the [MNIST tutorial](../mnist-tutorial.html). 
+In order to get started building neural nets, checkout the [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for more information.
 
-When you're building a new project with Deeplearning4j, you'll create a new project, following the instructions on the ND4J ["Getting Started"](http://nd4j.org/getstarted.html) page and including the dependencies you need in your POM file as shown [here](http://nd4j.org/dependencies.html). 
+Take a look at the [MNIST tutorial](../mnist-tutorial.html) to get running quickly and checkout [custom datasets](../customdatasets.html) for other datasets to explore.
 
-Once you do that, you can open up the App.java file that is created with every new project, and start writing DL4J code between the curly brackets you see after **public static void main( String[] args )**. 
-
-For example, try pasting a Multilayer model like the one in the Mnist tutorial cited above. Many of the classes will appear in red, since you haven't imported the right packages, but IntelliJ will add those packages automatically to the top of your file if you press Alt+Return while your mouse hovers over the missing class in the code. 
-
-If you have a clear idea of how deep learning works and what you want to build, go straight to our section on [custom datasets](../customdatasets.html). 
+Follow [ND4J Getting Started](http://nd4j.org/getstarted.html) instructions to start a new project and include necessary [POM dependencies](http://nd4j.org/dependencies.html). 
