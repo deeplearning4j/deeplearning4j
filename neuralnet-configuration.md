@@ -72,7 +72,8 @@ Parameters:
 		- SQUARED_LOSS
 		- RECONSTRUCTION_CROSSENTROPY
 		- NEGATIVELOGLIKELIHOOD
-- **lr**: *double*, learning rate
+- **learningRate**: *double*, step size aka how fast we change the parameter vector as we move through search space (larger can drive faster to goal but overshoot and smaller can lead to a lot longer training times to hit goal)
+rate of change in optimization function
 	- default = 1e-1f
 - **minimize**: *boolean*, setting objective to minimize or maximize
 	- default = false
