@@ -29,7 +29,7 @@ Parameters:
 	- default = false
 - **batch**: *int*, amount of data to input into the neural net
 	- default = 0
-- **constrainGradientToUnitNorm**: *boolean*, helps gradient converge and makes loss smaller and smoother
+- **constrainGradientToUnitNorm**: *boolean*, helps gradient converge and makes loss smaller and smoother (prevents exploding gradients)
 	- default = false
 - **convolutionType**: *ConvolutionLayer.ConvolutionType class*, convolution layer type
 	- default = ConvolutionLayer.ConvolutionType.MAX
@@ -41,7 +41,7 @@ Parameters:
 	- default = 0
 - **featureMapSize**: *int[]*, kernel convolution size (also refered to as receptive field)
 	- default = {2,2}
-- **filterSize**: *int[]* ,creates tensor data structure for subsampling layers = number of feature maps x number of channels x feature map space (rows & cols of input data matrix)
+- **filterSize**: *int[]* ,creates tensor data structure for subsampling layers = number of feature maps (number of depth slices) x number of channels x feature map space (rows & cols of input data matrix)
 	- default = {2,2,2,2}
 	- ex: 5, 1, numRows, numColumns
 	- rows = batch or total data samples & columns = number of features per data sample
