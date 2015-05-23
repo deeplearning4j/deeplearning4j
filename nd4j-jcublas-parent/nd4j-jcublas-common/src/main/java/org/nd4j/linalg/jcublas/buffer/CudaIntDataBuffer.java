@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import io.netty.buffer.ByteBuf;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 
@@ -182,6 +183,26 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer dup() {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(double[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(float[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(int[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(ByteBuf buf, int length) {
         return null;
     }
 

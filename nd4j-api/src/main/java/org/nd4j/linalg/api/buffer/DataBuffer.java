@@ -19,11 +19,13 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 
 /**
@@ -55,6 +57,34 @@ public interface DataBuffer extends Serializable {
         HEAP
     }
 
+    /**
+     * Returns a view of this as an
+     * nio byte buffer
+     * @return a view of this as an nio double buffer
+     */
+    java.nio.DoubleBuffer asNioDouble();
+    /**
+     * Returns a view of this as an
+     * nio byte buffer
+     * @return a view of this as an nio float buffer
+     */
+    java.nio.FloatBuffer asNioFloat();
+
+    /**
+     * Returns a view of this as an
+     * nio byte buffer
+     * @return a view of this as an nio byte buffer
+     */
+    ByteBuffer asNio();
+
+
+    /**
+     * Returns a view of this as a
+     * netty byte buffer
+     * @return a reference to this as
+     * a netty byte buffer
+     */
+    ByteBuf asNetty();
 
     /**
      * Allocation mode for buffers

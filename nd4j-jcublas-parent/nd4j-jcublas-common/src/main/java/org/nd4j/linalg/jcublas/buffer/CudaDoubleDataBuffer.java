@@ -19,10 +19,10 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.DoubleBuffer;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 
@@ -54,6 +54,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         this(data.length);
         setData(data);
     }
+
 
 
     @Override
@@ -90,43 +91,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     }
 
-    @Override
-    public double[] getDoublesAt(int offset, int length) {
-        return getDoublesAt(offset, 1, length);
-    }
 
-    @Override
-    public float[] getFloatsAt(int offset, int length) {
-        return ArrayUtil.toFloats(getDoublesAt(offset, length));
-    }
-
-    @Override
-    public double[] getDoublesAt(int offset, int inc, int length) {
-
-        if (offset + length > length())
-            length -= offset;
-
-        double[] ret = new double[length];
-        DoubleBuffer buf2 = getDoubleBuffer(offset);
-        for(int i = 0; i < length; i++) {
-            ret[i] = buf2.get(i * inc);
-        }
-        return ret;
-    }
-
-    @Override
-    public float[] getFloatsAt(int offset, int inc, int length) {
-        return ArrayUtil.toFloats(getDoublesAt(offset, 1, length));
-    }
-
-    @Override
-    public void assign(Number value, int offset) {
-        modified.set(true);
-        ByteBuffer buf = getBuffer(offset);
-        DoubleBuffer buf2 = buf.asDoubleBuffer();
-        for (int i = offset; i < length(); i++)
-            buf2.put(i,value.doubleValue());
-    }
 
     @Override
     public void setData(int[] data) {
@@ -138,70 +103,38 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         setData(ArrayUtil.toDoubles(data));
     }
 
-    @Override
-    public void setData(double[] data) {
-    	
-        if (data.length != length)
-            throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
 
-        getDoubleBuffer().put(data);
-    }
-
-    @Override
-    public byte[] asBytes() {
-        return hostBuffer.array();
-    }
 
     @Override
     public DataBuffer.Type dataType() {
         return DataBuffer.Type.DOUBLE;
     }
 
-    @Override
-    public double getDouble(int i) {
-        return getDoubleBuffer().get(i);
-    }
-
-    @Override
-    public float getFloat(int i) {
-        return (float) getDouble(i);
-    }
-
-    @Override
-    public Number getNumber(int i) {
-        return getDouble(i);
-    }
-
-
-    @Override
-    public void put(int i, float element) {
-        modified.set(true);
-        put(i, (double) element);
-    }
-
-    @Override
-    public void put(int i, double element) {
-        modified.set(true);
-        getDoubleBuffer().put(i,element);
-    }
-
-    @Override
-    public void put(int i, int element) {
-        put(i, (double) element);
-    }
-
-
-    @Override
-    public int getInt(int ix) {
-        return (int) getDouble(ix);
-    }
-
-    @Override
+      @Override
     public DataBuffer dup() {
-
         CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length());
         copyTo(buffer);
         return buffer;
+    }
+
+    @Override
+    public DataBuffer create(double[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(float[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(int[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(ByteBuf buf, int length) {
+        return null;
     }
 
 
@@ -234,8 +167,8 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         
         this.length = n;
         this.elementSize = Sizeof.DOUBLE;
-        hostBuffer = ByteBuffer.allocate(length*elementSize);
-        hostBuffer.order(ByteOrder.nativeOrder());
+        dataBuffer = Unpooled.directBuffer(length());
+        dataBuffer.order(ByteOrder.nativeOrder());
         setData(arr);
     }
 

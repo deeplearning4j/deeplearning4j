@@ -407,7 +407,7 @@ public class JCublas2
      * cublasSetVectorAsync ( int n, int elemSize, const void *x, int incx, 
      *                       void *y, int incy, cudaStream_t stream );
      *
-     * cublasSetVectorAsync has the same functionnality as cublasSetVector
+     * cublasSetVectorAsync has the same functionality as cublasSetVector
      * but the transfer is done asynchronously within the CUDA stream passed
      * in parameter.
      *
