@@ -566,7 +566,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public ByteBuffer asNio() {
-        return dataBuffer.nioBuffer();
+        return dataBuffer.nioBuffer(0,dataBuffer.capacity()).order(ByteOrder.nativeOrder());
     }
 
     @Override

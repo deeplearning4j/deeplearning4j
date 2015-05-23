@@ -40,6 +40,16 @@ public class CublasPointerTests {
     }
 
 
+    @Test
+    public void testVectorAlongDimension() throws Exception {
+        INDArray arr = Nd4j.create(new double[]{1,2,3,4},new int[]{2,2},'c');
+        INDArray column = arr.getColumn(1);
+        INDArray otherColumnAssertion = column.dup();
+        CublasPointer p = new CublasPointer(column);
+        p.copyToHost();
+        assertEquals(otherColumnAssertion,column);
+        p.close();
+    }
 
 
     @Test

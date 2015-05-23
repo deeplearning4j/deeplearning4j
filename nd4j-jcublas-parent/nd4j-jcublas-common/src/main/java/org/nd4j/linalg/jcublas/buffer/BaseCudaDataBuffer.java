@@ -101,7 +101,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer getHostPointer() {
         if(hostPointer == null) {
-            hostPointer = Pointer.to(dataBuffer.nioBuffer());
+            hostPointer = Pointer.to(asNio());
         }
         return hostPointer;
     }

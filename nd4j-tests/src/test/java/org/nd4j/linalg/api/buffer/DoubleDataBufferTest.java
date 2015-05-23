@@ -19,19 +19,14 @@
 
 package org.nd4j.linalg.api.buffer;
 
-import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Double data buffer tests

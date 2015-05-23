@@ -25,6 +25,7 @@ import jcuda.jcublas.JCublas2;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -144,11 +145,7 @@ public class CublasPointer  implements AutoCloseable {
                             ,array.offset()
                             ,array.length());
 
-            Pointer hostPointer = buffer.getHostPointer()
-                    .withByteOffset(
-                        array.offset() * array.data().getElementSize()
-                    );
-
+            Pointer hostPointer = buffer.getHostPointer().withByteOffset(buffer.getElementSize() * arr.offset());
 
 
             // Copy the data to the device
@@ -161,7 +158,6 @@ public class CublasPointer  implements AutoCloseable {
                     , 1
                     , ContextHolder.getInstance().getCudaStream());
 
-            toString();
 
         }
 
@@ -179,17 +175,34 @@ public class CublasPointer  implements AutoCloseable {
         StringBuffer sb = new StringBuffer();
         if(devicePointer != null) {
             if(arr != null) {
-                double[] set = new double[arr.length()];
-                JCublas2.cublasGetVectorAsync(
-                        arr.length()
-                        , buffer.getElementSize()
-                        ,devicePointer
-                        ,1
-                        ,Pointer.to(set)
-                        ,1
-                        , ContextHolder.getInstance().getCudaStream());
-                ContextHolder.syncStream();
-                sb.append(Arrays.toString(set));
+                if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
+                    double[] set = new double[arr.length()];
+                    JCublas2.cublasGetVectorAsync(
+                            arr.length()
+                            , buffer.getElementSize()
+                            ,devicePointer
+                            ,1
+                            ,Pointer.to(set)
+                            ,1
+                            , ContextHolder.getInstance().getCudaStream());
+                    ContextHolder.syncStream();
+                    sb.append(Arrays.toString(set));
+                }
+                else {
+                    float[] set = new float[arr.length()];
+                    JCublas2.cublasGetVectorAsync(
+                            arr.length()
+                            , buffer.getElementSize()
+                            ,devicePointer
+                            ,1
+                            ,Pointer.to(set)
+                            ,1
+                            , ContextHolder.getInstance().getCudaStream());
+                    ContextHolder.syncStream();
+                    sb.append(Arrays.toString(set));
+                }
+
+
             }
             else {
                 double[] set = new double[buffer.length()];
