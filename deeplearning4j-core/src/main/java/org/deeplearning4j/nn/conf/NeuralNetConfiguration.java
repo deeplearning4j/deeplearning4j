@@ -80,7 +80,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
     /* RNG for sampling. */
-    protected transient Random rng;
+    protected Random rng;
     //weight initialization
     protected Distribution dist;
     protected StepFunction stepFunction = new GradientStepFunction();
