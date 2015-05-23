@@ -549,29 +549,7 @@ public class SimpleJCublas {
      */
     public static void copy(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-
-        sync();
-
-        CublasPointer xCPointer = new CublasPointer(x);
-        CublasPointer yCPointer = new CublasPointer(y);
-
-
-        JCudaBuffer buff = (JCudaBuffer) x.data();
-        if (x.majorStride() == 2 && y.majorStride() == 2)
-            JCuda.cudaMemcpyAsync(
-                    yCPointer.getDevicePointer()
-                    , xCPointer.getDevicePointer()
-                    , x.length() * buff.getElementSize() * 2
-                    , cudaMemcpyKind.cudaMemcpyDeviceToDevice, ContextHolder.getInstance().getCudaStream());
-        else
-            Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
-
-        sync();
-
-        yCPointer.copyToHost();
-        releaseCublasPointers(yCPointer, xCPointer);
-
-
+        Nd4j.getExecutioner().exec(new CopyOp(x, y, y, x.length()));
     }
 
 

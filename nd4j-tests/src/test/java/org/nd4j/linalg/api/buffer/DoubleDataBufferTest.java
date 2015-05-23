@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -27,11 +28,18 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.nio.ByteBuffer;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by agibsonccc on 2/21/15.
+ * Double data buffer tests
+ *
+ * This tests the double buffer data type
+ * Put all buffer related tests here
+ *
+ * @author Adam Gibson
  */
 public  class DoubleDataBufferTest extends BaseNd4jTest {
 
@@ -119,14 +127,13 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testAssign() {
-        DataBuffer assertion = Nd4j.createBuffer(new double[]{1,2,3});
+        DataBuffer assertion = Nd4j.createBuffer(new double[]{1, 2, 3});
         DataBuffer one = Nd4j.createBuffer(new double[]{1});
         DataBuffer twoThree = Nd4j.createBuffer(new double[]{2,3});
-        DataBuffer blank = Nd4j.createBuffer(new double[]{0,0,0});
+        DataBuffer blank = Nd4j.createBuffer(new double[]{0, 0, 0});
         blank.assign(one,twoThree);
-        assertEquals(assertion,blank);
+        assertEquals(assertion, blank);
     }
-
 
 
 

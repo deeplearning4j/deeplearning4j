@@ -827,12 +827,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     }
 
-    @Test
-    public void testCopyMatrix() {
-        INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
-        INDArray copy = Nd4j.create(28, 28);
-        Nd4j.getBlasWrapper().copy(twoByThree.linearView(), copy.linearView());
-    }
+
 
 
 
@@ -910,6 +905,8 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     @Test
     public void testColumnStd() {
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnStd = twoByThree.std(0);
         INDArray assertion = Nd4j.create(new float[]{173.78147196982766f, 173.78147196982766f, 173.78147196982766f, 173.78147196982766f});

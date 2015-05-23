@@ -71,7 +71,7 @@ public class StandardDeviation extends Variance {
         if (y() != null)
             return new StandardDeviation(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new StandardDeviation(x.vectorAlongDimension(index, dimension));
+            return new StandardDeviation(xAlongDimension);
 
     }
 }

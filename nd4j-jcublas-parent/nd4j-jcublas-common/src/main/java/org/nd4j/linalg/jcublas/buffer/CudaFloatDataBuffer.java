@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
+import io.netty.buffer.ByteBuf;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 
@@ -91,41 +92,13 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
     }
 
-    @Override
-    public float[] getFloatsAt(int offset, int inc, int length) {
-        if (offset + length > length())
-            length -= offset;
-        float[] ret = new float[length];
-        FloatBuffer buf = getFloatBuffer(offset);
-        for(int i = 0; i < length; i++) {
-            ret[i] = buf.get(i * inc);
-        }
-
-        return ret;
-    }
-
-    @Override
-    public void assign(Number value, int offset) {
-        int arrLength = length - offset;
-        float[] data = new float[arrLength];
-        FloatBuffer buf = getFloatBuffer(offset);
-        for (int i = 0; i < data.length; i++)
-            buf.put(i,value.floatValue());
-
-    }
 
     @Override
     public void setData(int[] data) {
         setData(ArrayUtil.toFloats(data));
     }
 
-    @Override
-    public void setData(float[] data) {
 
-        if (data.length != length)
-            throw new IllegalArgumentException("Unable to set vector, must be of length " + length() + " but found length " + data.length);
-        getFloatBuffer().put(data);
-    }
 
     @Override
     public void setData(double[] data) {
@@ -151,16 +124,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         return DataBuffer.Type.FLOAT;
     }
 
-    @Override
-    public float[] asFloat() {
-        //ensureNotFreed();
-        float[] ret = new float[length()];
-        FloatBuffer buf = getFloatBuffer();
-        for(int i = 0; i < length(); i++) {
-            ret[i] = buf.get(i);
-        }
-        return ret;
-    }
+
 
     @Override
     public double[] asDouble() {
@@ -178,37 +142,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         return getFloat(i);
     }
 
-    @Override
-    public float getFloat(int i) {
-        return getFloatBuffer().get(i);
-    }
 
-    @Override
-    public Number getNumber(int i) {
-        return getFloat(i);
-    }
-
-
-    @Override
-    public void put(int i, float element) {
-        getFloatBuffer().put(i,element);
-    }
-
-    @Override
-    public void put(int i, double element) {
-        put(i, (float) element);
-    }
-
-    @Override
-    public void put(int i, int element) {
-        put(i, (float) element);
-    }
-
-
-    @Override
-    public int getInt(int ix) {
-        return (int) getFloat(ix);
-    }
 
     @Override
     public DataBuffer dup() {
@@ -218,42 +152,30 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    public DataBuffer create(double[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(float[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(int[] data) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer create(ByteBuf buf, int length) {
+        return null;
+    }
+
+    @Override
     public void flush() {
 
     }
 
 
-    private void writeObject(java.io.ObjectOutputStream stream)
-            throws java.io.IOException {
-        stream.defaultWriteObject();
 
-        if (getHostPointer() == null) {
-            stream.writeInt(0);
-        } else {
-            float[] arr = this.asFloat();
-
-            stream.writeInt(arr.length);
-            for (int i = 0; i < arr.length; i++) {
-                stream.writeFloat(arr[i]);
-            }
-        }
-    }
-
-    private void readObject(java.io.ObjectInputStream stream)
-            throws java.io.IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-
-        int n = stream.readInt();
-        float[] arr = new float[n];
-
-        for (int i = 0; i < n; i++) {
-            arr[i] = stream.readFloat();
-        }
-        
-        this.length = n;
-        this.elementSize = Sizeof.FLOAT;
-        hostBuffer = ByteBuffer.allocate(length * elementSize);
-        hostBuffer.order(ByteOrder.nativeOrder());
-        setData(arr);
-    }
 }

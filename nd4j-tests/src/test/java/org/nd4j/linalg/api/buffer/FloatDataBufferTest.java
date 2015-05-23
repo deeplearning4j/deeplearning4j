@@ -32,7 +32,12 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Created by agibsonccc on 2/14/15.
+ * Float data buffer tests
+ *
+ * This tests the float buffer data type
+ * Put all buffer related tests here
+ *
+ * @author Adam Gibson
  */
 public  class FloatDataBufferTest  extends BaseNd4jTest {
 

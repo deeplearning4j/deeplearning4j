@@ -140,7 +140,7 @@ public class KernelParamsWrapper implements AutoCloseable {
 			if(arg instanceof JCudaBuffer) {
                 JCudaBuffer buffer = (JCudaBuffer) arg;
 				CublasPointer pointerToFree = new CublasPointer(buffer);
-				kernelParameters[i] = pointerToFree.getBuffer().getDevicePointer(1,0,buffer.length());
+				kernelParameters[i] = pointerToFree.getDevicePointer();
 				pointersToFree.add(pointerToFree);
 
 				// If we have an INDArray we should assign the buffer to the device and set an appropriate pointer
@@ -148,7 +148,7 @@ public class KernelParamsWrapper implements AutoCloseable {
             else if(arg instanceof INDArray) {
                 INDArray array = (INDArray) arg;
 				CublasPointer pointerToFree = new CublasPointer(array);
-				kernelParameters[i] = pointerToFree.getBuffer().getDevicePointer(array.majorStride(),array.offset(),array.length());
+				kernelParameters[i] = pointerToFree.getDevicePointer();
 				pointersToFree.add(pointerToFree);
 				arrayToPointer.put(array, pointerToFree);
 
