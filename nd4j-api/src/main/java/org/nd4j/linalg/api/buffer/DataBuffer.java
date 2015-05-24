@@ -78,6 +78,8 @@ public interface DataBuffer extends Serializable {
     ByteBuffer asNio();
 
 
+
+
     /**
      * Returns a view of this as a
      * netty byte buffer
@@ -104,6 +106,11 @@ public interface DataBuffer extends Serializable {
      * @return whether the buffer should be persistent or not (default false)
      */
     boolean isPersist();
+
+    /**
+     * Un persist the buffer
+     */
+    void unPersist();
 
     /**
      * The number of bytes for each individual element

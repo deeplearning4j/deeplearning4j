@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -27,6 +28,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -76,6 +79,17 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         DataBuffer d = Nd4j.createBuffer(d1);
         DataBuffer d2 = d.dup();
         assertEquals(getFailureMessage(), d, d2);
+    }
+
+    @Test
+    public void testToNio() {
+        DataBuffer buff = Nd4j.createBuffer(new double[]{1, 2, 3, 4});
+        assertEquals(4,buff.length());
+        ByteBuffer nio = buff.asNio();
+        ByteBuf netty = buff.asNetty();
+        assertEquals(16,netty.capacity());
+        assertEquals(16,nio.capacity());
+
     }
 
     @Test

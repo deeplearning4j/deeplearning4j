@@ -8,7 +8,7 @@ import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
  */
 public class PageableArrayMemoryStrategy implements MemoryStrategy {
     @Override
-    public Object copyToHost(DataBuffer copy) {
+    public Object copyToHost(DataBuffer copy,int offset) {
         throw new UnsupportedOperationException();
     }
 
@@ -18,7 +18,7 @@ public class PageableArrayMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public void free(DataBuffer buffer) {
+    public void free(DataBuffer buffer,int offset) {
        throw new UnsupportedOperationException();
     }
 }

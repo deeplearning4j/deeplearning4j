@@ -19,12 +19,12 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
-import jcuda.Sizeof;
 import jcuda.jcublas.JCublas2;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -41,16 +41,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -63,14 +59,43 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     static AtomicLong allocated = new AtomicLong();
     static AtomicLong totalAllocated = new AtomicLong();
     private static Logger log = LoggerFactory.getLogger(BaseCudaDataBuffer.class);
-    protected transient Map<String,DevicePointerInfo> pointersToContexts = new ConcurrentHashMap<>();
+    /**
+     * Pointers to contexts covers this buffer on the gpu at offset 0
+     * for each thread.
+     *
+     * The column key is for offsets. If we only have one device allocation per thread
+     * we will clobber anything that is already allocated on the gpu.
+     *
+     * This also allows us to make a simplifying assumption about how to allocate the data as follows:
+     *
+     * Always allocate for offset zero by default. This allows us to reuse the same pointer with an offset
+     * for each extra allocations (say for row wise operations)
+     *
+     * This also prevents duplicate uploads to the gpu.
+     */
+    protected transient Table<String,Integer,DevicePointerInfo> pointersToContexts = HashBasedTable.create();
     protected AtomicBoolean modified = new AtomicBoolean(false);
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
-    protected boolean isPersist = false;
     protected AtomicBoolean freed = new AtomicBoolean(false);
     private Pointer hostPointer;
+    private Map<String,Boolean> copied = new ConcurrentHashMap<>();
 
+    public BaseCudaDataBuffer(ByteBuf buf, int length) {
+        super(buf, length);
+    }
+
+    public BaseCudaDataBuffer(float[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public BaseCudaDataBuffer(double[] data, boolean copy) {
+        super(data, copy);
+    }
+
+    public BaseCudaDataBuffer(int[] data, boolean copy) {
+        super(data, copy);
+    }
 
     /**
      * Base constructor
@@ -82,6 +107,34 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         super(length,elementSize);
     }
 
+    public BaseCudaDataBuffer(int length) {
+        super(length);
+    }
+
+    public BaseCudaDataBuffer(float[] data) {
+        super(data);
+    }
+
+    public BaseCudaDataBuffer(int[] data) {
+        super(data);
+    }
+
+    public BaseCudaDataBuffer(double[] data) {
+        super(data);
+    }
+
+    @Override
+    public boolean copied(String name) {
+        Boolean copied = this.copied.get(name);
+        if(copied == null)
+            return false;
+        return this.copied.get(name);
+    }
+
+    @Override
+    public void setCopied(String name) {
+        copied.put(name, true);
+    }
 
     @Override
     public AllocationMode allocationMode() {
@@ -101,7 +154,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer getHostPointer() {
         if(hostPointer == null) {
-            hostPointer = Pointer.to(dataBuffer.nioBuffer());
+            hostPointer = Pointer.to(asNio());
         }
         return hostPointer;
     }
@@ -109,20 +162,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer getHostPointer(int offset) {
         if(hostPointer == null) {
-            hostPointer = Pointer.to(dataBuffer.nioBuffer());
+            hostPointer = Pointer.to(asNio());
         }
         return hostPointer.withByteOffset(offset * getElementSize());
     }
 
-    @Override
-    public void persist() {
-        isPersist = true;
-    }
-
-    @Override
-    public boolean isPersist() {
-        return isPersist;
-    }
 
     @Override
     public void removeReferencing(String id) {
@@ -174,25 +218,83 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer getDevicePointer(int stride, int offset,int length) {
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
-
+        String name = Thread.currentThread().getName();
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,offset);
         if(devicePointerInfo == null) {
             int devicePointerLength = getElementSize() * length;
             allocated.addAndGet(devicePointerLength);
             totalAllocated.addAndGet(devicePointerLength);
             log.trace("Allocating {} bytes, total: {}, overall: {}", devicePointerLength, allocated.get(), totalAllocated);
-            devicePointerInfo = (DevicePointerInfo)
-                    ContextHolder.getInstance()
-                            .getConf()
-                            .getMemoryStrategy()
-                            .alloc(this,stride,offset,length);
+            if(devicePointerInfo == null) {
+                /**
+                 * Add zero first no matter what.
+                 * Allocate the whole buffer on the gpu
+                 * and use offsets for any other pointers that come in.
+                 * This will allow us to set device pointers with offsets
+                 *
+                 * with no extra allocation.
+                 *
+                 * Notice here we ignore the length of the actual array.
+                 *
+                 * We are going to allocate the whole buffer on the gpu only once.
+                 *
+                 */
+                if(!pointersToContexts.contains(name,0)) {
+                    devicePointerInfo = (DevicePointerInfo)
+                            ContextHolder.getInstance()
+                                    .getConf()
+                                    .getMemoryStrategy()
+                                    .alloc(this, 1, 0, this.length);
 
-            pointersToContexts.put(Thread.currentThread().getName(), devicePointerInfo);
+                    pointersToContexts.put(name, 0, devicePointerInfo);
+                }
+
+                if(offset > 0) {
+                    /**
+                     * Store the length for the offset of the pointer.
+                     * Return the original pointer with an offset
+                     * (these pointers can't be reused?)
+                     *
+                     * With the device pointer info,
+                     * we want to store the original pointer.
+                     * When retrieving the vector from the gpu later,
+                     * we will use the recorded offset.
+                     *
+                     * Due to gpu instability (please correct me if I'm wrong here)
+                     * we can't seem to reuse the pointers with the offset specified,
+                     * therefore it is desirable to recreate this pointer later.
+                     *
+                     * This will prevent extra allocation as well
+                     * as inform the length for retrieving data from the gpu
+                     * for this particular offset and buffer.
+                     *
+                     */
+                    Pointer zero = pointersToContexts.get(name,0).getPointer();
+                    Pointer ret =  pointersToContexts.get(name,0).getPointer().withByteOffset(offset * getElementSize());
+                    devicePointerInfo = new DevicePointerInfo(zero,length,stride,offset);
+                    pointersToContexts.put(name, offset, devicePointerInfo);
+                    return ret;
+
+                }
+
+
+
+            }
+
+
             freed.set(false);
         }
 
-        return devicePointerInfo.getPointer();
+        /**
+         * Return the device pointer with the specified offset.
+         * Regardless of whether the device pointer has been allocated,
+         * we need to return with it respect to the specified array
+         * not the array's underlying buffer.
+         */
+        return devicePointerInfo.getPointer().withByteOffset(offset * getElementSize());
     }
+
+
 
 
     @Override
@@ -221,24 +323,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
 
-    }
-
-
-    /**
-     * Copy the data of this buffer to another buffer on the gpu
-     *
-     * @param to the buffer to copy data to
-     */
-    protected void copyTo(JCudaBuffer to) {
-
-        for(int i = 0; i < length(); i++) {
-            to.put(i,getDouble(i));
-        }
-    }
-
-    @Override
-    public void assign(Number value) {
-        assign(value, 0);
     }
 
 
@@ -317,32 +401,46 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
-    public boolean freeDevicePointer() {
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
-        if (devicePointerInfo != null && !freed.get()) {
+    public boolean freeDevicePointer(int offset) {
+        String name = Thread.currentThread().getName();
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,offset);
+
+        //nothing to free, there was no copy. Only the gpu pointer was reused with a different offset.
+        if(offset != 0)
+            pointersToContexts.remove(name,offset);
+        else if(offset == 0 && isPersist) {
+            return true;
+        }
+        else if (devicePointerInfo != null && !freed.get()) {
             allocated.addAndGet(-devicePointerInfo.getLength());
             log.trace("freeing {} bytes, total: {}", devicePointerInfo.getLength(), allocated.get());
-            ContextHolder.getInstance().getMemoryStrategy().free(this);
+            ContextHolder.getInstance().getMemoryStrategy().free(this,offset);
             freed.set(true);
-            pointersToContexts.remove(Thread.currentThread().getName());
+            copied.remove(name);
+            pointersToContexts.remove(name,offset);
             return true;
 
 
         }
+
         return false;
     }
 
     @Override
-    public void copyToHost() {
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
+    public void copyToHost(int offset) {
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),offset);
+        //prevent inconsistent pointers
+        if (devicePointerInfo.getOffset() != offset)
+            throw new IllegalStateException("Device pointer offset didn't match specified offset in pointer map");
+
         if (devicePointerInfo != null) {
             ContextHolder.syncStream();
 
             JCublas2.cublasGetVectorAsync(
                     (int) devicePointerInfo.getLength()
                     , getElementSize()
-                    , devicePointerInfo.getPointer()
-                    , 1
+                    , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
+                    , devicePointerInfo.getStride()
                     , getHostPointer(devicePointerInfo.getOffset())
                     , devicePointerInfo.getStride()
                     , ContextHolder.getInstance().getCudaStream());
@@ -351,6 +449,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
         }
+
+        else
+            throw new IllegalStateException("No offset found to copy");
 
     }
 
@@ -371,9 +472,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void destroy() {
-        freeDevicePointer();
-       dataBuffer.clear();
-
+        dataBuffer.clear();
     }
 
     private void writeObject(java.io.ObjectOutputStream stream)
@@ -400,7 +499,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         length = stream.readInt();
         elementSize = stream.readInt();
         isPersist = stream.readBoolean();
-        pointersToContexts = new ConcurrentHashMap<>();
+        pointersToContexts = HashBasedTable.create();
         referencing = Collections.synchronizedSet(new HashSet<String>());
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         freed = new AtomicBoolean(false);
@@ -420,11 +519,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
 
     @Override
-    public Map<String, DevicePointerInfo> getPointersToContexts() {
+    public Table<String, Integer, DevicePointerInfo> getPointersToContexts() {
         return pointersToContexts;
     }
 
-    public void setPointersToContexts(Map<String, DevicePointerInfo> pointersToContexts) {
+    public void setPointersToContexts( Table<String,Integer,DevicePointerInfo> pointersToContexts) {
         this.pointersToContexts = pointersToContexts;
     }
 

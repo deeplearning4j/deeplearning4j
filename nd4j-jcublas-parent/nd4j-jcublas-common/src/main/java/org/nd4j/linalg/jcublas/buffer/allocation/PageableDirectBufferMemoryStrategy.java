@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas.buffer.allocation;
 
+import com.google.common.collect.Table;
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -20,18 +21,18 @@ import java.util.Map;
  */
 public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
-    public Object copyToHost(DataBuffer copy) {
+    public Object copyToHost(DataBuffer copy,int offset) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        Map<String,BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        Table<String, Integer, BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
 
-        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
+        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),offset);
         if(devicePointerInfo != null) {
-                    JCuda.cudaMemcpyAsync(
-                            buf2.getHostPointer()
-                            , devicePointerInfo.getPointer()
-                            , devicePointerInfo.getLength()
-                            , cudaMemcpyKind.cudaMemcpyDeviceToHost
-                            , ContextHolder.getInstance().getCudaStream());
+            JCuda.cudaMemcpyAsync(
+                    buf2.getHostPointer()
+                    , devicePointerInfo.getPointer()
+                    , devicePointerInfo.getLength()
+                    , cudaMemcpyKind.cudaMemcpyDeviceToHost
+                    , ContextHolder.getInstance().getCudaStream());
         }
 
         return buf2.getHostPointer();
@@ -45,9 +46,9 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public void free(DataBuffer buffer) {
+    public void free(DataBuffer buffer,int offset) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName());
+        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = buf2.getPointersToContexts().get(Thread.currentThread().getName(),offset);
         JCuda.cudaFree(devicePointerInfo.getPointer());
 
     }

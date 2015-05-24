@@ -53,6 +53,18 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         setData(buffer);
     }
 
+    public CudaFloatDataBuffer(double[] data) {
+        super(data);
+    }
+
+    public CudaFloatDataBuffer(int[] data) {
+        super(data);
+    }
+
+    public CudaFloatDataBuffer(ByteBuf buf, int length) {
+        super(buf, length);
+    }
+
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
@@ -84,6 +96,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
             set(offset, data.length, p, inc);
         } else
             throw new UnsupportedOperationException("Only contiguous supported");
+    }
+
+    @Override
+    protected DataBuffer create(int length) {
+        return new CudaFloatDataBuffer(length);
     }
 
 
@@ -143,32 +160,24 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     }
 
 
-
-    @Override
-    public DataBuffer dup() {
-        CudaFloatDataBuffer buf = new CudaFloatDataBuffer(length());
-        copyTo(buf);
-        return buf;
-    }
-
     @Override
     public DataBuffer create(double[] data) {
-        return null;
+        return new CudaFloatDataBuffer(data);
     }
 
     @Override
     public DataBuffer create(float[] data) {
-        return null;
+        return new CudaFloatDataBuffer(data);
     }
 
     @Override
     public DataBuffer create(int[] data) {
-        return null;
+       return new CudaFloatDataBuffer(data);
     }
 
     @Override
     public DataBuffer create(ByteBuf buf, int length) {
-        return null;
+        return new CudaFloatDataBuffer(buf,length);
     }
 
     @Override

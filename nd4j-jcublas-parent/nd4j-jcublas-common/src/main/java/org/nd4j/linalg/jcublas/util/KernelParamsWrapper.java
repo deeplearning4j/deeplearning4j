@@ -142,8 +142,6 @@ public class KernelParamsWrapper implements AutoCloseable {
 				CublasPointer pointerToFree = new CublasPointer(buffer);
 				kernelParameters[i] = pointerToFree.getDevicePointer();
 				pointersToFree.add(pointerToFree);
-
-				// If we have an INDArray we should assign the buffer to the device and set an appropriate pointer
 			}
             else if(arg instanceof INDArray) {
                 INDArray array = (INDArray) arg;
@@ -151,8 +149,6 @@ public class KernelParamsWrapper implements AutoCloseable {
 				kernelParameters[i] = pointerToFree.getDevicePointer();
 				pointersToFree.add(pointerToFree);
 				arrayToPointer.put(array, pointerToFree);
-
-				// If we don't need to copy anything to the device just copy it to the parameters
 			}
 			else
 				kernelParameters[i] = arg;

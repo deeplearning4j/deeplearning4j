@@ -554,7 +554,6 @@ public abstract class BaseNDArray implements INDArray {
         if(ordering() == NDArrayFactory.C) {
             if(stride[shape().length - 1] == 1 && !isMatrix())
                 return getFirstNonOneStride();
-
         }
 
         if(ordering() == NDArrayFactory.FORTRAN && size(0) == 1) {
@@ -2631,24 +2630,24 @@ public abstract class BaseNDArray implements INDArray {
 
         if (result == this) {
             if (data.dataType() == DataBuffer.Type.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(-1.0, other.linearView(), result.linearView());
+                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
             else
-                Nd4j.getBlasWrapper().axpy(-1.0f, other.linearView(), result.linearView());
+                Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
         } else if (result == other) {
             if (data.dataType() == DataBuffer.Type.DOUBLE) {
-                Nd4j.getBlasWrapper().scal(-1.0, result.linearView());
-                Nd4j.getBlasWrapper().axpy(1.0, this.linearView(), result.linearView());
+                Nd4j.getBlasWrapper().scal(-1.0, result);
+                Nd4j.getBlasWrapper().axpy(1.0, this, result);
             } else {
                 Nd4j.getBlasWrapper().scal(-1.0f, result);
-                Nd4j.getBlasWrapper().axpy(1.0f, this.linearView(), result.linearView());
+                Nd4j.getBlasWrapper().axpy(1.0f, this, result);
             }
         } else {
             if (data.dataType() == DataBuffer.Type.FLOAT) {
                 Nd4j.getBlasWrapper().copy(this, result);
-                Nd4j.getBlasWrapper().axpy(-1.0f, other.linearView(), result.linearView());
+                Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
             } else {
-                Nd4j.getBlasWrapper().copy(this.linearView(), result.linearView());
-                Nd4j.getBlasWrapper().axpy(-1.0, other.linearView(), result.linearView());
+                Nd4j.getBlasWrapper().copy(this, result);
+                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
             }
 
         }
@@ -2688,7 +2687,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
 
-        Nd4j.getExecutioner().exec(new AddOp(linearView(), other.linearView(), result.linearView()));
+        Nd4j.getExecutioner().exec(new AddOp(linearView(), other, result));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

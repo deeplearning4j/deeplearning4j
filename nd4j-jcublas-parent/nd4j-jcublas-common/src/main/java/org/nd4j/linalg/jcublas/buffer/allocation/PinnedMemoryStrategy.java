@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas.buffer.allocation;
 
+import com.google.common.collect.Table;
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
@@ -20,10 +21,10 @@ import java.util.Map;
  */
 public class PinnedMemoryStrategy implements MemoryStrategy {
     @Override
-    public Object copyToHost(DataBuffer copy) {
+    public Object copyToHost(DataBuffer copy,int offset) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        Map<String,BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
-        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName());
+        Table<String, Integer, BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),offset);
         JCuda.cudaMemcpyAsync(
                 buf2.getHostPointer()
                 , devicePointerInfo.getPointer()
@@ -53,10 +54,10 @@ public class PinnedMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public void free(DataBuffer buffer) {
+    public void free(DataBuffer buffer,int offset) {
         JCudaBuffer buf2 = (JCudaBuffer) buffer;
-        Map<String,BaseCudaDataBuffer.DevicePointerInfo> pointers = buf2.getPointersToContexts();
-        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName());
+        Table<String, Integer, BaseCudaDataBuffer.DevicePointerInfo> pointers = buf2.getPointersToContexts();
+        BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointers.get(Thread.currentThread().getName(),offset);
         if(!devicePointerInfo.isFreed()) {
             JCuda.cudaFreeHost(devicePointerInfo.getPointer());
             devicePointerInfo.setFreed(true);

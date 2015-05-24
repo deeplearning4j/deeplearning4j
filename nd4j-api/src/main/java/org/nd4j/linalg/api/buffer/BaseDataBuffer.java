@@ -163,6 +163,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return isPersist;
     }
 
+    @Override
+    public void unPersist() {
+        isPersist = false;
+    }
+
     /**
      * Instantiate a buffer with the given length
      *
@@ -324,8 +329,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return create(intData);
         }
 
-        return create(dataBuffer.copy(),length);
+        DataBuffer ret = create(length);
+        for(int i = 0; i < ret.length(); i++)
+            ret.put(i,getDouble(i));
+
+        return ret;
     }
+
+    /**
+     * Create with length
+     * @param length a databuffer of the same type as
+     *               this with the given length
+     * @return a data buffer with the same length and datatype as this one
+     */
+    protected abstract  DataBuffer create(int length);
+
 
     /**
      * Create the data buffer
@@ -566,7 +584,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public ByteBuffer asNio() {
-        return dataBuffer.nioBuffer();
+        return dataBuffer.nioBuffer(0,dataBuffer.capacity()).order(ByteOrder.nativeOrder());
     }
 
     @Override

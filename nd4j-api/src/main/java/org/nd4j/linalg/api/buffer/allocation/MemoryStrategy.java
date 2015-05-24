@@ -22,7 +22,7 @@ public interface MemoryStrategy {
      * @return a pointer representing
      * the copied data
      */
-    Object copyToHost(DataBuffer copy);
+    Object copyToHost(DataBuffer copy,int offset);
 
     /**
      * Allocate memory for the given buffer
@@ -39,6 +39,6 @@ public interface MemoryStrategy {
      * allocation strategy
      * @param buffer the buffer to free
      */
-    void free(DataBuffer buffer);
+    void free(DataBuffer buffer,int offset);
 
 }
