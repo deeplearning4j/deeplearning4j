@@ -169,10 +169,6 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
     }
 
 
-    @Test
-    public void testDiag() {
-
-    }
 
     @Test
     public void testReadWriteDouble() throws Exception {

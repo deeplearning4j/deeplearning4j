@@ -101,7 +101,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testReadWrite() throws Exception {
-        INDArray write = Nd4j.linspace(1,4,4);
+        INDArray write = Nd4j.linspace(1, 4, 4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         Nd4j.write(write,dos);
@@ -195,7 +195,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testGetIndicesVector() {
         INDArray line = Nd4j.linspace(1, 4, 4);
         INDArray test = Nd4j.create(new float[]{2, 3});
-        INDArray result = line.get(new NDArrayIndex(0),NDArrayIndex.interval(1, 3));
+        INDArray result = line.get(new NDArrayIndex(0), NDArrayIndex.interval(1, 3));
         assertEquals(test, result);
     }
 
@@ -375,6 +375,15 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(column, testColumn);
         assertEquals(column2, testColumn1);
 
+    }
+
+
+    @Test
+    public void testGetColumns() {
+        INDArray matrix = Nd4j.linspace(1, 6, 6).reshape(2, 3);
+        INDArray matrixGet = matrix.getColumns(new int[]{1, 2});
+        INDArray matrixAssertion = Nd4j.create(new double[][]{{3,5}, {4, 6}});
+        assertEquals(matrixAssertion, matrixGet);
     }
 
 
