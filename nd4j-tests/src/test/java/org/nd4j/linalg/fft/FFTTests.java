@@ -149,7 +149,7 @@ public  class FFTTests extends BaseNd4jTest {
 
         assertEquals(assertion,fftLinspaced);
 
-    
+
 
 
     }

@@ -59,8 +59,8 @@ public  class IFFTTests extends BaseNd4jTest {
         Nd4j.EPS_THRESHOLD = 1e-1;
         double[] ffted = {10.2, 5., -3.0, -1.};
         double[] orig = {3.5999999999999996, 2, 6.5999999999999996, 3};
-        IComplexNDArray c = Nd4j.createComplex(orig, new int[]{2});
-        IComplexNDArray assertion = Nd4j.createComplex(ffted, new int[]{2});
+        IComplexNDArray c = Nd4j.createComplex(orig, new int[]{1,2});
+        IComplexNDArray assertion = Nd4j.createComplex(ffted, new int[]{1,2});
 
         assertEquals(assertion, Nd4j.getExecutioner().execAndReturn(new VectorFFT(c,2)));
         IComplexNDArray iffted = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(assertion.dup(),2));
