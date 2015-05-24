@@ -58,7 +58,7 @@ Add the local compiled file dependencies to your pom.xml file. Here's an example
     <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-cli</artifactId>
-        <version>0.0.3.3.3.alpha1-SNAPSHOT</version>
+        <version>0.0.3.3.4.alpha1-SNAPSHOT</version>
     </dependency>
 
 #### Load RPM (*coming soon*)
