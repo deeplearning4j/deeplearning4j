@@ -187,6 +187,11 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    protected DataBuffer create(int length) {
+        return new CudaIntDataBuffer(length);
+    }
+
+    @Override
     public DataBuffer create(double[] data) {
         return null;
     }

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.buffer;
 
+import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -77,6 +78,17 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         DataBuffer d2 = d.dup();
         assertEquals(d, d2);
     }
+
+    @Test
+    public void testNettyCopy() {
+        DataBuffer db = Nd4j.createBuffer(new double[]{1,2,3,4});
+        ByteBuf buf = db.asNetty();
+        ByteBuf copy = buf.copy(0,buf.capacity());
+        for(int i = 0; i < db.length(); i++) {
+            assertEquals(db.getDouble(i),copy.getDouble(i * 8));
+        }
+    }
+
 
     @Test
     public void testPut() throws Exception {

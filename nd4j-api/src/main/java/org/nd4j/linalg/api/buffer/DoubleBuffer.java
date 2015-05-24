@@ -35,6 +35,8 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(length);
     }
 
+
+
     public DoubleBuffer(ByteBuf buf,int length) {
         super(buf,length);
     }
@@ -56,7 +58,7 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     public DoubleBuffer(float[] data, boolean copyOnOps) {
-        super(data,copyOnOps);
+        super(data, copyOnOps);
     }
 
     @Override
@@ -101,7 +103,10 @@ public class DoubleBuffer extends BaseDataBuffer {
     public DataBuffer create(int[] data) {
         return new DoubleBuffer(data);
     }
-
+    @Override
+    protected DataBuffer create(int length) {
+        return new DoubleBuffer(length);
+    }
     @Override
     public int getInt(int ix) {
         return dataBuffer.getInt(ix);

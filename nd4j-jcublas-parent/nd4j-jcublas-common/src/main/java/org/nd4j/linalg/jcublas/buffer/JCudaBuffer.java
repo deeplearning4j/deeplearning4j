@@ -23,6 +23,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import com.google.common.collect.Table;
 import jcuda.Pointer;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -64,16 +65,6 @@ public interface JCudaBuffer extends DataBuffer {
     Pointer getHostPointer(int offset);
 
 
-    /**
-     * Frees the device pointer if it exists
-     * @return
-     */
-    boolean freeDevicePointer();
-    
-    /**
-     * copies all the allocated device memory to the host memory
-     */
-    void copyToHost();
 
     /**
      * Get the device pointer with the given offset and stride
@@ -94,5 +85,36 @@ public interface JCudaBuffer extends DataBuffer {
     void set(Pointer pointer);
 
 
-    Map<String, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
+    boolean freeDevicePointer(int offset);
+
+    void copyToHost(int offset);
+
+    /**
+     * Pointer to context map.
+     * Contains the device pointer information
+     * mapping thread name to offset
+     * @return the pointer info containing allocated poitners
+     */
+    Table<String, Integer, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
+
+    /**
+     * Returns true if the buffer has
+     * already been copied to the device
+     * @return true if the buffer
+     * has already been copied to the device
+     * false otherwise
+     */
+    boolean copied(String name);
+
+
+    /**
+     * Returns true if the data for this
+     * thread name has already been copied
+     * @param name the name of the thread to
+     *             check for whether it's been copied or not
+     *
+     */
+    void setCopied(String name);
+
+
 }

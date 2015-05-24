@@ -34,6 +34,11 @@ public class IntBuffer extends BaseDataBuffer {
         super(length);
     }
 
+    @Override
+    protected DataBuffer create(int length) {
+        return new IntBuffer(length);
+    }
+
     public IntBuffer(int[] data) {
         super(data);
     }

@@ -19,13 +19,7 @@
 
 package org.nd4j.linalg.jcublas.ops.executioner;
 
-import jcuda.CudaException;
-import jcuda.Pointer;
-import jcuda.Sizeof;
-import jcuda.jcublas.JCublas;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaError;
-import jcuda.runtime.cudaMemcpyKind;
+
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -38,11 +32,8 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
@@ -66,10 +57,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         dummyFloatPointer = KernelFunctions.alloc(new float[]{1});
         dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
     }
-    
+
     @Override
     public Op exec(Op op) {
-        if(op.x() instanceof LinearViewNDArray || op.x() instanceof LinearViewComplexNDArray)
+        //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpeted as vectors)
+        if(op.x() instanceof LinearViewNDArray || op.x() instanceof LinearViewComplexNDArray || op.x().offset() > 0 && op.x().shape().length >= 2)
             return super.exec(op);
 
         if (op instanceof TransformOp) {
@@ -86,6 +78,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
     @Override
     public void iterateOverAllRows(Op op) {
+        persist(op);
         if(op.x().isRowVector()) {
             //reset the op in case
             op.setX(op.x());
@@ -146,10 +139,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         }
+
+        //on the recursive case only free buffers where the buffer is the base case
+        if(op.x().length() == op.x().data().length())
+            unPersistAndFree(op);
     }
 
     @Override
     public void iterateOverAllColumns(Op op) {
+        //persist for the duration of the usage of the buffer
+        persist(op);
         if(op.x().isRowVector()) {
             exec(op);
         }
@@ -184,6 +183,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             }
 
         }
+
+        //only free once the whole recursion has expired
+        if(op.x().data().length() == op.x().length())
+            unPersistAndFree(op);
     }
 
     private JCudaBuffer dummyDouble() {
@@ -214,6 +217,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op, int dimension) {
+        persist(op);
         //only accumulate along a particular dimension
         if (op instanceof Accumulation) {
             Accumulation a = (Accumulation) op;
@@ -230,13 +234,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         }
+
+        unPersistAndFree(op);
+
         return op;
     }
 
     @Override
     public INDArray exec(Accumulation op, int dimension) {
-    	if(dimension == Integer.MAX_VALUE) {
-    		op.setX(op.x().linearView());
+        if(dimension == Integer.MAX_VALUE) {
+            op.setX(op.x().linearView());
             if(op.x() instanceof IComplexNDArray)
                 return Nd4j.scalar(execAndReturn(op).currentResultComplex());
             else
@@ -264,12 +271,17 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 }
             }
 
+            //cache the whole buffer on each piece until after the processing along
+            //each dimension is done
+            persist(op);
             for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
                 Op op2 = op.opForDimension(i, dimension);
                 IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
                 linear.putScalar(i, result);
 
             }
+
+            unPersistAndFree(op);
 
             return ret;
         }
@@ -293,13 +305,16 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
             INDArray linear = ret.linearView();
-
+            persist(op);
             for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
                 Op op2 = op.opForDimension(i, dimension);
                 Number result = execAndReturn((Accumulation) op2).currentResult();
                 linear.putScalar(i,result.doubleValue());
 
             }
+
+            unPersistAndFree(op);
+
 
             return ret;
 
@@ -309,6 +324,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op, int dimension) {
+        //don't free device pointer until after operation is done
+        persist(op);
         for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);
@@ -320,7 +337,42 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         }
+
+        //don't cache buffers anymore
+        unPersistAndFree(op);
+
         return op.z();
+    }
+
+    private void persist(Op op) {
+        persist(op.x());
+        persist(op.y());
+        persist(op.z());
+    }
+
+    private void unPersistAndFree(Op op) {
+        unPersistAndFree(op.x());
+        unPersistAndFree(op.y());
+        unPersistAndFree(op.z());
+    }
+
+    private void persist(INDArray arr) {
+        if(arr == null)
+            return;
+        arr.data().persist();
+    }
+
+    private void unPersistAndFree(INDArray buffer) {
+        if(buffer == null)
+            return;
+        unPersistAndFree(buffer.data());
+    }
+
+    private void unPersistAndFree(DataBuffer buffer) {
+        buffer.unPersist();
+        //free the buffer after un persisting
+        JCudaBuffer buf = (JCudaBuffer) buffer;
+        buf.freeDevicePointer(0);
     }
 
     @Override
@@ -356,7 +408,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
 
-	    INDArray result = Nd4j.create(2);
+        INDArray result = Nd4j.create(2);
 
 
         if (op.y() != null) {
@@ -373,21 +425,26 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     toArgs(op.extraArgs(), getType(op)),
                     result
             };
-            
+
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultOp(op, result)) {
-	            invokeFunction(op, kParams.getKernelParameters());
+                invokeFunction(op, kParams.getKernelParameters());
                 kParams.close();
             } catch(Exception e) {
-            	throw new RuntimeException("Could not execute kernel", e);
+                throw new RuntimeException("Could not execute kernel", e);
             }
 
-            
+
 
 
         } else {
             //int n, int xOffset,double *dx,int incx,double result
+            //NOTE THE STRIDE HERE. The stride should be set to 1.
+            //The reason for this is because we only upload
+            //the vector itself that is needed to the gpu
+            //If you never need to use the whole array
+            //with striding change this back to arr.majorStride()
             Object[] kernelParams = new Object[] {
-            		op.n(),
+                    op.n(),
                     op.x().offset(),
                     op.x(),
                     op.x().majorStride(),
@@ -399,9 +456,9 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 invokeFunction(op, kParams.getKernelParameters());
                 kParams.close();
             } catch(Exception e) {
-            	throw new RuntimeException("Could not execute kernel", e);
+                throw new RuntimeException("Could not execute kernel", e);
             }
-        	
+
 
 
         }
@@ -420,10 +477,10 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                 ,kernelParams);
 
     }
-    
-    
 
-    
+
+
+
 
 
     private void invoke(ScalarOp op) {
@@ -431,7 +488,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
         if (op.y() != null) {
-        	
+
             Object[] kernelParams = new Object[]{
                     op.n(),
                     op.x().offset(),
@@ -447,7 +504,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
                 invokeFunction(op, kParams.getKernelParameters());
             } catch(Exception e) {
-            	throw new RuntimeException("Could not execute kernel", e);
+                throw new RuntimeException("Could not execute kernel", e);
             }
 
 
@@ -467,12 +524,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
-	            invokeFunction(op, kParams.getKernelParameters());
+                invokeFunction(op, kParams.getKernelParameters());
                 kParams.close();
             }
 
             catch(Exception e) {
-            	throw new RuntimeException("Could not execute kernel", e);
+                throw new RuntimeException("Could not execute kernel", e);
             }
 
 
@@ -494,34 +551,34 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             return;
         }
         if (op.y() != null) {
-            
-	            /**
-	             * Construct pointer arguments in the following order:
-	             * n
-	             * offset,
-	             * pointer to buffer
-	             * increment,
-	             * extraArgs,
-	             * result
-	             */
-            
-        	Object[] kernelParams = new Object[]{
-        			op.n(),
-        			op.x().offset(),
-        			op.y().offset(),
-        			op.x(),
-        			op.y(),
-        			op.x().majorStride(),
-        			op.y().majorStride(),
-        			toArgs(op.extraArgs(), getType(op)),
-        			op.z()
-        	};
-        	
-        	try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
-        		invokeFunction(op, kParams.getKernelParameters());
+
+            /**
+             * Construct pointer arguments in the following order:
+             * n
+             * offset,
+             * pointer to buffer
+             * increment,
+             * extraArgs,
+             * result
+             */
+
+            Object[] kernelParams = new Object[]{
+                    op.n(),
+                    op.x().offset(),
+                    op.y().offset(),
+                    op.x(),
+                    op.y(),
+                    op.x().majorStride(),
+                    op.y().majorStride(),
+                    toArgs(op.extraArgs(), getType(op)),
+                    op.z()
+            };
+
+            try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
+                invokeFunction(op, kParams.getKernelParameters());
                 kParams.close();
-        	} catch(Exception e) {
-            	throw new RuntimeException("Could not execute kernel", e);
+            } catch(Exception e) {
+                throw new RuntimeException("Could not execute kernel", e);
             }
 
 
@@ -531,27 +588,23 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.n(),
                     op.x().offset(),
                     op.x(),
-                    op.x().majorStride(),
+                    1,
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
-        		invokeFunction(op, kParams.getKernelParameters());
+                invokeFunction(op, kParams.getKernelParameters());
                 kParams.close();
-        	} catch(Exception e) {
-            	throw new RuntimeException("Could not execute kernel", e);
+            } catch(Exception e) {
+                throw new RuntimeException("Could not execute kernel", e);
             }
-            
+
 
 
         }
 
     }
-    
-
-
-
 }
 
 

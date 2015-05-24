@@ -55,6 +55,17 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
+    public CudaDoubleDataBuffer(float[] data) {
+        super(data);
+    }
+
+    public CudaDoubleDataBuffer(int[] data) {
+        super(data);
+    }
+
+    public CudaDoubleDataBuffer(ByteBuf buf, int length) {
+        super(buf, length);
+    }
 
 
     @Override
@@ -91,6 +102,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     }
 
+    @Override
+    protected DataBuffer create(int length) {
+        return new CudaDoubleDataBuffer(length);
+    }
 
 
     @Override
@@ -110,31 +125,26 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         return DataBuffer.Type.DOUBLE;
     }
 
-      @Override
-    public DataBuffer dup() {
-        CudaDoubleDataBuffer buffer = new CudaDoubleDataBuffer(length());
-        copyTo(buffer);
-        return buffer;
-    }
+
 
     @Override
     public DataBuffer create(double[] data) {
-        return null;
+        return new CudaDoubleDataBuffer(data);
     }
 
     @Override
     public DataBuffer create(float[] data) {
-        return null;
+        return new CudaDoubleDataBuffer(data);
     }
 
     @Override
     public DataBuffer create(int[] data) {
-        return null;
+        return new CudaDoubleDataBuffer(data);
     }
 
     @Override
     public DataBuffer create(ByteBuf buf, int length) {
-        return null;
+        return new CudaDoubleDataBuffer(buf,length);
     }
 
 
@@ -164,7 +174,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         for (int i = 0; i < n; i++) {
             arr[i] = stream.readDouble();
         }
-        
+
         this.length = n;
         this.elementSize = Sizeof.DOUBLE;
         dataBuffer = Unpooled.directBuffer(length());

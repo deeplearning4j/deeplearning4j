@@ -28,8 +28,10 @@ import jcuda.runtime.cudaMemcpyKind;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.util.LinearUtil;
 
 import java.util.Arrays;
 
@@ -56,7 +58,10 @@ public class CublasPointer  implements AutoCloseable {
     @Override
     public void close() throws Exception {
         if(!closed) {
-            buffer.freeDevicePointer();
+            if(arr != null)
+                buffer.freeDevicePointer(arr.offset());
+            else
+                buffer.freeDevicePointer(0);
             closed = true;
         }
     }
@@ -73,7 +78,11 @@ public class CublasPointer  implements AutoCloseable {
      * copies the result to the host buffer
      */
     public void copyToHost() {
-        buffer.copyToHost();
+        if(arr != null)
+            buffer.copyToHost(arr.offset());
+        else {
+            buffer.copyToHost(0);
+        }
     }
 
 
@@ -111,15 +120,17 @@ public class CublasPointer  implements AutoCloseable {
      */
     public CublasPointer(INDArray array) {
         buffer = (JCudaBuffer) array.data();
+        //the name of this thread for knowing whether to copy data or not
+        String name = Thread.currentThread().getName();
         this.arr = array;
         //no striding for upload if we are using the whole buffer
         int deviceStride;
         int compLength = array instanceof IComplexNDArray ? array.length() * 2 : array.length();
         if(compLength == buffer.length()) {
-              deviceStride = 1;
+            deviceStride = 1;
         }
         else
-             deviceStride = arr.majorStride();
+            deviceStride = LinearUtil.linearStride(array);
 
         if(array instanceof IComplexNDArray) {
 
@@ -133,7 +144,7 @@ public class CublasPointer  implements AutoCloseable {
                     , array.data().getElementSize()
                     , buffer.getHostPointer().withByteOffset(arr2.blasOffset() * array.data().getElementSize())
                     , deviceStride
-                    , devicePointer
+                    , devicePointer.withByteOffset(arr.offset() * arr.data().getElementSize())
                     , 1
                     , ContextHolder.getInstance().getCudaStream());
 
@@ -144,19 +155,24 @@ public class CublasPointer  implements AutoCloseable {
                             array.majorStride()
                             ,array.offset()
                             ,array.length());
+            String s = toString();
 
-            Pointer hostPointer = buffer.getHostPointer().withByteOffset(buffer.getElementSize() * arr.offset());
 
+            // Copy the data to the device iff the whole buffer hasn't been copied
+            if(!buffer.copied(name)) {
+                JCublas.cublasSetVectorAsync(
+                        buffer.length()
+                        , array.data().getElementSize()
+                        ,  buffer.getHostPointer()
+                        , 1
+                        , buffer.getPointersToContexts().get(name,0).getPointer()
+                        , 1
+                        , ContextHolder.getInstance().getCudaStream());
+                //mark the buffer copied
+                buffer.setCopied(name);
+                s = toString();
 
-            // Copy the data to the device
-            JCublas.cublasSetVectorAsync(
-                    array.length()
-                    , array.data().getElementSize()
-                    , hostPointer
-                    , deviceStride
-                    , devicePointer
-                    , 1
-                    , ContextHolder.getInstance().getCudaStream());
+            }
 
 
         }
@@ -165,55 +181,106 @@ public class CublasPointer  implements AutoCloseable {
 
     }
 
-
-    public boolean isClosed() {
-        return closed;
-    }
 
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
         if(devicePointer != null) {
             if(arr != null) {
-                if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-                    double[] set = new double[arr.length()];
-                    JCublas2.cublasGetVectorAsync(
-                            arr.length()
-                            , buffer.getElementSize()
-                            ,devicePointer
-                            ,1
-                            ,Pointer.to(set)
-                            ,1
-                            , ContextHolder.getInstance().getCudaStream());
-                    ContextHolder.syncStream();
-                    sb.append(Arrays.toString(set));
-                }
-                else {
-                    float[] set = new float[arr.length()];
-                    JCublas2.cublasGetVectorAsync(
-                            arr.length()
-                            , buffer.getElementSize()
-                            ,devicePointer
-                            ,1
-                            ,Pointer.to(set)
-                            ,1
-                            , ContextHolder.getInstance().getCudaStream());
-                    ContextHolder.syncStream();
-                    sb.append(Arrays.toString(set));
-                }
-
+                if(arr.length() == buffer.length())
+                    appendWhereArrayLengthEqualsBufferLength(sb);
+                else
+                    appendWhereArrayLengthLessThanBufferLength(sb);
 
             }
             else {
-                double[] set = new double[buffer.length()];
-                JCublas2.cublasGetVectorAsync(arr.length(), buffer.getElementSize(), devicePointer, 1, Pointer.to(set), 1, ContextHolder.getInstance().getCudaStream());
-                sb.append(Arrays.toString(set));
+                if(buffer.dataType() == DataBuffer.Type.DOUBLE) {
+                    double[] set = new double[buffer.length()];
+                    JCublas2.cublasGetVectorAsync(
+                            buffer.length()
+                            , buffer.getElementSize()
+                            , devicePointer, LinearUtil.linearStride(arr)
+                            , Pointer.to(set)
+                            , 1
+                            , ContextHolder.getInstance().getCudaStream());
+                    sb.append(Arrays.toString(set));
+                }
+                else {
+                    float[] set = new float[buffer.length()];
+                    JCublas2.cublasGetVectorAsync(
+                            buffer.length()
+                            , buffer.getElementSize()
+                            , devicePointer, LinearUtil.linearStride(arr)
+                            , Pointer.to(set)
+                            , 1
+                            , ContextHolder.getInstance().getCudaStream());
+                    sb.append(Arrays.toString(set));
+                }
+
 
             }
         }
         else
             sb.append("No device pointer yet");
         return sb.toString();
+    }
+
+
+    private void appendWhereArrayLengthLessThanBufferLength(StringBuffer sb) {
+        if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
+            double[] set = new double[arr.length()];
+            JCublas2.cublasGetVectorAsync(
+                    arr.length()
+                    , buffer.getElementSize()
+                    ,devicePointer
+                    ,arr.majorStride()
+                    ,Pointer.to(set)
+                    ,1
+                    , ContextHolder.getInstance().getCudaStream());
+            ContextHolder.syncStream();
+            sb.append(Arrays.toString(set));
+        }
+        else {
+            float[] set = new float[arr.length()];
+            JCublas2.cublasGetVectorAsync(
+                    arr.length()
+                    , buffer.getElementSize()
+                    , devicePointer
+                    , arr.majorStride()
+                    , Pointer.to(set)
+                    , 1, ContextHolder.getInstance().getCudaStream());
+            ContextHolder.syncStream();
+            sb.append(Arrays.toString(set));
+        }
+    }
+
+    private void appendWhereArrayLengthEqualsBufferLength(StringBuffer sb) {
+        if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
+            double[] set = new double[arr.length()];
+            JCublas2.cublasGetVectorAsync(
+                    arr.length()
+                    , buffer.getElementSize()
+                    ,devicePointer
+                    ,1
+                    ,Pointer.to(set)
+                    ,1
+                    , ContextHolder.getInstance().getCudaStream());
+            ContextHolder.syncStream();
+            sb.append(Arrays.toString(set));
+        }
+        else {
+            float[] set = new float[arr.length()];
+            JCublas2.cublasGetVectorAsync(
+                    arr.length()
+                    , buffer.getElementSize()
+                    ,devicePointer
+                    ,1
+                    ,Pointer.to(set)
+                    ,1
+                    , ContextHolder.getInstance().getCudaStream());
+            ContextHolder.syncStream();
+            sb.append(Arrays.toString(set));
+        }
     }
 
 

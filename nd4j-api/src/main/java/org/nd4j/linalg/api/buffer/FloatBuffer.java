@@ -81,6 +81,10 @@ public class FloatBuffer extends BaseDataBuffer {
 
 
 
+    @Override
+    protected DataBuffer create(int length) {
+        return new FloatBuffer(length);
+    }
 
     @Override
     public DataBuffer.Type dataType() {

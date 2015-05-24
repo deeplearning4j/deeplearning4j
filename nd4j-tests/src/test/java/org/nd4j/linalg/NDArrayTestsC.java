@@ -188,6 +188,8 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
     }
 
+
+
     @Test
     public void testSubiRowVector() throws Exception {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2, 2);
