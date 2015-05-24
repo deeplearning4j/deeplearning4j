@@ -48,7 +48,6 @@ public class DefaultFFTInstance extends BaseFFTInstance {
             return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
         else {
             int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
-            int[] axes = ArrayUtil.range(0, finalShape.length);
             IComplexNDArray transform2 = Nd4j.createComplex(transform);
             IComplexNDArray result = transform2.dup();
 

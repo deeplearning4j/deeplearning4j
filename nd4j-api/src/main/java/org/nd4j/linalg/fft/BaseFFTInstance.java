@@ -300,9 +300,8 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
         if(noAxes) {
             for(int i : axes) {
-                if(i < 0) {
+                if(i < 0)
                     i = shape.length + i;
-                }
                 transform = fixShape(transform,shape,i,shape[i]);
             }
         }

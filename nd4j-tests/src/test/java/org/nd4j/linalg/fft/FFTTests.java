@@ -22,7 +22,6 @@ package org.nd4j.linalg.fft;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -53,6 +52,17 @@ public  class FFTTests extends BaseNd4jTest {
 
     public FFTTests() {
     }
+
+    @Test
+    public void testVectorFftOnes() {
+        INDArray arr = Nd4j.ones(5);
+        VectorFFT fft = new VectorFFT(arr);
+        fft.exec();
+        INDArray assertion = Nd4j.create(5);
+        assertion.putScalar(0,5);
+        assertEquals(assertion,fft.z());
+    }
+
 
     @Test
     public void testColumnVector() {
@@ -105,6 +115,7 @@ public  class FFTTests extends BaseNd4jTest {
                 ,{Nd4j.createComplexNumber(-8,0),Nd4j.createComplexNumber(0,0)}
         });
 
+
         IComplexNDArray matrix2 = Nd4j.createComplex(new IComplexNumber[][] {
                 {Nd4j.createComplexNumber(-4,0),Nd4j.createComplexNumber(0,0)}
                 ,{Nd4j.createComplexNumber(0,0),Nd4j.createComplexNumber(0,0)}
@@ -138,13 +149,7 @@ public  class FFTTests extends BaseNd4jTest {
 
         assertEquals(assertion,fftLinspaced);
 
-        fftLinspaced = Nd4j.getFFt().rawfftn(linspaced,new int[]{2,2},null);
-        assertion = Nd4j.createComplex(new IComplexNumber[][]{
-                {Nd4j.createComplexNumber(10,0),Nd4j.createComplexNumber(-4,0)}
-                ,{Nd4j.createComplexNumber(-2,0),Nd4j.createComplexNumber(0,0)}
-        });
-        assertEquals(assertion,fftLinspaced);
-
+    
 
 
     }
