@@ -40,7 +40,6 @@ import jcuda.runtime.cudaStream_t;
 
 import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.JCublasBackend;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +71,7 @@ public class ContextHolder {
     private int numDevices = 0;
     private Map<Integer,DeviceConfiguration> confs = new ConcurrentHashMap<>();
     private static ContextHolder INSTANCE;
-    public final static String DEVICES_TO_USE = "org.nd4j.linalg.jcuda.jcublas.use_devices";
+    public final static String DEVICES_TO_BAN = "org.nd4j.linalg.jcuda.jcublas.ban_devices";
     private boolean confCalled = false;
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
@@ -200,7 +199,7 @@ public class ContextHolder {
         bannedDevices = new ArrayList<>();
 
 
-        String props = System.getProperty(DEVICES_TO_USE, "-1");
+        String props = System.getProperty(DEVICES_TO_BAN, "-1");
         String[] split = props.split(",");
         //Should only be used in multi device scenarios; otherwise always use one device
         if(split.length > 1)
