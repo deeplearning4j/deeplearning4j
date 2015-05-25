@@ -96,21 +96,15 @@ public class Word2VecTests {
         File file = resource.getFile().getParentFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
         new File("cache.ser").delete();
-        InMemoryLookupCache cache = new InMemoryLookupCache();
 
 
         TokenizerFactory t = new UimaTokenizerFactory();
 
-        WeightLookupTable table = new InMemoryLookupTable
-                .Builder()
-                .vectorLength(100).useAdaGrad(false).cache(cache)
-                .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()
                 .minWordFrequency(1).iterations(5)
-                .layerSize(100).lookupTable(table)
+                .layerSize(100)
                 .stopWords(new ArrayList<String>())
-                .vocabCache(cache)
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
