@@ -546,7 +546,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private void invoke(TransformOp op) {
-        if(!KernelFunctionLoader.getInstance().exists(op.name())) {
+        if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray) {
             super.exec(op);
             return;
         }

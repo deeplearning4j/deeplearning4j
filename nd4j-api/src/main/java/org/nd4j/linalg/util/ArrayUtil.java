@@ -475,6 +475,9 @@ public class ArrayUtil {
      * item
      */
     public static int[] removeIndex(int[] data, int index) {
+        if(data == null)
+            return null;
+
         if (index >= data.length)
             throw new IllegalArgumentException("Unable to remove index " + index + " was >= data.length");
 

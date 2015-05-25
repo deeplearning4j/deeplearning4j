@@ -3,20 +3,25 @@ package org.nd4j.linalg.jcublas.fft;
 import jcuda.jcufft.JCufft;
 import jcuda.jcufft.cufftHandle;
 import jcuda.jcufft.cufftType;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
-import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.jcublas.fft.ops.JCudaVectorFFT;
+import org.nd4j.linalg.jcublas.fft.ops.JCudaVectorIFFT;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ *
+ * Uses JCufft rather than
+ * the built in FFTs
+ *
  * @author Adam Gibson
  */
 public class JcudaFft extends DefaultFFTInstance {
@@ -37,6 +42,10 @@ public class JcudaFft extends DefaultFFTInstance {
     }
 
 
+    /**
+     * Get the handle for the current thread
+     * @return the handle for the current thread
+     */
     public cufftHandle getHandle() {
         cufftHandle handle =  handles.get(Thread.currentThread().getName());
         if(handle == null) {
@@ -113,19 +122,15 @@ public class JcudaFft extends DefaultFFTInstance {
 
         }
         else {
-            JCufft.cufftMakePlanMany(
-                    getHandle()
-                    , axes.length
-                    , transform.shape()
-                    , shape
-                    , transform.elementStride()
-                    , transform.stride(0)
-                    , shape
-                    , transform.elementStride()
-                    , transform.stride(0)
-                    , cufftType.CUFFT_C2C
-                    , 1
-                    , workAreaLength);
+           if(shape == null)
+               shape = transform.shape();
+
+            for(int i = 0; i < result.slices(); i++) {
+                IComplexNDArray slice = transform.slice(i);
+                IComplexNDArray fftedSlice = doFftn(slice, ArrayUtil.removeIndex(shape, 0), ArrayUtil.removeIndex(shape, 0), fftType);
+                result.putSlice(i,fftedSlice);
+            }
+
 
 
         }
@@ -233,7 +238,7 @@ public class JcudaFft extends DefaultFFTInstance {
     @Override
     public IComplexNDArray ifft(INDArray transform, int numElements) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
-        return doFft(inputC,numElements,- 1,JCufft.CUFFT_INVERSE);
+        return doFft(inputC, numElements, -1, JCufft.CUFFT_INVERSE);
     }
 
     /**
@@ -247,13 +252,13 @@ public class JcudaFft extends DefaultFFTInstance {
      */
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC) {
-        return doFft(inputC,inputC.length(),-1,JCufft.CUFFT_INVERSE);
+        return doFft(inputC, inputC.length(), -1, JCufft.CUFFT_INVERSE);
 
     }
 
     @Override
     public IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
-        return doFftn(transform,shape,axes,JCufft.CUFFT_INVERSE);
+        return doFftn(transform, shape, axes, JCufft.CUFFT_INVERSE);
     }
 
 
@@ -261,28 +266,16 @@ public class JcudaFft extends DefaultFFTInstance {
 
     @Override
     public IComplexNDArray rawfftn(IComplexNDArray transform, int[] shape, int[] axes) {
-        return doFftn(transform,shape,axes,JCufft.CUFFT_FORWARD);
+        return doFftn(transform, shape, axes, JCufft.CUFFT_FORWARD);
     }
 
-    /**
-     * Underlying fft algorithm
-     *
-     * @param transform the ndarray to op
-     * @param n         the desired number of elements
-     * @param dimension the dimension to do fft along
-     * @return the transformed ndarray
-     */
     @Override
-    public IComplexNDArray rawfft(IComplexNDArray transform, int n, int dimension) {
-        return doFft(transform,n,dimension,JCufft.CUFFT_FORWARD);
+    protected Op getIfftOp(INDArray arr, int n) {
+        return new JCudaVectorIFFT(arr,n);
     }
 
-
-    //underlying fftn
     @Override
-    public IComplexNDArray rawifft(IComplexNDArray transform, int n, int dimension) {
-        return doFft(transform,n,dimension,JCufft.CUFFT_INVERSE);
+    protected Op getFftOp(INDArray arr, int n) {
+        return new JCudaVectorFFT(arr,n);
     }
-
-
 }

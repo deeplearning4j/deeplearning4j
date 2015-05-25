@@ -21,6 +21,7 @@ package org.nd4j.linalg.fft;
 
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorIFFT;
 import org.nd4j.linalg.factory.Nd4j;
@@ -221,5 +222,14 @@ public class DefaultFFTInstance extends BaseFFTInstance {
 
         return result;
     }
+
+    protected Op getIfftOp(INDArray arr, int n) {
+        return new VectorFFT(arr,n);
+    }
+
+    protected Op getFftOp(INDArray arr,int n) {
+        return new VectorFFT(arr,n);
+    }
+
 
 }

@@ -89,6 +89,11 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     }
 
 
+    @Test
+    public void testPutSlice() {
+
+    }
+
 
     @Test
     public void testPutComplex() {
