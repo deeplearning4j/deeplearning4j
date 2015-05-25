@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
@@ -45,8 +46,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             //make assumption x and z are same type
-            if (!op.x().getClass().equals(t.z().getClass()))
-                throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types");
+            if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
+                throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
             for (int c = 0; c < op.n(); c++) {
                 apply(t, c);
             }
