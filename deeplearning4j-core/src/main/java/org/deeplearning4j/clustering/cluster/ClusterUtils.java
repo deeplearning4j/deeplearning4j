@@ -41,7 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ClusterUtils {
 
 	public static ClusterSetInfo classifyPoints(final ClusterSet clusterSet, List<Point> points,
-																							ExecutorService executorService) {
+												ExecutorService executorService) {
 		final ClusterSetInfo clusterSetInfo = ClusterSetInfo.initialize(clusterSet, true);
 
 		List<Runnable> tasks = new ArrayList<>();
@@ -69,7 +69,7 @@ public class ClusterUtils {
 	}
 
 	public static void refreshClustersCenters(final ClusterSet clusterSet, final ClusterSetInfo clusterSetInfo,
-																						ExecutorService executorService) {
+											  ExecutorService executorService) {
 		List<Runnable> tasks = new ArrayList<>();
 		for (int i = 0, j = clusterSet.getClusterCount(); i < j; i++) {
 			final Cluster cluster = clusterSet.getClusters().get(i);
@@ -93,10 +93,10 @@ public class ClusterUtils {
 		int pointsCount = cluster.getPoints().size();
 		if (pointsCount == 0)
 			return;
-		Point center = new Point(Nd4j.create(cluster.getPoints().get(0).length()));
+		Point center = new Point(Nd4j.create(cluster.getPoints().get(0).getArray().length()));
 		for (Point point : cluster.getPoints())
-			center.addi(point);
-		center.divi(pointsCount);
+			center.getArray().addi(point.getArray());
+		center.getArray().divi(pointsCount);
 		cluster.setCenter(center);
 	}
 
@@ -173,9 +173,9 @@ public class ClusterUtils {
 					try {
 						for (int k = clusterIdx + 1, l = clusterSet.getClusterCount(); k < l; k++) {
 							Cluster toCluster = clusterSet.getClusters().get(k);
-              double distance =
+							double distance =
 									Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum(clusterSet.getAccumulation(),
-											fromCluster.getCenter(),toCluster.getCenter())).currentResult().doubleValue();
+											fromCluster.getCenter().getArray(),toCluster.getCenter().getArray())).currentResult().doubleValue();
 							info.getDistancesBetweenClustersCenters().put(fromCluster.getId(), toCluster.getId(), distance);
 						}
 					} catch (Exception e) {
@@ -196,7 +196,8 @@ public class ClusterUtils {
 		for (int i = 0, j = cluster.getPoints().size(); i < j; i++) {
 			Point point = cluster.getPoints().get(i);
 			double distance =
-					Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction,cluster.getCenter(),
+					Nd4j.getExecutioner().execAndReturn(
+							Nd4j.getOpFactory().createAccum(distanceFunction,cluster.getCenter().getArray(),
 							point.getArray())).currentResult().doubleValue();
 			info.getPointDistancesFromCenter().put(point.getId(), distance);
 			info.setTotalPointDistanceFromCenter(info.getTotalPointDistanceFromCenter() + distance);
@@ -207,13 +208,13 @@ public class ClusterUtils {
 	}
 
 	public static boolean applyOptimization(OptimisationStrategy optimization, ClusterSet clusterSet,
-																					ClusterSetInfo clusterSetInfo, ExecutorService executor) {
+											ClusterSetInfo clusterSetInfo, ExecutorService executor) {
 
 		if (optimization.isClusteringOptimizationType(
 				ClusteringOptimizationType.MINIMIZE_AVERAGE_POINT_TO_CENTER_DISTANCE)) {
 			int splitCount =
 					ClusterUtils.splitClustersWhereAverageDistanceFromCenterGreaterThan(clusterSet, clusterSetInfo,
-					optimization.getClusteringOptimizationValue(), executor);
+							optimization.getClusteringOptimizationValue(), executor);
 			return splitCount>0;
 		}
 
@@ -221,7 +222,7 @@ public class ClusterUtils {
 				ClusteringOptimizationType.MINIMIZE_MAXIMUM_POINT_TO_CENTER_DISTANCE)) {
 			int splitCount =
 					ClusterUtils.splitClustersWhereMaximumDistanceFromCenterGreaterThan(clusterSet, clusterSetInfo,
-					optimization.getClusteringOptimizationValue(), executor);
+							optimization.getClusteringOptimizationValue(), executor);
 			return splitCount > 0;
 		}
 
@@ -242,8 +243,8 @@ public class ClusterUtils {
 	}
 
 	public static List<Cluster> getClustersWhereAverageDistanceFromCenterGreaterThan(final ClusterSet clusterSet,
-																																									 final ClusterSetInfo info,
-																																									 double maximumAverageDistance) {
+																					 final ClusterSetInfo info,
+																					 double maximumAverageDistance) {
 		List<Cluster> clusters = new ArrayList<>();
 		for (Cluster cluster : clusterSet.getClusters()) {
 			ClusterInfo clusterInfo = info.getClusterInfo(cluster.getId());
@@ -253,9 +254,7 @@ public class ClusterUtils {
 		return clusters;
 	}
 
-	public static List<Cluster> getClustersWhereMaximumDistanceFromCenterGreaterThan(final ClusterSet clusterSet,
-																																									 final ClusterSetInfo info,
-																																									 double maximumDistance) {
+	public static List<Cluster> getClustersWhereMaximumDistanceFromCenterGreaterThan(final ClusterSet clusterSet, final ClusterSetInfo info, double maximumDistance) {
 		List<Cluster> clusters = new ArrayList<>();
 		for (Cluster cluster : clusterSet.getClusters()) {
 			ClusterInfo clusterInfo = info.getClusterInfo(cluster.getId());
@@ -266,16 +265,16 @@ public class ClusterUtils {
 	}
 
 	public static int splitMostSpreadOutClusters(ClusterSet clusterSet, ClusterSetInfo clusterSetInfo,
-																							 int count, ExecutorService executorService) {
+												 int count, ExecutorService executorService) {
 		List<Cluster> clustersToSplit = getMostSpreadOutClusters(clusterSet, clusterSetInfo, count);
 		splitClusters(clusterSet, clusterSetInfo, clustersToSplit, executorService);
 		return clustersToSplit.size();
 	}
 
 	public static int splitClustersWhereAverageDistanceFromCenterGreaterThan(ClusterSet clusterSet,
-																																					 ClusterSetInfo clusterSetInfo,
-																																					 double maxWithinClusterDistance,
-			ExecutorService executorService) {
+																			 ClusterSetInfo clusterSetInfo,
+																			 double maxWithinClusterDistance,
+																			 ExecutorService executorService) {
 		List<Cluster> clustersToSplit =
 				getClustersWhereAverageDistanceFromCenterGreaterThan(clusterSet, clusterSetInfo, maxWithinClusterDistance);
 		splitClusters(clusterSet, clusterSetInfo, clustersToSplit, maxWithinClusterDistance, executorService);
@@ -283,9 +282,9 @@ public class ClusterUtils {
 	}
 
 	public static int splitClustersWhereMaximumDistanceFromCenterGreaterThan(ClusterSet clusterSet,
-																																					 ClusterSetInfo clusterSetInfo,
-																																					 double maxWithinClusterDistance,
-			ExecutorService executorService) {
+																			 ClusterSetInfo clusterSetInfo,
+																			 double maxWithinClusterDistance,
+																			 ExecutorService executorService) {
 		List<Cluster> clustersToSplit =
 				getClustersWhereMaximumDistanceFromCenterGreaterThan(clusterSet, clusterSetInfo, maxWithinClusterDistance);
 		splitClusters(clusterSet, clusterSetInfo, clustersToSplit, maxWithinClusterDistance, executorService);
@@ -293,14 +292,14 @@ public class ClusterUtils {
 	}
 
 	public static void splitMostPopulatedClusters(ClusterSet clusterSet, ClusterSetInfo clusterSetInfo,
-																								int count, ExecutorService executorService) {
+												  int count, ExecutorService executorService) {
 		List<Cluster> clustersToSplit = clusterSet.getMostPopulatedClusters(count);
 		splitClusters(clusterSet, clusterSetInfo, clustersToSplit, executorService);
 	}
 
 	public static void splitClusters(final ClusterSet clusterSet, final ClusterSetInfo clusterSetInfo,
-																	 List<Cluster> clusters, final double maxDistance,
-			ExecutorService executorService) {
+									 List<Cluster> clusters, final double maxDistance,
+									 ExecutorService executorService) {
 		final Random random = new Random();
 		List<Runnable> tasks = new ArrayList<>();
 		for (final Cluster cluster : clusters) {
@@ -324,7 +323,7 @@ public class ClusterUtils {
 	}
 
 	public static void splitClusters(final ClusterSet clusterSet, final ClusterSetInfo clusterSetInfo,
-																	 List<Cluster> clusters, ExecutorService executorService) {
+									 List<Cluster> clusters, ExecutorService executorService) {
 		final Random random = new Random();
 		List<Runnable> tasks = new ArrayList<>();
 		for (final Cluster cluster : clusters) {

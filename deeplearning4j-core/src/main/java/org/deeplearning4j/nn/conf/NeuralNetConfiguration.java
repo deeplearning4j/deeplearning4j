@@ -37,7 +37,6 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.rng.DefaultRandom;
 import org.deeplearning4j.nn.conf.rng.Random;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;

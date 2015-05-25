@@ -48,7 +48,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private int batchSize = 10;
     private int labelIndex = -1;
     private int numPossibleLabels = -1;
+    private boolean overshot = false;
     private Iterator<Collection<Writable>> sequenceIter;
+    private DataSet last;
 
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1, -1);
@@ -121,8 +123,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
 
-        return new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
+        if(inputs.isEmpty()) {
+            overshot = true;
+            return last;
+        }
 
+        DataSet ret =  new DataSet(Nd4j.vstack(inputs.toArray(new INDArray[0])), Nd4j.vstack(labels.toArray(new INDArray[0])));
+        last = ret;
+        return ret;
     }
 
 
@@ -215,7 +223,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return recordReader.hasNext();
+        return recordReader.hasNext() || overshot;
     }
 
     @Override
