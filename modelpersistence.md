@@ -19,10 +19,9 @@ It allows neural networks to be loaded into memory afterward (to resume training
 
 ## Save an Interoperable Vector of All Weights
 
-The second format for saving a model is as a long vector of all coefficients, while writing your configuration to a JSON file.
+The second format for saving a model is as a long vector of all coefficients, while writing your configuration to a JSON file. 
 
 ```
-
 INDArray params = layer.params();
 String conf = layer.conf().toJson();
 
