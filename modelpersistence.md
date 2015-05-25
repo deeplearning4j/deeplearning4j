@@ -21,12 +21,12 @@ It allows neural networks to be loaded into memory afterward (to resume training
 
 The second format for saving a model is as a long vector of all coefficients, while writing your configuration to a JSON file. 
 
-    INDArray params = layer.params();
-    String conf = layer.conf().toJson();
+    INDArray params = layer.params(); //turn model's weight matrix into vector
+    String conf = layer.conf().toJson(); 
     
-    Nd4j.write/writeTxt(params,"somefile"); //it's a string save however you want
+    Nd4j.write/writeTxt(params,"somefile"); //save vector as a string to file type of your choice
     
-    //You can load the conf with
+    //You can reload the conf with
     MultiLayerConfiguration/NeuralNetConfiguration = NeuralNetConfiguration/MultiLayerConfiguration.fromJson(); 
     
     //You can set the params with 
