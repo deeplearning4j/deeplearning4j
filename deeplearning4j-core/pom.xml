@@ -27,6 +27,8 @@
 	<properties>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<logback.version>1.1.2</logback.version>
+		<netty.version>5.0.0.Alpha2</netty.version>
+
 	</properties>
 
 	<dependencyManagement>
@@ -62,6 +64,11 @@
 	</dependencyManagement>
 
 	<dependencies>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-buffer</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>canova-api</artifactId>
