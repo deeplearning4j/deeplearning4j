@@ -5,9 +5,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.fft.FFT;
 import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.jcublas.fft.JcudaFft;
 

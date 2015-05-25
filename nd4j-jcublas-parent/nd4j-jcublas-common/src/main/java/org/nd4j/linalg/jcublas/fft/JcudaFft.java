@@ -6,14 +6,11 @@ import jcuda.jcufft.cufftType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
-import org.nd4j.linalg.api.ops.impl.transforms.VectorIFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.ComplexNDArrayUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,25 +59,7 @@ public class JcudaFft extends DefaultFFTInstance {
      */
     @Override
     public IComplexNDArray fft(INDArray transform, int numElements, int dimension) {
-        IComplexNDArray inputC = Nd4j.createComplex(transform);
-        if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
-        else {
-            int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
-            IComplexNDArray transform2 = Nd4j.createComplex(transform);
-            IComplexNDArray result = transform2.dup();
-
-            int desiredElementsAlongDimension = result.size(dimension);
-
-            if(numElements > desiredElementsAlongDimension) {
-                result = ComplexNDArrayUtil.padWithZeros(result, finalShape);
-            }
-
-            else if(numElements < desiredElementsAlongDimension)
-                result = ComplexNDArrayUtil.truncate(result,numElements,dimension);
-
-            return rawfft(result, numElements, dimension);
-        }
+        return doFft(Nd4j.createComplex(transform),numElements,dimension,JCufft.CUFFT_FORWARD);
     }
 
     /**
@@ -94,18 +73,95 @@ public class JcudaFft extends DefaultFFTInstance {
      */
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC, int numElements, int dimension) {
-        if (inputC.isVector()) {
-            return doFft(inputC,numElements,JCufft.CUFFT_FORWARD);
-
-        }
-        else
-            return rawfft(inputC, numElements, dimension);
+        return doFft(inputC,numElements,dimension,JCufft.CUFFT_FORWARD);
 
     }
 
 
+    private IComplexNDArray doFftn(IComplexNDArray transform,int[] shape,int[] axes,int fftType) {
+        IComplexNDArray result = transform.dup();
+        if(axes == null)
+            axes = ArrayUtil.range(0,transform.shape().length);
 
-    private IComplexNDArray doFft(IComplexNDArray inputC,int n,int fftKind) {
+        INDArray workerArea = Nd4j.create(result.length() * 2);
+
+        CublasPointer workerPointer = new CublasPointer(workerArea);
+
+        JCufft.cufftSetWorkArea(getHandle(),workerPointer.getDevicePointer());
+
+        JCufft.cufftSetStream(
+                getHandle()
+                , ContextHolder.getInstance().getCudaStream());
+
+        JCufft.cufftSetAutoAllocation(
+                getHandle()
+                , JCufft.cufftSetAutoAllocation(getHandle(), 1));
+
+        CublasPointer pointer = new CublasPointer(result);
+
+
+        long[] workAreaLength = new long[]{workerArea.length()  * workerArea.data().getElementSize()};
+        if(transform.data().dataType() == DataBuffer.Type.FLOAT) {
+            JCufft.cufftMakePlanMany(
+                    getHandle()
+                    , axes.length
+                    , transform.shape()
+                    , shape
+                    , 2
+                    , transform.majorStride()
+                    , shape
+                    , 2
+                    , transform.majorStride()
+                    , cufftType.CUFFT_C2C
+                    , transform.vectorsAlongDimension(-1)
+                    , workAreaLength);
+
+            JCufft.cufftExecC2C(
+                    getHandle()
+                    ,pointer.getDevicePointer()
+                    ,pointer.getDevicePointer()
+                    ,fftType);
+
+        }
+        else {
+            JCufft.cufftMakePlanMany(
+                    getHandle()
+                    , axes.length
+                    ,shape
+                    , transform.shape()
+                    , transform.stride(-1)
+                    , transform.majorStride()
+                    , transform.shape()
+                    , 2
+                    ,  transform.majorStride()
+                    , cufftType.CUFFT_C2C
+                    , transform.vectorsAlongDimension(-1)
+                    , workAreaLength);
+            JCufft.cufftExecC2C(
+
+                    getHandle()
+                    ,pointer.getDevicePointer()
+                    ,pointer.getDevicePointer()
+                    ,fftType);
+
+        }
+
+
+        try {
+            pointer.copyToHost();
+            pointer.close();
+            workerPointer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+
+        return result;
+
+    }
+
+    private IComplexNDArray doFft(IComplexNDArray inputC,int n,int dimension,int fftKind) {
         INDArray workerArea = Nd4j.create(inputC.length() * 2);
         CublasPointer inputPointer = new CublasPointer(inputC);
         CublasPointer workerPointer = new CublasPointer(workerArea);
@@ -160,10 +216,7 @@ public class JcudaFft extends DefaultFFTInstance {
     @Override
     public IComplexNDArray ifft(INDArray transform, int numElements, int dimension) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
-        if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
-        else
-            return rawifft(inputC, numElements, dimension);
+        return doFft(inputC,numElements,dimension,JCufft.CUFFT_INVERSE);
 
     }
 
@@ -178,11 +231,7 @@ public class JcudaFft extends DefaultFFTInstance {
      */
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC, int numElements, int dimension) {
-        if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
-        else {
-            return rawifft(inputC, numElements, dimension);
-        }
+        return doFft(inputC,numElements,dimension,JCufft.CUFFT_INVERSE);
     }
 
     /**
@@ -195,12 +244,7 @@ public class JcudaFft extends DefaultFFTInstance {
     @Override
     public IComplexNDArray ifft(INDArray transform, int numElements) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
-        if (inputC.isVector())
-            return doFft(inputC,numElements,JCufft.CUFFT_INVERSE);
-
-        else {
-            return rawifft(inputC, numElements, inputC.shape().length - 1);
-        }
+        return doFft(inputC,numElements,- 1,JCufft.CUFFT_INVERSE);
     }
 
     /**
@@ -214,14 +258,22 @@ public class JcudaFft extends DefaultFFTInstance {
      */
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC) {
-        if (inputC.isVector())
-            return doFft(inputC,inputC.length(),JCufft.CUFFT_FORWARD);
+        return doFft(inputC,inputC.length(),-1,JCufft.CUFFT_INVERSE);
 
-        else {
-            return rawifft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
-        }
     }
 
+    @Override
+    public IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
+        return doFftn(transform,shape,axes,JCufft.CUFFT_INVERSE);
+    }
+
+
+
+
+    @Override
+    public IComplexNDArray rawfftn(IComplexNDArray transform, int[] shape, int[] axes) {
+        return doFftn(transform,shape,axes,JCufft.CUFFT_FORWARD);
+    }
 
     /**
      * Underlying fft algorithm
@@ -233,179 +285,14 @@ public class JcudaFft extends DefaultFFTInstance {
      */
     @Override
     public IComplexNDArray rawfft(IComplexNDArray transform, int n, int dimension) {
-        IComplexNDArray result = transform.dup();
-
-        if (transform.size(dimension) != n) {
-            int[] shape = ArrayUtil.copy(result.shape());
-            shape[dimension] = n;
-            if (transform.size(dimension) > n)
-                result = ComplexNDArrayUtil.truncate(result, n, dimension);
-
-            else
-                result = ComplexNDArrayUtil.padWithZeros(result, shape);
-
-        }
-
-
-        if (dimension != result.shape().length - 1)
-            result = result.swapAxes(result.shape().length - 1, dimension);
-
-        INDArray workerArea = Nd4j.create(transform.length() * 2);
-
-        CublasPointer workerPointer = new CublasPointer(workerArea);
-
-        JCufft.cufftSetWorkArea(getHandle(),workerPointer.getDevicePointer());
-
-        JCufft.cufftSetStream(
-                getHandle()
-                , ContextHolder.getInstance().getCudaStream());
-
-        JCufft.cufftSetAutoAllocation(
-                getHandle()
-                , JCufft.cufftSetAutoAllocation(getHandle(), 1));
-
-        CublasPointer pointer = new CublasPointer(transform);
-
-
-        long[] workAreaLength = new long[]{workerArea.length()  * workerArea.data().getElementSize()};
-        if(transform.data().dataType() == DataBuffer.Type.FLOAT) {
-            JCufft.cufftMakePlanMany(
-                    getHandle()
-                    , transform.slices()
-                    , transform.shape()
-                    , transform.shape()
-                    , transform.majorStride(), transform.stride(-1), transform.shape()
-                    , transform.majorStride()
-                    , transform.stride(-1)
-                    , cufftType.CUFFT_C2C
-                    , transform.vectorsAlongDimension(0)
-                    , workAreaLength);
-
-            JCufft.cufftExecC2C(
-                    getHandle()
-                    ,pointer.getDevicePointer()
-                    ,pointer.getDevicePointer()
-                    ,JCufft.CUFFT_FORWARD);
-
-        }
-        else {
-            JCufft.cufftMakePlanMany(
-                    getHandle()
-                    , transform.slices()
-                    , transform.shape()
-                    , transform.shape()
-                    , transform.majorStride(), transform.stride(-1), transform.shape()
-                    , transform.majorStride()
-                    , transform.stride(-1)
-                    , cufftType.CUFFT_C2C
-                    , transform.vectorsAlongDimension(0)
-                    , workAreaLength);
-            JCufft.cufftExecC2C(
-
-                    getHandle()
-                    ,pointer.getDevicePointer()
-                    ,pointer.getDevicePointer()
-                    ,JCufft.CUFFT_FORWARD);
-
-        }
-
-
-        try {
-            pointer.copyToHost();
-            pointer.close();
-            workerPointer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (dimension != result.shape().length - 1)
-            result = result.swapAxes(result.shape().length - 1, dimension);
-
-        return result;
+        return doFft(transform,n,dimension,JCufft.CUFFT_FORWARD);
     }
 
 
     //underlying fftn
     @Override
     public IComplexNDArray rawifft(IComplexNDArray transform, int n, int dimension) {
-        IComplexNDArray result = transform.dup();
-
-        if (transform.size(dimension) != n) {
-            int[] shape = ArrayUtil.copy(result.shape());
-            shape[dimension] = n;
-            if (transform.size(dimension) > n)
-                result = ComplexNDArrayUtil.truncate(result, n, dimension);
-
-            else
-                result = ComplexNDArrayUtil.padWithZeros(result, shape);
-
-        }
-
-
-        if (dimension != result.shape().length - 1)
-            result = result.swapAxes(result.shape().length - 1, dimension);
-
-        INDArray workerArea = Nd4j.create(transform.length() * 2);
-        CublasPointer workerPointer = new CublasPointer(workerArea);
-        JCufft.cufftSetWorkArea(getHandle(),workerPointer.getDevicePointer());
-        JCufft.cufftSetStream(
-                getHandle()
-                , ContextHolder.getInstance().getCudaStream());
-        JCufft.cufftSetAutoAllocation(getHandle(), JCufft.cufftSetAutoAllocation(getHandle(), 1));
-        CublasPointer pointer = new CublasPointer(transform);
-        long[] workAreaLength = new long[]{workerArea.length()  * workerArea.data().getElementSize()};
-        if(transform.data().dataType() == DataBuffer.Type.FLOAT) {
-            JCufft.cufftMakePlanMany(
-                    getHandle()
-                    , transform.slices()
-                    , transform.shape()
-                    , null
-                    , transform.majorStride(), transform.stride(-1), transform.shape()
-                    , transform.majorStride()
-                    , transform.stride(-1)
-                    , cufftType.CUFFT_C2C
-                    , transform.vectorsAlongDimension(0)
-                    , workAreaLength);
-            JCufft.cufftExecC2C(
-                    getHandle()
-                    ,pointer.getDevicePointer()
-                    ,pointer.getDevicePointer()
-                    ,JCufft.CUFFT_INVERSE);
-
-        }
-        else {
-            JCufft.cufftMakePlanMany(
-                    getHandle()
-                    , transform.slices()
-                    , transform.shape()
-                    , null
-                    , transform.majorStride(), transform.stride(-1), transform.shape()
-                    , transform.majorStride()
-                    , transform.stride(-1)
-                    , cufftType.CUFFT_C2C
-                    , transform.vectorsAlongDimension(0)
-                    , workAreaLength);
-            JCufft.cufftExecC2C(
-                    getHandle()
-                    ,pointer.getDevicePointer()
-                    ,pointer.getDevicePointer()
-                    ,JCufft.CUFFT_INVERSE);
-
-        }
-
-
-        try {
-            pointer.copyToHost();
-            pointer.close();
-            workerPointer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (dimension != result.shape().length - 1)
-            result = result.swapAxes(result.shape().length - 1, dimension);
-
-        return result;
+        return doFft(transform,n,dimension,JCufft.CUFFT_INVERSE);
     }
 
 
