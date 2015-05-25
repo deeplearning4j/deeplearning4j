@@ -470,7 +470,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         } else {
             for (int j = 0; j < a.columns(); j++) {
                 double byj = beta * y.data().getDouble(j);
-                double xj = x.getFloat(j);
+                double xj = x.getDouble(j);
                 for (int i = 0; i < a.rows(); i++) {
                     y.putScalar(j, a.getDouble(i, j) * xj + byj);
                 }
@@ -592,14 +592,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 (ComplexFloat) alpha,
                 a.data().asFloat(),
                 a.blasOffset(),
-                a.rows(),
+                a.size(0),
                 x.data().asFloat(),
                 x.offset(),
-                x.majorStride(),
+                1,
                 (ComplexFloat) beta,
                 y.data().asFloat(),
                 y.blasOffset(),
-                y.majorStride()
+                1
         );
         return y;
     }
@@ -813,14 +813,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     a.data().asFloat(),
                     a.blasOffset(),
-                    a.rows(),
+                    a.size(0),
                     b.data().asFloat(),
                     b.blasOffset(),
-                    b.rows(),
+                    b.size(0),
                     new ComplexFloat(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
                     , c.data().asFloat(),
                     c.blasOffset(),
-                    c.rows());
+                    c.size(0));
         else
             NativeBlas.zgemm(
                     'N',
@@ -831,14 +831,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     a.data().asDouble(),
                     a.blasOffset(),
-                    a.rows(),
+                    a.size(0),
                     b.data().asDouble(),
                     b.blasOffset(),
-                    b.rows(),
+                    b.size(0),
                     new ComplexDouble(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
                     , c.data().asDouble(),
                     c.blasOffset(),
-                    c.rows());
+                    c.size(0));
         return c;
 
     }

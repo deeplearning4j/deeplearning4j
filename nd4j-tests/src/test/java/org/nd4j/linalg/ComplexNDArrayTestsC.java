@@ -153,6 +153,14 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     }
 
     @Test
+    public void testAssignOffset() {
+        IComplexNDArray arr = Nd4j.complexOnes(5, 5);
+        IComplexNDArray row = arr.slice(1);
+        row.assign(1);
+        assertEquals(Nd4j.complexOnes(5),row);
+    }
+
+    @Test
     public void testDimShuffle() {
         IComplexNDArray n = Nd4j.complexLinSpace(1, 4, 4).reshape(2, 2);
         IComplexNDArray twoOneTwo = n.dimShuffle(new Object[]{0, 'x', 1}, new int[]{0, 1}, new boolean[]{false, false});

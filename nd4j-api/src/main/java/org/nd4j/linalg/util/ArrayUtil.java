@@ -38,6 +38,20 @@ public class ArrayUtil {
 
 
     /**
+     * Repeat a value n times
+     * @param n the number of times to repeat
+     * @param toReplicate the value to repeat
+     * @return an array of length n filled with the
+     * given value
+     */
+    public static int[] nTimes(int n,int toReplicate) {
+        int[] ret = new int[n];
+        Arrays.fill(ret,toReplicate);
+        return ret;
+    }
+
+
+    /**
      * Returns true if all of the elements in the
      * given int array are unique
      * @param toTest the array to test

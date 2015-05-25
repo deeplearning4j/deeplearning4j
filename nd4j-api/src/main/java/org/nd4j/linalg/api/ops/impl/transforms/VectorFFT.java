@@ -164,10 +164,10 @@ public class VectorFFT extends BaseTransformOp {
 
         IComplexNDArray reshaped = ret.reshape(new int[]{1,ret.length()});
         IComplexNDArray matrix = reshaped.mmul(M);
-        if (originalN > 0) {
+        if (originalN > 0)
             matrix = ComplexNDArrayUtil.truncate(matrix, originalN, 0);
 
-        }
+
         //completely pass through
         this.x = matrix;
         this.z = matrix;

@@ -32,6 +32,55 @@ import org.nd4j.linalg.factory.Nd4j;
 public class ComplexUtil {
     private ComplexUtil() {
     }
+    /**
+     * Create complex number where the
+     * @param realComponents the real components for the complex
+     * @return the complex numbers based on the given real components
+     */
+    public static IComplexNumber[][] complexNumbersFor(float[][] realComponents) {
+        IComplexNumber[][] ret = new IComplexNumber[realComponents.length][realComponents[0].length];
+        for(int i = 0; i < realComponents.length; i++)
+            for(int j = 0; j < realComponents[i].length; j++)
+                ret[i][j] = Nd4j.createComplexNumber(realComponents[i][j],0);
+        return ret;
+    }
+
+    /**
+     * Create complex number where the
+     * @param realComponents the real components for the complex
+     * @return the complex numbers based on the given real components
+     */
+    public static IComplexNumber[][] complexNumbersFor(double[][] realComponents) {
+        IComplexNumber[][] ret = new IComplexNumber[realComponents.length][realComponents[0].length];
+        for(int i = 0; i < realComponents.length; i++)
+            for(int j = 0; j < realComponents[i].length; j++)
+                ret[i][j] = Nd4j.createComplexNumber(realComponents[i][j],0);
+        return ret;
+    }
+
+    /**
+     * Create complex number where the
+     * @param realComponents the real components for the complex
+     * @return the complex numbers based on the given real components
+     */
+    public static IComplexNumber[] complexNumbersFor(float[] realComponents) {
+        IComplexNumber[] ret = new IComplexNumber[realComponents.length];
+        for(int i = 0; i < realComponents.length; i++)
+            ret[i] = Nd4j.createComplexNumber(realComponents[i],0);
+        return ret;
+    }
+
+    /**
+     * Create complex number where the
+     * @param realComponents the real components for the complex
+     * @return the complex numbers based on the given real components
+     */
+    public static IComplexNumber[] complexNumbersFor(double[] realComponents) {
+        IComplexNumber[] ret = new IComplexNumber[realComponents.length];
+        for(int i = 0; i < realComponents.length; i++)
+            ret[i] = Nd4j.createComplexNumber(realComponents[i],0);
+        return ret;
+    }
 
     /**
      * Return the  sin value of the given complex number

@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
@@ -45,8 +46,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             //make assumption x and z are same type
-            if (!op.x().getClass().equals(t.z().getClass()))
-                throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types");
+            if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
+                throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
             for (int c = 0; c < op.n(); c++) {
                 apply(t, c);
             }
@@ -85,14 +86,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 IComplexNDArray y = (IComplexNDArray) op.y();
 
                 for(int i = 0; i < original.rows(); i++) {
-                    IComplexNDArray row = original.slice(i);
-                    IComplexNDArray zRow = originalZ.slice(i);
+                    IComplexNDArray row = original.slice(i).ravel();
+                    IComplexNDArray zRow = originalZ.slice(i).ravel();
                     op.setX(row);
                     op.setZ(zRow);
                     if(y != null)
                         op.setY(y.slice(i));
                     exec(op);
-                    zRow.assign(op.z());
+                    originalZ.slice(i).assign(op.z());
 
                 }
             }
@@ -144,8 +145,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 IComplexNDArray originalZ = (IComplexNDArray) op.z();
                 IComplexNDArray y = (IComplexNDArray) op.y();
                 for(int i = 0; i < op.x().slices(); i++) {
-                    op.setX(originalX.getColumn(i));
-                    op.setZ(originalZ.getColumn(i));
+                    op.setX(originalX.getColumn(i).ravel());
+                    op.setZ(originalZ.getColumn(i).ravel());
                     if(y != null)
                         op.setY(y.getColumn(i));
                     iterateOverAllColumns(op);

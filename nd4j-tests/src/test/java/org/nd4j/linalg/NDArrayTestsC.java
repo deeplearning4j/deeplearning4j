@@ -24,9 +24,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
+import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -108,7 +110,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         });
 
         INDArray test = arr.mmul(arr.transpose());
-        assertEquals(assertion,test);
+        assertEquals(assertion, test);
 
     }
 
@@ -243,6 +245,8 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
 
 
+
+
     @Test
     public void testAddVectorWithOffset() throws Exception {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4).reshape(2, 2);
@@ -253,6 +257,19 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
 
 
     }
+
+    @Test
+    public void testIterateOverAllRows() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+        IComplexNDArray ones = Nd4j.complexOnes(5, 5);
+        VectorFFT fft = new VectorFFT(ones);
+        IComplexNDArray assertion = Nd4j.createComplex(5,5);
+        for(int i = 0; i < assertion.rows(); i++)
+            assertion.getRow(i).putScalar(0,Nd4j.createComplexNumber(5,0));
+        Nd4j.getExecutioner().iterateOverAllRows(fft);
+        assertEquals(assertion,ones);
+    }
+
 
 
     @Test
@@ -1366,6 +1383,15 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);
         assertEquals(tensor,ones);
+    }
+
+
+    @Test
+    public void testAssignOffset() {
+        INDArray arr = Nd4j.ones(5,5);
+        INDArray row = arr.slice(1);
+        row.assign(1);
+        assertEquals(Nd4j.ones(5),row);
     }
 
     @Test

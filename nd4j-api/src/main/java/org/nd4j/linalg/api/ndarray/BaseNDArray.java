@@ -1441,7 +1441,7 @@ public abstract class BaseNDArray implements INDArray {
 
         else if (Shape.isVector(newShape) && isVector()) {
             if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
-                return create(data, newShape, stride, offset);
+                return create(data, newShape, getStrides(new int[]{columns(),1},ordering()), offset);
             }
             //handle case where row vector is reshaped to row vector
             else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {
@@ -3263,10 +3263,43 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray transposei() {
-        if (isRowVector())
-            return create(data, shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()), offset);
-        else if (isColumnVector())
-            return create(data, new int[]{1,shape[0]}, offset);
+        if (isRowVector()) {
+            INDArray ret = create(shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()));
+            if(ret instanceof IComplexNDArray) {
+                IComplexNDArray arr = (IComplexNDArray) ret;
+                IComplexNDArray thisArr = (IComplexNDArray) this;
+                for(int i = 0; i < ret.length(); i++) {
+                    arr.putScalar(i,thisArr.getComplex(i));
+                }
+
+            }
+            else {
+                for(int i = 0; i < ret.length(); i++) {
+                    ret.putScalar(i,getDouble(i));
+                }
+            }
+
+            return ret;
+
+        }
+        else if (isColumnVector()) {
+            INDArray ret = create(new int[]{1,shape[0]});
+            if(ret instanceof IComplexNDArray) {
+                IComplexNDArray arr = (IComplexNDArray) ret;
+                IComplexNDArray thisArr = (IComplexNDArray) this;
+                for(int i = 0; i < ret.length(); i++) {
+                    arr.putScalar(i,thisArr.getComplex(i));
+                }
+
+            }
+            else {
+                for(int i = 0; i < ret.length(); i++) {
+                    ret.putScalar(i,getDouble(i));
+                }
+            }
+
+            return ret;
+        }
         if(isMatrix()) {
             if(this instanceof IComplexNDArray) {
                 IComplexNDArray arr = (IComplexNDArray) create(new int[]{columns(), rows()});

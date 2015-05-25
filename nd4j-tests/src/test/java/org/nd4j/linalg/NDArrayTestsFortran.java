@@ -382,7 +382,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testGetColumns() {
         INDArray matrix = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray matrixGet = matrix.getColumns(new int[]{1, 2});
-        INDArray matrixAssertion = Nd4j.create(new double[][]{{3,5}, {4, 6}});
+        INDArray matrixAssertion = Nd4j.create(new double[][]{{3, 5}, {4, 6}});
         assertEquals(matrixAssertion, matrixGet);
     }
 
@@ -399,6 +399,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(true, columnVector.isColumnVector());
     }
 
+
+    @Test
+    public void testAssignOffset() {
+        INDArray arr = Nd4j.ones(5, 5);
+        INDArray row = arr.slice(1);
+        row.assign(1);
+        assertEquals(Nd4j.ones(5),row);
+    }
 
     @Test
     public void testColumns() {

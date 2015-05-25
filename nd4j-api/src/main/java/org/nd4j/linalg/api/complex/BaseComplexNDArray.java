@@ -278,8 +278,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     public BaseComplexNDArray(IComplexNumber[] newData, int[] shape) {
         super(new float[ArrayUtil.prod(shape) * 2]);
-        if(!Shape.isVector(shape))
-            throw new IllegalArgumentException("Unable to initialize, must tbe a vector");
         init(shape);
         for (int i = 0; i < length; i++)
             putScalar(i, newData[i].asDouble());
@@ -456,7 +454,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public int blasOffset() {
-        return offset > 0 ? offset() / 2 : offset();    }
+        return  offset();
+    }
 
     @Override
     public IComplexNDArray linearViewColumnOrder() {
