@@ -73,7 +73,7 @@ public  class FFTTests extends BaseNd4jTest {
         IComplexNDArray n = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(complexLinSpace,8));
         IComplexNDArray assertion = Nd4j.createComplex(new double[]
                 {36., 0., -4., 9.65685425, -4., 4, -4., 1.65685425, -4., 0., -4., -1.65685425, -4., -4., -4., -9.65685425
-                }, new int[]{8});
+                }, new int[]{1,8});
         assertEquals(n, assertion);
 
     }
