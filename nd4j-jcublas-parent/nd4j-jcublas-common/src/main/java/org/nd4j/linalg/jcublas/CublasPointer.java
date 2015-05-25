@@ -124,29 +124,30 @@ public class CublasPointer  implements AutoCloseable {
         String name = Thread.currentThread().getName();
         this.arr = array;
         //no striding for upload if we are using the whole buffer
-        int deviceStride;
-        int compLength = array instanceof IComplexNDArray ? array.length() * 2 : array.length();
-        if(compLength == buffer.length()) {
-            deviceStride = 1;
-        }
-        else
-            deviceStride = LinearUtil.linearStride(array);
 
         if(array instanceof IComplexNDArray) {
-
-            IComplexNDArray arr2 = (IComplexNDArray) array;
             this.devicePointer = buffer
-                    .getDevicePointer(array.majorStride(),array.offset(),2 * array.length());
+                    .getDevicePointer(
+                            array.majorStride()
+                            ,array.offset()
+                            ,array.length());
 
-            // Copy the data to the device
-            JCublas2.cublasSetVectorAsync(
-                    array instanceof IComplexNDArray ? array.length() * 2 : array.length()
-                    , array.data().getElementSize()
-                    , buffer.getHostPointer().withByteOffset(arr2.blasOffset() * array.data().getElementSize())
-                    , deviceStride
-                    , devicePointer.withByteOffset(arr.offset() * arr.data().getElementSize())
-                    , 1
-                    , ContextHolder.getInstance().getCudaStream());
+
+            // Copy the data to the device iff the whole buffer hasn't been copied
+            if(!buffer.copied(name)) {
+                JCublas.cublasSetVectorAsync(
+                        buffer.length()
+                        , array.data().getElementSize()
+                        , buffer.getHostPointer()
+                        , 1
+                        , buffer.getPointersToContexts().get(name, 0).getPointer()
+                        , 1
+                        , ContextHolder.getInstance().getCudaStream());
+                //mark the buffer copied
+                buffer.setCopied(name);
+
+            }
+
 
         }
         else {
@@ -155,22 +156,19 @@ public class CublasPointer  implements AutoCloseable {
                             array.majorStride()
                             ,array.offset()
                             ,array.length());
-            String s = toString();
-
 
             // Copy the data to the device iff the whole buffer hasn't been copied
             if(!buffer.copied(name)) {
                 JCublas.cublasSetVectorAsync(
                         buffer.length()
                         , array.data().getElementSize()
-                        ,  buffer.getHostPointer()
+                        , buffer.getHostPointer()
                         , 1
-                        , buffer.getPointersToContexts().get(name,0).getPointer()
+                        , buffer.getPointersToContexts().get(name, 0).getPointer()
                         , 1
                         , ContextHolder.getInstance().getCudaStream());
                 //mark the buffer copied
                 buffer.setCopied(name);
-                s = toString();
 
             }
 
@@ -187,7 +185,7 @@ public class CublasPointer  implements AutoCloseable {
         StringBuffer sb = new StringBuffer();
         if(devicePointer != null) {
             if(arr != null) {
-                if(arr.length() == buffer.length())
+                if(arr instanceof IComplexNDArray && arr.length() * 2 == buffer.length() || arr.length() == buffer.length())
                     appendWhereArrayLengthEqualsBufferLength(sb);
                 else
                     appendWhereArrayLengthLessThanBufferLength(sb);
@@ -228,7 +226,7 @@ public class CublasPointer  implements AutoCloseable {
 
     private void appendWhereArrayLengthLessThanBufferLength(StringBuffer sb) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] set = new double[arr.length()];
+            double[] set = new double[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
             JCublas2.cublasGetVectorAsync(
                     arr.length()
                     , buffer.getElementSize()
@@ -241,7 +239,7 @@ public class CublasPointer  implements AutoCloseable {
             sb.append(Arrays.toString(set));
         }
         else {
-            float[] set = new float[arr.length()];
+            float[] set = new float[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
             JCublas2.cublasGetVectorAsync(
                     arr.length()
                     , buffer.getElementSize()
@@ -256,7 +254,7 @@ public class CublasPointer  implements AutoCloseable {
 
     private void appendWhereArrayLengthEqualsBufferLength(StringBuffer sb) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] set = new double[arr.length()];
+            double[] set = new double[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
             JCublas2.cublasGetVectorAsync(
                     arr.length()
                     , buffer.getElementSize()
@@ -269,7 +267,7 @@ public class CublasPointer  implements AutoCloseable {
             sb.append(Arrays.toString(set));
         }
         else {
-            float[] set = new float[arr.length()];
+            float[] set = new float[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
             JCublas2.cublasGetVectorAsync(
                     arr.length()
                     , buffer.getElementSize()

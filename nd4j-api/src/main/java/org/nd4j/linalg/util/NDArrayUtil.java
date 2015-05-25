@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.util;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;

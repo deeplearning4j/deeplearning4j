@@ -54,7 +54,7 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public boolean canRun() {
-        return Paths.nameExistsInPath("nvcc");
+        return Paths.nameExistsInPath("nvcc") || Paths.nameExistsInPath("nvcc.exe");
     }
 
     @Override

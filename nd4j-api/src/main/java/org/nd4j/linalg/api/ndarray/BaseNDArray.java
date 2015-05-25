@@ -3899,6 +3899,11 @@ public abstract class BaseNDArray implements INDArray {
         return shape[dimension];
     }
 
+    @Override
+    public int rank() {
+       return shape().length;
+    }
+
     /**
      * Returns the total number of elements in the ndarray
      *

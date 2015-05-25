@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
+import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -101,51 +102,39 @@ public class JcudaFft extends DefaultFFTInstance {
 
 
         long[] workAreaLength = new long[]{workerArea.length()  * workerArea.data().getElementSize()};
-        if(transform.data().dataType() == DataBuffer.Type.FLOAT) {
-            JCufft.cufftMakePlanMany(
-                    getHandle()
-                    , axes.length
-                    , transform.shape()
-                    , shape
-                    , 2
-                    , transform.majorStride()
-                    , shape
-                    , 2
-                    , transform.majorStride()
-                    , cufftType.CUFFT_C2C
-                    , transform.vectorsAlongDimension(-1)
-                    , workAreaLength);
-
-            JCufft.cufftExecC2C(
-                    getHandle()
-                    ,pointer.getDevicePointer()
-                    ,pointer.getDevicePointer()
-                    ,fftType);
+        if(transform.isVector()) {
+            JCufft.cufftMakePlan1d(getHandle(),transform.length(),fftType,1,workAreaLength);
+        }
+        else if(transform.isMatrix()) {
+            JCufft.cufftMakePlan2d(getHandle(),transform.rows(),transform.columns(),fftType,workAreaLength);
+        }
+        else if(transform.shape().length == 3) {
+            JCufft.cufftMakePlan3d(getHandle(),transform.size(0),transform.size(1),transform.size(2),fftType,workAreaLength);
 
         }
         else {
             JCufft.cufftMakePlanMany(
                     getHandle()
                     , axes.length
-                    ,shape
                     , transform.shape()
-                    , transform.stride(-1)
-                    , transform.majorStride()
-                    , transform.shape()
-                    , 2
-                    ,  transform.majorStride()
+                    , shape
+                    , transform.elementStride()
+                    , transform.stride(0)
+                    , shape
+                    , transform.elementStride()
+                    , transform.stride(0)
                     , cufftType.CUFFT_C2C
-                    , transform.vectorsAlongDimension(-1)
+                    , 1
                     , workAreaLength);
-            JCufft.cufftExecC2C(
 
-                    getHandle()
-                    ,pointer.getDevicePointer()
-                    ,pointer.getDevicePointer()
-                    ,fftType);
 
         }
 
+        JCufft.cufftExecC2C(
+                getHandle()
+                , pointer.getDevicePointer()
+                , pointer.getDevicePointer()
+                , fftType);
 
         try {
             pointer.copyToHost();

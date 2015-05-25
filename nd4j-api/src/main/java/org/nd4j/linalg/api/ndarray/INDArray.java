@@ -35,6 +35,11 @@ import java.util.List;
  */
 public interface INDArray extends Serializable  {
 
+    /**
+     * The rank of the ndarray (the number of dimensions
+     * @return the rank for the ndarray
+     */
+    int rank();
 
     /**
      * Calculate the stride along a particular dimension

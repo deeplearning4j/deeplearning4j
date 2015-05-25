@@ -53,10 +53,6 @@ public class JCudaFftTest {
         zeros.putScalar(0, 0, Nd4j.createComplexNumber(25, 0));
         assertEquals(zeros, ffted);
 
-        IComplexNDArray threeOnes = Nd4j.complexOnes(3, 3);
-        IComplexNDArray threeComp = Nd4j.createComplex(3, 3);
-        threeComp.putScalar(0, 0, Nd4j.createComplexNumber(9, 0));
-        assertEquals(instance.fftn(threeOnes), threeComp);
 
 
 
