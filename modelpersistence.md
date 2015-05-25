@@ -17,7 +17,7 @@ With this binary, any neural network can be saved and sent across a network. Dee
 
 It allows neural networks to be loaded into memory afterward (to resume training), and can be used with a REST API or other tools.
 
-## Save an Interoperable Vector of All Weights
+## <a name="vector">Save an Interoperable Vector of All Weights</a>
 
 The second format for saving a model is as a long vector of all coefficients, while writing your configuration to a JSON file. 
 
@@ -31,4 +31,3 @@ The second format for saving a model is as a long vector of all coefficients, wh
     
     //You can set the params with 
     layer/multiLayerNetwork.setParams(params)
-
