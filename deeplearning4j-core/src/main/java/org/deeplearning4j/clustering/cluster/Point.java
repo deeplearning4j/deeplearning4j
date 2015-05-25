@@ -93,6 +93,16 @@ public class Point implements INDArray {
 		this.array = array;
 	}
 
+	/**
+	 * The rank of the ndarray (the number of dimensions
+	 *
+	 * @return the rank for the ndarray
+	 */
+	@Override
+	public int rank() {
+		return array.rank();
+	}
+
 	@Override
 	public int stride(int dimension) {
 		return array.stride(dimension);
