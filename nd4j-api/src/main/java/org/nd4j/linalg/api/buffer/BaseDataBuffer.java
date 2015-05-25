@@ -609,7 +609,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public int getInt(int ix) {
-        return 0;
+       return (int) getDouble(ix);
     }
 
     @Override

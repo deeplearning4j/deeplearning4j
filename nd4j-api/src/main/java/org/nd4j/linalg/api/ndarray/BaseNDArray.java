@@ -3717,6 +3717,9 @@ public abstract class BaseNDArray implements INDArray {
         if(offsets[0] > 0 && ordering() == NDArrayFactory.C) {
             stride = ArrayUtil.reverseCopy(getStrides(shape,ordering));
         }
+        else if(ordering() == NDArrayFactory.FORTRAN && Shape.isRowVectorShape(shape))
+            stride = ArrayUtil.reverseCopy(stride);
+
 
 
         return subArray(offsets, shape,stride);
