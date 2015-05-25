@@ -24,8 +24,8 @@ import org.nd4j.linalg.indexing.conditions.LessThan;
 
 public class VarianceVariationCondition implements ClusteringAlgorithmCondition {
 
-	private Condition	varianceVariationCondition;
-	private int			period;
+	private Condition varianceVariationCondition;
+	private int	period;
 	
 	
 	protected VarianceVariationCondition(Condition varianceVariationCondition, int period) {
