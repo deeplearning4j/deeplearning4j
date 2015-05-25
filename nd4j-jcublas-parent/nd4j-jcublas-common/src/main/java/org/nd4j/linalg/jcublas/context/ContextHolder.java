@@ -202,7 +202,7 @@ public class ContextHolder {
         String props = System.getProperty(DEVICES_TO_BAN, "-1");
         String[] split = props.split(",");
         //Should only be used in multi device scenarios; otherwise always use one device
-        if(split.length > 1)
+        if(split.length >= 1)
             for(String s : split) {
                 Integer i = Integer.parseInt(s);
                 if(i >= 0)
