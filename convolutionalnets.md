@@ -25,7 +25,7 @@ With max pooling, only the locations on the image that showed the strongest corr
 
 Convolutional neural networks are related to signal processing. In signal processing, a convolution is the mathematical product of two functions reflecting their overlap, or correlation. Think of a convolution as a way of mixing two inputs by multiplying them. 
 
-### Yann LeCun
+### ConvNets in Academia
 
 [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
 
