@@ -23,6 +23,8 @@ import static org.junit.Assert.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.SerializationUtils;
 import org.junit.Test;
 
 import java.io.*;
@@ -61,7 +63,6 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         MultiLayerConfiguration conf3 = MultiLayerConfiguration.fromJson(props2.getProperty("json"));
         assertEquals(conf,conf3);
-
 
     }
 
