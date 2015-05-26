@@ -32,8 +32,6 @@ import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jblas.complex.ComplexDouble;
 import org.nd4j.linalg.jblas.complex.ComplexFloat;
 
-import java.sql.DatabaseMetaData;
-
 import static org.jblas.util.Functions.*;
 
 /**
@@ -744,7 +742,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 aData.asDouble(),
                 a.offset(),
                 a.size(0)
-                , bData.asDouble(),
+                ,bData.asDouble(),
                 b.offset(),
                 b.size(0),
                 beta,
@@ -786,8 +784,6 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int lda = a.size(0);
         int ldb = b.size(0);
         int ldc = c.size(0);
-        DataBuffer aData = a.offset() > 0 ? a.ravel().data() : a.data();
-        DataBuffer bData = b.offset() > 0 ? b.ravel().data() : b.data();
         if(a.offset() > 0)
             a = a.ravel();
         if(b.offset() > 0)
@@ -803,10 +799,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 n,
                 k,
                 alpha,
-                aData.asFloat(),
+                a.data().asFloat(),
                 a.offset(),
                lda
-                , bData.asFloat(),
+                , b.data().asFloat(),
                 b.offset(),
                 ldb,
                 beta,
@@ -819,15 +815,8 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
 
     @Override
-    public IComplexNDArray gemm(IComplexNumber alpha
-            , IComplexNDArray a
-            , IComplexNDArray b
-            , IComplexNumber beta
-            , IComplexNDArray c) {
+    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
         DataTypeValidation.assertSameDataType(a, b, c);
-        DataBuffer aData = a.offset() > 0 ? a.ravel().data() : a.data();
-        DataBuffer bData = b.offset() > 0 ? b.ravel().data() : b.data();
-
         if (a.data().dataType() == DataBuffer.Type.FLOAT)
             NativeBlas.cgemm(
                     'N',
@@ -836,10 +825,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     c.columns(),
                     a.columns(),
                     new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                    aData.asFloat(),
+                    a.data().asFloat(),
                     a.blasOffset(),
                     a.size(0),
-                    aData.asFloat(),
+                    b.data().asFloat(),
                     b.blasOffset(),
                     b.size(0),
                     new ComplexFloat(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
@@ -854,10 +843,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     c.columns(),
                     a.columns(),
                     new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                    aData.asDouble(),
+                    a.data().asDouble(),
                     a.blasOffset(),
                     a.size(0),
-                    bData.asDouble(),
+                    b.data().asDouble(),
                     b.blasOffset(),
                     b.size(0),
                     new ComplexDouble(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())

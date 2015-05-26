@@ -232,7 +232,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
      */
     @Override
     public IComplexNDArray fftn(IComplexNDArray transform) {
-        return rawfftn(transform,null,null);
+        return rawfftn(transform, null, null);
     }
 
     @Override
@@ -253,7 +253,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
     //underlying ifftn
     @Override
     public IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
-        return doFFt(transform,shape,axes,true);
+        return doFFt(transform, shape, axes, true);
 
     }
 
@@ -286,11 +286,10 @@ public abstract class BaseFFTInstance implements FFTInstance {
         return rawifft(transform, transform.shape()[dimension], dimension);
     }
 
-    private IComplexNDArray doFFt(IComplexNDArray transform,int[] shape,int[] axes,boolean inverse) {
+    protected IComplexNDArray doFFt(IComplexNDArray transform,int[] shape,int[] axes,boolean inverse) {
         IComplexNDArray result = transform.dup();
         if(shape == null)
             shape = ArrayUtil.copy(result.shape());
-
         boolean noAxes = false;
         if(axes == null || axes.length < 1) {
             noAxes = true;
@@ -306,11 +305,18 @@ public abstract class BaseFFTInstance implements FFTInstance {
             }
         }
 
+        if(ArrayUtil.prod(shape) > ArrayUtil.prod(result.shape()))
+            result = ComplexNDArrayUtil.padWithZeros(result,shape);
 
+
+        return doInnerFft(result,shape,axes,inverse);
+    }
+
+    //the inner loopfor an fft or ifft
+    protected IComplexNDArray doInnerFft(IComplexNDArray result,int[] shape,int[] axes,boolean inverse) {
         for(int i = 0; i < axes.length; i++) {
             result = inverse ? ifft(result,shape[axes[i]],axes[i]) : fft(result,shape[axes[i]],axes[i]);
         }
-
 
         return result;
     }
