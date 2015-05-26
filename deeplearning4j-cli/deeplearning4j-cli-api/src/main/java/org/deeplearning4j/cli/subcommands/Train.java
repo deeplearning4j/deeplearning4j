@@ -144,7 +144,6 @@ public class Train extends BaseSubCommand {
      * Execute local training
      */
     public void execLocal() {
-
         log.warn( "[dl4j] - executing local ... " );
         log.warn( "using training input: " + this.input );
 
@@ -163,17 +162,17 @@ public class Train extends BaseSubCommand {
         if(type.equals("multi")) {
             try {
                 MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File(modelPath)));
-                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getConf(0).getBatchSize());
+                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getConf(0).getBatchSize(),-1,conf.getConf(conf.getConfs().size() - 1).getnOut());
 
                 MultiLayerNetwork network = new MultiLayerNetwork(conf);
                 network.fit(iter);
                 if(saveMode.equals("binary")) {
-                    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(this.outputDirectory));
+                    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(this.outputDirectory + File.separator + "outputmodel.bin"));
                     DataOutputStream dos = new DataOutputStream(bos);
                     Nd4j.write(network.params(),dos);
                 }
                 else {
-                    Nd4j.writeTxt(network.params(),outputDirectory,",");
+                    Nd4j.writeTxt(network.params(),outputDirectory + File.separator + "outputmodel.txt",",");
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -219,7 +218,12 @@ public class Train extends BaseSubCommand {
      * @return the input format to be created
      */
     public InputFormat createInputFormat() {
-
+       if(configProps == null)
+           try {
+               loadConfigFile();
+           } catch (Exception e) {
+               e.printStackTrace();
+           }
         //log.warn( "> Loading Input Format: " + (String) this.configProps.get( INPUT_FORMAT ) );
 
         String clazz = (String) this.configProps.get( INPUT_FORMAT_KEY );

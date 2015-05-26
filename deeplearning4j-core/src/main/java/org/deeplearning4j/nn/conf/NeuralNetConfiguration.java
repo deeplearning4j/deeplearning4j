@@ -931,7 +931,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] stride = {2,2};
         private StepFunction stepFunction = new DefaultStepFunction();
         private Layer layer;
-        private int batchSize = 0;
+        private int batchSize = 100;
         private int numLineSearchIterations = 100;
         private boolean minimize = false;
         private ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
