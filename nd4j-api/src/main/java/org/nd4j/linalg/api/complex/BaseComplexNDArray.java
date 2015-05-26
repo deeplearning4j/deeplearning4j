@@ -3310,7 +3310,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             }
             return ret;
         }
-        int dimension = isMatrix() || isColumnVector() ? 1 : shape.length;
+        int dimension = -1;
         int count = 0;
         for (int i = 0; i < vectorsAlongDimension(dimension); i++) {
             IComplexNDArray vec = vectorAlongDimension(i, dimension);

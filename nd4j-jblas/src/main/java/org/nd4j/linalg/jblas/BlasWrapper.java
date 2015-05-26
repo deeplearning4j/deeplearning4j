@@ -32,6 +32,8 @@ import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jblas.complex.ComplexDouble;
 import org.nd4j.linalg.jblas.complex.ComplexFloat;
 
+import java.sql.DatabaseMetaData;
+
 import static org.jblas.util.Functions.*;
 
 /**
@@ -725,6 +727,12 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
             return c;
         }
+        DataBuffer aData = a.offset() > 0 ? a.ravel().data() : a.data();
+        DataBuffer bData = b.offset() > 0 ? b.ravel().data() : b.data();
+        if(a.offset() > 0)
+            a = a.ravel();
+        if(b.offset() > 0)
+            b = b.ravel();
 
         NativeBlas.dgemm(
                 'N',
@@ -733,16 +741,16 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 c.columns(),
                 a.columns(),
                 alpha,
-                a.data().asDouble(),
+                aData.asDouble(),
                 a.offset(),
-                a.rows()
-                , b.data().asDouble(),
+                a.size(0)
+                , bData.asDouble(),
                 b.offset(),
-                b.rows(),
+                b.size(0),
                 beta,
                 c.data().asDouble(),
                 c.offset(),
-                c.rows());
+                c.size(0));
 
         return c;
     }
@@ -778,6 +786,16 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int lda = a.size(0);
         int ldb = b.size(0);
         int ldc = c.size(0);
+        DataBuffer aData = a.offset() > 0 ? a.ravel().data() : a.data();
+        DataBuffer bData = b.offset() > 0 ? b.ravel().data() : b.data();
+        if(a.offset() > 0)
+            a = a.ravel();
+        if(b.offset() > 0)
+            b = b.ravel();
+
+
+
+
         NativeBlas.sgemm(
                 'N',
                 'N',
@@ -785,10 +803,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 n,
                 k,
                 alpha,
-                a.data().asFloat(),
+                aData.asFloat(),
                 a.offset(),
                lda
-                , b.data().asFloat(),
+                , bData.asFloat(),
                 b.offset(),
                 ldb,
                 beta,
@@ -801,8 +819,15 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
 
     @Override
-    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
+    public IComplexNDArray gemm(IComplexNumber alpha
+            , IComplexNDArray a
+            , IComplexNDArray b
+            , IComplexNumber beta
+            , IComplexNDArray c) {
         DataTypeValidation.assertSameDataType(a, b, c);
+        DataBuffer aData = a.offset() > 0 ? a.ravel().data() : a.data();
+        DataBuffer bData = b.offset() > 0 ? b.ravel().data() : b.data();
+
         if (a.data().dataType() == DataBuffer.Type.FLOAT)
             NativeBlas.cgemm(
                     'N',
@@ -811,10 +836,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     c.columns(),
                     a.columns(),
                     new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                    a.data().asFloat(),
+                    aData.asFloat(),
                     a.blasOffset(),
                     a.size(0),
-                    b.data().asFloat(),
+                    aData.asFloat(),
                     b.blasOffset(),
                     b.size(0),
                     new ComplexFloat(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
@@ -829,10 +854,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     c.columns(),
                     a.columns(),
                     new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                    a.data().asDouble(),
+                    aData.asDouble(),
                     a.blasOffset(),
                     a.size(0),
-                    b.data().asDouble(),
+                    bData.asDouble(),
                     b.blasOffset(),
                     b.size(0),
                     new ComplexDouble(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())

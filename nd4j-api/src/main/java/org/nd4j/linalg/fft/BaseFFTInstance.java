@@ -192,7 +192,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
 
         if (numElements > desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.padWithZeros(result, finalShape);
-         else if (numElements < desiredElementsAlongDimension)
+        else if (numElements < desiredElementsAlongDimension)
             result = ComplexNDArrayUtil.truncate(result, numElements, dimension);
 
         return rawfftn(result, finalShape, axes);
@@ -253,14 +253,14 @@ public abstract class BaseFFTInstance implements FFTInstance {
     //underlying ifftn
     @Override
     public IComplexNDArray rawifftn(IComplexNDArray transform, int[] shape, int[] axes) {
-      return doFFt(transform,shape,axes,true);
+        return doFFt(transform,shape,axes,true);
 
     }
 
     //underlying fftn
     @Override
     public IComplexNDArray rawfftn(IComplexNDArray transform, int[] shape, int[] axes) {
-      return doFFt(transform,shape,axes,false);
+        return doFFt(transform,shape,axes,false);
     }
 
     private IComplexNDArray fixShape(IComplexNDArray x,int[] shape,int axis, int n) {

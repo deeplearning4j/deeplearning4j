@@ -1447,7 +1447,8 @@ public abstract class BaseNDArray implements INDArray {
 
         else if (Shape.isVector(newShape) && isVector()) {
             if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
-                return create(data, newShape, getStrides(new int[]{columns(),1},ordering()), offset);
+                int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.copy(stride()) : getStrides(new int[]{columns(),1},ordering());
+                return create(data, newShape,stride,offset);
             }
             //handle case where row vector is reshaped to row vector
             else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {

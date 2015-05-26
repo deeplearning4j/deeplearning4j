@@ -19,7 +19,9 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Base op. An op involves iterating over 2 buffers (x,y)  up to n elements
@@ -136,6 +138,7 @@ public abstract class BaseOp implements Op {
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
+
 
     }
 

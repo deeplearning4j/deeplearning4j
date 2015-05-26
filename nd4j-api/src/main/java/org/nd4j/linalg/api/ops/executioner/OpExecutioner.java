@@ -115,5 +115,11 @@ public interface OpExecutioner {
      */
     INDArray execAndReturn(ScalarOp op, int dimension);
 
-
+    /**
+     * Execute and return  a result
+     * ndarray from the given op
+     * @param op the operation to execute
+     * @return the result from the operation
+     */
+    INDArray execAndReturn(Op op);
 }

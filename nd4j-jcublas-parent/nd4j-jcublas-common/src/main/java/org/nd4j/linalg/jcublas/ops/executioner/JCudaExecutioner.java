@@ -61,7 +61,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     @Override
     public Op exec(Op op) {
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpeted as vectors)
-        if(op.x() instanceof LinearViewNDArray || op.x() instanceof LinearViewComplexNDArray || op.x().offset() > 0 && op.x().shape().length >= 2)
+        if(op.x() instanceof LinearViewNDArray || op.x() instanceof IComplexNDArray || op.x().offset() > 0 && op.x().shape().length >= 2)
             return super.exec(op);
 
         if (op instanceof TransformOp) {
@@ -204,16 +204,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
 
-    @Override
-    public Accumulation execAndReturn(Accumulation op) {
-        return (Accumulation) exec(op);
-    }
-
-    @Override
-    public INDArray execAndReturn(ScalarOp op) {
-        return exec(op).z();
-    }
-
 
     @Override
     public Op exec(Op op, int dimension) {
@@ -344,18 +334,23 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return op.z();
     }
 
+    //save the pointers till they are all done being used
     private void persist(Op op) {
         persist(op.x());
         persist(op.y());
         persist(op.z());
     }
 
+    //allow the pointers to be freed
     private void unPersistAndFree(Op op) {
         unPersistAndFree(op.x());
         unPersistAndFree(op.y());
         unPersistAndFree(op.z());
     }
 
+    //persist() on a jcuda buffer forces the buffer uploaded to the gpu to be cached
+    //this is useful for when you have arrays with offsets all viewing the same buffer
+    //and intend on doing operations on slices of the same buffer
     private void persist(INDArray arr) {
         if(arr == null)
             return;
@@ -466,6 +461,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private void invokeFunction(Op op, Object... kernelParams) {
+        /**
+         * Invoke a cuda kernel by name. This will be wrt the function name.
+         * Functions that are accumulations or transforms have names that end with _strided.
+         *
+         */
         String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
         int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
         int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
@@ -510,9 +510,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         } else {
-            //int n,int idx,double *dy,int incy,double *result
-            //int n, int idx,double dx,double *dy,int incy,double *result
-
             Object[] kernelParams = new Object[]{
                     op.n(),
                     op.x().offset(),
@@ -599,9 +596,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }
-
-
-
         }
 
     }

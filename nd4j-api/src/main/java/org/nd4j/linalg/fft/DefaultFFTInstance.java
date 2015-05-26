@@ -29,7 +29,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
 
 /**
- * Default FFT instance that will work that is backend agnostic.
+ * Default FFT instance
+ * that will work that is backend agnostic.
  *
  * @author Adam Gibson
  */
@@ -46,7 +47,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     public IComplexNDArray fft(INDArray transform, int numElements, int dimension) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(getFftOp(inputC, numElements));
         else {
             int[] finalShape = ArrayUtil.replace(transform.shape(), dimension, numElements);
             IComplexNDArray transform2 = Nd4j.createComplex(transform);
@@ -77,7 +78,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray fft(IComplexNDArray inputC, int numElements, int dimension) {
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorFFT(inputC,numElements));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(getFftOp(inputC, numElements));
         else
             return rawfft(inputC, numElements, dimension);
 
@@ -96,7 +97,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     public IComplexNDArray ifft(INDArray transform, int numElements, int dimension) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(getIfftOp(inputC, numElements));
         else
             return rawifft(inputC, numElements, dimension);
 
@@ -114,7 +115,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC, int numElements, int dimension) {
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(getIfftOp(inputC,numElements));
         else {
             return rawifft(inputC, numElements, dimension);
         }
@@ -131,7 +132,7 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     public IComplexNDArray ifft(INDArray transform, int numElements) {
         IComplexNDArray inputC = Nd4j.createComplex(transform);
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,numElements));
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(getIfftOp(inputC, numElements));
         else {
             return rawifft(inputC, numElements, inputC.shape().length - 1);
         }
@@ -149,10 +150,10 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray ifft(IComplexNDArray inputC) {
         if (inputC.isVector())
-            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(inputC,inputC.length()));
-        else {
+            return (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(getIfftOp(inputC, inputC.length()));
+        else
             return rawifft(inputC, inputC.size(inputC.shape().length - 1), inputC.shape().length - 1);
-        }
+
     }
 
 
@@ -167,39 +168,34 @@ public class DefaultFFTInstance extends BaseFFTInstance {
     @Override
     public IComplexNDArray rawfft(IComplexNDArray transform, int n, int dimension) {
         IComplexNDArray result = transform.dup();
-
-        if (transform.size(dimension) != n) {
-            int[] shape = ArrayUtil.copy(result.shape());
-            shape[dimension] = n;
-            if (transform.size(dimension) > n)
-                result = ComplexNDArrayUtil.truncate(result, n, dimension);
-
-            else
-                result = ComplexNDArrayUtil.padWithZeros(result, shape);
-
-        }
-
-
-        if (dimension != result.shape().length - 1)
-            result = result.swapAxes(result.shape().length - 1, dimension);
-
-
-
-        Nd4j.getExecutioner().iterateOverAllRows(new VectorFFT(result, n));
-
-
-        if (dimension != result.shape().length - 1)
-            result = result.swapAxes(result.shape().length - 1, dimension);
-
+        result = preProcess(result,transform,n,dimension);
+        Nd4j.getExecutioner().iterateOverAllRows(getFftOp(result,n));
+        result = postProcess(result,dimension);
         return result;
     }
 
 
-    //underlying fftn
     @Override
     public IComplexNDArray rawifft(IComplexNDArray transform, int n, int dimension) {
         IComplexNDArray result = transform.dup();
+        result = preProcess(result,transform,n,dimension);
+        Nd4j.getExecutioner().iterateOverAllRows(getIfftOp(result, n));
+        result = postProcess(result,dimension);
+        return result;
+    }
 
+
+    protected IComplexNDArray postProcess(IComplexNDArray result,int dimension) {
+        if (dimension != result.shape().length - 1)
+            result = result.swapAxes(result.shape().length - 1, dimension);
+        return result;
+    }
+
+
+
+    protected IComplexNDArray preProcess(IComplexNDArray result,IComplexNDArray transform,int n,int dimension) {
+         if(dimension < 0)
+             dimension = transform.shape().length  - 1 - dimension;
         if (transform.size(dimension) != n) {
             int[] shape = ArrayUtil.copy(result.shape());
             shape[dimension] = n;
@@ -214,17 +210,14 @@ public class DefaultFFTInstance extends BaseFFTInstance {
         if (dimension != result.shape().length - 1)
             result = result.swapAxes(result.shape().length - 1, dimension);
 
-        Nd4j.getExecutioner().iterateOverAllRows(new VectorIFFT(result, n));
-
-
-        if (dimension != result.shape().length - 1)
-            result = result.swapAxes(result.shape().length - 1, dimension);
-
         return result;
+
     }
 
+
+
     protected Op getIfftOp(INDArray arr, int n) {
-        return new VectorFFT(arr,n);
+        return new VectorIFFT(arr,n);
     }
 
     protected Op getFftOp(INDArray arr,int n) {

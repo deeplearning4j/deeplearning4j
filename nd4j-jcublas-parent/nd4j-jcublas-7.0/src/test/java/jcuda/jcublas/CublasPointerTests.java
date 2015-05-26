@@ -24,11 +24,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 
 import org.junit.Test;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
+import org.nd4j.linalg.util.ComplexUtil;
 
 public class CublasPointerTests {
 
@@ -49,6 +51,17 @@ public class CublasPointerTests {
         p.copyToHost();
         assertEquals(otherColumnAssertion,column);
         p.close();
+    }
+
+    @Test
+    public void testTwoByTwoBuffer() throws Exception {
+        IComplexNDArray arr = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{2,6}),new int[]{2,1});
+        IComplexNDArray dup = arr.dup();
+        CublasPointer pointer = new CublasPointer(arr);
+        pointer.copyToHost();
+        assertEquals(dup,arr);
+        pointer.close();
+
     }
 
 

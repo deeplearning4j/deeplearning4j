@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ComplexUtil;
@@ -263,8 +264,8 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
         IComplexNDArray sliceOfSlice0 = test.slice(0).slice(0);
         assertEquals(sliceOfSlice0.getComplex(0),Nd4j.createComplexNumber(1,0));
-        assertEquals( test.slice(1).slice(0).getComplex(0),Nd4j.createComplexNumber(2,0));
-        assertEquals(test.slice(1).getComplex(1),Nd4j.createComplexNumber(4,0));
+        assertEquals( test.slice(1).slice(0).getComplex(0),Nd4j.createComplexNumber(2, 0));
+        assertEquals(test.slice(1).getComplex(1),Nd4j.createComplexNumber(4, 0));
 
 
     }
@@ -381,7 +382,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
         INDArray innerProduct = n.mmul(transposed);
 
-        INDArray scalar = Nd4j.scalar(Nd4j.createComplexNumber(385,0));
+        INDArray scalar = Nd4j.scalar(Nd4j.createComplexNumber(385, 0));
         assertEquals(scalar, innerProduct);
 
         INDArray outerProduct = transposed.mmul(n);
@@ -391,10 +392,26 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         IComplexNDArray d4 = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{3, 4}));
         INDArray resultNDArray = d3.mmul(d4);
         INDArray result = Nd4j.createComplex(new IComplexNumber[][]{
-                {Nd4j.createComplexNumber(3,0), Nd4j.createComplexNumber(4,0)}
-                , {Nd4j.createComplexNumber(6,0), Nd4j.createComplexNumber(8,0)}});
+                {Nd4j.createComplexNumber(3, 0), Nd4j.createComplexNumber(4, 0)}
+                , {Nd4j.createComplexNumber(6, 0), Nd4j.createComplexNumber(8, 0)}});
 
         assertEquals(result, resultNDArray);
+
+
+
+
+    }
+
+    @Test
+    public void testMmulOffset() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1, 4, 4).reshape(2, 2);
+        IComplexNDArray row1 = arr.getRow(1);
+        IComplexNDArray arrT = row1.transpose();
+        assertEquals(row1,arrT);
+    }
+
+    @Test
+    public void testMmulColumnVector() {
 
 
         IComplexNDArray three = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{4, 19}), new int[]{1,2});
@@ -402,31 +419,20 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         IComplexNDArray sliceRow = test.slice(0).getRow(1);
         assertEquals(three, sliceRow);
 
+
         IComplexNDArray twoSix = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{2, 6}), new int[]{2, 1});
         IComplexNDArray threeTwoSix = three.mmul(twoSix);
 
         IComplexNDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
-
         assertEquals(threeTwoSix, sliceRowTwoSix);
 
-
     }
-
-    @Test
-    public void testMmulOffset() {
-        IComplexNDArray arr = Nd4j.complexLinSpace(1, 4, 4).reshape(2,2);
-        IComplexNDArray row1 = arr.getRow(1);
-        IComplexNDArray arrT = row1.transpose();
-        assertEquals(row1,arrT);
-        System.out.println(arrT);
-    }
-
 
 
 
     @Test
     public void testLinearIndex() {
-        IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{8}));
+        IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1,8}));
         for (int i = 0; i < n.length(); i++) {
             int linearIndex = n.linearIndex(i);
             assertEquals(i * 2, linearIndex);
@@ -435,21 +441,6 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
             assertEquals(i + 1, curr, 1e-1);
         }
     }
-
-
-
-
-    @Test
-    public void testNdArrayConstructor() {
-        IComplexNDArray result = Nd4j.createComplex(Nd4j.create(new double[]{2, 6}, new int[]{1, 2}));
-        result.toString();
-    }
-
-
-
-
-
-
 
     @Test
     public void testPutAndGet() {
@@ -482,7 +473,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     @Test
     public void testGetReal() {
         DataBuffer data = Nd4j.linspace(1, 8, 8).data();
-        int[] shape = new int[]{8};
+        int[] shape = new int[]{1,8};
         IComplexNDArray arr = Nd4j.createComplex(shape);
         for (int i = 0; i < arr.length(); i++)
             arr.put(i, Nd4j.scalar(data.getFloat(i)));
@@ -494,6 +485,9 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         assertEquals(ones, n2.getReal());
 
     }
+
+
+
 
 
     @Test
@@ -591,20 +585,20 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
 
 
-   @Test
-   public void testGemmWithOffset() {
-       IComplexNDArray arr = Nd4j.complexLinSpace(1,4,4).reshape(2, 2);
-       IComplexNDArray row1 = arr.getRow(1).ravel();
-       IComplexNDArray row1T = row1.transpose();
-       IComplexNDArray result = Nd4j.createComplex(2,2);
-       Nd4j.getBlasWrapper().gemm(Nd4j.UNIT, row1T, row1, Nd4j.ZERO, result);
-       IComplexNDArray assertion = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[][]{
-               {4,8},
-               {8,16}
-       }));
+    @Test
+    public void testGemmWithOffset() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,4,4).reshape(2, 2);
+        IComplexNDArray row1 = arr.getRow(1).ravel();
+        IComplexNDArray row1T = row1.transpose();
+        IComplexNDArray result = Nd4j.createComplex(2,2);
+        Nd4j.getBlasWrapper().gemm(Nd4j.UNIT, row1T, row1, Nd4j.ZERO, result);
+        IComplexNDArray assertion = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[][]{
+                {4,8},
+                {8,16}
+        }));
 
-       assertEquals(assertion,result);
-   }
+        assertEquals(assertion,result);
+    }
 
 
 

@@ -38,9 +38,9 @@ import static org.nd4j.linalg.ops.transforms.Transforms.exp;
  * @author Adam Gibson
  */
 public class VectorFFT extends BaseTransformOp {
-    private int fftLength;
+    protected int fftLength;
     private int originalN = -1;
-    private boolean executed = false;
+    protected boolean executed = false;
 
     public VectorFFT(INDArray x, INDArray z,int fftLength) {
         super(x, z);

@@ -128,10 +128,9 @@ public  class FFTTests extends BaseNd4jTest {
         assertEquals(fftedAnswer,ffted);
 
 
-        Nd4j.EPS_THRESHOLD = 1e-12;
+        Nd4j.EPS_THRESHOLD = 1e-1;
 
     }
-
 
     @Test
     public void testOnes() {
@@ -141,8 +140,6 @@ public  class FFTTests extends BaseNd4jTest {
         IComplexNDArray zeros = Nd4j.createComplex(5, 5);
         zeros.putScalar(0, 0, Nd4j.createComplexNumber(25, 0));
         assertEquals(zeros, ffted);
-
-
     }
 
 
