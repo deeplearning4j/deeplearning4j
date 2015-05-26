@@ -42,6 +42,7 @@ public abstract class BaseBenchmarkPerformer implements BenchMarkPerformer {
     public long run(Nd4jBackend backend) {
         Nd4j nd4j = new Nd4j();
         nd4j.initWithBackend(backend);
+        averageTime = 0;
 
         for(int i = 0; i < nTimes; i++) {
             stopWatch.start();
