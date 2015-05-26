@@ -25,6 +25,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -109,17 +110,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(3).hiddenLayerSizes(3,2)
-                .override(2, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-
-                        if (i == 2) {
-                            builder.activationFunction("softmax");
-                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                        }
-                    }
-                }).build();
+                .override(2, new ClassifierOverride()).build();
 
 
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
