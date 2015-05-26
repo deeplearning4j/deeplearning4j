@@ -270,6 +270,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.filterSize = neuralNetConfiguration.filterSize;
         this.convolutionType = neuralNetConfiguration.getConvolutionType();
 
+
         if(dist == null)
             this.dist = new NormalDistribution(0.01,1);
 
@@ -916,7 +917,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean constrainGradientToUnitNorm = false;
         private Random rng = new DefaultRandom();
         private Distribution dist  = new NormalDistribution(1e-3,1);
-        private boolean adagrad = true;
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
         private int nOut;
@@ -931,7 +931,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] stride = {2,2};
         private StepFunction stepFunction = new DefaultStepFunction();
         private Layer layer;
-        private int batchSize = 0;
+        private int batchSize = 100;
         private int numLineSearchIterations = 100;
         private boolean minimize = false;
         private ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
@@ -992,7 +992,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity).minimize(minimize)
                     .constrainGradientToUnitNorm(constrainGradientToUnitNorm)
                     .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).numLineSearchIterations(numLineSearchIterations)
-                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(adagrad).stepFunction(stepFunction)
+                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(useAdaGrad).stepFunction(stepFunction)
                     .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum)
                     .nIn(nIn).nOut(nOut).optimizationAlgo(optimizationAlgo).batchSize(batchSize).l1(l1)
                     .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
@@ -1109,7 +1109,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     constrainGradientToUnitNorm,  rng,
                     dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
                     ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1);
-            ret.useAdaGrad = this.adagrad;
+            ret.useAdaGrad = this.useAdaGrad;
             ret.stepFunction = stepFunction;
             return ret;
         }
