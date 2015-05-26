@@ -49,7 +49,7 @@ To install ND4J, there are a couple of approaches, and more information can be f
 1. Search for nd4j in the [Maven Central Repository](http://mvnrepository.com/search?q=nd4j) to find the available nd4j jars.
 2. Include the appropriate dependency in your pom.xml.
 
-#### Install from source
+#### Clone from the GitHub Repo
 
 ND4J is actively developed. You can clone the repository, compile it, and reference it in your project.
 
@@ -70,12 +70,29 @@ Add the local compiled file dependency (choose the module for your backend) to y
         <version>0.0.3.5.5.4-SNAPSHOT</version>
     </dependency>
 
+#### Yum Install / Load RPM (Fedora or CentOS)
+Create a yum repo and run yum install to load the Red Hat Package Management (RPM) files. First create the repo file to setup the configuration locally.
 
-#### Install from RPM (*coming soon*)
+    $ sudo vi /etc/yum.repos.d/dl4j.repo 
 
-Download the rpm file. Then run the following command.
+Add the following to the dl4j.repo file:
 
-    $ sudo rpm -iv [package.rpm]
+'''
+
+    [dl4j.repo]
+
+    name=dl4j-repo
+    baseurl=http://ec2-52-5-255-24.compute-1.amazonaws.com/repo/RPMS
+    enabled=1
+    gpgcheck=0
+'''
+
+Then run the following command on the dl4j repo packages to install them on your machine:
+
+    $ sudo yum install [package name] -y
+    $ sudo yum install nd4j-cli -y # for example
+
+Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
 
 ---
 ## Contribute
