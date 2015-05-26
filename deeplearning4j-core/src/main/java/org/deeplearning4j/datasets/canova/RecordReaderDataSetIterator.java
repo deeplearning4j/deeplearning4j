@@ -51,7 +51,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private boolean overshot = false;
     private Iterator<Collection<Writable>> sequenceIter;
     private DataSet last;
-
+    private boolean useCurrent = false;
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1, -1);
     }
@@ -90,6 +90,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next(int num) {
+        if(useCurrent) {
+            useCurrent = false;
+            return last;
+        }
+
         List<DataSet> dataSets = new ArrayList<>();
         for (int i = 0; i < num; i++) {
             if (!hasNext())
@@ -182,13 +187,28 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        throw new UnsupportedOperationException();
+        if(last == null) {
+            DataSet next = next();
+            last = next;
+            useCurrent = true;
+            return next.numInputs();
+        }
+       else
+            return last.numInputs();
 
     }
 
     @Override
     public int totalOutcomes() {
-        throw new UnsupportedOperationException();
+        if(last == null) {
+            DataSet next = next();
+            last = next;
+            useCurrent = true;
+            return next.numOutcomes();
+        }
+        else
+            return last.numOutcomes();
+
 
     }
 
