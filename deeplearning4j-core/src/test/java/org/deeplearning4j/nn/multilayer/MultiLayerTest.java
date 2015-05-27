@@ -64,15 +64,18 @@ public class MultiLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3)
+                .nIn(4)
+                .nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .activationFunction("tanh").list(2).hiddenLayerSizes(3)
-                .override(1, new ClassifierOverride()).build();
-
-
+                .activationFunction("tanh")
+                .list(2)
+                .hiddenLayerSizes(3)
+                .override(1, new ClassifierOverride(1))
+                .build();
 
         MultiLayerNetwork network3 = new MultiLayerNetwork(conf);
         network3.init();
+
         INDArray params = network3.params();
         network3.setParameters(params);
         INDArray params4 = network3.params();
@@ -87,11 +90,13 @@ public class MultiLayerTest {
         next.normalizeZeroMeanZeroUnitVariance();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .nIn(next.numInputs()).nOut(next.numOutcomes())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1e-5))
+                .weightInit(WeightInit.DISTRIBUTION)
+                .dist(new NormalDistribution(0,1e-5))
                 .iterations(10).learningRate(1e-3).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .nIn(next.numInputs()).nOut(next.numOutcomes()).visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .layer(new RBM())
                 .list(4).hiddenLayerSizes(600,250,100).override(3,new ClassifierOverride()).build();
         
@@ -101,10 +106,6 @@ public class MultiLayerTest {
         network.fit(next);
 
     }
-
-
-
-
 
     @Test
     public void testBackProp() {
@@ -120,7 +121,6 @@ public class MultiLayerTest {
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-
         DataSet next = iter.next();
         next.normalizeZeroMeanZeroUnitVariance();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
@@ -128,13 +128,11 @@ public class MultiLayerTest {
         network.setLabels(trainTest.getTrain().getLabels());
         network.fit(trainTest.getTrain());
 
-
         DataSet test = trainTest.getTest();
         Evaluation eval = new Evaluation();
         INDArray output = network.output(test.getFeatureMatrix());
         eval.eval(test.getLabels(),output);
         log.info("Score " +eval.stats());
-
 
     }
 
@@ -163,10 +161,7 @@ public class MultiLayerTest {
         Layer l = LayerFactories.getFactory(conf2).create(conf2,
                 Arrays.<IterationListener>asList(new ScoreIterationListener(2)));
 
-
-
         MultiLayerNetwork d = new MultiLayerNetwork(conf);
-
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
@@ -181,17 +176,12 @@ public class MultiLayerTest {
 
         d.fit(train);
 
-
-
-
         DataSet test = testAndTrain.getTest();
-
 
         Evaluation eval = new Evaluation();
         INDArray output = d.output(test.getFeatureMatrix());
         eval.eval(test.getLabels(),output);
         log.info("Score " + eval.stats());
-
 
     }
 
