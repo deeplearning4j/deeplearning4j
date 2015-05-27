@@ -889,6 +889,10 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         n.putSlice(0, newSlice);
         assertEquals(newSlice, n.slice(0));
 
+        INDArray firstDimensionAs1 = newSlice.reshape(1,3,3);
+        n.putSlice(0,firstDimensionAs1);
+
+
     }
 
     @Test

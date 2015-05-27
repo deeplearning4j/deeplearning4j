@@ -94,6 +94,10 @@ public abstract class BaseNDArray implements INDArray {
     protected INDArray linearView;
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
+    protected int firstNonOneStride = -1;
+    protected int majorStride = -1;
+    protected Boolean isVector = null;
+    protected Boolean isScalar = null;
 
     public BaseNDArray() {
     }
@@ -548,19 +552,29 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int majorStride() {
         ensureNotCleanedUp();
-        if(stride.length == 0)
+        if(majorStride >= 0)
+            return majorStride;
+        if(stride.length == 0) {
+            majorStride = 1;
             return 1;
-
+        }
         if(ordering() == NDArrayFactory.C) {
-            if(stride[shape().length - 1] == 1 && !isMatrix())
-                return getFirstNonOneStride();
+            if(stride[shape().length - 1] == 1 && !isMatrix()) {
+                int ret =  getFirstNonOneStride();
+                majorStride = ret;
+                return ret;
+            }
         }
 
         if(ordering() == NDArrayFactory.FORTRAN && size(0) == 1) {
-            return getFirstNonOneStride();
+            int ret =  getFirstNonOneStride();
+            majorStride = ret;
+            return ret;
         }
 
-        return stride[0];
+        int majorStride =  stride[0];
+        this.majorStride = majorStride;
+        return majorStride;
     }
 
     @Override
@@ -752,6 +766,7 @@ public abstract class BaseNDArray implements INDArray {
         for(int j = 0; j < stride().length; j++) {
             if(stride[j] == 1)
                 continue;
+
             return j;
         }
 
@@ -759,12 +774,19 @@ public abstract class BaseNDArray implements INDArray {
 
     }
     private int getFirstNonOneStride() {
+        if(firstNonOneStride >= 0)
+            return firstNonOneStride;
+
         for(int j = 0; j < stride().length; j++) {
             if(stride()[j] == 1)
                 continue;
+            if(firstNonOneStride < 0)
+                firstNonOneStride = stride[j];
             return stride[j];
         }
 
+        if(firstNonOneStride < 0)
+            firstNonOneStride = elementStride();
         return elementStride();
 
     }
@@ -855,7 +877,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray putScalar(int i, int value) {
-        return putScalar(i,(double) value);
+        return putScalar(i, (double) value);
     }
 
     @Override
@@ -1173,6 +1195,8 @@ public abstract class BaseNDArray implements INDArray {
         return this;
     }
 
+
+
     /**
      * Returns the element at the specified row/column
      * This will throw an exception if the
@@ -1252,18 +1276,27 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public boolean isScalar() {
+        if(isScalar != null)
+            return isScalar;
         ensureNotCleanedUp();
-        if (shape.length == 0)
+        if (shape.length == 0) {
+            isScalar = true;
             return true;
-        else if (shape.length == 1 && shape[0] == 1)
+        }
+        else if (shape.length == 1 && shape[0] == 1) {
+            isScalar = true;
             return true;
+        }
         else if (shape.length >= 2) {
             for (int i = 0; i < shape.length; i++)
-                if (shape[i] != 1)
+                if (shape[i] != 1) {
+                    isScalar = false;
                     return false;
+                }
         }
 
-        return length == 1;
+        isScalar = length == 1;
+        return isScalar;
     }
 
     /**
@@ -1364,7 +1397,8 @@ public abstract class BaseNDArray implements INDArray {
         else if (put.isVector())
             for (int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getDouble(i));
-
+        else if(put.shape().length > 2 && put.size(0) == 1)
+            return putSlice(slice,put.slice(0));
         else {
 
             assert put.slices() == view.slices() : "Slices must be equivalent.";
@@ -2814,6 +2848,8 @@ public abstract class BaseNDArray implements INDArray {
         return this;
     }
 
+
+
     @Override
     public int linearIndex(int i) {
         if(isScalar() && i > 1)
@@ -3081,6 +3117,8 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray addi(Number n) {
         return addi(n, this);
     }
+
+
 
     /**
      * Replicate and tile array to fill out to the given shape
@@ -3911,7 +3949,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int rank() {
-       return shape().length;
+        return shape().length;
     }
 
     /**
@@ -4206,7 +4244,9 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public boolean isVector() {
         ensureNotCleanedUp();
-        return isRowVector() || isColumnVector();
+        if(this.isVector == null)
+            isVector =  isRowVector() || isColumnVector();
+        return isVector;
     }
 
     @Override
