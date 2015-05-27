@@ -1386,6 +1386,9 @@ public abstract class BaseNDArray implements INDArray {
             return this;
         }
 
+        //handle first dimension being of size 1
+        if(put.shape().length > 2 && put.size(0) == 1)
+            return putSlice(slice,put.slice(0));
 
         assertSlice(put, slice);
 
@@ -1397,10 +1400,7 @@ public abstract class BaseNDArray implements INDArray {
         else if (put.isVector())
             for (int i = 0; i < put.length(); i++)
                 view.putScalar(i, put.getDouble(i));
-        else if(put.shape().length > 2 && put.size(0) == 1)
-            return putSlice(slice,put.slice(0));
         else {
-
             assert put.slices() == view.slices() : "Slices must be equivalent.";
             INDArray linear = view.linearView();
             INDArray putLinearView = put.linearView();
@@ -2943,7 +2943,6 @@ public abstract class BaseNDArray implements INDArray {
                             offset, ordering);
                     return slice2;
                 }
-
 
 
             }
