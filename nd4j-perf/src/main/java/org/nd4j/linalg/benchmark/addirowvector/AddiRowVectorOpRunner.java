@@ -16,4 +16,7 @@ public class AddiRowVectorOpRunner implements OpRunner {
     public void runOp() {
         arr.addi(dup);
     }
+
+
+
 }

@@ -19,6 +19,11 @@ public class JblasTest {
     @Test
     public void testJblas() {
         int trials = 300;
+        BenchMarkPerformer mmulPerf = new GemmBenchmarkPerformer(trials);
+        mmulPerf.run(backend);
+        System.out.println(mmulPerf.averageTime());
+
+
         BenchMarkPerformer performer = new AddiRowVectorBenchmarkPerformer(trials);
         assertEquals(trials, performer.nTimes());
         performer.run(backend);
@@ -30,9 +35,7 @@ public class JblasTest {
 
 
 
-        BenchMarkPerformer mmulPerf = new GemmBenchmarkPerformer(trials);
-        mmulPerf.run(backend);
-        System.out.println(mmulPerf.averageTime());
+
 
 
     }

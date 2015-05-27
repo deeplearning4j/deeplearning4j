@@ -8,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
@@ -19,12 +20,16 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class BenchmarkRunnerApp {
-    @Option(name="nTrials",usage="Number of trials to run")
+    @Option(name="--nTrials",usage="Number of trials to run",aliases = "-n")
     private int nTrials = 1000;
 
-
+    /**
+     * Do the main method
+     * @param args the arguments for the method
+     * @throws Exception if an exception is thrown
+     */
     public void doMain(String[] args) throws Exception {
-        Reflections reflections = Reflections.collect();
+        Reflections reflections = new Reflections();
         CmdLineParser parser = new CmdLineParser(this);
         try {
             parser.parseArgument(args);
@@ -42,15 +47,20 @@ public class BenchmarkRunnerApp {
 
         Set<Class<? extends BenchMarkPerformer>> performers = reflections.getSubTypesOf(BenchMarkPerformer.class);
         for(Class<? extends BenchMarkPerformer> perfClazz : performers) {
+            if(Modifier.isAbstract(perfClazz.getModifiers()))
+                continue;
+
             Constructor<BenchMarkPerformer> performerConstructor = (Constructor<BenchMarkPerformer>) perfClazz.getConstructor(int.class);
             BenchMarkPerformer performer = performerConstructor.newInstance(nTrials);
-            System.out.println("==================================Benchmark:" + perfClazz.getName() + " =======================================");
+            String begin = "=========================";
+            String end = "===========================";
+            System.out.println(begin + " Benchmark: " + perfClazz.getName() + " " + end);
             for(Nd4jBackend backend : backends) {
                 performer.run(backend);
                 System.out.println("Backend " + backend.getClass().getName() + " took " + performer.averageTime());
             }
 
-            System.out.println("================================================================================================================");
+            System.out.println(begin + end);
         }
 
     }
