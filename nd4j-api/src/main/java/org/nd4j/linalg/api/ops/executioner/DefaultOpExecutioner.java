@@ -51,7 +51,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             for (int c = 0; c < op.n(); c++) {
                 apply(t, c);
             }
-        } else if (op instanceof Accumulation) {
+        }
+        else if (op instanceof Accumulation) {
             Accumulation accumulation = (Accumulation) op;
             for (int c = 0; c < op.n(); c++)
                 apply(accumulation, c);
@@ -65,6 +66,21 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
         return op;
+    }
+
+    @Override
+    public INDArray execAndReturn(Op op) {
+        if(op instanceof TransformOp) {
+            return execAndReturn((TransformOp) op);
+        }
+        else if(op instanceof ScalarOp) {
+            return execAndReturn((ScalarOp) op);
+        }
+        else if(op instanceof Accumulation) {
+            return Nd4j.scalar(execAndReturn((Accumulation) op).currentResult());
+        }
+
+        throw new IllegalArgumentException("Illegal type of op " + op.getClass());
     }
 
     @Override

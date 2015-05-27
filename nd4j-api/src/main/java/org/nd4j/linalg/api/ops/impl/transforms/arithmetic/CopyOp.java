@@ -68,17 +68,17 @@ public class CopyOp extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return other;
+        return origin;
     }
 
     @Override
     public float op(float origin, float other) {
-        return other;
+        return origin;
     }
 
     @Override
     public double op(double origin, double other) {
-        return other;
+        return origin;
     }
 
     @Override

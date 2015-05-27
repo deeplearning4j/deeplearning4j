@@ -1248,7 +1248,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray put(int i, int j, IComplexNumber complex) {
-        return (IComplexNDArray) putScalar(new int[]{i, j}, complex);
+        return putScalar(new int[]{i, j}, complex);
     }
 
 
@@ -1258,42 +1258,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * Assigns the given matrix (put) to the specified slice
      *
      * @param slice the slice to assign
-     * @param put   the slice to applyTransformToDestination
+     * @param put   the slice to transform
      * @return this for chainability
      */
     @Override
     public IComplexNDArray putSlice(int slice, IComplexNDArray put) {
-        if (isScalar()) {
-            assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
-            putScalar(0, put.getDouble(0));
-            return this;
-        }
-
-        assertSlice(put, slice);
-
-
-        IComplexNDArray view = slice(slice);
-
-        if (put.isScalar())
-            putScalar(slice, put.getComplex(0));
-        else if (put.isVector())
-            for (int i = 0; i < put.length(); i++)
-                view.putScalar(i, put.getComplex(i));
-        else if (put.shape().length == 2)
-            for (int i = 0; i < put.rows(); i++)
-                for (int j = 0; j < put.columns(); j++)
-                    view.put(i, j, put.getComplex(i, j));
-
-        else {
-
-            assert put.slices() == view.slices() : "Slices must be equivalent.";
-            for (int i = 0; i < put.slices(); i++)
-                view.slice(i).putSlice(i, view.slice(i));
-
-        }
-
-        return this;
-
+        return (IComplexNDArray) super.putSlice(slice,put);
     }
 
 
@@ -1719,7 +1689,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element) {
-         super.put(indices,element);
+        super.put(indices,element);
         return this;
     }
 
@@ -2303,7 +2273,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray mmul(INDArray other) {
-       return (IComplexNDArray) super.mmul(other);
+        return (IComplexNDArray) super.mmul(other);
     }
 
     /**
@@ -3340,7 +3310,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             }
             return ret;
         }
-        int dimension = isMatrix() || isColumnVector() ? 1 : shape.length;
+        int dimension = -1;
         int count = 0;
         for (int i = 0; i < vectorsAlongDimension(dimension); i++) {
             IComplexNDArray vec = vectorAlongDimension(i, dimension);

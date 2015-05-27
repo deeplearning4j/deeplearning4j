@@ -725,6 +725,12 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
             return c;
         }
+        DataBuffer aData = a.offset() > 0 ? a.ravel().data() : a.data();
+        DataBuffer bData = b.offset() > 0 ? b.ravel().data() : b.data();
+        if(a.offset() > 0)
+            a = a.ravel();
+        if(b.offset() > 0)
+            b = b.ravel();
 
         NativeBlas.dgemm(
                 'N',
@@ -733,16 +739,16 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 c.columns(),
                 a.columns(),
                 alpha,
-                a.data().asDouble(),
+                aData.asDouble(),
                 a.offset(),
-                a.rows()
-                , b.data().asDouble(),
+                a.size(0)
+                ,bData.asDouble(),
                 b.offset(),
-                b.rows(),
+                b.size(0),
                 beta,
                 c.data().asDouble(),
                 c.offset(),
-                c.rows());
+                c.size(0));
 
         return c;
     }
@@ -778,6 +784,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int lda = a.size(0);
         int ldb = b.size(0);
         int ldc = c.size(0);
+        if(a.offset() > 0)
+            a = a.ravel();
+        if(b.offset() > 0)
+            b = b.ravel();
+
+
+
+
         NativeBlas.sgemm(
                 'N',
                 'N',

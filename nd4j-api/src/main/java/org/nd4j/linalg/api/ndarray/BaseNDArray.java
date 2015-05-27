@@ -1385,20 +1385,26 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         assert slice <= slices() : "Invalid slice specified " + slice;
         int[] sliceShape = put.shape();
-        int[] requiredShape = ArrayUtil.removeIndex(shape(), 0);
+        if(Shape.isRowVectorShape(sliceShape)) {
+            return;
+        }
+        else {
+            int[] requiredShape = ArrayUtil.removeIndex(shape(), 0);
 
-        //no need to compare for scalar; primarily due to shapes either being [1] or length 0
-        if (put.isScalar())
-            return;
+            //no need to compare for scalar; primarily due to shapes either being [1] or length 0
+            if (put.isScalar())
+                return;
 
-        if(isVector() && put.isVector() && put.length() < length())
-            return;
-        //edge case for column vectors
-        if (Shape.isColumnVectorShape(sliceShape))
-            return;
-        if(!Shape.shapeEquals(sliceShape, requiredShape))
-            throw new IllegalStateException(String.format("Invalid shape size of %s . Should have been %s "
-                    , Arrays.toString(sliceShape), Arrays.toString(requiredShape)));
+            if(isVector() && put.isVector() && put.length() < length())
+                return;
+            //edge case for column vectors
+            if (Shape.isColumnVectorShape(sliceShape))
+                return;
+            if(!Shape.shapeEquals(sliceShape, requiredShape) && !Shape.isRowVectorShape(requiredShape) && !Shape.isRowVectorShape(sliceShape))
+                throw new IllegalStateException(String.format("Invalid shape size of %s . Should have been %s "
+                        , Arrays.toString(sliceShape), Arrays.toString(requiredShape)));
+
+        }
 
     }
 
@@ -1441,7 +1447,8 @@ public abstract class BaseNDArray implements INDArray {
 
         else if (Shape.isVector(newShape) && isVector()) {
             if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
-                return create(data, newShape, getStrides(new int[]{columns(),1},ordering()), offset);
+                int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.copy(stride()) : getStrides(new int[]{columns(),1},ordering());
+                return create(data, newShape,stride,offset);
             }
             //handle case where row vector is reshaped to row vector
             else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {
