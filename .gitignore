@@ -3,7 +3,6 @@ target/
 *.ser
 application.home_IS_UNDEFINEiD
 README.md~
-*.jpg
 *.png
 *.bin
 *.releaseBackup
