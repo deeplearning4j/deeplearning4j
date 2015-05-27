@@ -6,7 +6,6 @@ README.md~
 *.png
 *.bin
 *.releaseBackup
-*.jpg
 *.png
 *.bin
 *.out
@@ -15,7 +14,6 @@ README.md~
 release.properties
 .idea/
 *.iml
-*.png
 *.prefs
 *.settings/*
 model-saver-*
