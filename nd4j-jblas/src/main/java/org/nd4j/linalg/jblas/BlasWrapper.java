@@ -826,14 +826,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     a.columns(),
                     new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     a.data().asFloat(),
-                    a.blasOffset(),
+                    a.offset() / 2,
                     a.size(0),
                     b.data().asFloat(),
-                    b.blasOffset(),
+                    b.offset() / 2,
                     b.size(0),
                     new ComplexFloat(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
                     , c.data().asFloat(),
-                    c.blasOffset(),
+                    c.offset() / 2,
                     c.size(0));
         else
             NativeBlas.zgemm(
@@ -844,14 +844,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                     a.columns(),
                     new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                     a.data().asDouble(),
-                    a.blasOffset(),
+                    a.offset() / 2,
                     a.size(0),
                     b.data().asDouble(),
-                    b.blasOffset(),
+                    b.offset() / 2,
                     b.size(0),
                     new ComplexDouble(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue())
                     , c.data().asDouble(),
-                    c.blasOffset(),
+                    c.offset() / 2,
                     c.size(0));
         return c;
 
