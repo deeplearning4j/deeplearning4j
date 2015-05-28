@@ -25,8 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by agibsoncccc on 4/15/15.
@@ -37,7 +39,7 @@ public class CounterMapTest {
 
     @Test
     public void testParallel() {
-        List<Integer> items = new ArrayList<>();
+        List<Integer> items =  Collections.synchronizedList(new ArrayList<Integer>());
         for(int i  = 0; i < 1e6; i++)
             items.add(i);
 
