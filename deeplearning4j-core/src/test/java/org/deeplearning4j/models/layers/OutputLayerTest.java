@@ -30,8 +30,7 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.optimize.stepfunctions.GradientStepFunction;
-import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
+
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -39,6 +38,8 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 9/1/14.
@@ -73,6 +74,20 @@ public class OutputLayerTest {
         log.info("Score " +eval.stats());
 
 
+    }
+
+    @Test
+    public void testSetParams() {
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .activationFunction("softmax")
+                .iterations(100).weightInit(WeightInit.ZERO)
+                .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
+
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        INDArray params = l.params();
+        l.setParams(params);
+        assertEquals(params,l.params());
     }
 
 
