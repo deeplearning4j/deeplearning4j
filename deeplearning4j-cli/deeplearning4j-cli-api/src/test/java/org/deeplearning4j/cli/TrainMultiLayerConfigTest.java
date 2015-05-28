@@ -68,7 +68,12 @@ public class TrainMultiLayerConfigTest {
         CommandLineInterfaceDriver driver = new CommandLineInterfaceDriver();
 
         String[] cmd = {
-                "train","-conf",new ClassPathResource("confs/cli_train_unit_test_conf.txt").getFile().getAbsolutePath(),"-input", new ClassPathResource("iris.txt").getFile().getAbsolutePath(), "-model", "model_multi.json", "-output", "model_results.txt"
+                "train","-conf",
+                new ClassPathResource("confs/cli_train_unit_test_conf.txt").getFile().getAbsolutePath(),
+                "-input", new ClassPathResource("iris.txt").getFile().getAbsolutePath()
+                , "-model", "model_multi.json"
+                , "-output", "model_results.txt"
+               ,"-verbose"
         };
         driver.doMain(cmd);
 
