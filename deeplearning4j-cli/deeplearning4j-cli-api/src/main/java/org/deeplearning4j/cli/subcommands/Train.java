@@ -20,6 +20,7 @@ package org.deeplearning4j.cli.subcommands;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Properties;
@@ -34,6 +35,8 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
@@ -100,6 +103,8 @@ public class Train extends BaseSubCommand {
     private String properties;
     @Option(name = "-savemode",usage = "output: (binary | txt)")
     private String saveMode = "txt";
+    @Option(name = "-verbose",usage = "verbose(true | false)",aliases  = "-v")
+    private boolean verbose = false;
 
 
 
@@ -165,6 +170,10 @@ public class Train extends BaseSubCommand {
                 DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getConf(0).getBatchSize(),-1,conf.getConf(conf.getConfs().size() - 1).getnOut());
 
                 MultiLayerNetwork network = new MultiLayerNetwork(conf);
+                if(verbose) {
+                    network.init();
+                    network.setListeners(Collections.<IterationListener>singletonList(new ScoreIterationListener(1)));
+                }
                 network.fit(iter);
                 if(saveMode.equals("binary")) {
                     BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(this.outputDirectory + File.separator + "outputmodel.bin"));
