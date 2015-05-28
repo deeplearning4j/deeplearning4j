@@ -27,7 +27,7 @@ public class SubsampleTests {
         LayerFactory layerFactory = LayerFactories.getFactory(new SubsamplingLayer());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .convolutionType(org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer.ConvolutionType.MAX).filterSize(5,1,28,28)
+                .convolutionType(org.deeplearning4j.nn.conf.layers.ConvolutionLayer.ConvolutionType.MAX).filterSize(5,1,28,28)
                 .layer(new SubsamplingLayer())
                 .nIn(784).nOut(1).build();
         Layer convolutionLayer =  layerFactory.create(conf);
@@ -35,7 +35,7 @@ public class SubsampleTests {
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(), 1, 28, 28);
         input = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 20), NDArrayIndex.interval(0,20));
         INDArray output =  convolutionLayer.activate(input);
-        assertTrue(Arrays.equals(new int[]{next.numExamples(),1,19,19},output.shape()));
+        assertTrue(Arrays.equals(new int[]{next.numExamples(),1,10,21},output.shape()));
     }
 
 }
