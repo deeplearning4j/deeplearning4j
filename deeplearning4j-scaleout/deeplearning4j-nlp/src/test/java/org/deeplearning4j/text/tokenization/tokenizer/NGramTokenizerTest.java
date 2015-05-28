@@ -22,6 +22,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
+
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 
@@ -41,5 +44,8 @@ public class NGramTokenizerTest {
         }
         int stringCount = factory.create(toTokenize).countTokens();
         assertEquals(9, stringCount);
+        factory = new NGramTokenizerFactory(new DefaultTokenizerFactory(), 2, 2);
+        List<String> tokens = factory.create(toTokenize).getTokens();
+        assertEquals(4,tokens.size());
     }
 }
