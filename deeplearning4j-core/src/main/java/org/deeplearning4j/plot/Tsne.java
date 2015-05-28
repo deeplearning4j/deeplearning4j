@@ -356,7 +356,8 @@ public class Tsne implements Serializable {
         log.info("Cost at iteration " + i + " was " + costGradient.getFirst());
         y.addi(yIncs);
         y.addi(yIncs).subiRowVector(y.mean(0));
-        y.subi(Nd4j.tile(y.mean(0), new int[]{y.rows(), 1}));
+        INDArray tiled = Nd4j.tile(y.mean(0), new int[]{y.rows(), y.columns()});
+        y.subi(tiled);
 
     }
 
