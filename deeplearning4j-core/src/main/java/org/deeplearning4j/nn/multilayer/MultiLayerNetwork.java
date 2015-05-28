@@ -1417,7 +1417,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             if(get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
-            idx += range;
+            idx += range - 1;
         }
 
     }
