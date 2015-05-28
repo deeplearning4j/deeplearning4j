@@ -58,8 +58,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 apply(accumulation, c);
         } else if (op instanceof ScalarOp) {
             ScalarOp scalarOp = (ScalarOp) op;
-            for (int c = 0; c < op.n(); c++) {
-                apply(scalarOp, c);
+            if(op.isPassThrough())
+                return scalarOp;
+            INDArray zLinear = op.z().linearView();
+            INDArray xLinear = op.x().linearView();
+
+            if (op.x() instanceof IComplexNDArray) {
+                IComplexNDArray ndArray = (IComplexNDArray) op.z();
+                for(int c = 0; c < op.n(); c++)
+                    ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
+            }
+            else {
+                for(int c = 0; c < op.n(); c++)
+                    zLinear.putScalar(c, op.op(xLinear.getDouble(c)));
 
             }
         }
@@ -364,8 +375,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op.x() instanceof IComplexNDArray) {
             IComplexNDArray ndArray = (IComplexNDArray) op.z();
             ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
-        } else
-            op.z().linearView().putScalar(c, op.op(op.x().linearView().getDouble(c)));
+        }
+        else {
+            INDArray zLinear = op.z().linearView();
+            INDArray xLinear = op.x().linearView();
+            zLinear.putScalar(c, op.op(xLinear.getDouble(c)));
+
+        }
     }
 
 
@@ -387,8 +403,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
             }
             //x is real
-            else
-                op.z().linearView().putScalar(c, op.op(op.x().linearView().getDouble(c), op.y().linearView().getDouble(c)));
+            else {
+                INDArray zLinear = op.z().linearView();
+                INDArray xLinear = op.x().linearView();
+                INDArray yLinear = op.y().linearView();
+                zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c)));
+
+            }
 
         }
 
@@ -432,7 +453,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
             //x is real
             else
                 op.update(op.op(op.x().linearView().getDouble(x), op.y().linearView().getDouble(x)));
-        } else {
+        }
+
+        else {
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {
                 IComplexNDArray complexX = (IComplexNDArray) op.x().linearView();
