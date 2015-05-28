@@ -25,6 +25,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecPerformer;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 
@@ -87,7 +88,8 @@ public class TextPipeline {
     public Pair<VocabCache,Long> process(String tokenizer) {
         JavaSparkContext sc = new JavaSparkContext(corpus.context());
         Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
-        return corpus.map(new TokenizerFunction(tokenizer))
+        int nGrams = corpus.context().conf().getInt(Word2VecPerformer.N_GRAMS,1);
+        return corpus.map(new TokenizerFunction(tokenizer,nGrams))
                 .map(new VocabCacheFunction(minWordFrequency,new InMemoryLookupCache(),broadcast))
                 .cache().collect().get(0);
     }
