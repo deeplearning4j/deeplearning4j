@@ -42,7 +42,7 @@ To install Deeplearning4J, there are a couple approaches (briefly described belo
 
     Add the dependency information into your pom.xml
 
-#### Get the Code
+#### Clone from the GitHub Repo
 Deeplearning4J is being actively developed and you can clone the repository, compile it and reference it in your project.
 
 Clone the repository:
@@ -61,10 +61,29 @@ Add the local compiled file dependencies to your pom.xml file. Here's an example
         <version>0.0.3.3.4.alpha1-SNAPSHOT</version>
     </dependency>
 
-#### Load RPM (*coming soon*)
-Download the Red Hat Package Management (RPM) file and run the following command:
+#### Yum Install / Load RPM (Fedora or CentOS)
+Create a yum repo and run yum install to load the Red Hat Package Management (RPM) files. First create the repo file to setup the configuration locally.
 
-    $ sudo rpm -iv [package.rpm]
+    $ sudo vi /etc/yum.repos.d/dl4j.repo 
+
+Add the following to the dl4j.repo file:
+
+'''
+
+    [dl4j.repo]
+
+    name=dl4j-repo
+    baseurl=http://ec2-52-5-255-24.compute-1.amazonaws.com/repo/RPMS
+    enabled=1
+    gpgcheck=0
+'''
+
+Then run the following command on the dl4j repo packages to install them on your machine:
+
+    $ sudo yum install [package name] -y
+    $ sudo yum install DL4J-Distro -y 
+
+Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
 
 ---
 ## Contribute
