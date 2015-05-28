@@ -63,11 +63,13 @@ public abstract class BaseLayer implements Layer {
         this.input = input;
         this.conf = conf;
     }
-    
+
+    @Override
     public Collection<IterationListener> getIterationListeners() {
         return iterationListeners;
     }
 
+    @Override
     public void setIterationListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
@@ -433,7 +435,7 @@ public abstract class BaseLayer implements Layer {
             int nIn = clone.getnOut(),nOut = clone.getnIn();
             clone.setnIn(nIn);
             clone.setnOut(nOut);
-            layer = (Layer) c.newInstance(conf, W.transpose().dup(), b.transpose().dup(), input != null ? input.transpose().dup() : null);
+            layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
         } catch (Exception e) {
             e.printStackTrace();
         }
