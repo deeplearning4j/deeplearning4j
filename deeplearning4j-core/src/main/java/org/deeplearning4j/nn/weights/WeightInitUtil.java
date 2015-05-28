@@ -79,7 +79,7 @@ public class WeightInitUtil {
         ret = Nd4j.rand(shape);
         return ret.subi(0.5).divi(shape[0]);
       case UNIFORM:
-        double a = 1 / shape[0];
+        double a = 1 / (double) shape[0];
         return Nd4j.rand(shape, -a, a, Nd4j.getRandom());
 
       case VI:
