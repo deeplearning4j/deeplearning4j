@@ -40,7 +40,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <hadoop.version>1.0.4</hadoop.version>
+        <hadoop.version>2.6.0</hadoop.version>
         <scala.version>2.10.4</scala.version>
         <spark.version>1.3.0</spark.version>
         <scala.binary.version>2.10</scala.binary.version>
@@ -123,6 +123,12 @@
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
