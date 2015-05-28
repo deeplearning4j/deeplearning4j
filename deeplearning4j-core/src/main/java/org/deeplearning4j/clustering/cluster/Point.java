@@ -22,14 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Condition;
 
 public class Point  {
 
@@ -38,7 +32,6 @@ public class Point  {
 	private String id = UUID.randomUUID().toString();
 	private String label;
 	private INDArray array;
-	private boolean	cleanedUp = false;
 
 	public Point(INDArray array) {
 		super();
