@@ -1832,13 +1832,37 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-        //prevent off by one error
-        if(isRowVector()) {
-            offsets[0] = 0;
 
+
+        /**
+         * Any situation where the second row vector offset is 0
+         * will cause the dot product to screw up.
+         *
+         * This will set those offsets beyond the first to be 1.
+         */
+        boolean adjustOffsets = false;
+        if(offsets.length > 1 && Shape.isRowVectorShape(shape) && offsets[0] > 0) {
+            for(int i = 1; i < offsets.length; i++) {
+                if(offsets[i] == 0) {
+                    adjustOffsets = true;
+                    break;
+                }
+            }
+
+            if(adjustOffsets) {
+                for(int i = 1; i < offsets.length; i++) {
+                    if(offsets[i] < 1)
+                        offsets[i] = 1;
+                }
+            }
         }
 
+
         int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
+
+        //prevent off by 1
+        if(adjustOffsets)
+            offset--;
 
         if(ordering() == NDArrayFactory.C ) {
             return create(
