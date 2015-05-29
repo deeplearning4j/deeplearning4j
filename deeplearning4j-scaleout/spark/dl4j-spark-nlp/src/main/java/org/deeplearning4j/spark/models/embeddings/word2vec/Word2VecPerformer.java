@@ -55,6 +55,7 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     public final static String ALPHA = NAME_SPACE + ".alpha";
     public final static String MIN_ALPHA = NAME_SPACE + ".minalpha";
     public final static String ITERATIONS = NAME_SPACE + ".iterations";
+    public final static String N_GRAMS = NAME_SPACE + ".ngrams";
 
     private static double MAX_EXP = 6;
     private boolean useAdaGrad = false;

@@ -27,10 +27,17 @@
 	<properties>
 		<spring.version>3.2.5.RELEASE</spring.version>
 		<logback.version>1.1.2</logback.version>
+		<netty.version>5.0.0.Alpha2</netty.version>
+
 	</properties>
 
 	<dependencyManagement>
 		<dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
 			<dependency>
 				<groupId>org.nd4j</groupId>
 				<artifactId>nd4j-api</artifactId>
@@ -45,7 +52,7 @@
 			<dependency>
 				<groupId>org.jblas</groupId>
 				<artifactId>jblas</artifactId>
-				<version>1.2.3</version>
+				<version>1.2.4</version>
 				<scope>test</scope>
 			</dependency>
             <dependency>
@@ -57,6 +64,11 @@
 	</dependencyManagement>
 
 	<dependencies>
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-buffer</artifactId>
+			<version>${netty.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>canova-api</artifactId>
@@ -143,5 +155,17 @@
 			<artifactId>json</artifactId>
 			<version>20131018</version>
 		</dependency>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>dl4j-test-resources</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+
 	</dependencies>
 </project>

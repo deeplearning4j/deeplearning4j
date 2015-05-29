@@ -35,9 +35,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <hadoop.version>2.6.0</hadoop.version>
         <scala.version>2.10.4</scala.version>
-        <spark.version>1.3.0</spark.version>
+        <spark.version>1.2.0</spark.version>
         <hazelcast.version>3.4.2</hazelcast.version>
-
     </properties>
 
     <profiles>
@@ -68,16 +67,19 @@
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-all</artifactId>
-            <version>${hazelcast.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
             <version>${canova.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>dl4j-test-resources</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>

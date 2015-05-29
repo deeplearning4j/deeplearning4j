@@ -56,7 +56,7 @@ public class Cluster {
 
 	public void addPoint(Point point, boolean moveClusterCenter) {
 		if (moveClusterCenter) {
-			center.muli(points.size()).addi(point).divi(points.size() + 1);
+			center.getArray().muli(points.size()).addi(point.getArray()).divi(points.size() + 1);
 		}
 		getPoints().add(point);
 	}

@@ -59,11 +59,6 @@
 				<artifactId>spring-context</artifactId>
 				<version>${spring.version}</version>
 			</dependency>
-			<dependency>
-				<groupId>io.netty</groupId>
-				<artifactId>netty</artifactId>
-				<version>${netty.version}</version>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -153,8 +148,14 @@
         <dependency>
             <groupId>org.jblas</groupId>
             <artifactId>jblas</artifactId>
-            <version>1.2.3</version>
+            <version>1.2.4</version>
             <scope>test</scope>
         </dependency>
+		<dependency>
+			<groupId>org.deeplearning4j</groupId>
+			<artifactId>dl4j-test-resources</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
