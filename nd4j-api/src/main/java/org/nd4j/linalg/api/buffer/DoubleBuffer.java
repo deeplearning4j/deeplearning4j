@@ -107,11 +107,6 @@ public class DoubleBuffer extends BaseDataBuffer {
     protected DataBuffer create(int length) {
         return new DoubleBuffer(length);
     }
-    @Override
-    public int getInt(int ix) {
-        return dataBuffer.getInt(ix);
-    }
-
 
 
     @Override

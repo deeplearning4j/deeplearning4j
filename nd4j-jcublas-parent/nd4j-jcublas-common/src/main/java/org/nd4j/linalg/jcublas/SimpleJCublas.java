@@ -23,6 +23,7 @@ package org.nd4j.linalg.jcublas;
 
 import jcuda.*;
 import jcuda.driver.JCudaDriver;
+import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasOperation;
 import jcuda.runtime.JCuda;
@@ -732,28 +733,22 @@ public class SimpleJCublas {
         Pointer result;
         sync();
         if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            float[] ret = new float[1];
-            result = Pointer.to(ret);
-            JCublas2.cublasIsamax(
-                    ContextHolder.getInstance().getHandle(),
-                    x.length() * x.data().getElementSize(),
-                    xCPointer.getDevicePointer(),
-                    1,result);
-            ContextHolder.syncStream();
-            sync();
-            return (int) (ret[0]- 1);
-        }
-        else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] ret = new double[1];
-            result = Pointer.to(ret);
-            sync();
-            JCublas2.cublasIdamax(
-                    ContextHolder.getInstance().getHandle(),
+            int ret2 = JCublas.cublasIsamax(
                     x.length(),
                     xCPointer.getDevicePointer(),
-                    1, result);
+                    x.majorStride());
+            ContextHolder.syncStream();
             sync();
-            return (int) (ret[0] - 1);
+            return  (ret2 - 1);
+        }
+        else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
+            sync();
+            int ret2 = JCublas.cublasIdamax(
+                    x.length(),
+                    xCPointer.getDevicePointer(),
+                    x.majorStride());
+            sync();
+            return ret2 - 1;
         }
 
         throw new IllegalStateException("Illegal data type on array ");

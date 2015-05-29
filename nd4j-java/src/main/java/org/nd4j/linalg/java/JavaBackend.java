@@ -17,15 +17,18 @@
  *
  */
 
-package org.nd4j.linalg.netlib;
+package org.nd4j.linalg.java;
 
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-public class NetlibBlasBackend extends Nd4jBackend {
+/**
+ * Java backend
+ */
+public class JavaBackend extends Nd4jBackend {
 
-    private final static String LINALG_PROPS = "/nd4j-netlib.properties";
+    private final static String LINALG_PROPS = "/nd4j-java.properties";
 
     @Override
     public boolean isAvailable() {

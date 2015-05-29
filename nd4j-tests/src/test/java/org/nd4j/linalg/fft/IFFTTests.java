@@ -64,7 +64,7 @@ public  class IFFTTests extends BaseNd4jTest {
         IComplexNDArray c = Nd4j.createComplex(orig, new int[]{1,2});
         IComplexNDArray assertion = Nd4j.createComplex(ffted, new int[]{1,2});
 
-        assertEquals(assertion, Nd4j.getFFt().fft(c.dup(), 2));
+        assertEquals(getFailureMessage(),assertion, Nd4j.getFFt().fft(c.dup(), 2));
         IComplexNDArray iffted =  Nd4j.getFFt().ifft(Nd4j.getFFt().fft(c.dup(), 2),2);
         assertEquals(iffted, c);
 

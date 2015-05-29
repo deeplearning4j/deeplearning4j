@@ -240,6 +240,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
     @Test
     public void testSliceOffset() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
         IComplexNDArray test = Nd4j.complexLinSpace(1, 10, 10).reshape(2,5);
         IComplexNDArray testSlice0 = Nd4j.createComplex(new IComplexNumber[]{
                 Nd4j.createComplexNumber(1, 0),
@@ -259,13 +260,13 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
         });
 
-        assertEquals(testSlice0,test.slice(0));
-        assertEquals(testSlice1,test.slice(1));
+        assertEquals(getFailureMessage(),testSlice0,test.slice(0));
+        assertEquals(getFailureMessage(),testSlice1,test.slice(1));
 
         IComplexNDArray sliceOfSlice0 = test.slice(0).slice(0);
         assertEquals(sliceOfSlice0.getComplex(0),Nd4j.createComplexNumber(1,0));
-        assertEquals( test.slice(1).slice(0).getComplex(0),Nd4j.createComplexNumber(2, 0));
-        assertEquals(test.slice(1).getComplex(1),Nd4j.createComplexNumber(4, 0));
+        assertEquals(getFailureMessage(),test.slice(1).slice(0).getComplex(0),Nd4j.createComplexNumber(2, 0));
+        assertEquals(getFailureMessage(),test.slice(1).getComplex(1),Nd4j.createComplexNumber(4, 0));
 
 
     }
@@ -383,7 +384,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         INDArray innerProduct = n.mmul(transposed);
 
         INDArray scalar = Nd4j.scalar(Nd4j.createComplexNumber(385, 0));
-        assertEquals(scalar, innerProduct);
+        assertEquals(getFailureMessage(),scalar, innerProduct);
 
         INDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10, 10}, outerProduct.shape()));
@@ -395,7 +396,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
                 {Nd4j.createComplexNumber(3, 0), Nd4j.createComplexNumber(4, 0)}
                 , {Nd4j.createComplexNumber(6, 0), Nd4j.createComplexNumber(8, 0)}});
 
-        assertEquals(result, resultNDArray);
+        assertEquals(getFailureMessage(),result, resultNDArray);
 
 
 
@@ -424,7 +425,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         IComplexNDArray threeTwoSix = three.mmul(twoSix);
 
         IComplexNDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
-        assertEquals(threeTwoSix, sliceRowTwoSix);
+        assertEquals(getFailureMessage(),threeTwoSix, sliceRowTwoSix);
 
     }
 
@@ -438,7 +439,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
             assertEquals(i * 2, linearIndex);
             IComplexDouble d = (IComplexDouble) n.getScalar(i).element();
             double curr = d.realComponent();
-            assertEquals(i + 1, curr, 1e-1);
+            assertEquals(getFailureMessage(),i + 1, curr, 1e-1);
         }
     }
 
@@ -462,8 +463,8 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         IComplexNumber n1 = arr.getComplex(1, 1);
         IComplexNumber n2 = arr.getComplex(1, 1);
 
-        assertEquals(5.0, n1.realComponent().doubleValue(), 1e-1);
-        assertEquals(0.0, n2.imaginaryComponent().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(),5.0, n1.realComponent().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(),0.0, n2.imaginaryComponent().doubleValue(), 1e-1);
 
 
 
@@ -482,7 +483,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
         INDArray ones = Nd4j.ones(10);
         IComplexNDArray n2 = Nd4j.complexOnes(10);
-        assertEquals(ones, n2.getReal());
+        assertEquals(getFailureMessage(),ones, n2.getReal());
 
     }
 

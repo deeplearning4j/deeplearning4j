@@ -17,13 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.netlib;
-
-/**
- * NDArray for net lib blas
- *
- * @author Adam Gibson
- */
+package org.nd4j.linalg.java;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -33,6 +27,12 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
+
+/**
+ * NDArray for net lib blas
+ *
+ * @author Adam Gibson
+ */
 
 public class NetlibBlasNDArray extends BaseNDArray {
 
@@ -267,6 +267,10 @@ public class NetlibBlasNDArray extends BaseNDArray {
         super(data, shape, stride, offset);
     }
 
+    public NetlibBlasNDArray(float[] data) {
+        super(data);
+    }
+
 
     public NetlibBlasNDArray(NetlibBlasNDArray doubleMatrix) {
         this(new int[]{doubleMatrix.rows, doubleMatrix.columns});
@@ -284,9 +288,17 @@ public class NetlibBlasNDArray extends BaseNDArray {
         super(floats);
     }
 
+    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
+        super(buffer, shape, offset, ordering);
+    }
+
 
     public NetlibBlasNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
+    }
+
+    public NetlibBlasNDArray(int[] data, int[] shape, int[] strides) {
+        super(data, shape, strides);
     }
 
     public NetlibBlasNDArray(DataBuffer data, int[] shape) {
@@ -303,6 +315,18 @@ public class NetlibBlasNDArray extends BaseNDArray {
 
     public NetlibBlasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
+    }
+
+    public NetlibBlasNDArray(float[] data, char order) {
+        super(data, order);
+    }
+
+    public NetlibBlasNDArray(DataBuffer floatBuffer, char order) {
+        super(floatBuffer, order);
+    }
+
+    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int[] strides) {
+        super(buffer, shape, strides);
     }
 
     public NetlibBlasNDArray(int[] shape, DataBuffer buffer) {

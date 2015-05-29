@@ -433,12 +433,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         } else {
             //int n, int xOffset,double *dx,int incx,double result
-            //NOTE THE STRIDE HERE. The stride should be set to 1.
-            //The reason for this is because we only upload
-            //the vector itself that is needed to the gpu
-            //If you never need to use the whole array
-            //with striding change this back to arr.majorStride()
-            Object[] kernelParams = new Object[] {
+             Object[] kernelParams = new Object[] {
                     op.n(),
                     op.x().offset(),
                     op.x(),
@@ -585,7 +580,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.n(),
                     op.x().offset(),
                     op.x(),
-                    1,
+                    op.x().majorStride(),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };

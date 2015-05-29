@@ -17,4 +17,4 @@
 #
 #
 
-org.nd4j.linalg.netlib.NetlibBlasBackend
+org.nd4j.linalg.java.NetlibBlasBackend

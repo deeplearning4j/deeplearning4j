@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.netlib;
+package org.nd4j.linalg.java;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -27,9 +27,10 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.netlib.complex.ComplexDouble;
-import org.nd4j.linalg.netlib.complex.ComplexFloat;
-import org.nd4j.linalg.netlib.complex.ComplexNDArray;
+
+import org.nd4j.linalg.java.complex.ComplexDouble;
+import org.nd4j.linalg.java.complex.ComplexFloat;
+import org.nd4j.linalg.java.complex.ComplexNDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;

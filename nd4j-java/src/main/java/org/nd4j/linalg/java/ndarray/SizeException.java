@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.netlib.ndarray;
+package org.nd4j.linalg.java.ndarray;
 
 public class SizeException extends RuntimeException {
     public SizeException(String message) {

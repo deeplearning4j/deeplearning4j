@@ -569,14 +569,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 a.columns(),
                 (ComplexDouble) alpha,
                 a.data().asDouble(),
-                a.blasOffset(),
+                a.offset() / 2,
                 a.rows(),
                 x.data().asDouble(),
-                x.offset(),
+                x.offset() / 2,
                 x.majorStride(),
                 (ComplexDouble) beta,
                 y.data().asDouble(),
-                y.blasOffset(),
+                y.offset() / 2,
                 y.majorStride()
         );
         return y;
@@ -585,21 +585,28 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
         DataTypeValidation.assertFloat(a, x, y);
+       if(a.offset() > 0) {
+           a = a.ravel().reshape(a.rows(),a.columns());
+       }
+        if(x.offset() > 0) {
+            x = x.ravel().reshape(x.rows(),x.columns());
+
+        }
         NativeBlas.cgemv(
                 'N',
                 a.rows(),
                 a.columns(),
                 (ComplexFloat) alpha,
                 a.data().asFloat(),
-                a.blasOffset(),
+                a.offset(),
                 a.size(0),
                 x.data().asFloat(),
                 x.offset(),
-                1,
+                a.secondaryStride(),
                 (ComplexFloat) beta,
                 y.data().asFloat(),
-                y.blasOffset(),
-                1
+                y.offset(),
+                y.secondaryStride()
         );
         return y;
     }
@@ -620,13 +627,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 a.columns(),
                 new ComplexDouble(alpha.realComponent().doubleValue(), alpha.imaginaryComponent().doubleValue()),
                 x.data().asDouble(),
-                x.offset(),
+                x.offset() / 2,
                 x.majorStride(),
                 y.data().asDouble(),
-                y.offset(),
+                y.offset() / 2,
                 y.majorStride(),
                 a.data().asDouble(),
-                a.offset(),
+                a.offset() / 2,
                 a.rows());
         return a;
     }
@@ -647,13 +654,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 a.columns(),
                 new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
                 x.data().asFloat(),
-                x.offset(),
+                x.offset() / 2,
                 x.majorStride(),
                 y.data().asFloat(),
-                y.offset(),
+                y.offset() / 2,
                 y.majorStride(),
                 a.data().asFloat(),
-                a.offset(),
+                a.offset() / 2,
                 a.rows());
         return a;
     }
@@ -671,13 +678,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 a.columns(),
                 (ComplexDouble) alpha,
                 x.data().asDouble(),
-                x.offset(),
+                x.offset() / 2,
                 x.majorStride(),
                 y.data().asDouble(),
-                y.offset(),
+                y.offset() / 2,
                 y.majorStride(),
                 a.data().asDouble(),
-                a.offset(),
+                a.offset() / 2,
                 a.rows());
         return a;
     }
@@ -694,13 +701,13 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 a.columns(),
                 (ComplexFloat) alpha,
                 x.data().asFloat(),
-                x.offset(),
+                x.offset() / 2,
                 x.majorStride(),
                 y.data().asFloat(),
-                y.offset(),
+                y.offset() / 2,
                 y.majorStride(),
                 a.data().asFloat(),
-                a.offset(),
+                a.offset() / 2,
                 a.rows());
         return a;
     }

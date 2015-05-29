@@ -14,14 +14,6 @@ __device__ double update(double old,double opOutput,double *extraParams);
 //post process result (for things like means etc)
 __device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result);
 
-
-
-
-
-
-
-
-
 /**
 
 Perform a reduction

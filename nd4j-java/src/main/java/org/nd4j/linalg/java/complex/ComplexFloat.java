@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.netlib.complex;
+package org.nd4j.linalg.java.complex;
 
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -760,7 +760,17 @@ public class ComplexFloat extends org.jblas.ComplexFloat implements IComplexFloa
      */
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (this == o) return true;
+        if (!(o instanceof IComplexNumber)) return false;
+
+        IComplexNumber that = (IComplexNumber) o;
+
+        if (Math.abs(that.realComponent().doubleValue() - real()) > Nd4j.EPS_THRESHOLD)
+            return false;
+        if(Math.abs(that.imaginaryComponent().doubleValue() - imag()) > Nd4j.EPS_THRESHOLD)
+            return false;
+
+        return true;
     }
 
     @Override

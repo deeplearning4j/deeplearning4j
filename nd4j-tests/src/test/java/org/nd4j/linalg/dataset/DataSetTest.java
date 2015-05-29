@@ -23,13 +23,27 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import static org.junit.Assert.assertEquals;
 
 public class DataSetTest extends BaseNd4jTest {
+	public DataSetTest() {
+	}
 
-	
+	public DataSetTest(String name) {
+		super(name);
+	}
+
+	public DataSetTest(String name, Nd4jBackend backend) {
+		super(name, backend);
+	}
+
+	public DataSetTest(Nd4jBackend backend) {
+		super(backend);
+	}
+
 	@Test
 	public void testSetNewLabels() {
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;

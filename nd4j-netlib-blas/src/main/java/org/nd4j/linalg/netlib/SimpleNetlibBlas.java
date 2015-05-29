@@ -23,7 +23,6 @@ import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.LAPACK;
 import org.jblas.NativeBlas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -539,6 +538,10 @@ public class SimpleNetlibBlas {
      */
     public static void axpy(double da, INDArray A, INDArray B) {
         DataTypeValidation.assertDouble(A, B);
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            axpy((float) da, A, B);
+            return;
+        }
         if (A.ordering() == NDArrayFactory.C) {
 
             BLAS.getInstance().daxpy(
@@ -578,6 +581,10 @@ public class SimpleNetlibBlas {
      */
     public static void axpy(float da, INDArray A, INDArray B) {
         DataTypeValidation.assertFloat(A, B);
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            axpy((double) da, A, B);
+            return;
+        }
         if (A.ordering() == NDArrayFactory.C) {
             BLAS.getInstance().saxpy(
                     A.length(),
@@ -670,8 +677,9 @@ public class SimpleNetlibBlas {
      * @return
      */
     public static INDArray scal(float alpha, INDArray x) {
+        if(x.data().dataType() == DataBuffer.Type.DOUBLE)
+            return scal((double) alpha,x);
         DataTypeValidation.assertFloat(x);
-
         BLAS.getInstance().sscal(
                 x.length(),
                 alpha,
