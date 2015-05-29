@@ -23,7 +23,7 @@ class ColumnarRecordReader(val readers: (String,HadoopRecordReader[String,Row])*
   }
 
   override def getProgress: Float = {
-    prunedReaders.foldLeft(0f) { case (p,r) => math.min(p, r.getProgress)}
+    prunedReaders.foldLeft(1f) { case (p,r) => math.min(p, r.getProgress)}
   }
 
   override def nextKeyValue(): Boolean = {
