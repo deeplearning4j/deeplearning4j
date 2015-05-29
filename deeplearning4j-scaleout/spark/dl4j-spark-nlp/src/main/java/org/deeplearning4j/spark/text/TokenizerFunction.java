@@ -24,6 +24,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -61,6 +62,8 @@ public class TokenizerFunction implements Function<String,Pair<List<String>,Long
     public Pair<List<String>,Long> call(String v1) throws Exception {
         if(tokenizerFactory == null)
             tokenizerFactory = getTokenizerFactory();
+        if(v1.isEmpty())
+            return new Pair<>(Arrays.asList(""),1L);
         List<String> tokens = tokenizerFactory.create(v1).getTokens();
         return new Pair<>(tokens, (long) tokens.size());
     }
