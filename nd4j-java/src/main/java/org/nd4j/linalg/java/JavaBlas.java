@@ -551,16 +551,15 @@ public class JavaBlas {
         DataTypeValidation.assertDouble(A, B);
 
         if (A.ordering() == NDArrayFactory.C) {
-
             BLAS.getInstance().daxpy(
                     A.length(),
                     da,
                     A.data().asDouble(),
                     A.offset(),
-                    A.majorStride(),
+                    A.secondaryStride(),
                     B.data().asDouble(),
                     B.offset(),
-                    B.majorStride());
+                    B.secondaryStride());
 
 
         } else {

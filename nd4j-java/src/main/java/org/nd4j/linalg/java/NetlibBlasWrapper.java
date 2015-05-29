@@ -46,157 +46,157 @@ import static org.jblas.util.Functions.*;
 public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray swap(INDArray x, INDArray y) {
-        JavaBlas.swap(x.linearView(), y.linearView());
+        JavaBlas.swap(x, y);
         return y;
     }
 
     @Override
     public INDArray scal(double alpha, INDArray x) {
-        JavaBlas.scal(alpha, x.linearView());
+        JavaBlas.scal(alpha, x);
         return x;
     }
 
     @Override
     public INDArray scal(float alpha, INDArray x) {
-        JavaBlas.scal(alpha, x.linearView());
+        JavaBlas.scal(alpha, x);
         return x;
     }
 
 
     @Override
     public IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
-        return JavaBlas.sscal(alpha.asFloat(), x.linearView());
+        return JavaBlas.sscal(alpha.asFloat(), x);
 
     }
 
     @Override
     public IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
-        return JavaBlas.dscal(alpha, x.linearView());
+        return JavaBlas.dscal(alpha, x);
     }
 
     @Override
     public INDArray copy(INDArray x, INDArray y) {
-        JavaBlas.copy(x.linearView(), y.linearView());
+        JavaBlas.copy(x, y);
         return y;
     }
 
     @Override
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
-        JavaBlas.copy(x.linearView(), y.linearView());
+        JavaBlas.copy(x, y);
         return y;
     }
 
     @Override
     public INDArray axpy(double da, INDArray dx, INDArray dy) {
-        JavaBlas.axpy(da, dx.linearView(), dy.linearView());
+        JavaBlas.axpy(da, dx, dy);
         return dy;
     }
 
     @Override
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
-        JavaBlas.axpy(da, dx.linearView(), dy.linearView());
+        JavaBlas.axpy(da, dx, dy);
         return dy;
     }
 
 
     @Override
     public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
-        JavaBlas.axpy(da, dx.linearView(), dy.linearView());
+        JavaBlas.axpy(da, dx, dy);
         return dy;
     }
 
     @Override
     public double dot(INDArray x, INDArray y) {
-        return JavaBlas.dot(x.linearView(), y.linearView());
+        return JavaBlas.dot(x, y);
     }
 
     //@Override
     public double dotd(INDArray x, INDArray y) {
-        return JavaBlas.dot(x.linearView(), y.linearView());
+        return JavaBlas.dot(x, y);
     }
 
     @Override
     public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y) {
-        return JavaBlas.dot(x.linearView(), y.linearView());
+        return JavaBlas.dot(x, y);
     }
 
     @Override
     public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
-        return JavaBlas.dotu(x.linearView(), y.linearView());
+        return JavaBlas.dotu(x, y);
     }
 
     @Override
     public double nrm2(INDArray x) {
-        return JavaBlas.nrm2(x.linearView());
+        return JavaBlas.nrm2(x);
     }
 
     @Override
     public double nrm2(IComplexNDArray x) {
-        return JavaBlas.nrm2(x.linearView());
+        return JavaBlas.nrm2(x);
     }
 
     @Override
     public double asum(INDArray x) {
-        return JavaBlas.asum(x.linearView());
+        return JavaBlas.asum(x);
 
     }
 
     @Override
     public double asum(IComplexNDArray x) {
-        return JavaBlas.asum(x.linearView());
+        return JavaBlas.asum(x);
     }
 
     @Override
     public int iamax(INDArray x) {
-        return JavaBlas.iamax(x.linearView());
+        return JavaBlas.iamax(x);
     }
 
     @Override
     public int iamax(IComplexNDArray x) {
-        return JavaBlas.iamax(x.linearView());
+        return JavaBlas.iamax(x);
     }
 
     @Override
     public INDArray gemv(double alpha, INDArray a, INDArray x, double beta, INDArray y) {
-        return JavaBlas.gemv(a.linearView(), x.linearView(), y.linearView(), alpha, beta);
+        return JavaBlas.gemv(a, x, y, alpha, beta);
 
     }
 
     @Override
     public INDArray gemv(float alpha, INDArray a, INDArray x, float beta, INDArray y) {
-        return JavaBlas.gemv(a.linearView(), x.linearView(), y.linearView(), alpha, beta);
+        return JavaBlas.gemv(a, x, y, alpha, beta);
     }
 
     @Override
     public INDArray ger(double alpha, INDArray x, INDArray y, INDArray a) {
-        return JavaBlas.ger(x.linearView(), y.linearView(), a.linearView(), alpha);
+        return JavaBlas.ger(x, y, a, alpha);
     }
 
     @Override
     public INDArray ger(float alpha, INDArray x, INDArray y, INDArray a) {
-        return JavaBlas.ger(x.linearView(), y.linearView(), a.linearView(), alpha);
+        return JavaBlas.ger(x, y, a, alpha);
 
     }
 
     @Override
     public IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return JavaBlas.geru(alpha, x.linearView(), y.linearView(), a.linearView());
+        return JavaBlas.geru(alpha, x, y, a);
     }
 
 
     @Override
     public IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return JavaBlas.geru(alpha, x.linearView(), y.linearView(), a.linearView());
+        return JavaBlas.geru(alpha, x, y, a);
     }
 
     @Override
     public IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return JavaBlas.gerc(x.linearView(), y.linearView(), a.linearView(), alpha.asDouble());
+        return JavaBlas.gerc(x, y, a, alpha.asDouble());
     }
 
     @Override
     public IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return JavaBlas.gerc(x.linearView(), y.linearView(), a.linearView(), alpha.asDouble());
+        return JavaBlas.gerc(x, y, a, alpha.asDouble());
 
     }
 

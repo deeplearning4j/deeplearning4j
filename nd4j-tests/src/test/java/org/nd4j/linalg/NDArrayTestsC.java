@@ -32,10 +32,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,14 +44,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
 
 /**
  * NDArrayTests
  *
  * @author Adam Gibson
  */
-public  class NDArrayTestsC extends BaseNDArrayTests {
+public  class NDArrayTestsC extends BaseNd4jTest {
     private static Logger log = LoggerFactory.getLogger(NDArrayTestsC.class);
 
 
@@ -106,7 +103,7 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         });
 
         INDArray assertion = Nd4j.create(new double[][]{
-                {14,32},{32,77}
+                {14, 32}, {32, 77}
         });
 
         INDArray test = arr.mmul(arr.transpose());
@@ -143,6 +140,8 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         assertEquals(write, read);
 
     }
+
+
 
 
     @Test
@@ -1331,6 +1330,11 @@ public  class NDArrayTestsC extends BaseNDArrayTests {
         INDArray bSlice = B.slice(2);
         INDArray concat = Nd4j.concat(0, A, B);
         assertTrue(Arrays.equals(new int[]{5, 2, 2}, concat.shape()));
+
+        INDArray columnConcat = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray concatWith = Nd4j.zeros(2, 3);
+        INDArray columnWiseConcat = Nd4j.concat(0,columnConcat,concatWith);
+        System.out.println(columnConcat);
 
     }
 

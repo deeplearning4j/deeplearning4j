@@ -158,10 +158,8 @@ public class Nd4jTestSuite {
                             //unless the ordering is a (the default) which means all
                             char ordering = test.ordering();
                             char backendOrdering = backendProps.getProperty(Nd4j.ORDER_KEY).charAt(0);
-                            if(ordering == backendOrdering || ordering == 'a')
-                                testSuite.addTest(test);
-                            else
-                                break;
+                            testSuite.addTest(test);
+
                         }catch(InstantiationException e) {
                             throw new RuntimeException("Failed to construct backend " + backend.getClass() + " with method " + method.getName() + " with class " + clazz.getName(),e);
                         }

@@ -81,9 +81,12 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testNettyCopy() {
-        DataBuffer db = Nd4j.createBuffer(new double[]{1,2,3,4});
+        DataBuffer db = Nd4j.createBuffer(new double[]{1, 2, 3, 4});
         ByteBuf buf = db.asNetty();
-        ByteBuf copy = buf.copy(0,buf.capacity());
+        if(db.allocationMode() == DataBuffer.AllocationMode.HEAP)
+            return;
+
+        ByteBuf copy = buf.copy(0, buf.capacity());
         for(int i = 0; i < db.length(); i++) {
             assertEquals(db.getDouble(i),copy.getDouble(i * 8));
         }
