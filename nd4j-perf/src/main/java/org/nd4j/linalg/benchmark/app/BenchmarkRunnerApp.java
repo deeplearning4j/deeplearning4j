@@ -23,6 +23,8 @@ import java.util.concurrent.TimeUnit;
 public class BenchmarkRunnerApp {
     @Option(name="--nTrials",usage="Number of trials to run",aliases = "-n")
     private int nTrials = 1000;
+    @Option(name="--run",usage="Trials to run",aliases   = "-r")
+    private String benchmarksToRun;
 
     /**
      * Do the main method
@@ -42,13 +44,19 @@ public class BenchmarkRunnerApp {
         ServiceLoader<Nd4jBackend> backends = ServiceLoader.load(Nd4jBackend.class);
         Iterator<Nd4jBackend> backendIterator = backends.iterator();
         List<Nd4jBackend> allBackends = new ArrayList<>();
+        Set<String> run = new HashSet<>();
+        if(benchmarksToRun != null) {
+            String[] split = benchmarksToRun.split(",");
+            for(String s : split)
+                run.add(s);
+        }
         while(backendIterator.hasNext())
             allBackends.add(backendIterator.next());
 
 
         Set<Class<? extends BenchMarkPerformer>> performers = reflections.getSubTypesOf(BenchMarkPerformer.class);
         for(Class<? extends BenchMarkPerformer> perfClazz : performers) {
-            if(Modifier.isAbstract(perfClazz.getModifiers()))
+            if(Modifier.isAbstract(perfClazz.getModifiers()) || !run.isEmpty() && !run.contains(perfClazz.getName()))
                 continue;
 
             Constructor<BenchMarkPerformer> performerConstructor = (Constructor<BenchMarkPerformer>) perfClazz.getConstructor(int.class);
@@ -58,7 +66,7 @@ public class BenchmarkRunnerApp {
             System.out.println(begin + " Benchmark: " + perfClazz.getName() + " " + end);
             for(Nd4jBackend backend : backends) {
                 performer.run(backend);
-                System.out.println("Backend " + backend.getClass().getName() + " took (in naoseconds) " + performer.averageTime() + " (in milliseconds) " + TimeUnit.MILLISECONDS.convert(performer.averageTime(),TimeUnit.NANOSECONDS));
+                System.out.println("Backend " + backend.getClass().getName() + " took (in nanoseconds) " + performer.averageTime() + " (in milliseconds) " + TimeUnit.MILLISECONDS.convert(performer.averageTime(),TimeUnit.NANOSECONDS));
             }
 
             System.out.println(begin + end);
