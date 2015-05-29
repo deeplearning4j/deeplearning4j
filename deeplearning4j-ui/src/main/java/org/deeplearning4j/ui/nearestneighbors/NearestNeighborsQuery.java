@@ -58,8 +58,7 @@ public class NearestNeighborsQuery implements Serializable {
 
         NearestNeighborsQuery that = (NearestNeighborsQuery) o;
 
-        if (numWords != that.numWords) return false;
-        return !(word != null ? !word.equals(that.word) : that.word != null);
+        return numWords == that.numWords && !(word != null ? !word.equals(that.word) : that.word != null);
 
     }
 

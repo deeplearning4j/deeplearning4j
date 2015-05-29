@@ -305,7 +305,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
-        bias.assign(params.get(NDArrayIndex.interval(conf.getnIn() * conf.getnOut(), params.length())).dup());
+        int biasBegin = params.length() - bias.length();
+        int biasEnd = params.length();
+        INDArray biasAssign = params.get(NDArrayIndex.interval(biasBegin, biasEnd));
+        bias.assign(biasAssign);
     }
     /**
      * Fit the model to the given data

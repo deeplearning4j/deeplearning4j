@@ -34,10 +34,13 @@ public class NeuralNetConfigurationTest {
     public void testJson() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dist(new NormalDistribution(1,1))
-                .layer(new RBM())
+                .layer(new RBM()).useAdaGrad(false)
                 .build();
+
+        assertFalse(conf.isUseAdaGrad());
         String json = conf.toJson();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromJson(json);
+
         assertEquals(conf,read);
     }
 

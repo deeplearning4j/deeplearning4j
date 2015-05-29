@@ -22,16 +22,11 @@ package org.deeplearning4j.nn.conf.layers;
  * Convolutional and pooling layer
  *
  */
+@Deprecated
 public class ConvolutionDownSampleLayer extends ConvolutionLayer {
 
     private static final long serialVersionUID = 7524152911435120057L;
 
-    /**
-     * Convolution type: max avg or sum
-     */
-    public enum ConvolutionType {
-        MAX,AVG,SUM,NONE
-    }
 
     @Override
     public int hashCode() {

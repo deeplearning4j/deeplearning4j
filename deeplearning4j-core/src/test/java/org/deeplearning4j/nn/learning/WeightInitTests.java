@@ -31,7 +31,7 @@ public class WeightInitTests {
 
     @Test
     public void testSi() {
-        WeightInitUtil.initWeights(1,2, WeightInit.VI, Nd4j.getDistributions().createNormal(1,0));
+        WeightInitUtil.initWeights(1,2, WeightInit.VI, Nd4j.getDistributions().createNormal(0,1));
     }
 
 }

@@ -22,7 +22,6 @@ package org.deeplearning4j.nn.layers.factory;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 
 /**
  * Static method for finding which layer factory to use
@@ -74,7 +73,10 @@ public class LayerFactories {
             return org.deeplearning4j.nn.api.Layer.Type.RECURRENT;
         else if(layerFactory instanceof RecursiveAutoEncoderLayerFactory)
             return org.deeplearning4j.nn.api.Layer.Type.RECURSIVE;
-        return org.deeplearning4j.nn.api.Layer.Type.FEED_FORWARD;
+        else if(layerFactory instanceof DefaultLayerFactory || layerFactory instanceof PretrainLayerFactory)
+            return org.deeplearning4j.nn.api.Layer.Type.FEED_FORWARD;
+
+        throw new IllegalArgumentException("Unknown layer type");
     }
 
 }

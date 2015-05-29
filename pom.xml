@@ -51,12 +51,12 @@
 
 
     <properties>
-        <slf4j.version>1.7.10</slf4j.version>
+        <slf4j.version>1.7.12</slf4j.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
         <jackson.version>2.5.1</jackson.version>
         <canova.version>0.0.0.3-SNAPSHOT</canova.version>
-        <nd4j.version>0.0.3.5.5.4-SNAPSHOT</nd4j.version>
+        <nd4j.version>0.0.3.5.5.5-SNAPSHOT</nd4j.version>
         <spring.version>3.2.5.RELEASE</spring.version>
     </properties>
 
@@ -158,6 +158,7 @@
         <module>deeplearning4j-scaleout</module>
         <module>deeplearning4j-cli</module>
         <module>deeplearning4j-ui</module>
+        <module>dl4j-test-resources</module>
     </modules>
 
     <licenses>
@@ -192,7 +193,7 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>source-plugin</artifactId>
+                <artifactId>maven-source-plugin</artifactId>
                 <version>2.4</version>
             </plugin>
         </plugins>

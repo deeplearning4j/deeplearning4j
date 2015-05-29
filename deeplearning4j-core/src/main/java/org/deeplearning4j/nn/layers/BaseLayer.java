@@ -31,6 +31,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -62,11 +63,13 @@ public abstract class BaseLayer implements Layer {
         this.input = input;
         this.conf = conf;
     }
-    
+
+    @Override
     public Collection<IterationListener> getIterationListeners() {
         return iterationListeners;
     }
 
+    @Override
     public void setIterationListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
@@ -177,10 +180,20 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public INDArray params() {
-        List<INDArray> ret = new ArrayList<>();
-        for(String s : params.keySet())
-            ret.add(params.get(s));
-        return Nd4j.toFlattened(ret);
+        int length = 0;
+        for(String s : params.keySet()) {
+            length += params.get(s).length();
+        }
+
+        INDArray ret = Nd4j.create(1,length);
+        int count = 0;
+        for(String s : params.keySet()) {
+            INDArray get = params.get(s).linearView();
+            for(int i = 0; i < get.length(); i++) {
+                ret.putScalar(count++,get.getDouble(i));
+            }
+        }
+        return ret;
     }
 
     @Override
@@ -197,7 +210,7 @@ public abstract class BaseLayer implements Layer {
             INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + gradientList.get(i) + " should have been of length " + param.length() + " but was " + get.length());
-            param.assign(get.reshape(param.shape()));
+            param.linearView().assign(get);
             idx += param.length();
         }
 
@@ -422,7 +435,7 @@ public abstract class BaseLayer implements Layer {
             int nIn = clone.getnOut(),nOut = clone.getnIn();
             clone.setnIn(nIn);
             clone.setnOut(nOut);
-            layer = (Layer) c.newInstance(conf, W.transpose().dup(), b.transpose().dup(), input != null ? input.transpose().dup() : null);
+            layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
         } catch (Exception e) {
             e.printStackTrace();
         }
