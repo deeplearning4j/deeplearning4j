@@ -34,8 +34,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <scala.version>2.10.4</scala.version>
         <scala.binary.version>2.10</scala.binary.version>
-        <spark.version>1.3.0</spark.version>
-        <!-- <spark.version>1.4.0-SNAPSHOT</spark.version> -->
+        <spark.version>1.4.0-SNAPSHOT</spark.version>
     </properties>
 
 
@@ -148,11 +147,5 @@
             <artifactId>deeplearning4j-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--<dependency>
-            <groupId>org.jblas</groupId>
-            <artifactId>jblas</artifactId>
-            <version>1.2.3</version>
-            <scope>test</scope>
-        </dependency>-->
     </dependencies>
 </project>

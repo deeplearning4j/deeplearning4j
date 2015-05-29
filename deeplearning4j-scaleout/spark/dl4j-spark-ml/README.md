@@ -1,18 +1,18 @@
 
 # DL4J on Spark ML
 
-Spark 1.2+ provides a standardized API for machine learning called [Spark ML](http://spark.apache.org/docs/latest/ml-guide.html).   DL4J has experimental support for Spark ML.  The main benefit is easy integration of DL4J with Spark data sources, with other ML components (such as feature extractors and learning algorithms), and with SQL.
-
-## Caveats
-Be aware that this module will undergo breaking changes for Spark 1.4.  The DL4J-on-Spark-ML classes are located at `org.apache.spark.ml` to work around a limitation of Spark 1.3, that the Spark ML extensibilty API is currently marked 'private'.   For 1.4, we expect to move these classes to 'org.deeplearning4j.spark.ml'.
+Spark 1.4 provides a standardized API for machine learning called [Spark ML](http://spark.apache.org/docs/latest/ml-guide.html).   DL4J has experimental support for Spark ML.  The main benefit is easy integration of DL4J with Spark data sources, with other ML components (such as feature extractors and learning algorithms), and with SQL.
 
 # Getting Started
 
 ## System Requirements
-- Please use Spark 1.3.
+
+| Requirement | Instructions |
+| ----------- | ------------ |
+| Spark 1.4 RC0 | Checkout Spark sources (branch-1.4), then 'mvn install'. |
 
 ## Examples
-Please try the examples at [deeplearning4j/spark-examples](https://github.com/deeplearning4j/spark-examples).  ML-related examples:
+Please try the examples at [deeplearning4j/spark-ml-examples](https://github.com/EronWright/spark-ml-examples/tree/feature-spark-ml).  ML-related examples:
 
 - `ml.JavaIrisClassificationPipeline`
 
@@ -34,9 +34,16 @@ For ML purposes, the following data types are preferred for ML columns:
 | --------- | ----------- |
 | Vector    | A sparse or dense array of doubles |
 | Double    | A numeric label |
-| ~~String~~    | Strings are not expected in ML columns! |
+| Tensor    | (WIP) A multi-dimensional vector |
 
-Please consider LabeledPoint to be obsolete.
+Strings should be converted to an ML type using a transformer.  Please consider LabeledPoint to be obsolete.
+
+### Sources
+The following DataFrame sources are provided:
+
+| Source | Description |
+| --------- | ------- |
+| LFW | Labeled Faces in the Wild (LFW) dataset as a DataFrame. |
 
 ## ML Pipeline
 

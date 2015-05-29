@@ -28,10 +28,10 @@ private[spark] trait HasMultiLayerConfiguration extends Params {
    * Param for multiLayer configuration.
    * @group param
    */
-  val conf = new Param[String](this, "conf", "multilayer configuration", null)
+  val conf = new Param[String](this, "conf", "multilayer configuration")
 
   /** @group getParam */
-  def getConf: String = get(conf)
+  def getConf: String = $(conf)
 }
 
 /**
@@ -45,10 +45,10 @@ private[spark] trait HasReconstructionCol extends Params {
    * @group param
    */
   val reconstructionCol: Param[String] = 
-    new Param[String](this, "reconstructionCol", "reconstruction column name", Some("reconstruction"))
+    new Param[String](this, "reconstructionCol", "reconstruction column name")
 
   /** @group getParam */
-  def getReconstructionCol: String = get(reconstructionCol)
+  def getReconstructionCol: String = $(reconstructionCol)
 }
 
 @DeveloperApi
@@ -58,10 +58,10 @@ private[spark] trait HasBatchSize extends Params {
    * Param for batch size
    * @group param
    */
-  val batchSize: IntParam = new IntParam(this, "batchSize", "batch size", Some(10))
-  
+  val batchSize: IntParam = new IntParam(this, "batchSize", "batch size")
+
   /** @group getParam */
-  def getBatchSize: Int = get(batchSize)
+  def getBatchSize: Int = $(batchSize)
 }
 
 @DeveloperApi
@@ -71,10 +71,10 @@ private[spark] trait HasEpochs extends Params {
    * Param for epochs
    * @group param
    */
-  val epochs: IntParam = new IntParam(this, "epochs", "number of epochs", Some(1))
-  
+  val epochs: IntParam = new IntParam(this, "epochs", "number of epochs")
+
   /** @group getParam */
-  def getEpochs: Int = get(epochs)
+  def getEpochs: Int = $(epochs)
 }
 
 @DeveloperApi
@@ -84,9 +84,9 @@ private[spark] trait HasLayerIndex extends Params {
    * Param for layer index
    * @group param
    */
-  val layerIndex: IntParam = new IntParam(this, "layerIndex", "layer index (one-based)", Some(1))
+  val layerIndex: IntParam = new IntParam(this, "layerIndex", "layer index (one-based)")
 
   /** @group getParam */
-  def getLayerIndex: Int = get(layerIndex)
+  def getLayerIndex: Int = $(layerIndex)
 }
 
