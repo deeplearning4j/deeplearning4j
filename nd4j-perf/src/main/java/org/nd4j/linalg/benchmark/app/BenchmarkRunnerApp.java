@@ -10,6 +10,7 @@ import org.reflections.Reflections;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Discovers all sub classes of benchmark performer on the class
@@ -57,7 +58,7 @@ public class BenchmarkRunnerApp {
             System.out.println(begin + " Benchmark: " + perfClazz.getName() + " " + end);
             for(Nd4jBackend backend : backends) {
                 performer.run(backend);
-                System.out.println("Backend " + backend.getClass().getName() + " took " + performer.averageTime());
+                System.out.println("Backend " + backend.getClass().getName() + " took (in naoseconds) " + performer.averageTime() + " (in milliseconds) " + TimeUnit.MILLISECONDS.convert(performer.averageTime(),TimeUnit.NANOSECONDS));
             }
 
             System.out.println(begin + end);
