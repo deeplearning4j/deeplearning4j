@@ -1411,9 +1411,13 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
             Layer layer = getLayers()[i];
+
             int range = layer.numParams();
-            layer.setParams(params.get(NDArrayIndex.interval(idx, range + idx)));
-            idx += range;
+            INDArray get = params.get(NDArrayIndex.interval(idx, range + idx));
+            if(get.length() < 1)
+                throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
+            layer.setParams(get);
+            idx += range - 1;
         }
 
     }

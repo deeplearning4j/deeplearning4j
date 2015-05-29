@@ -47,7 +47,7 @@ public class Model implements Flag {
     @Override
     public <E> E value(String value) throws Exception {
         Boolean isMultiLayer = value.contains("_multi");
-        String json = value;
+        String json = FileUtils.readFileToString(new File(value));
 
         if (isMultiLayer) {
             return (E) MultiLayerConfiguration.fromJson(json);

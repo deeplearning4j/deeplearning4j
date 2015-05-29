@@ -1,84 +1,64 @@
 package org.deeplearning4j.cli.driver;
 
-import java.util.Arrays;
 
 import org.deeplearning4j.cli.subcommands.Train;
+import org.kohsuke.args4j.Argument;
+import org.kohsuke.args4j.CmdLineException;
+import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.spi.SubCommand;
+import org.kohsuke.args4j.spi.SubCommandHandler;
+import org.kohsuke.args4j.spi.SubCommands;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
-
+/**
+ * CLI Driver for dl4j.
+ *
+ * Supports the train command
+ *
+ * @author Adam Gibson
+ */
 public class CommandLineInterfaceDriver {
 
-	
+	private static Logger log = LoggerFactory.getLogger(CommandLineInterfaceDriver.class);
+
+	@Argument(required=true,index=0,metaVar="action",usage="subcommands, e.g., {train|test|predict}",handler=SubCommandHandler.class)
+	@SubCommands({
+			@SubCommand(name="train",impl=Train.class)
+	})
+	private org.deeplearning4j.cli.subcommands.SubCommand subCommand;
+
+
+
+    /**
+     * Print the usage for the command.
+     */
 	public static void printUsage() {
-		
-		System.out.println( "Usage: " );
-		System.out.println( "\tdl4j [command] [params] " );
-		System.out.println( "Commands: " );
-		System.out.println( "\ttrain\tbuild a deep learning model " );
-		System.out.println( "\ttest\ttest a deep learning model " );
-		System.out.println( "\tpredict\tscore new records against a deep learning model " );
-		System.out.println( "" );
-		
+        log.info( "Usage: " );
+		log.info( "\tdl4j [command] [params] " );
+		log.info( "Commands: " );
+		log.info( "\ttrain\tbuild a deep learning model " );
+		log.info( "\ttest\ttest a deep learning model " );
+		log.info( "\tpredict\tscore new records against a deep learning model " );
+		log.info( "" );
+
 	}
 
-	public static void main(String [ ] args) {
-	    /*
-		System.out.println( "CommandLineInterfaceDriver > Printing args:");
-		
-		for ( String arg : args ) {
-			
-			System.out.println( ">> " + arg );
-			
-		}
-		*/
-		
-		if ( args.length < 1 ) {
-		
-			printUsage();
-			
-		} else if ("train".equals( args[ 0 ] )) {
+    public void doMain(String[] args) throws Exception {
+        CmdLineParser parser = new CmdLineParser(this);
+        try {
+            parser.parseArgument(args);
+            subCommand.execute();
+        } catch( CmdLineException e ) {
+            System.err.println(e.getMessage());
+            return;
+        }
+    }
 
-			String[] vec_params = Arrays.copyOfRange(args, 1, args.length);
-			/*
-			Vectorize vecCommand = new Vectorize( vec_params );
-			try {
-				vecCommand.execute();
-			} catch (CanovaException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			*/
-			
-			String[] cmd = {
-	                "--input", "iris.txt", "--model", "model.json", "--output", "test_output.txt"
-	        };
 
-	        Train train = new Train(cmd);
-	        
-	        System.out.println( "[DONE] - Test Mode" ); 
-			
+    public static void main(String [] args) throws Exception {
+        new CommandLineInterfaceDriver().doMain(args);
 
-		} else if ("test".equals( args[ 0 ] )) {
-			
-		} else if ("predict".equals( args[ 0 ] )) {
-			
-			
-		} else {
-			
-			//System.out.println( "Canova's command line system only supports the 'vectorize' command." );
-			printUsage();
-			
-		}
-		
-		
-		
-		
-	}		
-	
+    }
+
 }

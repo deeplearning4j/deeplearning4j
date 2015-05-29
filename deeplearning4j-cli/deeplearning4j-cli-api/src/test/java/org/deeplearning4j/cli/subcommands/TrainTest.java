@@ -27,8 +27,7 @@ public class TrainTest {
 		} catch (Exception e) {
 			System.out.println( "could not load conf: " + e );
 		}
-		train.debugLoadedConfProperties();
-		train.exec();
+		train.execute();
 		
 		System.out.println("[testLoadInputFormat] End");
 		

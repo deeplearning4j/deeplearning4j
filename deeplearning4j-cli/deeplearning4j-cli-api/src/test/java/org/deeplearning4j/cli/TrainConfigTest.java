@@ -46,7 +46,8 @@ public class TrainConfigTest {
                 .layer(new RBM())
                 .build();
         String json = conf.toJson();
-        NeuralNetConfiguration testConfig = testModelFlag.value(json);
+        FileUtils.writeStringToFile(new File("model.json"),json);
+        NeuralNetConfiguration testConfig = testModelFlag.value("model.json");
         assertEquals(conf, testConfig);
 
         FileUtils.writeStringToFile(new ClassPathResource("model.json").getFile(), json);

@@ -35,7 +35,10 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 1/15/15.
+ * A DataSetIterator that uses a record reader for
+ * creating datasets from records
+ *
+ * @author Adam Gibson
  */
 public class RecordReaderDataSetIterator implements DataSetIterator {
     private RecordReader recordReader;

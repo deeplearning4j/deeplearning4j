@@ -20,13 +20,20 @@ package org.deeplearning4j.cli;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.cli.api.flags.Model;
+import org.deeplearning4j.cli.driver.CommandLineInterfaceDriver;
 import org.deeplearning4j.cli.subcommands.Train;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 
@@ -39,23 +46,37 @@ public class TrainMultiLayerConfigTest {
     @Test
     public void testMultiLayerConfig() throws Exception {
         Model testModelFlag = new Model();
-
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM()).dist(new NormalDistribution(1e-1,0))
-                .list(4).preProcessor(0,new ConvolutionPostProcessor())
-                .hiddenLayerSizes(3, 2, 2).build();
+                .layer(new RBM()).nIn(4).nOut(3)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .iterations(100).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
+                .activationFunction("tanh").k(1).batchSize(10)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .learningRate(1e-1f).momentum(0.9).regularization(true).l2(2e-4)
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS).constrainGradientToUnitNorm(true)
+                .list(2).hiddenLayerSizes(3)
+                .override(1, new ClassifierOverride(1))
+                .build();
         String json = conf.toJson();
 
         FileUtils.writeStringToFile(new File("model_multi.json"), json);
 
         MultiLayerConfiguration from = testModelFlag.value("model_multi.json");
-        assertEquals(conf,from);
+        assertEquals(conf, from);
+
+
+        CommandLineInterfaceDriver driver = new CommandLineInterfaceDriver();
 
         String[] cmd = {
-                "-input", "iris.txt", "-model", "model_multi.json", "-output", "model_results.txt"
+                "train","-conf",
+                new ClassPathResource("confs/cli_train_unit_test_conf.txt").getFile().getAbsolutePath(),
+                "-input", new ClassPathResource("iris.txt").getFile().getAbsolutePath()
+                , "-model", "model_multi.json"
+                , "-output", "model_results.txt"
+               ,"-verbose"
         };
+        driver.doMain(cmd);
 
-        Train train = new Train(cmd);
     }
 
 }
