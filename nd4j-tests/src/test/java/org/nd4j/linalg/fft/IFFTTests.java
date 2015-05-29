@@ -34,7 +34,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by agibsonccc on 9/6/14.
+ * Tests for ifft
+ *
+ * @author Adam Gibson
  */
 public  class IFFTTests extends BaseNd4jTest {
 
@@ -62,8 +64,8 @@ public  class IFFTTests extends BaseNd4jTest {
         IComplexNDArray c = Nd4j.createComplex(orig, new int[]{1,2});
         IComplexNDArray assertion = Nd4j.createComplex(ffted, new int[]{1,2});
 
-        assertEquals(assertion, Nd4j.getExecutioner().execAndReturn(new VectorFFT(c,2)));
-        IComplexNDArray iffted = (IComplexNDArray) Nd4j.getExecutioner().execAndReturn(new VectorIFFT(assertion.dup(),2));
+        assertEquals(assertion, Nd4j.getFFt().fft(c.dup(), 2));
+        IComplexNDArray iffted =  Nd4j.getFFt().ifft(Nd4j.getFFt().fft(c.dup(), 2),2);
         assertEquals(iffted, c);
 
 
@@ -88,7 +90,7 @@ public  class IFFTTests extends BaseNd4jTest {
         Nd4j.EPS_THRESHOLD = 1e-1;
         assertEquals(ffted.eps(ffted2).sum(Integer.MAX_VALUE).getDouble(0),8,1e-1);
 
-        IComplexNDArray iffted = FFT.ifft(ffted2);
+        IComplexNDArray iffted = FFT.ifft(ffted);
         assertEquals(iffted.eps(linspace).sum(Integer.MAX_VALUE).getDouble(0),8,1e-1);
 
     }

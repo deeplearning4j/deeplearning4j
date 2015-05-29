@@ -35,9 +35,9 @@ import org.nd4j.linalg.util.ComplexNDArrayUtil;
 public class VectorIFFT extends BaseTransformOp {
 
 
-    private int fftLength;
+    protected int fftLength;
     private int originalN = -1;
-    private boolean executed = false;
+    protected boolean executed = false;
 
 
     public VectorIFFT(INDArray x, INDArray z,int fftLength) {

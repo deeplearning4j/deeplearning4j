@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * A data applyTransformToDestination (example/outcome pairs)
+ * A data transform (example/outcome pairs)
  * The outcomes are specifically for neural network encoding such that
  * any labels that are considered true are 1s. The rest are zeros.
  *
@@ -60,7 +60,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     public DataSet(INDArray first, INDArray second) {
         if (first.rows() != second.rows())
-            throw new IllegalStateException("Invalid data applyTransformToDestination; first and second do not have equal rows. First was " + first.rows() + " second was " + second.rows());
+            throw new IllegalStateException("Invalid data transform; first and second do not have equal rows. First was " + first.rows() + " second was " + second.rows());
         this.features = first;
         this.labels = second;
     }
@@ -208,7 +208,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * Divides the input data applyTransformToDestination by the max number in each row
+     * Divides the input data transform
+     * by the max number in each row
      */
     @Override
     public void scale() {
@@ -321,7 +322,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     /**
      * Sets the outcome of a particular example
      *
-     * @param example the example to applyTransformToDestination
+     * @param example the example to transform
      * @param label   the label of the outcome
      */
     @Override
@@ -345,7 +346,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public DataSet get(int i) {
         if (i > numExamples() || i < 0)
             throw new IllegalArgumentException("invalid example number");
-
+        if(i == 0 && numExamples() == 1)
+            return this;
         return new DataSet(getFeatures().getRow(i), getLabels().getRow(i));
     }
 
@@ -373,9 +375,9 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * Strips the data applyTransformToDestination of all but the passed in labels
+     * Strips the data transform of all but the passed in labels
      *
-     * @param labels strips the data applyTransformToDestination of all but the passed in labels
+     * @param labels strips the data transform of all but the passed in labels
      * @return the dataset with only the specified labels
      */
     @Override
@@ -414,7 +416,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
         //map examples
         for (int i = 0; i < filtered.numExamples(); i++) {
-            int o2 = filtered.get(i).outcome();
+            DataSet example = filtered.get(i);
+            int o2 = example.outcome();
             Integer outcome = labelMap.get(o2);
             newLabels.add(outcome);
 
@@ -440,10 +443,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     /**
-     * Partitions the data applyTransformToDestination by the specified number.
+     * Partitions the data transform by the specified number.
      *
      * @param num the number to split by
-     * @return the partitioned data applyTransformToDestination
+     * @return the partitioned data transform
      */
     @Override
     public List<DataSet> dataSetBatches(int num) {
@@ -457,7 +460,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     /**
      * Sorts the dataset by label:
-     * Splits the data applyTransformToDestination such that examples are sorted by their labels.
+     * Splits the data transform such that examples are sorted by their labels.
      * A ten label dataset would produce lists with batches like the following:
      * x1   y = 1
      * x2   y = 2
@@ -637,7 +640,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * Sample without replacement and a random rng
      *
      * @param numSamples the number of samples to getFromOrigin
-     * @return a sample data applyTransformToDestination without replacement
+     * @return a sample data transform without replacement
      */
     @Override
     public DataSet sample(int numSamples) {
@@ -745,12 +748,12 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public void setLabelNames(List<String> labelNames) {
         if (labelNames == null || labelNames.size() != numOutcomes())
-            throw new IllegalArgumentException("Unable to applyTransformToDestination label names, does not match number of possible outcomes");
+            throw new IllegalArgumentException("Unable to transform label names, does not match number of possible outcomes");
         this.labelNames = labelNames;
     }
 
     /**
-     * Optional column names of the data applyTransformToDestination, this is mainly used
+     * Optional column names of the data transform, this is mainly used
      * for interpeting what columns are in the dataset
      *
      * @return

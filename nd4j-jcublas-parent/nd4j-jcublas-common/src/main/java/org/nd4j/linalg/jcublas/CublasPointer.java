@@ -145,6 +145,7 @@ public class CublasPointer  implements AutoCloseable {
                         , ContextHolder.getInstance().getCudaStream());
                 //mark the buffer copied
                 buffer.setCopied(name);
+                toString();
 
             }
 
@@ -185,7 +186,10 @@ public class CublasPointer  implements AutoCloseable {
         StringBuffer sb = new StringBuffer();
         if(devicePointer != null) {
             if(arr != null) {
-                if(arr instanceof IComplexNDArray && arr.length() * 2 == buffer.length() || arr.length() == buffer.length())
+                if(arr instanceof IComplexNDArray
+                        && arr.length() * 2
+                        == buffer.length()
+                        || arr.length() == buffer.length())
                     appendWhereArrayLengthEqualsBufferLength(sb);
                 else
                     appendWhereArrayLengthLessThanBufferLength(sb);
@@ -208,7 +212,8 @@ public class CublasPointer  implements AutoCloseable {
                     JCublas2.cublasGetVectorAsync(
                             buffer.length()
                             , buffer.getElementSize()
-                            , devicePointer, LinearUtil.linearStride(arr)
+                            , devicePointer
+                            , LinearUtil.linearStride(arr)
                             , Pointer.to(set)
                             , 1
                             , ContextHolder.getInstance().getCudaStream());
@@ -225,10 +230,12 @@ public class CublasPointer  implements AutoCloseable {
 
 
     private void appendWhereArrayLengthLessThanBufferLength(StringBuffer sb) {
+        int length = arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length();
+
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] set = new double[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
+            double[] set = new double[length];
             JCublas2.cublasGetVectorAsync(
-                    arr.length()
+                    length
                     , buffer.getElementSize()
                     ,devicePointer
                     ,arr.majorStride()
@@ -239,12 +246,12 @@ public class CublasPointer  implements AutoCloseable {
             sb.append(Arrays.toString(set));
         }
         else {
-            float[] set = new float[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
+            float[] set = new float[length];
             JCublas2.cublasGetVectorAsync(
-                    arr.length()
+                    length
                     , buffer.getElementSize()
                     , devicePointer
-                    , arr.majorStride()
+                    , 1
                     , Pointer.to(set)
                     , 1, ContextHolder.getInstance().getCudaStream());
             ContextHolder.syncStream();
@@ -253,10 +260,11 @@ public class CublasPointer  implements AutoCloseable {
     }
 
     private void appendWhereArrayLengthEqualsBufferLength(StringBuffer sb) {
+        int length = arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length();
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE) {
-            double[] set = new double[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
+            double[] set = new double[length];
             JCublas2.cublasGetVectorAsync(
-                    arr.length()
+                    length
                     , buffer.getElementSize()
                     ,devicePointer
                     ,1
@@ -267,9 +275,9 @@ public class CublasPointer  implements AutoCloseable {
             sb.append(Arrays.toString(set));
         }
         else {
-            float[] set = new float[arr instanceof  IComplexNDArray ? arr.length() * 2 : arr.length()];
+            float[] set = new float[length];
             JCublas2.cublasGetVectorAsync(
-                    arr.length()
+                    length
                     , buffer.getElementSize()
                     ,devicePointer
                     ,1

@@ -23,6 +23,7 @@ import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.LAPACK;
 import org.jblas.NativeBlas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;

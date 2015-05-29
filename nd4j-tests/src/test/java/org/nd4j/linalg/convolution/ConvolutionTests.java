@@ -25,9 +25,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -51,15 +54,21 @@ public  class ConvolutionTests extends BaseNd4jTest {
     }
 
     @Test
-    public void convNTest() {
+    public void testConv() {
         Nd4j.EPS_THRESHOLD = 1e-1;
         INDArray arr = Nd4j.linspace(1, 8, 8);
         INDArray kernel = Nd4j.linspace(1, 3, 3);
-            INDArray answer = Nd4j.create(new double[]{1.0000012});
+        INDArray answer = Nd4j.create(new double[]{1.0000012});
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
         assertEquals(answer, test);
     }
 
+    @Test
+    public void testDownSample() {
+        INDArray zeros = Nd4j.create(56,56);
+        INDArray downsampled = Transforms.downSample(zeros,new int[]{2,2});
+        assertTrue(Arrays.equals(new int[]{28,28},downsampled.shape()));
+    }
 
 
     @Test
@@ -70,6 +79,8 @@ public  class ConvolutionTests extends BaseNd4jTest {
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
         assertEquals(answer, test);
     }
+
+
 
 
     @Override
