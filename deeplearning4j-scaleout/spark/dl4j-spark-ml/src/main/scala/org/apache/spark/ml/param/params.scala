@@ -14,17 +14,17 @@ trait HasDimensions extends Params {
    * Param for width
    * @group param
    */
-  val width: IntParam = new IntParam(this, "width", "image width", None)
+  val width: IntParam = new IntParam(this, "width", "image width")
 
   /** @group getParam */
-  def getWidth: Int = get(width)
+  def getWidth: Int = $(width)
 
   /**
    * Param for height
    * @group param
    */
-  val height: IntParam = new IntParam(this, "height", "image height", None)
+  val height: IntParam = new IntParam(this, "height", "image height")
 
   /** @group getParam */
-  def getHeight: Int = get(height)
+  def getHeight: Int = $(height)
 }
