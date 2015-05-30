@@ -16,6 +16,7 @@ Contents
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#code">A Code Example</a>
 * <a href="#next">Next Steps</a>
+* <a href="#patent">Word2vec Patent</a>
 
 ###<a name="intro">Introduction to Word2Vec</a>
 
@@ -276,3 +277,7 @@ Word2Vec is especially useful in preparing text-based data for information retri
 An example of sentiment analysis using [Word2Vec is here](http://deeplearning4j.org/sentiment_analysis_word2vec.html). 
 
 (We are still testing our recent implementations of Doc2vec and GLoVE -- watch this space!)
+
+###<a name="patent">Google's Word2vec Patent</a>
+
+Word2vec is [a method of computing vector representations of words](http://arxiv.org/pdf/1301.3781.pdf) introduced by a team of researchers led by Tomas Mikolov in 2013. Google [hosts an open-source version of Word2vec](https://code.google.com/p/word2vec/) released under an Apache 2.0 license. In 2014, Mikolov left Google for Facebook, and in May 2015, [Google was granted a patent for the method](http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=9037464&OS=9037464&RS=9037464), which does not abrogate the Apache license under which it has been released.
