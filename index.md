@@ -8,7 +8,7 @@ Deeplearning4j is the first commercial-grade, open-source, distributed deep-lear
 
 ### [Deep learning use cases](use_cases.html)
 
-* Face/image recognition
+* [Face/image recognition](http://deeplearning4j.org/facial-reconstruction-tutorial.html)
 * Voice search
 * Speech-to-text (transcription)
 * Spam filtering (anomaly detection)
