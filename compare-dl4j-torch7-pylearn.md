@@ -15,17 +15,17 @@ Pylearn2 is a normal (non-distributed) framework that includes everything necess
 
 ### Torch
 
-[**Torch7**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. It is purported to be used by large tech companies that devote in-house teams to deep learning. Lua is a multi-paradigm language developed in Brazil in the early 1990s. 
+[**Torch7**](http://torch.ch/) is a computational framework written in Lua that supports machine-learning algorithms. Some version of it is used by large tech companies such as Google and Facebook, which devote in-house teams to customizing their deep learning platforms. Lua is a multi-paradigm language developed in Brazil in the early 1990s. 
 
 Torch7, while powerful, [was not designed to be widely accessible](https://news.ycombinator.com/item?id=7929216) to the Python-based academic community, nor to corporate software engineers, whose lingua franca is Java. Deeplearning4j was written in Java to reflect our focus on industry and ease of use. We believe usability is the limiting parameter that inhibits more widespread deep-learning implementations. We believe that a commercially supported open-source framework is the appropriate solution to ensure working tools and building a community. 
 
 ### Caffe
 
-Caffe is a well-known and widely used machine-vision library. It is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* and many, seemingly trivial, features that make deep learning run more smoothely on multiple GPU clusters in parallel. 
+[Caffe](http://caffe.berkeleyvision.org/) is a well-known and widely used machine-vision library written in C and C++. It is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. 
 
 ### Licensing
 
-Licensing is another distinction: Theano, Torch and Caffe employ a BSD License, which does not address patents or patent disputes. Deeplearning4j and ND4J are distributed under an **[Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0)**, which contains both a patent grant and a litigation retaliation clause. That is, anyone is free to make and patent derivative works based on Apache 2.0-licensed code, but if they sue someone else over patent claims regarding the original code (DL4J in this case), they immediately lose all patent claim to it. (In other words, you are given resources to defend yourself in litigation, and discouraged from attacking others.) BSD doesn't address the issue at all. 
+Licensing is another distinction among these open-source projects: Theano, Torch and Caffe employ a BSD License, which does not address patents or patent disputes. Deeplearning4j and ND4J are distributed under an **[Apache 2.0 License](http://en.swpat.org/wiki/Patent_clauses_in_software_licences#Apache_License_2.0)**, which contains both a patent grant and a litigation retaliation clause. That is, anyone is free to make and patent derivative works based on Apache 2.0-licensed code, but if they sue someone else over patent claims regarding the original code (DL4J in this case), they immediately lose all patent claim to it. (In other words, you are given resources to defend yourself in litigation, and discouraged from attacking others.) BSD doesn't address the issue. 
 
 ### Speed
 
@@ -49,13 +49,13 @@ Finally, Java is a secure, network language that inherently works cross-platform
 
 ###Ecosystem
 
-Java's popularity is only strengthened by its ecosystem. Hadoop is implemented in Java; Spark runs within Hadoop's Yarn run-time; libraries like Akka made building distributed systems for Deeplearning4j feasible. In sum, Java boasts a highly tested infrastructure for pretty much any application, and deep-learning nets written in Java can live close to the data, which makes programmers' lives easier. Deeplearning4j can be run and provisioned as a YARN app.
+Java's popularity is only strengthened by its ecosystem. [Hadoop](https://hadoop.apache.org/) is implemented in Java; [Spark](https://spark.apache.org/) runs within Hadoop's Yarn run-time; libraries like [Akka](https://www.typesafe.com/community/core-projects/akka) made building distributed systems for Deeplearning4j feasible. In sum, Java boasts a highly tested infrastructure for pretty much any application, and deep-learning nets written in Java can live close to the data, which makes programmers' lives easier. Deeplearning4j can be run and provisioned as a YARN app.
 
 Java can also be used natively from other popular languages like Scala, Clojure, Python and Ruby. By choosing Java, we excluded the fewest major programming communities possible. 
 
-While Java is not as fast as C or C++, we've built a distributed system that can accelerate with the addition of more nodes. That is, if you want speed, just throw more boxes at it. 
+While Java is not as fast as C or C++, it is much faster than many believe, and we've built a distributed system that can accelerate with the addition of more nodes, whether they are GPUs or CPUs. That is, if you want speed, just throw more boxes at it. 
 
-Finally, we are building the basic applications of Numpy, including ND-Array, in Java for DL4J. Other features, such as GPU interoperability based on company-backed plugins, will be released shortly. We believe that many of Java's shortcomings can be solved quickly, and many of its advantages will continue for some time. 
+Finally, we are building the basic applications of Numpy, including ND-Array, in Java for DL4J. We believe that many of Java's shortcomings can be solved quickly, and many of its advantages will continue for some time. 
 
 ### Scala
 
