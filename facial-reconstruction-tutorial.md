@@ -27,7 +27,7 @@ Here's some of the code used to run LFW on DL4J:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNLWFExample.java?slice=30:72"></script>
 
-To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either click "run" on the FacesDemo.java file in IntelliJ (see our [Getting Started page](../gettingstarted.html)).
+To run the Labeled Faces in the Wild dataset on Deeplearning4j, you can either click "run" on the DBNLFWExample.java file in IntelliJ (see our [Getting Started page](../gettingstarted.html)).
 
 After your net has trained, you'll see an F1 score. In machine learning, that's the name for one metric used to determine how well a classifier performs. The [f1 score](https://en.wikipedia.org/wiki/F1_score) is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
 
