@@ -34,6 +34,7 @@ case class LfwRelation(location: String)(@transient val sqlContext: SQLContext)
     CanovaImageVectorizer.setWidth(conf, 28)
     CanovaImageVectorizer.setHeight(conf, 28)
     conf.setLong("mapreduce.input.fileinputformat.split.maxsize", 10 * 1024 * 1024)
+    conf.setBoolean("mapreduce.input.fileinputformat.input.dir.recursive",true)
 
     val baseRdd = sc.newAPIHadoopFile[String, Row, LfwInputFormat](
       location, classOf[LfwInputFormat], classOf[String], classOf[Row], conf)
