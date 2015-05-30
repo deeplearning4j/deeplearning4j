@@ -5,9 +5,9 @@ layout: default
 
 # Facial reconstruction
 
-Facial images are one type of continuous data from which deep-learning nets can extract features. In this case, we're using a continuous restricted Boltzmann machine, or CRBM, to identify relevant facial features.
+Facial images are one type of continuous data from which deep-learning nets can extract features. In this case, we're using a deep-belief network, or DBN, to identify relevant facial features.
 
-The goal here isn't to classify faces (yet), but to teach the CRBM to reconstruct them based on features shared across faces; i.e. generic traits.  
+The goal here isn't to classify faces (yet), but to teach the DBN to reconstruct them based on features shared across faces; i.e. generic traits.  
 
 We're training the net on the [Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/results.html) (LFW) dataset created by UMass/Amherst. LFW contains 13,233 images of 5,749 different faces, so it's fairly large. The dataset is an important and widely used tool in building nets useful for computer vision.
 
