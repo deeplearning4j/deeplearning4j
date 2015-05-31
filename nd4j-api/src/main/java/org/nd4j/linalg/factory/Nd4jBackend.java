@@ -22,6 +22,7 @@ package org.nd4j.linalg.factory;
 import java.io.IOException;
 import java.util.*;
 
+import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -101,6 +102,39 @@ public abstract class Nd4jBackend {
         });
 
         for(Nd4jBackend backend: backends) {
+            if(!backend.isAvailable()) {
+                log.trace("Skipped [{}] backend (unavailable)", backend.getClass().getSimpleName());
+                continue;
+            }
+
+            log.trace("Loaded [{}] backend", backend.getClass().getSimpleName());
+            return backend;
+        }
+
+        log.trace("Service loader failed...falling back to reflection");
+        List<Class<? extends Nd4jBackend>> clazzes = (List<Class<? extends Nd4jBackend>>) new Reflections("org.nd4j").getSubTypesOf(Nd4jBackend.class);
+        List<Nd4jBackend> reflectionBackends = new ArrayList<>();
+        for(Class<? extends Nd4jBackend> backend : clazzes) {
+            try {
+                Nd4jBackend load = backend.newInstance();
+                reflectionBackends.add(load);
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        Collections.sort(backends, new Comparator<Nd4jBackend>() {
+            @Override
+            public int compare(Nd4jBackend o1, Nd4jBackend o2) {
+                // high-priority first
+                return o2.getPriority() - o1.getPriority();
+            }
+        });
+
+        for(Nd4jBackend backend: reflectionBackends) {
             if(!backend.isAvailable()) {
                 log.trace("Skipped [{}] backend (unavailable)", backend.getClass().getSimpleName());
                 continue;
