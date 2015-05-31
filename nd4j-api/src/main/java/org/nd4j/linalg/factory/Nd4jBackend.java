@@ -112,7 +112,7 @@ public abstract class Nd4jBackend {
         }
 
         log.trace("Service loader failed...falling back to reflection");
-        List<Class<? extends Nd4jBackend>> clazzes = (List<Class<? extends Nd4jBackend>>) new Reflections("org.nd4j").getSubTypesOf(Nd4jBackend.class);
+        Set<Class<? extends Nd4jBackend>> clazzes =  new Reflections("org.nd4j").getSubTypesOf(Nd4jBackend.class);
         List<Nd4jBackend> reflectionBackends = new ArrayList<>();
         for(Class<? extends Nd4jBackend> backend : clazzes) {
             try {
