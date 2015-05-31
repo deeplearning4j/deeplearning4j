@@ -186,7 +186,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
         else {
             dataBuffer = allocationMode == AllocationMode.DIRECT ?
-                    Unpooled.directBuffer(length * getElementSize()).order(ByteOrder.nativeOrder())
+                    Unpooled.buffer(length * getElementSize()).order(ByteOrder.nativeOrder())
                     : Unpooled.buffer(length * getElementSize()).order(ByteOrder.nativeOrder());
         }
 
