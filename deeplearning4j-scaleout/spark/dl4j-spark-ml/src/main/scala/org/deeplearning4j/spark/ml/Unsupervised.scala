@@ -14,17 +14,18 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.ml.nn
+package org.deeplearning4j.spark.ml
 
-import org.apache.spark.annotation.{AlphaComponent, DeveloperApi}
+import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.ml.param._
-import org.apache.spark.ml.param.shared._
-import org.apache.spark.ml.nn._
+import org.deeplearning4j.spark.ml.param.shared._
+import org.deeplearning4j.spark.ml.util.SchemaUtils
 import org.apache.spark.ml.{Estimator, Model}
-import org.apache.spark.ml.util.SchemaUtils
-import org.apache.spark.mllib.linalg.{VectorUDT, Vector}
-import org.apache.spark.sql.types.{DataType, DoubleType, FloatType, IntegerType, StructField, StructType}
+import org.apache.spark.mllib.linalg.VectorUDT
+import org.apache.spark.mllib.linalg.VectorUDT
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.{DataType, StructType}
+import org.deeplearning4j.spark.sql.types.VectorUDT
 
 /**
  * :: DeveloperApi ::
@@ -94,7 +95,7 @@ abstract class UnsupervisedLearner[
    *
    * The default value is VectorUDT, but it may be overridden if FeaturesType is not Vector.
    */
-  protected def featuresDataType: DataType = new VectorUDT
+  protected def featuresDataType: DataType = VectorUDT()
   
   override def transformSchema(schema: StructType): StructType = {
     validateAndTransformSchema(schema, fitting = true, featuresDataType)
@@ -125,7 +126,7 @@ abstract class UnsupervisedModel[FeaturesType, M <: UnsupervisedModel[FeaturesTy
    *
    * The default value is VectorUDT, but it may be overridden if FeaturesType is not Vector.
    */
-  protected def featuresDataType: DataType = new VectorUDT
+  protected def featuresDataType: DataType = VectorUDT()
 
   override def transformSchema(schema: StructType): StructType = {
     validateAndTransformSchema(schema, fitting = false, featuresDataType)

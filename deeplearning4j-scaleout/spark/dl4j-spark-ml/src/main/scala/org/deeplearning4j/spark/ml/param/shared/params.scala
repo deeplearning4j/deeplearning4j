@@ -14,15 +14,13 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.ml.nn
+package org.deeplearning4j.spark.ml.param.shared
 
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.ml.param._
-
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.apache.spark.ml.param._;
 
 @DeveloperApi
-private[spark] trait HasMultiLayerConfiguration extends Params {
+private[ml] trait HasMultiLayerConfiguration extends Params {
 
   /**
    * Param for multiLayer configuration.
@@ -35,10 +33,27 @@ private[spark] trait HasMultiLayerConfiguration extends Params {
 }
 
 /**
+ * (private[ml]) Trait for shared param featuresCol (default: "features").
+ */
+private[ml] trait HasFeaturesCol extends Params {
+
+  /**
+   * Param for features column name.
+   * @group param
+   */
+  final val featuresCol: Param[String] = new Param[String](this, "featuresCol", "features column name")
+
+  setDefault(featuresCol, "features")
+
+  /** @group getParam */
+  final def getFeaturesCol: String = $(featuresCol)
+}
+
+/**
  * The reconstruction column is similar to 'prediction' but is typically a Vector, not Double
  */
 @DeveloperApi
-private[spark] trait HasReconstructionCol extends Params {
+private[ml] trait HasReconstructionCol extends Params {
 
   /**
    * Param for reconstruction column name.
@@ -52,7 +67,7 @@ private[spark] trait HasReconstructionCol extends Params {
 }
 
 @DeveloperApi
-private[spark] trait HasBatchSize extends Params {
+private[ml] trait HasBatchSize extends Params {
 
   /**
    * Param for batch size
@@ -65,7 +80,7 @@ private[spark] trait HasBatchSize extends Params {
 }
 
 @DeveloperApi
-private[spark] trait HasEpochs extends Params {
+private[ml] trait HasEpochs extends Params {
 
   /**
    * Param for epochs
@@ -78,7 +93,7 @@ private[spark] trait HasEpochs extends Params {
 }
 
 @DeveloperApi
-private[spark] trait HasLayerIndex extends Params {
+private[ml] trait HasLayerIndex extends Params {
 
   /**
    * Param for layer index

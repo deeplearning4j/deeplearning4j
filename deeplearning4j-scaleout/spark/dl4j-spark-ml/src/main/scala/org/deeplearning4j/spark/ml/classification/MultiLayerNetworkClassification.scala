@@ -14,35 +14,30 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.ml.classification
+package org.deeplearning4j.spark.ml.classification
 
-import org.apache.spark.ml.util.Identifiable
-import org.deeplearning4j.nn.layers.OutputLayer
-
-import scala.collection.JavaConversions._
-
-import org.apache.spark.SparkContext
-import org.apache.spark.annotation.{DeveloperApi, AlphaComponent}
+import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.ml.classification.{ClassificationModel, Classifier}
 import org.apache.spark.ml.param._
-import org.apache.spark.ml.nn._
-import org.apache.spark.mllib.linalg.{VectorUDT, BLAS, Vector, Vectors}
-import org.apache.spark.sql.types.{DataType, DoubleType, FloatType, IntegerType, StructField, StructType}
+import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
-
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
+import org.deeplearning4j.spark.ml.nn.ParameterAveragingTrainingStrategy
+import org.deeplearning4j.spark.ml.param.shared.{HasEpochs, HasMultiLayerConfiguration}
+import org.deeplearning4j.spark.ml.util.Identifiable
 import org.deeplearning4j.spark.util.MLLibUtil
-
-import org.nd4j.linalg.util.FeatureUtil
-import org.nd4j.linalg.factory.Nd4j
+import org.deeplearning4j.spark.util.conversions._
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.util.FeatureUtil
 
 /*
  * Parameters for neural network classification.
  */
-trait NeuralNetworkClassificationParams extends ProbabilisticClassifierParams 
+trait NeuralNetworkClassificationParams extends Params
   with HasMultiLayerConfiguration 
   with HasEpochs {
 }
@@ -59,14 +54,14 @@ trait NeuralNetworkClassificationParams extends ProbabilisticClassifierParams
  */
 @DeveloperApi
 class NeuralNetworkClassification(override val uid: String)
-  extends ProbabilisticClassifier[Vector, NeuralNetworkClassification, NeuralNetworkClassificationModel]
+  extends Classifier[Vector, NeuralNetworkClassification, NeuralNetworkClassificationModel]
   with NeuralNetworkClassificationParams {
 
   def this() = this(Identifiable.randomUID("nnClassification"))
 
   /** @group setParam */
   def setConf(value: String): this.type = set(conf, value)
-  def setConf(value: MultiLayerConfiguration): this.type = set(conf, value.toJson())
+  def setConf(value: MultiLayerConfiguration): this.type = set(conf, value.toJson)
 
   /** @group setParam */
   def setEpochs(value: Int): this.type = set(epochs, value)
@@ -77,11 +72,11 @@ class NeuralNetworkClassification(override val uid: String)
     val sc = sqlContext.sparkContext
     
     // parameters
-    @transient val c = MultiLayerConfiguration.fromJson($(conf));
+    @transient val c = MultiLayerConfiguration.fromJson($(conf))
 
     // prepare the dataset for classification
     val prepared = dataset.select($(labelCol), $(featuresCol))
-    val numClasses = c.getConf(c.getConfs().size() - 1).getnOut() // TODO - use ML column metadata 'numValues'
+    val numClasses = c.getConf(c.getConfs.size() - 1).getnOut // TODO - use ML column metadata 'numValues'
     val handlePersistence = dataset.rdd.getStorageLevel == StorageLevel.NONE
     if (handlePersistence) prepared.persist(StorageLevel.MEMORY_AND_DISK)
 
@@ -94,7 +89,10 @@ class NeuralNetworkClassification(override val uid: String)
 
           // features & labels
           val (features, labels) = rows.map { row =>
-            (MLLibUtil.toVector(row.getAs[Vector](1)), FeatureUtil.toOutcomeVector(row.getDouble(0).toInt, numClasses))
+            (
+              MLLibUtil.fromVector(row.getAs[Vector](1)),
+              FeatureUtil.toOutcomeVector(row.getDouble(0).toInt, numClasses)
+            )
           }.toIterable.unzip
           
           val featureMatrix = Nd4j.vstack(features.toArray: _*)
@@ -117,28 +115,14 @@ class NeuralNetworkClassificationModel private[ml] (
     override val uid: String,
     override val numClasses: Int,
     val networkParams: Broadcast[INDArray])
-  extends ProbabilisticClassificationModel[Vector, NeuralNetworkClassificationModel]
+  extends ClassificationModel[Vector, NeuralNetworkClassificationModel]
   with NeuralNetworkClassificationParams {
-  
-  override protected def predict(features: Vector): Double = {
-    val examples: INDArray = MLLibUtil.toVector(features)
-    
-    val predictions = getNetwork().predict(examples)
-    predictions(0)
-  }
-  
-  override protected def predictRaw(features: Vector): Vector = {
-    val examples: INDArray = MLLibUtil.toVector(features)
-    
-    val activationsByLayer = getNetwork().feedForward(examples)
-    MLLibUtil.toVector(activationsByLayer.get(activationsByLayer.size() - 1))
-  }
 
-  override protected def raw2probabilityInPlace(rawPrediction: Vector): Vector = {
-    val prediction: INDArray = MLLibUtil.toVector(rawPrediction)
-    val outputLayer = getNetwork().getOutputLayer.asInstanceOf[OutputLayer]
-    val probabilities: INDArray = outputLayer.labelProbabilities(prediction)
-    MLLibUtil.toVector(probabilities)
+  override protected def predictRaw(features: Vector): Vector = {
+    val examples: INDArray = MLLibUtil.fromVector(features)
+
+    // produces a probability distribution
+    MLLibUtil.toVector(network().output(examples))
   }
 
   override def copy(extra: ParamMap): NeuralNetworkClassificationModel = {
@@ -148,7 +132,7 @@ class NeuralNetworkClassificationModel private[ml] (
   @transient
   private var networkHolder: ThreadLocal[MultiLayerNetwork] = null
 
-  private def getNetwork(): MultiLayerNetwork = {
+  private def network(): MultiLayerNetwork = {
 
     if(networkHolder == null) {
       networkHolder = new ThreadLocal[MultiLayerNetwork] {

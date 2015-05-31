@@ -14,7 +14,7 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.ml.nn
+package org.deeplearning4j.spark.ml.nn
 
 import scala.collection.JavaConversions._
 

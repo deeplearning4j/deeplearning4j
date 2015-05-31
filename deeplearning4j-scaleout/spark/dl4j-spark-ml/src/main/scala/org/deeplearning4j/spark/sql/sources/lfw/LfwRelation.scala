@@ -1,18 +1,33 @@
+/*
+ * Copyright 2015 Skymind,Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 
-package org.apache.spark.sql.sources.lfw
+package org.deeplearning4j.spark.sql.sources.lfw
 
 import org.apache.hadoop.conf.{Configuration => HadoopConfiguration}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.mapreduce.lib.input.{CombineFileInputFormat, CombineFileRecordReader, CombineFileSplit}
 import org.apache.spark.Logging
-import org.apache.spark.mllib.linalg._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.sources.canova.{CanovaImageVectorizer, CanovaRecordReaderAdapter}
-import org.apache.spark.sql.sources.mapreduce.{PrunedReader, CachedStatus, LabelRecordReader, ColumnarRecordReader}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
+import org.deeplearning4j.spark.sql.sources.canova.{CanovaRecordReaderAdapter, CanovaImageVectorizer}
+import org.deeplearning4j.spark.sql.sources.mapreduce.{PrunedReader, ColumnarRecordReader, LabelRecordReader, CachedStatus}
+import org.deeplearning4j.spark.sql.types.VectorUDT
 
 /**
  * LFW dataset as a Spark SQL relation.
@@ -23,7 +38,7 @@ case class LfwRelation(location: String)(@transient val sqlContext: SQLContext)
 
   override def schema: StructType = StructType(
     StructField("label", StringType, nullable = false) ::
-      StructField("features", new VectorUDT, nullable = false) :: Nil)
+      StructField("features", VectorUDT(), nullable = false) :: Nil)
 
   override def buildScan(requiredColumns: Array[String]): RDD[Row] = {
 
@@ -46,7 +61,7 @@ case class LfwRelation(location: String)(@transient val sqlContext: SQLContext)
 
   override def equals(other: Any): Boolean = other match {
     case that: LfwRelation =>
-      (this.location == that.location) && this.schema.sameType(that.schema)
+      (this.location == that.location) && this.schema.equals(that.schema)
     case _ => false
   }
 }

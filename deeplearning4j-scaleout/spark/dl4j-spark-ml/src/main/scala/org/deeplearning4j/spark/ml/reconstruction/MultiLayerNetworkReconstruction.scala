@@ -14,28 +14,26 @@
  *    limitations under the License.
  */
 
-package org.apache.spark.ml.nn.reconstruction
+package org.deeplearning4j.spark.ml.reconstruction
 
-import org.apache.spark.SparkContext
-import org.apache.spark.annotation.{AlphaComponent, DeveloperApi}
+import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param._
-import org.apache.spark.ml.nn._
-import org.apache.spark.ml.{Estimator, Model}
-import org.apache.spark.ml.util.{Identifiable, SchemaUtils}
-import org.apache.spark.mllib.linalg.{Vector, VectorUDT}
-import org.apache.spark.sql.types.{DataType, DoubleType, FloatType, IntegerType, StructField, StructType, UserDefinedType}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
-
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
+import org.deeplearning4j.spark.ml.nn._
+import org.deeplearning4j.spark.ml.param.shared.{HasEpochs, HasLayerIndex, HasMultiLayerConfiguration, HasReconstructionCol}
+import org.deeplearning4j.spark.ml.util.{Identifiable, SchemaUtils}
+import org.deeplearning4j.spark.ml.{UnsupervisedLearner, UnsupervisedLearnerParams, UnsupervisedModel}
+import org.deeplearning4j.spark.sql.types.VectorUDT
 import org.deeplearning4j.spark.util.MLLibUtil
-
-import org.nd4j.linalg.util.FeatureUtil
-import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 
 /**
  * Parameters for neural network reconstruction.
@@ -52,7 +50,7 @@ trait NeuralNetworkReconstructionParams extends UnsupervisedLearnerParams
       featuresDataType: DataType): StructType = {
     
     val parentSchema = super.validateAndTransformSchema(schema, fitting, featuresDataType)
-    SchemaUtils.appendColumn(parentSchema, $(reconstructionCol), new VectorUDT)
+    SchemaUtils.appendColumn(parentSchema, $(reconstructionCol), VectorUDT())
   }
 }
 
@@ -76,7 +74,7 @@ class NeuralNetworkReconstruction(override val uid: String)
 
   /** @group setParam */
   def setConf(value: String): this.type = set(conf, value)
-  def setConf(value: MultiLayerConfiguration): this.type = set(conf, value.toJson())
+  def setConf(value: MultiLayerConfiguration): this.type = set(conf, value.toJson)
 
   /** @group setParam */
   def setEpochs(value: Int): this.type = set(epochs, value)
@@ -110,7 +108,7 @@ class NeuralNetworkReconstruction(override val uid: String)
         prepared.rdd, (network:MultiLayerNetwork, rows:Iterator[Row]) => {
           
           // features
-          val featureArrays = rows.map(row => MLLibUtil.toVector(row.getAs[Vector](0)))
+          val featureArrays = rows.map(row => MLLibUtil.fromVector(row.getAs[Vector](0)))
           val featureMatrix = Nd4j.vstack(featureArrays.toArray: _*)
          
           network.fit(featureMatrix)
@@ -139,7 +137,7 @@ class NeuralNetworkReconstructionModel private[ml] (
         reconstruct(features, $(layerIndex))
       }
       dataset.withColumn($(reconstructionCol),
-        callUDF(pred, new VectorUDT, col($(featuresCol))))
+        callUDF(pred, VectorUDT(), col($(featuresCol))))
     } else {
       this.logWarning(s"$uid: NeuralNetworkReconstructionModel.transform() was called as NOOP" +
         " since no output columns were set.")
@@ -148,8 +146,8 @@ class NeuralNetworkReconstructionModel private[ml] (
   }
   
   protected def reconstruct(features: Vector, layerIndex: Int): Vector = {
-    val examples: INDArray = MLLibUtil.toVector(features)
-    val reconstruction: INDArray = getNetwork().reconstruct(examples, layerIndex)
+    val examples: INDArray = MLLibUtil.fromVector(features)
+    val reconstruction: INDArray = network().reconstruct(examples, layerIndex)
     MLLibUtil.toVector(reconstruction)
   }
 
@@ -160,7 +158,7 @@ class NeuralNetworkReconstructionModel private[ml] (
   @transient
   private var networkHolder: ThreadLocal[MultiLayerNetwork] = null
 
-  private def getNetwork(): MultiLayerNetwork = {
+  private def network(): MultiLayerNetwork = {
 
     if(networkHolder == null) {
       networkHolder = new ThreadLocal[MultiLayerNetwork] {
