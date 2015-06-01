@@ -40,7 +40,11 @@ package object util {
       if (!array.isVector) {
         throw new IllegalArgumentException("implicit array must be a vector")
       }
-      Vectors.dense(array.data.asDouble)
+      val ret = new Array[Double](array.length)
+      for(i <- 0 to array.length)
+        ret(i) = array.getDouble(i)
+
+      return Vectors.dense(ret)
     }
   }
 }
