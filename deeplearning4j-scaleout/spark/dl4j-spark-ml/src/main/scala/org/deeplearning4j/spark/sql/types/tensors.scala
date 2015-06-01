@@ -16,11 +16,7 @@
 
 package org.deeplearning4j.spark.sql.types
 
-import java.net.URI
-
-import org.apache.hadoop.fs.Path
-import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.mllib.linalg.DenseVector
+import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericMutableRow
 import org.apache.spark.sql.types._
@@ -29,13 +25,26 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
 
+/**
+ * A multidimensional array structure.
+ * @param array initialization data
+ */
+@Experimental
 @SQLUserDefinedType(udt = classOf[TensorUDT])
 case class Tensor(val array: INDArray) {
 
+  def toArray: INDArray = array
+
+  override def toString: String = array.shape.mkString("[", "x", "]")
 }
 
+/**
+ * Tensor UDT for dataframe/SQL interoperability.
+ *
+ * @author Eron Wright
+ */
 @DeveloperApi
-private[spark] class TensorUDT extends UserDefinedType[Tensor] {
+class TensorUDT extends UserDefinedType[Tensor] {
   override def sqlType: StructType = {
     StructType(Seq(
       StructField("shape", ArrayType(IntegerType, containsNull = false), nullable = false),

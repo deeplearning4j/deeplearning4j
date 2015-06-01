@@ -27,6 +27,12 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j;
 import org.apache.spark.rdd.RDD
 
+/**
+ * An abstract training strategy for a distributed neural network, given partitions of data.
+ * @tparam RowType
+ *
+ * @author Eron Wright
+ */
 private[spark] abstract class TrainingStrategy[RowType]{
   /**
    * Train a network in some way.
@@ -46,6 +52,8 @@ private[spark] abstract class TrainingStrategy[RowType]{
  * 1. broadcast the parameters to all workers.
  * 2. train a local network on each partition until the network converges (i.e. after some iterations).
  * 3. accumulate the final parameters from each partition and compute an average.
+ *
+ * @author Eron Wright
  */
 private[spark] class ParameterAveragingTrainingStrategy[RowType](
     @transient val conf: MultiLayerConfiguration,

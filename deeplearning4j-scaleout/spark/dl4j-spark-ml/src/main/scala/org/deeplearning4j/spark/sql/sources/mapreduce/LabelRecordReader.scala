@@ -24,6 +24,8 @@ import org.apache.spark.sql.Row
  * A record reader that produces labels based on the filesystem path.
  *
  * Produces a single row for each path in the split.
+ *
+ * @author Eron Wright
  */
 class LabelRecordReader(val split: CombineFileSplit, val context: TaskAttemptContext, val index: Integer)
   extends RecordReader[String,Row] {

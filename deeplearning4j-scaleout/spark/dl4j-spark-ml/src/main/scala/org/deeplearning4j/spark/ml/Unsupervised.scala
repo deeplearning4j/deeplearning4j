@@ -55,6 +55,8 @@ trait UnsupervisedLearnerParams extends Params
 
 /**
  * Abstract unsupervised learning algorithm.
+ *
+ * @author Eron Wright
  */
 @DeveloperApi
 abstract class UnsupervisedLearner[
@@ -110,6 +112,8 @@ abstract class UnsupervisedLearner[
  *                       E.g., [[org.apache.spark.mllib.linalg.VectorUDT]] for vector features.
  * @tparam M  Specialization of [[Model]].  If you subclass this type, use this type
  *            parameter to specify the concrete type for the corresponding model.
+ *
+ * @author Eron Wright
  */
 @DeveloperApi
 abstract class UnsupervisedModel[FeaturesType, M <: UnsupervisedModel[FeaturesType, M]]

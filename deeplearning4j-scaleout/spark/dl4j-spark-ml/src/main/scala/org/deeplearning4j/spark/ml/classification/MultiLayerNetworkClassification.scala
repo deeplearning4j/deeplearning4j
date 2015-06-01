@@ -51,6 +51,8 @@ trait NeuralNetworkClassificationParams extends Params
  * Noteworthy parameters:
  *  - conf        - the multilayer configuration
  *  - epochs      - the number of full passes over the dataset, with convergence on each pass.
+ *
+ *  @author Eron Wright
  */
 @DeveloperApi
 class NeuralNetworkClassification(override val uid: String)
@@ -109,6 +111,8 @@ class NeuralNetworkClassification(override val uid: String)
 
 /**
  * Neural network-based classification model.
+ *
+ * @author Eron Wright
  */
 @DeveloperApi
 class NeuralNetworkClassificationModel private[ml] (

@@ -29,7 +29,11 @@ import org.canova.image.recordreader.{ImageRecordReader => CanovaImageRecordRead
 
 import scala.collection.JavaConversions._
 
-
+/**
+ * Vectorizes an image file using Canova image reader.
+ *
+ * @author Eron Wright
+ */
 trait CanovaImageVectorizer extends CanovaRecordReaderAdapter {
 
   val reader = new CanovaImageRecordReader
@@ -54,54 +58,23 @@ trait CanovaImageVectorizer extends CanovaRecordReaderAdapter {
 
 object CanovaImageVectorizer {
 
+  /**
+   * Specify the target width of the image.
+   * @param conf
+   * @param width
+   */
   def setWidth(conf: HadoopConfiguration, width: Int) = {
     conf.setInt(CanovaImageRecordReader.WIDTH, width)
   }
+
+  /**
+   * Specify the target height of the image.
+   * @param conf
+   * @param height
+   */
   def setHeight(conf: HadoopConfiguration, height: Int) = {
     conf.setInt(CanovaImageRecordReader.HEIGHT, height)
   }
 }
-
-
-/**
- * Default image extractor based on ImageIO.
- * Assumes that all input images are the same dimensions.
- */
-//class DefaultImageExtractor
-//  extends HadoopFileTransformer[Vector, DefaultImageExtractor] {
-//
-//  protected def outputDataType = new VectorUDT
-//
-//  protected def createTransformFunc(dataset: DataFrame, paramMap: ParamMap): HadoopFile => Vector = {
-//
-//    stream(dataset.sqlContext, (stream: FSDataInputStream) => {
-//      val istream = ImageIO.createImageInputStream(stream)
-//      try {
-//        val ireader = ImageIO.getImageReaders(istream).find(_ => true).get
-//
-//        val param = ireader.getDefaultReadParam()
-//        //        dimension match {
-//        //          case Some(d) =>
-//        //            if (param.canSetSourceRenderSize) {
-//        //              param.setSourceRenderSize(d)
-//        //            }
-//        //            else throw new NotImplementedError("resize for provided image type")
-//        //          case None =>
-//        //        }
-//
-//        ireader.setInput(istream)
-//        val image: BufferedImage = ireader.read(0, param)
-//
-//        val rgbArray = new Array[Int](image.getWidth * image.getHeight)
-//        image.getRGB(0, 0, image.getWidth, image.getHeight, rgbArray, 0, image.getWidth)
-//        Vectors.dense(rgbArray.map(_.asInstanceOf[Float].asInstanceOf[Double]))
-//      }
-//      finally {
-//        istream.close()
-//      }
-//    })
-//  }
-//}
-//
 
 
