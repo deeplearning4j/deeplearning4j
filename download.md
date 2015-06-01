@@ -9,9 +9,9 @@ To install Deeplearning4J, there are a couple approaches (briefly described belo
 
 #### Use Maven Central Repository
 
-    Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of jars you can use
+1. Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of jars you can use
 
-    Add the dependency information into your pom.xml
+2. Add the dependency information into your pom.xml
 
 #### Clone from the GitHub Repo
 Deeplearning4J is being actively developed and you can clone the repository, compile it and reference it in your project.
@@ -39,7 +39,7 @@ Create a yum repo and run yum install to load the Red Hat Package Management (RP
 
 Add the following to the dl4j.repo file:
 
-'''
+
 
     [dl4j.repo]
 
@@ -47,7 +47,7 @@ Add the following to the dl4j.repo file:
     baseurl=http://ec2-52-5-255-24.compute-1.amazonaws.com/repo/RPMS
     enabled=1
     gpgcheck=0
-'''
+
 
 Then run the following command on the dl4j repo packages to install them on your machine:
 
