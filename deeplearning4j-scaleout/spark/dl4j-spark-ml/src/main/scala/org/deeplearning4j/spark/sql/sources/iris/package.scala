@@ -27,6 +27,4 @@ package object iris {
     def iris(filePath: String) =
       sqlContext.baseRelationToDataFrame(IrisRelation(filePath)(sqlContext))
   }
-
-
 }

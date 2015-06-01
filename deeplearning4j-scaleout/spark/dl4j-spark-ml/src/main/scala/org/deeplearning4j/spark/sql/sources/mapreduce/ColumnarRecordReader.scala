@@ -23,6 +23,10 @@ import org.apache.spark.sql.Row
 /**
  * Record reader of rows consisting of columns produced by one or more associated readers.
  * @param readers a sequence of readers whose rows are to be zipped (merged).
+ *
+ * Reading stops when any one reader reaches EOF.
+ *
+ * @author Eron Wright
  */
 class ColumnarRecordReader(val readers: (String,HadoopRecordReader[String,Row])*)
   extends HadoopRecordReader[String,Row] {

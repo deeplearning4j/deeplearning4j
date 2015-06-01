@@ -20,6 +20,9 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.types.{DataType, SQLUserDefinedType}
 
 object VectorUDT {
+  /**
+   * Get the UDT associated with the {@code org.apache.spark.mllib.linalg.Vector} type.
+   */
   def apply(): DataType = {
     classOf[Vector].getAnnotation(classOf[SQLUserDefinedType]).udt().newInstance()
   }

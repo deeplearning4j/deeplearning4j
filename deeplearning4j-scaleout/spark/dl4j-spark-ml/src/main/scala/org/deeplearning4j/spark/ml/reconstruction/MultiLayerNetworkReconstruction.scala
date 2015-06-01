@@ -64,6 +64,8 @@ trait NeuralNetworkReconstructionParams extends UnsupervisedLearnerParams
  *  - conf        - the multilayer configuration
  *  - layer index - the neural network layer to use for reconstruction (by default, the input layer)
  *  - epochs      - the number of full passes over the dataset, with convergence on each pass.
+ *
+ *  @author Eron Wright
  */
 @DeveloperApi
 class NeuralNetworkReconstruction(override val uid: String)
@@ -122,6 +124,8 @@ class NeuralNetworkReconstruction(override val uid: String)
 
 /**
  * Neural network-based reconstruction model.
+ *
+ * @author Eron Wright
  */
 @DeveloperApi
 class NeuralNetworkReconstructionModel private[ml] (
