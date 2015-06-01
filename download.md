@@ -3,6 +3,7 @@ title: "Downloads"
 layout: default
 ---
 
+# Downloads
 
 To install Deeplearning4J, there are a couple approaches (briefly described below). More information can be found on the  [ND4J website](http://nd4j.org/getstarted.html).
 
