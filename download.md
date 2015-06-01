@@ -1,5 +1,5 @@
 ---
-title: Downloads
+title: "Downloads"
 layout: default
 ---
 
