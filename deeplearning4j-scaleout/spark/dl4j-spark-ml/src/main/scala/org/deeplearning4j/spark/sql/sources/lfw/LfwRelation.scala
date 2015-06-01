@@ -31,6 +31,8 @@ import org.deeplearning4j.spark.sql.types.VectorUDT
 
 /**
  * LFW dataset as a Spark SQL relation.
+ *
+ * @author Eron Wright
  */
 case class LfwRelation(location: String)(@transient val sqlContext: SQLContext)
   extends BaseRelation
@@ -66,6 +68,9 @@ case class LfwRelation(location: String)(@transient val sqlContext: SQLContext)
   }
 }
 
+/**
+ * LFW input format that produces a Row with 'label' and 'features' columns.
+ */
 private class LfwInputFormat
   extends CombineFileInputFormat[String, Row]
   with CachedStatus
@@ -83,7 +88,7 @@ private class LfwInputFormat
   }
 }
 
-class LfwImageRecordReader(split: CombineFileSplit, context: TaskAttemptContext, index: Integer)
+private class LfwImageRecordReader(split: CombineFileSplit, context: TaskAttemptContext, index: Integer)
   extends CanovaRecordReaderAdapter(split, context, index)
   with CanovaImageVectorizer {
 }

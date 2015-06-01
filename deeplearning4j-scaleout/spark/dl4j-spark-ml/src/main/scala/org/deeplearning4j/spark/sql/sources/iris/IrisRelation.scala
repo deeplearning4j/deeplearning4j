@@ -34,6 +34,8 @@ import org.deeplearning4j.spark.sql.types.VectorUDT
 
 /**
  * Iris dataset as a Spark SQL relation.
+ *
+ * @author Eron Wright
  */
 case class IrisRelation(location: String)(@transient val sqlContext: SQLContext)
   extends BaseRelation

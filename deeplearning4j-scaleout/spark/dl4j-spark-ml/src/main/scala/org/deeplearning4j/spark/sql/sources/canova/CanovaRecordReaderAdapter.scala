@@ -16,27 +16,24 @@
 
 package org.deeplearning4j.spark.sql.sources.canova
 
-import java.util
-
 import org.apache.hadoop.fs.FSDataInputStream
-import org.apache.hadoop.mapreduce.TaskAttemptContext
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit
-import org.apache.hadoop.mapreduce.{InputSplit=>HadoopInputSplit,RecordReader=>HadoopRecordReader}
+import org.apache.hadoop.mapreduce.{InputSplit => HadoopInputSplit, RecordReader => HadoopRecordReader, TaskAttemptContext}
 import org.apache.spark.Logging
 import org.apache.spark.sql.Row
-import org.canova.api.split.InputStreamInputSplit
-import org.canova.api.records.reader.{RecordReader=>CanovaRecordReader}
-import org.canova.api.writable.{Writable=>CanovaWritable}
 import org.canova.api.conf.{Configuration => CanovaConfiguration}
-import org.canova.api.io.data.{DoubleWritable, FloatWritable}
+import org.canova.api.records.reader.{RecordReader => CanovaRecordReader}
 import org.canova.api.split.InputStreamInputSplit
-
-import scala.reflect.ClassTag
-
-
+import org.canova.api.writable.{Writable => CanovaWritable}
 
 /**
- * Adapts a Canova reader to Hadoop.
+ * Adapts a Canova record reader to Hadoop.
+ *
+ * The subclass provides a concrete Canova reader.
+ * Each split is fed to the reader as an input stream.   For CombineFileSplit, the stream
+ * corresponds to a single file.
+ *
+ * @author Eron Wright
  */
 abstract class CanovaRecordReaderAdapter(val split: CombineFileSplit, val context: TaskAttemptContext, val index: Integer)
   extends HadoopRecordReader[String,Row]
