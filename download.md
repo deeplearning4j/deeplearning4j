@@ -1,11 +1,9 @@
-Deeplearning4J: Neural Net Platform
-=========================
- 
-
-Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPus. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
-
 ---
-## Installation
+title: Downloads
+layout: default
+---
+
+
 To install Deeplearning4J, there are a couple approaches (briefly described below). More information can be found on the  [ND4J website](http://nd4j.org/getstarted.html).
 
 #### Use Maven Central Repository
