@@ -1,62 +1,58 @@
+Deeplearning4J: Neural Net Platform
+=========================
+ 
+
+Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPus. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
+
 ---
-title: 
-layout: default
----
+## Installation
+To install Deeplearning4J, there are a couple approaches (briefly described below). More information can be found on the  [ND4J website](http://nd4j.org/getstarted.html).
 
-# ND4J
+#### Use Maven Central Repository
 
-DeepLearning4j uses [ND4J](http://nd4j.org/) as its scientific computing kernel for matrix operations. To get started with Deeplearning4j, you need to pick an [ND4J backend](http://nd4j.org/downloads.html), which will rely on GPUs or native computations. 
+    Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of jars you can use
 
-##Why Swappable Backends?
+    Add the dependency information into your pom.xml
 
-Many deep learning researchers have standardized on Cuda GPUs for parallel processing and matrix computations. Unfortunately, industry practicioners have to grapple with more limited options due to legacy hardware. Even facing such limitations, throwing CPUs at a deep-learning problem can significantly increase its speed. 
+#### Clone from the GitHub Repo
+Deeplearning4J is being actively developed and you can clone the repository, compile it and reference it in your project.
 
-We created ND4J because no JVM Blas-based libraries allowed users to have a swappable interface for different fast-matrix operations. Swappable backends (a la [SLF4J](http://slf4j.org/)) were the only answer. 
+Clone the repository:
 
-In addition, we felt a common API for creating machine-learning algorithms was a worthy goal. No one wants to rewrite their libraries if they find that their matrix run-time is faster.
+    $ git clone git://github.com/deeplearning4j/deeplearning4j.git
 
-##Downloads
+Compile the project:
 
-Below, you will find bundled downloads of deeplearning4j for GPUs and native, among other components.
+    $ cd deeplearning4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-Much like [ND4J backend downloads](http://nd4j.org/downloads.html), Deeplearning4j needs an implementation of ND4J to use. Below are several binary bundles you can use bundled with different backends.
+Add the local compiled file dependencies to your pom.xml file. Here's an example of what they'll look like:
 
-#Native
+    <dependency>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j-cli</artifactId>
+        <version>0.0.3.3.4.alpha1-SNAPSHOT</version>
+    </dependency>
 
-## Jblas
+#### Yum Install / Load RPM (Fedora or CentOS)
+Create a yum repo and run yum install to load the Red Hat Package Management (RPM) files. First create the repo file to setup the configuration locally.
 
-### Latest
-* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.gz)
-* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.tar.bz2)
-* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jblas/deeplearning4j-dist-bin.zip)
+    $ sudo vi /etc/yum.repos.d/dl4j.repo 
 
-### 0.0.3.2.5
-* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.gz)
-* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.bz2)
-* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.zip)
+Add the following to the dl4j.repo file:
 
-## Netlib Blas
+'''
 
-### Latest
-* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.tar.gz)
-* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.tar.bz2)
-* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/netlib-blas/deeplearning4j-dist-bin.zip)
+    [dl4j.repo]
 
-### 0.0.3.2.5
-* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.gz)
-* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.tar.bz2)
-* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jblas/deeplearning4j-dist-bin.zip)
+    name=dl4j-repo
+    baseurl=http://ec2-52-5-255-24.compute-1.amazonaws.com/repo/RPMS
+    enabled=1
+    gpgcheck=0
+'''
 
-# GPUs
+Then run the following command on the dl4j repo packages to install them on your machine:
 
-## Jcublas
+    $ sudo yum install [package name] -y
+    $ sudo yum install DL4J-Distro -y 
 
-###Latest
-* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.tar.gz)
-* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.tar.bz2)
-* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/latest/jcublas/deeplearning4j-dist-bin.zip)
-
-###0.0.3.2.5
-* [tar archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.tar.gz)
-* [bz2 archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.tar.bz2)
-* [zip archive](https://s3.amazonaws.com/dl4j-distribution/releases/0.0.3.2.5/jcublas/deeplearning4j-dist-bin.zip)
+Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
