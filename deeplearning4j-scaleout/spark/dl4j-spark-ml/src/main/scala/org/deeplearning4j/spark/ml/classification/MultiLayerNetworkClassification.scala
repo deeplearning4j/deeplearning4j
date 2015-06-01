@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.ml.classification
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.ml.attribute.{Attribute, NominalAttribute}
 import org.apache.spark.ml.classification.{ClassificationModel, Classifier}
 import org.apache.spark.ml.param._
 import org.apache.spark.mllib.linalg.Vector
@@ -78,9 +79,24 @@ class NeuralNetworkClassification(override val uid: String)
 
     // prepare the dataset for classification
     val prepared = dataset.select($(labelCol), $(featuresCol))
-    val numClasses = c.getConf(c.getConfs.size() - 1).getnOut // TODO - use ML column metadata 'numValues'
     val handlePersistence = dataset.rdd.getStorageLevel == StorageLevel.NONE
     if (handlePersistence) prepared.persist(StorageLevel.MEMORY_AND_DISK)
+
+    // resolve the number of classes/outcomes
+    val outputLayer = c.getConf(c.getConfs.size() - 1)
+    val numClasses = outputLayer.getnOut match {
+      case 0 => {
+        Attribute.fromStructField(dataset.schema($(labelCol))) match {
+          case (attr: NominalAttribute) => attr.getNumValues match {
+            case Some(value: Int) => value
+            case _ => throw new UnsupportedOperationException("expected numValues on nominal attribute")
+          }
+          case _ => throw new UnsupportedOperationException(s"column ${$(labelCol)} must be indexed")
+        }
+      }
+      case n => n
+    }
+    outputLayer.setnOut(numClasses)
 
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](c, $(epochs))
