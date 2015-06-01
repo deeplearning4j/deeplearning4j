@@ -20,10 +20,7 @@
 package org.nd4j.linalg.java;
 
 import com.github.fommil.netlib.LAPACK;
-import org.jblas.ComplexDouble;
-import org.jblas.ComplexFloat;
-import org.jblas.NativeBlas;
-import org.jblas.exceptions.SizeException;
+
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -33,7 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.netlib.util.intW;
 
-import static org.jblas.util.Functions.*;
 
 
 /**
@@ -223,46 +219,14 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         DataTypeValidation.assertDouble(a, x, y);
         if (y.isScalar())
             return y.putScalar(0, dotc(a, x));
-        NativeBlas.zgemv(
-                'N',
-                a.rows(),
-                a.columns(),
-                (ComplexDouble) alpha,
-                a.data().asDouble(),
-                a.blasOffset(),
-                a.rows(),
-                x.data().asDouble(),
-                x.offset(),
-                x.secondaryStride(),
-                (ComplexDouble) beta,
-                y.data().asDouble(),
-                y.blasOffset(),
-                y.secondaryStride()
-        );
-        return y;
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
         DataTypeValidation.assertDouble(a, x, y);
-        NativeBlas.cgemv(
-                'N',
-                a.rows(),
-                a.columns(),
-                (ComplexFloat) alpha,
-                a.data().asFloat(),
-                a.blasOffset(),
-                a.rows(),
-                x.data().asFloat(),
-                x.offset(),
-                x.secondaryStride(),
-                (ComplexFloat) beta,
-                y.data().asFloat(),
-                y.blasOffset(),
-                y.secondaryStride()
-        );
-        return y;
+        throw new UnsupportedOperationException();
     }
 
 
@@ -766,90 +730,7 @@ public class NetlibBlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     @Override
     public void gelsd(INDArray A, INDArray B) {
-
-        int m = A.rows();
-        int n = A.columns();
-        int nrhs = B.columns();
-        int minmn = min(m, n);
-        int maxmn = max(m, n);
-
-
-        if (B.rows() < maxmn) {
-            throw new SizeException("Result matrix B must be padded to contain the solution matrix X!");
-        }
-
-        int smlsiz = NativeBlas.ilaenv(9, "DGELSD", "", m, n, nrhs, 0);
-        int nlvl = max(0, (int) log2(minmn / (smlsiz + 1)) + 1);
-
-        int lwork = 0;
-        int[] iwork = new int[3 * minmn * nlvl + 11 * minmn];
-
-
-        if (A.data().dataType() == DataBuffer.Type.FLOAT) {
-            float[] s = new float[minmn];
-            float[] work = new float[1];
-
-            intW rank = new intW(1);
-            intW info = new intW(0);
-
-            float rCond = -1f;
-
-
-            LAPACK.getInstance().sgelsd(
-                    m,
-                    n,
-                    nrhs,
-                    A.data().asFloat(),
-                    A.offset(),
-                    A.rows(),
-                    B.data().asFloat(),
-                    B.offset(),
-                    B.rows(),
-                    s,
-                    0,
-                    rCond,
-                    rank,
-                    work,
-                    0,
-                    lwork,
-                    iwork,
-                    0,
-                    info
-
-            );
-        } else {
-            double[] s = new double[minmn];
-            double[] work = new double[1];
-
-            intW rank = new intW(1);
-            intW info = new intW(0);
-
-            float rCond = -1f;
-
-
-            LAPACK.getInstance().dgelsd(
-                    m,
-                    n,
-                    nrhs,
-                    A.data().asDouble(),
-                    A.offset(),
-                    A.rows(),
-                    B.data().asDouble(),
-                    B.offset(),
-                    B.rows(),
-                    s,
-                    0,
-                    rCond,
-                    rank,
-                    work,
-                    0,
-                    lwork,
-                    iwork,
-                    0,
-                    info
-
-            );
-        }
+        throw new UnsupportedOperationException();
 
 
     }

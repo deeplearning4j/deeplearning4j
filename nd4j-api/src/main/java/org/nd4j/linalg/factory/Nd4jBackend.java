@@ -134,6 +134,7 @@ public abstract class Nd4jBackend {
             }
         });
 
+
         for(Nd4jBackend backend: reflectionBackends) {
             if(!backend.isAvailable()) {
                 log.trace("Skipped [{}] backend (unavailable)", backend.getClass().getSimpleName());

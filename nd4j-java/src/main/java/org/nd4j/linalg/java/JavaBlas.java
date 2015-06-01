@@ -21,7 +21,6 @@ package org.nd4j.linalg.java;
 
 import com.github.fommil.netlib.BLAS;
 import com.github.fommil.netlib.LAPACK;
-import org.jblas.NativeBlas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -124,48 +123,7 @@ public class JavaBlas {
      */
     public static IComplexNDArray gemm(IComplexNDArray A, IComplexNDArray B, IComplexNumber a, IComplexNDArray C
             , IComplexNumber b) {
-        DataTypeValidation.assertSameDataType(A, B, C);
-        if (A.data().dataType() == DataBuffer.Type.FLOAT)
-            NativeBlas.cgemm(
-                    'N',
-                    'N',
-                    C.rows(),
-                    C.columns(),
-                    A.columns(),
-                    new ComplexFloat(a.realComponent().floatValue(), a.imaginaryComponent().floatValue()),
-                    A.data().asFloat(),
-                    A.offset() / 2,
-                    A.rows(),
-                    B.data().asFloat(),
-                    B.offset() / 2,
-                    B.rows(),
-                    new ComplexFloat(b.realComponent().floatValue(), b.imaginaryComponent().floatValue())
-                    ,
-                    C.data().asFloat(),
-                    C.offset() / 2,
-                    C.rows());
-        else if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            NativeBlas.zgemm(
-                    'N',
-                    'N',
-                    C.rows(),
-                    C.columns(),
-                    A.columns(),
-                    new ComplexDouble(a.realComponent().doubleValue(), a.imaginaryComponent().doubleValue()),
-                    A.data().asDouble(),
-                    A.offset() / 2,
-                    A.rows(),
-                    B.data().asDouble(),
-                    B.offset() / 2,
-                    B.rows(),
-                    new ComplexDouble(b.realComponent().doubleValue(), b.imaginaryComponent().doubleValue())
-                    ,
-                    C.data().asDouble(),
-                    C.offset() / 2,
-                    C.rows());
-        }
-        return C;
-
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -428,10 +386,7 @@ public class JavaBlas {
      * @return
      */
     public static int iamax(IComplexNDArray x) {
-        if (x.data().dataType() == DataBuffer.Type.FLOAT)
-            return NativeBlas.icamax(x.length(), x.data().asFloat(), x.offset(), 1) - 1;
-        else
-            return NativeBlas.izamax(x.length(), x.data().asDouble(), x.offset(), 1) - 1;
+        throw new UnsupportedOperationException();
 
     }
 
@@ -440,10 +395,7 @@ public class JavaBlas {
      * @return
      */
     public static double asum(IComplexNDArray x) {
-        if (x.data().dataType() == DataBuffer.Type.FLOAT)
-            return NativeBlas.scasum(x.length(), x.data().asFloat(), x.offset(), x.majorStride());
-        else
-            return NativeBlas.dzasum(x.length(), x.data().asDouble(), x.offset(), x.majorStride());
+        throw new UnsupportedOperationException();
 
     }
 
@@ -631,27 +583,7 @@ public class JavaBlas {
      */
     public static void axpy(IComplexNumber da, IComplexNDArray A, IComplexNDArray B) {
         DataTypeValidation.assertSameDataType(A, B);
-
-        if (A.data().dataType() == DataBuffer.Type.FLOAT)
-            NativeBlas.caxpy(
-                    A.length(),
-                    new org.jblas.ComplexFloat(da.realComponent().floatValue(), da.imaginaryComponent().floatValue()),
-                    A.data().asFloat(),
-                    A.offset(),
-                    A.majorStride(),
-                    B.data().asFloat(),
-                    B.offset(),
-                    A.majorStride());
-        else
-            NativeBlas.zaxpy(
-                    A.length(),
-                    new org.jblas.ComplexDouble(da.realComponent().doubleValue(), da.imaginaryComponent().doubleValue()),
-                    A.data().asDouble(),
-                    A.offset(),
-                    A.majorStride(),
-                    B.data().asDouble(),
-                    B.offset(),
-                    B.majorStride());
+        throw new UnsupportedOperationException();
 
 
     }
@@ -781,29 +713,7 @@ public class JavaBlas {
      */
     public static IComplexDouble dot(IComplexNDArray x, IComplexNDArray y) {
         DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            ComplexFloat f = new ComplexFloat(NativeBlas.cdotc(
-                    x.length(),
-                    x.data().asFloat(),
-                    x.blasOffset() / 2,
-                    x.secondaryStride(),
-                    y.data().asFloat(),
-                    y.offset() / 2,
-                    y.secondaryStride()));
-            return new ComplexDouble(f.realComponent().doubleValue(), f.imaginaryComponent().doubleValue());
-
-        } else {
-            ComplexDouble f = new ComplexDouble(NativeBlas.zdotc(
-                    x.length(),
-                    x.data().asDouble(),
-                    x.offset() / 2,
-                    x.secondaryStride(),
-                    y.data().asDouble(),
-                    y.offset() / 2,
-                    y.secondaryStride()));
-            return new ComplexDouble(f.realComponent().doubleValue(), f.imaginaryComponent().doubleValue());
-
-        }
+        throw new UnsupportedOperationException();
     }
 
 
@@ -865,28 +775,7 @@ public class JavaBlas {
      * @return
      */
     public static IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
-        DataTypeValidation.assertSameDataType(x, y);
-        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
-            return new ComplexFloat(NativeBlas.cdotu(
-                    x.length(),
-                    x.data().asFloat(),
-                    x.offset() / 2,
-                    x.majorStride(),
-                    y.data().asFloat(),
-                    y.offset() / 2,
-                    y.majorStride()));
-
-        } else {
-            return new ComplexDouble(NativeBlas.zdotu(
-                    x.length(),
-                    x.data().asDouble(),
-                    x.offset() / 2,
-                    x.majorStride(),
-                    y.data().asDouble(),
-                    y.offset() / 2,
-                    y.majorStride()));
-
-        }
+        throw new UnsupportedOperationException();
 
     }
 
@@ -899,35 +788,7 @@ public class JavaBlas {
      */
     public static IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
         DataTypeValidation.assertSameDataType(x, y, a);
-        if (x.data().dataType() == DataBuffer.Type.FLOAT)
-            NativeBlas.cgeru(
-                    a.rows(),
-                    a.columns(),
-                    new ComplexFloat(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                    x.data().asFloat(),
-                    x.offset() / 2,
-                    x.majorStride(),
-                    y.data().asFloat(),
-                    y.offset() / 2,
-                    y.majorStride(),
-                    a.data().asFloat(),
-                    a.offset(),
-                    a.rows());
-        else
-            NativeBlas.zgeru(
-                    a.rows(),
-                    a.columns(),
-                    new ComplexDouble(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue()),
-                    x.data().asDouble(),
-                    x.offset() / 2,
-                    x.majorStride(),
-                    y.data().asDouble(),
-                    y.offset() / 2,
-                    y.majorStride(),
-                    a.data().asDouble(),
-                    a.offset(),
-                    a.rows());
-        return a;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -940,35 +801,7 @@ public class JavaBlas {
     public static IComplexNDArray gerc(IComplexNDArray x, IComplexNDArray y, IComplexNDArray a,
                                        IComplexDouble alpha) {
         DataTypeValidation.assertDouble(x, y, a);
-        if (x.data().dataType() == DataBuffer.Type.FLOAT)
-            NativeBlas.cgerc(
-                    a.rows(),
-                    a.columns(),
-                    (ComplexFloat) alpha,
-                    x.data().asFloat(),
-                    x.offset() / 2,
-                    x.majorStride(),
-                    y.data().asFloat(),
-                    y.offset() / 2,
-                    y.majorStride(),
-                    a.data().asFloat(),
-                    a.offset(),
-                    a.rows());
-        else
-            NativeBlas.zgerc(
-                    a.rows(),
-                    a.columns(),
-                    (ComplexDouble) alpha,
-                    x.data().asDouble(),
-                    x.offset() / 2,
-                    x.majorStride(),
-                    y.data().asDouble(),
-                    y.offset() / 2,
-                    y.majorStride(),
-                    a.data().asDouble(),
-                    a.offset(),
-                    a.rows());
-        return a;
+        throw new UnsupportedOperationException();
     }
 
 
@@ -980,8 +813,7 @@ public class JavaBlas {
      * @return
      */
     public static IComplexNDArray dscal(IComplexDouble alpha, IComplexNDArray x) {
-        NativeBlas.zscal(x.length(), (org.jblas.ComplexDouble) alpha, x.data().asDouble(), x.offset() / 2, x.majorStride());
-        return x;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -993,8 +825,7 @@ public class JavaBlas {
      */
     public static IComplexNDArray sscal(IComplexFloat alpha, IComplexNDArray x) {
         DataTypeValidation.assertFloat(x);
-        NativeBlas.cscal(x.length(), (org.jblas.ComplexFloat) alpha, x.data().asFloat(), x.offset() / 2, x.majorStride());
-        return x;
+        throw new UnsupportedOperationException();
     }
 
 
