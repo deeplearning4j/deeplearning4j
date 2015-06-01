@@ -75,6 +75,11 @@ public class MLLibUtil {
         if(!arr.isVector()) {
             throw new IllegalArgumentException("passed in array must be a vector");
         }
-        return Vectors.dense(arr.data().asDouble());
+        double[] ret = new double[arr.length()];
+        for(int i = 0; i < arr.length(); i++) {
+            ret[i] = arr.getDouble(i);
+        }
+
+        return Vectors.dense(ret);
     }
 }
