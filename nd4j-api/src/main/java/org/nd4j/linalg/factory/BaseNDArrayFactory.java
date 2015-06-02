@@ -938,7 +938,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         else if (toConcat[0].isVector()) {
             if (toConcat[0].isRowVector()) {
                 if (dimension == 1 || dimension == 0) {
-                    INDArray ret = Nd4j.create(toConcat.length * toConcat[0].length());
+                    int length = 0;
+                    for(INDArray toConcat2 : toConcat)
+                        length += toConcat2.length();
+
+                    INDArray ret = Nd4j.create(1,length);
                     int count = 0;
                     for (INDArray arr : toConcat) {
                         for (int i = 0; i < arr.length(); i++) {
