@@ -399,6 +399,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(true, columnVector.isColumnVector());
     }
 
+    @Test
+    public void testConcatColumnWise() {
+        INDArray rand = Nd4j.rand(123,new int[]{1,1000});
+        INDArray otherParameters = Nd4j.toFlattened(rand);
+        INDArray wordvectors = Nd4j.rand(100, 68000);
+        INDArray flattened = Nd4j.toFlattened(wordvectors);
+        Nd4j.concat(0, otherParameters,flattened);
+    }
 
     @Test
     public void testAssignOffset() {

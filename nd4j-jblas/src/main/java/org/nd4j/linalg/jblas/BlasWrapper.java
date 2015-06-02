@@ -457,6 +457,10 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemv(double alpha, INDArray a,
                          INDArray x, double beta, INDArray y) {
+        if(x.data().dataType() == DataBuffer.Type.FLOAT) {
+            return gemv((float) alpha,a,x,(float) beta,y);
+        }
+
         DataTypeValidation.assertDouble(a, x, y);
         if (beta == 0.0) {
             for (int j = 0; j < a.columns(); j++) {
@@ -487,6 +491,9 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemv(float alpha, INDArray a,
                          INDArray x, float beta, INDArray y) {
+        if(x.data().dataType() == DataBuffer.Type.DOUBLE) {
+            return gemv((double) alpha,a,x,(double) beta,y);
+        }
         DataTypeValidation.assertFloat(a, x, y);
         if (beta == 0.0) {
             for (int j = 0; j < a.columns(); j++) {
@@ -517,6 +524,9 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray ger(double alpha, INDArray x,
                         INDArray y, INDArray a) {
+        if(x.data().dataType() == DataBuffer.Type.FLOAT) {
+            return ger((float) alpha,x,y,a);
+        }
         DataTypeValidation.assertDouble(x, y, a);
         NativeBlas.dger(
                 a.rows(),
@@ -541,7 +551,11 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray ger(float alpha, INDArray x,
                         INDArray y, INDArray a) {
+        if(x.data().dataType() == DataBuffer.Type.DOUBLE) {
+            return ger((double) alpha,x,y,a);
+        }
         DataTypeValidation.assertFloat(x, y, a);
+
         NativeBlas.sger(
                 a.rows(),
                 a.columns(),
