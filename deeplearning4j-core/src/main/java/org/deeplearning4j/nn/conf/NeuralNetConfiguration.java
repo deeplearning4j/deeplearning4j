@@ -41,6 +41,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -104,58 +105,22 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //aka pool size for subsampling
     private int[] stride = {2,2};
     //kernel size for a convolutional net
+    @Deprecated
     protected int kernel = 5;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected int batchSize = 10;
     //minimize or maximize objective
     protected boolean minimize = false;
-
-    private double l1 = 0.0;
-    private int[] featureMapSize = {9,9};
+    //l1 regularization
+    protected double l1 = 0.0;
+    //feature map
+    protected int[] featureMapSize = {9,9};
 
 
     protected ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
 
     public NeuralNetConfiguration() {}
 
-
-    public NeuralNetConfiguration(double sparsity, boolean useAdaGrad, double lr, double corruptionLevel, int numIterations, double momentum, double l2, boolean useRegularization, Map<Integer, Double> momentumAfter, int resetAdaGradIterations, int numLineSearchIterations, double dropOut, boolean applySparsity, WeightInit weightInit, OptimizationAlgorithm optimizationAlgo, LossFunctions.LossFunction lossFunction, boolean constrainGradientToUnitNorm, Random rng, Distribution dist, StepFunction stepFunction, Layer layer, List<String> variables, int nIn, int nOut, String activationFunction, RBM.VisibleUnit visibleUnit, RBM.HiddenUnit hiddenUnit, int k, int[] weightShape, int[] filterSize, int[] stride, int kernel, int batchSize, boolean minimize, ConvolutionLayer.ConvolutionType convolutionType) {
-        this.sparsity = sparsity;
-        this.useAdaGrad = useAdaGrad;
-        this.lr = lr;
-        this.corruptionLevel = corruptionLevel;
-        this.numIterations = numIterations;
-        this.momentum = momentum;
-        this.l2 = l2;
-        this.useRegularization = useRegularization;
-        this.momentumAfter = momentumAfter;
-        this.resetAdaGradIterations = resetAdaGradIterations;
-        this.numLineSearchIterations = numLineSearchIterations;
-        this.dropOut = dropOut;
-        this.applySparsity = applySparsity;
-        this.weightInit = weightInit;
-        this.optimizationAlgo = optimizationAlgo;
-        this.lossFunction = lossFunction;
-        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
-        this.rng = rng;
-        this.dist = dist;
-        this.stepFunction = stepFunction;
-        this.layer = layer;
-        this.variables = variables;
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.activationFunction = activationFunction;
-        this.visibleUnit = visibleUnit;
-        this.hiddenUnit = hiddenUnit;
-        this.k = k;
-        this.weightShape = weightShape;
-        this.filterSize = filterSize;
-        this.stride = stride;
-        this.kernel = kernel;
-        this.batchSize = batchSize;
-        this.minimize = minimize;
-        this.convolutionType = convolutionType;
-    }
 
     public NeuralNetConfiguration(double sparsity,
                                   boolean useAdaGrad,
@@ -235,46 +200,25 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     }
 
+    /**
+     * Copy constructor
+     * @param neuralNetConfiguration
+     */
     public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
-        this.minimize = neuralNetConfiguration.minimize;
-        this.layer = neuralNetConfiguration.layer;
-        this.numLineSearchIterations = neuralNetConfiguration.numLineSearchIterations;
-        this.batchSize = neuralNetConfiguration.batchSize;
-        this.sparsity = neuralNetConfiguration.sparsity;
-        this.useAdaGrad = neuralNetConfiguration.useAdaGrad;
-        this.lr = neuralNetConfiguration.lr;
-        this.momentum = neuralNetConfiguration.momentum;
-        this.l2 = neuralNetConfiguration.l2;
-        this.numIterations = neuralNetConfiguration.numIterations;
-        this.k = neuralNetConfiguration.k;
-        this.corruptionLevel = neuralNetConfiguration.corruptionLevel;
-        this.visibleUnit = neuralNetConfiguration.visibleUnit;
-        this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
-        this.useRegularization = neuralNetConfiguration.useRegularization;
-        this.momentumAfter = neuralNetConfiguration.momentumAfter;
-        this.resetAdaGradIterations = neuralNetConfiguration.resetAdaGradIterations;
-        this.dropOut = neuralNetConfiguration.dropOut;
-        this.applySparsity = neuralNetConfiguration.applySparsity;
-        this.weightInit = neuralNetConfiguration.weightInit;
-        this.optimizationAlgo = neuralNetConfiguration.optimizationAlgo;
-        this.lossFunction = neuralNetConfiguration.lossFunction;
-        this.constrainGradientToUnitNorm = neuralNetConfiguration.constrainGradientToUnitNorm;
-        this.rng = neuralNetConfiguration.rng;
-        this.dist = neuralNetConfiguration.dist;
-        this.nIn = neuralNetConfiguration.nIn;
-        this.nOut = neuralNetConfiguration.nOut;
-        this.activationFunction = neuralNetConfiguration.activationFunction;
-        this.visibleUnit = neuralNetConfiguration.visibleUnit;
-        this.weightShape = neuralNetConfiguration.weightShape;
-        this.stride = neuralNetConfiguration.stride;
-        this.filterSize = neuralNetConfiguration.filterSize;
-        this.convolutionType = neuralNetConfiguration.getConvolutionType();
+        Field[] fields = NeuralNetConfiguration.class.getDeclaredFields();
+        for(Field f : fields) {
+            try {
+                f.setAccessible(true);
+                f.set(this,f.get(neuralNetConfiguration));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
 
 
         if(dist == null)
             this.dist = new NormalDistribution(0.01,1);
 
-        this.hiddenUnit = neuralNetConfiguration.hiddenUnit;
     }
 
     /**
@@ -988,16 +932,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public Builder clone() {
-            return new Builder().activationFunction(activationFunction).layer(layer).convolutionType(convolutionType)
-                    .adagradResetIterations(resetAdaGradIterations).applySparsity(applySparsity).minimize(minimize)
-                    .constrainGradientToUnitNorm(constrainGradientToUnitNorm)
-                    .dist(dist).dropOut(dropOut).featureMapSize(featureMapSize).filterSize(filterSize).numLineSearchIterations(numLineSearchIterations)
-                    .hiddenUnit(hiddenUnit).iterations(numIterations).l2(l2).learningRate(lr).useAdaGrad(useAdaGrad).stepFunction(stepFunction)
-                    .lossFunction(lossFunction).momentumAfter(momentumAfter).momentum(momentum)
-                    .nIn(nIn).nOut(nOut).optimizationAlgo(optimizationAlgo).batchSize(batchSize).l1(l1)
-                    .regularization(useRegularization).render(renderWeightsEveryNumEpochs).resetAdaGradIterations(resetAdaGradIterations)
-                    .rng(rng).sparsity(sparsity).stride(stride).useAdaGrad(useAdaGrad).visibleUnit(visibleUnit)
-                    .weightInit(weightInit).weightShape(weightShape);
+            Builder b = new Builder();
+            Field[] fields = Builder.class.getDeclaredFields();
+            for(Field f : fields) {
+                try {
+                    f.setAccessible(true);
+                    f.set(b,f.get(this));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+
+           return b;
         }
 
         public Builder featureMapSize(int...featureMapSize) {
@@ -1070,6 +1016,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        @Deprecated
         public Builder adagradResetIterations(int resetAdaGradIterations) {
             this.resetAdaGradIterations = resetAdaGradIterations;
             return this;
