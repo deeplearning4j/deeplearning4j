@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
@@ -35,6 +36,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.*;
  * @author Adam Gibson
  */
 public class DefaultOpFactory implements OpFactory {
+
+    @Override
+    public LossFunction createLossFunction(String name, INDArray x, INDArray y) {
+        return null;
+    }
 
     @Override
     public Accumulation createAccum(String name, INDArray x) {
