@@ -45,8 +45,8 @@ public class MultiLayerConfiguration implements Serializable {
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean backward = false;
 
-    
-    
+
+
     public MultiLayerConfiguration() {}
 
     public MultiLayerConfiguration(MultiLayerConfiguration multiLayerConfiguration) {
@@ -62,8 +62,8 @@ public class MultiLayerConfiguration implements Serializable {
         this.inputPreProcessors = multiLayerConfiguration.inputPreProcessors;
 
     }
-    
-    
+
+
 
     public NeuralNetConfiguration getConf(int i) {
         return confs.get(i);
@@ -186,34 +186,26 @@ public class MultiLayerConfiguration implements Serializable {
 
     @Override
     public String toString() {
-        return "MultiLayerConfiguration{" +
-                "hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
-                ", confs=" + confs +
-                ", useDropConnect=" + useDropConnect +
-                ", useGaussNewtonVectorProductBackProp=" + useGaussNewtonVectorProductBackProp +
-                ", pretrain=" + pretrain +
-                ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
-                ", dampingFactor=" + dampingFactor +
-                ", processors=" + processors +
-                ", backward=" + backward +
-                '}';
+        return toJson();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof MultiLayerConfiguration)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
 
         MultiLayerConfiguration that = (MultiLayerConfiguration) o;
 
-        if (backward != that.backward) return false;
-        if (Double.compare(that.dampingFactor, dampingFactor) != 0) return false;
-        if (pretrain != that.pretrain) return false;
         if (useDropConnect != that.useDropConnect) return false;
         if (useGaussNewtonVectorProductBackProp != that.useGaussNewtonVectorProductBackProp) return false;
+        if (pretrain != that.pretrain) return false;
         if (useRBMPropUpAsActivations != that.useRBMPropUpAsActivations) return false;
+        if (Double.compare(that.dampingFactor, dampingFactor) != 0) return false;
+        if (backward != that.backward) return false;
+        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
         if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
-        return Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes);
+        if (processors != null ? !processors.equals(that.processors) : that.processors != null) return false;
+        return !(inputPreProcessors != null ? !inputPreProcessors.equals(that.inputPreProcessors) : that.inputPreProcessors != null);
 
     }
 
@@ -230,6 +222,7 @@ public class MultiLayerConfiguration implements Serializable {
         temp = Double.doubleToLongBits(dampingFactor);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + (processors != null ? processors.hashCode() : 0);
+        result = 31 * result + (inputPreProcessors != null ? inputPreProcessors.hashCode() : 0);
         result = 31 * result + (backward ? 1 : 0);
         return result;
     }
@@ -279,7 +272,7 @@ public class MultiLayerConfiguration implements Serializable {
             inputPreProcessor.put(layer,preProcessor);
             return this;
         }
-        
+
         public Builder preProcessor(Integer layer,OutputPreProcessor preProcessor) {
             preProcessors.put(layer,preProcessor);
             return this;
@@ -381,10 +374,10 @@ public class MultiLayerConfiguration implements Serializable {
             Builder builder = (Builder) o;
 
             return Double.compare(builder.dampingFactor, dampingFactor) == 0
-                && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
-                && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
-                && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
-                && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes);
+                    && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
+                    && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
+                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
+                    && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes);
 
         }
 
