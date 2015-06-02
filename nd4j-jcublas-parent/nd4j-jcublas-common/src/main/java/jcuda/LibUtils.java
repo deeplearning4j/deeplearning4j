@@ -182,10 +182,9 @@ public final class LibUtils
     private static String createLibExtension()
     {
         OSType osType = calculateOS();
-        switch (osType) 
-        {
+        switch (osType) {
             case APPLE:
-                return "jnilib";
+                return "dylib";
             case LINUX:
                 return "so";
             case SUN:
