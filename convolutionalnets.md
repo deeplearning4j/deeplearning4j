@@ -25,6 +25,12 @@ With max pooling, only the locations on the image that showed the strongest corr
 
 Convolutional neural networks are related to signal processing. In signal processing, a convolution is the mathematical product of two functions reflecting their overlap, or correlation. Think of a convolution as a way of mixing two inputs by multiplying them. 
 
+### DL4J Code Example
+
+Here's one example of how you might configure a ConvNet with Deeplearning4j:
+
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/convolution/CNNMnistExample.java?slice=32:100"></script>
+
 ### ConvNets in Academia
 
 [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
