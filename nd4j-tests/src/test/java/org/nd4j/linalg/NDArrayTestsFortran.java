@@ -98,6 +98,12 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testRepmat() {
+        INDArray rowVector = Nd4j.create(1,4);
+        INDArray repmat = rowVector.repmat(4,4);
+        assertTrue(Arrays.equals(new int[]{4,4},repmat.shape()));
+    }
 
     @Test
     public void testReadWrite() throws Exception {

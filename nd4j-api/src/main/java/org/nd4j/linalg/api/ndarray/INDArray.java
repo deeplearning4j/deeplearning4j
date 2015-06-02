@@ -724,7 +724,7 @@ public interface INDArray extends Serializable  {
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
-    INDArray repmat(int[] shape);
+    INDArray repmat(int...shape);
 
     /**
      * Insert a row in to this array

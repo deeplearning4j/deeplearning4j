@@ -3173,7 +3173,7 @@ public abstract class BaseNDArray implements INDArray {
                         ret.putScalar(i,getDouble(curr));
                         curr++;
                         if(curr >= length()) {
-                            curr = shape[1];
+                            curr = 0;
                         }
                     }
 
@@ -3187,7 +3187,7 @@ public abstract class BaseNDArray implements INDArray {
                     ret.putScalar(i,getDouble(curr));
                     curr++;
                     if(curr >= length()) {
-                        curr = shape[1];
+                        curr = 0;
                     }
                 }
 

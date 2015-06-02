@@ -720,7 +720,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the shape to fill out to
      */
     @Override
-    IComplexNDArray repmat(int[] shape);
+    IComplexNDArray repmat(int...shape);
 
     /**
      * Insert a row in to this array
