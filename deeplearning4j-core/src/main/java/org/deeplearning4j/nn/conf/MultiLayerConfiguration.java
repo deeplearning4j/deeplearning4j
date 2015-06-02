@@ -149,6 +149,14 @@ public class MultiLayerConfiguration implements Serializable {
         this.backward = backward;
     }
 
+    public Map<Integer, InputPreProcessor> getInputPreProcessors() {
+        return inputPreProcessors;
+    }
+
+    public void setInputPreProcessors(Map<Integer, InputPreProcessor> inputPreProcessors) {
+        this.inputPreProcessors = inputPreProcessors;
+    }
+
     /**
      *
      * @return  JSON representation of NN configuration
