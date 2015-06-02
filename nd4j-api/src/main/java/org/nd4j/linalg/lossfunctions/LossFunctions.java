@@ -35,7 +35,10 @@ public class LossFunctions {
 
 
     /**
-     * Generic scoring function
+     * Generic scoring function.
+     * Note that an IllegalArgumentException is thrown if the given
+     * loss function is custom. An alternative mechanism for scoring
+     * (preferrably with a function name and the op factory) should be used instead.
      *
      * @param labels            the labels to score
      * @param lossFunction      the loss function to use
@@ -50,6 +53,7 @@ public class LossFunctions {
         if (!Arrays.equals(labels.shape(), z.shape()))
             throw new IllegalArgumentException("Output and labels must be same length");
         switch (lossFunction) {
+            case CUSTOM: throw new IllegalStateException("Unable to score custom operation. Please define an alternative mechanism");
             case RECONSTRUCTION_CROSSENTROPY:
                 INDArray xEntLogZ2 = log(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
@@ -111,8 +115,9 @@ public class LossFunctions {
      * SQUARED_LOSS: Squared Loss
      * RECONSUTRCTION_CROSSENTROPY: Reconstruction Cross Entropy
      * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
+     * CUSTOM: Define your own loss function
      */
-    public static enum LossFunction {
+    public  enum LossFunction {
         MSE,
         EXPLL,
         XENT,
@@ -120,7 +125,8 @@ public class LossFunctions {
         RMSE_XENT,
         SQUARED_LOSS,
         RECONSTRUCTION_CROSSENTROPY,
-        NEGATIVELOGLIKELIHOOD
+        NEGATIVELOGLIKELIHOOD,
+        CUSTOM
     }
 
 

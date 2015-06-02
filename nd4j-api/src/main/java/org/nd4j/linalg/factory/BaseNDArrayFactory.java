@@ -56,7 +56,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * Initialize with the given data type and ordering
      * The ndarray factory will use this for
      * @param dtype the data type
-     * @param order the ordering
+     * @param order the orderingmem
      */
     protected BaseNDArrayFactory(DataBuffer.Type dtype, Character order) {
         this.dtype = dtype;
