@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class AddOp extends BaseTransformOp {
+
+    public AddOp() {
+    }
+
     public AddOp(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }
@@ -43,7 +47,7 @@ public class AddOp extends BaseTransformOp {
     }
 
     public AddOp(INDArray x) {
-        super(x);
+        super(x,x);
     }
 
     public AddOp(INDArray x, INDArray xDup, INDArray z) {

@@ -29,6 +29,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * Created by agibsonccc on 2/22/15.
  */
 public class TestAccumulation extends BaseAccumulation {
+
+    public TestAccumulation() {
+    }
+
     public TestAccumulation(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }

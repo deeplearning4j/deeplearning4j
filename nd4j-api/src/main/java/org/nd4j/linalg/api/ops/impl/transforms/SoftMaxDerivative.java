@@ -30,6 +30,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class SoftMaxDerivative extends SoftMax {
+
+
     public SoftMaxDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
@@ -44,6 +46,9 @@ public class SoftMaxDerivative extends SoftMax {
 
     public SoftMaxDerivative(INDArray x) {
         super(x);
+    }
+
+    public SoftMaxDerivative() {
     }
 
     @Override

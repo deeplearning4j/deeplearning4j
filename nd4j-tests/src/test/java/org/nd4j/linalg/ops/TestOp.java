@@ -34,6 +34,9 @@ public class TestOp extends BaseTransformOp {
         super(x, y, z, n);
     }
 
+    public TestOp() {
+    }
+
     public TestOp(INDArray x) {
         super(x);
     }

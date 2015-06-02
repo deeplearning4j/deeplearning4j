@@ -33,6 +33,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Tanh extends BaseTransformOp {
+
+    public Tanh() {
+    }
+
     public Tanh(INDArray x, INDArray z) {
         super(x, z);
     }

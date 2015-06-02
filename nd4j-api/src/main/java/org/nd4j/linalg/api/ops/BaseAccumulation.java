@@ -41,6 +41,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number initial;
     protected IComplexNumber initialComplex;
 
+    public BaseAccumulation() {
+    }
+
     /**
      * Initialize with the given
      * input, pairwise transform, result, and number

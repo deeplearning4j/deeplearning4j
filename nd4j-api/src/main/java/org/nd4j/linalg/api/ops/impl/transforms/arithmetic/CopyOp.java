@@ -31,6 +31,9 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class CopyOp extends BaseTransformOp {
+    public CopyOp() {
+    }
+
     public CopyOp(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }

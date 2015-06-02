@@ -35,6 +35,13 @@ public class SetRange extends BaseTransformOp {
 
     private double min, max;
 
+    public SetRange() {
+    }
+
+    public SetRange(INDArray x) {
+        this(x,0,1);
+    }
+
     public SetRange(INDArray x, INDArray z, double min, double max) {
         super(x, z);
         this.min = min;

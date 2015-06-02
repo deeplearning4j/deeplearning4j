@@ -31,6 +31,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class StandardDeviation extends Variance {
+
+    public StandardDeviation() {
+    }
+
     public StandardDeviation(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }

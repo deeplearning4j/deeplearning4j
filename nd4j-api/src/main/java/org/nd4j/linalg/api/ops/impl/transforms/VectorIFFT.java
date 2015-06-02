@@ -39,6 +39,8 @@ public class VectorIFFT extends BaseTransformOp {
     private int originalN = -1;
     protected boolean executed = false;
 
+    public VectorIFFT() {
+    }
 
     public VectorIFFT(INDArray x, INDArray z,int fftLength) {
         super(x, z);
@@ -64,7 +66,9 @@ public class VectorIFFT extends BaseTransformOp {
         exec();
     }
 
-
+    public VectorIFFT(INDArray x) {
+        this(x,x.length());
+    }
 
     @Override
     public String name() {

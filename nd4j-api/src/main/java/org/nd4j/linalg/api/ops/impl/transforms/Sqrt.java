@@ -27,11 +27,13 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Sqrt funciton
+ * Sqrt function
  *
  * @author Adam Gibson
  */
 public class Sqrt extends BaseTransformOp {
+    public Sqrt() {
+    }
 
     public Sqrt(INDArray x, INDArray z) {
         super(x, z);

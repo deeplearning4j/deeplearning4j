@@ -34,6 +34,9 @@ import org.nd4j.linalg.util.ComplexUtil;
 public class Pow extends BaseTransformOp {
     private double pow;
 
+    public Pow() {
+    }
+
     public Pow(INDArray x, INDArray z, double pow) {
         super(x, z);
         this.pow = pow;

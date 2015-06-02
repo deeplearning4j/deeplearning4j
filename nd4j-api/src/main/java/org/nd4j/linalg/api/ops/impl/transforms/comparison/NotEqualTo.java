@@ -32,6 +32,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class NotEqualTo extends BaseTransformOp {
+
+    public NotEqualTo() {
+    }
+
     public NotEqualTo(INDArray x) {
         super(x);
     }

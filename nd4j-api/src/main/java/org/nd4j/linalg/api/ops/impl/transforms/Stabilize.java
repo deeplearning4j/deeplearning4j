@@ -36,6 +36,9 @@ public class Stabilize extends BaseTransformOp {
     double cutOff = FastMath.log(realMin);
     double k;
 
+    public Stabilize() {
+    }
+
     public Stabilize(INDArray x, INDArray z, double k) {
         super(x, z);
         this.k = k;

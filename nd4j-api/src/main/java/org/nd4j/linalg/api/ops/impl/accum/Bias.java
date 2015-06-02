@@ -34,6 +34,9 @@ public class Bias extends BaseAccumulation {
 
     private double mean;
 
+    public Bias() {
+    }
+
     public Bias(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }

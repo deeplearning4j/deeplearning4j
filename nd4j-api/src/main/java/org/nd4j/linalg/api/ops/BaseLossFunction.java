@@ -22,6 +22,9 @@ public abstract class BaseLossFunction extends BaseAccumulation implements LossF
         super(x, y);
     }
 
+    public BaseLossFunction() {
+    }
+
     @Override
     public INDArray input() {
         return x;

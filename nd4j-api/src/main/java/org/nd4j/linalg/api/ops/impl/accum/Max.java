@@ -31,6 +31,9 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class Max extends BaseAccumulation {
+    public Max() {
+    }
+
     public Max(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }

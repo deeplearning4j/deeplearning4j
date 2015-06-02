@@ -50,6 +50,9 @@ public class Sin extends BaseTransformOp {
         super(x);
     }
 
+    public Sin() {
+    }
+
     @Override
     public String name() {
         return "sin";

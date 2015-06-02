@@ -32,6 +32,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class LessThanOrEqual extends BaseTransformOp {
+
+    public LessThanOrEqual() {
+    }
+
     public LessThanOrEqual(INDArray x, INDArray z) {
         super(x, z);
     }

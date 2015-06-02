@@ -26,11 +26,14 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Return a binary (0 or 1) when greater than a number
+ * Return a binary (0 or 1)
+ * when greater than a number
  *
  * @author Adam Gibson
  */
 public class ScalarNotEquals extends BaseScalarOp {
+    public ScalarNotEquals() {
+    }
 
     public ScalarNotEquals(INDArray x, INDArray y, INDArray z, int n, Number num) {
         super(x, y, z, n, num);

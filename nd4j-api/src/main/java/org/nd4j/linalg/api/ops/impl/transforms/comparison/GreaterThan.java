@@ -32,6 +32,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class GreaterThan extends BaseTransformOp {
+    public GreaterThan() {
+    }
 
     public GreaterThan(INDArray x, INDArray z) {
         super(x, z);

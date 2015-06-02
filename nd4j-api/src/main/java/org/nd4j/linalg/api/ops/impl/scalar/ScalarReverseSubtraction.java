@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class ScalarReverseSubtraction extends BaseScalarOp {
+
+    public ScalarReverseSubtraction() {
+    }
+
     public ScalarReverseSubtraction(INDArray x, INDArray y, INDArray z, int n, Number num) {
         super(x, y, z, n, num);
     }

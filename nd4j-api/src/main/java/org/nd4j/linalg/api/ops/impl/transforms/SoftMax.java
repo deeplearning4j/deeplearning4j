@@ -47,6 +47,8 @@ public class SoftMax extends BaseTransformOp {
     private Number max;
     private IComplexNumber maxComplex, sumComplex;
 
+    public SoftMax() {
+    }
 
     public SoftMax(INDArray x, INDArray z) {
         super(x, z);

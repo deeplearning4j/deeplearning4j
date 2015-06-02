@@ -42,6 +42,9 @@ public class VectorFFT extends BaseTransformOp {
     private int originalN = -1;
     protected boolean executed = false;
 
+    public VectorFFT() {
+    }
+
     public VectorFFT(INDArray x, INDArray z,int fftLength) {
         super(x, z);
         this.fftLength = fftLength;

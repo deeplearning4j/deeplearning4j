@@ -33,6 +33,8 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class HardTanhDerivative extends BaseTransformOp {
+    public HardTanhDerivative() {
+    }
 
     public HardTanhDerivative(INDArray x, INDArray z) {
         super(x, z);

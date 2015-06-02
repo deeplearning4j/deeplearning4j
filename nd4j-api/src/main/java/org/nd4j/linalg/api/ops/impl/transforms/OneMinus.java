@@ -31,6 +31,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class OneMinus extends BaseTransformOp {
+
+    public OneMinus() {
+    }
+
     public OneMinus(INDArray x, INDArray z) {
         super(x, z);
     }

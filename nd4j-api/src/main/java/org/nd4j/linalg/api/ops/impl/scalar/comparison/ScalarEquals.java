@@ -31,6 +31,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class ScalarEquals extends BaseScalarOp {
+    public ScalarEquals() {
+    }
 
     public ScalarEquals(INDArray x, INDArray y, INDArray z, int n, Number num) {
         super(x, y, z, n, num);
@@ -46,6 +48,10 @@ public class ScalarEquals extends BaseScalarOp {
 
     public ScalarEquals(INDArray x, IComplexNumber num) {
         super(x, num);
+    }
+
+    public ScalarEquals(INDArray x) {
+        this(x,0);
     }
 
     @Override

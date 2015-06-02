@@ -32,6 +32,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Floor extends BaseTransformOp {
+
+    public Floor() {
+    }
+
     public Floor(INDArray x, INDArray z) {
         super(x, z);
     }

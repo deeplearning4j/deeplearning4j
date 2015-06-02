@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class Sum extends BaseAccumulation {
+
+    public Sum() {
+    }
+
     public Sum(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }

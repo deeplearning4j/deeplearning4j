@@ -32,6 +32,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class GreaterThanOrEqual extends BaseTransformOp {
+
+    public GreaterThanOrEqual() {
+    }
+
     public GreaterThanOrEqual(INDArray x, INDArray z) {
         super(x, z);
     }

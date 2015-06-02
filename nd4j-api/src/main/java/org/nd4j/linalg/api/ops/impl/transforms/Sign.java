@@ -31,6 +31,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Sign extends BaseTransformOp {
+    public Sign() {
+    }
 
     public Sign(INDArray x, INDArray z) {
         super(x, z);

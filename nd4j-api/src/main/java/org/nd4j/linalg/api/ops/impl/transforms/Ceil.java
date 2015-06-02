@@ -32,6 +32,8 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Ceil extends BaseTransformOp {
+    public Ceil() {
+    }
 
     public Ceil(INDArray x, INDArray z) {
         super(x, z);

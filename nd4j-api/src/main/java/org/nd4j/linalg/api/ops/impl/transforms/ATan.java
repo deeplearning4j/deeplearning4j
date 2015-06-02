@@ -32,6 +32,8 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class ATan extends BaseTransformOp {
+    public ATan() {
+    }
 
     public ATan(INDArray x, INDArray z) {
         super(x, z);

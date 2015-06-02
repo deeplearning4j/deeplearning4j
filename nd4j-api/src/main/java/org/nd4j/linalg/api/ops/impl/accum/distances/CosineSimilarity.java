@@ -37,6 +37,9 @@ import org.nd4j.linalg.factory.Nd4j;
 public class CosineSimilarity extends BaseAccumulation {
     private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
+    public CosineSimilarity() {
+    }
+
     public CosineSimilarity(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }

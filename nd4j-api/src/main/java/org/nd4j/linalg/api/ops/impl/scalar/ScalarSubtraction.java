@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 
 /**
  * Scalar subtraction
@@ -30,6 +31,10 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class ScalarSubtraction extends BaseScalarOp {
+
+    public ScalarSubtraction() {
+    }
+
     public ScalarSubtraction(INDArray x, INDArray y, INDArray z, int n, Number num) {
         super(x, y, z, n, num);
     }
@@ -44,6 +49,10 @@ public class ScalarSubtraction extends BaseScalarOp {
 
     public ScalarSubtraction(INDArray x, IComplexNumber num) {
         super(x, num);
+    }
+
+    public ScalarSubtraction(INDArray x) {
+        this(x,0);
     }
 
     @Override

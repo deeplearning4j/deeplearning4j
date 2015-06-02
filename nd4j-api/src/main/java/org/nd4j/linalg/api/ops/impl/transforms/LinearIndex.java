@@ -43,6 +43,13 @@ public class LinearIndex extends BaseTransformOp {
     private boolean wholeArray = false;
     private Set<Integer> encountered = new HashSet<>();
 
+    public LinearIndex() {
+    }
+
+    public LinearIndex(INDArray x) {
+       this(x,true);
+    }
+
     public LinearIndex(INDArray x, INDArray z,boolean wholeArray) {
         super(x, z);
         this.wholeArray = wholeArray;

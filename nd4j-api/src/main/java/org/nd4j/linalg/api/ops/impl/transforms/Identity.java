@@ -30,6 +30,8 @@ import org.nd4j.linalg.api.ops.Op;
  * @author Adam Gibson
  */
 public class Identity extends BaseTransformOp {
+    public Identity() {
+    }
 
     public Identity(INDArray x, INDArray z) {
         super(x, z);

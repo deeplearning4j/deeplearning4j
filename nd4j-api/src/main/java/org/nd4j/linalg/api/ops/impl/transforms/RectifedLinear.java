@@ -34,6 +34,9 @@ import org.nd4j.linalg.factory.Nd4j;
 public class RectifedLinear extends BaseTransformOp {
     private double cutoff = 0.0;
 
+    public RectifedLinear() {
+    }
+
     public RectifedLinear(INDArray x, INDArray z, double cutoff) {
         super(x, z);
         this.cutoff = cutoff;
