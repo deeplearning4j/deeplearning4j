@@ -43,6 +43,6 @@ We specify the batch size as well as the number of examples so the user can choo
 
 Next, we want to train a restricted Boltzmann machine to reconstruct the MNIST data set. This is done with following snippet:
 
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/RBMMnistExample.java?slice=21:62"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNSmallMnistExample.java?slice=33:69"></script>
 
 Now we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](../mnist-tutorial.html).
