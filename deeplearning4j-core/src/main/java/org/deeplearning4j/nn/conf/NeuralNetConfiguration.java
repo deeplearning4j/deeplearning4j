@@ -63,6 +63,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double l2 = 0;
     protected boolean useRegularization = false;
 
+    private String customLossFunction;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
     //reset adagrad historical gradient after n iterations
@@ -154,8 +155,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int batchSize,
                                   int numLineSearchIterations,
                                   boolean minimize,
-                                  Layer layer, ConvolutionLayer.ConvolutionType convolutionType,double l1) {
+                                  Layer layer, ConvolutionLayer.ConvolutionType convolutionType,double l1,String customLossFunction) {
         this.minimize = minimize;
+        this.customLossFunction = customLossFunction;
         this.convolutionType = convolutionType;
         this.numLineSearchIterations = numLineSearchIterations;
         this.featureMapSize = featureMapSize;
@@ -219,6 +221,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if(dist == null)
             this.dist = new NormalDistribution(0.01,1);
 
+    }
+
+    public String getCustomLossFunction() {
+        return customLossFunction;
+    }
+
+    public void setCustomLossFunction(String customLossFunction) {
+        this.customLossFunction = customLossFunction;
     }
 
     /**
@@ -843,6 +853,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     public static class Builder {
         private int k = 1;
+        private String customLossFunction;
+        @Deprecated
         private int kernel = 5;
         private double corruptionLevel = 3e-1f;
         private double sparsity = 0f;
@@ -857,7 +869,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean applySparsity = false;
         private WeightInit weightInit = WeightInit.VI;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-        private int renderWeightsEveryNumEpochs = -1;
         private boolean constrainGradientToUnitNorm = false;
         private Random rng = new DefaultRandom();
         private Distribution dist  = new NormalDistribution(1e-3,1);
@@ -883,6 +894,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder l1(double l1) {
             this.l1 = l1;
+            return this;
+        }
+
+
+        public Builder customLossFunction(String customLossFunction) {
+            this.customLossFunction = customLossFunction;
             return this;
         }
 
@@ -1037,10 +1054,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder render(int renderWeightsEveryNumEpochs) {
-            this.renderWeightsEveryNumEpochs = renderWeightsEveryNumEpochs;
-            return this;
-        }
 
 
 
@@ -1055,7 +1068,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  rng,
                     dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
-                    ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1);
+                    ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1,customLossFunction);
             ret.useAdaGrad = this.useAdaGrad;
             ret.stepFunction = stepFunction;
             return ret;
