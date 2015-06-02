@@ -24,6 +24,10 @@ public class JCudaVectorFFT extends VectorFFT {
         super(x, z, fftLength);
     }
 
+
+    public JCudaVectorFFT() {
+    }
+
     public JCudaVectorFFT(INDArray x, INDArray z, int n, int fftLength) {
         super(x, z, n, fftLength);
     }

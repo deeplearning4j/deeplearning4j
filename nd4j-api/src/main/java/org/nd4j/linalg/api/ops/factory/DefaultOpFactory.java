@@ -21,12 +21,22 @@ package org.nd4j.linalg.api.ops.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.LossFunction;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.factory.Nd4j;
+import org.reflections.Reflections;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -35,6 +45,37 @@ import org.nd4j.linalg.api.ops.impl.transforms.*;
  * @author Adam Gibson
  */
 public class DefaultOpFactory implements OpFactory {
+    private Map<String,Class<? extends Op>> opClazzes;
+
+
+    public DefaultOpFactory() {
+        opClazzes = new HashMap<>();
+        Set<Class<? extends Op>> clazzes = new Reflections("org.nd4j").getSubTypesOf(Op.class);
+        for(Class<? extends Op> clazz : clazzes) {
+            if(Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface())
+                continue;
+
+            try {
+                opClazzes.put(clazz.newInstance().name(),clazz);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        }
+    }
+
+    @Override
+    public LossFunction createLossFunction(String name, INDArray x, INDArray y) {
+        Class<? extends Op> clazz = opClazzes.get(name);
+        try {
+            Constructor<Op> constructor = (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class,INDArray.class);
+            Op create = constructor.newInstance(x,y);
+            return (LossFunction) create;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Illegal op " + name);
+        }
+
+    }
 
     @Override
     public Accumulation createAccum(String name, INDArray x) {
@@ -293,6 +334,11 @@ public class DefaultOpFactory implements OpFactory {
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
+    }
+
+    protected Class<? extends Op> lookupFunctionByName(String name) {
+        return opClazzes.get(name);
+
     }
 
 

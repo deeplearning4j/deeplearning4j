@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer.Type;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.slf4j.Logger;
@@ -54,6 +55,11 @@ public  class LossFunctionTests extends BaseNd4jTest {
         super(name, backend);
     }
 
+    @Test
+    public void testCreateLossFunction() {
+        LossFunction l = Nd4j.getOpFactory().createLossFunction(new TestLossFunction().name(),Nd4j.create(1),Nd4j.create(1));
+        assertEquals(l.getClass(),TestLossFunction.class);
+    }
 
     @Test
     public void testRMseXent() {

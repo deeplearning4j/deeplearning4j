@@ -33,7 +33,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Sigmoid extends BaseTransformOp {
-
+    public Sigmoid() {
+    }
 
     public Sigmoid(INDArray x, INDArray z) {
         super(x, z);

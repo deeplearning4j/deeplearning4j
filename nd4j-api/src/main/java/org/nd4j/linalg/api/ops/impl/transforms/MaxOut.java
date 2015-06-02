@@ -36,6 +36,9 @@ public class MaxOut extends BaseTransformOp {
     private IComplexNumber maxComplex = Nd4j.createComplexNumber(Double.NaN, Double.NaN);
     private Number max = Double.NaN;
 
+    public MaxOut() {
+    }
+
     public MaxOut(INDArray x, INDArray z) {
         super(x, z);
     }

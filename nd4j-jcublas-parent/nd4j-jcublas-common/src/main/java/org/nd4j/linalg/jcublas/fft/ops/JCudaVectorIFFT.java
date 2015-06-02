@@ -36,6 +36,8 @@ public class JCudaVectorIFFT extends VectorIFFT {
         super(x, fftLength);
     }
 
+    public JCudaVectorIFFT() {
+    }
 
     /**
      * Get the handle for the current thread

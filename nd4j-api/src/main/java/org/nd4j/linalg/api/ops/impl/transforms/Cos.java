@@ -32,6 +32,8 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Cos extends BaseTransformOp {
+    public Cos() {
+    }
 
     public Cos(INDArray x, INDArray z) {
         super(x, z);

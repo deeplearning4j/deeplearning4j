@@ -33,6 +33,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Exp extends BaseTransformOp {
+
+    public Exp() {
+    }
+
     public Exp(INDArray x, INDArray z) {
         super(x, z);
     }

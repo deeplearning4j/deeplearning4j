@@ -480,7 +480,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         else if(intData != null) {
             return (double) intData[i];
         }
-        return dataBuffer.getDouble(i * 8);
+
+        if(dataType() == Type.FLOAT)
+            return dataBuffer.getFloat(i * getElementSize());
+
+        return dataBuffer.getDouble(i * getElementSize());
     }
 
     @Override
@@ -494,11 +498,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return (float) intData[i];
         }
 
-        dataBuffer.setIndex(i,i);
         if(dataType() == Type.DOUBLE)
-            return (float) dataBuffer.getDouble(i * 8);
-        else
-            return dataBuffer.getFloat(i * 4);
+            return (float) dataBuffer.getDouble(i * getElementSize());
+
+        return dataBuffer.getFloat(i * getElementSize());
     }
 
     @Override
@@ -609,7 +612,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public int getInt(int ix) {
-       return (int) getDouble(ix);
+        return (int) getDouble(ix);
     }
 
     @Override

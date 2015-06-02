@@ -33,6 +33,9 @@ import org.nd4j.linalg.api.ops.Op;
 public class IAMax extends BaseAccumulation {
     private int currIndexOfMax = 0;
 
+    public IAMax() {
+    }
+
     public IAMax(INDArray x, INDArray y, int n) {
         super(x, y, n);
     }

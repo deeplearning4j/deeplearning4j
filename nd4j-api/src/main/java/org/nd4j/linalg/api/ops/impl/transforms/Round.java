@@ -32,6 +32,8 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Round extends BaseTransformOp {
+    public Round() {
+    }
 
     public Round(INDArray x, INDArray z) {
         super(x, z);

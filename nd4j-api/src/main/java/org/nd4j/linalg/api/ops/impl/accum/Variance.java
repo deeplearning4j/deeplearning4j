@@ -38,6 +38,9 @@ public class Variance extends BaseAccumulation {
     private double mean, bias;
     private boolean biasCorrected = true;
 
+    public Variance() {
+    }
+
     public Variance(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }

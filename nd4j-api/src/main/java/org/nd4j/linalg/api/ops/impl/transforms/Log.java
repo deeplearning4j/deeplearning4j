@@ -32,6 +32,8 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Log extends BaseTransformOp {
+    public Log() {
+    }
 
     public Log(INDArray x, INDArray z) {
         super(x, z);

@@ -32,6 +32,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class Abs extends BaseTransformOp {
+
+    public Abs() {
+    }
+
     public Abs(INDArray x, INDArray z) {
         super(x, z);
     }

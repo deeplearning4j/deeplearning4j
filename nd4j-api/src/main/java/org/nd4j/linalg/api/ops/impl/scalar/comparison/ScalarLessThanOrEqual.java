@@ -32,6 +32,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class ScalarLessThanOrEqual extends BaseScalarOp {
+
+    public ScalarLessThanOrEqual() {
+    }
+
     public ScalarLessThanOrEqual(INDArray x, INDArray y, INDArray z, int n, Number num) {
         super(x, y, z, n, num);
     }

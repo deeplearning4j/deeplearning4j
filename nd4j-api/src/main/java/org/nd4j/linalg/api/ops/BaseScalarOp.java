@@ -33,6 +33,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     protected Number num;
     protected IComplexNumber complexNumber;
 
+    public BaseScalarOp() {
+    }
+
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, int n, Number num) {
         super(x, y, z, n);
         this.num = num;

@@ -32,6 +32,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Min extends BaseTransformOp {
+
+    public Min() {
+    }
+
     public Min(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }

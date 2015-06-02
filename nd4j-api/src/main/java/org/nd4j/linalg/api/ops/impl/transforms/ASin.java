@@ -32,6 +32,10 @@ import org.nd4j.linalg.util.ComplexUtil;
  * @author Adam Gibson
  */
 public class ASin extends BaseTransformOp {
+
+    public ASin() {
+    }
+
     public ASin(INDArray x, INDArray z) {
         super(x, z);
     }

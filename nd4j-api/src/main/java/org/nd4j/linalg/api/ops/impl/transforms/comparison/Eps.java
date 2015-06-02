@@ -33,6 +33,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class Eps extends BaseTransformOp {
+
+    public Eps() {
+    }
+
     public Eps(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }

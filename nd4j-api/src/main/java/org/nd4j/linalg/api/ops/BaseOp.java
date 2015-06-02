@@ -19,9 +19,7 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Base op. An op involves iterating over 2 buffers (x,y)  up to n elements
@@ -36,6 +34,9 @@ public abstract class BaseOp implements Op {
     protected int numProcessed;
     protected Object[] extraArgs;
     protected boolean passThrough;
+
+    public BaseOp() {
+    }
 
     @Override
     public boolean isPassThrough() {

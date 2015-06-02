@@ -31,6 +31,10 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class SigmoidDerivative extends BaseTransformOp {
+
+    public SigmoidDerivative() {
+    }
+
     public SigmoidDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
