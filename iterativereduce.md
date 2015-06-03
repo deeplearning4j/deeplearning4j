@@ -33,7 +33,9 @@ The image below compares the two processes. On the left, you have a close-up of 
 
 Both Hadoop and Spark are distributed run-times that perform a version of MapReduce and Iterative Reduce. Deeplearning4j works as a job within Hadoop/YARN or Spark. It can be called, run and provisioned as a YARN app, for example.
 
-To provide a little context about the state-of-the-art, both Google and Yahoo operate parameter servers that store billions of parameters which are then distributed to the cluster for processing. Google's is called the Google Brain, which was created by Andrew Ng and is now led by his student Quoc Le.
+To provide a little context about the state-of-the-art, both Google and Yahoo operate parameter servers that store billions of parameters which are then distributed to the cluster for processing. Google's is called the Google Brain, which was created by Andrew Ng and is now led by his student Quoc Le. Here's a rough picture of the Google production stack circa 2015 to show you how MapReduce fits in.
+
+![Alt text](../img/google_production_stack.png)
 
 Deeplearning4j considers distributed run-times to be interchangeable (but not necessarily equal); they are all simply a directory in a larger modular architecture that can be swapped in or out. This allows the overall project to evolve at different speeds, and separate run-times from other modules devoted to neural net algorithms on the one hand, and hardware on the other. Deeplearning4j users are also able to build a standalone distributed architecture via Akka, spinning out nodes on AWS.
 
