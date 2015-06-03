@@ -1300,10 +1300,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         assertEquals(getFailureMessage(),cumSumAnswer, cumSumTest);
 
         INDArray n2 = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
-        INDArray cumSumCorrect2 = Nd4j.create(new double[]{1.0, 3.0, 10.0, 18.0, 31.0, 45.0, 64.0, 84.0, 87.0, 91.0, 100.0, 110.0, 125.0, 141.0, 162.0, 184.0, 189.0, 195.0, 206.0, 218.0, 235.0, 253.0, 276.0, 300.0}, new int[]{1,24});
-        INDArray cumSumTest2 = n2.cumsum(n2.shape().length - 1);
-        assertEquals(getFailureMessage(),cumSumCorrect2, cumSumTest2);
-
+    
         INDArray axis0assertion = Nd4j.create(new double[]{1.0, 3.0, 6.0, 16.0, 21.0, 27.0, 7.0, 15.0, 24.0, 58.0, 69.0, 81.0, 13.0, 27.0, 42.0, 58.0, 17.0, 18.0, 19.0, 39.0, 60.0, 82.0, 23.0, 24.0}, n2.shape());
         INDArray axis0Test = n2.cumsum(0);
         assertEquals(getFailureMessage(),axis0assertion, axis0Test);

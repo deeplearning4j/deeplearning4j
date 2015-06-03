@@ -806,7 +806,7 @@ public abstract class BaseNDArray implements INDArray {
                 s += getDouble(i);
                 putScalar(i, s);
             }
-        } else if (dimension == Integer.MAX_VALUE || dimension == shape.length - 1) {
+        } else if (dimension == Integer.MAX_VALUE) {
             INDArray flattened = ravel();
             double prevVal = flattened.getDouble(0);
             for (int i = 1; i < flattened.length(); i++) {
