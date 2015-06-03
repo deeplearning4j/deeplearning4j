@@ -25,7 +25,7 @@ Let's say you have a deep-belief net that you want to train on a very large data
 
 Map places all those operations on each core in your distributed system. Then it distributed batches of your very large input dataset over those many cores. On each core, a model is trained on the input it receives. *Reduce* takes all those models and averages the parameters, before sending the new, aggregate model back to each core. Iterative Reduce does that many times until learning plateaus and error ceases to shrink. 
 
-The image below compares the two processes. On the left, you have a close-up of MapReduce; on the right, of Iterative. Each "Superstep" is an instance of parameter averaging, and each "Processor" is a deep-belief network at work, learning on batches of a larger dataset. 
+The image below compares the two processes. On the left, you have a close-up of MapReduce; on the right, of Iterative. Each "Processor" is a deep-belief network at work, learning on batches of a larger dataset; each "Superstep" is an instance of parameter averaging, before the central model is redistributed to the rest of the cluster. 
 
 ![Alt text](../img/mapreduce_v_iterative.png)
 
