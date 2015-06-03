@@ -148,7 +148,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet copy() {
-        return new DataSet(getFeatures().dup(), getLabels().dup());
+        DataSet ret = new DataSet(getFeatures().dup(), getLabels().dup());
+        ret.setColumnNames(getColumnNames());
+        ret.setLabelNames(getLabelNames());
+        return ret;
     }
 
     /**
@@ -223,7 +226,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray toAdd) {
-        setFeatures(Nd4j.hstack());
+        setFeatures(Nd4j.hstack(getFeatureMatrix(),toAdd));
     }
 
 
@@ -235,7 +238,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray feature, int example) {
-        getFeatures().putRow(example, Nd4j.hstack());
+        getFeatures().putRow(example, feature);
     }
 
     @Override
@@ -484,7 +487,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public List<DataSet> asList() {
         List<DataSet> list = new ArrayList<>(numExamples());
         for (int i = 0; i < numExamples(); i++) {
-            list.add(new DataSet(getFeatures().getRow(i).dup(), getLabels().getRow(i).dup()));
+            list.add(new DataSet(getFeatures().getRow(i), getLabels().getRow(i)));
         }
         return list;
     }
