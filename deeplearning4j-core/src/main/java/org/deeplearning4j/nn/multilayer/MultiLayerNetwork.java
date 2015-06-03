@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 
@@ -721,7 +722,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public MultiLayerNetwork clone() {
         MultiLayerNetwork ret;
         try {
-            ret = getClass().newInstance();
+            Constructor<MultiLayerNetwork> constructor = (Constructor<MultiLayerNetwork>) getClass().getDeclaredConstructor(MultiLayerConfiguration.class);
+            ret = constructor.newInstance(getLayerWiseConfigurations());
             ret.update(this);
 
         } catch (Exception e) {
