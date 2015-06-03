@@ -17,9 +17,9 @@ For example, in their simplest form, map and reduce can understood with the exam
 
 MapReduce operates on a larger scale. Map breaks down a very large job by distributing data to many cores, and running the same operation(s) on those data shards. Reduce consolidates all those scattered and transformed shards into one dataset, gathering all the work into one place and applying an additional operation. Map explodes and Reduce collapses, like a star expands to become a Red Giant, and shrinks to a White Dwarf. 
 
-## Iterative Reduce
+## Iterative MapReduce
 
-Iterative Reduce is simply a series of MapReduce operations, where the output of MapReduce1 becomes the input of MapReduce2 and so on. While a single pass of MapReduce performs fine for many use cases, it is insufficient for machine- and deep learning, which are iterative in nature, since a model "learns" with an optimization algorithm that leads it to a point of minimal error over many steps. Each step would trigger another round of MapReduce. 
+Iterative MapReduce, also inspired by Jeff Dean, is simply a series of MapReduce operations, where the output of MapReduce1 becomes the input of MapReduce2 and so on. While a single pass of MapReduce performs fine for many use cases, it is insufficient for machine- and deep learning, which are iterative in nature, since a model "learns" with an optimization algorithm that leads it to a point of minimal error over many steps. Each step would trigger another round of MapReduce. 
 
 Let's say you have a deep-belief net that you want to train on a very large dataset to create a model that accurately classifies  your inputs. A deep-belief net is composed of three functions: a scoring function that maps inputs to classifications; an error function that measures the difference between the model's guesses and the correct answer; and optimization algorithm that adjusts the parameters of your model until they make the guesses with the least amount of error. 
 
