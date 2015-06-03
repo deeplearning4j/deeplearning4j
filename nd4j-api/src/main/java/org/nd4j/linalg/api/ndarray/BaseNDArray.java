@@ -3589,14 +3589,9 @@ public abstract class BaseNDArray implements INDArray {
 
         ensureNotCleanedUp();
         INDArray ret = create(new int[]{1,length}, ordering);
-
-        int dimension = shape.length == 2 ? 1 : shape.length - 1;
-        int count = 0;
-        for (int i = 0; i < vectorsAlongDimension(dimension); i++) {
-            INDArray vec = vectorAlongDimension(i, dimension);
-            for (int j = 0; j < vec.length(); j++) {
-                ret.putScalar(count++, vec.getDouble(j));
-            }
+        INDArray linear = linearView();
+        for(int i = 0; i < length(); i++) {
+            ret.putScalar(i,linear.getDouble(i));
         }
 
         return ret;

@@ -460,13 +460,28 @@ public class SimpleJCublas {
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 double alpha, double beta) {
 
+        int m = A.rows();
+        int n = B.columns();
+        int k = A.columns();
+        int lda = A.size(0);
+        int ldb = B.size(0);
+        int ldc = C.size(0);
+        if(A.offset() > 0) {
+            INDArray copy = Nd4j.create(A.shape());
+            copy.assign(A);
+            A = copy;
+        }
+        if(B.offset() > 0) {
+            INDArray copy = Nd4j.create(B.shape());
+            copy.assign(B);
+            B = copy;
+        }
+
+
         DataTypeValidation.assertDouble(A, B, C);
 
         sync();
 
-        JCublasNDArray cA = (JCublasNDArray) A;
-        JCublasNDArray cB = (JCublasNDArray) B;
-        JCublasNDArray cC = (JCublasNDArray) C;
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
@@ -477,17 +492,17 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 cublasOperation.CUBLAS_OP_N, //trans
                 cublasOperation.CUBLAS_OP_N,
-                C.rows(),  // m
-                C.columns(), // n
-                A.columns(), //k,
+                m,  // m
+                n, // n
+                k, //k,
                 Pointer.to(new double[]{alpha}),
                 cAPointer.getDevicePointer(), // A
-                A.rows(),  // lda
+                lda,  // lda
                 cBPointer.getDevicePointer(), // x
-                B.rows(), // ldb
+               ldb, // ldb
                 Pointer.to(new double[]{beta}),
                 cCPointer.getDevicePointer(), // y
-                C.rows()); // incy
+                ldc); // incy
 
         sync();
 
@@ -513,6 +528,26 @@ public class SimpleJCublas {
         DataTypeValidation.assertFloat(A, B, C);
         sync();
 
+        int m = A.rows();
+        int n = B.columns();
+        int k = A.columns();
+        int lda = A.size(0);
+        int ldb = B.size(0);
+        int ldc = C.size(0);
+        if(A.offset() > 0) {
+            INDArray copy = Nd4j.create(A.shape());
+            copy.assign(A);
+            A = copy;
+        }
+        if(B.offset() > 0) {
+            INDArray copy = Nd4j.create(B.shape());
+            copy.assign(B);
+            B = copy;
+        }
+
+
+
+
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
@@ -522,17 +557,17 @@ public class SimpleJCublas {
                 ContextHolder.getInstance().getHandle(),
                 cublasOperation.CUBLAS_OP_N, //trans
                 cublasOperation.CUBLAS_OP_N,
-                C.rows(),  // m
-                C.columns(), // n
-                A.columns(), //k,
+                m,  // m
+                n, // n
+                k, //k,
                 Pointer.to(new float[]{alpha}),
                 cAPointer.getDevicePointer(), // A
-                A.rows(),  // lda
+                lda,  // lda
                 cBPointer.getDevicePointer(), // x
-                B.rows(), // ldb
+                ldb, // ldb
                 Pointer.to(new float[]{beta}),
                 cCPointer.getDevicePointer(), // y
-                C.rows()); // incy
+                ldc); // incy
         sync();
 
         cCPointer.copyToHost();

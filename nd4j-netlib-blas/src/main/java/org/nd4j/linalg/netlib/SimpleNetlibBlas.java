@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.NDArrayFactory;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.netlib.complex.ComplexDouble;
 import org.nd4j.linalg.netlib.complex.ComplexFloat;
 import org.netlib.util.intW;
@@ -175,25 +176,41 @@ public class SimpleNetlibBlas {
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 double alpha, double beta) {
 
+        int m = A.rows();
+        int n = B.columns();
+        int k = A.columns();
+        int lda = A.size(0);
+        int ldb = B.size(0);
+        int ldc = C.size(0);
+        if(A.offset() > 0) {
+            INDArray copy = Nd4j.create(A.shape());
+            copy.assign(A);
+            A = copy;
+        }
+        if(B.offset() > 0) {
+            INDArray copy = Nd4j.create(B.shape());
+            copy.assign(B);
+            B = copy;
+        }
 
         DataTypeValidation.assertDouble(A, B, C);
         BLAS.getInstance().dgemm(
                 "N",
                 "N",
-                C.rows(),
-                C.columns(),
-                A.columns(),
+                m,
+                n,
+                k,
                 alpha,
                 A.data().asDouble(),
                 A.offset(),
-                A.rows()
+                lda
                 , B.data().asDouble(),
                 B.offset(),
-                B.rows(),
+                ldb,
                 beta,
                 C.data().asDouble(),
                 C.offset(),
-                C.rows());
+                ldc);
 
         return C;
 
@@ -212,25 +229,42 @@ public class SimpleNetlibBlas {
     public static INDArray gemm(INDArray A, INDArray B, INDArray C,
                                 float alpha, float beta) {
 
+        int m = A.rows();
+        int n = B.columns();
+        int k = A.columns();
+        int lda = A.size(0);
+        int ldb = B.size(0);
+        int ldc = C.size(0);
+        if(A.offset() > 0) {
+            INDArray copy = Nd4j.create(A.shape());
+            copy.assign(A);
+            A = copy;
+        }
+        if(B.offset() > 0) {
+            INDArray copy = Nd4j.create(B.shape());
+            copy.assign(B);
+            B = copy;
+        }
+
         DataTypeValidation.assertFloat(A, B, C);
 
         BLAS.getInstance().sgemm(
                 "N",
                 "N",
-                C.rows(),
-                C.columns(),
-                A.columns(),
+                m,
+                n,
+                k,
                 alpha,
                 A.data().asFloat(),
                 A.offset(),
-                A.rows()
+                lda
                 , B.data().asFloat(),
                 B.offset(),
-                B.rows(),
+                ldb,
                 beta,
                 C.data().asFloat(),
                 C.offset(),
-                C.rows());
+                ldc);
 
         return C;
 

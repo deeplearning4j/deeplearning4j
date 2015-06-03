@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.DataTypeValidation;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jblas.complex.ComplexDouble;
 import org.nd4j.linalg.jblas.complex.ComplexFloat;
 
@@ -552,7 +553,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray ger(float alpha, INDArray x,
                         INDArray y, INDArray a) {
         if(x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            return ger((double) alpha,x,y,a);
+            return ger((double) alpha, x, y, a);
         }
         DataTypeValidation.assertFloat(x, y, a);
 
@@ -599,9 +600,9 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
         DataTypeValidation.assertFloat(a, x, y);
-       if(a.offset() > 0) {
-           a = a.ravel().reshape(a.rows(),a.columns());
-       }
+        if(a.offset() > 0) {
+            a = a.ravel().reshape(a.rows(),a.columns());
+        }
         if(x.offset() > 0) {
             x = x.ravel().reshape(x.rows(),x.columns());
 
@@ -748,10 +749,14 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         }
         DataBuffer aData = a.offset() > 0 ? a.ravel().data() : a.data();
         DataBuffer bData = b.offset() > 0 ? b.ravel().data() : b.data();
-        if(a.offset() > 0)
-            a = a.ravel();
-        if(b.offset() > 0)
-            b = b.ravel();
+        if(a.offset() > 0) {
+            int[] shape = a.shape();
+            a = a.ravel().reshape(shape);
+        }
+        if(b.offset() > 0) {
+            int[] bShape = b.shape();
+            b = b.ravel().reshape(bShape);
+        }
 
         NativeBlas.dgemm(
                 'N',
@@ -763,7 +768,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 aData.asDouble(),
                 a.offset(),
                 a.size(0)
-                ,bData.asDouble(),
+                , bData.asDouble(),
                 b.offset(),
                 b.size(0),
                 beta,
@@ -805,11 +810,16 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         int lda = a.size(0);
         int ldb = b.size(0);
         int ldc = c.size(0);
-        if(a.offset() > 0)
-            a = a.ravel();
-        if(b.offset() > 0)
-            b = b.ravel();
-
+        if(a.offset() > 0) {
+            INDArray copy = Nd4j.create(a.shape());
+            copy.assign(a);
+            a = copy;
+        }
+        if(b.offset() > 0) {
+            INDArray copy = Nd4j.create(b.shape());
+            copy.assign(b);
+            b = copy;
+        }
 
 
 
@@ -822,7 +832,7 @@ public class BlasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
                 alpha,
                 a.data().asFloat(),
                 a.offset(),
-               lda
+                lda
                 , b.data().asFloat(),
                 b.offset(),
                 ldb,

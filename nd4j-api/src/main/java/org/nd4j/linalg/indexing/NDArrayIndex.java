@@ -43,7 +43,6 @@ public class NDArrayIndex {
      */
     public NDArrayIndex(int... indices) {
         this.indices = indices;
-
     }
 
 
@@ -243,7 +242,6 @@ public class NDArrayIndex {
         NDArrayIndex that = (NDArrayIndex) o;
 
         if (!Arrays.equals(indices, that.indices)) return false;
-
         return true;
     }
 

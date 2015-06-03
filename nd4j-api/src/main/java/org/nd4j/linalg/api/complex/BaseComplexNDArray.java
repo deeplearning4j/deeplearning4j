@@ -3303,20 +3303,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNDArray ravel() {
         ensureNotCleanedUp();
         IComplexNDArray ret = Nd4j.createComplex(length, ordering);
-
-        if(isVector()) {
-            for(int i = 0; i < ret.length(); i++) {
-                ret.putScalar(i,getComplex(i));
-            }
-            return ret;
-        }
-        int dimension = -1;
-        int count = 0;
-        for (int i = 0; i < vectorsAlongDimension(dimension); i++) {
-            IComplexNDArray vec = vectorAlongDimension(i, dimension);
-            for (int j = 0; j < vec.length(); j++) {
-                ret.putScalar(count++, vec.getComplex(j));
-            }
+        IComplexNDArray linear = linearView();
+        for(int i = 0; i < length(); i++) {
+            ret.putScalar(i,linear.getComplex(i));
         }
 
         return ret;
