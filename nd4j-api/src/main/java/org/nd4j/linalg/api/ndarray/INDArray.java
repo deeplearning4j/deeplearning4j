@@ -855,34 +855,34 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * In place addition of a column vector
+     * In place division of a column vector
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector used for division
+     * @return the result of the division 
      */
     INDArray diviColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * Division of a column vector (copy)
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector used for division
+     * @return the result of the division 
      */
     INDArray divColumnVector(INDArray columnVector);
 
-    /**
-     * In place addition of a column vector
+     /**
+     * In place division of a row vector
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector used for division
+     * @return the result of the division 
      */
     INDArray diviRowVector(INDArray rowVector);
 
     /**
-     * In place addition of a column vector
+     * Division of a row vector (copy)
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector used for division
+     * @return the result of the division 
      */
     INDArray divRowVector(INDArray rowVector);
 
@@ -890,130 +890,130 @@ public interface INDArray extends Serializable  {
     /**
      * In place reverse divison of a column vector
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector used for division
+     * @return the result of the division 
      */
     INDArray rdiviColumnVector(INDArray columnVector);
 
     /**
-     * In place reverse division of a column vector
+     * Reverse division of a column vector (copy)
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector used for division
+     * @return the result of the division 
      */
     INDArray rdivColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * In place reverse division of a column vector
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector used for division
+     * @return the result of the division 
      */
     INDArray rdiviRowVector(INDArray rowVector);
 
     /**
-     * In place addition of a column vector
+     * Reverse division of a column vector (copy)
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector used for division
+     * @return the result of the division 
      */
     INDArray rdivRowVector(INDArray rowVector);
 
 
     /**
-     * In place addition of a column vector
+     * In place multiplication of a column vector
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector used for multiplication
+     * @return the result of the multiplication
      */
     INDArray muliColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * Multiplication of a column vector (copy)
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector used for multiplication
+     * @return the result of the multiplication
      */
     INDArray mulColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * In place multiplication of a row vector
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector used for multiplication
+     * @return the result of the multiplication
      */
     INDArray muliRowVector(INDArray rowVector);
 
     /**
-     * In place addition of a column vector
+     * Multiplication of a row vector (copy)
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector used for multiplication
+     * @return the result of the multiplication
      */
     INDArray mulRowVector(INDArray rowVector);
 
 
     /**
-     * In place addition of a column vector
+     * In place reverse subtraction of a column vector
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector to subtract
+     * @return the result of the subtraction
      */
     INDArray rsubiColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * Reverse subtraction of a column vector (copy)
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector to subtract
+     * @return the result of the subtraction
      */
     INDArray rsubColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * In place reverse subtraction of a row vector
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector to subtract
+     * @return the result of the subtraction
      */
     INDArray rsubiRowVector(INDArray rowVector);
 
     /**
-     * In place addition of a column vector
+     * Reverse subtraction of a row vector (copy)
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector to subtract
+     * @return the result of the subtraction
      */
     INDArray rsubRowVector(INDArray rowVector);
 
     /**
-     * In place addition of a column vector
+     * In place subtraction of a column vector
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector to subtract
+     * @return the result of the subtraction
      */
     INDArray subiColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * Subtraction of a column vector (copy)
      *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
+     * @param columnVector the column vector to subtract
+     * @return the result of the subtraction
      */
     INDArray subColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * In place subtraction of a row vector
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector to subtract
+     * @return the result of the subtraction
      */
     INDArray subiRowVector(INDArray rowVector);
 
     /**
-     * In place addition of a column vector
+     * Subtraction of a row vector (copy)
      *
-     * @param rowVector the column vector to add
-     * @return the result of the addition
+     * @param rowVector the row vector to subtract
+     * @return the result of the subtraction
      */
     INDArray subRowVector(INDArray rowVector);
 
@@ -1026,7 +1026,7 @@ public interface INDArray extends Serializable  {
     INDArray addiColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * Addition of a column vector (copy)
      *
      * @param columnVector the column vector to add
      * @return the result of the addition
@@ -1034,17 +1034,17 @@ public interface INDArray extends Serializable  {
     INDArray addColumnVector(INDArray columnVector);
 
     /**
-     * In place addition of a column vector
+     * In place addition of a row vector
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     INDArray addiRowVector(INDArray rowVector);
 
     /**
-     * In place addition of a column vector
+     * Addition of a row vector (copy)
      *
-     * @param rowVector the column vector to add
+     * @param rowVector the row vector to add
      * @return the result of the addition
      */
     INDArray addRowVector(INDArray rowVector);
