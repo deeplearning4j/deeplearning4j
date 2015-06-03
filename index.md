@@ -42,6 +42,6 @@ Here's an overview of the different libraries we've built and where they fit int
 
 There are a lot of parameters to adjust when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, [Scala](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-scala-api/src/main/scala/org/nd4j/api/linalg) and Clojure programmers.
 
-For any question, please join [our Google Group](https://groups.google.com/forum/#!forum/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact.html). [ND4J is the Java-based scientific computing engine](http://nd4j.org/) powering our matrix manipulations.
+If you have any questions, please join [us on Gitter](gitter.im/deeplearning4j/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact.html). [ND4J is the Java-based scientific computing engine](http://nd4j.org/) powering our matrix operations.
 
 ![Alt text](../img/logos_8.png)
