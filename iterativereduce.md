@@ -19,7 +19,11 @@ MapReduce operates on a larger scale. Map breaks down a very large job by distri
 
 ## Iterative MapReduce
 
-You can think of Iterative MapReduce, also [inspired by Jeff Dean](https://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/CIKM-keynote-Nov2014.pdf), as an extension of MapReduce, where the output of MapReduce1 becomes the input of MapReduce2 and so on. While a single pass of MapReduce performs fine for many use cases, it is insufficient for machine- and deep learning, which are iterative in nature, since a model "learns" with an optimization algorithm that leads it to a point of minimal error over many steps. Each step would trigger another round of MapReduce. 
+You can think of Iterative MapReduce, also [inspired by Jeff Dean](https://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/CIKM-keynote-Nov2014.pdf), as an asynchronous extension of MapReduce. 
+
+![Alt text](../img/asynchronous_SGD.png)
+
+While a single pass of MapReduce performs fine for many use cases, it is insufficient for machine- and deep learning, which are iterative in nature, since a model "learns" with an optimization algorithm that leads it to a point of minimal error over many steps. Each step would trigger another round of MapReduce. 
 
 Let's say you have a deep-belief net that you want to train on a very large dataset to create a model that accurately classifies  your inputs. A deep-belief net is composed of three functions: a scoring function that maps inputs to classifications; an error function that measures the difference between the model's guesses and the correct answer; and optimization algorithm that adjusts the parameters of your model until they make the guesses with the least amount of error. 
 
