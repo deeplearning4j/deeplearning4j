@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.conf;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
+import org.deeplearning4j.nn.conf.rng.DefaultRandom;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -349,6 +351,8 @@ public class MultiLayerConfiguration implements Serializable {
             conf.processors = preProcessors;
             conf.backward = backward;
             conf.inputPreProcessors = inputPreProcessor;
+            DefaultRandom r = (DefaultRandom) conf.getConf(0).getRng();
+            Nd4j.getRandom().setSeed(r.getSeed());
             return conf;
 
         }
