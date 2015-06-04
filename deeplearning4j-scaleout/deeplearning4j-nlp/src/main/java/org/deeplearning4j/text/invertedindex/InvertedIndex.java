@@ -219,7 +219,7 @@ public interface InvertedIndex extends Serializable {
      * Total number of words in the index
      * @return the total number of words in the index
      */
-    int totalWords();
+    long totalWords();
 
     /**
      * For word vectors, this is the batch size for which to train on

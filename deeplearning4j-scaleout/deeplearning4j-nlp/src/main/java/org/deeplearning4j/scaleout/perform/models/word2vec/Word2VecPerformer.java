@@ -208,7 +208,7 @@ public class Word2VecPerformer implements WorkerPerformer {
         conf.setBoolean(ADAGRAD, table.isUseAdaGrad());
         conf.setFloat(NEGATIVE, (float) table.getNegative());
         conf.setFloat(ALPHA,(float) table.getLr().get());
-        conf.setInt(NUM_WORDS, index.totalWords());
+        conf.setLong(NUM_WORDS, index.totalWords());
         conf.set(JobAggregator.AGGREGATOR, Word2VecJobAggregator.class.getName());
         conf.set(WorkerPerformerFactory.WORKER_PERFORMER,Word2VecPerformerFactory.class.getName());
         table.resetWeights();

@@ -44,5 +44,16 @@ public class NeuralNetConfigurationTest {
         assertEquals(conf,read);
     }
 
+    @Test
+    public void testCopyConstructor() {
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dist(new NormalDistribution(1,1))
+                .layer(new RBM()).useAdaGrad(false)
+                .build();
+
+        NeuralNetConfiguration conf2 = new NeuralNetConfiguration(conf);
+        assertEquals(conf,conf2);
+    }
+
 
 }

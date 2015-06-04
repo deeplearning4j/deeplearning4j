@@ -31,6 +31,7 @@ import java.io.Serializable;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public interface DataSetFetcher extends Serializable {
 
 	/**

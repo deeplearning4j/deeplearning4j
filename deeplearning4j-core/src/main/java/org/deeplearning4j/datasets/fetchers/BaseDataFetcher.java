@@ -72,7 +72,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	}
 	
 	/**
-	 * Initializes this data applyTransformToDestination fetcher from the passed in datasets
+	 * Initializes this data transform fetcher from the passed in datasets
 	 * @param examples the examples to use
 	 */
 	protected void initializeCurrFromList(List<DataSet> examples) {
@@ -83,8 +83,10 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 		INDArray inputs = createInputMatrix(examples.size());
 		INDArray labels = createOutputMatrix(examples.size());
 		for(int i = 0; i < examples.size(); i++) {
-			inputs.putRow(i, examples.get(i).getFeatureMatrix());
-			labels.putRow(i,examples.get(i).getLabels());
+			INDArray data = examples.get(i).getFeatureMatrix();
+			INDArray label = examples.get(i).getLabels();
+			inputs.putRow(i, data);
+			labels.putRow(i,label);
 		}
 		curr = new DataSet(inputs,labels);
         examples.clear();

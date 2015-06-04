@@ -29,8 +29,10 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Constructor;
@@ -54,7 +56,7 @@ public abstract class BaseLayer implements Layer {
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
-    
+
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
     }
@@ -125,7 +127,27 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setScore() {
+        if(this.input == null)
+            return;
 
+        INDArray output = transform(input);
+        if(conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(),input,output);
+            create.exec();
+            score = -create.currentResult().doubleValue();
+        }
+        else {
+            score = -LossFunctions.score(
+                    input,
+                    conf.getLossFunction(),
+                    output,
+                    conf.getL2(),
+                    conf.isUseRegularization());
+        }
+
+        //minimization target
+        if(conf.isMinimize())
+            score = -score;
     }
 
 

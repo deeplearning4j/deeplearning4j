@@ -38,7 +38,7 @@ public class SubsampleTests {
         input = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 20), NDArrayIndex.interval(0,20));
 
         INDArray output = model.activate(input);
-        assertTrue(Arrays.equals(new int[]{mnist.numExamples(),1,19,19},output.shape()));
+        assertTrue(Arrays.equals(new int[]{mnist.numExamples(),1,10,21},output.shape()));
     }
 
 }
