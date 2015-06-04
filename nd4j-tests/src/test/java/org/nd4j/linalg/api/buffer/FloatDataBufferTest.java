@@ -28,7 +28,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.util.SerializationUtils;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -71,6 +73,25 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         float[] d2 = d.asFloat();
         assertArrayEquals(getFailureMessage(),d1, d2, 1e-1f);
 
+    }
+
+
+    @Test
+    public void testSerialization() {
+        DataBuffer buf = Nd4j.createBuffer(5);
+        String fileName = "buf.ser";
+        File file = new File(fileName);
+        file.deleteOnExit();
+        org.nd4j.linalg.util.SerializationUtils.saveObject(buf, file);
+        DataBuffer buf2 = SerializationUtils.readObject(file);
+        assertEquals(buf, buf2);
+
+        Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
+        buf = Nd4j.createBuffer(5);
+        file.deleteOnExit();
+        org.nd4j.linalg.util.SerializationUtils.saveObject(buf, file);
+        buf2 = SerializationUtils.readObject(file);
+        assertEquals(buf, buf2);
     }
 
     @Test
