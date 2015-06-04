@@ -145,6 +145,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public BaseDataBuffer(int length, int elementSize) {
+        allocationMode = Nd4j.alloc;
         this.length = length;
         this.elementSize = elementSize;
         this.dataBuffer = Unpooled.buffer(elementSize * length, Integer.MAX_VALUE).order(ByteOrder.nativeOrder());
