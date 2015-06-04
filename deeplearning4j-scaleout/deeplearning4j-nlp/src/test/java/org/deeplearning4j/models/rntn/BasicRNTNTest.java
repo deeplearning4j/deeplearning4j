@@ -40,6 +40,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,6 +57,7 @@ public class BasicRNTNTest {
     private InvertedIndex index;
     private VocabCache cache;
     private WeightLookupTable lookupTable;
+    private List<Tree> trees = new ArrayList<>();
 
     @Before
     public void init() throws Exception {
@@ -75,7 +77,6 @@ public class BasicRNTNTest {
         if(lookupTable == null)
             lookupTable = new InMemoryLookupTable.Builder().cache(cache)
                     .vectorLength(100).build();
-
         if(index == null)
             index = new LuceneInvertedIndex.Builder()
                     .indexDir(new File("rntn-index")).cache(cache).build();
@@ -85,7 +86,7 @@ public class BasicRNTNTest {
                     .iterate(sentenceIter).build();
             vec.fit();
         }
-
+        List<Tree> trees = vectorizer.getTreesWithLabels(sentence, Arrays.asList("LABEL"));
 
 
     }
@@ -95,7 +96,6 @@ public class BasicRNTNTest {
         FileUtils.deleteDirectory(new File("rntn-index"));
     }
 
-
     @Test
     public void testGetValuesAndDerivativeLengths() throws Exception {
 
@@ -104,18 +104,30 @@ public class BasicRNTNTest {
                 .setCombineClassification(true).setFeatureVectors(vec)
                 .setRandomFeatureVectors(false)
                 .setUseTensors(false).build();
-        List<Tree> trees = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
 
         INDArray params = rntn.getParameters();
         INDArray gradient = rntn.getValueGradient(trees);
         rntn.setParams(params);
         assertEquals(params.length(), gradient.length());
+    }
+
+    @Test
+    public void testRNTNEval() throws Exception {
+        RNTN rntn = new RNTN.Builder().setActivationFunction("tanh")
+                .setAdagradResetFrequency(1)
+                .setCombineClassification(true).setFeatureVectors(vec)
+                .setRandomFeatureVectors(false)
+                .setUseTensors(false).build();
 
         rntn.fit(trees);
 
+        RNTNEval eval = new RNTNEval();
+        List<Tree> treeTest = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
+        eval.eval(rntn, treeTest);
+        eval.stats();
+        assertNotEquals(0, eval.f1(), 1e-4);
 
-
-    }
+        }
 
 
 

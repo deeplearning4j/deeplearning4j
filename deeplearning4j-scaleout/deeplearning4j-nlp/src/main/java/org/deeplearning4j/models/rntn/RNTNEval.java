@@ -17,7 +17,7 @@
  */
 
 package org.deeplearning4j.models.rntn;
-
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.eval.ConfusionMatrix;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,7 +34,10 @@ import java.util.Set;
  */
 public class RNTNEval {
 
-    private ConfusionMatrix<Integer> cf = new ConfusionMatrix<>();
+    private Counter<Integer> truePositives = new Counter<>();
+    private Counter<Integer> falsePositives = new Counter<>();
+    private Counter<Integer> falseNegatives = new Counter<>();
+    private ConfusionMatrix<Integer> confusionMatrix = new ConfusionMatrix<>();
     private static final Logger log = LoggerFactory.getLogger(RNTNEval.class);
 
 
@@ -43,6 +46,7 @@ public class RNTNEval {
      * @param rntn
      * @param trees
      */
+
     public void eval(RNTN rntn, List<Tree> trees) {
         for(Tree t : trees) {
             rntn.forwardPropagateTree(t);
@@ -62,7 +66,20 @@ public class RNTNEval {
             count(t);
         int treeGoldLabel = tree.goldLabel();
         int predictionLabel = Nd4j.getBlasWrapper().iamax(tree.prediction());
-        cf.add(treeGoldLabel,predictionLabel);
+        confusionMatrix.add(treeGoldLabel, predictionLabel);
+    }
+
+
+    public void incrementTruePositives(int i) {
+        truePositives.incrementCount(i, 1.0);
+    }
+
+    public void incrementFalsePositives(int i) {
+        falsePositives.incrementCount(i, 1.0);
+    }
+
+    public void incrementFalseNegatives(int i) {
+        falseNegatives.incrementCount(i, 1.0);
     }
 
 
@@ -73,15 +90,99 @@ public class RNTNEval {
     public String stats() {
         StringBuilder builder = new StringBuilder()
                 .append("\n");
-        Set<Integer> classes = cf.getClasses();
+        Set<Integer> classes = confusionMatrix.getClasses();
         for(Integer clazz : classes) {
             for(Integer clazz2 : classes) {
-                int count = cf.getCount(clazz, clazz2);
+                int count = confusionMatrix.getCount(clazz, clazz2);
                 if(count != 0)
                     builder.append("\nActual Class " + clazz + " was predicted with Predicted " + clazz2 + " with count " + count  + " times\n");
+                if (clazz == clazz2) {
+                    incrementTruePositives(count);
+                } else {
+                    incrementFalsePositives(count);
+                }
             }
+            int falseNegatives = confusionMatrix.getActualTotal(clazz) - confusionMatrix.getPredictedTotal(clazz);
+            if (falseNegatives > 0) incrementFalseNegatives(falseNegatives);
         }
+        builder.append("\n==========================Scores========================================");
+        builder.append("\n Precision: " + precision());
+        builder.append("\n Recall: " + recall());
+        builder.append("\n F1 Score: " + f1());
+        builder.append("\n===========================================================================");
         return builder.toString();
     }
+
+
+    /**
+     * Total precision based on guesses so far
+     * @return the total precision based on guesses so far
+     *
+     */
+    public double precision() {
+        double prec = 0.0;
+        for(Integer i : confusionMatrix.getClasses()) {
+            prec += precision(i);
+        }
+        return prec / (double) confusionMatrix.getClasses().size();
+    }
+
+    /**
+     * Returns the precision for a given label
+     * @param i the label
+     * @return the precision for the label
+     */
+    public double precision(int i) {
+        if(truePositives.getCount(i) == 0)
+            return 0;
+        return truePositives.getCount(i) / (truePositives.getCount(i) + falsePositives.getCount(i));
+    }
+
+    /**
+     * Returns the recall for the outcomes
+     * @return the recall for the outcomes
+     */
+    public double recall() {
+        double r = 0.0;
+        for(Integer i : confusionMatrix.getClasses()) {
+            r += recall(i);
+        }
+        return r / (double) confusionMatrix.getClasses().size();
+    }
+
+    public double recall(int i) {
+        if(truePositives.getCount(i) == 0)
+            return 0;
+        return truePositives.getCount(i) / (truePositives.getCount(i) + falseNegatives.getCount(i));
+    }
+
+    /**
+     * TP: true positive
+     * FP: False Positive
+     * FN: False Negative
+     * F1 score: 2 * TP / (2TP + FP + FN)
+     * @return the f1 score or harmonic mean based on current guesses
+     */
+    public double f1() {
+        double precision = precision();
+        double recall = recall();
+        if(precision == 0 || recall == 0)
+            return 0;
+        return 2.0 * ((precision * recall / (precision + recall)));
+    }
+
+    /**
+     * Calculate f1 score for a given class
+     * @param i the label to calculate f1 for
+     * @return the f1 score for the given label
+     */
+    public double f1(int i) {
+        double precision = precision(i);
+        double recall = recall();
+        if(precision == 0 || recall == 0)
+            return 0;
+        return 2.0 * ((precision * recall / (precision + recall)));
+    }
+
 
 }
