@@ -145,7 +145,7 @@ public class GlovePerformer implements WorkerPerformer {
         conf.setInt(VECTOR_LENGTH, table.getVectorLength());
         conf.setFloat(ALPHA,(float) table.getLr().get());
         conf.setStrings(LOOKUPTABLE_SIZE,String.valueOf(table.getSyn0().rows()),String.valueOf(table.getSyn0().columns()));
-        conf.setInt(NUM_WORDS, index.totalWords());
+        conf.setLong(NUM_WORDS, index.totalWords());
         conf.set(JobAggregator.AGGREGATOR, GloveJobAggregator.class.getName());
         conf.set(WorkerPerformerFactory.WORKER_PERFORMER,GlovePerformerFactory.class.getName());
         table.resetWeights();
