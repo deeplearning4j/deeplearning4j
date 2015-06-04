@@ -28,11 +28,14 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
 import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base class for a data buffer
@@ -44,7 +47,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected int length;
     protected int elementSize;
-    protected ByteBuf dataBuffer;
+    protected transient ByteBuf dataBuffer;
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
     protected boolean isPersist = false;
@@ -142,6 +145,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public BaseDataBuffer(int length, int elementSize) {
+        allocationMode = Nd4j.alloc;
         this.length = length;
         this.elementSize = elementSize;
         this.dataBuffer = Unpooled.buffer(elementSize * length, Integer.MAX_VALUE).order(ByteOrder.nativeOrder());
@@ -668,6 +672,75 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
 
         return true;
+    }
+
+    private void readObject(ObjectInputStream s) {
+        doReadObject(s);
+
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out)
+            throws IOException {
+        doWriteObject(out);
+    }
+
+
+    protected void doReadObject(ObjectInputStream s) {
+        try {
+            ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
+            referencing = Collections.synchronizedSet(new HashSet<String>());
+
+            allocationMode = AllocationMode.valueOf(s.readUTF());
+            length = s.readInt();
+            Type t = Type.valueOf(s.readUTF());
+            if(t == Type.DOUBLE) {
+                if(allocationMode == AllocationMode.HEAP) {
+                    floatData = new float[length()];
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readFloat());
+                    }
+                }
+                else {
+                    dataBuffer = Unpooled.buffer(length() * getElementSize()).order(ByteOrder.nativeOrder());
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readFloat());
+                    }
+                }
+            }
+            else {
+                if(allocationMode == AllocationMode.HEAP) {
+                    doubleData = new double[length()];
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readDouble());
+                    }
+                }
+                else {
+                    dataBuffer = Unpooled.buffer(length() * getElementSize()).order(ByteOrder.nativeOrder());
+                    for(int i = 0; i < length(); i++) {
+                        put(i,s.readDouble());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    protected void doWriteObject(java.io.ObjectOutputStream out) throws IOException {
+        out.writeUTF(allocationMode.name());
+        out.writeInt(length());
+        out.writeUTF(dataType().name());
+        if(dataType() == Type.DOUBLE) {
+            for(int i = 0; i < length(); i++)
+                out.writeDouble(getDouble(i));
+        }
+        else {
+            for(int i = 0; i < length(); i++)
+                out.writeFloat(getFloat(i));
+        }
+
     }
 
     @Override
