@@ -55,20 +55,20 @@ import org.apache.uima.resource.ResourceInitializationException;
  * @see {@link TokenizerME}
  */
 public class ConcurrentTokenizer extends AbstractTokenizer {
-  
+
   /**
    * The OpenNLP tokenizer.
    */
   private TokenizerME tokenizer;
-  
-  private Feature probabilityFeature;
-  
-  @Override
-public synchronized void process(CAS cas) throws AnalysisEngineProcessException {
-	super.process(cas);
-}
 
-/**
+  private Feature probabilityFeature;
+
+  @Override
+  public synchronized void process(CAS cas) throws AnalysisEngineProcessException {
+    super.process(cas);
+  }
+
+  /**
    * Initializes a new instance.
    *
    * Note: Use {@link #initialize(UimaContext) } to initialize 
@@ -76,17 +76,17 @@ public synchronized void process(CAS cas) throws AnalysisEngineProcessException 
    */
   public ConcurrentTokenizer() {
     super("OpenNLP Tokenizer");
-	  
+
     // must not be implemented !
   }
-  
+
   /**
    * Initializes the current instance with the given context.
-   * 
+   *
    * Note: Do all initialization in this method, do not use the constructor.
    */
   public void initialize(UimaContext context)
-      throws ResourceInitializationException {
+          throws ResourceInitializationException {
 
     super.initialize(context);
 
@@ -94,7 +94,7 @@ public synchronized void process(CAS cas) throws AnalysisEngineProcessException 
 
     try {
       TokenizerModelResource modelResource = (TokenizerModelResource) context
-          .getResourceObject(UimaUtil.MODEL_PARAMETER);
+              .getResourceObject(UimaUtil.MODEL_PARAMETER);
 
       model = modelResource.getModel();
     } catch (ResourceAccessException e) {
@@ -108,35 +108,35 @@ public synchronized void process(CAS cas) throws AnalysisEngineProcessException 
    * Initializes the type system.
    */
   public void typeSystemInit(TypeSystem typeSystem)
-      throws AnalysisEngineProcessException {
+          throws AnalysisEngineProcessException {
 
     super.typeSystemInit(typeSystem);
 
     probabilityFeature = AnnotatorUtil
-        .getOptionalFeatureParameter(context, tokenType,
-            UimaUtil.PROBABILITY_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
+            .getOptionalFeatureParameter(context, tokenType,
+                    UimaUtil.PROBABILITY_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
   }
 
-  
+
   @Override
   protected Span[] tokenize(CAS cas, AnnotationFS sentence) {
     return tokenizer.tokenizePos(sentence.getCoveredText());
   }
-  
+
   @Override
   protected void postProcessAnnotations(Span[] tokens,
-      AnnotationFS[] tokenAnnotations) {
+                                        AnnotationFS[] tokenAnnotations) {
     // if interest
     if (probabilityFeature != null) {
       double tokenProbabilties[] = tokenizer.getTokenProbabilities();
 
       for (int i = 0; i < tokenAnnotations.length; i++) {
         tokenAnnotations[i].setDoubleValue(probabilityFeature,
-            tokenProbabilties[i]);
+                tokenProbabilties[i]);
       }
     }
   }
-  
+
   /**
    * Releases allocated resources.
    */
