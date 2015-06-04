@@ -750,8 +750,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void setLabelNames(List<String> labelNames) {
-        if (labelNames == null || labelNames.size() != numOutcomes())
-            throw new IllegalArgumentException("Unable to transform label names, does not match number of possible outcomes");
         this.labelNames = labelNames;
     }
 
