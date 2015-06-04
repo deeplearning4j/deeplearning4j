@@ -19,7 +19,7 @@ MapReduce operates on a larger scale. Map breaks down a very large job by distri
 
 ## Iterative MapReduce
 
-You can think of Iterative MapReduce, also [inspired by Jeff Dean](https://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/CIKM-keynote-Nov2014.pdf), as an asynchronous extension of MapReduce. 
+You can think of Iterative MapReduce, also [inspired by Jeff Dean](https://static.googleusercontent.com/media/research.google.com/en/us/people/jeff/CIKM-keynote-Nov2014.pdf), as an extension of MapReduce. 
 
 ![Alt text](../img/asynchronous_SGD.png)
 
