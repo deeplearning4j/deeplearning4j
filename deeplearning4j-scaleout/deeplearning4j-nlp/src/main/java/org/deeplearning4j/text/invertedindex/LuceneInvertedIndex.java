@@ -667,7 +667,7 @@ public class LuceneInvertedIndex implements InvertedIndex, IndexReader.ReaderClo
     }
 
     @Override
-    public int totalWords() {
+    public long totalWords() {
         return totalWords.get();
     }
 
