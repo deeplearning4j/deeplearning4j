@@ -774,8 +774,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void setColumnNames(List<String> columnNames) {
-        if (columnNames.size() != numInputs())
-            throw new IllegalArgumentException("Column names don't match input");
         this.columnNames = columnNames;
     }
 
