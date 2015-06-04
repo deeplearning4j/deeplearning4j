@@ -38,6 +38,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -101,9 +102,11 @@ public class BasicRNTNTest {
 
         RNTN rntn = new RNTN.Builder().setActivationFunction("tanh")
                 .setAdagradResetFrequency(1)
-                .setCombineClassification(true).setFeatureVectors(vec)
+                .setCombineClassification(true)
+                .setFeatureVectors(vec)
                 .setRandomFeatureVectors(false)
-                .setUseTensors(false).build();
+                .setUseTensors(false)
+                .build();
 
         INDArray params = rntn.getParameters();
         INDArray gradient = rntn.getValueGradient(trees);
@@ -114,17 +117,21 @@ public class BasicRNTNTest {
     @Test
     public void testRNTNEval() throws Exception {
         RNTN rntn = new RNTN.Builder().setActivationFunction("tanh")
+                .setRng(new DefaultRandom(3))
                 .setAdagradResetFrequency(1)
-                .setCombineClassification(true).setFeatureVectors(vec)
+                .setCombineClassification(true)
+                .setFeatureVectors(vec)
                 .setRandomFeatureVectors(false)
-                .setUseTensors(false).build();
+                .setUseTensors(false)
+                .build();
 
         rntn.fit(trees);
 
         RNTNEval eval = new RNTNEval();
         List<Tree> treeTest = vectorizer.getTreesWithLabels(sentence,Arrays.asList("LABEL"));
         eval.eval(rntn, treeTest);
-        eval.stats();
+        System.out.print(eval.stats());
+        // TODO Fix rng in RNTN and test for equals
         assertNotEquals(0, eval.f1(), 1e-4);
 
         }
