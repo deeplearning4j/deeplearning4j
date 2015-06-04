@@ -35,6 +35,7 @@ import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base class for a data buffer
@@ -673,7 +674,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     private void readObject(ObjectInputStream s) {
+        doReadObject(s);
+
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out)
+            throws IOException {
+        doWriteObject(out);
+    }
+
+
+    protected void doReadObject(ObjectInputStream s) {
         try {
+            ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
+            referencing = Collections.synchronizedSet(new HashSet<String>());
+
             allocationMode = AllocationMode.valueOf(s.readUTF());
             length = s.readInt();
             Type t = Type.valueOf(s.readUTF());
@@ -710,11 +725,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
 
 
-
     }
 
-    private void writeObject(java.io.ObjectOutputStream out)
-            throws IOException {
+    protected void doWriteObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeUTF(allocationMode.name());
         out.writeInt(length());
         out.writeUTF(dataType().name());
@@ -727,7 +740,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 out.writeFloat(getFloat(i));
         }
 
-        out.flush();
     }
 
     @Override

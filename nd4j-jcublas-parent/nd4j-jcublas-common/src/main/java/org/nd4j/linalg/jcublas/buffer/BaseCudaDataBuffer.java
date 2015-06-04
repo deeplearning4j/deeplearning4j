@@ -477,43 +477,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws IOException {
-        stream.writeInt(length);
-        stream.writeInt(elementSize);
-        stream.writeBoolean(isPersist);
-        if(dataType() == DataBuffer.Type.DOUBLE) {
-            double[] d = asDouble();
-            for(int i = 0; i < d.length; i++)
-                stream.writeDouble(d[i]);
-        }
-        else if(dataType() == DataBuffer.Type.FLOAT) {
-            float[] f = asFloat();
-            for(int i = 0; i < f.length; i++)
-                stream.writeFloat(f[i]);
-        }
-
+        doWriteObject(stream);
 
     }
 
     private void readObject(java.io.ObjectInputStream stream)
             throws IOException, ClassNotFoundException {
-        length = stream.readInt();
-        elementSize = stream.readInt();
+
+        doReadObject(stream);
         isPersist = stream.readBoolean();
         pointersToContexts = HashBasedTable.create();
-        referencing = Collections.synchronizedSet(new HashSet<String>());
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         freed = new AtomicBoolean(false);
-        if(dataType() == DataBuffer.Type.DOUBLE) {
-            double[] d = new double[length];
-            for(int i = 0; i < d.length; i++)
-                d[i] = stream.readDouble();
-        } else if (dataType() == DataBuffer.Type.FLOAT) {
-            float[] f = new float[length];
-            for (int i = 0; i < f.length; i++)
-                f[i] = stream.readFloat();
-            BaseCudaDataBuffer buf = (BaseCudaDataBuffer) KernelFunctions.alloc(f);
-            setHostBuffer(buf.getHostBuffer());
-        }
     }
 
 
