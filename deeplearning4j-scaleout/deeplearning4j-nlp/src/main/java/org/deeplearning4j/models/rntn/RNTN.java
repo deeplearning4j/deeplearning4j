@@ -350,42 +350,42 @@ public class RNTN implements Layer {
         // Leave the bias column with 0 values
         double range = 1.0 / (Math.sqrt((double) numHidden));
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
-        INDArray insert = Nd4j.rand(numOuts,numHidden,-range,range,rng);
+        INDArray insert = Nd4j.rand(numOuts, numHidden, -range, range, rng);
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
         if(ret.data().dataType() == (DataBuffer.Type.DOUBLE))
             return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
         return Nd4j.getBlasWrapper().scal((float) scalingForInit, ret);
 
     }
-    
-    
-	/**
-	 * Trains the network on this mini batch and waits for the training set to complete
-     * @param trainingBatch the trees to iterate on
-	 */
-    public void fit(List<Tree> trainingBatch) {
-    	final CountDownLatch c = new CountDownLatch(trainingBatch.size());
-    	
-    	List<Future<Object>> futureBatch = fitAsync(trainingBatch);
-    	
-    	for(Future<Object> f : futureBatch) {
-	    	f.onComplete(new OnComplete<Object>() {
-	            @Override
-	            public void onComplete(Throwable throwable, Object e) throws Throwable {
-	                if(throwable != null)
-	                    log.warn("Error occurred training batch",throwable);
-	                
-	                c.countDown();
-	            }
-	        },rnTnActorSystem.dispatcher());
-    	}
-    
 
-	    try {
-	        c.await();
-	    } catch (InterruptedException e) {
-	        Thread.currentThread().interrupt();
-	    }
+
+    /**
+     * Trains the network on this mini batch and waits for the training set to complete
+     * @param trainingBatch the trees to iterate on
+     */
+    public void fit(List<Tree> trainingBatch) {
+        final CountDownLatch c = new CountDownLatch(trainingBatch.size());
+
+        List<Future<Object>> futureBatch = fitAsync(trainingBatch);
+
+        for(Future<Object> f : futureBatch) {
+            f.onComplete(new OnComplete<Object>() {
+                @Override
+                public void onComplete(Throwable throwable, Object e) throws Throwable {
+                    if (throwable != null)
+                        log.warn("Error occurred training batch", throwable);
+
+                    c.countDown();
+                }
+            }, rnTnActorSystem.dispatcher());
+        }
+
+
+        try {
+            c.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -394,9 +394,9 @@ public class RNTN implements Layer {
      */
     public List<Future<Object>> fitAsync(final List<Tree> trainingBatch) {
         int count = 0;
-        
+
         List<Future<Object>> futureBatch = new ArrayList<>();
-        
+
         for(final Tree t : trainingBatch) {
             log.info("Working mini batch " + count++);
             futureBatch.add(Futures.future(new Callable<Object>() {
@@ -479,7 +479,11 @@ public class RNTN implements Layer {
         INDArray Wt_df = Nd4j.create(size,size * 2, size*2);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; slice++) {
-            Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector).mmul(fullVector.transpose()));
+            if(Wt_df.data().dataType() == DataBuffer.Type.DOUBLE)
+                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector).mmul(fullVector.transpose()));
+            else
+                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getFloat(0),fullVector).mmul(fullVector.transpose()));
+
         }
         return Wt_df;
     }
@@ -655,7 +659,15 @@ public class RNTN implements Layer {
         // make this more efficient by eliminating various of the below
         // calculations, but this would be the easiest way to handle the
         // unlabeled class
-        INDArray deltaClass = goldClass >= 0 ? Nd4j.getBlasWrapper().scal(nodeWeight,predictions.sub(goldLabel)) : Nd4j.create(predictions.rows(), predictions.columns());
+        INDArray deltaClass = null;
+        if(predictions.data().dataType() == DataBuffer.Type.DOUBLE) {
+            deltaClass =  goldClass >= 0 ? Nd4j.getBlasWrapper().scal(nodeWeight,predictions.sub(goldLabel)) : Nd4j.create(predictions.rows(), predictions.columns());
+
+        }
+        else {
+            deltaClass =  goldClass >= 0 ? Nd4j.getBlasWrapper().scal((float) nodeWeight.doubleValue(),predictions.sub(goldLabel)) : Nd4j.create(predictions.rows(), predictions.columns());
+
+        }
         INDArray localCD = deltaClass.mmul(Nd4j.appendBias(currentVector).transpose());
 
         double error = - (Transforms.log(predictions).muli(goldLabel).sum(Integer.MAX_VALUE).getDouble(0));
@@ -973,18 +985,18 @@ public class RNTN implements Layer {
 
         final List<Tree> forwardPropTrees = new CopyOnWriteArrayList<>();
         //if(!forwardPropTrees.isEmpty())
-            Parallelization.iterateInParallel(trainingBatch,new Parallelization.RunnableWithParams<Tree>() {
+        Parallelization.iterateInParallel(trainingBatch,new Parallelization.RunnableWithParams<Tree>() {
 
-                public void run(Tree currentItem, Object[] args) {
-                    Tree trainingTree = new Tree(currentItem);
-                    trainingTree.connect(new ArrayList<>(currentItem.children()));
-                    // this will attach the error vectors and the node vectors
-                    // to each node in the tree
-                    forwardPropagateTree(trainingTree);
-                    forwardPropTrees.add(trainingTree);
+            public void run(Tree currentItem, Object[] args) {
+                Tree trainingTree = new Tree(currentItem);
+                trainingTree.connect(new ArrayList<>(currentItem.children()));
+                // this will attach the error vectors and the node vectors
+                // to each node in the tree
+                forwardPropagateTree(trainingTree);
+                forwardPropTrees.add(trainingTree);
 
-                }
-            },rnTnActorSystem);
+            }
+        },rnTnActorSystem);
 
 
         // TODO: we may find a big speedup by separating the derivatives and then summing
@@ -1072,7 +1084,7 @@ public class RNTN implements Layer {
 
     @Override
     public void fit(INDArray data) {
-          throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

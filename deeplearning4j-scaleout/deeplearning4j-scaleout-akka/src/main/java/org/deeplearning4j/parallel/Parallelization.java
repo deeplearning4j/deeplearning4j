@@ -77,18 +77,8 @@ public class Parallelization {
 
     }
 
-
-
-
-
-
-
-
-
-
-
     /**
-     * Run n copies of the runnable in parallel
+     *  Run n copies of the runnable in parallel
      * @param numWorkers the number of workers
      * @param runnable the runnable to run
      */
