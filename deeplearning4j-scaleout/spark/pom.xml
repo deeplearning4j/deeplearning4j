@@ -136,4 +136,15 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+
+        <profile>
+            <id>spark-1.4</id>
+            <modules>
+                <module>dl4j-spark-ml</module>
+            </modules>
+        </profile>
+
+    </profiles>
+
 </project>
