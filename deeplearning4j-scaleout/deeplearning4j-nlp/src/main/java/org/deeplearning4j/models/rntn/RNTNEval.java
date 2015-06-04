@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
 
@@ -70,16 +71,16 @@ public class RNTNEval {
     }
 
 
-    public void incrementTruePositives(int i) {
-        truePositives.incrementCount(i, 1.0);
+    public void incrementTruePositives(int clazz, int i){
+        truePositives.incrementCount(clazz, i);
     }
 
-    public void incrementFalsePositives(int i) {
-        falsePositives.incrementCount(i, 1.0);
+    public void incrementFalsePositives(int clazz, int i){
+        falsePositives.incrementCount(clazz, i);
     }
 
-    public void incrementFalseNegatives(int i) {
-        falseNegatives.incrementCount(i, 1.0);
+    public void incrementFalseNegatives(int clazz, int i){
+        falseNegatives.incrementCount(clazz, i);
     }
 
 
@@ -97,18 +98,19 @@ public class RNTNEval {
                 if(count != 0)
                     builder.append("\nActual Class " + clazz + " was predicted with Predicted " + clazz2 + " with count " + count  + " times\n");
                 if (clazz == clazz2) {
-                    incrementTruePositives(count);
+                    incrementTruePositives(clazz, count);
                 } else {
-                    incrementFalsePositives(count);
+                    incrementFalsePositives(clazz2, count);
                 }
             }
             int falseNegatives = confusionMatrix.getActualTotal(clazz) - confusionMatrix.getPredictedTotal(clazz);
-            if (falseNegatives > 0) incrementFalseNegatives(falseNegatives);
+            if (falseNegatives > 0) incrementFalseNegatives(clazz, falseNegatives);
         }
+        DecimalFormat df = new DecimalFormat("#.####");
         builder.append("\n==========================Scores========================================");
-        builder.append("\n Precision: " + precision());
-        builder.append("\n Recall: " + recall());
-        builder.append("\n F1 Score: " + f1());
+        builder.append("\n Precision: " + df.format(precision()));
+        builder.append("\n Recall: " + df.format(recall()));
+        builder.append("\n F1 Score: " + df.format(f1()));
         builder.append("\n===========================================================================");
         return builder.toString();
     }
