@@ -99,8 +99,9 @@ rate of change in optimization function
 - **renderWeightsEveryNumEpochs**: *int*, default = -1
 - **resetAdaGradIterations**: *int*, reset AdaGrad historical gradient after n iteractions
 	- default = -1
-- **rng**: *Random class*, used for sampling
+- **rng**: *Random class*, applies seed to ensure the same initial weights are used when training
 	- default = new DefaultRandom()
+	- example = .rng(new DefaultRandom(3))
 - **stride**: *int[]*, size for subsampling type layers
 	- default = {2,2}
 - **sparsity**: *double*
