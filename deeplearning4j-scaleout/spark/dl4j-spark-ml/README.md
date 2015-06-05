@@ -9,12 +9,13 @@ Spark 1.4 provides a standardized API for machine learning called [Spark ML](htt
 
 | Requirement | Instructions |
 | ----------- | ------------ |
-| Spark 1.4 RC0 | Checkout Spark sources (branch-1.4), then 'mvn install'. |
+| Spark 1.4 RC4 | Checkout Spark sources (branch-1.4), then 'mvn install'. |
 
 ## Examples
-Please try the examples at [deeplearning4j/spark-ml-examples](https://github.com/EronWright/spark-ml-examples/tree/feature-spark-ml).  ML-related examples:
+Please try the examples at [deeplearning4j/dl4j-spark-ml-examples](https://github.com/deeplearning4j/dl4j-spark-ml-examples).  ML-related examples:
 
-- `ml.JavaIrisClassificationPipeline`
+- `ml.JavaIrisClassification`
+- `ml.JavaLfwClassification`
 
 # Concepts
 Spark ML introduces a new API for machine learning based on powerful Spark SQL abstractions (see [the docs](http://spark.apache.org/docs/latest/sql-programming-guide.html)).
@@ -44,6 +45,7 @@ The following DataFrame sources are provided:
 | Source | Description |
 | --------- | ------- |
 | LFW | Labeled Faces in the Wild (LFW) dataset as a DataFrame. |
+| Iris | Iris dataset as a DataFrame. |
 
 ## ML Pipeline
 
@@ -67,8 +69,6 @@ A model is a type of transformer that appends predictions, reconstructions, anom
 
 ### Evaluators
 An evaluator facilitates cross-fit validation based on an evaluation algorithm.
-
-_DL4J has functionality here that is not yet exposed to Spark ML._
 
 ### Pipeline
 The ML pipeline consists of a DAG of estimators and transformers.  Data frames pass through the pipeline, being augmented with machine learning predictions, reconstructions etc., while retaining the application-specific context in other columns. 
