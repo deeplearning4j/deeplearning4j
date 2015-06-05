@@ -687,6 +687,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void doReadObject(ObjectInputStream s) {
         try {
+            s.defaultReadObject();
             ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
             referencing = Collections.synchronizedSet(new HashSet<String>());
 
@@ -697,13 +698,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 if(allocationMode == AllocationMode.HEAP) {
                     floatData = new float[length()];
                     for(int i = 0; i < length(); i++) {
-                        put(i,s.readFloat());
+                        put(i,s.readDouble());
                     }
                 }
                 else {
                     dataBuffer = Unpooled.buffer(length() * getElementSize()).order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
-                        put(i,s.readFloat());
+                        put(i,s.readDouble());
                     }
                 }
             }
@@ -711,24 +712,25 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 if(allocationMode == AllocationMode.HEAP) {
                     doubleData = new double[length()];
                     for(int i = 0; i < length(); i++) {
-                        put(i,s.readDouble());
+                        put(i,s.readFloat());
                     }
                 }
                 else {
                     dataBuffer = Unpooled.buffer(length() * getElementSize()).order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
-                        put(i,s.readDouble());
+                        put(i,s.readFloat());
                     }
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+           throw new RuntimeException(e);
         }
 
 
     }
 
     protected void doWriteObject(java.io.ObjectOutputStream out) throws IOException {
+        out.defaultWriteObject();
         out.writeUTF(allocationMode.name());
         out.writeInt(length());
         out.writeUTF(dataType().name());
@@ -741,6 +743,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 out.writeFloat(getFloat(i));
         }
 
+        out.flush();
     }
 
     @Override
