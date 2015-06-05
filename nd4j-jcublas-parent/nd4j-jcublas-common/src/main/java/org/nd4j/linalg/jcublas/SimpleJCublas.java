@@ -1225,7 +1225,6 @@ public class SimpleJCublas {
                 cCPointer.getDevicePointer(),        // d_C or A
                 C.rows()    // lda
         );
-        
         sync();
 
         cCPointer.copyToHost();
