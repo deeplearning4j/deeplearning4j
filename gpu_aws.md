@@ -11,6 +11,12 @@ Short of building their own GPU rack, most DL4J users will run neural nets over 
 
 [AWS provides instructions for launching GPU instances for a variety of NVIDIA drivers](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using_cluster_computing.html).
 
+Once you have the GPUs installed, you're ready to run DL4J on top of them from Spark. 
 
+Here's an example of how you configure a [deep-belief network to learn MNIST using Spark and GPUs](https://github.com/deeplearning4j/spark-gpu-examples/blob/master/src/main/java/org/deeplearning4j/SparkGpuExample.java). 
 
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/spark-gpu-examples/blob/master/src/main/java/org/deeplearning4j/SparkGpuExample.java?slice=38:69"></script>
 
+What's important here is your POM.xml file, which should [look like this](https://github.com/deeplearning4j/spark-gpu-examples/blob/master/pom.xml). Note the Spark and Jcublas dependencies in the POM. 
+
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/spark-gpu-examples/blob/master/pom.xml?slice=136:148"></script>
