@@ -24,3 +24,5 @@ Each document has to be tokenized to create a vocab, the set of words that matte
 The vocab cache stores metadata for methods such as Word2vec and Bag of Words, which treat words in radically different ways. Word2vec creates representations of words, or neural word embeddings, in the form of vectors that are hundreds of coefficients long. Those coefficients help neural nets predict the likelihood of a word appearing in any given context; for example, after another word. Here's Word2vec, configured:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=58:74"></script>
+
+Once you obtain word vectors, you can feed them into a deep net for classification, prediction, sentiment analysis and the like.
