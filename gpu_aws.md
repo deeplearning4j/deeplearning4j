@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Spinning Up GPUs on AWS With Spark
+# Launching GPUs on AWS With Spark
 
 Scaling out over many cores is the only way to train deep neural networks in a reasonable amount of time. Deeplearning4j can parallelize the massive linear algebra operations necessary for processing large and high-dimensional datasets on multiple GPUs. Indeed, it scales to use an arbitrary number of GPUs, as many as you have available. 
 
