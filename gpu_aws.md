@@ -17,6 +17,6 @@ Here's an example of how you configure a [deep-belief network to learn MNIST usi
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/spark-gpu-examples/blob/master/src/main/java/org/deeplearning4j/SparkGpuExample.java?slice=38:69"></script>
 
-What's important here is your POM.xml file, which should [look like this](https://github.com/deeplearning4j/spark-gpu-examples/blob/master/pom.xml). Note the Spark and Jcublas dependencies in the POM. 
+The POM.xml file of your project should [look like this](https://github.com/deeplearning4j/spark-gpu-examples/blob/master/pom.xml). Note the Spark and Jcublas dependencies in the POM. 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/spark-gpu-examples/blob/master/pom.xml?slice=136:148"></script>
