@@ -11,13 +11,13 @@ There are several steps involved in processing natural language. The first is to
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=33:41"></script>
 
-The SentenceIterator encapsulates a corpus or text, organizing it, say, as one Tweet per line. It is responsible for feed text into your natural language processing. The SentenceIterator is not analogous to a similarly named class, the DatasetIterator, which creates a dataset for training a neural net. Instead it creates a collection of strings by segmenting a corpus. 
+The SentenceIterator encapsulates a corpus or text, organizing it, say, as one Tweet per line. It is responsible for feeding text piece by piece into your natural language processor. The SentenceIterator is not analogous to a similarly named class, the DatasetIterator, which creates a dataset for training a neural net. Instead it creates a collection of strings by segmenting a corpus. 
 
-A tokenizer further segments the text at the level of single words, also configurable as n-grams. ClearTK contains the underlying tokenizers, such as parts of speech (PoS) and parse trees, which allow for both constituency and dependency parsing. 
+A Tokenizer further segments the text at the level of single words, also alternatively as n-grams. ClearTK contains the underlying tokenizers, such as parts of speech (PoS) and parse trees, which allow for both dependency and constituency parsing, like that employed by a recursive neural tensor network (RNTN). 
 
 A Tokenizer is created and wrapped by a [TokenizerFactory](https://github.com/deeplearning4j/deeplearning4j/blob/6f027fd5075e3e76a38123ae5e28c00c17db4361/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/text/tokenization/tokenizerfactory/UimaTokenizerFactory.java). The default tokens are words separated by spaces. The tokenization process also involves some machine learning to differentiate between ambibuous symbols like . which end sentences and also abbreviate words such as Mr. and vs.
 
-Both Tokenizers and SentenceIterators work with Preprocessors to deal with anomalies in messy text like Unicode and to render all the text, say, in lowercase. 
+Both Tokenizers and SentenceIterators work with Preprocessors to deal with anomalies in messy text like Unicode, and to render such text, say, as lowercase characters uniformly. 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=43:57"></script>
 
