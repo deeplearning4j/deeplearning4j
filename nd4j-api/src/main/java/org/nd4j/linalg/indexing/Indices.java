@@ -55,7 +55,7 @@ public class Indices {
      * @return the linear offset
      */
     public static int rowNumber(int index,INDArray arr) {
-        double otherTest = Double.valueOf(index) / Double.valueOf(arr.size(-1));
+        double otherTest = ((double) index) / arr.size(-1);
         int test = (int) Math.floor(otherTest);
         int vectors = arr.vectorsAlongDimension(-1);
         if(test >= vectors)
@@ -84,7 +84,7 @@ public class Indices {
      */
     public static int linearOffset(int index,INDArray arr) {
         if(arr.ordering() == NDArrayFactory.C) {
-            double otherTest = Double.valueOf(index) % Double.valueOf(arr.size(-1));
+            double otherTest = ((double) index) % arr.size(-1);
             int test = (int) Math.floor(otherTest);
             INDArray vec = arr.vectorAlongDimension(test,-1);
             int otherDim = arr.vectorAlongDimension(test,-1).offset() + index;
