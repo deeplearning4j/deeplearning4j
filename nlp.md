@@ -17,6 +17,8 @@ A tokenizer further segments the text at the level of single words, also configu
 
 A Tokenizer is created and wrapped by a [TokenizerFactory](https://github.com/deeplearning4j/deeplearning4j/blob/6f027fd5075e3e76a38123ae5e28c00c17db4361/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/text/tokenization/tokenizerfactory/UimaTokenizerFactory.java). The default tokens are words separated by spaces. The tokenization process also involves some machine learning to differentiate between ambibuous symbols like . which end sentences and also abbreviate words such as Mr. and vs.
 
+Both Tokenizers and SentenceIterators work with Preprocessors to deal with anomalies in messy text like Unicode and to render all the text, say, in lowercase. 
+
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=43:57"></script>
 
 Each document has to be tokenized to create a vocab, the set of words that matter for that document or corpus. Those words are stored in the vocab cache, which contains statistics about a subset of words counted in the document, the words that "matter". The line separating significant and insignifant words is mobile, but the basic idea of distinguishing between the two groups is that words occurring only once (or less than, say, five times) are hard to learn and their presence represents unhelpful noise.
