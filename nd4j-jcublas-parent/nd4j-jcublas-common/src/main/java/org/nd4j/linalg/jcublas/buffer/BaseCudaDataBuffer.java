@@ -78,7 +78,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     protected Collection<String> referencing = Collections.synchronizedSet(new HashSet<String>());
     protected transient WeakReference<DataBuffer> ref;
     protected AtomicBoolean freed = new AtomicBoolean(false);
-    private Pointer hostPointer;
+    private transient Pointer hostPointer;
     private Map<String,Boolean> copied = new ConcurrentHashMap<>();
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
