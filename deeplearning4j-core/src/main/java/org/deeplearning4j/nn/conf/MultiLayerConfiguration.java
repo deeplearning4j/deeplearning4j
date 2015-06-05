@@ -19,6 +19,10 @@
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.conf.rng.DefaultRandom;
@@ -33,6 +37,9 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@Data
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class MultiLayerConfiguration implements Serializable {
 
     protected int[] hiddenLayerSizes;
@@ -48,8 +55,6 @@ public class MultiLayerConfiguration implements Serializable {
     protected boolean backward = false;
 
 
-
-    public MultiLayerConfiguration() {}
 
     public MultiLayerConfiguration(MultiLayerConfiguration multiLayerConfiguration) {
         this.hiddenLayerSizes = multiLayerConfiguration.hiddenLayerSizes;
@@ -67,97 +72,7 @@ public class MultiLayerConfiguration implements Serializable {
 
 
 
-    public NeuralNetConfiguration getConf(int i) {
-        return confs.get(i);
-    }
 
-    public OutputPreProcessor getPreProcessor(int layer) {
-        return processors.get(layer);
-    }
-
-    public InputPreProcessor getInputPreProcess(int layer) {
-        return inputPreProcessors.get(layer);
-    }
-
-    public double getDampingFactor() {
-        return dampingFactor;
-    }
-
-    public void setDampingFactor(double dampingFactor) {
-        this.dampingFactor = dampingFactor;
-    }
-
-    public boolean isUseRBMPropUpAsActivations() {
-        return useRBMPropUpAsActivations;
-    }
-
-    public void setUseRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
-        this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
-    }
-
-    public boolean isUseDropConnect() {
-        return useDropConnect;
-    }
-
-    public void setUseDropConnect(boolean useDropConnect) {
-        this.useDropConnect = useDropConnect;
-    }
-
-    public boolean isUseGaussNewtonVectorProductBackProp() {
-        return useGaussNewtonVectorProductBackProp;
-    }
-
-    public void setUseGaussNewtonVectorProductBackProp(boolean useGaussNewtonVectorProductBackProp) {
-        this.useGaussNewtonVectorProductBackProp = useGaussNewtonVectorProductBackProp;
-    }
-
-    public boolean isPretrain() {
-        return pretrain;
-    }
-
-    public void setPretrain(boolean pretrain) {
-        this.pretrain = pretrain;
-    }
-
-    public int[] getHiddenLayerSizes() {
-        return hiddenLayerSizes;
-    }
-
-    public void setHiddenLayerSizes(int[] hiddenLayerSizes) {
-        this.hiddenLayerSizes = hiddenLayerSizes;
-    }
-
-    public List<NeuralNetConfiguration> getConfs() {
-        return confs;
-    }
-
-    public void setConfs(List<NeuralNetConfiguration> confs) {
-        this.confs = confs;
-    }
-
-    public Map<Integer, OutputPreProcessor> getProcessors() {
-        return processors;
-    }
-
-    public void setProcessors(Map<Integer, OutputPreProcessor> processors) {
-        this.processors = processors;
-    }
-
-    public boolean isBackward() {
-        return backward;
-    }
-
-    public void setBackward(boolean backward) {
-        this.backward = backward;
-    }
-
-    public Map<Integer, InputPreProcessor> getInputPreProcessors() {
-        return inputPreProcessors;
-    }
-
-    public void setInputPreProcessors(Map<Integer, InputPreProcessor> inputPreProcessors) {
-        this.inputPreProcessors = inputPreProcessors;
-    }
 
     /**
      *
@@ -191,43 +106,12 @@ public class MultiLayerConfiguration implements Serializable {
         return toJson();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
 
-        MultiLayerConfiguration that = (MultiLayerConfiguration) o;
 
-        if (useDropConnect != that.useDropConnect) return false;
-        if (useGaussNewtonVectorProductBackProp != that.useGaussNewtonVectorProductBackProp) return false;
-        if (pretrain != that.pretrain) return false;
-        if (useRBMPropUpAsActivations != that.useRBMPropUpAsActivations) return false;
-        if (Double.compare(that.dampingFactor, dampingFactor) != 0) return false;
-        if (backward != that.backward) return false;
-        if (!Arrays.equals(hiddenLayerSizes, that.hiddenLayerSizes)) return false;
-        if (confs != null ? !confs.equals(that.confs) : that.confs != null) return false;
-        if (processors != null ? !processors.equals(that.processors) : that.processors != null) return false;
-        return !(inputPreProcessors != null ? !inputPreProcessors.equals(that.inputPreProcessors) : that.inputPreProcessors != null);
-
+    public NeuralNetConfiguration getConf(int i) {
+        return confs.get(i);
     }
 
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        result = hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0;
-        result = 31 * result + (confs != null ? confs.hashCode() : 0);
-        result = 31 * result + (useDropConnect ? 1 : 0);
-        result = 31 * result + (useGaussNewtonVectorProductBackProp ? 1 : 0);
-        result = 31 * result + (pretrain ? 1 : 0);
-        result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
-        temp = Double.doubleToLongBits(dampingFactor);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (processors != null ? processors.hashCode() : 0);
-        result = 31 * result + (inputPreProcessors != null ? inputPreProcessors.hashCode() : 0);
-        result = 31 * result + (backward ? 1 : 0);
-        return result;
-    }
 
     @Override
     public MultiLayerConfiguration clone() {
