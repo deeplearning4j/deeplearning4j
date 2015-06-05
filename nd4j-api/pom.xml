@@ -61,7 +61,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
         <spring.version>3.2.5.RELEASE</spring.version>
-        <netty.version>5.0.0.Alpha2</netty.version>
+        <netty.version>4.0.28.Final</netty.version>
+        <lombok.version>1.16.4</lombok.version>
     </properties>
 
     <dependencyManagement>
@@ -137,12 +138,17 @@
         <dependency>
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
-            <version>0.9.9</version>
+            <version>0.9.10</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
             <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
         </dependency>
     </dependencies>
 </project>
