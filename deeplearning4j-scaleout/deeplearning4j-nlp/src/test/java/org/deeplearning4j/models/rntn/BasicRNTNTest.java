@@ -87,9 +87,8 @@ public class BasicRNTNTest {
                     .iterate(sentenceIter).build();
             vec.fit();
         }
-        List<Tree> trees = vectorizer.getTreesWithLabels(sentence, Arrays.asList("LABEL"));
 
-
+        trees = vectorizer.getTreesWithLabels(sentence, Arrays.asList("LABEL"));
     }
 
     @After

@@ -358,6 +358,13 @@ public class RNTN implements Layer {
 
     }
 
+    /**
+     *
+     * Shut down this network actor
+     */
+    public void shutdown() {
+        rnTnActorSystem.shutdown();
+    }
 
     /**
      * Trains the network on this mini batch and waits for the training set to complete
