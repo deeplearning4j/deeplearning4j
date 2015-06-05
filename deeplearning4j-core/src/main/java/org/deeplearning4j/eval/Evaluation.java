@@ -113,7 +113,7 @@ public class Evaluation {
 		builder.append("\n Accuracy:  " + df.format(accuracy()));
 		builder.append("\n Precision: " + df.format(precision()));
 		builder.append("\n Recall:    " + df.format(recall()));
-		builder.append("\n F1 Score:  " + df.format(f1()));
+		builder.append("\n F1 Score:  " + f1());
 		builder.append("\n===========================================================================");
 		return builder.toString();
 	}
