@@ -26,10 +26,11 @@ Parameters:
 While the following parameters are specific to multilayer networks, the same inputs for a single-layer neural network
 will also work for a multilayer network.
 
-- **hiddenLayerSizes**: *int[]*, number of nodes for the fully connected layer
+- **hiddenLayerSizes**: *int[]*, number of nodes for the feed forward layer
    - two layers format = new int[]{50} = initiate int array with 50 nodes
    - five layers format = new int[]{32,20,40,32} = layer 1 is 32 nodes, layer 2 is 20 nodes, etc
 - **list**: *int*, number of layers; this function replicates your configuration n times and builds a layerwise configuration
+    - do not include input in the layer count
 - **override**: (*int*, *class*) {layer number, data processor class}, override with specific layer configuration
     - When you're building a multilayer network, you won't necessarily want the same configuration for all layers.
     - In that case, you should use the override method to modify any configurations that are necessary.
