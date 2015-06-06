@@ -16,11 +16,13 @@ Here are the steps to install Deeplearning4j with a Red Hat Package Manager (RPM
         name=dl4j-repo
         baseurl=http://repo.deeplearning4j.org/repo
         enabled=1
+
 * Then enter the distros for ND4J, Canova (a vectorization lib) and DL4J. For example, you might install ND4J-jblas:
+
         sudo yum install nd4j-{backend}
         sudo yum install Canova-Distro
         sudo yum install Dl4j-Distro
-
+        
 That puts the JAR files on your system under /usr/local/Skymind
 
 * The libs will be located under the project name (dl4j or nd4j or canova) 
