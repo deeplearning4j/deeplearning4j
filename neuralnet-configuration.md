@@ -56,6 +56,10 @@ Parameters:
 	- default = 0.3
 - **dist**: *Distribution class*, distribution to use for weight initialization
 	- default = new NormalDistribution(1e-3,1)
+	- Options:
+		- NormalDistribution
+		- UniformDistribution
+		- BinomialDistribution
 - **dropOut**: *double*, randomly drop a certain amount of active units/nodes to zero (no activation)
 	- default = 0
 - **featureMapSize**: *int[]*, kernel convolution size (also refered to as receptive field)
