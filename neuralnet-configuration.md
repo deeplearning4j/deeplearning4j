@@ -21,9 +21,28 @@ Parameters:
 - **activationFunction**: *string*, activation function on each hidden layer node,
 	- default="sigmoid"
 	- Options:
-		-"sigmoid"
+		- "abs"
+		- "acos"
+		- "asin"
+		- "atan"
+		- "ceil"
+		- "cos"
+		- "exp"
+		- "floor"
+		- "hardtanh"
+		- "identity"
+		- "maxout"
+		- "negative"
+		- "pow"
+		- "relu"
+		- "round"
+		- "sigmoid"
+		- "sign"
+		- "sin"
+		- "softmax"
+		- "sqrt"
+		- "stabilize"
 		- "tahn"
-		- "reclu"
 		- create customized functions with nd4j.getExecutioner
 - **applySparsity**: *boolean*, use when binary hidden nets are active
 	- default = false
