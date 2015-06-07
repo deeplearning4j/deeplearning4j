@@ -1,5 +1,5 @@
 
-# DL4J on Spark ML
+# Deeplearning4j on Spark ML
 
 *Status: Experimental (all interfaces are subject to change)*
 
@@ -8,14 +8,15 @@ Spark 1.4 provides a standardized API for machine learning called [Spark ML](htt
 ## Getting Started
 
 ### Install Spark 1.4.0 (RC4)
-Spark 1.4.0 is not yet released and must be built from source.   Follow the instructions on [spark.apache.org](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/building-spark.html), summarized below:
-1. Clone the apache/spark repository (`v1.4.0-rc4` tag).
+Spark 1.4.0 is not yet released and must be built from source.   Follow the instructions on [spark.apache.org](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/building-spark.html), summarized below.
+
+Clone the apache/spark repository (`v1.4.0-rc4` tag):
 ```
 git clone https://github.com/apache/spark.git
 cd spark
 git checkout v1.4.0-rc4
 ```
-2. Build Spark, installing artifacts to the local Maven repository.
+Build Spark, installing artifacts to the local Maven repository:
 ```
 build/mvn -Pyarn -Phadoop-2.4 -Dhadoop.version=2.4.0 -DskipTests clean install
 ```
@@ -35,7 +36,7 @@ cd dl4j-spark-ml
 sbt publishM2
 ```
 
-## Using
+## Using DL4J with Spark ML
 ### Examples
 Please review the examples at [deeplearning4j/dl4j-spark-ml-examples](https://github.com/deeplearning4j/dl4j-spark-ml-examples).  ML-related examples:
 
@@ -45,6 +46,7 @@ Please review the examples at [deeplearning4j/dl4j-spark-ml-examples](https://gi
 ### Data Sources
 
 Spark ML supports operating on a variety of data sources through the DataFrame interface.  Load your data into a DataFrame by any means, including:
+
 1. Use a built-in data source, such as Parquet, JSON, JDBC, or Hive.  See [the documentation](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/sql-programming-guide.html#data-sources).
 2. Develop a Spark SQL relation provider.  See the [announcement](https://databricks.com/blog/2015/01/09/spark-sql-data-sources-api-unified-data-access-for-the-spark-platform.html), the [Iris relation](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml/src/main/scala/org/deeplearning4j/spark/sql/sources/iris), and the [LFW relation](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml/src/main/scala/org/deeplearning4j/spark/sql/sources/lfw).  More information will be available soon.
 
@@ -58,7 +60,7 @@ In supervised learning scenarios, labels are expected to be provided as an ML co
 ### ML Algorithms
 Spark ML standardizes APIs for machine learning algorithms (see the appendix).  The `dl4j-spark-ml` library provides a number of transformers to include in an ML pipeline.
 
-Most deeplearning4j neural network-based algorithms may be used with Spark ML.   Simply provide an instance of `org.deeplearning4j.nn.conf.MultiLayerConfiguration` as a parameter to the transformer.
+Most deeplearning4j neural network-based algorithms may be used with Spark ML.   Simply provide an instance of `org.deeplearning4j.nn.conf.MultiLayerConfiguration` as a parameter to the transformer.   Visit [deeplearning4j.org](deeplearning4j.org) for more information on the core functionality.
 
 #### Classification
 For supervised classification scenarios, use `o.d.spark.ml.classification.NeuralNetworkClassification` as a pipeline component.  Extends [Classifier](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.ml.classification.Classifier) and supports multi-class labels.
