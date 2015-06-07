@@ -13,9 +13,9 @@ You can use Deeplearning4j with Maven by adding the following to your POM.xml:
 
     <dependencies>
     	<dependency>
-        <groupId>org.deeplearning4j</groupId>
-        <artifactId>deeplearning4j-core</artifactId>
-        <version>0.0.3.3.4.alpha2</version> //<--find the latest version on Maven Central: search.maven.org
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-core</artifactId>
+            <version>0.0.3.3.4.alpha2</version>
     		<scope>provided</scope>
     	</dependency>
     </dependencies>
