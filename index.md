@@ -4,7 +4,11 @@ layout: default
 
 # What is Deeplearning4j?
 
-Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and Spark, DL4J is designed to be used in business environments, rather than as a research tool. It aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale, and under its Apache 2.0 release, all derivative works belong to their inventors. 
+Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../gpu_aws.html), DL4J is designed to be used in business environments, rather than as a research tool. 
+
+It aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors. 
+
+By following the [instructions on our Quick Start page](../quickstart.html), you can run your first examples of trained neural nets in minutes. 
 
 ### [Deep learning use cases](use_cases.html)
 
@@ -18,9 +22,9 @@ Deeplearning4j is the first commercial-grade, open-source, distributed deep-lear
 
 * A versatile [n-dimensional array](http://nd4j.org/) class. 
 * [GPU](http://nd4j.org/gpu_native_backends.html) integration
-* [Scalable](../scaleout.html) on [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark) and Akka + AWS et al
+* [Scalable](../scaleout.html) on [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](../gpu_aws.html) and Akka + AWS et al
 
-Deeplearning4j includes a distributed multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data. Nets are trained in parallel via iterative reduce, and they are equally compatible with **Java**, **Scala** and **Clojure**.
+Deeplearning4j includes both a distributed, multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data quickly. Nets are trained in parallel via [iterative reduce](../iterativereduce.html), and they are equally compatible with **Java**, **[Scala](http://nd4j.org/scala.html)** and **Clojure**.
 
 ### DL4J's neural nets
 
@@ -34,7 +38,7 @@ Deeplearning4j includes a distributed multi-threaded deep-learning framework and
 * [Recursive Neural Tensor Networks](http://deeplearning4j.org/recursiveneuraltensornetwork.html) (scenes, parsing)
 * See our ["How to Choose a Neural Net" page](neuralnetworktable.html)
 
-Deep neural nets are capable of [record-breaking accuracy](../accuracy.html). For a quick introduction to them, please visit our [overview](../overview.html) page. In a nutshell, Deeplearning4j lets you compose deep neural nets from various shallow nets, each of which form a layer. This flexibility lets you combine restricted Boltzmann machines, autoencoders, convolutional nets and recurrent nets as needed in a distributed, production-grade framework that works with Spark and Hadoop on top of distributed CPUs or GPUs. 
+Deep neural nets are capable of [record-breaking accuracy](../accuracy.html). For a quick introduction to them, please visit our [overview](../overview.html) page. In a nutshell, Deeplearning4j lets you compose deep neural nets from various shallow nets, each of which form a so-called layer. This flexibility lets you combine restricted Boltzmann machines, other autoencoders, convolutional nets and recurrent nets as needed in a distributed, production-grade framework that works with Spark and Hadoop on top of distributed CPUs or GPUs. 
 
 Here's an overview of the different libraries we've built and where they fit into a larger ecosystem:
 
