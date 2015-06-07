@@ -63,6 +63,4 @@ Each document’s number set, or vector, is then introduced to the same vector s
 
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
 
-Here's an example of what a deep autoencoder looks like in code:
-
- <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/SemanticHashingTest.java?slice=21:45"></script>
+For questions about Deep Autoencoders, contact us on the Gitter live chat. 
