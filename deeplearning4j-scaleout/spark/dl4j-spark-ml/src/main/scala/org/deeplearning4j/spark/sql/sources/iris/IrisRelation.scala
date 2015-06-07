@@ -69,7 +69,19 @@ case class IrisRelation(location: String)(@transient val sqlContext: SQLContext)
   }
 }
 
+/**
+ * Iris dataset provider.
+ */
+class DefaultSource extends RelationProvider {
+  private def checkPath(parameters: Map[String, String]): String = {
+    parameters.getOrElse("path", sys.error("'path' must be specified for Iris data."))
+  }
 
+  override def createRelation(sqlContext: SQLContext, parameters: Map[String, String]) = {
+    val path = checkPath(parameters)
+    new IrisRelation(path)(sqlContext)
+  }
+}
 
 
 
