@@ -20,8 +20,10 @@ If you need to install any of the above, please read how in this [Getting Starte
 
 ## DL4J in 5 Easy Steps
 
+After those installs, if you can follow these five steps, you'll be up and running:
+
 1) *git clone* [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples)
-2) Import the examples as a project into Maven
+2) Import the examples as a project into IntelliJ with Maven
 3) Pick a Blas backend and insert it in your POM (You should probably choose *nd4j-jblas*)
 4) Select example from the lefthand file tree (Start with DBNSmallMnistExample.java...)
 5) Hit run! It's the green button.
