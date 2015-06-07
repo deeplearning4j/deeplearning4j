@@ -25,21 +25,22 @@ After those installs, if you can follow these five steps, you'll be up and runni
 1. *git clone* [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on version 0.0.3.3.x.
 2. Import the examples as a project into IntelliJ with Maven
 3. Pick a Blas [backend](http://nd4j.org/dependencies.html) and insert it in your POM (Probably *nd4j-jblas*)
+4. Select example from the lefthand file tree (Start with *DBNSmallMnistExample.java*)
+5. Hit run! (It's the green button)
+
+Once you do that, try the other examples and see what they look like. 
+
+## Dependencies and Backends
+
+When you know which backend you want, search for it on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ.
+
+Your Blas backend will look something like this:
 
      <dependency>
        <groupId>org.nd4j</groupId>
        <artifactId>nd4j-$BACKEND_OF_YOUR_CHOICE</artifactId>
        <version>${nd4j.version}</version>
      </dependency>
-
-4. Select example from the lefthand file tree (Start with *DBNSmallMnistExample.java*)
-5. Hit run! (It's the green button)
-
-Once you do that, try the other examples and see what they look like. 
-
-## Dependencies in Maven
-
-When you know which backend you want, search for it on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ.
 
 For core algorithms, you can simply add this snippet to your deeplearning4j POM.xml file:
 
