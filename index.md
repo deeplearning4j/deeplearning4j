@@ -30,15 +30,15 @@ Deeplearning4j includes both a distributed, multi-threaded deep-learning framewo
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) (images)
-* [Stacked Denoising Autoencoders](../stackeddenoisingautoencoder.html) 
-* Recurrent Nets/LSTMs (time series)
-* [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/autoencoder/recursive/RecursiveAutoEncoderTest.java)
+* Stacked Denoising Autoencoders 
+* [Recurrent Nets/LSTMs](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/LSTM.java) (time series)
+* [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [Deep-belief networks](../deepbeliefnetwork.html)
-* [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html) (QA/information retrieval)
+* [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html) (QA/data compression)
 * [Recursive Neural Tensor Networks](http://deeplearning4j.org/recursiveneuraltensornetwork.html) (scenes, parsing)
 * See our ["How to Choose a Neural Net" page](neuralnetworktable.html)
 
-Deep neural nets are capable of [record-breaking accuracy](../accuracy.html). For a quick introduction to them, please visit our [overview](../neuralnet-overview.html) page. In a nutshell, Deeplearning4j lets you compose deep neural nets from various shallow nets, each of which form a so-called layer. This flexibility lets you combine restricted Boltzmann machines, other autoencoders, convolutional nets and recurrent nets as needed in a distributed, production-grade framework that works with Spark and Hadoop on top of distributed CPUs or GPUs. 
+Deep neural nets are capable of [record-breaking accuracy](../accuracy.html). For a quick neural net introduction, please visit our [overview](../neuralnet-overview.html) page. In a nutshell, Deeplearning4j lets you compose deep neural nets from various shallow nets, each of which form a so-called layer. This flexibility lets you combine restricted Boltzmann machines, other autoencoders, convolutional nets and recurrent nets as needed in a distributed, production-grade framework that works with Spark and Hadoop on top of distributed CPUs or GPUs. 
 
 Here's an overview of the different libraries we've built and where they fit into a larger ecosystem:
 
