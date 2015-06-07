@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Deep-belief networks
+# Deep-Belief Networks
 
 For our purposes, a deep-belief network can be defined as a stack of restricted Boltzmann machines in which each layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
 
