@@ -12,7 +12,7 @@ While we encourage Deeplearning4j, ND4J and Canova users to employ Maven, it's w
 You can use Deeplearning4j with Maven by adding the following to your POM.xml:
 
     <dependencies>
-    	<dependency>
+      <dependency>
           <groupId>org.deeplearning4j</groupId>
           <artifactId>deeplearning4j-core</artifactId>
           <version>0.0.3.3.4.alpha2</version>
