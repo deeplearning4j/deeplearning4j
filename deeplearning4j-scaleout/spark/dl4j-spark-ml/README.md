@@ -1,34 +1,110 @@
 
 # DL4J on Spark ML
 
-Spark 1.4 provides a standardized API for machine learning called [Spark ML](http://spark.apache.org/docs/latest/ml-guide.html).   DL4J has experimental support for Spark ML.  The main benefit is easy integration of DL4J with Spark data sources, with other ML components (such as feature extractors and learning algorithms), and with SQL.
+*Status: Experimental (all interfaces are subject to change)*
 
-# Getting Started
+Spark 1.4 provides a standardized API for machine learning called [Spark ML](http://spark.apache.org/docs/latest/ml-guide.html).   DL4J enhances Spark ML with powerful neural network algorithms for supervised and unsupervised learning. Benefits include easy integration of DL4J with Spark-based datasets, with other Spark ML components (such as feature extractors and learning algorithms), and with Spark SQL.
 
-## System Requirements
+## Getting Started
 
-| Requirement | Instructions |
-| ----------- | ------------ |
-| Spark 1.4 RC4 | Checkout Spark sources (branch-1.4), then 'mvn install'. |
+### Install Spark 1.4.0 (RC4)
+Spark 1.4.0 is not yet released and must be built from source.   Follow the instructions on [spark.apache.org](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/building-spark.html), summarized below:
+1. Clone the apache/spark repository (`v1.4.0-rc4` tag).
+```
+git clone https://github.com/apache/spark.git
+cd spark
+git checkout v1.4.0-rc4
+```
+2. Build Spark, installing artifacts to the local Maven repository.
+```
+build/mvn -Pyarn -Phadoop-2.4 -Dhadoop.version=2.4.0 -DskipTests clean install
+```
 
-## Examples
-Please try the examples at [deeplearning4j/dl4j-spark-ml-examples](https://github.com/deeplearning4j/dl4j-spark-ml-examples).  ML-related examples:
+### Install dl4j-spark-ml Library
+The `dl4j-spark-ml` library is not yet published to the Maven Central repository and must be built from source.
+```
+git clone https://github.com/deeplearning4j/deeplearning4j.git
+cd deeplearning4j
+mvn clean install -DskipTests -Pspark-1.4
+```
+### Install dl4j-spark-ml Spark Package
+The 'dl4j-spark-ml' Spark Package is not yet published to the Spark Packages repository and must be built from source.
+```
+git clone https://github.com/deeplearning4j/dl4j-spark-ml.git
+cd dl4j-spark-ml
+sbt publishM2
+```
+
+## Using
+### Examples
+Please review the examples at [deeplearning4j/dl4j-spark-ml-examples](https://github.com/deeplearning4j/dl4j-spark-ml-examples).  ML-related examples:
 
 - `ml.JavaIrisClassification`
 - `ml.JavaLfwClassification`
 
-# Concepts
-Spark ML introduces a new API for machine learning based on powerful Spark SQL abstractions (see [the docs](http://spark.apache.org/docs/latest/sql-programming-guide.html)).
+### Data Sources
 
-## DataFrame
+Spark ML supports operating on a variety of data sources through the DataFrame interface.  Load your data into a DataFrame by any means, including:
+1. Use a built-in data source, such as Parquet, JSON, JDBC, or Hive.  See [the documentation](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/sql-programming-guide.html#data-sources).
+2. Develop a Spark SQL relation provider.  See the [announcement](https://databricks.com/blog/2015/01/09/spark-sql-data-sources-api-unified-data-access-for-the-spark-platform.html), the [Iris relation](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml/src/main/scala/org/deeplearning4j/spark/sql/sources/iris), and the [LFW relation](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml/src/main/scala/org/deeplearning4j/spark/sql/sources/lfw).  More information will be available soon.
+
+Data may be loaded from any Hadoop-compatible filesystem.  *We recommend that you load datasets from HDFS rather than from the local filesystem.*
+
+#### Data Types
+The DL4J pipeline components expect feature data to be provided as an ML column of [Vectors](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.mllib.linalg.Vectors$).   The data should be normalized; consider using [StandardScaler](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.ml.feature.StandardScaler) in your pipeline.
+
+In supervised learning scenarios, labels are expected to be provided as an ML column of label indices.   Consider using [StringIndexer](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.ml.feature.StringIndexer) in your pipeline.
+
+### ML Algorithms
+Spark ML standardizes APIs for machine learning algorithms (see the appendix).  The `dl4j-spark-ml` library provides a number of transformers to include in an ML pipeline.
+
+Most deeplearning4j neural network-based algorithms may be used with Spark ML.   Simply provide an instance of `org.deeplearning4j.nn.conf.MultiLayerConfiguration` as a parameter to the transformer.
+
+#### Classification
+For supervised classification scenarios, use `o.d.spark.ml.classification.NeuralNetworkClassification` as a pipeline component.  Extends [Classifier](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.ml.classification.Classifier) and supports multi-class labels.
+
+The following pipeline parameters are provided:
+
+| Parameter        | Description |
+| ---------------- | ----------- |
+| conf             | The MultiLayerConfiguration instance that describes the neural network. |
+| epochs           | The number of full passes over the dataset, with convergence on each pass.  Default is 1. |
+| featuresCol      | The name of the column containing feature data. Default is 'features'. |
+| labelCol         | The name of the column containing label data.  Default is 'label'. |
+| predictionCol    | The name of the column containing predicted labels. Default is 'prediction'. | 
+| rawPredictionCol | The name of the column containing raw probabilities for each label. | 
+
+When configuring the neural network, ensure that the # of input columns on the input layer matches the expected size of the feature vector.  The # of output columns on the output layer should match the expected number of labels/classes.  Tip: if using `StringIndexer`, set the number of output columns to zero to have the classifier adjust the configuation automatically.
+
+#### Reconstruction
+For reconstruction scenarios such as deep auto-encoding, use `o.d.spark.ml.reconstruction.NeuralNetworkReconstruction` as a pipeline component.  The component performs unsupervised learning for which no label is necessary.
+
+The following pipeline parameters are provided:
+
+| Parameter         | Description |
+| ----------------- | ----------- |
+| conf              | The MultiLayerConfiguration instance that describes the neural network. |
+| epochs            | The number of full passes over the dataset, with convergence on each pass.  Default is 1. |
+| layerIndex        | The layer from which to draw reconstruction data.  Default is 1 (the input layer). |
+| reconstructionCol | The name of the column containing reconstruction data.  Default is 'reconstruction'. |
+
+When configuring the neural network, ensure that the # of input columns on the input layer matches the expected size of the feature vector.  
+
+### Evaluation
+Spark ML provides a standardized evaluation API for scoring and model selection.   See the [Programming Guide](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/ml-guide.html#example-model-selection-via-cross-validation) for more information.
+
+## Appendix: Spark Concepts
+Spark ML introduces a new API for machine learning based on powerful Spark SQL abstractions.  Please read the [Spark ML Programming Guide](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/ml-guide.html) for more information.
+
+### DataFrame
 A DataFrame is a distributed collection of data organized into named columns, with an associated schema.   Under the hood, a data frame has an associated `RDD[Row]`. Through the familiar RDD transformation process, columns may be added to and deleted from derived data frames.  
 
-### Columns
-Each column has an associated name, data type, and optional metadata.  
+#### Columns
+Each column of a DataFrame has an associated name, data type, and optional metadata.  
 
-In Spark 1.4, a formal notion of 'ML column' will be introduced.  An ML column is of a certain subset of datatypes - Vector, numeric data, nominal data - and contains metadata such as label strings, # of unique labels, etc.
+Spark ML defines the notion of 'ML column'.  An ML column is of a certain subset of data types - Vector, numeric data, nominal data - and contains metadata such as label strings, # of unique labels, etc.
 
-### Data Types
+#### Data Types
 For ML purposes, the following data types are preferred for ML columns:
 
 | Data Type | Description |
@@ -37,41 +113,33 @@ For ML purposes, the following data types are preferred for ML columns:
 | Double    | A numeric label |
 | Tensor    | (WIP) A multi-dimensional vector |
 
-Strings should be converted to an ML type using a transformer.  Please consider LabeledPoint to be obsolete.
+Strings should be converted to an ML type using a transformer such as `StringIndexer`.  Please consider LabeledPoint to be obsolete.
 
-### Sources
-The following DataFrame sources are provided:
+#### Data Sources
+Spark SQL provides a sophisticated set of abstractions for loading data from any source.   Capabilties include column pruning (to load only those columns needed for a given transformation) and predicate push-down.
+
+DL4J provides the following data sources for reading certain well-known datasets:
 
 | Source | Description |
 | --------- | ------- |
 | LFW | Labeled Faces in the Wild (LFW) dataset as a DataFrame. |
 | Iris | Iris dataset as a DataFrame. |
 
-## ML Pipeline
+### ML Pipeline
 
 ML pipelines are based on the idea of learning from data in DataFrame columns and appending prediction columns.  Please read the [documentation](http://spark.apache.org/docs/latest/ml-guide.html).
 
-### Estimators
+#### Estimators
 An estimator is a learning algorithm, expected to produce a model based on provided input.  The estimator does not typically alter the input DataFrame.
 
-DL4J provides:
-
-| Estimator | Purpose |
-| --------- | ------- |
-| NeuralNetworkClassification | Neural network-based learning algorithm for supervised classification.  Supports multi-class labels. |
-| NeuralNetworkReconstruction | Neural network-based learning algorithm for unsupervised reconstruction. |
-
-### Transformers
+#### Transformers
 A transformer alters a data frame, typically appending a column based on a UDF over existing column(s).
 
-### Model
+#### Models
 A model is a type of transformer that appends predictions, reconstructions, anomaly indicators, etc.
 
-### Evaluators
+#### Evaluators
 An evaluator facilitates cross-fit validation based on an evaluation algorithm.
 
-### Pipeline
+#### Pipeline
 The ML pipeline consists of a DAG of estimators and transformers.  Data frames pass through the pipeline, being augmented with machine learning predictions, reconstructions etc., while retaining the application-specific context in other columns. 
-
-
-
