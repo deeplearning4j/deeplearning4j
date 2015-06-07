@@ -5,7 +5,7 @@ layout: default
 
 ## Configuring Automated Build Tools
 
-While we encourage Deeplearning4j, ND4J and Canova users to employ Maven, it's worthwhile documenting how to configure build files for other tools, like Ivy, Gradle and SBT. Particularly since Google prefers Gradle over Maven for Android projects. The instructions below apply to all DL4J and ND4J submodules, such as deeplearning4j-api, deeplearning4j-scaleout, nd4j-jblas, etc. You can find the latest version of any project or submodule on [Maven Central](https://search.maven.org/).
+While we encourage Deeplearning4j, ND4J and Canova users to employ Maven, it's worthwhile documenting how to configure build files for other tools, like Ivy, Gradle and SBT. Particularly since Google prefers Gradle over Maven for Android projects. The instructions below apply to all DL4J and ND4J submodules, such as *deeplearning4j-api, deeplearning4j-scaleout, nd4j-jblas*, etc. You can find the latest version of any project or submodule on [Maven Central](https://search.maven.org/).
 
 ## Maven
 
@@ -13,11 +13,11 @@ You can use Deeplearning4j with Maven by adding the following to your POM.xml:
 
     <dependencies>
     	<dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-core</artifactId>
-            <version>0.0.3.3.4.alpha2</version>
-    		<scope>provided</scope>
-    	</dependency>
+          <groupId>org.deeplearning4j</groupId>
+          <artifactId>deeplearning4j-core</artifactId>
+          <version>0.0.3.3.4.alpha2</version>
+          <scope>provided</scope>
+      </dependency>
     </dependencies>
 
 ## Ivy
