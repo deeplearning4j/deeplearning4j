@@ -3,29 +3,21 @@ title:
 layout: default
 ---
 
-# Scaleout: Iterative reduce on multithreaded training
+# Scaleout
 
-Deeplearning4j integrates with [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark), [Hadoop/YARN](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn) and can also spin out a stand-alone distributed system using Akka and AWS.
-
-Training a neural network is very time consuming without some kind of parallelism. 
+Deeplearning4j integrates with [Spark](http://deeplearning4j.org/gpu_aws.html), [Hadoop/YARN](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn) and can also spin out a stand-alone distributed system using Akka and AWS. It employs a method known as [iterative reduce](../iterativereduce) to process data in parallel. (Without some form of parallelism, training a neural network on large datasets can take weeks.)
 
 ## Akka
 
-One scaleout module in deeplearning4j-scaleout uses Akka for both clustering for distributed computing as well as multithreaded computing.
-
-Here's a snippet for training a network:
-
-<script src="http://gist-it.appspot.com/github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/mnist/MnistExampleMultiThreaded.java?slice=30:53"></script>
-
-Note that runner.train() is not a blocking call.
+One submodule in deeplearning4j-scaleout uses Akka for both clustering for distributed computing as well as multithreaded computing. 
 
 ### ZooKeeper
 
-This relies on having a zookeeper instance setup -- otherwise the system will stall.
+This relies on having a Zookeeper instance setup -- otherwise the system will stall.
 
 ### ActorNetworkRunner
 
-There are two different ActorNetworkRunners: one for single and another for multi. Both have similar APIs so they're easy to use, but that can also lead to confusion.
+There are two different ActorNetworkRunners: one for single and another for multi-threaded. Both have similar APIs, so they're easy to use, but that can also lead to confusion.
 
 If your cluster does not start after calling train, this is likely a race condition of sending the data for training relative to the cluster starting. Submit a pull request if that's the case.
 
