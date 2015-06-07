@@ -5,36 +5,8 @@ layout: default
 
 # Scaleout
 
-Deeplearning4j integrates with [Spark](http://deeplearning4j.org/gpu_aws.html), [Hadoop/YARN](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn) and can also spin out a stand-alone distributed system using Akka and AWS. It employs a method known as [iterative reduce](../iterativereduce) to process data in parallel. (Without some form of parallelism, training a neural network on large datasets can take weeks.)
+Deeplearning4j integrates with [Spark](http://deeplearning4j.org/gpu_aws.html), [Hadoop/YARN](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn) and can also spin out a stand-alone distributed system using Akka and AWS. 
 
-## Akka
+It employs a method known as [iterative reduce](../iterativereduce) to process data in parallel. (Without some form of parallelism, training a neural network on large datasets can take weeks.)
 
-One submodule in deeplearning4j-scaleout uses Akka for both clustering for distributed computing as well as multithreaded computing. 
-
-### ZooKeeper
-
-This relies on having a Zookeeper instance setup -- otherwise the system will stall.
-
-### ActorNetworkRunner
-
-There are two different ActorNetworkRunners: one for single and another for multi-threaded. Both have similar APIs, so they're easy to use, but that can also lead to confusion.
-
-If your cluster does not start after calling train, this is likely a race condition of sending the data for training relative to the cluster starting. Submit a pull request if that's the case.
-
-After training, all models are saved in the same directory where the user started. These models will be named nn-model-*.bin. That's the output of the network. (These neural networks are parameter averaged.)
-
-### Roles
-
-*Master*: Used for multithreading and seeding a cluster.
-
-*Worker*: Used for connecting to a master network runner for lending cpu power.
-
-### Conf
-
-The configuration class has a lot of knobs. It handles both the single-layer network and the multilayer networks. Call multiLayerClazz or setNeuralNetworkClazz, respectively. 
-
-### Costs
-
-Setting up a cluster on [EC2](https://aws.amazon.com/ec2/) costs anywhere from a few cents to a few dollars an hour. While this may be prohibitive for some, the intense computational needs of deep learning make parallelism necessary for any serious work. 
-
-Next, we'll show you how to [run a worker node](../distributed.html).
+Deeplearning4j can be called from within Hadoop as a YARN app. It is run and provisioned by Hadoop as a first-class citizen within the framework. Likewise, lines of Deeplearning4j code can be called from within Spark shell to initiate distributed neural net training. 
