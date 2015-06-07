@@ -12,8 +12,8 @@ This QuickStart guide assumes that you have the following already installed:
 
 1. Java
 2. An Integrated Development Environment (IDE) like IntelliJ
-3. Maven (Java's automated build tool)
-4. Canova (An ML Vectorization lib)
+3. [Maven](../maven.html) (Java's automated build tool)
+4. [Canova](../canova.html) (An ML Vectorization lib)
 5. Github (Optional)
  
 If you need to install any of the above, please read how in this [Getting Started guide](http://nd4j.org/getstarted.html).
@@ -22,44 +22,24 @@ If you need to install any of the above, please read how in this [Getting Starte
 
 After those installs, if you can follow these five steps, you'll be up and running:
 
-1. *git clone* [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples)
+1. *git clone* [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on version 0.0.3.3.x.
 2. Import the examples as a project into IntelliJ with Maven
-3. Pick a Blas backend and insert it in your POM (Probably *nd4j-jblas*)
-4. Select example from the lefthand file tree (Start with *DBNSmallMnistExample.java*)
-5. Hit run! (It's the green button)
-
-Once you do that, try the other examples and see what they look like. 
-
-Installing From Maven Central 
-=========================================
-
-You must install Maven first. ([See installation details here](http://nd4j.org/getstarted.html#maven) and read our [brief introduction to Maven here](../maven.html).)
-
-Please use the latest version of the examples, which you will find in Maven. We are currently on 0.0.3.3.x.
-
-Include an [ND4J](http://nd4j.org/) backend in this dependency in your deeplearning4j POM.xml file:
-
+3. Pick a Blas [backend](http://nd4j.org/dependencies.html) and insert it in your POM (Probably *nd4j-jblas*)
      <dependency>
        <groupId>org.nd4j</groupId>
        <artifactId>nd4j-$BACKEND_OF_YOUR_CHOICE</artifactId>
        <version>${nd4j.version}</version>
      </dependency>
+4. Select example from the lefthand file tree (Start with *DBNSmallMnistExample.java*)
+5. Hit run! (It's the green button)
 
-These are the BLAS [backends](http://nd4j.org/gpu_native_backends.html) you can choose from:
+Once you do that, try the other examples and see what they look like. 
 
-     //Ensure that Cuda (for GPUs) is properly set up in your LD_LIBRARY_PATH
-     
-     nd4j-jcublas-${YOUR_CUDA_VERSION} 
-     
-     //Linux: Install Blas/Gfortran. OSX: Already set up. Windows: Set up the MINGW Blas libs on your path.
-     
-     nd4j-jblas 
-     
-     nd4j-netlib-blas
-    
-Versions can be found on [Maven Central](http://search.maven.org/#search%7Cga%7C2%7Cnd4j). When you know which backend you want, search for it there; click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ.
+## Dependencies in Maven
 
-For core algorithms, you can simply add this snippet to your deeplearning4j pom.xml file:
+When you know which backend you want, search for it on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ.
+
+For core algorithms, you can simply add this snippet to your deeplearning4j POM.xml file:
 
      <dependency>
          <groupId>org.deeplearning4j</groupId>
