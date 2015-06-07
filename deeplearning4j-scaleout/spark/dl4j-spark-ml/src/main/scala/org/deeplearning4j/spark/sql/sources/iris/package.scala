@@ -25,6 +25,6 @@ package object iris {
    */
   implicit class IrisContext(sqlContext: SQLContext) {
     def iris(filePath: String) =
-      sqlContext.baseRelationToDataFrame(IrisRelation(filePath)(sqlContext))
+      sqlContext.read.format(classOf[DefaultSource].getName).load(filePath)
   }
 }
