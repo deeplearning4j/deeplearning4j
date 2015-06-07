@@ -24,7 +24,7 @@ package object lfw {
    * Adds a method, `lfw`, to SQLContext that allows reading the LFW dataset.
    */
   implicit class LfwContext(sqlContext: SQLContext) {
-    def lfw(filePath: String) =
-      sqlContext.baseRelationToDataFrame(LfwRelation(filePath)(sqlContext))
+    def lfw(rootImageDirectory: String) =
+      sqlContext.read.format(classOf[DefaultSource].getName).load(rootImageDirectory)
   }
 }
