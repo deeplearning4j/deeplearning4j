@@ -29,7 +29,7 @@ That creates a deep-belief network with the specified hidden-layer sizes (three 
 
 Next, you iterate through the dataset with the MNISTDataSetInterator, and then evaluate the performance of your classifier.
 
-<script src="http://gist-it.appspot.com/http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNFullMnistExample.java?slice=70:77"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNFullMnistExample.java?slice=70:77"></script>
 
 This will print out the f1 score of the prediction.
 
