@@ -76,8 +76,7 @@ For Scaleout (Hadoop/Spark):
           <version>${deeplearning4j.version}</version>
       </dependency>
 
-Installing From Source 
-==============================
+## Installing From Source 
 
 YOU DON'T HAVE TO DO THIS IF YOU'RE JUST USING THE SOFTWARE FROM MAVEN CENTRAL OR THE DOWNLOADS.
 
