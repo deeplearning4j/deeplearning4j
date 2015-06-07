@@ -8,7 +8,7 @@ Quick Start Guide
 
 ## Prerequisites
 
-This QuickStart guide assumes that you have the following already installed:
+This Quick Start guide assumes that you have the following already installed:
 
 1. Java
 2. An Integrated Development Environment (IDE) like IntelliJ
