@@ -72,7 +72,7 @@ For Scaleout (Hadoop/Spark):
 
       <dependency>
           <groupId>org.deeplearning4j</groupId>
-          <artifactId>spark</artifactId>
+          <artifactId>dl4j-spark </artifactId>
           <version>${deeplearning4j.version}</version>
       </dependency>
 
