@@ -21,15 +21,15 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 Here's how you set up a single-thread deep-belief network: 
 
-To create it, you instantiate a more general class, the multi-layer neural net, and tell it how many RBMs to stack upon each other:
+To create it, you instantiate a more general class, the multi-layer neural net, and tell it how many RBMs to stack upon each other (by passing three integers into hiddenLayerSizes, you effectively tell the configuration to create three hidden layers. Higher up, the net has been instructed to create RBM layers):
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/reconstruct/DBNExample.java?slice=28:38"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNFullMnistExample.java?slice=41:62"></script>
 
 That creates a deep-belief network with the specified hidden-layer sizes (three hidden layers); the number of inputs being 784; outputs 10; momentum and learning rate; the specified random number generator; sets root-means-squared cross entropy as the loss function; and implements no regularization. The hidden layer sizes are 600, 500 and 400 nodes, as you move forward through the net. 
 
-Next, you iterate through the dataset with the MNISTDataFetcher, and then evaluate the performance of your classifier.
+Next, you iterate through the dataset with the MNISTDataSetInterator, and then evaluate the performance of your classifier.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/reconstruct/DBNExample.java?slice=41:59"></script>
+<script src="http://gist-it.appspot.com/http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNFullMnistExample.java?slice=70:77"></script>
 
 This will print out the f1 score of the prediction.
 
