@@ -64,7 +64,7 @@ This has everything that our DBN classifier will need. As you can see, there are
 
 These include but are not limited to: the momentum, regularizations (yes or no) and its coefficient, the number of iterations (or passes as the algorithm learns), the velocity of the learning rate, the number of output nodes, and the transforms attached to each node layer (such as Gaussian or Rectified). 
 
- <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=80:82"></script>
+ <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=84:87"></script>
 
 By training a model on a dataset, your algorithm learns to extract those specific features of the data that are useful signals for classifying the target input, the features that distinguish one species from another.
 
@@ -76,7 +76,7 @@ You should see some output from running that last line, if debugs are turned on.
 
 Consider the code snippet below, which would come after our *fit()* call.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=83:96"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=87:101"></script>
 
 DL4J uses an **Evaluation** object that collects statistics about the model’s performance. The INDArray output is created by a chained call of *DataSet.getFeatureMatrix()* and **output**. The getFeatureMatrix call returns an NDArray of all data inputs, which is fed into **output()**. This method will label the probabilities of an input, in this case our feature matrix. *eval* itself just collects misses and hits of predicted and real outcomes of the model. 
 
