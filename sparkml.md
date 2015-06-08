@@ -16,6 +16,7 @@ Major aspects of the integration work:
 5. **UDTs.** With Spark SQL it is possible to introduce new data types. We prototyped an experimental Tensor type, [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-scaleout/spark/dl4j-spark-ml/src/main/scala/org/deeplearning4j/spark/sql/types/tensors.scala).
 6. **Spark Package.** We developed a spark package to make it easy to use the dl4j framework in spark-shell and with spark-submit. See the [deeplearning4j/dl4j-spark-ml](https://github.com/deeplearning4j/dl4j-spark-ml) repository for useful snippets involving the sbt-spark-package plugin.
 7. **Example code.** Examples demonstrate how the standardized ML API simplifies interoperability, such as with label preprocessing and feature scaling. See the [deeplearning4j/dl4j-spark-ml-examples](https://github.com/deeplearning4j/dl4j-spark-ml-examples) repository for an expanding set of example pipelines.
+8. 
 Hope this proves useful to the community as we transition to exciting new concepts in Spark SQL and Spark ML. Meanwhile, we have Spark working with [multiple GPUs on AWS](http://deeplearning4j.org/gpu_aws.html) and we're looking forward to optimizations that will speed neural net training even more. 
 
 *~Eron Wright*
