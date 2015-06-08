@@ -7,21 +7,21 @@ layout: default
 
 Deep-belief networks are multi-class classifiers. Given many inputs belonging to various classes, a DBN can first learn from a small training set, and then classify unlabeled data according to those various classes. It can take in one input and decide which label should be applied to its data record. 
 
-Given an input record, the DBN will choose a label from a set of labels. This goes beyond a Boolean ‘yes’ or ‘no’ to handle a broader, multinomial taxonomy of inputs. 
+Given an input record, the DBN will choose one label from a set. This goes beyond a Boolean ‘yes’ or ‘no’ to handle a broader, multinomial taxonomy of inputs, where the label chosen is represented as a 1, and all other possible labels are 0s. 
 
-The network outputs a vector containing one number per output node. The number of output nodes equals the number of labels. Each of those outputs are going to be a 0 or 1, and taken together, those 0s and 1s form the vector. 
+That is, the network outputs a vector containing one number per output node. The number of output nodes represented in the vector equals the number of labels to choose from. Each of those outputs are going to be a 0 or 1, and taken together, those 0s and 1s form the vector. 
 
-*(To run the example, [use this file](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java).)*
+*(To run the Iris example, [use this file](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java) and explore others from our [Quick Start page](../quickstart.html).)*
 
 ### The IRIS Dataset
 
-The [Iris flower dataset](https://archive.ics.uci.edu/ml/datasets/Iris) is widely used in machine learning to test classification techniques. We will use it to verify the effectiveness of our neural nets.
+The [Iris flower dataset](https://archive.ics.uci.edu/ml/datasets/Iris) is widely used in machine learning to test classification techniques. We will use it to verify the effectiveness of a deep-belief net.
 
-The dataset consists of four measurements taken from 50 examples of each of three species of Iris, so 150 flowers and 600 data points in all. The iris species have petals and sepals (the green, leaflike sheaths at the base of petals) of different lengths, measured in centimeters. The length and width of both sepals and petals were taken for the species Iris setosa, Iris virginica and Iris versicolor. Each species name serves as a label. 
+The dataset consists of four measurements taken from 50 examples of each of three species of Iris, so 150 flowers and 600 data points in all. The various iris species have petals and sepals (the green, leaflike sheaths at the base of petals) of different lengths, measured in centimeters. The length and width of both sepals and petals were taken for the species *Iris setosa, Iris virginica* and *Iris versicolor*. Each species name serves as a label. 
 
-The continuous nature of those measurements make the Iris dataset a perfect test for continuous deep-belief networks. Those four features alone can be sufficient to classify the three species accurately. That is, Success is teaching a neural net to classify by species the data records of individual flowers while knowing only their dimensions, and failure to do so is a very strong signal that your neural net needs fixing. 
+The continuous nature of those measurements make the Iris dataset a perfect test for continuous deep-belief networks. Those four features alone can be sufficient to classify the three species accurately. That is, success here consists of teaching a neural net to classify by species the data records of individual flowers while knowing only their dimensions, and failure to do the same is a very strong signal that your neural net needs fixing. 
 
-The dataset is small, which can present its own problems, and the species I. virginica and I. versicolor are so similar that they partially overlap. 
+The dataset is small, which can present its own problems, and the species I. virginica and I. versicolor are so similar that they partially overlap -- a useful and interesting twist... 
 
 Here is a single record:
 
@@ -40,73 +40,15 @@ Given three output nodes making binary decisions, we can label the three iris sp
 
 ### Loading the data
 
-DL4J uses an object called a DataSet to load data into a neural network. A DataSet is an easy way to store data (and its associated labels) which we want to make predictions about. The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the label. 
+DL4J uses DataSetIterator and DataSet objects to load and store data for neural networks. A DataSet holds data and its associated labels, which we want to make predictions about, while the DataSetIterator feeds the data in piece by piece. 
+
+The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the labels. 
 
 ![input output table](../img/ribbit_table.png)
 
-(Contained within a DataSet object are two NDArrays, a fundamental object that DL4J uses for numeric computation. N-dimensional arrays are scalable, multi-dimensional arrays suitable for sophisticated mathematical operations and frequently used in scientific computing.) 
+(Contained within a DataSet object are two NDArrays, the fundamental data structures that DL4J uses for numeric computation. N-dimensional arrays are scalable, multi-dimensional arrays suitable for sophisticated mathematical operations and frequently used in [scientific computing](http://nd4j.org).) 
 
-The IRIS dataset, like many others, comes as a CSV (comma-separated value) file. Here's how you parse an Iris CSV and put it in the objects DL4J can understand. 
-
-    File f = new File(“Iris.dat”);
-    InputStream fis = new FileInputStream(f);
-
-    List<String> lines = org.apache.commons.io.IOUtils.readLines(fis);
-    INDArray data = Nd4j.ones(to, 4);
-    List<String> outcomeTypes = new ArrayList<>();
-    double[][] outcomes = new double[lines.size()][3];
-
-Let’s break this down: iris.dat is a CSV file containing the data we need to feed the network.
-
-Here, we use *IOUtils*, an Apache library, to help read the data from a file stream. Please note that readLines will copy all the data into memory (generally you shouldn’t do that in production). Instead, consider a BufferedReader object.
-
-The NDArray variable *data* will hold our raw numeric data and the list *outcomeTypes* will be a sort of map that contains our labels. The Dataset object *completedData*, which at the end of the code you'll see below, contains all of our data, including binarized labels. 
-
-The variable *outcomes* will be a two-dimensional array of doubles that has as many rows as we have records (i.e. lines in iris.dat), and as many columns as we have labels (i.e. the three species of iris). This will contain our binarized labels.
-
-Take a look at this code segment
-
-      for(int i = from; i < to; i++) {
-        String line = lines.get(i);
-        String[] split = line.split(",");
-
-         // turn the 4 numeric values into doubles and add them
-        double[] vector = new double[4];
-        for(int i = 0; i < 4; i++)
-             vector[i] = Double.parseDouble(line[i]);
-
-        data.putRow(row,Nd4j.create(vector));
-
-        String outcome = split[split.length - 1];
-        if(!outcomeTypes.contains(outcome))
-            outcomeTypes.add(outcome);
-
-        double[] rowOutcome = new double[3];
-        rowOutcome[outcomeTypes.indexOf(outcome)] = 1;
-        outcomes[i] = rowOutcome;
-    }
-
-          DataSet completedData = new DataSet(data, Nd4j.create(outcomes));
-
-OK, time to look at what we wrote.
-
-Line 3: Since we’re dealing with CSV data, we can just use *split* to tokenize on each comma and store the data in the String array *split*.
-
-Lines 6 - 10: Our String objects are strings of numbers. That is, instead of a double of 1.5, we have a String object with the characters “1.5”. We’ll create a temporary array called *vector* and store the characters there for use later. 
-
-Line 12-14: We get the labels by grabbing the last element of our String array. Now we can think about binarizing that label. To do that, we’ll collect all the labels in the list outcomeTypes, which is our bridge to the next step.
-
-Lines 16-18: We start to binarize the labels with our outcomeTypes list. Each label has a certain position, or index, and we’ll use that index number to map onto the label row we make here. So, if *i. setosa* is the label, we’ll put it at the end of the outcomeTypes list. From there, we’ll create a new label row, three elements in size, and mark the corresponding position in rowOutcome as the 1, and 0 for the two others. Finally, we save rowOutcome into the 2D array outcomes that we made earlier. 
-
-By the time we finish, we'll have a row with a numeric representation of labels. A data record classified as *i. setosa* would look like:
-
-![final table](../img/final_table.png)
-
-The words you see in the upper boxes only serve to illustrate our tutorial and remind us which words go with which numbers. The numbers in the lower boxes will be what appear as a vector for data processing. In fact, the bottom, finished row is what we call *vectorized data*.
-
-Line 21: Now we can start to think about packaging the data for DL4J. To do that, we create a single *DataSet* object with the data we want to work with and the accompanying, binarized labels.
-
-Finally, we’ll return the list completedData, a dataset our deep-belief network can work with. 
+The IRIS dataset, like many others, comes as a CSV (comma-separated value) file. We use a [general machine-learning vectorization lib called Canova](http://deeplearning4j.org/canova.html) to parse it. 
 
 ### Creating a Neural Network (NN)
 
@@ -116,42 +58,13 @@ With DL4J, creating a neural network of any kind involves several steps.
 
 First, we need to create a configuration object:
 
-    NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-    .hiddenUnit(RBM.HiddenUnit.RECTIFIED).momentum(5e-1f)
-        .visibleUnit(RBM.VisibleUnit.GAUSSIAN).regularization(true)
-        .regularizationCoefficient(2e-4f).dist(Distributions.uniform(gen))
-        .activationFunction(Activations.tanh()).iterations(10000)
-        .weightInit(WeightInit.DISTRIBUTION)
-    .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).rng(gen)
-        .learningRate(1e-3f).nIn(4).nOut(3).build();
+ <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=53:80"></script>
 
 This has everything that our DBN classifier will need. As you can see, there are a lot of parameters, or ‘knobs’, that you will learn to adjust over time to improve your nets’ performance. These are the pedals, clutch and steering wheel attached to DL4J's deep-learning engine. 
 
-These include but are not limited to: the amount of momentum, regularization (yes or no) and its coefficient, the number of iterations, the velocity of the learning rate, the number of output nodes, and the transforms attached to each node layer (such as Gaussian or Rectified). 
+These include but are not limited to: the momentum, regularizations (yes or no) and its coefficient, the number of iterations (or passes as the algorithm learns), the velocity of the learning rate, the number of output nodes, and the transforms attached to each node layer (such as Gaussian or Rectified). 
 
-We also need a random number generator object:
-
-        RandomGenerator gen = new MersenneTwister(123);
-
-Finally, we create the DBN itself: dbn
-
-    DBN dbn = new DBN.Builder().configure(conf)
-        .hiddenLayerSizes(new int[]{3})
-        .build();
-      dbn.getOutputLayer().conf().setActivationFunction(Activations.softMaxRows());
-      dbn.getOutputLayer().conf().setLossFunction(LossFunctions.LossFunction.MCXENT);
-
-Let’s analyze the code above. On the first line, we take the Configuration object we called ‘conf’ and we pass it in as a parameter. Then we specify the hidden layer size. We can do so with a separate array for each layer of the array. In this case, there is a single hidden layer, three nodes long. 
-
-Now we can prepare the DataSet object we made earlier. We’ll put it in a separate function irisLoad().
-
-    DataSet ourDataSet = loadIris(0, 150);
-    ourDataSet.normalizeZeroMeanZeroUnitVariance();
-    dbn.fit(ourDataSet);
-
-Note the second line above. In many machine-learning models, it’s important to normalize the data to ensure that outliers don’t distort the model. (The normalization of numbers means adjusting values that may be measured on different scales (in tens or hundreds or millions) to a notionally common scale, say, between 0 and 1. You can only compare apples to apples if everything is apple-scale...
-
-Finally, we call *fit* to train the model on the data set. 
+ <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=80:83"></script>
 
 By training a model on a dataset, your algorithm learns to extract those specific features of the data that are useful signals for classifying the target input, the features that distinguish one species from another.
 
@@ -163,11 +76,7 @@ You should see some output from running that last line, if debugs are turned on.
 
 Consider the code snippet below, which would come after our *fit()* call.
 
-    Evaluation eval = new Evaluation();
-    INDArray output = d.output(next.getFeatureMatrix());
-    eval.eval(next.getLabels(),output);
-    System.out.printf("Score: %s\n", eval.stats());
-    log.info("Score " + eval.stats());
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=83:97"></script>
 
 DL4J uses an **Evaluation** object that collects statistics about the model’s performance. The INDArray output is created by a chained call of *DataSet.getFeatureMatrix()* and **output**. The getFeatureMatrix call returns an NDArray of all data inputs, which is fed into **output()**. This method will label the probabilities of an input, in this case our feature matrix. *eval* itself just collects misses and hits of predicted and real outcomes of the model. 
 
@@ -187,10 +96,8 @@ In this example, we have the following
                      0.767064393939394
     ====================================================
 
-After your net has trained, you'll see an F1 score like this. In machine learning, an F1 score is one metric used to determine how well a classifier performs. It's a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct.
+After your net has trained, you'll see an F1 score like this. In machine learning, an F1 score is one metric used to determine how well a classifier performs. It's a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It's basically the probability that your net's guesses are correct. 
 
-Our model wasn’t tuned all that well (back to the knobs!), and this is just a first pass, but not bad!
-
-In the end, a a working network's visual representation of the Iris dataset will look something like this
+In the end, a working network's visual representation of the Iris dataset will look something like this
 
 ![Alt text](../img/iris_dataset.png)
