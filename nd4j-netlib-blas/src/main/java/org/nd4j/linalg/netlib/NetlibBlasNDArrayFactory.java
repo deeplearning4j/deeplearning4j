@@ -27,6 +27,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.netlib.blas.NetlibLevel1;
+import org.nd4j.linalg.netlib.blas.NetlibLevel2;
+import org.nd4j.linalg.netlib.blas.NetlibLevel3;
 import org.nd4j.linalg.netlib.complex.ComplexDouble;
 import org.nd4j.linalg.netlib.complex.ComplexFloat;
 import org.nd4j.linalg.netlib.complex.ComplexNDArray;
@@ -47,6 +50,21 @@ public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
 
     public NetlibBlasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+    }
+
+    @Override
+    public void createLevel1() {
+        level1 = new NetlibLevel1();
+    }
+
+    @Override
+    public void createLevel2() {
+       level2 = new NetlibLevel2();
+    }
+
+    @Override
+    public void createLevel3() {
+      level3 = new NetlibLevel3();
     }
 
     @Override

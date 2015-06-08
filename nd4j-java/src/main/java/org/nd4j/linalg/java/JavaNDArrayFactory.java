@@ -28,6 +28,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 
+import org.nd4j.linalg.java.blas.JavaLevel1;
+import org.nd4j.linalg.java.blas.JavaLevel2;
+import org.nd4j.linalg.java.blas.JavaLevel3;
 import org.nd4j.linalg.java.complex.ComplexDouble;
 import org.nd4j.linalg.java.complex.ComplexFloat;
 import org.nd4j.linalg.java.complex.ComplexNDArray;
@@ -38,16 +41,31 @@ import java.util.List;
 /**
  * @author Adam Gibson
  */
-public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
-    public NetlibBlasNDArrayFactory() {
+public class JavaNDArrayFactory extends BaseNDArrayFactory {
+    public JavaNDArrayFactory() {
     }
 
-    public NetlibBlasNDArrayFactory(DataBuffer.Type dtype, Character order) {
+    public JavaNDArrayFactory(DataBuffer.Type dtype, Character order) {
         super(dtype, order);
     }
 
-    public NetlibBlasNDArrayFactory(DataBuffer.Type dtype, char order) {
+    public JavaNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+    }
+
+    @Override
+    public void createLevel1() {
+        level1 = new JavaLevel1();
+    }
+
+    @Override
+    public void createLevel2() {
+        level2 = new JavaLevel2();
+    }
+
+    @Override
+    public void createLevel3() {
+       level3 = new JavaLevel3();
     }
 
     @Override

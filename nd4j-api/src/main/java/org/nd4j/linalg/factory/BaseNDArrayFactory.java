@@ -25,6 +25,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.blas.Level2;
+import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -47,8 +50,32 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     protected DataBuffer.Type dtype;
     protected char order;
+    protected Level1 level1;
+    protected Level2 level2;
+    protected Level3 level3;
 
     public BaseNDArrayFactory() {
+    }
+
+    @Override
+    public Level1 level1() {
+        if(level1 == null)
+            createLevel1();
+        return level1;
+    }
+
+    @Override
+    public Level2 level2() {
+        if(level2 == null)
+            createLevel2();
+        return level2;
+    }
+
+    @Override
+    public Level3 level3() {
+        if(level3 == null)
+            createLevel3();
+        return level3;
     }
 
     /**

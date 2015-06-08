@@ -22,6 +22,9 @@
 
 package org.nd4j.linalg.factory;
 
+import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.blas.Level2;
+import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -38,7 +41,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * <p/>
  * Currently, all the general matrix routines are implemented.
  */
-public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
+public interface BlasWrapper {
     /***************************************************************************
      * BLAS Level 1
      */
@@ -46,70 +49,109 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
     /**
      * Compute x <-> y (swap two matrices)
      */
-    public NDARRAY_TYPE swap(NDARRAY_TYPE x, NDARRAY_TYPE y);
+    INDArray swap(INDArray x, INDArray y);
 
+    /**
+     * Return the level 1 functions
+     * for this blas impl
+     * @return
+     */
+    Level1 level1();
+    /**
+     * Return the level 2 functions
+     * for this blas impl
+     * @return
+     */
+    Level2 level2();
+    /**
+     * Return the level 3 functions
+     * for this blas impl
+     * @return
+     */
+    Level3 level3();
+
+    @Deprecated
     INDArray scal(double alpha, INDArray x);
 
     /**
      * Compute x <- alpha * x (scale a matrix)
      */
-    public NDARRAY_TYPE scal(float alpha, NDARRAY_TYPE x);
+    @Deprecated
+    INDArray scal(float alpha, INDArray x);
+    @Deprecated
+    IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x);
 
-    public IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x);
-
-
+    @Deprecated
     IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x);
+
+    /**
+     * Compute x <- alpha * x (scale a matrix)
+     */
+    IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x);
+
 
     /**
      * Compute y <- x (copy a matrix)
      */
-    public NDARRAY_TYPE copy(NDARRAY_TYPE x, NDARRAY_TYPE y);
+    INDArray copy(INDArray x, INDArray y);
 
-    public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y);
+    IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y);
 
+    @Deprecated
     INDArray axpy(double da, INDArray dx, INDArray dy);
 
     /**
      * Compute y <- alpha * x + y (elementwise addition)
      */
-    public NDARRAY_TYPE axpy(float da, NDARRAY_TYPE dx, NDARRAY_TYPE dy);
+    @Deprecated
+    INDArray axpy(float da, INDArray dx, INDArray dy);
 
-    public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy);
+    /**
+     * Compute y <- y + x * alpha
+     * @param da the alpha to multiply by
+     * @param dx
+     * @param dy
+     * @return
+     */
+    INDArray axpy(Number da, INDArray dx, INDArray dy);
+
+
+    IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy);
 
     /**
      * Compute x^T * y (dot product)
      */
-    public double dot(NDARRAY_TYPE x, NDARRAY_TYPE y);
+    double dot(INDArray x, INDArray y);
 
     /**
      * Compute x^T * y (dot product)
      */
-    public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y);
+    IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y);
 
     /**
      * Compute x^T * y (dot product)
      */
-    public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y);
+    IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y);
 
     /**
      * Compute || x ||_2 (2-norm)
      */
-    public double nrm2(NDARRAY_TYPE x);
+    double nrm2(INDArray x);
 
-    public double nrm2(IComplexNDArray x);
+    double nrm2(IComplexNDArray x);
 
     /**
      * Compute || x ||_1 (1-norm, sum of absolute values)
      */
-    public double asum(NDARRAY_TYPE x);
+    double asum(INDArray x);
 
-    public double asum(IComplexNDArray x);
+    double asum(IComplexNDArray x);
 
     /**
      * Compute index of element with largest absolute value (index of absolute
      * value maximum)
      */
-    public int iamax(NDARRAY_TYPE x);
+    int iamax(INDArray x);
 
     /**
      * Compute index of element with largest absolute value (complex version).
@@ -117,13 +159,17 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * @param x matrix
      * @return index of element with largest absolute value.
      */
-    public int iamax(IComplexNDArray x);
+    int iamax(IComplexNDArray x);
 
     /**
      * ************************************************************************
      * BLAS Level 2
      */
 
+    INDArray gemv(Number alpha, INDArray a,
+                  INDArray x, double beta, INDArray y);
+
+    @Deprecated
     INDArray gemv(double alpha, INDArray a,
                   INDArray x, double beta, INDArray y);
 
@@ -131,37 +177,54 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * Compute y <- alpha*op(a)*x + beta * y (general matrix vector
      * multiplication)
      */
-    public NDARRAY_TYPE gemv(float alpha, NDARRAY_TYPE a,
-                             NDARRAY_TYPE x, float beta, NDARRAY_TYPE y);
+    @Deprecated
+    INDArray gemv(float alpha, INDArray a,
+                  INDArray x, float beta, INDArray y);
+    INDArray ger(Number alpha, INDArray x,
+                 INDArray y, INDArray a);
 
+    @Deprecated
     INDArray ger(double alpha, INDArray x,
                  INDArray y, INDArray a);
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
-    public NDARRAY_TYPE ger(float alpha, NDARRAY_TYPE x,
-                            NDARRAY_TYPE y, NDARRAY_TYPE a);
+    INDArray ger(float alpha, INDArray x,
+                 INDArray y, INDArray a);
 
     IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a,
                          IComplexNDArray x, IComplexDouble beta, IComplexNDArray y);
 
-    IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y);
 
+    IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta, IComplexNDArray y);
+
+
+    IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y);
+    @Deprecated
     IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
+
 
     /**
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
-    public IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x,
-                                IComplexNDArray y, IComplexNDArray a);
+    IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x,
+                         IComplexNDArray y, IComplexNDArray a);
+
+    /**
+     * Compute A <- alpha * x * y^T + A (general rank-1 update)
+     */
+    @Deprecated
+    IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x,
+                         IComplexNDArray y, IComplexNDArray a);
 
     /**
      * Compute A <- alpha * x * y^H + A (general rank-1 update)
      */
-    public IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x,
-                                IComplexNDArray y, IComplexNDArray a);
-
+    @Deprecated
+    IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x,
+                         IComplexNDArray y, IComplexNDArray a);
+    @Deprecated
     IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x,
                          IComplexNDArray y, IComplexNDArray a);
 
@@ -169,7 +232,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * ************************************************************************
      * BLAS Level 3
      */
-
+    @Deprecated
     INDArray gemm(double alpha, INDArray a,
                   INDArray b, double beta, INDArray c);
 
@@ -177,11 +240,12 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * Compute c <- a*b + beta * c (general matrix matrix
      * multiplication)
      */
-    public NDARRAY_TYPE gemm(float alpha, NDARRAY_TYPE a,
-                             NDARRAY_TYPE b, float beta, NDARRAY_TYPE c);
+    @Deprecated
+    INDArray gemm(float alpha, INDArray a,
+                  INDArray b, float beta, INDArray c);
 
-    public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a,
-                                IComplexNDArray b, IComplexNumber beta, IComplexNDArray c);
+    IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a,
+                         IComplexNDArray b, IComplexNumber beta, IComplexNDArray c);
 
 
     /**
@@ -189,42 +253,52 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * LAPACK
      */
 
-    public NDARRAY_TYPE gesv(NDARRAY_TYPE a, int[] ipiv,
-                             NDARRAY_TYPE b);
+    INDArray gesv(INDArray a, int[] ipiv,
+                  INDArray b);
 
-//STOP
+     //STOP
 
     void checkInfo(String name, int info);
-//START
+    //START
 
-    public NDARRAY_TYPE sysv(char uplo, NDARRAY_TYPE a, int[] ipiv,
-                             NDARRAY_TYPE b);
+    INDArray sysv(char uplo, INDArray a, int[] ipiv,
+                  INDArray b);
 
-    public int syev(char jobz, char uplo, NDARRAY_TYPE a, NDARRAY_TYPE w);
+
+
+    int syev(char jobz, char uplo, INDArray a, INDArray w);
 
     int syevx(char jobz, char range, char uplo, INDArray a,
               double vl, double vu, int il, int iu, double abstol,
               INDArray w, INDArray z);
 
-    public int syevx(char jobz, char range, char uplo, NDARRAY_TYPE a,
-                     float vl, float vu, int il, int iu, float abstol,
-                     NDARRAY_TYPE w, NDARRAY_TYPE z);
+    int syevx(char jobz, char range, char uplo, INDArray a,
+              float vl, float vu, int il, int iu, float abstol,
+              INDArray w, INDArray z);
 
-    public int syevd(char jobz, char uplo, NDARRAY_TYPE A,
-                     NDARRAY_TYPE w);
+    int syevd(char jobz, char uplo, INDArray A,
+              INDArray w);
 
+    @Deprecated
     int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz);
 
-    public int syevr(char jobz, char range, char uplo, NDARRAY_TYPE a,
-                     float vl, float vu, int il, int iu, float abstol,
-                     NDARRAY_TYPE w, NDARRAY_TYPE z, int[] isuppz);
+    @Deprecated
+    int syevr(char jobz, char range, char uplo, INDArray a,
+              float vl, float vu, int il, int iu, float abstol,
+              INDArray w, INDArray z, int[] isuppz);
 
-    public void posv(char uplo, NDARRAY_TYPE A, NDARRAY_TYPE B);
 
-    public int geev(char jobvl, char jobvr, NDARRAY_TYPE A,
-                    NDARRAY_TYPE WR, NDARRAY_TYPE WI, NDARRAY_TYPE VL, NDARRAY_TYPE VR);
+    int syevr(char jobz, char range, char uplo, INDArray a,
+              float vl, float vu, int il, int iu, Number abstol,
+              INDArray w, INDArray z, int[] isuppz);
 
-    public int sygvd(int itype, char jobz, char uplo, NDARRAY_TYPE A, NDARRAY_TYPE B, NDARRAY_TYPE W);
+
+    void posv(char uplo, INDArray A, INDArray B);
+
+    int geev(char jobvl, char jobvr, INDArray A,
+             INDArray WR, INDArray WI, INDArray VL, INDArray VR);
+
+    int sygvd(int itype, char jobz, char uplo, INDArray A, INDArray B, INDArray W);
 
     /**
      * Generalized Least Squares via *GELSD.
@@ -240,15 +314,14 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * @param A an (m,n) matrix
      * @param B an (max(m,n), k) matrix (well, at least)
      */
-    public void gelsd(NDARRAY_TYPE A, NDARRAY_TYPE B);
+    void gelsd(INDArray A, INDArray B);
 
-    public void geqrf(NDARRAY_TYPE A, NDARRAY_TYPE tau);
+    void geqrf(INDArray A, INDArray tau);
 
-    public void ormqr(char side, char trans, NDARRAY_TYPE A, NDARRAY_TYPE tau, NDARRAY_TYPE C);
+    void ormqr(char side, char trans, INDArray A, INDArray tau, INDArray C);
 
 
-    public void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy);
-
+    @Deprecated
     void saxpy(double alpha, INDArray x, INDArray y);
 
     /**
@@ -258,6 +331,7 @@ public interface BlasWrapper<NDARRAY_TYPE extends INDArray> {
      * @param x     the ndarray to use
      * @param y     the ndarray to use
      */
+    @Deprecated
     void saxpy(float alpha, INDArray x, INDArray y);
 
 

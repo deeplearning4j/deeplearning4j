@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.BaseBlasWrapper;
 
 
 /**
@@ -32,7 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author mjk
  * @author Adam Gibson
  */
-public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
+public class JCublasWrapper extends BaseBlasWrapper {
     @Override
     public INDArray swap(INDArray x, INDArray y) {
         SimpleJCublas.swap(x, y);
@@ -65,6 +66,11 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     }
 
     @Override
+    public IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x) {
+        return null;
+    }
+
+    @Override
     public INDArray copy(INDArray x, INDArray y) {
         SimpleJCublas.copy(x, y);
         return y;
@@ -86,6 +92,11 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     public INDArray axpy(float da, INDArray dx, INDArray dy) {
         SimpleJCublas.axpy(da, dx, dy);
         return dy;
+    }
+
+    @Override
+    public INDArray axpy(Number da, INDArray dx, INDArray dy) {
+        return null;
     }
 
 
@@ -152,6 +163,11 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     }
 
     @Override
+    public INDArray gemv(Number alpha, INDArray a, INDArray x, double beta, INDArray y) {
+        return null;
+    }
+
+    @Override
     public INDArray gemv(double alpha, INDArray a, INDArray x, double beta, INDArray y) {
         SimpleJCublas.gemv(a, x, y, alpha, beta);
         return y;
@@ -160,6 +176,11 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public INDArray gemv(float alpha, INDArray a, INDArray x, float beta, INDArray y) {
         return SimpleJCublas.gemv(a, x, y, alpha, beta);
+    }
+
+    @Override
+    public INDArray ger(Number alpha, INDArray x, INDArray y, INDArray a) {
+        return null;
     }
 
     @Override
@@ -179,6 +200,11 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     }
 
     @Override
+    public IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta, IComplexNDArray y) {
+        return null;
+    }
+
+    @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
         return SimpleJCublas.gemv(a, x, alpha, y, beta);
     }
@@ -186,6 +212,11 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
     @Override
     public IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
+        return null;
     }
 
 
@@ -271,6 +302,11 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int syevr(char jobz, char range, char uplo, INDArray a, float vl, float vu, int il, int iu, Number abstol, INDArray w, INDArray z, int[] isuppz) {
+        return 0;
+    }
+
     //@Override
     public int syevr(char jobz, char range, char uplo, INDArray a, double vl, double vu, int il, int iu, double abstol, INDArray w, INDArray z, int[] isuppz) {
         throw new UnsupportedOperationException();
@@ -313,11 +349,6 @@ public class JCublasWrapper implements org.nd4j.linalg.factory.BlasWrapper {
 
     }
 
-    @Override
-    public void dcopy(int n, float[] dx, int dxIdx, int incx, float[] dy, int dyIdx, int incy) {
-        throw new UnsupportedOperationException();
-
-    }
 
     @Override
     public void saxpy(double alpha, INDArray x, INDArray y) {

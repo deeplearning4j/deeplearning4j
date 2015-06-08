@@ -20,6 +20,9 @@
 package org.nd4j.linalg.factory;
 
 
+import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.blas.Level2;
+import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -40,9 +43,39 @@ import java.util.List;
 public interface NDArrayFactory {
 
 
-    public final static char FORTRAN = 'f';
-    public final static char C = 'c';
+    char FORTRAN = 'f';
+    char C = 'c';
 
+    /**
+     * Return the level 1 blas operations
+     * @return
+     */
+    Level1 level1();
+
+    /**
+     * Return the level 2 blas operations
+     * @return
+     */
+    Level2 level2();
+
+    /**
+     * Return the level 3 blas operations
+     * @return
+     */
+    Level3 level3();
+
+    /**
+     * Create level 1
+     */
+    void createLevel1();
+    /**
+     * Create level 2
+     */
+    void createLevel2();
+    /**
+     * Create level 3
+     */
+    void createLevel3();
 
     /**
      * Creates an 1 x num ndarray with the specified value
@@ -52,7 +85,7 @@ public interface NDArrayFactory {
      * @return a complex ndarray of the specified size
      * and value
      */
-    public IComplexNDArray complexValueOf(int num, IComplexNumber value);
+    IComplexNDArray complexValueOf(int num, IComplexNumber value);
 
     /**
      * Creates an shape ndarray with the specified value
@@ -62,7 +95,7 @@ public interface NDArrayFactory {
      * @return a complex ndarray of the specified size
      * and value
      */
-    public IComplexNDArray complexValueOf(int[] shape, IComplexNumber value);
+    IComplexNDArray complexValueOf(int[] shape, IComplexNumber value);
 
     /**
      * Creates an 1 x num ndarray with the specified value
@@ -72,7 +105,7 @@ public interface NDArrayFactory {
      * @return a complex ndarray of the specified size
      * and value
      */
-    public IComplexNDArray complexValueOf(int num, double value);
+    IComplexNDArray complexValueOf(int num, double value);
 
     /**
      * Creates an shape ndarray with the specified value
@@ -82,7 +115,7 @@ public interface NDArrayFactory {
      * @return a complex ndarray of the specified size
      * and value
      */
-    public IComplexNDArray complexValueOf(int[] shape, double value);
+    IComplexNDArray complexValueOf(int[] shape, double value);
 
     /**
      * Sets the order. Primarily for testing purposes
@@ -105,14 +138,14 @@ public interface NDArrayFactory {
      *
      * @return the order (c or f)
      */
-    public char order();
+    char order();
 
     /**
      * Returns the data type for this ndarray
      *
      * @return the data type for this ndarray
      */
-    public DataBuffer.Type dtype();
+    DataBuffer.Type dtype();
 
     /**
      * Creates a complex ndarray with the specified shape
@@ -123,7 +156,7 @@ public interface NDArrayFactory {
      * @param offset  the offset of the ndarray
      * @return the instance
      */
-    public IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset);
+    IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset);
 
     /**
      * Generate a linearly spaced vector
