@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -27,8 +28,8 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double dot(int n, double alpha, INDArray X, INDArray Y) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            return ddot(n,X,X.majorStride(),Y,Y.majorStride());
-        return sdot(n,X,X.majorStride(),Y,Y.majorStride());
+            return ddot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X));
+        return sdot(n,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X));
     }
 
     /**
@@ -42,7 +43,7 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public IComplexNumber dot(int n, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -54,8 +55,8 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double nrm2(INDArray arr) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
-            return dnrm2(arr.length(),arr,arr.majorStride());
-        return snrm2(arr.length(),arr,arr.majorStride());
+            return dnrm2(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
+        return snrm2(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
     }
 
     /**
@@ -78,8 +79,8 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public double asum(INDArray arr) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
-            return dasum(arr.length(),arr,arr.majorStride());
-        return sasum(arr.length(),arr,arr.majorStride());
+            return dasum(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
+        return sasum(arr.length(),arr, BlasBufferUtil.getBlasStride(arr));
     }
 
     /**
@@ -105,8 +106,8 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public int iamax(INDArray arr) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
-            return idamax(arr.length(),arr,arr.majorStride());
-        return isamax(arr.length(),arr,arr.majorStride());
+            return idamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
+        return isamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
     }
 
     /**
@@ -118,8 +119,8 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public int iamax(IComplexNDArray arr) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
-            return izamax(arr.length(),arr,arr.majorStride());
-        return icamax(arr.length(),arr,arr.majorStride());
+            return izamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
+        return icamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
     }
 
     /**
@@ -153,9 +154,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void swap(INDArray x, INDArray y) {
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
-            dswap(x.length(),x,x.majorStride(),y,y.majorStride());
+            dswap(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
         else
-            sswap(x.length(),x,x.majorStride(),y,y.majorStride());
+            sswap(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
     }
 
     /**
@@ -167,9 +168,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void copy(INDArray x, INDArray y) {
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
-            dcopy(x.length(),x,x.majorStride(),y,y.majorStride());
+            dcopy(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
         else
-            scopy(x.length(),x,x.majorStride(),y,y.majorStride());
+            scopy(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
     }
 
     /**
@@ -183,9 +184,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void axpy(int n, double alpha, INDArray x, INDArray y) {
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
-            daxpy(n,alpha,x,x.majorStride(),y,y.majorStride());
+            daxpy(n,alpha,x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
         else
-            saxpy(n, (float) alpha, x, x.majorStride(), y, y.majorStride());
+            saxpy(n, (float) alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
     }
 
     /**
@@ -199,9 +200,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void axpy(int n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
-            zaxpy(n,alpha.asDouble(),x,x.majorStride(),y,y.majorStride());
+            zaxpy(n,alpha.asDouble(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
         else
-            caxpy(n,alpha.asFloat(),x,x.majorStride(),y,y.majorStride());
+            caxpy(n,alpha.asFloat(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
     }
 
     /**
@@ -232,9 +233,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void rot(int N, INDArray X, INDArray Y, double c, double s) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            drot(N,X,X.majorStride(),Y,Y.majorStride(),c,s);
+            drot(N,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X),c,s);
         else
-            srot(N,X,X.majorStride(),Y,Y.majorStride(),(float) c,(float) s);
+            srot(N,X,BlasBufferUtil.getBlasStride(X),Y,BlasBufferUtil.getBlasStride(X),(float) c,(float) s);
     }
 
     /**
@@ -292,9 +293,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void scal(int N, double alpha, INDArray X) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            dscal(N,alpha,X,X.majorStride());
+            dscal(N,alpha,X,BlasBufferUtil.getBlasStride(X));
         else
-            sscal(N, (float) alpha,X,X.majorStride());
+            sscal(N, (float) alpha,X,BlasBufferUtil.getBlasStride(X));
     }
 
     /**
@@ -307,9 +308,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public void scal(int N, IComplexNumber alpha, IComplexNDArray X) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zscal(N,alpha.asDouble(),X,X.majorStride());
+            zscal(N,alpha.asDouble(),X,BlasBufferUtil.getBlasStride(X));
         else
-            cscal(N,alpha.asFloat(),X,X.majorStride());
+            cscal(N,alpha.asFloat(),X,BlasBufferUtil.getBlasStride(X));
 
     }
 
