@@ -40,27 +40,19 @@ Given three output nodes making binary decisions, we can label the three iris sp
 
 ### Loading the data
 
-DL4J uses DataSetIterator and DataSet objects to load and store data for neural networks. A DataSet holds data and its associated labels, which we want to make predictions about, while the DataSetIterator feeds the data in piece by piece. 
+DL4J uses DataSetIterator and DataSet objects to load and store data for neural networks. A DataSet holds data and its associated labels, which we want to make predictions about, while the DataSetIterator feeds the data in piece by piece from its original file, say, a CSV. 
 
-The columns First and Second, below, are both NDArrays. One of the NDArrays will hold the data’s attributes; the other holds the labels. 
-
-![input output table](../img/ribbit_table.png)
-
-(Contained within a DataSet object are two NDArrays, the fundamental data structures that DL4J uses for numeric computation. N-dimensional arrays are scalable, multi-dimensional arrays suitable for sophisticated mathematical operations and frequently used in [scientific computing](http://nd4j.org).) 
+(The fundamental data structures that DL4J uses for numeric computation are NDArrays. N-dimensional arrays are scalable, multi-dimensional arrays suitable for sophisticated mathematical operations and frequently used in [scientific computing](http://nd4j.org).) 
 
 The IRIS dataset, like many others, comes as a CSV (comma-separated value) file. We use a [general machine-learning vectorization lib called Canova](http://deeplearning4j.org/canova.html) to parse it. 
 
 ### Creating a Neural Network (NN)
 
-Now we’re ready to create a deep-belief network, or DBN, to classify our inputs.
-
-With DL4J, creating a neural network of any kind involves several steps. 
-
-First, we need to create a configuration object:
+Now we’re ready to create a deep-belief network, or DBN, to classify our inputs. With DL4J, creating and training a neural network takes a couple steps. First, we need to create a configuration object:
 
  <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=53:81"></script>
 
-This has everything that our DBN classifier will need. As you can see, there are a lot of parameters, or ‘knobs’, that you will learn to adjust over time to improve your nets’ performance. These are the pedals, clutch and steering wheel attached to DL4J's deep-learning engine. 
+This has everything that our DBN classifier will need. As you can see, there are a lot of parameters that you will learn to adjust over time to improve your nets’ performance. These are the pedals, clutch and steering wheel attached to DL4J's deep-learning engine. 
 
 These include but are not limited to: the momentum, regularizations (yes or no) and its coefficient, the number of iterations (or passes as the algorithm learns), the velocity of the learning rate, the number of output nodes, and the transforms attached to each node layer (such as Gaussian or Rectified). Training the net just involves calling fit on the model and passing in the *train* parameter.
 
@@ -68,9 +60,7 @@ These include but are not limited to: the momentum, regularizations (yes or no) 
 
 By training a model on a dataset, your algorithm learns to extract those specific features of the data that are useful signals for classifying the target input, the features that distinguish one species from another.
 
-Training is the repeated attempt to classify inputs based on various machine-extracted features. It consists of two main steps: the comparison of those guesses with the real answers in a test set; and the reward or punishment of the net as it moves closer to or farther from the correct answers. With sufficient data and training, this net could be unleashed to classify unsupervised iris data with a fairly precise expectation of its future accuracy. 
-
-You should see some output from running that last line, if debugs are turned on. 
+Training is the repeated attempt to classify inputs based on various machine-extracted features. It consists of two main steps: the comparison of those guesses with the real answers in a test set; and the reward or punishment of the net as it moves closer to or farther from the correct answers. With sufficient data and training, this net could be unleashed to classify unsupervised iris data with a fair expectation of its future accuracy. 
 
 ### **Evaluating our results**
 
