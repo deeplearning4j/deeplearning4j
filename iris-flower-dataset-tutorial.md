@@ -62,7 +62,7 @@ First, we need to create a configuration object:
 
 This has everything that our DBN classifier will need. As you can see, there are a lot of parameters, or ‘knobs’, that you will learn to adjust over time to improve your nets’ performance. These are the pedals, clutch and steering wheel attached to DL4J's deep-learning engine. 
 
-These include but are not limited to: the momentum, regularizations (yes or no) and its coefficient, the number of iterations (or passes as the algorithm learns), the velocity of the learning rate, the number of output nodes, and the transforms attached to each node layer (such as Gaussian or Rectified). 
+These include but are not limited to: the momentum, regularizations (yes or no) and its coefficient, the number of iterations (or passes as the algorithm learns), the velocity of the learning rate, the number of output nodes, and the transforms attached to each node layer (such as Gaussian or Rectified). Training the net just involves calling fit on the model and passing in the *train* parameter.
 
  <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=84:87"></script>
 
