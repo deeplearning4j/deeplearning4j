@@ -53,7 +53,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     private JCudaBuffer dummyFloatPointer, dummyDoublePointer;
 
     public JCudaExecutioner() {
-        SimpleJCublas.init();
+        try {
+            SimpleJCublas.init();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         dummyFloatPointer = KernelFunctions.alloc(new float[]{1});
         dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
     }

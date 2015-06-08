@@ -145,7 +145,6 @@ public class CublasPointer  implements AutoCloseable {
                         , ContextHolder.getInstance().getCudaStream());
                 //mark the buffer copied
                 buffer.setCopied(name);
-                toString();
 
             }
 

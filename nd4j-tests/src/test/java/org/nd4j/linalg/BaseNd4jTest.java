@@ -68,7 +68,7 @@ public abstract class BaseNd4jTest extends TestCase {
      * given command line arguments
      */
     public static Nd4jBackend getDefaultBackend() {
-        String clazz = System.getProperty(DEFAULT_BACKED,JCublasBackend.class.getName());
+        String clazz = System.getProperty(DEFAULT_BACKED,JblasBackend.class.getName());
         try {
             return (Nd4jBackend) Class.forName(clazz).newInstance();
         } catch (Exception e) {

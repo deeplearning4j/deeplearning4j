@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.indexing.Indices;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,6 +130,10 @@ public class LinearViewNDArray  extends BaseNDArray {
         return this;
     }
 
+    @Override
+    public DataBuffer data() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public int length() {

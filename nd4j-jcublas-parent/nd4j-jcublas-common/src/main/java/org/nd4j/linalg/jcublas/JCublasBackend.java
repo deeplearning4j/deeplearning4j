@@ -44,8 +44,7 @@ public class JCublasBackend extends Nd4jBackend {
         // execute SimpleJCublas static initializer to confirm that the library is usable
         try {
             if(!canRun())
-                throw new IllegalStateException("Please ensure cuda is installed and nvcc is in the path.");
-            Class.forName("org.nd4j.linalg.jcublas.SimpleJCublas");
+                return false;
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }

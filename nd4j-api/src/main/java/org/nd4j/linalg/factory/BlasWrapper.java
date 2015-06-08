@@ -138,14 +138,14 @@ public interface BlasWrapper {
      */
     double nrm2(INDArray x);
 
-    double nrm2(IComplexNDArray x);
+    IComplexNumber nrm2(IComplexNDArray x);
 
     /**
      * Compute || x ||_1 (1-norm, sum of absolute values)
      */
     double asum(INDArray x);
 
-    double asum(IComplexNDArray x);
+    IComplexNumber asum(IComplexNDArray x);
 
     /**
      * Compute index of element with largest absolute value (index of absolute

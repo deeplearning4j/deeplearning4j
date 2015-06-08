@@ -14,7 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public abstract  class BaseLevel1 implements Level1 {
+public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     /**
      * computes a vector-vector dot product.
      *

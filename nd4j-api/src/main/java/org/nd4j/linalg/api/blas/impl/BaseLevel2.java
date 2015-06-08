@@ -14,7 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public abstract class BaseLevel2 implements Level2 {
+public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     /**
      * gemv computes a matrix-vector product using a general matrix and performs one of the following matrix-vector operations:
      * y := alpha*a*x + beta*y  for trans = 'N'or'n';

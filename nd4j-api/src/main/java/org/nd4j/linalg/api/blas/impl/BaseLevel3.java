@@ -14,15 +14,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public abstract class BaseLevel3 implements Level3 {
+public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     /**
      * gemm performs a matrix-matrix operation
      * c := alpha*op(a)*op(b) + beta*c,
      * where c is an m-by-n matrix,
      * op(a) is an m-by-k matrix,
      * op(b) is a k-by-n matrix.
-     *
-     * @param Order
+     *  @param Order
      * @param TransA
      * @param TransB
      * @param alpha
@@ -32,7 +31,7 @@ public abstract class BaseLevel3 implements Level3 {
      * @param C
      */
     @Override
-    public void gemm(char Order, char TransA, char TransB, INDArray alpha, INDArray A, INDArray B, INDArray beta, INDArray C) {
+    public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemm(Order,TransA,TransB,A.rows(),B.columns(),A.columns(),1.0,A,A.size(0),B,B.size(0),0,C,C.size(0));
         else

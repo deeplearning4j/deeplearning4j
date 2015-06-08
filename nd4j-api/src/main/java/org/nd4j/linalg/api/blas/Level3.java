@@ -41,9 +41,9 @@ public interface Level3 {
      */
     void gemm( char Order,  char TransA,
           char TransB,
-         INDArray alpha,  INDArray A,
+         double alpha,  INDArray A,
           INDArray B,
-          INDArray beta, INDArray C);
+          double beta, INDArray C);
 
 
 
