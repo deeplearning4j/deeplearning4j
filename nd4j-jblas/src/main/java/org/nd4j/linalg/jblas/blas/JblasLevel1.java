@@ -1,5 +1,7 @@
 package org.nd4j.linalg.jblas.blas;
 
+import org.jblas.NativeBlas;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -22,7 +24,18 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return 0;
+        float[] xData = BlasBufferUtil.getFloatData(X);
+        float[] yData = BlasBufferUtil.getFloatData(Y);
+        return NativeBlas.sdot(
+                N
+                ,xData
+                ,BlasBufferUtil.getBlasOffset(X)
+                ,BlasBufferUtil.getBlasStride(X)
+                ,yData
+                ,BlasBufferUtil.getBlasOffset(Y)
+                , incY);
+
+
     }
 
     @Override
@@ -52,7 +65,10 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
-        return 0;
+        return NativeBlas.snrm2(
+                N,X.data().asFloat()
+                ,X.offset()
+                ,X.majorStride());
     }
 
     @Override

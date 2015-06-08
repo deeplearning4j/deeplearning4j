@@ -58,6 +58,12 @@ public interface DataBuffer extends Serializable {
     }
 
 
+    /**
+     * Returns the backing array
+     * of this buffer (if there is one)
+     * @return the backing array of this buffer
+     */
+    Object array();
 
     /**
      * Returns a view of this as an
