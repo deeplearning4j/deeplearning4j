@@ -5,7 +5,7 @@ layout: default
 
 # Deeplearning4j for Spark ML
 
-We’re integrating with the Spark ML pipeline leveraging the developer API. The integration code is located in the [dl4j-spark-ml module](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml) in the deeplearning4j repository.
+We’re integrating with the Spark ML pipeline leveraging the developer API (*editor's note: this submodule is still in early alpha, given that the latest version of Spark has yet to be posted to Maven Central, and needs to be compiled from source*). The integration code is located in the [dl4j-spark-ml module](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml) in the deeplearning4j repository.
 
 Major aspects of the integration work:
 
