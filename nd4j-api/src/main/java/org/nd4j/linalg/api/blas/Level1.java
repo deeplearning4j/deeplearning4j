@@ -103,12 +103,17 @@ public interface Level1 {
      * @param y
      */
     void swap(INDArray x,INDArray y);
+
+    void swap(IComplexNDArray x, IComplexNDArray y);
+
     /**
      * swaps a vector with another vector.
      * @param x
      * @param y
      */
     void copy(INDArray x,INDArray y);
+
+    void copy(IComplexNDArray x, IComplexNDArray y);
 
     /**
      *  computes a vector-scalar product and adds the result to a vector.

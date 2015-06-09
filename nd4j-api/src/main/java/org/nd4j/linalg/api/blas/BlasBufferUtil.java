@@ -24,6 +24,19 @@ public class BlasBufferUtil {
         return arr.majorStride();
     }
 
+    /**
+     * Get blas stride for the
+     * given array
+     * @param arr the array
+     * @return the blas stride
+     */
+    public static int getBlasOffset(INDArray arr) {
+        if(arr instanceof IComplexNDArray)
+            return arr.offset() / 2;
+        return arr.offset();
+
+    }
+
     public static float[] getFloatData(INDArray buf) {
         if(buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
             if(buf.length() == buf.data().length() && buf.offset() == 0)

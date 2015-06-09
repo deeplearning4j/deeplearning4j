@@ -85,9 +85,10 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
 
     /**
      * computes the sum of magnitudes
-     * of all vector elements or, for a complex vector x, the sum
+     * of all vector elements or,
+     * for a complex vector x, the sum
      *
-     * @param arr
+     * @param arr the array to get the sum for
      * @return
      */
     @Override
@@ -131,18 +132,19 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public int iamin(INDArray arr) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     /**
-     * finds the element of a vector that has the minimum absolute value.
+     * finds the element of
+     * a vector that has the minimum absolute value.
      *
      * @param arr
      * @return
      */
     @Override
     public int iamin(IComplexNDArray arr) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -159,6 +161,18 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
             sswap(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
     }
 
+    @Override
+    public void swap(IComplexNDArray x, IComplexNDArray y) {
+        if(x.data().dataType() == DataBuffer.Type.DOUBLE)
+            zswap(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
+
+        else
+            cswap(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
+
+
+    }
+
+
     /**
      * swaps a vector with another vector.
      *
@@ -172,6 +186,23 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
         else
             scopy(x.length(),x,BlasBufferUtil.getBlasStride(x),y,BlasBufferUtil.getBlasStride(y));
     }
+
+
+
+    /**
+     * swaps a vector with another vector.
+     *
+     * @param x
+     * @param y
+     */
+    @Override
+    public void copy(IComplexNDArray x, IComplexNDArray y) {
+        if(x.data().dataType() == DataBuffer.Type.DOUBLE)
+            zcopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
+        else
+            ccopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
+    }
+
 
     /**
      * computes a vector-scalar product and adds the result to a vector.
@@ -420,13 +451,13 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     protected abstract  void drotmg(INDArray d1, INDArray d2, INDArray b1,  double b2, INDArray P);
     protected abstract  void drot( int N, INDArray X,  int incX,
                                    INDArray Y,  int incY,  double c,  double s);
-    protected abstract void drotm( int N, INDArray X,  int incX,
-                                   INDArray Y,  int incY,  INDArray P);
 
+
+    protected abstract void drotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P);
 
     /*
-     * Routines with S D C Z CS and ZD prefixes
-     */
+         * Routines with S D C Z CS and ZD prefixes
+         */
     protected abstract void sscal( int N,  float alpha, INDArray X,  int incX);
     protected abstract void dscal( int N,  double alpha, INDArray X,  int incX);
     protected abstract void cscal( int N,  IComplexFloat alpha, IComplexNDArray X,  int incX);
