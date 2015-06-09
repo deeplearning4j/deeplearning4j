@@ -747,6 +747,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
+    public Object array() {
+        if(floatData != null)
+            return floatData;
+        if(doubleData != null)
+            return doubleData;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public String toString() {
         StringBuffer ret = new StringBuffer();
         ret.append("[");
