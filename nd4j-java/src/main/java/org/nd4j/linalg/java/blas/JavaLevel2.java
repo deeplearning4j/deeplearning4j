@@ -271,7 +271,7 @@ public class JavaLevel2 extends BaseLevel2 {
     }
 
     @Override
-    protected void cgerc(char order, int M, int N, IComplexNDArray alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
+    protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
 
     }
 
@@ -316,7 +316,7 @@ public class JavaLevel2 extends BaseLevel2 {
     }
 
     @Override
-    protected void zgerc(char order, int M, int N, IComplexNDArray alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
+    protected void zgerc(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
 
     }
 

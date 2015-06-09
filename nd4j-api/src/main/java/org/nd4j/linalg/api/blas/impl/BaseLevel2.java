@@ -735,7 +735,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                                    IComplexFloat alpha,  IComplexNDArray X,  int incX,
                                    IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
     protected abstract void cgerc( char order,  int M,  int N,
-                                   IComplexNDArray alpha,  IComplexNDArray X,  int incX,
+                                   IComplexFloat alpha,  IComplexNDArray X,  int incX,
                                    IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
     protected abstract void cher( char order,  char Uplo,
                                   int N,  float alpha,  IComplexNDArray X,  int incX,
@@ -766,7 +766,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                                     IComplexDouble alpha,  IComplexNDArray X,  int incX,
                                     IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
     protected abstract void zgerc( char order,  int M,  int N,
-                                   IComplexNDArray alpha,  IComplexNDArray X,  int incX,
+                                   IComplexDouble alpha,  IComplexNDArray X,  int incX,
                                    IComplexNDArray Y,  int incY, IComplexNDArray A,  int lda);
     protected abstract void zher( char order,  char Uplo,
                                   int N,  double alpha,  IComplexNDArray X,  int incX,
