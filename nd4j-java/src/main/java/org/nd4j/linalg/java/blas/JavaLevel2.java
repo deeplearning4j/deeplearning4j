@@ -1,10 +1,14 @@
 package org.nd4j.linalg.java.blas;
 
+import com.github.fommil.netlib.BLAS;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
+import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
+import static org.nd4j.linalg.api.blas.BlasBufferUtil.getFloatData;
 
 /**
  * @author Adam Gibson
@@ -12,27 +16,37 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class JavaLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-
+        float[] yData = getFloatData(Y);
+        BLAS.getInstance().sgemv(String.valueOf(TransA),M,N,alpha,getFloatData(A),getBlasOffset(A),lda,getFloatData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
+        setData(yData,Y);
     }
 
     @Override
     protected void sgbmv(char order, char TransA, int M, int N, int KL, int KU, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
-
+        float[] yData = getFloatData(Y);
+        BLAS.getInstance().sgbmv(String.valueOf(TransA),M,N,KL,KU,alpha,getFloatData(A),getBlasOffset(A),lda,getFloatData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
+        setData(yData,Y);
     }
 
     @Override
     protected void strmv(char order, char Uplo, char TransA, char Diag, int N, INDArray A, int lda, INDArray X, int incX) {
-
+        float[] xData = getFloatData(X);
+        BLAS.getInstance().strmv(String.valueOf(Uplo),String.valueOf(order),String.valueOf(Diag),N,getFloatData(A),getBlasOffset(A),lda,xData,getBlasOffset(X),incX);
+        setData(xData,X);
     }
 
     @Override
     protected void stbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
-
+        float[] xData = getFloatData(X);
+        BLAS.getInstance().stbmv(String.valueOf(Uplo),String.valueOf(TransA),String.valueOf(Diag),N,K,getFloatData(A),getBlasOffset(A),lda,xData,getBlasOffset(X),incX);
+        setData(xData,X);
     }
 
     @Override
     protected void stpmv(char order, char Uplo, char TransA, char Diag, int N, INDArray Ap, INDArray X, int incX) {
-
+        float[] xData = getFloatData(X);
+        BLAS.getInstance().stpmv(String.valueOf(Uplo),String.valueOf(TransA),String.valueOf(Diag),N,getFloatData(Ap),getBlasOffset(X),xData,getBlasOffset(X),incX);
+        setData(xData,X);
     }
 
     @Override
@@ -52,7 +66,9 @@ public class JavaLevel2 extends BaseLevel2 {
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
-
+        double[] yData = getDoubleData(Y);
+        BLAS.getInstance().dgemv(String.valueOf(TransA),M,N,alpha,getDoubleData(A),getBlasOffset(A),lda,getDoubleData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
+        setData(yData,Y);
     }
 
     @Override
@@ -66,7 +82,7 @@ public class JavaLevel2 extends BaseLevel2 {
     }
 
     @Override
-    protected void dtbmv(char order, char Uplo, char TransA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
+    protected void dtbmv(char order, char Uplo, char TraA, char Diag, int N, int K, INDArray A, int lda, INDArray X, int incX) {
 
     }
 

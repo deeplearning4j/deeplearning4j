@@ -40,7 +40,8 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
 
     @Override
     public INDArray axpy(Number da, INDArray dx, INDArray dy) {
-        throw new UnsupportedOperationException();
+        level1().axpy(dx.length(),da.doubleValue(),dx,dy);
+        return dy;
     }
 
     @Override

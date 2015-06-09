@@ -211,7 +211,7 @@ public class JblasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void srotg(INDArray a, INDArray b, INDArray c, INDArray s) {
+    protected void srotg(float a, float b, float c, float s) {
         throw new UnsupportedOperationException();
 
     }
@@ -234,13 +234,13 @@ public class JblasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void drotg(INDArray a, INDArray b, INDArray c, INDArray s) {
+    protected void drotg(double a, double b, double c, double s) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    protected void drotmg(INDArray d1, INDArray d2, INDArray b1, double b2, INDArray P) {
+    protected void drotmg(double d1, double d2, double b1, double b2, INDArray P) {
         throw new UnsupportedOperationException();
 
     }

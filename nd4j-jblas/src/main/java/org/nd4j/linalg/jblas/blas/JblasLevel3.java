@@ -13,6 +13,9 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
 
 
 /**
+ *
+ * A jblas delgation for level 3 routines
+ *
  * @author Adam Gibson
  */
 public class JblasLevel3 extends BaseLevel3 {

@@ -412,25 +412,7 @@ public class JavaBlas {
     }
 
 
-    /**
-     * Return the index of the max in the given ndarray
-     *
-     * @param x the ndarray to ge tthe max for
-     * @return
-     */
-    public static int iamax(IComplexNDArray x) {
-        throw new UnsupportedOperationException();
 
-    }
-
-    /**
-     * @param x
-     * @return
-     */
-    public static double asum(IComplexNDArray x) {
-        throw new UnsupportedOperationException();
-
-    }
 
 
     /**
