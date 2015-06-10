@@ -39,6 +39,28 @@ public class LinAlgExceptions {
     }
 
 
+    public static void assertVector(INDArray...arr) {
+        for(INDArray a1 : arr)
+            assertVector(a1);
+    }
+
+    public static void assertMatrix(INDArray...arr) {
+        for(INDArray a1 : arr)
+            assertMatrix(a1);
+    }
+
+    public static void assertVector(INDArray arr) {
+        if(!arr.isVector())
+            throw new IllegalArgumentException("Array must be a vector");
+    }
+
+    public static void assertMatrix(INDArray arr) {
+        if(!arr.isVector())
+            throw new IllegalArgumentException("Array must be a vector");
+    }
+
+
+
     /**
      * Asserts matrix multiply rules (columns of left == rows of right)
      *

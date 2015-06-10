@@ -7,8 +7,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
-import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
-import static org.nd4j.linalg.api.blas.BlasBufferUtil.getFloatData;
+
 
 /**
  * @author Adam Gibson

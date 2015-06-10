@@ -246,10 +246,7 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void rotg(INDArray a, INDArray b, INDArray c, INDArray s) {
-        if(a.data().dataType() == DataBuffer.Type.DOUBLE)
-            drotg(a,b,c,s);
-        else
-            srotg(a,b,c,s);
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -294,10 +291,7 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void rotmg(INDArray d1, INDArray d2, INDArray b1, double b2, INDArray P) {
-        if(d1.data().dataType() == DataBuffer.Type.DOUBLE)
-            drotmg(d1,d2,b1,b2,P);
-        else
-            srotmg(d1,d2,b1, (float) b2,P);
+     throw new UnsupportedOperationException();
     }
 
     /**
