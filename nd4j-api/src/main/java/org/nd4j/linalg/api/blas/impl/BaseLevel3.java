@@ -137,7 +137,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             dtrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
         }
         else
-            strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
+            strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0), , );
 
     }
 
@@ -353,9 +353,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B) {
           if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-              ztrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0));
+              ztrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0), , );
         else
-              ctrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0));
+              ctrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0), , );
 
     }
 
@@ -416,11 +416,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                                     float alpha,  INDArray A,  int lda,
                                     INDArray B,  int ldb,  float beta,
                                     INDArray C,  int ldc);
-    protected abstract void strmm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   float alpha,  INDArray A,  int lda,
-                                   INDArray B,  int ldb);
+    protected abstract void strmm(char Order, char Side,
+                                  char Uplo, char TransA,
+                                  char Diag, int M, int N,
+                                  float alpha, INDArray A, int lda,
+                                  INDArray B, int ldb, INDArray C, int ldc);
     protected abstract void strsm( char Order,  char Side,
                                    char Uplo,  char TransA,
                                    char Diag,  int M,  int N,
@@ -476,11 +476,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                                     IComplexFloat alpha,  IComplexNDArray A,  int lda,
                                     IComplexNDArray B,  int ldb,  IComplexFloat beta,
                                     IComplexNDArray C,  int ldc);
-    protected abstract void ctrmm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   IComplexFloat alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb);
+    protected abstract void ctrmm(char Order, char Side,
+                                  char Uplo, char TransA,
+                                  char Diag, int M, int N,
+                                  IComplexFloat alpha, IComplexNDArray A, int lda,
+                                  IComplexNDArray B, int ldb, IComplexNDArray C, int ldc);
     protected abstract void ctrsm( char Order,  char Side,
                                    char Uplo,  char TransA,
                                    char Diag,  int M,  int N,
@@ -506,11 +506,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                                     IComplexDouble alpha,  IComplexNDArray A,  int lda,
                                     IComplexNDArray B,  int ldb,  IComplexDouble beta,
                                     IComplexNDArray C,  int ldc);
-    protected abstract void ztrmm( char Order,  char Side,
-                                   char Uplo,  char TransA,
-                                   char Diag,  int M,  int N,
-                                   IComplexDouble alpha,  IComplexNDArray A,  int lda,
-                                   IComplexNDArray B,  int ldb);
+    protected abstract void ztrmm(char Order, char Side,
+                                  char Uplo, char TransA,
+                                  char Diag, int M, int N,
+                                  IComplexDouble alpha, IComplexNDArray A, int lda,
+                                  IComplexNDArray B, int ldb, IComplexNDArray C, int ldc);
     protected abstract void ztrsm( char Order,  char Side,
                                    char Uplo,  char TransA,
                                    char Diag,  int M,  int N,

@@ -44,7 +44,7 @@ public class JblasLevel3 extends BaseLevel3 {
     }
 
     @Override
-    protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
+    protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, INDArray C, int ldc) {
         throw new UnsupportedOperationException();
 
     }
@@ -118,7 +118,7 @@ public class JblasLevel3 extends BaseLevel3 {
     }
 
     @Override
-    protected void ctrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb) {
+    protected void ctrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexNDArray C, int ldc) {
         throw new UnsupportedOperationException();
 
     }
@@ -155,7 +155,7 @@ public class JblasLevel3 extends BaseLevel3 {
     }
 
     @Override
-    protected void ztrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb) {
+    protected void ztrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexNDArray C, int ldc) {
         throw new UnsupportedOperationException();
 
     }
