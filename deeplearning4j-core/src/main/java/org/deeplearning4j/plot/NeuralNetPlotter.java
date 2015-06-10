@@ -55,6 +55,7 @@ public class NeuralNetPlotter implements Serializable {
         loadIntoTmp();
     }
 
+
     private static void loadIntoTmp() {
 
         File script = new File("/tmp/plot.py");
@@ -69,6 +70,7 @@ public class NeuralNetPlotter implements Serializable {
         }
 
     }
+
 
     protected String writeMatrix(INDArray matrix) throws IOException {
         String filePath = System.getProperty("java.io.tmpdir") + File.separator +  UUID.randomUUID().toString();
@@ -93,23 +95,12 @@ public class NeuralNetPlotter implements Serializable {
         return filePath;
     }
 
-    public void renderFilter(INDArray w) {
-        INDArray weightRender = w.dup();
-        try {
-            render.renderFilters(weightRender, "currimg.png", (int)Math.sqrt(weightRender.rows()) , (int) Math.sqrt( weightRender.columns()),10);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void renderGraph(String action, String data) throws Exception{
+    public void renderGraph(String action, String dataPath) throws Exception{
         String fileName = new ClassPathResource("python/plot.py").getFile().getAbsolutePath();
 
         try {
-            log.info("Rendering Matrix histograms... ");
-            Process is = Runtime.getRuntime().exec("python " + fileName + " " + action + " "+ data);
+            log.info("Rendering graphs for data analysis... ");
+            Process is = Runtime.getRuntime().exec("python " + fileName + " " + action + " "+ dataPath);
             Thread.sleep(10000);
             is.destroy();
             log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
@@ -122,12 +113,13 @@ public class NeuralNetPlotter implements Serializable {
     }
 
     /**
-     * Histograms of the given matrices. This is primarily used
-     * for debugging gradients. You don't necessarily use this directly
+     * Primarily used for debugging gradients.
+     * @param plotType sets which plot to call whether "multi" for historgram of multiple matrices,
+     *                 "hist" for a histogram of one matrix, or "scatter" for scatter
      * @param titles the titles of the plots
      * @param matrices the matrices to plot
      */
-    public void histogram(List<String> titles, INDArray[] matrices) throws Exception {
+    public void graphPlotType(String plotType, List<String> titles, INDArray[] matrices) throws Exception {
         String[] path = new String[matrices.length * 2];
 
         if(titles.size() != matrices.length)
@@ -137,18 +129,21 @@ public class NeuralNetPlotter implements Serializable {
             path[i] = writeMatrix(matrices[i / 2].ravel());
             path[i + 1] = titles.get(i / 2);
         }
-        String data = StringUtils.join(path,",");
-        renderGraph("multi", data);
+
+        String dataPath = StringUtils.join(path, ",");
+        renderGraph(plotType, dataPath);
 
     }
 
-    public void hist(Layer network,Gradient gradient) throws Exception{
+
+    public void plotHistograms(Layer network, Gradient gradient) throws Exception{
         Set<String> vars = new TreeSet<>(gradient.gradientForVariable().keySet());
         List<String> titles = new ArrayList<>(vars);
         for(String s : vars) {
             titles.add(s + "-gradient");
         }
-        histogram(
+        graphPlotType(
+                "multi",
                 titles,
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
@@ -161,9 +156,10 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
-    public void hist(Layer network) throws Exception {
-        hist(network, network.gradient());
+    public void plotHistograms(Layer network) throws Exception {
+        plotHistograms(network, network.gradient());
     }
+
 
     public void plotActivations(Layer network) throws Exception{
 
@@ -177,38 +173,53 @@ public class NeuralNetPlotter implements Serializable {
 
     }
 
+
     public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) throws Exception {
-        hist(network, gradient);
+        plotHistograms(network, gradient);
         plotActivations(network);
 
         FilterRenderer render = new FilterRenderer();
+
         try {
             INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-            render.renderFilters(w, "currimg.png", (int) Math.sqrt(w.rows()),
-                    (int) Math.sqrt(w.rows()), patchesPerRow);
+            render.renderFilters(w,
+                    "currimg.png",
+                    (int) Math.sqrt(w.rows()),
+                    (int) Math.sqrt(w.rows()),
+                    patchesPerRow);
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...",e);
         }
     }
 
+
     public void plotNetworkGradient(Layer network,INDArray gradient,int patchesPerRow) throws Exception{
-        histogram(
+        graphPlotType(
+                "multi",
                 Arrays.asList("W", "w-gradient"),
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         gradient
                 });
         plotActivations(network);
+        INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
 
         try {
             if(network.getParam(DefaultParamInitializer.WEIGHT_KEY).shape().length > 2) {
-                INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
                 INDArray render2 = w.transpose();
-                render.renderFilters(render2, "currimg.png", w.columns() , w.rows(),w.slices());
+                render.renderFilters(render2,
+                        "currimg.png",
+                        w.columns(),
+                        w.rows(),
+                        w.slices());
 
             }
             else
-                render.renderFilters(network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup(), "currimg.png", (int)Math.sqrt(network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()) , (int) Math.sqrt( network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),patchesPerRow);
+                render.renderFilters(w,
+                        "currimg.png",
+                        (int) Math.sqrt(network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),
+                        (int) Math.sqrt( network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),
+                        patchesPerRow);
 
 
         } catch (Exception e) {
@@ -217,39 +228,20 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
-    /**
-     * Scatter plot of the given matrices. This is primarily used
-     * for debugging gradients. You don't necessarily use this directly
-     * @param titles the titles of the plots
-     * @param matrices the matrices to plot
-     */
-    public void scatter(String[] titles, INDArray[] matrices) {
-        String[] path = new String[matrices.length * 2];
-
+    public void renderFilter(INDArray w) {
+        INDArray weightRender = w.dup();
         try {
-            if(titles.length != matrices.length)
-                throw new IllegalArgumentException("Titles and matrix lengths must be equal");
+            render.renderFilters(
+                    weightRender,
+                    "currimg.png",
+                    (int) Math.sqrt(weightRender.rows()),
+                    (int) Math.sqrt(weightRender.columns()),
+                    10);
 
-
-            for(int i = 0; i < path.length - 1; i+=2) {
-                path[i] = writeMatrix(matrices[i / 2].ravel());
-                path[i + 1] = titles[i / 2];
-            }
-            String paths = StringUtils.join(path, ",");
-
-            Process is = Runtime.getRuntime().exec("python /tmp/plot.py scatter " + paths);
-
-            log.info("Rendering Matrix histograms... ");
-            log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
-            log.error(IOUtils.readLines(is.getErrorStream()).toString());
-
-
-        }catch(IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
     }
-
-
 
 }
