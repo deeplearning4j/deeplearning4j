@@ -1,7 +1,7 @@
 import math
 from matplotlib.pyplot import hist, title, subplot, scatter
 import matplotlib.pyplot as plt
-from numpy import tanh, fabs, mean, ones, loadtxt, fromfile, zeros, product
+import numpy as np
 from PIL import Image
 import seaborn
 import sys
@@ -14,34 +14,35 @@ Graph tools to help visualize how optimization is performing
 
 
 def load_file(path):
-    return loadtxt(path, delimiter=',')
+    return np.loadtxt(path, delimiter=',')
 
 
-def sigmoid(xx):
-    return .5 * (1 + tanh(xx / 2.))
+def sigmoid(hidden_mean):
+    # return .5 * (1 + tanh(xx / 2.))
+    return 1 / (1 + np.exp(-hidden_mean))
 
 
-def render_hbias(path):
-    hMean = load_file(path)
-    Image.fromarray(hMean * 256).show()
-
-
-def render_plot(values, plot_type="hist", chart_title=''):
-    if product(values.shape) < 2:
-        values = zeros((3, 3))
+def render_plot(values, plot_type='histogram', chart_title=''):
+    if np.product(values.shape) < 2:
+        values = np.zeros((3, 3))
         chart_title += '-fake'
 
-    if plot_type == "hist" or "multi":
+    if plot_type == 'histogram':
         hist(values)
     else:
         scatter(values)
 
-    magnitude = ' mm %g ' % mean(fabs(values))
+    magnitude = ' mm %g ' % np.mean(np.fabs(values))
     chart_title += ' ' + magnitude
     title(chart_title)
 
 
-def plot_multiple_matrices(orig_path, plot_type):
+def render_activation_probability(dataPath):
+    hidden_mean = load_file(dataPath)
+    Image.fromarray(sigmoid(hidden_mean) * 256).show()
+
+
+def plot_matrices(orig_path, plot_type=''):
     paths = orig_path.split(',')
 
     for idx, path in enumerate(paths):
@@ -61,7 +62,7 @@ def render_filter(path, n_rows, n_cols, data_length):
     data = math.sqrt(n_rows)
     print 'data ' + str(data)
     # Initialize background to dark gray
-    tiled = ones((data * n_rows, data * n_cols), dtype='unit8') * 51
+    tiled = np.ones((data * n_rows, data * n_cols), dtype='unit8') * 51
 
     for row in xrange(n_rows):
          for col in xrange(n_cols):
@@ -79,14 +80,14 @@ if __name__ == '__main__':
     plot_type = sys.argv[1]
     path = sys.argv[2]
 
-    if plot_type == 'hbias':
-        render_hbias(path)
-    elif plot_type == 'hist':
-        render_plot(path, plot_type)
-    elif plot_type == 'multi':
-        plot_multiple_matrices(path, plot_type)
+    if plot_type == 'activations':
+        render_activation_probability(path)
+    elif plot_type == 'single_matrix':
+        render_plot(path)
+    elif plot_type == 'histogram':
+        plot_matrices(path, plot_type)
     elif plot_type == 'scatter':
-        plot_multiple_matrices(path, plot_type)
+        plot_matrices(path, plot_type)
     elif sys.argv[1] == 'filter':
         n_rows = int(sys.argv[3])
         n_cols = int(sys.argv[4])

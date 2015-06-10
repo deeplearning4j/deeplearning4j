@@ -113,9 +113,9 @@ public class NeuralNetPlotter implements Serializable {
     }
 
     /**
-     * Primarily used for debugging gradients.
-     * @param plotType sets which plot to call whether "multi" for historgram of multiple matrices,
-     *                 "hist" for a histogram of one matrix, or "scatter" for scatter
+     * graphPlotType sets up data to pass to scripts that render graphs
+     * @param plotType sets which plot to call whether "multi" for multiple matrices histograms,
+     *                 "hist" for a histogram of one matrix, or "scatter" for scatter plot
      * @param titles the titles of the plots
      * @param matrices the matrices to plot
      */
@@ -135,15 +135,20 @@ public class NeuralNetPlotter implements Serializable {
 
     }
 
-
-    public void plotHistograms(Layer network, Gradient gradient) throws Exception{
+    /**
+     * plotWeightHistograms graphs values of vBias, W, and hBias on aggregate and
+     *          most recent mini-batch updates (-gradient)
+     * @param network the trained neural net model
+     * @param gradient latest updates to weights and biases
+     */
+    public void plotWeightHistograms(Layer network, Gradient gradient) throws Exception{
         Set<String> vars = new TreeSet<>(gradient.gradientForVariable().keySet());
         List<String> titles = new ArrayList<>(vars);
         for(String s : vars) {
             titles.add(s + "-gradient");
         }
         graphPlotType(
-                "multi",
+                "histogram",
                 titles,
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
@@ -156,56 +161,37 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
-    public void plotHistograms(Layer network) throws Exception {
-        plotHistograms(network, network.gradient());
+    public void plotWeightHistograms(Layer network) throws Exception {
+        plotWeightHistograms(network, network.gradient());
     }
 
-
+    /**
+    * plotActivations show how hidden neurons are used, how often on vs. off and correlation
+     * @param network the trained neural net model
+     **/
     public void plotActivations(Layer network) throws Exception{
 
         if(network.input() == null)
             throw new IllegalStateException("Unable to plot; missing input");
 
+        // TODO hidden_mean coming back with only 4 values - need further digging to understand issue
         INDArray hbiasMean = network.activationMean();
-        String data = writeMatrix(hbiasMean);
+        String dataPath = writeMatrix(hbiasMean);
 
-        renderGraph("hbias", data);
+        renderGraph("activations", dataPath);
 
     }
 
-
-    public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) throws Exception {
-        plotHistograms(network, gradient);
-        plotActivations(network);
-
+    /**
+     * renderFilter plot learned filter for each hidden neuron
+     * @param weight the trained neural net model
+     * @param patchesPerRow number of filters
+     **/
+    public void renderFilter(INDArray weight, int patchesPerRow) {
+        INDArray w = weight.dup();
         FilterRenderer render = new FilterRenderer();
-
         try {
-            INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-            render.renderFilters(w,
-                    "currimg.png",
-                    (int) Math.sqrt(w.rows()),
-                    (int) Math.sqrt(w.rows()),
-                    patchesPerRow);
-        } catch (Exception e) {
-            log.error("Unable to plot filter, continuing...",e);
-        }
-    }
-
-
-    public void plotNetworkGradient(Layer network,INDArray gradient,int patchesPerRow) throws Exception{
-        graphPlotType(
-                "multi",
-                Arrays.asList("W", "w-gradient"),
-                new INDArray[]{
-                        network.getParam(DefaultParamInitializer.WEIGHT_KEY),
-                        gradient
-                });
-        plotActivations(network);
-        INDArray w =  network.getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-
-        try {
-            if(network.getParam(DefaultParamInitializer.WEIGHT_KEY).shape().length > 2) {
+            if(w.shape().length > 2) {
                 INDArray render2 = w.transpose();
                 render.renderFilters(render2,
                         "currimg.png",
@@ -214,34 +200,53 @@ public class NeuralNetPlotter implements Serializable {
                         w.slices());
 
             }
-            else
+            else {
                 render.renderFilters(w,
                         "currimg.png",
-                        (int) Math.sqrt(network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),
-                        (int) Math.sqrt( network.getParam(DefaultParamInitializer.WEIGHT_KEY).rows()),
+                        (int) Math.sqrt(w.rows()),
+                        (int) Math.sqrt(w.columns()),
                         patchesPerRow);
 
-
+            }
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...", e);
-        }
-    }
-
-
-    public void renderFilter(INDArray w) {
-        INDArray weightRender = w.dup();
-        try {
-            render.renderFilters(
-                    weightRender,
-                    "currimg.png",
-                    (int) Math.sqrt(weightRender.rows()),
-                    (int) Math.sqrt(weightRender.columns()),
-                    10);
-
-        } catch (Exception e) {
             e.printStackTrace();
+
         }
 
     }
+
+
+    /**
+     * plotNetworkGradient used for debugging gradients with different data visualizations
+     * top layer is
+     * @param network the trained neural net model
+     * @param gradient latest updates to weights and biases
+     * @param patchesPerRow number of filters
+     **/
+    public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) throws Exception {
+        INDArray weight = network.getParam(DefaultParamInitializer.WEIGHT_KEY);
+
+        plotWeightHistograms(network, gradient);
+        plotActivations(network);
+
+        renderFilter(weight, patchesPerRow);
+
+    }
+
+    public void plotNetworkGradient(Layer network,INDArray gradient,int patchesPerRow) throws Exception{
+
+        graphPlotType(
+                "histogram",
+                Arrays.asList("W", "w-gradient"),
+                new INDArray[]{
+                        network.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                        gradient
+                });
+        plotActivations(network);
+        INDArray weight =  network.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        renderFilter(weight, patchesPerRow);
+    }
+
 
 }
