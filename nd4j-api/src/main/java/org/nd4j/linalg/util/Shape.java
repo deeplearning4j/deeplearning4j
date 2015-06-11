@@ -19,6 +19,10 @@
 
 package org.nd4j.linalg.util;
 
+import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +34,33 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Shape {
+    /**
+     * Create a copy of the matrix
+     * where the new offset is zero
+     * @param arr the array to copy to offset 0
+     * @return the same array if offset is zero
+     * otherwise a copy of the array with
+     * elements set to zero
+     */
+    public static INDArray toOffsetZero(INDArray arr) {
+        if(arr.offset() < 1)
+            return arr;
+
+        if(arr instanceof IComplexNDArray) {
+            IComplexNDArray ret = Nd4j.createComplex(arr.shape());
+            for(int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i,arr.slice(i));
+            return ret;
+        }
+        else {
+           INDArray ret = Nd4j.create(arr.shape());
+            for(int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i,arr.slice(i));
+            return ret;
+        }
+    }
+
+
     /**
      * Gets rid of any singleton dimensions of the given array
      *

@@ -26,6 +26,8 @@ import jcuda.cuDoubleComplex;
 import jcuda.driver.CUdeviceptr;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.ops.ScalarOp;
 
 import java.nio.ByteBuffer;
@@ -51,6 +53,26 @@ public class PointerUtil {
 
         return ret;
     }
+
+
+    /**
+     * Get the pointer for a single complex float
+     * @param x the number ot get the pointer for
+     * @return the pointer for the given complex number
+     */
+    public static Pointer getPointer(IComplexDouble x) {
+       return getPointer(cuDoubleComplex.cuCmplx(x.realComponent().doubleValue(),x.imaginaryComponent().doubleValue()));
+    }
+    /**
+     * Get the pointer for a single complex float
+     * @param x the number ot get the pointer for
+     * @return the pointer for the given complex number
+     */
+    public static Pointer getPointer(IComplexFloat x) {
+        return getPointer(cuComplex.cuCmplx(x.realComponent().floatValue(), x.imaginaryComponent().floatValue()));
+
+    }
+
 
     /**
      * Get the pointer for a single complex float
@@ -166,5 +188,10 @@ public class PointerUtil {
         throw new IllegalStateException("Unable to get pointer for scalar operation " + scalarOp);
     }
 
-
+    public static Pointer getPointer(double alpha) {
+        return Pointer.to(new double[]{alpha});
+    }
+    public static Pointer getPointer(float alpha) {
+        return Pointer.to(new float[]{alpha});
+    }
 }

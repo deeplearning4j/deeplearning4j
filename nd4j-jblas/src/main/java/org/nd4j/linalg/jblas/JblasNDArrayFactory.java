@@ -29,6 +29,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jblas.blas.JblasLevel1;
+import org.nd4j.linalg.jblas.blas.JblasLevel2;
+import org.nd4j.linalg.jblas.blas.JblasLevel3;
 import org.nd4j.linalg.jblas.complex.ComplexDouble;
 import org.nd4j.linalg.jblas.complex.ComplexFloat;
 import org.nd4j.linalg.jblas.complex.ComplexNDArray;
@@ -51,6 +54,21 @@ public class JblasNDArrayFactory extends BaseNDArrayFactory {
 
     public JblasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+    }
+
+    @Override
+    public void createLevel1() {
+        level1 = new JblasLevel1();
+    }
+
+    @Override
+    public void createLevel2() {
+       level2 = new JblasLevel2();
+    }
+
+    @Override
+    public void createLevel3() {
+        level3 = new JblasLevel3();
     }
 
     @Override

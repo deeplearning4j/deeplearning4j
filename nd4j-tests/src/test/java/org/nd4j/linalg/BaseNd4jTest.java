@@ -30,6 +30,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jblas.JblasBackend;
 import org.nd4j.linalg.jcublas.JCublasBackend;
+import org.nd4j.linalg.netlib.NetlibBlasBackend;
 
 import java.util.UUID;
 

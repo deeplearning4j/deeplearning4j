@@ -449,7 +449,17 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
 
+    protected void copyImagTo(INDArray arr) {
+        INDArray linear = arr.linearView();
+        IComplexNDArray thisLinear = linearView();
+        if(arr.isScalar())
+            arr.putScalar(0,getReal(0));
+        else
+            for (int i = 0; i < linear.length(); i++) {
+                arr.putScalar(i, thisLinear.getImag(i));
+            }
 
+    }
 
 
     @Override
@@ -1412,7 +1422,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public INDArray imag() {
         INDArray ret = Nd4j.create(shape);
-        Nd4j.getBlasWrapper().dcopy(length, data.asFloat(), 1, 2, ret.data().asFloat(), 0, 1);
+        copyImagTo(ret);
         return ret;
     }
 

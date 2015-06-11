@@ -33,7 +33,7 @@ import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
  */
 public class ContextHolderTest {
     @Test
-    public void testContextHolder() {
+    public void testContextHolder() throws Exception  {
         SimpleJCublas.init();
         ContextHolder holder = ContextHolder.getInstance();
         CUcontext ctx = holder.getContext();

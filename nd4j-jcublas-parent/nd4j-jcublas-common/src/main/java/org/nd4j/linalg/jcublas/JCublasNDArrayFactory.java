@@ -27,6 +27,9 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.blas.JcublasLevel1;
+import org.nd4j.linalg.jcublas.blas.JcublasLevel2;
+import org.nd4j.linalg.jcublas.blas.JcublasLevel3;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
 import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.complex.JCublasComplexNDArray;
@@ -52,6 +55,21 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     public JCublasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+    }
+
+    @Override
+    public void createLevel1() {
+        level1 = new JcublasLevel1();
+    }
+
+    @Override
+    public void createLevel2() {
+        level2 = new JcublasLevel2();
+    }
+
+    @Override
+    public void createLevel3() {
+        level3 = new JcublasLevel3();
     }
 
     @Override
