@@ -23,6 +23,15 @@ public class Level1Test extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testAxpy() {
+        INDArray matrix = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray row = matrix.getRow(1);
+        Nd4j.getBlasWrapper().level1().axpy(row.length(),1.0,row,row);
+        assertEquals(Nd4j.create(new double[]{4,8}),row);
+
+    }
+
     @Override
     public char ordering() {
         return 'f';
