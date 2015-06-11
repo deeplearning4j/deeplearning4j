@@ -21,6 +21,7 @@ After that, please read the following:
 6. <a href="#source">Working With Source</a>
 7. <a href="#eclipse">Eclipse</a>
 8. <a href="#trouble">Troubleshooting</a>
+9. <a href="#results">Reproducible Results</a>
 9. <a href="#next">Next Steps</a>
 
 ### <a name="linux">Linux</a>
@@ -103,6 +104,12 @@ which will import the source and set everything up.
 ![Alt text](../img/dl4j_autocomplete.png)
 * Here's the Javadoc for all [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
 * Some problems encountered using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's excellent [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also highly instructive. While we've partially documented DL4J, many parts of the code are essentially a raw, domain-specific language for deep learning.
+
+### <a name="results">Reproducible Results</a>
+
+Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight with this line:
+
+      Nd4j.getRandom().setSeed (123);
 
 ### <a name="next">Next Steps: MNIST Example & Building NNs</a>
 
