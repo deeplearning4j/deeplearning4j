@@ -31,7 +31,7 @@ import org.springframework.core.io.Resource;
  */
 public class CpuBackend extends Nd4jBackend {
 
-    private static final Logger log = LoggerFactory.getLogger(jblas.CpuBackend.class);
+    private static final Logger log = LoggerFactory.getLogger(CpuBackend.class);
 
     private final static String LINALG_PROPS = "/nd4j-cpu.properties";
 
