@@ -35,6 +35,7 @@ public class SerializationUtils {
 			ObjectInputStream ois = new ObjectInputStream(FileUtils.openInputStream(file));
 			T ret =  (T) ois.readObject();
             ois.close();
+            return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
