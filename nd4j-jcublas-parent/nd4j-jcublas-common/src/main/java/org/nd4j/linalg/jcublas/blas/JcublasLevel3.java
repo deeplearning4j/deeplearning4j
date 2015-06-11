@@ -40,7 +40,6 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
 
-        DataTypeValidation.assertDouble(A, B, C);
 
         SimpleJCublas.sync();
 
@@ -50,25 +49,25 @@ public class JcublasLevel3 extends BaseLevel3 {
          CublasPointer cCPointer = new CublasPointer(C);
 
 
-        JCublas2.cublasDgemm(
+        JCublas2.cublasSgemm(
                 ContextHolder.getInstance().getHandle(),
                 cublasOperation.CUBLAS_OP_N,
                 cublasOperation.CUBLAS_OP_N,
                 m,
                 n,
                 k,
-                Pointer.to(new double[]{alpha}),
+                Pointer.to(new float[]{alpha}),
                 cAPointer.getDevicePointer(),
                 lda,  // lda
                 cBPointer.getDevicePointer(),
                 ldb, // ldb
-                Pointer.to(new double[]{beta}),
+                Pointer.to(new float[]{beta}),
                 cCPointer.getDevicePointer(),
                 ldc);
 
-        SimpleJCublas.sync();
 
         cCPointer.copyToHost();
+        SimpleJCublas.sync();
 
     }
 
@@ -164,9 +163,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                 cCPointer.getDevicePointer(), // y
                 ldc); // incy
 
+        cCPointer.copyToHost();
         SimpleJCublas.sync();
 
-        cCPointer.copyToHost();
 
     }
 
