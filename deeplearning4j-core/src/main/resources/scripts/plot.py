@@ -29,9 +29,10 @@ def render_plot(values, plot_type='histogram', chart_title=''):
 
     if plot_type == 'histogram':
         hist(values)
-    else:
+    elif "scatter":
         scatter(values)
-
+    else:
+        print "The " + plot_type + " format is not supported. Please choose histogram or scatter."
     magnitude = ' mm %g ' % np.mean(np.fabs(values))
     chart_title += ' ' + magnitude
     title(chart_title)
@@ -39,6 +40,7 @@ def render_plot(values, plot_type='histogram', chart_title=''):
 
 def render_activation_probability(dataPath):
     hidden_mean = load_file(dataPath)
+    # Should sigmoid be moved earlier?
     Image.fromarray(sigmoid(hidden_mean) * 256).show()
 
 
@@ -56,21 +58,24 @@ def plot_matrices(orig_path, plot_type=''):
     plt.tight_layout()
     plt.show()
 
+# TODO Finish adapting. Code still does not fully run through.
+# FilterRender produces a result for now
+# Goal is to consolidate these into a common script
+def render_filter(data_path, n_rows, n_cols):
+    weight_data = load_file(data_path).reshape((n_rows, n_cols))
+    patch_width = weight_data.shape[1]
+    patch_height = 1
 
-def render_filter(path, n_rows, n_cols, data_length):
-    X = load_file(path)
-    data = math.sqrt(n_rows)
-    print 'data ' + str(data)
     # Initialize background to dark gray
-    tiled = np.ones((data * n_rows, data * n_cols), dtype='unit8') * 51
+    filter_frame = np.ones((n_rows*patch_width, n_cols * patch_height), dtype='uint8')
 
-    for row in xrange(n_rows):
-         for col in xrange(n_cols):
-            curr_neuron = col
-            patch = X[:, curr_neuron].reshape((data, data))
-            normPatch = ((patch - patch.min()) / (patch.max() - patch.min() + 1e-6))
-            tiled[row * data:row * data + data, col * data:col * data + data] = normPatch * 255
-    Image.fromarray(tiled).show()
+    for row in xrange(int(n_rows/n_cols)):
+        for col in xrange(n_cols):
+            patch = weight_data[row * n_cols + col].reshape((patch_width, patch_height))
+            norm_patch = ((patch - patch.min()) / (patch.max() - patch.min() + 1e-6))
+            filter_frame[row * patch_width: row * patch_width + patch_width,
+                  col * patch_height:col * patch_height + patch_height] = norm_patch * 255
+    Image.fromarray(filter_frame).show()
 
 
 if __name__ == '__main__':
