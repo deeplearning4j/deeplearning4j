@@ -20,6 +20,8 @@
 package org.nd4j.linalg.util;
 // Code 
 
+import org.apache.commons.math3.util.FastMath;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -729,7 +731,8 @@ public class BigDecimalMath {
              */
             BigDecimal res = mod2pi(x);
             double errpi = 0.5 * Math.abs(x.ulp().doubleValue());
-            MathContext mc = new MathContext(2 + err2prec(3.14159, errpi));
+            int val = 2 + err2prec(FastMath.PI, errpi);
+            MathContext mc = new MathContext(val);
             BigDecimal p = pi(mc);
             mc = new MathContext(x.precision());
             if (res.compareTo(p) > 0) {
@@ -802,7 +805,8 @@ public class BigDecimalMath {
              */
             BigDecimal res = mod2pi(x);
             double errpi = 0.5 * Math.abs(x.ulp().doubleValue());
-            MathContext mc = new MathContext(2 + err2prec(3.14159, errpi));
+            int val =  + err2prec(FastMath.PI, errpi);
+            MathContext mc = new MathContext(val);
             BigDecimal p = pi(mc);
             mc = new MathContext(x.precision());
             if (res.compareTo(p) > 0) {

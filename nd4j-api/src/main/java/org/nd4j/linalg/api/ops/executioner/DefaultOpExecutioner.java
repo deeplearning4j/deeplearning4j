@@ -349,13 +349,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);
-            if (op instanceof TransformOp) {
-                TransformOp t = op;
-                TransformOp t2 = (TransformOp) op2;
-                t.z().vectorAlongDimension(i, dimension).assign(t2.z());
-            }
-
-
+            op.z().vectorAlongDimension(i, dimension).assign(op.z());
         }
         return op.z();
     }
@@ -368,21 +362,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return exec(op, dimension).z();
     }
 
-    private void apply(ScalarOp op, int c) {
-        if(op.isPassThrough())
-            return;
 
-        if (op.x() instanceof IComplexNDArray) {
-            IComplexNDArray ndArray = (IComplexNDArray) op.z();
-            ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
-        }
-        else {
-            INDArray zLinear = op.z().linearView();
-            INDArray xLinear = op.x().linearView();
-            zLinear.putScalar(c, op.op(xLinear.getDouble(c)));
-
-        }
-    }
 
 
     //apply a pairwise op to x and store the result

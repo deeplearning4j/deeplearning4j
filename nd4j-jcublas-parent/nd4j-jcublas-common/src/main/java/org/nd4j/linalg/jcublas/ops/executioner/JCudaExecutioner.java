@@ -323,11 +323,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);
-            if (op instanceof TransformOp) {
-                TransformOp t = op;
-                TransformOp t2 = (TransformOp) op2;
-                t.z().vectorAlongDimension(i, dimension).assign(t2.z());
-            }
+            op.z().vectorAlongDimension(i, dimension).assign(op2.z());
+
 
 
         }
@@ -437,7 +434,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         } else {
             //int n, int xOffset,double *dx,int incx,double result
-             Object[] kernelParams = new Object[] {
+            Object[] kernelParams = new Object[] {
                     op.n(),
                     op.x().offset(),
                     op.x(),

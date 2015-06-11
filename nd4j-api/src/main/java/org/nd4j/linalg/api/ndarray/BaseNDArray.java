@@ -269,7 +269,7 @@ public abstract class BaseNDArray implements INDArray {
 
 
         this.offset = offset;
-        this.stride = stride;
+        this.stride = ArrayUtil.copy(stride);
         this.ordering = ordering;
 
         if (data != null && data.length > 0) {

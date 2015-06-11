@@ -33,7 +33,8 @@ public class SerializationUtils {
 	public static <T> T readObject(File file) {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(FileUtils.openInputStream(file));
-			return (T) ois.readObject();
+			T ret =  (T) ois.readObject();
+            ois.close();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -49,7 +50,9 @@ public class SerializationUtils {
 	public static <T> T readObject(InputStream is) {
 		try {
 			ObjectInputStream ois = new ObjectInputStream(is);
-			return (T) ois.readObject();
+			T  ret = (T) ois.readObject();
+            ois.close();
+            return ret;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

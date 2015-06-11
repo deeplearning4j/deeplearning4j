@@ -563,8 +563,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             q.add(d);
         }
 
-        for (Integer label : map.keySet()) {
-            log.info("Label " + label + " has " + map.get(label).size() + " elements");
+        for (Map.Entry<Integer, Queue<DataSet>> label : map.entrySet()) {
+            log.info("Label " + label + " has " + label.getValue().size() + " elements");
         }
 
         //ideal input splits: 1 of each label in each batch

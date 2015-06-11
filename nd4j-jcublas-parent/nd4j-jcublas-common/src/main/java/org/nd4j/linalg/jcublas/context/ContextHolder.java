@@ -84,7 +84,7 @@ public class ContextHolder {
      * Singleton pattern
      * @return the instance for the context holder.
      */
-    public static ContextHolder getInstance() {
+    public static synchronized  ContextHolder getInstance() {
         if(INSTANCE == null) {
             INSTANCE = new ContextHolder();
 

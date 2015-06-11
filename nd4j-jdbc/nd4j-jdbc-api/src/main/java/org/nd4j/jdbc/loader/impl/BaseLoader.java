@@ -182,7 +182,7 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         PreparedStatement preparedStatement = c.prepareStatement(insertStatement());
         preparedStatement.setString(1, id);
         preparedStatement.setBytes(2, bytes);
-        int update = preparedStatement.executeUpdate();
+        preparedStatement.executeUpdate();
         preparedStatement.close();
         c.close();
 

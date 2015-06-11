@@ -203,7 +203,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     public BaseComplexNDArray(float[] data, int[] shape, int[] stride, int offset, Character order) {
         this.data = Nd4j.createBuffer(data);
-        this.stride = stride;
+        this.stride = ArrayUtil.copy(stride);
         this.offset = offset;
         this.ordering = order;
         init(shape);
@@ -215,7 +215,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     public BaseComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         this.data = data;
-        this.stride = stride;
+        this.stride = ArrayUtil.copy(stride);
         this.offset = offset;
         this.ordering = Nd4j.order();
         init(shape);

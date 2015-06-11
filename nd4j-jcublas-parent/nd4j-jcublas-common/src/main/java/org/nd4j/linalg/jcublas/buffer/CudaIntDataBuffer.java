@@ -52,10 +52,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
-        if (contiguous) {
-            int offset = indices[0];
-            Pointer p = Pointer.to(data);
-        } else
+        if (!contiguous)
             throw new UnsupportedOperationException("Non contiguous is not supported");
 
     }
@@ -67,10 +64,7 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length " + length() + " where the indices are of length " + data.length);
 
-        if (contiguous) {
-            int offset = indices[0];
-            Pointer p = Pointer.to(data);
-        } else
+        if (!contiguous)
             throw new UnsupportedOperationException("Non contiguous is not supported");
 
     }

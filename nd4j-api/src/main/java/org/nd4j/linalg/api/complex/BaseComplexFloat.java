@@ -120,7 +120,7 @@ public abstract class BaseComplexFloat implements IComplexFloat {
 
     @Override
     public IComplexNumber set(IComplexNumber set) {
-        return set(realComponent().floatValue(), realComponent().floatValue());
+        return set(realComponent().floatValue(), imaginaryComponent().floatValue());
     }
 
     @Override

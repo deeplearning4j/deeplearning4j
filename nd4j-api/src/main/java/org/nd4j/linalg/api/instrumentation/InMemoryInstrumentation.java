@@ -24,7 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -97,8 +96,8 @@ public class InMemoryInstrumentation implements Instrumentation {
     @Override
     public Collection<LogEntry> getStillAlive() {
         Set<LogEntry> ret = new HashSet<>();
-        for (String s : logEntries.keySet()) {
-            Collection<LogEntry> coll = logEntries.get(s);
+        for (Map.Entry<String, Collection<LogEntry>> s : logEntries.entrySet()) {
+            Collection<LogEntry> coll = s.getValue();
             boolean foundDestroyed = false;
             LogEntry created = null;
             for (LogEntry entry : coll) {
@@ -124,8 +123,8 @@ public class InMemoryInstrumentation implements Instrumentation {
     @Override
     public Collection<LogEntry> getDestroyed() {
         Set<LogEntry> ret = new HashSet<>();
-        for (String s : logEntries.keySet()) {
-            Collection<LogEntry> coll = logEntries.get(s);
+        for (Map.Entry<String, Collection<LogEntry>> s : logEntries.entrySet()) {
+            Collection<LogEntry> coll = s.getValue();
             for (LogEntry entry : coll) {
                 if (entry.getStatus().equals(Instrumentation.DESTROYED)) {
                     ret.add(entry);

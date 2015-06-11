@@ -65,7 +65,7 @@ public class PCA {
         IComplexNDArray diagLambda = Nd4j.diag(lambda);
         INDArray[] sorted = Nd4j.sortWithIndices(diagLambda, 0, false);
         //change lambda to be the indexes
-        lambda = Nd4j.createComplex(sorted[1]);
+
 
         INDArray indices = sorted[0];
 
