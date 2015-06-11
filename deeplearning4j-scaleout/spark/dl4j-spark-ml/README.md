@@ -7,18 +7,15 @@ Spark 1.4 provides a standardized API for machine learning called [Spark ML](htt
 
 ## Getting Started
 
-### Install Spark 1.4.0 (RC4)
-Spark 1.4.0 is not yet released and must be built from source.   Follow the instructions on [spark.apache.org](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/building-spark.html), summarized below.
+### Install Spark 1.4.0
+Download and install Spark 1.4.0 from [spark.apache.org](http://www.apache.org/dist/spark/spark-1.4.0/).
 
-Clone the apache/spark repository (`v1.4.0-rc4` tag):
+Set the following environment variable in `~/.bash_profile`:
+
 ```
-git clone https://github.com/apache/spark.git
-cd spark
-git checkout v1.4.0-rc4
-```
-Build Spark, installing artifacts to the local Maven repository:
-```
-build/mvn -Pyarn -Phadoop-2.4 -Dhadoop.version=2.4.0 -DskipTests clean install
+# set this to whereever you installed spark
+export SPARK_HOME="$HOME/spark-1.4.0"
+
 ```
 
 ### Install dl4j-spark-ml Library
@@ -26,7 +23,7 @@ The `dl4j-spark-ml` library is not yet published to the Maven Central repository
 ```
 git clone https://github.com/deeplearning4j/deeplearning4j.git
 cd deeplearning4j
-mvn clean install -DskipTests -Pspark-1.4
+mvn clean install -DskipTests
 ```
 ### Install dl4j-spark-ml Spark Package
 The 'dl4j-spark-ml' Spark Package is not yet published to the Spark Packages repository and must be built from source.
@@ -113,7 +110,6 @@ For ML purposes, the following data types are preferred for ML columns:
 | --------- | ----------- |
 | Vector    | A sparse or dense array of doubles |
 | Double    | A numeric label |
-| Tensor    | (WIP) A multi-dimensional vector |
 
 Strings should be converted to an ML type using a transformer such as `StringIndexer`.  Please consider LabeledPoint to be obsolete.
 
