@@ -115,6 +115,7 @@ public class BooleanIndexing {
         for (int i = 0; i < linear.linearView().length(); i++)
             if (condition.apply(linear.getFloat(i))) {
                 linear.putScalar(i, function.apply(linear.getDouble(i)).floatValue());
+            }
     }
 
 
