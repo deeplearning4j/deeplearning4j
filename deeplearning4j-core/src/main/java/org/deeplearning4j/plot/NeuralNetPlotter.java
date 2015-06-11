@@ -72,37 +72,39 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
-    protected String writeMatrix(INDArray matrix) throws IOException {
-        String filePath = System.getProperty("java.io.tmpdir") + File.separator +  UUID.randomUUID().toString();
-        File write = new File(filePath);
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
-        write.deleteOnExit();
-        for(int i = 0; i < matrix.rows(); i++) {
-            INDArray row = matrix.getRow(i);
-            StringBuilder sb = new StringBuilder();
-            for(int j = 0; j < row.length(); j++) {
-                sb.append(String.format("%.10f", row.getDouble(j)));
-                if(j < row.length() - 1)
-                    sb.append(",");
+    protected String writeMatrix(INDArray matrix)  {
+        try {
+            String filePath = System.getProperty("java.io.tmpdir") + File.separator +  UUID.randomUUID().toString();
+            File write = new File(filePath);
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
+            write.deleteOnExit();
+            for(int i = 0; i < matrix.rows(); i++) {
+                INDArray row = matrix.getRow(i);
+                StringBuilder sb = new StringBuilder();
+                for(int j = 0; j < row.length(); j++) {
+                    sb.append(String.format("%.10f", row.getDouble(j)));
+                    if(j < row.length() - 1)
+                        sb.append(",");
+                }
+                sb.append("\n");
+                String line = sb.toString();
+                    bos.write(line.getBytes());
+                    bos.flush();
             }
-            sb.append("\n");
-            String line = sb.toString();
-            bos.write(line.getBytes());
-            bos.flush();
-        }
+            bos.close();
+            return filePath;
 
-        bos.close();
-        return filePath;
+        } catch(IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
-    public void renderGraph(String action, String dataPath) throws Exception{
-        String fileName = new ClassPathResource("python/plot.py").getFile().getAbsolutePath();
+    public void renderGraph(String action, String dataPath) {
 
         try {
+            String fileName = new ClassPathResource("python/plot.py").getFile().getAbsolutePath();
             log.info("Rendering graphs for data analysis... ");
             Process is = Runtime.getRuntime().exec("python " + fileName + " " + action + " "+ dataPath);
-            Thread.sleep(10000);
-            is.destroy();
             log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
             log.error("Std error " + IOUtils.readLines(is.getErrorStream()).toString());
         }catch(IOException e) {
@@ -119,7 +121,7 @@ public class NeuralNetPlotter implements Serializable {
      * @param titles the titles of the plots
      * @param matrices the matrices to plot
      */
-    public void graphPlotType(String plotType, List<String> titles, INDArray[] matrices) throws Exception {
+    public void graphPlotType(String plotType, List<String> titles, INDArray[] matrices) {
         String[] path = new String[matrices.length * 2];
 
         if(titles.size() != matrices.length)
@@ -141,7 +143,7 @@ public class NeuralNetPlotter implements Serializable {
      * @param network the trained neural net model
      * @param gradient latest updates to weights and biases
      */
-    public void plotWeightHistograms(Layer network, Gradient gradient) throws Exception{
+    public void plotWeightHistograms(Layer network, Gradient gradient) {
         Set<String> vars = new TreeSet<>(gradient.gradientForVariable().keySet());
         List<String> titles = new ArrayList<>(vars);
         for(String s : vars) {
@@ -161,7 +163,7 @@ public class NeuralNetPlotter implements Serializable {
     }
 
 
-    public void plotWeightHistograms(Layer network) throws Exception {
+    public void plotWeightHistograms(Layer network) {
         plotWeightHistograms(network, network.gradient());
     }
 
@@ -169,7 +171,7 @@ public class NeuralNetPlotter implements Serializable {
     * plotActivations show how hidden neurons are used, how often on vs. off and correlation
      * @param network the trained neural net model
      **/
-    public void plotActivations(Layer network) throws Exception{
+    public void plotActivations(Layer network) {
 
         if(network.input() == null)
             throw new IllegalStateException("Unable to plot; missing input");
@@ -185,11 +187,11 @@ public class NeuralNetPlotter implements Serializable {
     /**
      * renderFilter plot learned filter for each hidden neuron
      * @param weight the trained neural net model
-     * @param patchesPerRow number of filters
      **/
-    public void renderFilter(INDArray weight, int patchesPerRow) {
+    public void renderFilter(INDArray weight) {
         INDArray w = weight.dup();
         FilterRenderer render = new FilterRenderer();
+
         try {
             if(w.shape().length > 2) {
                 INDArray render2 = w.transpose();
@@ -205,7 +207,11 @@ public class NeuralNetPlotter implements Serializable {
                         "currimg.png",
                         (int) Math.sqrt(w.rows()),
                         (int) Math.sqrt(w.columns()),
-                        patchesPerRow);
+                        10);
+
+                //Alternative python approach
+//                String dataPath = writeMatrix(w);
+//                renderGraph("filter", dataPath, nRows, nCols);
 
             }
         } catch (Exception e) {
@@ -222,19 +228,18 @@ public class NeuralNetPlotter implements Serializable {
      * top layer is
      * @param network the trained neural net model
      * @param gradient latest updates to weights and biases
-     * @param patchesPerRow number of filters
      **/
-    public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) throws Exception {
+    public void plotNetworkGradient(Layer network,Gradient gradient) {
         INDArray weight = network.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         plotWeightHistograms(network, gradient);
         plotActivations(network);
 
-        renderFilter(weight, patchesPerRow);
+        renderFilter(weight);
 
     }
 
-    public void plotNetworkGradient(Layer network,INDArray gradient,int patchesPerRow) throws Exception{
+    public void plotNetworkGradient(Layer network,INDArray gradient) {
 
         graphPlotType(
                 "histogram",
@@ -245,7 +250,7 @@ public class NeuralNetPlotter implements Serializable {
                 });
         plotActivations(network);
         INDArray weight =  network.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        renderFilter(weight, patchesPerRow);
+        renderFilter(weight);
     }
 
 
