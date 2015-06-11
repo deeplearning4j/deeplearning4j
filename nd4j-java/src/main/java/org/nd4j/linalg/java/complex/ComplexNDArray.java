@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.complex.BaseComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.java.NetlibBlasNDArray;
+import org.nd4j.linalg.java.JavaNDArray;
 
 import java.util.List;
 
@@ -324,7 +324,7 @@ public class ComplexNDArray extends BaseComplexNDArray {
     }
 
     public ComplexNDArray(float[][] floats) {
-        this(new NetlibBlasNDArray(floats));
+        this(new JavaNDArray(floats));
     }
 
     public ComplexNDArray(DataBuffer data) {

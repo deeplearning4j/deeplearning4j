@@ -70,7 +70,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(int[] shape, DataBuffer buffer) {
-        return new NetlibBlasNDArray(shape, buffer);
+        return new JavaNDArray(shape, buffer);
     }
 
     /**
@@ -105,7 +105,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray create(double[][] data) {
-        return new NetlibBlasNDArray(data);
+        return new JavaNDArray(data);
     }
 
     /**
@@ -154,7 +154,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data) {
-        return new NetlibBlasNDArray(data);
+        return new JavaNDArray(data);
     }
 
     @Override
@@ -169,7 +169,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, int rows, int columns, int[] stride, int offset) {
-        return new NetlibBlasNDArray(data, new int[]{rows, columns}, stride, offset);
+        return new JavaNDArray(data, new int[]{rows, columns}, stride, offset);
     }
 
     @Override
@@ -193,12 +193,12 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(int[] shape, char ordering) {
-        return new NetlibBlasNDArray(shape, 0, ordering);
+        return new JavaNDArray(shape, 0, ordering);
     }
 
     @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
-        return new NetlibBlasNDArray(data, newShape, newStride, offset, ordering);
+        return new JavaNDArray(data, newShape, newStride, offset, ordering);
     }
 
     @Override
@@ -213,32 +213,32 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(float[] data, int[] shape, int offset, Character order) {
-        return new NetlibBlasNDArray(data, shape, offset, order);
+        return new JavaNDArray(data, shape, offset, order);
     }
 
     @Override
     public INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        return new NetlibBlasNDArray(data, new int[]{rows, columns}, stride, offset, ordering);
+        return new JavaNDArray(data, new int[]{rows, columns}, stride, offset, ordering);
     }
 
     @Override
     public INDArray create(double[] data, int[] shape, char ordering) {
-        return new NetlibBlasNDArray(data, shape, ordering);
+        return new JavaNDArray(data, shape, ordering);
     }
 
     @Override
     public INDArray create(List<INDArray> list, int[] shape, char ordering) {
-        return new NetlibBlasNDArray(list, shape, ordering);
+        return new JavaNDArray(list, shape, ordering);
     }
 
     @Override
     public INDArray create(double[] data, int[] shape, int offset) {
-        return new NetlibBlasNDArray(data, shape, (char) offset);
+        return new JavaNDArray(data, shape, (char) offset);
     }
 
     @Override
     public INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        return new NetlibBlasNDArray(data, shape, stride, offset, ordering);
+        return new JavaNDArray(data, shape, stride, offset, ordering);
     }
 
     @Override
@@ -277,7 +277,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray create(float[] data, int[] shape, int[] stride, int offset) {
-        return new NetlibBlasNDArray(data, shape, stride, offset);
+        return new JavaNDArray(data, shape, stride, offset);
     }
 
     /**
@@ -305,12 +305,12 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
      */
     @Override
     public INDArray create(double[] data, int[] shape, int[] stride, int offset) {
-        return new NetlibBlasNDArray(data, shape, stride, offset);
+        return new JavaNDArray(data, shape, stride, offset);
     }
 
     @Override
     public INDArray create(DataBuffer data, int[] shape) {
-        return new NetlibBlasNDArray(data, shape);
+        return new JavaNDArray(data, shape);
     }
 
     @Override
@@ -325,7 +325,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, int[] shape, int[] stride, int offset) {
-        return new NetlibBlasNDArray(data, shape, stride, offset);
+        return new JavaNDArray(data, shape, stride, offset);
     }
 
     /**
@@ -338,9 +338,9 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(List<INDArray> list, int[] shape) {
         if (order == FORTRAN)
-            return new NetlibBlasNDArray(list, shape, ArrayUtil.calcStridesFortran(shape));
+            return new JavaNDArray(list, shape, ArrayUtil.calcStridesFortran(shape));
         else
-            return new NetlibBlasNDArray(list, shape);
+            return new JavaNDArray(list, shape);
     }
 
     @Override
@@ -370,7 +370,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(float[] data, int[] shape, int offset) {
-        return new NetlibBlasNDArray(data, shape, offset);
+        return new JavaNDArray(data, shape, offset);
     }
 
     @Override
@@ -390,7 +390,7 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(float[][] floats) {
-        return new NetlibBlasNDArray(floats);
+        return new JavaNDArray(floats);
     }
 
     @Override
@@ -407,11 +407,11 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
-        return new NetlibBlasNDArray(data, shape, stride, offset, ordering);
+        return new JavaNDArray(data, shape, stride, offset, ordering);
     }
 
     @Override
     public INDArray create(DataBuffer buffer, int[] shape, int offset) {
-        return new NetlibBlasNDArray(buffer, shape, offset);
+        return new JavaNDArray(buffer, shape, offset);
     }
 }

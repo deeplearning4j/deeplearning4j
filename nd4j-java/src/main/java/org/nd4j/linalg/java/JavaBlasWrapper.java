@@ -34,7 +34,12 @@ import org.nd4j.linalg.factory.BaseBlasWrapper;
  * @author Adam Gibson
  */
 public class JavaBlasWrapper extends BaseBlasWrapper {
+    static {
+        System.setProperty("com.github.fommil.netlib.BLAS","com.github.fommil.netlib.F2jBLAS");
+        System.setProperty("com.github.fommil.netlib.LAPACK","com.github.fommil.netlib.F2jLAPACK");
+        System.setProperty("com.github.fommil.netlib.ARPACK","com.github.fommil.netlib.F2jARPACK");
 
+    }
 
 
 }

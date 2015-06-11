@@ -34,21 +34,21 @@ import java.util.List;
  * @author Adam Gibson
  */
 
-public class NetlibBlasNDArray extends BaseNDArray {
+public class JavaNDArray extends BaseNDArray {
 
-    public NetlibBlasNDArray() {
+    public JavaNDArray() {
         super();
     }
 
-    public NetlibBlasNDArray(DataBuffer buffer) {
+    public JavaNDArray(DataBuffer buffer) {
         super(buffer);
     }
 
-    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
+    public JavaNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
         super(buffer, shape, stride, offset, ordering);
     }
 
-    public NetlibBlasNDArray(double[][] data) {
+    public JavaNDArray(double[][] data) {
         super(data);
 
     }
@@ -60,7 +60,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param shape    the shape of the JCublasNDArray
      * @param ordering
      */
-    public NetlibBlasNDArray(float[] data, int[] shape, char ordering) {
+    public JavaNDArray(float[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
 
 
@@ -72,7 +72,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering of the JCublasNDArray
      */
-    public NetlibBlasNDArray(float[] data, int[] shape, int offset, char ordering) {
+    public JavaNDArray(float[] data, int[] shape, int offset, char ordering) {
         super(data, shape, offset, ordering);
 
 
@@ -87,7 +87,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering of the JCublasNDArray
      */
-    public NetlibBlasNDArray(int[] shape, int[] stride, int offset, char ordering) {
+    public JavaNDArray(int[] shape, int[] stride, int offset, char ordering) {
         super(shape, stride, offset, ordering);
 
     }
@@ -100,19 +100,19 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param stride   the stride of the JCublasNDArray
      * @param ordering the ordering of the JCublasNDArray
      */
-    public NetlibBlasNDArray(int[] shape, int[] stride, char ordering) {
+    public JavaNDArray(int[] shape, int[] stride, char ordering) {
 
         super(shape, stride, ordering);
 
     }
 
-    public NetlibBlasNDArray(int[] shape, int offset, char ordering) {
+    public JavaNDArray(int[] shape, int offset, char ordering) {
 
         super(shape, offset, ordering);
 
     }
 
-    public NetlibBlasNDArray(int[] shape) {
+    public JavaNDArray(int[] shape) {
 
         super(shape);
 
@@ -125,7 +125,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
      * @param ordering
      */
-    public NetlibBlasNDArray(int newRows, int newColumns, char ordering) {
+    public JavaNDArray(int newRows, int newColumns, char ordering) {
         super(newRows, newColumns, ordering);
 
     }
@@ -140,7 +140,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param shape    the shape of the JCublasNDArray
      * @param ordering
      */
-    public NetlibBlasNDArray(List<INDArray> slices, int[] shape, char ordering) {
+    public JavaNDArray(List<INDArray> slices, int[] shape, char ordering) {
 
         super(slices, shape, ordering);
 
@@ -157,17 +157,17 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param stride
      * @param ordering
      */
-    public NetlibBlasNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
+    public JavaNDArray(List<INDArray> slices, int[] shape, int[] stride, char ordering) {
         super(slices, shape, stride, ordering);
 
     }
 
-    public NetlibBlasNDArray(float[] data, int[] shape, int[] stride, char ordering) {
+    public JavaNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         super(data, shape, stride, ordering);
 
     }
 
-    public NetlibBlasNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public JavaNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
 
     }
@@ -178,11 +178,11 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param data  the data to use
      * @param shape the shape of the JCublasNDArray
      */
-    public NetlibBlasNDArray(float[] data, int[] shape) {
+    public JavaNDArray(float[] data, int[] shape) {
         super(data, shape);
     }
 
-    public NetlibBlasNDArray(float[] data, int[] shape, int offset) {
+    public JavaNDArray(float[] data, int[] shape, int offset) {
 
         super(data, shape, offset);
 
@@ -196,7 +196,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param stride the stride of the JCublasNDArray
      * @param offset the desired offset
      */
-    public NetlibBlasNDArray(int[] shape, int[] stride, int offset) {
+    public JavaNDArray(int[] shape, int[] stride, int offset) {
 
         super(shape, stride, offset);
     }
@@ -208,15 +208,15 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param shape  the shape of the JCublasNDArray
      * @param stride the stride of the JCublasNDArray
      */
-    public NetlibBlasNDArray(int[] shape, int[] stride) {
+    public JavaNDArray(int[] shape, int[] stride) {
         super(shape, stride);
     }
 
-    public NetlibBlasNDArray(int[] shape, int offset) {
+    public JavaNDArray(int[] shape, int offset) {
         super(shape, offset);
     }
 
-    public NetlibBlasNDArray(int[] shape, char ordering) {
+    public JavaNDArray(int[] shape, char ordering) {
         super(shape, ordering);
     }
 
@@ -226,7 +226,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param newRows    the number of rows (<i>n</i>) of the new matrix.
      * @param newColumns the number of columns (<i>m</i>) of the new matrix.
      */
-    public NetlibBlasNDArray(int newRows, int newColumns) {
+    public JavaNDArray(int newRows, int newColumns) {
         super(newRows, newColumns);
     }
 
@@ -239,7 +239,7 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param slices the slices to merge
      * @param shape  the shape of the JCublasNDArray
      */
-    public NetlibBlasNDArray(List<INDArray> slices, int[] shape) {
+    public JavaNDArray(List<INDArray> slices, int[] shape) {
         super(slices, shape);
     }
 
@@ -253,83 +253,83 @@ public class NetlibBlasNDArray extends BaseNDArray {
      * @param shape  the shape of the JCublasNDArray
      * @param stride
      */
-    public NetlibBlasNDArray(List<INDArray> slices, int[] shape, int[] stride) {
+    public JavaNDArray(List<INDArray> slices, int[] shape, int[] stride) {
         super(slices, shape, stride);
 
     }
 
-    public NetlibBlasNDArray(float[] data, int[] shape, int[] stride) {
+    public JavaNDArray(float[] data, int[] shape, int[] stride) {
         super(data, shape, stride);
     }
 
 
-    public NetlibBlasNDArray(float[] data, int[] shape, int[] stride, int offset) {
+    public JavaNDArray(float[] data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
     }
 
-    public NetlibBlasNDArray(float[] data) {
+    public JavaNDArray(float[] data) {
         super(data);
     }
 
 
-    public NetlibBlasNDArray(NetlibBlasNDArray doubleMatrix) {
+    public JavaNDArray(JavaNDArray doubleMatrix) {
         this(new int[]{doubleMatrix.rows, doubleMatrix.columns});
         this.data = dup().data();
     }
 
-    public NetlibBlasNDArray(double[] data, int[] shape, int[] stride, int offset) {
+    public JavaNDArray(double[] data, int[] shape, int[] stride, int offset) {
         this.data = Nd4j.createBuffer(data);
         this.stride = stride;
         this.offset = offset;
         init(shape);
     }
 
-    public NetlibBlasNDArray(float[][] floats) {
+    public JavaNDArray(float[][] floats) {
         super(floats);
     }
 
-    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
+    public JavaNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
         super(buffer, shape, offset, ordering);
     }
 
 
-    public NetlibBlasNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+    public JavaNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
     }
 
-    public NetlibBlasNDArray(int[] data, int[] shape, int[] strides) {
+    public JavaNDArray(int[] data, int[] shape, int[] strides) {
         super(data, shape, strides);
     }
 
-    public NetlibBlasNDArray(DataBuffer data, int[] shape) {
+    public JavaNDArray(DataBuffer data, int[] shape) {
         super(data, shape);
     }
 
-    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int offset) {
+    public JavaNDArray(DataBuffer buffer, int[] shape, int offset) {
         super(buffer, shape, offset);
     }
 
-    public NetlibBlasNDArray(double[] data, int[] shape, char ordering) {
+    public JavaNDArray(double[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }
 
-    public NetlibBlasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public JavaNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
-    public NetlibBlasNDArray(float[] data, char order) {
+    public JavaNDArray(float[] data, char order) {
         super(data, order);
     }
 
-    public NetlibBlasNDArray(DataBuffer floatBuffer, char order) {
+    public JavaNDArray(DataBuffer floatBuffer, char order) {
         super(floatBuffer, order);
     }
 
-    public NetlibBlasNDArray(DataBuffer buffer, int[] shape, int[] strides) {
+    public JavaNDArray(DataBuffer buffer, int[] shape, int[] strides) {
         super(buffer, shape, strides);
     }
 
-    public NetlibBlasNDArray(int[] shape, DataBuffer buffer) {
+    public JavaNDArray(int[] shape, DataBuffer buffer) {
         super(shape, buffer);
     }
 
