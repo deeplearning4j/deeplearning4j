@@ -39,7 +39,7 @@ public class JavaLevel3 extends BaseLevel3 {
     }
 
     @Override
-    protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, INDArray C, int ldc) {
+    protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
         throw new UnsupportedOperationException();
 
     }

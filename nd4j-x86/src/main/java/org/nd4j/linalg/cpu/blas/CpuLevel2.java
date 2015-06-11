@@ -1,4 +1,4 @@
-package org.nd4j.linalg.jblas.blas;
+package org.nd4j.linalg.cpu.blas;
 
 import org.jblas.NativeBlas;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.jblas.util.JblasComplex;
+import org.nd4j.linalg.cpu.util.CpuComplex;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
@@ -14,7 +14,7 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 /**
  * @author Adam Gibson
  */
-public class JblasLevel2 extends BaseLevel2 {
+public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         float[] yData = getFloatData(Y);
@@ -115,7 +115,7 @@ public class JblasLevel2 extends BaseLevel2 {
     @Override
     protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
         float[] yData = getFloatData(Y);
-        NativeBlas.cgemv(TransA, M, N, JblasComplex.getComplexFloat(alpha), getFloatData(A), getBlasOffset(A), A.size(0), getFloatData(X), getBlasOffset(X), incX, JblasComplex.getComplexFloat(beta), yData, getBlasOffset(Y), incY);
+        NativeBlas.cgemv(TransA, M, N, CpuComplex.getComplexFloat(alpha), getFloatData(A), getBlasOffset(A), A.size(0), getFloatData(X), getBlasOffset(X), incX, CpuComplex.getComplexFloat(beta), yData, getBlasOffset(Y), incY);
         setData(yData,Y);
     }
 
@@ -164,7 +164,7 @@ public class JblasLevel2 extends BaseLevel2 {
     @Override
     protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
         double[] yData = getDoubleData(Y);
-        NativeBlas.zgemv(TransA,M,N, JblasComplex.getComplexDouble(alpha),getDoubleData(A),getBlasOffset(A),A.size(0),getDoubleData(X),getBlasOffset(X),incX,JblasComplex.getComplexDouble(beta),yData,getBlasOffset(Y),incY);
+        NativeBlas.zgemv(TransA,M,N, CpuComplex.getComplexDouble(alpha),getDoubleData(A),getBlasOffset(A),A.size(0),getDoubleData(X),getBlasOffset(X),incX, CpuComplex.getComplexDouble(beta),yData,getBlasOffset(Y),incY);
         setData(yData,Y);
     }
 
@@ -329,14 +329,14 @@ public class JblasLevel2 extends BaseLevel2 {
     @Override
     protected void cgeru(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
         float[] aData = getFloatData(A);
-        NativeBlas.cgeru(M, N, JblasComplex.getComplexFloat(alpha), getFloatData(X), getBlasOffset(X), incX, getFloatData(Y), getBlasOffset(Y), incY, aData, getBlasOffset(A), lda);
+        NativeBlas.cgeru(M, N, CpuComplex.getComplexFloat(alpha), getFloatData(X), getBlasOffset(X), incX, getFloatData(Y), getBlasOffset(Y), incY, aData, getBlasOffset(A), lda);
         setData(aData,A);
     }
 
     @Override
     protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
         float[] aData = getFloatData(A);
-        NativeBlas.cgerc(M,N,JblasComplex.getComplexFloat(alpha),getFloatData(X),getBlasOffset(X),incX,getFloatData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),lda);
+        NativeBlas.cgerc(M,N, CpuComplex.getComplexFloat(alpha),getFloatData(X),getBlasOffset(X),incX,getFloatData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),lda);
         setData(aData,A);
     }
 
@@ -385,14 +385,14 @@ public class JblasLevel2 extends BaseLevel2 {
     @Override
     protected void zgeru(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
         double[] aData = getDoubleData(A);
-        NativeBlas.zgeru(M,N,JblasComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),A.size(0));
+        NativeBlas.zgeru(M,N, CpuComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),A.size(0));
         setData(aData,A);
     }
 
     @Override
     protected void zgerc(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
         double[] aData = getDoubleData(A);
-        NativeBlas.zgerc(M,N,JblasComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),lda);
+        NativeBlas.zgerc(M,N, CpuComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),lda);
         setData(aData, A);
     }
 

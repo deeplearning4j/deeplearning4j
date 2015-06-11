@@ -1,60 +1,57 @@
-package org.nd4j.linalg.jblas.blas;
+package org.nd4j.linalg.cpu.blas;
 
+import com.github.fommil.netlib.BLAS;
 import org.jblas.JavaBlas;
 import org.jblas.NativeBlas;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.jblas.util.JblasComplex;
+import org.nd4j.linalg.cpu.util.CpuComplex;
+import org.netlib.util.doubleW;
+import org.netlib.util.floatW;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
-import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 
 
 /**
  * @author Adam Gibson
  */
-public class JblasLevel1 extends BaseLevel1 {
+public class CpuLevel1 extends BaseLevel1 {
     @Override
     protected float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        return 0;
+        return BLAS.getInstance().sdsdot(N,alpha,getFloatData(X),getBlasOffset(X),incX,getFloatData(Y),getBlasOffset(Y),incY);
+
     }
 
     @Override
     protected double dsdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        float[] xData = getFloatData(X);
-        float[] yData = getFloatData(Y);
-        int xOffset = getBlasOffset(X);
-        int yOffset = getBlasOffset(Y);
-        return JavaBlas.rdot(N,xData,xOffset,incX,yData,yOffset,incY);
+        return BLAS.getInstance().sdot(N,getFloatData(X),getBlasOffset(X),incX,getFloatData(Y),getBlasOffset(Y),incY);
+
     }
 
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        double[] xData = getDoubleData(X);
-        double[] yData = getDoubleData(Y);
-        int xOffset = getBlasOffset(X);
-        int yOffset = getBlasOffset(Y);
-        return JavaBlas.rdot(N,xData,xOffset,incX,yData,yOffset,incY);
+        return BLAS.getInstance().ddot(N, getDoubleData(X), getBlasOffset(X), incX, getDoubleData(Y), getBlasOffset(Y), incY);
+
     }
 
     @Override
     protected void cdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
-        throw new UnsupportedOperationException();
+         throw new UnsupportedOperationException();
     }
 
     @Override
     protected void cdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
-        throw new UnsupportedOperationException();
-
+         throw new UnsupportedOperationException();
     }
 
     @Override
@@ -71,26 +68,26 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
-        float[] data = getFloatData(X);
-        return NativeBlas.snrm2(N,data,getBlasOffset(X),incX);
+        return BLAS.getInstance().snrm2(N,getFloatData(X),getBlasOffset(X),incX);
+
     }
 
     @Override
     protected float sasum(int N, INDArray X, int incX) {
-        float[] data = getFloatData(X);
-        return NativeBlas.sasum(N,data,getBlasOffset(X),incX);
+        return BLAS.getInstance().sasum(N, getFloatData(X), getBlasOffset(X), incX);
+
     }
 
     @Override
     protected double dnrm2(int N, INDArray X, int incX) {
-        double[] data = getDoubleData(X);
-        return NativeBlas.dnrm2(N,data,getBlasOffset(X),incX);
+        return BLAS.getInstance().dnrm2(N, getDoubleData(X), getBlasOffset(X), incX);
+
     }
 
     @Override
     protected double dasum(int N, INDArray X, int incX) {
-        double[] data = getDoubleData(X);
-        return NativeBlas.dasum(N,data,getBlasOffset(X),incX);
+        return BLAS.getInstance().dasum(N, getDoubleData(X), getBlasOffset(X), incX);
+
     }
 
     @Override
@@ -112,17 +109,17 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected double dzasum(int N, IComplexNDArray X, int incX) {
-       return NativeBlas.dzasum(N,getDoubleData(X),getBlasOffset(X),incX);
+        return NativeBlas.dzasum(N,getDoubleData(X),getBlasOffset(X),incX);
     }
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
-        return NativeBlas.isamax(N,getFloatData(X),getBlasOffset(X),incX);
+        return BLAS.getInstance().isamax(N, getFloatData(X), getBlasOffset(X), incX);
     }
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
-        return NativeBlas.idamax(N, getDoubleData(X), getBlasOffset(X), incX);
+        return BLAS.getInstance().idamax(N, getDoubleData(X), getBlasOffset(X), incX);
     }
 
     @Override
@@ -137,39 +134,45 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        NativeBlas.sswap(N,getFloatData(X),getBlasOffset(X),incX,getFloatData(Y),getBlasOffset(Y),incY);
-    }
+        float[] yData = getFloatData(Y);
+        float[] xData = getFloatData(X);
+        BLAS.getInstance().sswap(N, xData, getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
+        setData(xData,X);
+        setData(yData,Y);    }
 
     @Override
     protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
-        float[] dataToSret = getFloatData(Y);
-        NativeBlas.scopy(N,getFloatData(X),getBlasOffset(X),incX,dataToSret,getBlasOffset(Y),incY);
-        setData(dataToSret,Y);
+        float[] yData = getFloatData(Y);
+        BLAS.getInstance().scopy(N, getFloatData(X), getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
+        setData(yData,Y);
     }
 
     @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        float[] dataToSret = getFloatData(Y);
-        JavaBlas.raxpy(N,alpha,getFloatData(X),getBlasOffset(X),incX,dataToSret,getBlasOffset(Y),incY);
-        setData(dataToSret,Y);
+        float[] yData = getFloatData(Y);
+        BLAS.getInstance().saxpy(N, alpha, getFloatData(X), getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
+        setData(yData,Y);
     }
 
     @Override
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-        NativeBlas.dswap(N,getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY);
-    }
+        double[] yData = getDoubleData(Y);
+        double[] xData = getDoubleData(X);
+        BLAS.getInstance().dswap(N,xData,getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        setData(xData, X);
+        setData(yData,Y);    }
 
     @Override
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
         double[] yData = getDoubleData(Y);
-        JavaBlas.rcopy(N,getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        BLAS.getInstance().dcopy(N, getDoubleData(X), getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
         setData(yData,Y);
     }
 
     @Override
     protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
         double[] yData = getDoubleData(Y);
-        JavaBlas.raxpy(N,alpha,getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        BLAS.getInstance().daxpy(N, alpha, getDoubleData(X), getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
         setData(yData,Y);
     }
 
@@ -190,7 +193,7 @@ public class JblasLevel1 extends BaseLevel1 {
     @Override
     protected void caxpy(int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         float[] yData = getFloatData(Y);
-        NativeBlas.caxpy(N, JblasComplex.getComplexFloat(alpha),getFloatData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        NativeBlas.caxpy(N, CpuComplex.getComplexFloat(alpha),getFloatData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
     }
 
@@ -211,7 +214,7 @@ public class JblasLevel1 extends BaseLevel1 {
     @Override
     protected void zaxpy(int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         double[] yData = getDoubleData(Y);
-        NativeBlas.zaxpy(N,JblasComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        NativeBlas.zaxpy(N, CpuComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
     }
 
@@ -223,13 +226,14 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected void srotmg(float d1, float d2, float b1, float b2, INDArray P) {
-        throw new UnsupportedOperationException();
-
+        float[] pData = getFloatData(P);
+        BLAS.getInstance().srotmg(new floatW(d1), new floatW(d2), new floatW(b1), b2, pData, getBlasOffset(P));
+        setData(pData,P);
     }
 
     @Override
     protected void srot(int N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
-        throw new UnsupportedOperationException();
+         throw new UnsupportedOperationException();
     }
 
     @Override
@@ -246,48 +250,52 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected void drotmg(double d1, double d2, double b1, double b2, INDArray P) {
-        throw new UnsupportedOperationException();
-
+        double[] pData = getDoubleData(P);
+        BLAS.getInstance().drotmg(new doubleW(d1),new doubleW(d2),new doubleW(b1),b2,pData,getBlasOffset(P));
+        setData(pData,P);
     }
 
     @Override
     protected void drot(int N, INDArray X, int incX, INDArray Y, int incY, double c, double s) {
-        throw new UnsupportedOperationException();
+        double[] yData = getDoubleData(Y);
+        BLAS.getInstance().drot(N,getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY,c,s);
+        setData(yData,Y);
 
     }
 
 
     @Override
     protected void drotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
-        throw new UnsupportedOperationException();
-
+        double[] pData = getDoubleData(P);
+        BLAS.getInstance().drotm(N,getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY,pData,getBlasOffset(P));
+        setData(pData,P);
     }
 
     @Override
     protected void sscal(int N, float alpha, INDArray X, int incX) {
-        float[] xData = getFloatData(X);
-        NativeBlas.sscal(N,alpha,xData,getBlasOffset(X),incX);
-        setData(xData, X);
+        float[] data = getFloatData(X);
+        BLAS.getInstance().sscal(N, alpha, data, getBlasOffset(X), incX);
+        setData(data,X);
     }
 
     @Override
     protected void dscal(int N, double alpha, INDArray X, int incX) {
-        double[] xData = getDoubleData(X);
-        NativeBlas.dscal(N, alpha, xData, getBlasOffset(X), incX);
-        setData(xData,X);
+        double[] data = getDoubleData(X);
+        BLAS.getInstance().dscal(N, alpha, data, BlasBufferUtil.getBlasOffset(X), incX);
+        setData(data,X);
     }
 
     @Override
     protected void cscal(int N, IComplexFloat alpha, IComplexNDArray X, int incX) {
         float[] xData = getFloatData(X);
-        NativeBlas.cscal(N,JblasComplex.getComplexFloat(alpha),xData,getBlasOffset(X),incX);
+        NativeBlas.cscal(N, CpuComplex.getComplexFloat(alpha),xData,getBlasOffset(X),incX);
         setData(xData, X);
     }
 
     @Override
     protected void zscal(int N, IComplexDouble alpha, IComplexNDArray X, int incX) {
         double[] xData = getDoubleData(X);
-        NativeBlas.zscal(N,JblasComplex.getComplexDouble(alpha),xData,getBlasOffset(X),incX);
+        NativeBlas.zscal(N, CpuComplex.getComplexDouble(alpha),xData,getBlasOffset(X),incX);
         setData(xData, X);
     }
 
