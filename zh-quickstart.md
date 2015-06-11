@@ -38,24 +38,13 @@ layout: zh-default
 
 * 接下来，git 复制（git clone）DL4J的例子：
 
-		git clone https://github.com/SkymindIO/dl4j-examples
+		git clone https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/
 
 接下来，您可以手动导入[Maven](https://maven.apache.org/download.cgi)项目到[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html)、 /[IntelliJ](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html)或[Netbeans](http://wiki.netbeans.org/MavenBestPractices) 平台中。
-
-* 当您在IntelliJ平台打开DL4J的样本项目，去寻找MNIST的例子，然后按运行。如果MNIST演示时产生过多的渲染，使其速度减缓，这时您可以通过增加渲染呼叫的参数，保存其文件并重新启动演示。
-
-		public static void main(String[] args) throws Exception {
-		RandomGenerator gen = new MersenneTwister(123);
-		  NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-		  .momentum(5e-1f).constrainGradientToUnitNorm(false).iterations(1000).render(50) //<--**ADD RENDER HERE**
 
 * 终于到了探索真相的时刻。您现在应该会在您的您的终端/ CMD看到神经网络已经开始被训练。迭代开始时，您会看到终端/ CMD窗口画面会往下滑（在某些情况下，该程序可能需要一分钟的时间来查找资源。）。接下来，请看看右下角第二个的行数，这个行数在每个新的迭代都会减少。这是测量当神经网络重组数字图像时的错误。神经网络正在学习时，您会看到产生的错误会逐渐减少。
 
 ![Alt text](../img/learning.png)
-
-* 在整个训练中，您应该看到一些数字图像小窗口在屏幕的左上角弹出。这些神经网络重组数字图像（参考下图）都是在证明您的神经网络在正常运行着。
-
-![Alt text](../img/numeral_reconstructions.png)
 
 如果想要判断您的神经网络是否成功了解到MNIST数据集，其方法就是要看可视化。它们应该逐渐变成类似于手写的数字。当他们变成类似于手写的数字时，您的神经网络已经成功受训，这就是为什么您需要深度学习，您也能了解深度学习的强大。
 
