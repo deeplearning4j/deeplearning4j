@@ -35,6 +35,11 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class NDArrayUtil {
+
+
+
+
+
     public static INDArray exp(INDArray toExp) {
         return expi(toExp.dup());
     }

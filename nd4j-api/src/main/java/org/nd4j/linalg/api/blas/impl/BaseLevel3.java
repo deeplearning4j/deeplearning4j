@@ -122,7 +122,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * where c is an n-by-n symmetric matrix;
      * a and b are n-by-k matrices, if trans = 'N'or'n',
      * a and b are k-by-n matrices, if trans = 'T'or't'.
-     *  @param Order
+     * @param Order
      * @param Side
      * @param Uplo
      * @param TransA
@@ -130,14 +130,15 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param alpha
      * @param A
      * @param B
+     * @param C
      */
     @Override
-    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B) {
+    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B, INDArray C) {
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
             dtrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
         }
         else
-            strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0), , );
+            strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0),C,C.size(0));
 
     }
 
@@ -302,10 +303,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void syrk(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNumber beta, IComplexNDArray C) {
-          if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-              zsyrk(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),beta.asDouble(),C,C.size(0));
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zsyrk(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),beta.asDouble(),C,C.size(0));
         else
-              csyrk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C, C.size(0));
+            csyrk(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), beta.asFloat(), C, C.size(0));
 
     }
 
@@ -327,10 +328,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void syr2k(char Order, char Uplo, char Trans, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
-         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-             zsyr2k(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),beta.asDouble(),C,C.size(0));
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+            zsyr2k(Order,Uplo,Trans,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),beta.asDouble(),C,C.size(0));
         else
-             csyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(), C, C.size(0));
+            csyr2k(Order, Uplo, Trans, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(), C, C.size(0));
 
     }
 
@@ -341,7 +342,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * where c is an n-by-n symmetric matrix;
      * a and b are n-by-k matrices, if trans = 'N'or'n',
      * a and b are k-by-n matrices, if trans = 'T'or't'.
-     *  @param Order
+     * @param Order
      * @param Side
      * @param Uplo
      * @param TransA
@@ -349,13 +350,14 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      * @param alpha
      * @param A
      * @param B
+     * @param C
      */
     @Override
-    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B) {
-          if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-              ztrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0), , );
+    public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNDArray C) {
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+            ztrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),C,C.size(0));
         else
-              ctrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0), , );
+            ctrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0),C,C.size(0));
 
     }
 
@@ -378,10 +380,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B) {
-         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-             ztrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0));
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+            ztrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0));
         else
-             ctrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0));
+            ctrsm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha.asFloat(),A,A.size(0),B,B.size(0));
 
     }
 

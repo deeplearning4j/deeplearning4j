@@ -208,7 +208,7 @@ public class JavaLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void srotmg(INDArray d1, INDArray d2, INDArray b1, float b2, INDArray P) {
+    protected void srotmg(float d1, float d2, float b1, float b2, INDArray P) {
         throw new UnsupportedOperationException();
 
     }

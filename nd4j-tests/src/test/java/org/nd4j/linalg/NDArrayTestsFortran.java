@@ -101,8 +101,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testRepmat() {
         INDArray rowVector = Nd4j.create(1,4);
-        INDArray repmat = rowVector.repmat(4,4);
-        assertTrue(Arrays.equals(new int[]{4,4},repmat.shape()));
+        INDArray repmat = rowVector.repmat(4, 4);
+        assertTrue(Arrays.equals(new int[]{4, 4}, repmat.shape()));
     }
 
     @Test
@@ -411,7 +411,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray otherParameters = Nd4j.toFlattened(rand);
         INDArray wordvectors = Nd4j.rand(100, 68000);
         INDArray flattened = Nd4j.toFlattened(wordvectors);
-        Nd4j.concat(0, otherParameters,flattened);
+        Nd4j.concat(0, otherParameters, flattened);
     }
 
     @Test
@@ -563,6 +563,16 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
         INDArray other = Nd4j.linspace(1, 600, 600).reshape(10, 60);
         INDArray other2 = other.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all());
+
+        INDArray arr1OffsetFor = Nd4j.linspace(1,12,12).reshape(4, 3);
+        INDArray arr1Offset = arr1OffsetFor.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all());
+        INDArray arr1MmulWith = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray mmul = arr1Offset.mmul(arr1MmulWith.transpose());
+        INDArray assertion2 = Nd4j.create(new double[][]{
+                {70,88},{79,100}
+        });
+        assertEquals(assertion2,mmul);
+
         INDArray mmulOffsets = square.mmul(other2);
         INDArray assertion = Nd4j.create(new double[][]{{    330.,     730.,    1130.,    1530.,    1930.,    2330.,
                 2730.,    3130.,    3530.,    3930.,    4330.,    4730.,
@@ -712,14 +722,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testCopyMatrix() {
-
-        INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
-        INDArray copy = Nd4j.create(28, 28);
-        Nd4j.getBlasWrapper().copy(twoByThree, copy);
-        assertEquals(twoByThree,copy);
-    }
 
 
 
@@ -730,8 +732,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray twos = Nd4j.valueArrayOf(5, 2);
         assertEquals(twos, five);
 
-        INDArray twoByThree = Nd4j.linspace(1, 6, 6).reshape(2, 3);
-        Nd4j.getBlasWrapper().axpy(1, twoByThree, twoByThree);
     }
 
 

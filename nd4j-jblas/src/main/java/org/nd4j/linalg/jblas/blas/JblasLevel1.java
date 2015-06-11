@@ -32,7 +32,7 @@ public class JblasLevel1 extends BaseLevel1 {
         float[] yData = getFloatData(Y);
         int xOffset = getBlasOffset(X);
         int yOffset = getBlasOffset(Y);
-        return JavaBlas.rdot(xData.length,xData,xOffset,incX,yData,yOffset,incY);
+        return JavaBlas.rdot(N,xData,xOffset,incX,yData,yOffset,incY);
     }
 
     @Override
@@ -41,7 +41,7 @@ public class JblasLevel1 extends BaseLevel1 {
         double[] yData = getDoubleData(Y);
         int xOffset = getBlasOffset(X);
         int yOffset = getBlasOffset(Y);
-        return JavaBlas.rdot(xData.length,xData,xOffset,incX,yData,yOffset,incY);
+        return JavaBlas.rdot(N,xData,xOffset,incX,yData,yOffset,incY);
     }
 
     @Override
@@ -217,7 +217,7 @@ public class JblasLevel1 extends BaseLevel1 {
     }
 
     @Override
-    protected void srotmg(INDArray d1, INDArray d2, INDArray b1, float b2, INDArray P) {
+    protected void srotmg(float d1, float d2, float b1, float b2, INDArray P) {
         throw new UnsupportedOperationException();
 
     }

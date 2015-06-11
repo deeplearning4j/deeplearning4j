@@ -55,8 +55,8 @@ public class LinAlgExceptions {
     }
 
     public static void assertMatrix(INDArray arr) {
-        if(!arr.isVector())
-            throw new IllegalArgumentException("Array must be a vector");
+        if(arr.shape().length > 2)
+            throw new IllegalArgumentException("Array must be a matrix");
     }
 
 

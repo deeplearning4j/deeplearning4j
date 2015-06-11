@@ -1,5 +1,6 @@
 package org.nd4j.linalg.factory;
 
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.Level3;
@@ -57,15 +58,15 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
 
     @Override
     public INDArray gemv(Number alpha, INDArray a, INDArray x, double beta, INDArray y) {
-        LinAlgExceptions.assertVector(x,y);
+        LinAlgExceptions.assertVector(x, y);
         LinAlgExceptions.assertMatrix(a);
-        level2().gemv('N','N',alpha.doubleValue(),a,x,beta,y);
+        level2().gemv(BlasBufferUtil.getCharForTranspose(a),BlasBufferUtil.getCharForTranspose(x),alpha.doubleValue(),a,x,beta,y);
         return y;
     }
 
     @Override
     public INDArray ger(Number alpha, INDArray x, INDArray y, INDArray a) {
-        level2().ger('N',alpha.doubleValue(),x,y,a);
+        level2().ger(BlasBufferUtil.getCharForTranspose(x),alpha.doubleValue(),x,y,a);
         return a;
     }
 
@@ -360,7 +361,14 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
         if(a.data().dataType() == DataBuffer.Type.FLOAT) {
             return gemm((float) alpha,a,b,(float) beta,c);
         }
-        level3().gemm('N','N','N',alpha,a,b,beta,c);
+        level3().gemm(
+                BlasBufferUtil.getCharForTranspose(a),
+                BlasBufferUtil.getCharForTranspose(b)
+                ,BlasBufferUtil.getCharForTranspose(c)
+                ,alpha
+                ,a,b
+                ,beta
+                ,c);
         return c;
     }
 
@@ -372,7 +380,16 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
         if(a.data().dataType() == DataBuffer.Type.DOUBLE) {
             return gemm((double) alpha,a,b,(double) beta,c);
         }
-        level3().gemm('N','N','N',alpha,a,b,beta,c);
+
+        level3().gemm(
+                BlasBufferUtil.getCharForTranspose(a),
+                BlasBufferUtil.getCharForTranspose(b)
+                ,BlasBufferUtil.getCharForTranspose(c)
+                ,alpha
+                ,a
+                ,b
+                ,beta
+                ,c);
         return c;
     }
 
@@ -380,7 +397,15 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
         LinAlgExceptions.assertMatrix(a,b,c);
 
-        level3().gemm('N','N','N',alpha,a,b,beta,c);
+        level3().gemm(
+                BlasBufferUtil.getCharForTranspose(a),
+                BlasBufferUtil.getCharForTranspose(b)
+                ,BlasBufferUtil.getCharForTranspose(c)
+                ,alpha
+                ,a
+                ,b
+                ,beta
+                ,c);
         return c;
     }
 

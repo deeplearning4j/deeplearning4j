@@ -126,12 +126,13 @@ public interface Level3 {
      * @param alpha
      * @param A
      * @param B
+     * @param C
      */
-    void trmm( char Order,  char Side,
-               char Uplo,  char TransA,
-               char Diag,
-               double alpha,  INDArray A,
-              INDArray B);
+    void trmm(char Order, char Side,
+              char Uplo, char TransA,
+              char Diag,
+              double alpha, INDArray A,
+              INDArray B, INDArray C);
 
     /**
      * ?trsm solves one of the following matrix equations:
@@ -314,12 +315,13 @@ public interface Level3 {
      * @param alpha
      * @param A
      * @param B
+     * @param C
      */
-    void trmm( char Order,  char Side,
-               char Uplo,  char TransA,
-               char Diag,
-               IComplexNumber alpha,  IComplexNDArray A,
-               IComplexNDArray B);
+    void trmm(char Order, char Side,
+              char Uplo, char TransA,
+              char Diag,
+              IComplexNumber alpha, IComplexNDArray A,
+              IComplexNDArray B, IComplexNDArray C);
 
     /**
      * ?trsm solves one of the following matrix equations:

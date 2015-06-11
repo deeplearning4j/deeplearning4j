@@ -435,7 +435,7 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
      * Routines with S and D prefix only
      */
     protected abstract void srotg(float a, float b, float c, float s);
-    protected abstract void srotmg(INDArray d1, INDArray d2, INDArray b1,  float b2, INDArray P);
+    protected abstract void srotmg(float d1, float d2, float b1,  float b2, INDArray P);
     protected abstract  void srot( int N, INDArray X,  int incX,
                                    INDArray Y,  int incY,  float c,  float s);
     protected abstract  void srotm( int N, INDArray X,  int incX,

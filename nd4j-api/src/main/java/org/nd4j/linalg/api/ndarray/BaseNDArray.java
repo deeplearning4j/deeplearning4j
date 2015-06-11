@@ -2127,7 +2127,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int stride(int dimension) {
         if(dimension < 0)
-            return stride[stride.length + dimension];
+            return stride[stride.length -1 + dimension];
         return stride[dimension];
     }
 

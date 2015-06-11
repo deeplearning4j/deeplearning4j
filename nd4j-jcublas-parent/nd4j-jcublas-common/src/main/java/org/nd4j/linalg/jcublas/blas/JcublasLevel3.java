@@ -3,7 +3,6 @@ package org.nd4j.linalg.jcublas.blas;
 import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
-import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasOperation;
 import lombok.Cleanup;
@@ -46,9 +45,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         SimpleJCublas.sync();
 
 
-        @Cleanup CublasPointer cAPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cBPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(C);
+         CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(B);
+         CublasPointer cCPointer = new CublasPointer(C);
 
 
         JCublas2.cublasDgemm(
@@ -75,17 +74,17 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void ssymm(char Order, char Side, char Uplo, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasSsymm(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), M, N, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
     }
 
     @Override
     protected void ssyrk(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, float beta, INDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasSsyrk(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Order),OpUtil.getOp(Trans),N,K,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,PointerUtil.getPointer(beta),cPointer.getDevicePointer(),ldc);
         cPointer.copyToHost();
 
@@ -94,9 +93,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void ssyr2k(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasSsyr2k(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
 
@@ -104,9 +103,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, INDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
 
         JCublas2.cublasStrmm(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Side), OpUtil.getOp(Uplo), OpUtil.getOp(TransA), OpUtil.getOp(Diag), M, N, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
@@ -116,8 +115,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void strsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
-        CublasPointer aPointer = new CublasPointer(A);
-        CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
         JCublas2.cublasStrsm(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Side),OpUtil.getOp(Uplo),OpUtil.getOp(TransA),OpUtil.getOp(Diag),M,N,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,bPointer.getDevicePointer(),ldb);
         bPointer.copyToHost();
     }
@@ -144,9 +143,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         SimpleJCublas.sync();
 
 
-        @Cleanup CublasPointer cAPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cBPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(C);
+         CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(B);
+         CublasPointer cCPointer = new CublasPointer(C);
 
 
         JCublas2.cublasDgemm(
@@ -173,9 +172,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsymm(char Order, char Side, char Uplo, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasDsymm(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), M, N, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
 
@@ -183,8 +182,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsyrk(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, double beta, INDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasDsyrk(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Trans), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
 
@@ -192,9 +191,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dsyr2k(char Order, char Uplo, char Trans, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasDsyr2k(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
 
@@ -208,8 +207,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dtrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, double alpha, INDArray A, int lda, INDArray B, int ldb) {
-        CublasPointer aPointer = new CublasPointer(A);
-        CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
         JCublas2.cublasDtrsm(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Side), OpUtil.getOp(Uplo), OpUtil.getOp(TransA), OpUtil.getOp(Diag), M, N, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb);
         bPointer.copyToHost();
 
@@ -221,9 +220,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         cuComplex beta2 = cuComplex.cuCmplx(beta.realComponent().floatValue(), beta.imaginaryComponent().floatValue());
         //custom striding for blas doesn't work
 
-        @Cleanup CublasPointer cAPointer = new CublasPointer(A.ravel());
-        @Cleanup CublasPointer cBPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(C);
+         CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(B);
+         CublasPointer cCPointer = new CublasPointer(C);
 
 
         JCublas2.cublasCgemm(
@@ -249,35 +248,35 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void csymm(char Order, char Side, char Uplo, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasCsymm(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), M, N, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
     }
 
     @Override
     protected void csyrk(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexFloat beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasCsyrk(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Trans), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
     }
 
     @Override
     protected void csyr2k(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasCsyr2k(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
     }
 
     @Override
     protected void ctrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
 
         JCublas2.cublasCtrmm(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Side),OpUtil.getOp(Uplo),OpUtil.getOp(TransA),OpUtil.getOp(Diag),M,N,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,bPointer.getDevicePointer(),ldb,cPointer.getDevicePointer(),ldc);
         cPointer.copyToHost();
@@ -285,8 +284,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void ctrsm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
         JCublas2.cublasCtrsm(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Side),OpUtil.getOp(Uplo),OpUtil.getOp(TransA),OpUtil.getOp(Diag),M,N,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,bPointer.getDevicePointer(),ldb);
         bPointer.copyToHost();
     }
@@ -295,9 +294,9 @@ public class JcublasLevel3 extends BaseLevel3 {
     protected void zgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
         SimpleJCublas.sync();
 
-        @Cleanup CublasPointer cAPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cBPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(C);
+         CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(B);
+         CublasPointer cCPointer = new CublasPointer(C);
 
 
 
@@ -328,26 +327,26 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void zsymm(char Order, char Side, char Uplo, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasZsymm(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Order),OpUtil.getOp(Uplo),M,N,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,bPointer.getDevicePointer(),ldb,PointerUtil.getPointer(beta),cPointer.getDevicePointer(),ldc);
         cPointer.copyToHost();
     }
 
     @Override
     protected void zsyrk(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
-        JCublas2.cublasZsyrk(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Order),OpUtil.getOp(Trans),N,K,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,PointerUtil.getPointer(beta),cPointer.getDevicePointer(),ldc);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer cPointer = new CublasPointer(C);
+        JCublas2.cublasZsyrk(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Trans), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
     }
 
     @Override
     protected void zsyr2k(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasZsyr2k(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
 
@@ -355,9 +354,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void ztrmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
 
         JCublas2.cublasCtrmm(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Side),OpUtil.getOp(Uplo),OpUtil.getOp(TransA),OpUtil.getOp(Diag),M,N,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,bPointer.getDevicePointer(),ldb,cPointer.getDevicePointer(),ldc);
         cPointer.copyToHost();
@@ -375,9 +374,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void chemm(char Order, char Side, char Uplo, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasChemm(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), M, N, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
 
@@ -385,8 +384,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void cherk(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexFloat beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer cPointer = new CublasPointer(C);
 
         JCublas2.cublasCherk(
                 ContextHolder.getInstance().getHandle(),
@@ -406,9 +405,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void cher2k(char Order, char Uplo, char Trans, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasCher2k(ContextHolder.getInstance().getHandle(), OpUtil.getOp(Order), OpUtil.getOp(Uplo), N, K, PointerUtil.getPointer(alpha), aPointer.getDevicePointer(), lda, bPointer.getDevicePointer(), ldb, PointerUtil.getPointer(beta), cPointer.getDevicePointer(), ldc);
         cPointer.copyToHost();
 
@@ -417,9 +416,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void zhemm(char Order, char Side, char Uplo, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
         JCublas2.cublasZhemm(ContextHolder.getInstance().getHandle(),OpUtil.getOp(Order),OpUtil.getOp(Uplo),M,N,PointerUtil.getPointer(alpha),aPointer.getDevicePointer(),lda,bPointer.getDevicePointer(),ldb,PointerUtil.getPointer(beta),cPointer.getDevicePointer(),ldc);
         cPointer.copyToHost();
 
@@ -428,8 +427,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void zherk(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer cPointer = new CublasPointer(C);
 
         JCublas2.cublasZherk(
                 ContextHolder.getInstance().getHandle(),
@@ -449,9 +448,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void zher2k(char Order, char Uplo, char Trans, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        @Cleanup CublasPointer aPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bPointer = new CublasPointer(B);
-        @Cleanup CublasPointer cPointer = new CublasPointer(C);
+         CublasPointer aPointer = new CublasPointer(A);
+         CublasPointer bPointer = new CublasPointer(B);
+         CublasPointer cPointer = new CublasPointer(C);
 
         JCublas2.cublasZher2k(
                 ContextHolder.getInstance().getHandle(),

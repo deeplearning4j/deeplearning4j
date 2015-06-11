@@ -2,11 +2,13 @@ package org.nd4j.linalg.jblas.blas;
 
 import org.jblas.NativeBlas;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jblas.util.JblasComplex;
+import org.nd4j.linalg.util.Shape;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
 
@@ -21,8 +23,26 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
 public class JblasLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        DataBuffer aData = Shape.toOffsetZero(A).data();
+        DataBuffer bData = Shape.toOffsetZero(B).data();
+
         float[] cData = getFloatData(C);
-        NativeBlas.sgemm(TransA,TransB,M,N,K,alpha,getFloatData(A),getBlasOffset(A),lda,getFloatData(B),getBlasOffset(B),ldb,beta,cData,getBlasOffset(C),ldc);
+        NativeBlas.sgemm(
+                TransA
+                ,TransB
+                ,M
+                ,N,
+                K,
+                alpha
+                ,aData.asFloat()
+                ,0
+                ,lda,bData.asFloat()
+                ,0
+                ,ldb
+                ,beta
+                ,cData
+                ,0
+                ,ldc);
         setData(cData,C);
     }
 
@@ -57,8 +77,29 @@ public class JblasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        DataBuffer aData = A.offset() > 0 ? A.ravel().data() : A.data();
+        DataBuffer bData = B.offset() > 0 ? B.ravel().data() : B.data();
+
         double[] cData = getDoubleData(C);
-        NativeBlas.dgemm(TransA, TransB, M, N, K, alpha, getDoubleData(A), getBlasOffset(A), lda, getDoubleData(B), getBlasOffset(B), ldb, beta, cData, getBlasOffset(C), ldc);
+        NativeBlas.dgemm(
+                TransA
+                , TransB
+                , M
+                ,
+                N,
+                K,
+                alpha,
+                aData.asDouble()
+                ,getBlasOffset(A)
+                ,
+                lda,bData.asDouble()
+                , getBlasOffset(B)
+                , ldb
+                ,
+                beta
+                , cData
+                , getBlasOffset(C)
+                , ldc);
         setData(cData,C);
     }
 

@@ -851,9 +851,6 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         five.addi(five);
         INDArray twos = Nd4j.valueArrayOf(5, 2);
         assertEquals(twos, five);
-
-        INDArray twoByThree = Nd4j.linspace(1, 6, 6).reshape(2, 3);
-        Nd4j.getBlasWrapper().axpy(1, twoByThree, twoByThree);
     }
 
 

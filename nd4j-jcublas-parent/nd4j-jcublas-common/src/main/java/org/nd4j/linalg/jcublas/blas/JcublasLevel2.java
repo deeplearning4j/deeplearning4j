@@ -25,9 +25,9 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         SimpleJCublas.sync();
 
-        @Cleanup CublasPointer cAPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cBPointer = new CublasPointer(X);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(Y);
+         CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(X);
+         CublasPointer cCPointer = new CublasPointer(Y);
 
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
@@ -86,9 +86,9 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
         SimpleJCublas.sync();
 
-        @Cleanup CublasPointer cAPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cBPointer = new CublasPointer(X);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(Y);
+         CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(X);
+         CublasPointer cCPointer = new CublasPointer(Y);
 
         JCublas2.cublasDgemv(
                 ContextHolder.getInstance().getHandle(),
@@ -147,9 +147,9 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
         SimpleJCublas.sync();
 
-        @Cleanup CublasPointer cAPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cBPointer = new CublasPointer(X);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(Y);
+         CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(X);
+         CublasPointer cCPointer = new CublasPointer(Y);
 
 
         cuComplex alpha2 = cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue());
@@ -215,9 +215,9 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
         SimpleJCublas.sync();
 
-        @Cleanup  CublasPointer cAPointer = new CublasPointer(A);
-        @Cleanup CublasPointer cBPointer = new CublasPointer(X);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(Y);
+          CublasPointer cAPointer = new CublasPointer(A);
+         CublasPointer cBPointer = new CublasPointer(X);
+         CublasPointer cCPointer = new CublasPointer(Y);
 
 
         cuDoubleComplex alpha2 = cuDoubleComplex.cuCmplx(alpha.realComponent().doubleValue(), alpha.imaginaryComponent().doubleValue());
@@ -383,9 +383,9 @@ public class JcublasLevel2 extends BaseLevel2 {
     protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
 
         SimpleJCublas.sync();
-        @Cleanup CublasPointer xPointer = new CublasPointer(A);
-        @Cleanup CublasPointer yPointer = new CublasPointer(X);
-        @Cleanup CublasPointer aPointer = new CublasPointer(Y);
+         CublasPointer xPointer = new CublasPointer(A);
+         CublasPointer yPointer = new CublasPointer(X);
+         CublasPointer aPointer = new CublasPointer(Y);
 
 
         cuComplex alpha2 = cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue());
@@ -449,9 +449,9 @@ public class JcublasLevel2 extends BaseLevel2 {
         SimpleJCublas.sync();
         DataTypeValidation.assertDouble(A, X, Y);
 
-        @Cleanup CublasPointer aCPointer = new CublasPointer(A);
-        @Cleanup CublasPointer bCPointer = new CublasPointer(X);
-        @Cleanup CublasPointer cCPointer = new CublasPointer(Y);
+         CublasPointer aCPointer = new CublasPointer(A);
+         CublasPointer bCPointer = new CublasPointer(X);
+         CublasPointer cCPointer = new CublasPointer(Y);
 
         cuDoubleComplex alpha2 = cuDoubleComplex.cuCmplx(alpha.realComponent(), alpha.imaginaryComponent());
 
@@ -477,9 +477,9 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void zgerc(char order, int M, int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
         SimpleJCublas.sync();
-        @Cleanup CublasPointer xPointer = new CublasPointer(A);
-        @Cleanup CublasPointer yPointer = new CublasPointer(X);
-        @Cleanup CublasPointer aPointer = new CublasPointer(Y);
+         CublasPointer xPointer = new CublasPointer(A);
+         CublasPointer yPointer = new CublasPointer(X);
+         CublasPointer aPointer = new CublasPointer(Y);
 
 
         cuComplex alpha2 = cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue());

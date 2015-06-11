@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.blas;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.NDArrayFactory;
 
 /**
  * Blas buffer util for interopping with the underlying buffers
@@ -46,15 +47,7 @@ public class BlasBufferUtil {
             throw new IllegalArgumentException("Float data must be obtained from a float buffer");
 
         if(buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
-            if(buf.length() == buf.data().length() && buf.offset() == 0)
-                return buf.data().asFloat();
-            else {
-                INDArray linear = buf.linearView();
-                float[] ret = new float[buf.length()];
-                for(int i = 0; i < buf.length(); i++)
-                    ret[i] = linear.getFloat(i);
-                return ret;
-            }
+            return buf.data().asFloat();
         }
         else {
             float[] ret = new float[buf.length()];
@@ -79,15 +72,8 @@ public class BlasBufferUtil {
             throw new IllegalArgumentException("Double data must be obtained from a double buffer");
 
         if(buf.data().allocationMode() == DataBuffer.AllocationMode.HEAP) {
-            if(buf.length() == buf.data().length() && buf.offset() == 0)
-                return buf.data().asDouble();
-            else {
-                double[] ret = new double[buf.length()];
-                INDArray linear = buf.linearView();
-                for(int i = 0; i < buf.length(); i++)
-                    ret[i] = linear.getDouble(i);
-                return ret;
-            }
+            return buf.data().asDouble();
+
         }
         else {
             double[] ret = new double[buf.length()];
@@ -97,6 +83,18 @@ public class BlasBufferUtil {
             return ret;
 
         }
+    }
+
+
+    /**
+     * Returns the proper character for
+     * how to interpret a buffer (fortran being N C being T)
+     * @param arr the array to get the transpose for
+     * @return the character for transpose of a particular
+     * array
+     */
+    public static char getCharForTranspose(INDArray arr) {
+        return arr.ordering() == NDArrayFactory.FORTRAN ? 'N' : 'T';
     }
 
     /**

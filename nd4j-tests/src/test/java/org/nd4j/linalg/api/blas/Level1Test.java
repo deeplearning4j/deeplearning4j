@@ -18,7 +18,8 @@ public class Level1Test extends BaseNd4jTest {
 
         INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray row = matrix.getRow(1);
-        assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
+        double dot = Nd4j.getBlasWrapper().dot(row, row);
+        assertEquals(20,dot, 1e-1);
 
     }
 
