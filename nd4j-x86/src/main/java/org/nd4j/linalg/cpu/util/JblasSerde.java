@@ -17,11 +17,11 @@
  *
  */
 
-package org.nd4j.linalg.jblas.util;
+package org.nd4j.linalg.cpu.util;
 
 import org.jblas.DoubleMatrix;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.jblas.NDArray;
+import org.nd4j.linalg.cpu.NDArray;
 
 import java.io.DataInputStream;
 import java.io.IOException;

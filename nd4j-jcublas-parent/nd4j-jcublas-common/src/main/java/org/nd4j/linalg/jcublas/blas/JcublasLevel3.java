@@ -5,7 +5,6 @@ import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasOperation;
-import lombok.Cleanup;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -101,7 +100,7 @@ public class JcublasLevel3 extends BaseLevel3 {
     }
 
     @Override
-    protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb, INDArray C, int ldc) {
+    protected void strmm(char Order, char Side, char Uplo, char TransA, char Diag, int M, int N, float alpha, INDArray A, int lda, INDArray B, int ldb) {
          CublasPointer aPointer = new CublasPointer(A);
          CublasPointer bPointer = new CublasPointer(B);
          CublasPointer cPointer = new CublasPointer(C);

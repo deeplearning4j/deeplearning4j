@@ -138,7 +138,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
             dtrmm(Order,Side,Uplo,TransA,Diag,A.rows(),A.columns(),alpha,A,A.size(0),B,B.size(0));
         }
         else
-            strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0),C,C.size(0));
+            strmm(Order, Side, Uplo, TransA, Diag, A.rows(), A.columns(), (float) alpha, A, A.size(0), B, B.size(0));
 
     }
 
@@ -422,7 +422,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                                   char Uplo, char TransA,
                                   char Diag, int M, int N,
                                   float alpha, INDArray A, int lda,
-                                  INDArray B, int ldb, INDArray C, int ldc);
+                                  INDArray B, int ldb);
     protected abstract void strsm( char Order,  char Side,
                                    char Uplo,  char TransA,
                                    char Diag,  int M,  int N,

@@ -229,7 +229,7 @@ public class NetlibLevel1 extends BaseLevel1 {
 
     @Override
     protected void srot(int N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
-
+         throw new UnsupportedOperationException();
     }
 
     @Override
