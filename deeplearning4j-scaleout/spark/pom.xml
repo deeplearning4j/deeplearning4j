@@ -31,16 +31,8 @@
     <modules>
         <module>dl4j-spark</module>
         <module>dl4j-spark-nlp</module>
+        <module>dl4j-spark-ml</module>
     </modules>
-
-    <profiles>
-        <profile>
-            <id>spark-1.4</id>
-            <modules>
-                <module>dl4j-spark-ml</module>
-            </modules>
-        </profile>
-    </profiles>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
