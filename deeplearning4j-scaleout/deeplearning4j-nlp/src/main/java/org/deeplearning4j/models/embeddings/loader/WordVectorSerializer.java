@@ -138,7 +138,7 @@ public class WordVectorSerializer
      * @throws FileNotFoundException
      */
     private static Word2Vec readBinaryModel(File modelFile)
-        throws NumberFormatException, IOException, FileNotFoundException
+        throws NumberFormatException, IOException
     {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
