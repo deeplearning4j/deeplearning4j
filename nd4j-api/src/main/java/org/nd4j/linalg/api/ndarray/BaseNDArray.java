@@ -39,6 +39,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
@@ -2686,33 +2687,10 @@ public abstract class BaseNDArray implements INDArray {
             return subi(other.getDouble(0), result);
         }
         if (isScalar()) {
-            return other.rsubi(getDouble(0), result);
+            return other.subi(getDouble(0), result);
         }
 
-
-        if (result == this) {
-            if (data.dataType() == DataBuffer.Type.DOUBLE)
-                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
-            else
-                Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
-        } else if (result == other) {
-            if (data.dataType() == DataBuffer.Type.DOUBLE) {
-                Nd4j.getBlasWrapper().scal(-1.0, result);
-                Nd4j.getBlasWrapper().axpy(1.0, this, result);
-            } else {
-                Nd4j.getBlasWrapper().scal(-1.0f, result);
-                Nd4j.getBlasWrapper().axpy(1.0f, this, result);
-            }
-        } else {
-            if (data.dataType() == DataBuffer.Type.FLOAT) {
-                Nd4j.getBlasWrapper().copy(this, result);
-                Nd4j.getBlasWrapper().axpy(-1.0f, other, result);
-            } else {
-                Nd4j.getBlasWrapper().copy(this, result);
-                Nd4j.getBlasWrapper().axpy(-1.0, other, result);
-            }
-
-        }
+        Nd4j.getExecutioner().exec(new SubOp(linearView(), other.linearView(), result.linearView(), length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
