@@ -138,8 +138,7 @@ public class WordVectorSerializer
      * @throws FileNotFoundException
      */
     private static Word2Vec readBinaryModel(File modelFile)
-        throws NumberFormatException, IOException
-    {
+        throws NumberFormatException, IOException {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
         INDArray syn0;
@@ -193,7 +192,7 @@ public class WordVectorSerializer
      * @return
      * @throws IOException
      */
-    private static String readString(DataInputStream dis)
+    public static String readString(DataInputStream dis)
         throws IOException
     {
         byte[] bytes = new byte[MAX_SIZE];
@@ -225,8 +224,7 @@ public class WordVectorSerializer
      */
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache,
             String path)
-        throws IOException
-    {
+        throws IOException {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         for (int i = 0; i < lookupTable.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
@@ -317,8 +315,7 @@ public class WordVectorSerializer
      *            the given pair
      * @return a read only word vectors impl based on the given lookup table and vocab
      */
-    public static WordVectors fromPair(Pair<InMemoryLookupTable, VocabCache> pair)
-    {
+    public static WordVectors fromPair(Pair<InMemoryLookupTable, VocabCache> pair) {
         WordVectorsImpl vectors = new WordVectorsImpl();
         vectors.setLookupTable(pair.getFirst());
         vectors.setVocab(pair.getSecond());
@@ -334,8 +331,7 @@ public class WordVectorSerializer
      * @throws FileNotFoundException if the file does not exist
      */
     public static WordVectors loadTxtVectors(File vectorsFile)
-        throws FileNotFoundException
-    {
+        throws FileNotFoundException {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectorsFile);
         return fromPair(pair);
     }
@@ -349,8 +345,7 @@ public class WordVectorSerializer
      * @throws FileNotFoundException
      */
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
-        throws FileNotFoundException
-    {
+        throws FileNotFoundException {
         BufferedReader write = new BufferedReader(new FileReader(vectorsFile));
         VocabCache cache = new InMemoryLookupCache();
 
