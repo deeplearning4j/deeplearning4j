@@ -44,23 +44,23 @@ Please review the examples at [deeplearning4j/dl4j-spark-ml-examples](https://gi
 
 Spark ML supports operating on a variety of data sources through the DataFrame interface.  Load your data into a DataFrame by any means, including:
 
-1. Use a built-in data source, such as Parquet, JSON, JDBC, or Hive.  See [the documentation](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/sql-programming-guide.html#data-sources).
+1. Use a built-in data source, such as Parquet, JSON, JDBC, or Hive.  See [the documentation](http://spark.apache.org/docs/latest/sql-programming-guide.html#data-sources).
 2. Develop a Spark SQL relation provider.  See the [announcement](https://databricks.com/blog/2015/01/09/spark-sql-data-sources-api-unified-data-access-for-the-spark-platform.html), the [Iris relation](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml/src/main/scala/org/deeplearning4j/spark/sql/sources/iris), and the [LFW relation](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark/dl4j-spark-ml/src/main/scala/org/deeplearning4j/spark/sql/sources/lfw).  More information will be available soon.
 
 Data may be loaded from any Hadoop-compatible filesystem.  *We recommend that you load datasets from HDFS rather than from the local filesystem.*
 
 #### Data Types
-The DL4J pipeline components expect feature data to be provided as an ML column of [Vectors](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.mllib.linalg.Vectors$).   The data should be normalized; consider using [StandardScaler](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.ml.feature.StandardScaler) in your pipeline.
+The DL4J pipeline components expect feature data to be provided as an ML column of [Vectors](http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.mllib.linalg.Vectors$).   The data should be normalized; consider using [StandardScaler](http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.ml.feature.StandardScaler) in your pipeline.
 
-In supervised learning scenarios, labels are expected to be provided as an ML column of label indices.   Consider using [StringIndexer](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.ml.feature.StringIndexer) in your pipeline.
+In supervised learning scenarios, labels are expected to be provided as an ML column of label indices.   Consider using [StringIndexer](http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.ml.feature.StringIndexer) in your pipeline.
 
 ### ML Algorithms
 Spark ML standardizes APIs for machine learning algorithms (see the appendix).  The `dl4j-spark-ml` library provides a number of transformers to include in an ML pipeline.
 
-Most deeplearning4j neural network-based algorithms may be used with Spark ML.   Simply provide an instance of `org.deeplearning4j.nn.conf.MultiLayerConfiguration` as a parameter to the transformer.   Visit [deeplearning4j.org](deeplearning4j.org) for more information on the core functionality.
+Most deeplearning4j neural network-based algorithms may be used with Spark ML.   Simply provide an instance of `org.deeplearning4j.nn.conf.MultiLayerConfiguration` as a parameter to the transformer.   Visit [deeplearning4j.org](http://deeplearning4j.org) for more information on the core functionality.
 
 #### Classification
-For supervised classification scenarios, use `o.d.spark.ml.classification.NeuralNetworkClassification` as a pipeline component.  Extends [Classifier](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/api/scala/index.html#org.apache.spark.ml.classification.Classifier) and supports multi-class labels.
+For supervised classification scenarios, use `o.d.spark.ml.classification.NeuralNetworkClassification` as a pipeline component.  Extends [Classifier](http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.ml.classification.Classifier) and supports multi-class labels.
 
 The following pipeline parameters are provided:
 
@@ -90,10 +90,10 @@ The following pipeline parameters are provided:
 When configuring the neural network, ensure that the # of input columns on the input layer matches the expected size of the feature vector.  
 
 ### Evaluation
-Spark ML provides a standardized evaluation API for scoring and model selection.   See the [Programming Guide](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/ml-guide.html#example-model-selection-via-cross-validation) for more information.
+Spark ML provides a standardized evaluation API for scoring and model selection.   See the [Programming Guide](http://spark.apache.org/docs/latest/ml-guide.html#example-model-selection-via-cross-validation) for more information.
 
 ## Appendix: Spark Concepts
-Spark ML introduces a new API for machine learning based on powerful Spark SQL abstractions.  Please read the [Spark ML Programming Guide](http://people.apache.org/~pwendell/spark-releases/spark-1.4.0-rc4-docs/ml-guide.html) for more information.
+Spark ML introduces a new API for machine learning based on powerful Spark SQL abstractions.  Please read the [Spark ML Programming Guide](http://spark.apache.org/docs/latest/ml-guide.html) for more information.
 
 ### DataFrame
 A DataFrame is a distributed collection of data organized into named columns, with an associated schema.   Under the hood, a data frame has an associated `RDD[Row]`. Through the familiar RDD transformation process, columns may be added to and deleted from derived data frames.  
