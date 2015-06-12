@@ -332,9 +332,8 @@ public class RNTN implements Layer {
         binary.put(indices,block);
         NDArrayIndex[] indices2 = new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
         binary.put(indices2,randomTransformBlock());
-        if(binary.data().dataType() == DataBuffer.Type.DOUBLE)
-            return Nd4j.getBlasWrapper().scal(scalingForInit,binary);
-        return Nd4j.getBlasWrapper().scal((float) scalingForInit,binary);
+        Nd4j.getBlasWrapper().level1().scal(binary.length(),scalingForInit,binary);
+        return binary;
     }
 
     public INDArray randomTransformBlock() {
@@ -352,10 +351,8 @@ public class RNTN implements Layer {
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
         INDArray insert = Nd4j.rand(numOuts, numHidden, -range, range, rng);
         ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
-        if(ret.data().dataType() == (DataBuffer.Type.DOUBLE))
-            return Nd4j.getBlasWrapper().scal(scalingForInit,ret);
-        return Nd4j.getBlasWrapper().scal((float) scalingForInit, ret);
-
+        Nd4j.getBlasWrapper().level1().scal(ret.length(), scalingForInit, ret);
+        return ret;
     }
 
     /**
@@ -486,10 +483,8 @@ public class RNTN implements Layer {
         INDArray Wt_df = Nd4j.create(size,size * 2, size*2);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; slice++) {
-            if(Wt_df.data().dataType() == DataBuffer.Type.DOUBLE)
-                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getDouble(0),fullVector).mmul(fullVector.transpose()));
-            else
-                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getScalar(slice).getFloat(0),fullVector).mmul(fullVector.transpose()));
+            Nd4j.getBlasWrapper().level1().scal(deltaFull.length(), deltaFull.getScalar(slice).getFloat(0), fullVector);
+            Wt_df.putSlice(slice, fullVector.mmul(fullVector.transpose()));
 
         }
         return Wt_df;
@@ -843,10 +838,8 @@ public class RNTN implements Layer {
         INDArray Wt_df = Nd4j.create(size * 2, size * 2, size);
         INDArray fullVector = Nd4j.concat(0,leftVector, rightVector);
         for (int slice = 0; slice < size; ++slice) {
-            if(Wt_df.data().dataType() == DataBuffer.Type.DOUBLE)
-                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal(deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
-            else
-                Wt_df.putSlice(slice, Nd4j.getBlasWrapper().scal((float) deltaFull.getDouble(slice),fullVector).mmul(fullVector.transpose()));
+            Nd4j.getBlasWrapper().level1().scal(fullVector.length(),deltaFull.getDouble(slice),fullVector);
+            Wt_df.putSlice(slice, fullVector.mmul(fullVector.transpose()));
 
         }
         return Wt_df;
