@@ -3765,7 +3765,8 @@ public abstract class BaseNDArray implements INDArray {
 
 
     /**
-     * Get whole columns from the passed indices.
+     * Get whole columns
+     * from the passed indices.
      *
      * @param cindices
      */

@@ -98,6 +98,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
+
+
     @Test
     public void testRepmat() {
         INDArray rowVector = Nd4j.create(1,4);
