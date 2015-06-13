@@ -1726,7 +1726,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     protected IComplexNDArray create(DataBuffer buffer) {
-        return Nd4j.createComplex(buffer, new int[]{1, buffer.length()});
+        return Nd4j.createComplex(buffer, new int[]{1, (int) buffer.length()});
     }
 
 

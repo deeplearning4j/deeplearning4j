@@ -73,6 +73,8 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
     }
 
+
+
     @Test
     public void testSerialization() {
         DataBuffer buf = Nd4j.createBuffer(5);

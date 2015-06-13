@@ -106,7 +106,7 @@ public abstract class BaseNDArray implements INDArray {
 
     public BaseNDArray(DataBuffer buffer) {
         this.data = buffer;
-        init(new int[]{1, buffer.length()});
+        init(new int[]{1, (int) buffer.length()});
     }
 
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
@@ -321,7 +321,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     public BaseNDArray(DataBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{floatBuffer.length()}, Nd4j.getStrides(new int[]{floatBuffer.length()}), 0, order);
+        this(floatBuffer, new int[]{(int) floatBuffer.length()}, Nd4j.getStrides(new int[]{(int) floatBuffer.length()}), 0, order);
     }
 
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] strides) {
@@ -1957,7 +1957,7 @@ public abstract class BaseNDArray implements INDArray {
         int idx = linearIndex(i);
         if (idx >= data.length())
             throw new IllegalArgumentException("Illegal indices " + i);
-        return createScalar(data.getDouble(idx));
+        return createScalarForIndex(idx,false);
     }
 
     protected void assertColumnVector(INDArray column) {
@@ -2879,7 +2879,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray slice(int slice) {
         if (shape.length == 0) {
             if(slice == 0)
-                return createScalar(getDouble(0));
+                return createScalarForIndex(slice,true);
             else
                 throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
@@ -2900,20 +2900,20 @@ public abstract class BaseNDArray implements INDArray {
 
         //slice of a matrix is a vector
         if(isRowVector())
-            return createScalar(getDouble(slice));
+            return createScalarForIndex(slice,true);
 
         else {
             int offset = calcoffset(slice);
             if (size(0) == 1) {
                 INDArray slice2 = create(data,
                         Arrays.copyOfRange(shape, 1, shape.length),
-                        sliceStride(slice),
+                        sliceStride(),
                         offset, ordering);
                 return slice2;
             } else {
                 if(ordering() == NDArrayFactory.FORTRAN) {
                     int[] sliceShape =  Arrays.copyOfRange(shape, 1, shape.length);
-                    int[] retStride = sliceStride(slice);
+                    int[] retStride = sliceStride();
                     //enforce 1 x m
                     if(Shape.isRowVectorShape(sliceShape)) {
                         sliceShape = new int[] {1,sliceShape[0]};
@@ -2928,7 +2928,7 @@ public abstract class BaseNDArray implements INDArray {
                 }
                 else {
                     int[] sliceShape =  Arrays.copyOfRange(shape, 1, shape.length);
-                    int[] retStride = sliceStride(slice);
+                    int[] retStride = sliceStride();
                     //enforce 1 x m
                     if(Shape.isRowVectorShape(sliceShape)) {
                         sliceShape = new int[] {1,sliceShape[0]};
@@ -2951,12 +2951,16 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
+    protected INDArray createScalarForIndex(int i,boolean applyOffset) {
+        return Nd4j.create(data(),new int[]{1,1},new int[]{1,1},applyOffset ? offset + i : i);
+    }
+
     protected INDArray createScalar(double d) {
         return Nd4j.scalar(d);
     }
 
 
-    public int[] sliceStride(int slice) {
+    public int[] sliceStride() {
         if(hasOneStride() && ordering() == NDArrayFactory.FORTRAN) {
             int[] ret = new int[stride.length - 1];
             Arrays.fill(ret,1);
@@ -3053,7 +3057,7 @@ public abstract class BaseNDArray implements INDArray {
         if (ix >= data.length())
             throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
 
-        return createScalar(data.getDouble(ix));
+        return createScalarForIndex(ix,false);
     }
 
     @Override
@@ -3618,7 +3622,7 @@ public abstract class BaseNDArray implements INDArray {
             return vectorAlongDimension(c,0);
 
         else if (isRowVector()) {
-            return createScalar(getDouble(c));
+            return createScalarForIndex(c,true);
         } else if (isColumnVector() && c == 0)
             return this;
 
@@ -3794,7 +3798,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if (shape.length == 2) {
             if (isColumnVector())
-                return createScalar(getDouble(r));
+                return createScalarForIndex(r,true);
             return vectorAlongDimension(r,1);
         }
 

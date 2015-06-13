@@ -195,7 +195,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         modified.set(true);
         if (dataType() == DataBuffer.Type.FLOAT) {
             JCublas2.cublasSetVector(
-                    length(),
+                    (int) length(),
                     getElementSize(),
                     PointerUtil.getPointer(CudaComplexConversion.toComplex(result.asFloat()))
                     , 1
@@ -204,7 +204,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
         else {
             JCublas2.cublasSetVector(
-                    length(),
+                    (int) length(),
                     getElementSize(),
                     PointerUtil.getPointer(CudaComplexConversion.toComplexDouble(result.asDouble()))
                     , 1
@@ -305,7 +305,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if (dataType() == DataBuffer.Type.DOUBLE) {
             JCublas2.cublasDcopy(
                     ContextHolder.getInstance().getHandle(),
-                    length(),
+                    (int) length(),
                     pointer,
                     1,
                     getHostPointer(),
@@ -314,7 +314,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         } else {
             JCublas2.cublasScopy(
                     ContextHolder.getInstance().getHandle(),
-                    length(),
+                    (int) length(),
                     pointer,
                     1,
                     getHostPointer(),

@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.buffer;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -35,7 +34,6 @@ import java.nio.*;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Base class for a data buffer
@@ -620,7 +618,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
-    public void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers) {
+    public void assign(int[] offsets, int[] strides, long n, DataBuffer... buffers) {
         if (offsets.length != strides.length || strides.length != buffers.length)
             throw new IllegalArgumentException("Unable to assign buffers, please specify equal lengths strides, offsets, and buffers");
         int length = 0;
@@ -696,13 +694,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
             Type t = Type.valueOf(s.readUTF());
             if(t == Type.DOUBLE) {
                 if(allocationMode == AllocationMode.HEAP) {
-                    floatData = new float[length()];
+                    floatData = new float[(int) length()];
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readDouble());
                     }
                 }
                 else {
-                    dataBuffer = Unpooled.buffer(length() * getElementSize()).order(ByteOrder.nativeOrder());
+                    dataBuffer = Unpooled.buffer((int) length() * getElementSize()).order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readDouble());
                     }
@@ -710,13 +708,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
             else {
                 if(allocationMode == AllocationMode.HEAP) {
-                    doubleData = new double[length()];
+                    doubleData = new double[(int) length()];
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
                     }
                 }
                 else {
-                    dataBuffer = Unpooled.buffer(length() * getElementSize()).order(ByteOrder.nativeOrder());
+                    dataBuffer = Unpooled.buffer((int) length() * getElementSize()).order(ByteOrder.nativeOrder());
                     for(int i = 0; i < length(); i++) {
                         put(i,s.readFloat());
                     }
@@ -732,7 +730,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void doWriteObject(java.io.ObjectOutputStream out) throws IOException {
         out.defaultWriteObject();
         out.writeUTF(allocationMode.name());
-        out.writeInt(length());
+        out.writeLong(length());
         out.writeUTF(dataType().name());
         if(dataType() == Type.DOUBLE) {
             for(int i = 0; i < length(); i++)
