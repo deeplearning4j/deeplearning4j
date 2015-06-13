@@ -9,12 +9,13 @@ Contents
 
 * <a href="#intro">Introduction</a>
 * <a href="#anatomy">Anatomy of Word2Vec</a>
-* <a href="#code">Training</a>
+* <a href="#train">Training</a>
 * <a href="#windows">Moving Windows</a>
 * <a href="#grams">N-grams & Skip-grams</a>
 * <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#code">A Code Example</a>
+* <a href="#use">A Use Case</a>
 * <a href="#next">Next Steps</a>
 * <a href="#patent">Word2vec Patent</a>
 * <a href="#foreign">Foreign Languages</a>
@@ -52,7 +53,7 @@ What do we talk about when we talk about Word2vec? Deeplearning4j's natural-lang
 
 Briefly, a two-layer neural net is trained with <a href="../glossary.html#downpoursgd">Gradient Descent</a>. The connection weights for the neural net are of a specified size. <em>syn0</em> in Word2vec terms is the wordvector lookup table, <em>syn1</em> is the activation, and a hierarchical Softmax trains on the two-layer net to calculate the likelihoods of various words being near one another. The Word2vec implementation here uses <a href="../glossary.html#skipgram">skipgrams</a>.
 
-## <a name="code">Training</a> 
+## <a name="train">Training</a> 
 
 Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table to compose windows of training text for various tasks in natural-language processing.
 
@@ -71,7 +72,7 @@ You can then use Word2vec as a lookup table in the following way:
 
 If the word isn't in the vocabulary, Word2vec returns zeros -- nothing more.
 
-###<a name="windows">Windows</a>
+###<a name="windows">Moving Windows</a>
 
 Word2Vec works with neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
 
@@ -272,6 +273,12 @@ Now that you have a basic idea of how to set up Word2Vec, here's one example of 
 There are a couple parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after WindowSize. The second is the number of nodes contained in the layer, which you'll enter after LayerSize. Those two numbers will be multiplied to obtain the number of inputs. 
 
 Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](../deepautoencoder.html). For sentence parsing and other NLP tasks, we also have an implementation of [recursive neural tensor networks](../recursiveneuraltensornetwork.html).
+
+###<a name="use">A Use Case</a>
+
+Kenny Helsens, a data scientist based in the Netherlands, [applied Deeplearning4j's implementation of Word2vec](thinkdata.be/2015/06/10/word2vec-on-raw-omim-database/) to the NCBI's Online Mendelian Inheritance In Man (OMIM) database. He then looked for the words most similar to alk, a known oncogene of non-small cell lung carcinoma, and Word2vec returned: "nonsmall, carcinomas, carcinoma, mapdkd." From there, he established analogies between other cancer phenotypes and their genotypes. This is just one example of the associations Word2vec can learn on a large corpus. The potential for discovering new aspects of important diseases has only just begun, and outside of medicine, the opportunities are equally diverse.
+
+Marketers might seek to establish relationships among products to build a recommendation engine. Investigators might analyze a social graph to surface members of a single group, or other relations they might have to location or financial sponsorship. The applications are inexhaustible. 
 
 ### <a name="next">Next Steps</a>
 
