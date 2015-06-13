@@ -398,7 +398,7 @@ public class FilterRenderer {
             saveImageToDisk( img, filename );
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             if(!ge.isHeadlessInstance()) {
-                log.info("Rendering frame...");
+                log.info("Rendering filter images...");
                 JFrame frame = new JFrame();
                 frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
