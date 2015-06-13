@@ -53,8 +53,6 @@ import org.slf4j.LoggerFactory;
  */
 public class FilterRenderer {
 
-
-
     public  JFrame frame;
     BufferedImage img;
     private int width = 28;
@@ -63,7 +61,6 @@ public class FilterRenderer {
     private int heightOffset = 0;
     private int widthOffset = 0;
     private static final Logger log = LoggerFactory.getLogger(FilterRenderer.class);
-
 
 
     public FilterRenderer() { }
@@ -201,14 +198,10 @@ public class FilterRenderer {
             }
         }
 
-
         return mapHistory;
 
 
     }
-
-
-
 
 
     /**
@@ -286,15 +279,11 @@ public class FilterRenderer {
             g2d.setColor(Color.BLACK);
             g2d.drawString("" + curLabel, 10, curY );
 
-
         }
-
 
         int xPos = xOffset;
 
         for (Integer key : mapHistory.keySet()) {
-
-
 
             long value = mapHistory.get(key);
 
@@ -318,15 +307,11 @@ public class FilterRenderer {
             xPos += barWidth + 10;
         }
 
-
-
         try {
             saveImageToDisk( img, filename );
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
 
         g2d.dispose();
 
@@ -347,11 +332,7 @@ public class FilterRenderer {
 
         int[] equiv = new int[ data.length()  ];
 
-
-
         int numberCols = data.columns();
-
-
 
         double approx = (double) numberCols / (double) patchesPerRow;
         int numPatchRows = (int) Math.round(approx);
@@ -363,31 +344,24 @@ public class FilterRenderer {
         int filterImgWidth = ( patchWidth + patchBorder ) * patchesPerRow;
         int filterImgHeight = numPatchRows * (patchHeight + patchBorder);
 
-
         img = new BufferedImage( filterImgWidth, filterImgHeight, BufferedImage.TYPE_BYTE_GRAY);
         WritableRaster r = img.getRaster();
 
-
         // for each hidden neuron
-
         // plot the learned filter (same dim as the input data)
-
-
-        outer:  for ( int col = 0; col < data.columns(); col++ ) {
+        outer:
+        for ( int col = 0; col < numberCols; col++ ) {
             int curX = (col % patchesPerRow ) * (patchWidth + patchBorder );
             int curY = col / patchesPerRow * ( patchHeight + patchBorder );
 
             INDArray column = data.getColumn(col);
 
-            double col_max =  column.min(Integer.MAX_VALUE).getDouble(0);
-            double col_min =  column.max(Integer.MAX_VALUE).getDouble(0);
+            double col_min =  column.min(Integer.MAX_VALUE).getDouble(0);
+            double col_max =  column.max(Integer.MAX_VALUE).getDouble(0);
 
-            // now reshape the column into the shape of the filter patch
-
-
+            // reshape the column into the shape of the filter patch
             // render the filter patch
-
-            log.debug("rendering " + column.length() + " pixels in column " + col + " for filter patch " + patchWidth + " x " + patchHeight + ", total size: " + (patchWidth * patchHeight) + " at " + curX );
+            log.debug("Rendering " + column.length() + " pixels in column " + col + " for filter patch " + patchWidth + " x " + patchHeight + ", total size: " + (patchWidth * patchHeight) + " at " + curX );
 
             for (int i = 0; i < column.length(); i++) {
 
@@ -397,8 +371,6 @@ public class FilterRenderer {
 
             }
 
-
-
             // now draw patch to raster image
             boolean outOfBounds = false;
             if(curX >= filterImgWidth) {
@@ -407,6 +379,7 @@ public class FilterRenderer {
                 break outer;
 
             }
+
             if(curY >= filterImgHeight) {
                 curY = filterImgHeight - 1;
                 outOfBounds = true;
@@ -425,7 +398,7 @@ public class FilterRenderer {
             saveImageToDisk( img, filename );
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             if(!ge.isHeadlessInstance()) {
-                log.info("Rendering frame...");
+                log.info("Rendering filter images...");
                 JFrame frame = new JFrame();
                 frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
