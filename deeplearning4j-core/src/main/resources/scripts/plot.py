@@ -1,118 +1,111 @@
-from numpy import tanh, fabs, mean, ones,loadtxt,fromfile,zeros,product
-import sys
 import math
+from matplotlib.pyplot import hist, title, subplot, scatter
+import matplotlib.pyplot as plt
+import numpy as np
 from PIL import Image
-from matplotlib.pyplot import hist, title, subplot,scatter
-import matplotlib.pyplot as plot
+import seaborn # improves matplotlib look and feel
+import sys
+import time
 
-from mpltools import style, layout
-style.use('ggplot')
+'''
+Optimization Methods Visualalization
 
-def sigmoid(xx):
-    return .5 * (1 + tanh(xx / 2.))
+Graph tools to help visualize how optimization is performing
+'''
 
 
+def load_file(path):
+    return np.loadtxt(path, delimiter=',')
 
-def from_file(path):
-    return loadtxt(path,delimiter=',')
-    
-def hist_matrix(values,show = True,chart_title = ''):
-    if product(values.shape) < 2:
-      values = zeros((3,3))
-      chart_title += '-fake'
 
-    hist(values)
-    magnitude = ' mm %g ' % mean(fabs(values))
+def sigmoid(hidden_mean):
+    # return .5 * (1 + tanh(xx / 2.))
+    return 1 / (1 + np.exp(-hidden_mean))
+
+
+def render_plot(values, plot_type='histogram', chart_title=''):
+    if np.product(values.shape) < 2:
+        values = np.zeros((3, 3))
+        chart_title += '-fake'
+
+    if plot_type == 'histogram':
+        hist(values)
+    elif "scatter":
+        scatter(values)
+    else:
+        print "The " + plot_type + " format is not supported. Please choose histogram or scatter."
+    magnitude = ' mm %g ' % np.mean(np.fabs(values))
     chart_title += ' ' + magnitude
     title(chart_title)
-    
-def scatter_matrix(values,show = True,chart_title = ''):
-    if product(values.shape) < 2:
-      values = zeros((3,3))
-      chart_title += '-fake'
-
-    scatter(values)
-    magnitude = ' mm %g ' % mean(fabs(values))
-    chart_title += ' ' + magnitude
-    title(chart_title)
-
-def render_hbias(path):
-    hMean = from_file(path)
-    image = Image.fromarray(hMean * 256).show()
 
 
+def render_activation_probability(dataPath, filename):
+    hidden_mean = load_file(dataPath)
+    # Should sigmoid be moved earlier?
+    img = Image.fromarray(sigmoid(hidden_mean) * 256)
+    img.save(filename, 'PNG')
+    time.sleep(15)
+    img.show()
+    time.sleep(15)
+    img.close()
 
-def plot_multiple_scatters(paths):
-    graph_count = 1
-    print paths
-    for i  in xrange(len(paths) - 1):
-        if i % 2 == 0:
-            path = paths[i]
-            title = paths[i + 1]
-            print 'Loading matrix ' + path + '\n'
-            matrix = from_file(path)
-            subplot(2,len(paths) / 3,graph_count)
-            plot.tight_layout()
-            scatter_matrix(matrix,False,chart_title=title)
-            graph_count+= 1
+def plot_matrices(orig_path, plot_type, filename):
+    paths = orig_path.split(',')
 
+    for idx, path in enumerate(paths):
+        if idx % 2 == 0:
+            title = paths[idx + 1]
+            print 'Loading matrix ' + title + '\n'
+            matrix = load_file(path)
+            subplot(2, len(paths)/4, idx/2+1)
+            render_plot(matrix, plot_type, chart_title=title)
 
-    plot.show()
-
-
-def plot_multiple_matrices(paths):
-    graph_count = 1
-    print paths
-    for i  in xrange(len(paths) - 1):
-        if i % 2 == 0:
-            path = paths[i]
-            title = paths[i + 1]
-            print 'Loading matrix ' + path + '\n'
-            matrix = from_file(path)
-            subplot(2,len(paths) / 3,graph_count)
-            plot.tight_layout()
-            hist_matrix(matrix,False,chart_title=title)
-            graph_count+= 1
+    plt.tight_layout()
+    plt.savefig(filename, format='png')
+    plt.show(block=False)
+    time.sleep(15)
+    plt.close()
 
 
-    plot.show()    
+# TODO Finish adapting. Code still does not fully run through.
+def render_filter(data_path, n_rows, n_cols, filename):
+    weight_data = load_file(data_path).reshape((n_rows, n_cols))
+    patch_width = weight_data.shape[1]
+    patch_height = 1
 
-def render_filter(path,nRows,nCols,data_length):
-    X = from_file(path)
-    data = math.sqrt(nRows)
-    print 'data ' + str(data)
     # Initialize background to dark gray
-    tiled = ones((data*nRows, data*nCols), dtype='uint8') * 51
-    for row in xrange(nRows):
-         for col in xrange(nCols):
-            curr_neuron = col
-            patch = X[:,curr_neuron].reshape((data,data))
-            normPatch = ((patch - patch.min()) /
-            (patch.max()-patch.min()+1e-6))
-            tiled[row*data:row*data+data, col*data:col*data+data] = normPatch * 255
-    Image.fromarray(tiled).show()
+    filter_frame = np.ones((n_rows*patch_width, n_cols * patch_height), dtype='uint8')
+
+    for row in xrange(int(n_rows/n_cols)):
+        for col in xrange(n_cols):
+            patch = weight_data[row * n_cols + col].reshape((patch_width, patch_height))
+            norm_patch = ((patch - patch.min()) / (patch.max() - patch.min() + 1e-6))
+            filter_frame[row * patch_width: row * patch_width + patch_width,
+                  col * patch_height:col * patch_height + patch_height] = norm_patch * 255
+    img = Image.fromarray(filter_frame)
+    img.savefig(filename)
+    img.show()
+
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 4:
        print 'Please specify a command: One of hbias,weights,plot and a file path'
        sys.exit(1)
-    
-    if sys.argv[1] == 'hbias':
-        render_hbias(sys.argv[2])
-    elif sys.argv[1] == 'weights':
-        hist_matrix(sys.argv[2])
-    elif sys.argv[1] == 'filter':
-        nRows = int(sys.argv[3])
-        nCols = int(sys.argv[4])
-        length = int(sys.argv[5])
-        print 'Rendering ' + sys.argv[3] + ' x ' + sys.argv[4] + ' matrix'
-        render_filter(sys.argv[2],nRows,nCols,length)
-    elif sys.argv[1] == 'multi':
-        paths = sys.argv[2].split(',')
-        plot_multiple_matrices(paths)
-    elif sys.argv[1] == 'scatter':
-        paths = sys.argv[2].split(',')
-        plot_multiple_matrices(paths)
+    plot_type = sys.argv[1]
+    path = sys.argv[2]
+    filename = sys.argv[3]
 
-        
-        
+    if plot_type == 'activations':
+        render_activation_probability(path, filename)
+    elif plot_type == 'single_matrix':
+        render_plot(path)
+    elif plot_type == 'histogram':
+        plot_matrices(path, plot_type, filename)
+    elif plot_type == 'scatter':
+        plot_matrices(path, plot_type, filename)
+    elif sys.argv[1] == 'filter':
+        n_rows = int(sys.argv[4])
+        n_cols = int(sys.argv[5])
+        length = int(sys.argv[6])
+        print 'Rendering ' + sys.argv[3] + ' x ' + sys.argv[4] + ' matrix'
+        render_filter(path, n_rows, n_cols, length, filename)
