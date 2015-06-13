@@ -3,8 +3,9 @@ from matplotlib.pyplot import hist, title, subplot, scatter
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-import seaborn
+import seaborn # improves matplotlib look and feel
 import sys
+import time
 
 '''
 Optimization Methods Visualalization
@@ -38,13 +39,17 @@ def render_plot(values, plot_type='histogram', chart_title=''):
     title(chart_title)
 
 
-def render_activation_probability(dataPath):
+def render_activation_probability(dataPath, filename):
     hidden_mean = load_file(dataPath)
     # Should sigmoid be moved earlier?
-    Image.fromarray(sigmoid(hidden_mean) * 256).show()
+    img = Image.fromarray(sigmoid(hidden_mean) * 256)
+    img.save(filename, 'PNG')
+    time.sleep(15)
+    img.show()
+    time.sleep(15)
+    img.close()
 
-
-def plot_matrices(orig_path, plot_type=''):
+def plot_matrices(orig_path, plot_type, filename):
     paths = orig_path.split(',')
 
     for idx, path in enumerate(paths):
@@ -56,12 +61,14 @@ def plot_matrices(orig_path, plot_type=''):
             render_plot(matrix, plot_type, chart_title=title)
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig(filename, format='png')
+    plt.show(block=False)
+    time.sleep(15)
+    plt.close()
+
 
 # TODO Finish adapting. Code still does not fully run through.
-# FilterRender produces a result for now
-# Goal is to consolidate these into a common script
-def render_filter(data_path, n_rows, n_cols):
+def render_filter(data_path, n_rows, n_cols, filename):
     weight_data = load_file(data_path).reshape((n_rows, n_cols))
     patch_width = weight_data.shape[1]
     patch_height = 1
@@ -75,27 +82,30 @@ def render_filter(data_path, n_rows, n_cols):
             norm_patch = ((patch - patch.min()) / (patch.max() - patch.min() + 1e-6))
             filter_frame[row * patch_width: row * patch_width + patch_width,
                   col * patch_height:col * patch_height + patch_height] = norm_patch * 255
-    Image.fromarray(filter_frame).show()
+    img = Image.fromarray(filter_frame)
+    img.savefig(filename)
+    img.show()
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 4:
        print 'Please specify a command: One of hbias,weights,plot and a file path'
        sys.exit(1)
     plot_type = sys.argv[1]
     path = sys.argv[2]
+    filename = sys.argv[3]
 
     if plot_type == 'activations':
-        render_activation_probability(path)
+        render_activation_probability(path, filename)
     elif plot_type == 'single_matrix':
         render_plot(path)
     elif plot_type == 'histogram':
-        plot_matrices(path, plot_type)
+        plot_matrices(path, plot_type, filename)
     elif plot_type == 'scatter':
-        plot_matrices(path, plot_type)
+        plot_matrices(path, plot_type, filename)
     elif sys.argv[1] == 'filter':
-        n_rows = int(sys.argv[3])
-        n_cols = int(sys.argv[4])
-        length = int(sys.argv[5])
+        n_rows = int(sys.argv[4])
+        n_cols = int(sys.argv[5])
+        length = int(sys.argv[6])
         print 'Rendering ' + sys.argv[3] + ' x ' + sys.argv[4] + ' matrix'
-        render_filter(path, n_rows, n_cols, length)
+        render_filter(path, n_rows, n_cols, length, filename)
