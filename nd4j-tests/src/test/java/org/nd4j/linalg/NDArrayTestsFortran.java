@@ -98,6 +98,26 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testColumnMmul() {
+        DataBuffer data = Nd4j.linspace(1, 10, 18).data();
+        INDArray x2 = Nd4j.create(data, new int[]{2,3,3});
+        data = Nd4j.linspace(1, 12, 9).data();
+        INDArray y2 = Nd4j.create(data, new int[]{3,3});
+        INDArray z2 = Nd4j.create(3,2);
+        z2.putColumn(0, y2.getColumn(0));
+        z2.putColumn(1, y2.getColumn(1));
+        INDArray nofOffset = Nd4j.create(3,3);
+        nofOffset.assign(x2.slice(0));
+        assertEquals(nofOffset,x2.slice(0));
+
+        INDArray slice = x2.slice(0);
+        INDArray zeroOffsetResult = slice.mmul(z2);
+        INDArray offsetResult = nofOffset.mmul(z2);
+        assertEquals(zeroOffsetResult,offsetResult);
+
+
+    }
 
 
     @Test
@@ -208,8 +228,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-
-
     @Test
     public void testVStackColumn() {
         INDArray linspaced = Nd4j.linspace(1,3,3).reshape(3,1);
@@ -274,8 +292,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(assertion, neg);
 
     }
-
-
 
 
     @Test
@@ -680,9 +696,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
                         33330.,   38230.,   43130.,   48030.,   52930.,   57830.,
                         62730.,   67630.,   72530.,   77430.,   82330.,   87230.,
                         92130.,   97030.,  101930.,  106830.,  111730.,  116630.,
-                        121530.,  126430.,  131330.,  136230.,  141130.,  146030.,
-                        150930.,  155830.,  160730.,  165630.,  170530.,  175430.,
-                        180330.,  185230.,  190130.,  195030.,  199930.,  204830.,
+                        121530.,  126430.,  131330.,  136230., 141130.,  146030.,
+                        150930.,  155830.,  160730.,  165630.,  170530., 175430.,
+                        180330., 185230., 190130., 195030.,  199930.,  204830.,
                         209730.,  214630.,  219530.,  224430.,  229330.,  234230.,
                         239130.,  244030.,  248930.,  253830.,  258730.,  263630.,
                         268530.,  273430.,  278330.,  283230.,  288130.,  293030.}});
@@ -747,11 +763,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-
-
     @Test
     public void testDimensionWiseWithVector() {
-        INDArray ret = Nd4j.linspace(1,2,2).reshape(1, 2);
+        INDArray ret = Nd4j.linspace(1, 2, 2).reshape(1, 2);
         assertTrue(ret.sum(0).isRowVector());
         assertTrue(ret.sum(1).isScalar());
         INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2,1);

@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
@@ -2553,15 +2554,26 @@ public abstract class BaseNDArray implements INDArray {
             INDArray temp = create(resultArray.shape(), getStrides(shape,NDArrayFactory.FORTRAN));
 
             if (otherArray.columns() == 1) {
-                if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                    Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, temp);
-                else
-                    Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, temp);
-            } else {
-                if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                    Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, temp);
-                else
-                    Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, temp);
+                Nd4j.getBlasWrapper().level2().gemv(
+                        BlasBufferUtil.getCharForTranspose(result)
+                        ,BlasBufferUtil.getCharForTranspose(this)
+                        ,1.0
+                        ,this
+                        ,otherArray
+                        ,0.0
+                        ,temp);
+            }
+
+            else {
+                Nd4j.getBlasWrapper().level3().gemm(
+                        BlasBufferUtil.getCharForTranspose(result)
+                        ,BlasBufferUtil.getCharForTranspose(this)
+                        ,BlasBufferUtil.getCharForTranspose(temp)
+                        ,1.0
+                        ,this
+                        ,other
+                        ,0.0
+                        ,resultArray);
             }
 
             Nd4j.getBlasWrapper().copy(temp, resultArray);
@@ -2569,15 +2581,24 @@ public abstract class BaseNDArray implements INDArray {
 
         } else {
             if (otherArray.columns() == 1)
-                if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                    Nd4j.getBlasWrapper().gemv(1.0, this, otherArray, 0.0, resultArray);
-                else
-                    Nd4j.getBlasWrapper().gemv(1.0f, this, otherArray, 0.0f, resultArray);
+                Nd4j.getBlasWrapper().level2().gemv(
+                        BlasBufferUtil.getCharForTranspose(resultArray)
+                        ,BlasBufferUtil.getCharForTranspose(this)
+                        ,1.0
+                        ,this
+                        ,otherArray
+                        ,0.0,
+                        resultArray);
             else {
-                if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                    Nd4j.getBlasWrapper().gemm(1.0, this, otherArray, 0.0, resultArray);
-                else
-                    Nd4j.getBlasWrapper().gemm(1.0f, this, otherArray, 0.0f, resultArray);
+                Nd4j.getBlasWrapper().level3().gemm(
+                        BlasBufferUtil.getCharForTranspose(this)
+                        ,BlasBufferUtil.getCharForTranspose(other)
+                        ,BlasBufferUtil.getCharForTranspose(resultArray)
+                        ,1.0
+                        ,this
+                        ,other
+                        ,0.0,resultArray);
+
             }
         }
 

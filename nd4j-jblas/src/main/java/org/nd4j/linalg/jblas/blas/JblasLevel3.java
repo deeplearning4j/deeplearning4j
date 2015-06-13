@@ -16,7 +16,9 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 
 /**
  *
- * A jblas delgation for level 3 routines
+ * A jblas delegation
+ * for level 3 routines
+ *
  *
  * @author Adam Gibson
  */
@@ -25,7 +27,8 @@ public class JblasLevel3 extends BaseLevel3 {
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         DataBuffer aData = Shape.toOffsetZero(A).data();
         DataBuffer bData = Shape.toOffsetZero(B).data();
-
+        float[] aDataArr = aData.asFloat();
+        float[] bDataArr = bData.asFloat();
         float[] cData = getFloatData(C);
         NativeBlas.sgemm(
                 TransA
@@ -34,9 +37,10 @@ public class JblasLevel3 extends BaseLevel3 {
                 ,N,
                 K,
                 alpha
-                ,aData.asFloat()
+                ,aDataArr
                 ,0
-                ,lda,bData.asFloat()
+                ,lda,
+                bDataArr
                 ,0
                 ,ldb
                 ,beta

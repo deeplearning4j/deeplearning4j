@@ -43,7 +43,7 @@ public class Shape {
      * elements set to zero
      */
     public static INDArray toOffsetZero(INDArray arr) {
-        if(arr.offset() < 1)
+        if(arr.offset() < 1 && arr.data().length() == arr.length())
             return arr;
 
         if(arr instanceof IComplexNDArray) {
