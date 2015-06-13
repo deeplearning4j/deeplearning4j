@@ -46,31 +46,26 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class NeuralNetPlotter implements Serializable {
 
-    private static 	ClassPathResource r = new ClassPathResource("/scripts/plot.py");
+    private static 	ClassPathResource script = new ClassPathResource("scripts/plot.py");
     private static final Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);
-    private static   FilterRenderer render = new FilterRenderer();
+    private static String localPath = "graph-tmp/";
+    private static String localPlotPath = loadIntoTmp();
 
+    private static String loadIntoTmp() {
 
-    static {
-        loadIntoTmp();
-    }
-
-
-    private static void loadIntoTmp() {
-
-        File script = new File("/tmp/plot.py");
+        File plotPath = new File(localPath+"plot.py");
 
         try {
-            List<String> lines = IOUtils.readLines(r.getInputStream());
-            FileUtils.writeLines(script, lines);
+            List<String> lines = IOUtils.readLines(script.getInputStream());
+            FileUtils.writeLines(plotPath, lines);
 
         } catch (IOException e) {
             throw new IllegalStateException("Unable to load python file");
 
         }
 
+        return plotPath.getAbsolutePath();
     }
-
 
     protected String writeMatrix(INDArray matrix)  {
         try {
@@ -99,19 +94,17 @@ public class NeuralNetPlotter implements Serializable {
         }
     }
 
-    public void renderGraph(String action, String dataPath) {
+    public void renderGraph(String action, String dataPath, String saveFilePath) {
 
         try {
-            String fileName = new ClassPathResource("python/plot.py").getFile().getAbsolutePath();
-            log.info("Rendering graphs for data analysis... ");
-            Process is = Runtime.getRuntime().exec("python " + fileName + " " + action + " "+ dataPath);
+            log.info("Rendering " + action + " graphs for data analysis... ");
+            Process is = Runtime.getRuntime().exec("python " + localPlotPath + " " + action + " " + dataPath + " " + saveFilePath);
             log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
             log.error("Std error " + IOUtils.readLines(is.getErrorStream()).toString());
         }catch(IOException e) {
             log.warn("Image closed");
             throw new RuntimeException(e);
-        }
-
+    }
     }
 
     /**
@@ -121,7 +114,7 @@ public class NeuralNetPlotter implements Serializable {
      * @param titles the titles of the plots
      * @param matrices the matrices to plot
      */
-    public void graphPlotType(String plotType, List<String> titles, INDArray[] matrices) {
+    public void graphPlotType(String plotType, List<String> titles, INDArray[] matrices, String saveFilePath) {
         String[] path = new String[matrices.length * 2];
 
         if(titles.size() != matrices.length)
@@ -133,7 +126,7 @@ public class NeuralNetPlotter implements Serializable {
         }
 
         String dataPath = StringUtils.join(path, ",");
-        renderGraph(plotType, dataPath);
+        renderGraph(plotType, dataPath, saveFilePath);
 
     }
 
@@ -159,7 +152,9 @@ public class NeuralNetPlotter implements Serializable {
                         gradient.gradientForVariable().get(DefaultParamInitializer.WEIGHT_KEY),
                         gradient.gradientForVariable().get(DefaultParamInitializer.BIAS_KEY),
                         gradient.gradientForVariable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
-                });
+                },
+                localPath + "weightHistograms.png"
+                );
     }
 
 
@@ -180,7 +175,7 @@ public class NeuralNetPlotter implements Serializable {
         INDArray hbiasMean = network.activationMean();
         String dataPath = writeMatrix(hbiasMean);
 
-        renderGraph("activations", dataPath);
+        renderGraph("activations", dataPath, localPath + "activationPlot.png");
 
     }
 
@@ -188,7 +183,7 @@ public class NeuralNetPlotter implements Serializable {
      * renderFilter plot learned filter for each hidden neuron
      * @param weight the trained neural net model
      **/
-    public void renderFilter(INDArray weight) {
+    public void renderFilter(INDArray weight, int patchesPerRow) {
         INDArray w = weight.dup();
         FilterRenderer render = new FilterRenderer();
 
@@ -196,7 +191,7 @@ public class NeuralNetPlotter implements Serializable {
             if(w.shape().length > 2) {
                 INDArray render2 = w.transpose();
                 render.renderFilters(render2,
-                        "currimg.png",
+                        localPath + "renderFilter.png",
                         w.columns(),
                         w.rows(),
                         w.slices());
@@ -204,10 +199,10 @@ public class NeuralNetPlotter implements Serializable {
             }
             else {
                 render.renderFilters(w,
-                        "currimg.png",
+                        localPath + "renderFilter.png",
                         (int) Math.sqrt(w.rows()),
                         (int) Math.sqrt(w.columns()),
-                        10);
+                        patchesPerRow);
 
                 //Alternative python approach
 //                String dataPath = writeMatrix(w);
@@ -229,28 +224,27 @@ public class NeuralNetPlotter implements Serializable {
      * @param network the trained neural net model
      * @param gradient latest updates to weights and biases
      **/
-    public void plotNetworkGradient(Layer network,Gradient gradient) {
+    public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) {
         INDArray weight = network.getParam(DefaultParamInitializer.WEIGHT_KEY);
-
         plotWeightHistograms(network, gradient);
         plotActivations(network);
-
-        renderFilter(weight);
+        renderFilter(weight, patchesPerRow);
 
     }
 
-    public void plotNetworkGradient(Layer network,INDArray gradient) {
-
+    public void plotNetworkGradient(Layer network,INDArray gradient,int patchesPerRow) {
+        INDArray weight =  network.getParam(DefaultParamInitializer.WEIGHT_KEY);
         graphPlotType(
                 "histogram",
                 Arrays.asList("W", "w-gradient"),
                 new INDArray[]{
                         network.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         gradient
-                });
+                },
+                localPath + "weightHistograms.png"
+        );
         plotActivations(network);
-        INDArray weight =  network.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        renderFilter(weight);
+        renderFilter(weight, patchesPerRow);
     }
 
 
