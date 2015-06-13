@@ -278,7 +278,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the data type of the buffer
      */
-    public DataBuffer.Type dataType();
+    DataBuffer.Type dataType();
 
     /**
      * Return the buffer as a float array
@@ -288,7 +288,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the buffer as a float
      */
-    public float[] asFloat();
+     float[] asFloat();
 
     /**
      * Return the buffer as a double array
@@ -298,7 +298,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the buffer as a float
      */
-    public double[] asDouble();
+     double[] asDouble();
 
     /**
      * Return the buffer as an int  array
@@ -308,7 +308,7 @@ public interface DataBuffer extends Serializable {
      *
      * @return the buffer as a float
      */
-    public int[] asInt();
+     int[] asInt();
 
     /**
      * Get element i in the buffer as a double
@@ -316,7 +316,7 @@ public interface DataBuffer extends Serializable {
      * @param i the element to getFloat
      * @return the element at this index
      */
-    public double getDouble(int i);
+     double getDouble(int i);
 
     /**
      * Get element i in the buffer as a double
@@ -324,7 +324,7 @@ public interface DataBuffer extends Serializable {
      * @param i the element to getFloat
      * @return the element at this index
      */
-    public float getFloat(int i);
+     float getFloat(int i);
 
     /**
      * Get element i in the buffer as a double
@@ -332,7 +332,7 @@ public interface DataBuffer extends Serializable {
      * @param i the element to getFloat
      * @return the element at this index
      */
-    public Number getNumber(int i);
+     Number getNumber(int i);
 
 
     /**
@@ -412,6 +412,11 @@ public interface DataBuffer extends Serializable {
      */
     void flush();
 
+    /**
+     * Insert a complex number at the given index
+     * @param i the index to insert
+     * @param result the element to insert
+     */
     void put(int i, IComplexNumber result);
 
 
@@ -429,13 +434,12 @@ public interface DataBuffer extends Serializable {
      * based on the given offsets and strides.
      * Note that the offsets and strides must be of equal
      * length to the number of buffers
-     *
-     * @param offsets the offsets to use
+     *  @param offsets the offsets to use
      * @param strides the strides to use
      * @param n       the number of elements to operate on
      * @param buffers the buffers to assign data from
      */
-    void assign(int[] offsets, int[] strides, int n, DataBuffer... buffers);
+    void assign(int[] offsets, int[] strides, long n, DataBuffer... buffers);
 
     /**
      * Assign the given data buffers to this buffer

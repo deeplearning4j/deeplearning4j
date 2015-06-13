@@ -204,7 +204,7 @@ public class NDArrayUtil {
             return nd;
 
         INDArray ret = Nd4j.create(targetShape);
-        System.arraycopy(nd.data(), 0, ret.data(), 0, nd.data().length());
+        System.arraycopy(nd.data(), 0, ret.data(), 0, (int) nd.data().length());
         return ret;
 
     }

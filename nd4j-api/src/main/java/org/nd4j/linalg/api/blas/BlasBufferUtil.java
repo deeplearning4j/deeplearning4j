@@ -110,7 +110,7 @@ public class BlasBufferUtil {
             return buf.asFloat();
         }
         else {
-            float[] ret = new float[buf.length()];
+            float[] ret = new float[(int) buf.length()];
             for(int i = 0; i < buf.length(); i++)
                 ret[i] = buf.getFloat(i);
             return ret;
@@ -129,7 +129,7 @@ public class BlasBufferUtil {
         if(buf.allocationMode() == DataBuffer.AllocationMode.HEAP)
             return buf.asDouble();
         else {
-            double[] ret = new double[buf.length()];
+            double[] ret = new double[(int) buf.length()];
             for(int i = 0; i < buf.length(); i++)
                 ret[i] = buf.getDouble(i);
             return ret;

@@ -177,7 +177,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
         this.length = n;
         this.elementSize = Sizeof.DOUBLE;
-        dataBuffer = Unpooled.directBuffer(length());
+        dataBuffer = Unpooled.directBuffer((int) length());
         dataBuffer.order(ByteOrder.nativeOrder());
         setData(arr);
     }
