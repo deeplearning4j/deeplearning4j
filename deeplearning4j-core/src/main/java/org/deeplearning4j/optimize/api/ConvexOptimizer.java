@@ -81,6 +81,8 @@ public interface ConvexOptimizer extends Serializable {
      */
     void setupSearchState(Pair<Gradient, Double> pair);
 
+    Map<String, INDArray> getLastStep();
+
     /**
      * The adagrad in this model
      * @return the adagrad in this model
