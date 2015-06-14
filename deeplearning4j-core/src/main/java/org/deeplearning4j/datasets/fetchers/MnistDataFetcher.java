@@ -70,8 +70,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
         this.binarize = binarize;
         totalExamples = NUM_EXAMPLES;
         //1 based cursor
-        cursor = 1;
-        man.setCurrent(cursor);
+        cursor = 0;
+        man.setCurrent(cursor+1);
         int[][] image;
         try {
             image = man.readImage();
@@ -109,7 +109,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
                     throw new RuntimeException(e);
                 }
             }
-            man.setCurrent(cursor);
+            man.setCurrent(cursor+1);
             //note data normalization
             try {
                 INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImage()));
@@ -161,7 +161,7 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     @Override
     public void reset() {
-        cursor = 1;
+        cursor = 0;
         curr = null;
     }
 
