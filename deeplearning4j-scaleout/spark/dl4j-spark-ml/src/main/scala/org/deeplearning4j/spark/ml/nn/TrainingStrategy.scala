@@ -16,16 +16,12 @@
 
 package org.deeplearning4j.spark.ml.nn
 
-import scala.collection.JavaConversions._
-
 import org.apache.spark.AccumulatorParam
+import org.apache.spark.rdd.RDD
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.factory.Nd4j;
-import org.apache.spark.rdd.RDD
+import org.nd4j.linalg.factory.Nd4j
 
 /**
  * An abstract training strategy for a distributed neural network, given partitions of data.

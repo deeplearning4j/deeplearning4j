@@ -30,7 +30,6 @@ import org.deeplearning4j.spark.ml.nn.ParameterAveragingTrainingStrategy
 import org.deeplearning4j.spark.ml.param.shared.{HasEpochs, HasMultiLayerConfiguration}
 import org.deeplearning4j.spark.ml.util.Identifiable
 import org.deeplearning4j.spark.util.MLLibUtil
-import org.deeplearning4j.spark.util.conversions._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.util.FeatureUtil
@@ -84,7 +83,7 @@ class NeuralNetworkClassification(override val uid: String)
 
     // resolve the number of classes/outcomes
     val outputLayer = c.getConf(c.getConfs.size() - 1)
-    val numClasses = outputLayer.getnOut match {
+    val numClasses = outputLayer.getNOut match {
       case 0 => {
         Attribute.fromStructField(dataset.schema($(labelCol))) match {
           case (attr: NominalAttribute) => attr.getNumValues match {
@@ -96,7 +95,7 @@ class NeuralNetworkClassification(override val uid: String)
       }
       case n => n
     }
-    outputLayer.setnOut(numClasses)
+    outputLayer.setNOut(numClasses)
 
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](c, $(epochs))

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import lombok.Builder;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
@@ -52,7 +51,6 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-@Builder
 @Data
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
@@ -290,6 +288,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return new NeuralNetConfiguration(this);
     }
 
+    public List<String> variables() {
+        return variables;
+    }
+
+    public void addVariable(String variable) {
+        variables.add(variable);
+    }
+
 
     /**
      * Fluent interface for building a list of configurations
@@ -366,6 +372,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             throw new RuntimeException(e);
         }
     }
+
 
 
     /**
