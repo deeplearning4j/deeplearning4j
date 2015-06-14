@@ -445,6 +445,20 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
+    public String toString() {
+        return "BaseLayer{" +
+                "conf=" + conf +
+                ", input=" + input +
+                ", params=" + params +
+                ", dropoutMask=" + dropoutMask +
+                ", paramInitializer=" + paramInitializer +
+                ", score=" + score +
+                ", optimizer=" + optimizer +
+                ", iterationListeners=" + iterationListeners +
+                '}';
+    }
+
+    @Override
     public Layer transpose() {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
