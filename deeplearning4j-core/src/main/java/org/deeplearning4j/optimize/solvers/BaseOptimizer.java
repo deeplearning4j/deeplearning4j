@@ -252,6 +252,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
+    public Map<String, INDArray> getLastStep() {
+        return lastStep;
+    }
+
+    public void setLastStep(Map<String, INDArray> lastStep) {
+        this.lastStep = lastStep;
+    }
+
+    @Override
     public AdaGrad getAdaGrad() {
         return adaGrad;
     }

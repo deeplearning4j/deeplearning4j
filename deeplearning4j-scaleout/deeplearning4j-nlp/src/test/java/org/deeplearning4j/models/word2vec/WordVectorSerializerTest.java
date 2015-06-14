@@ -74,12 +74,15 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testBinaryDryRun() throws Exception {
-        float vector;
+        double vector;
         int words, size;
+        String url = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz";
 
         String path = "GoogleNews-vectors-negative300.bin.gz";
         File modelFile = new File(path);
-
+        if(!modelFile.exists()) {
+            FileUtils.copyURLToFile(new URL(url),modelFile);
+        }
         try (BufferedInputStream bis =
                      new BufferedInputStream(GzipUtils.isCompressedFilename(modelFile.getName()) ?
                              new GZIPInputStream(new FileInputStream(modelFile)) :
@@ -89,6 +92,7 @@ public class WordVectorSerializerTest {
             size = Integer.parseInt(WordVectorSerializer.readString(dis));
             int wordsLoaded = 0;
             String word;
+
             for (int i = 0; i < words; i++) {
 
                 word = WordVectorSerializer.readString(dis);
@@ -97,7 +101,8 @@ public class WordVectorSerializerTest {
                 }
 
                 for (int j = 0; j < size; j++) {
-                    dis.readFloat();
+                    vector = readFloat(dis);
+                    System.out.println(vector);
                 }
 
                 wordsLoaded++;
@@ -112,6 +117,28 @@ public class WordVectorSerializerTest {
 
 
 
+    }
+
+
+    public static float readFloat(InputStream is) throws IOException {
+        byte[] bytes = new byte[4];
+        is.read(bytes);
+        return getFloat(bytes);
+    }
+
+    /**
+     * 读取一个float
+     *
+     * @param b
+     * @return
+     */
+    public static float getFloat(byte[] b) {
+        int accum = 0;
+        accum = accum | (b[0] & 0xff) << 0;
+        accum = accum | (b[1] & 0xff) << 8;
+        accum = accum | (b[2] & 0xff) << 16;
+        accum = accum | (b[3] & 0xff) << 24;
+        return Float.intBitsToFloat(accum);
     }
 
     @Test
