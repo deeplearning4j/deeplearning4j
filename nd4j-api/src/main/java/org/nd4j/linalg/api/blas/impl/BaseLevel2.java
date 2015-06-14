@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -57,9 +58,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zgemv(order, transA, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), X, X.majorStride(), beta.asDouble(), Y, Y.majorStride());
+            zgemv(order, transA, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), X, BlasBufferUtil.getBlasStride(X), beta.asDouble(), Y, BlasBufferUtil.getBlasStride(Y));
         else
-            cgemv(order, transA, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), X, X.majorStride(), beta.asFloat(), Y, Y.majorStride());
+            cgemv(order, transA, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), X, BlasBufferUtil.getBlasStride(X), beta.asFloat(), Y, BlasBufferUtil.getBlasStride(Y));
 
     }
 
@@ -109,9 +110,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asDouble(), A, A.size(0), X, X.majorStride(), beta.asDouble(), Y, Y.majorStride());
+            zgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asDouble(), A, A.size(0), X, X.majorStride() / 2, beta.asDouble(), Y, Y.majorStride() / 2);
         else
-            cgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asFloat(), A, A.size(0), X, X.majorStride(), beta.asFloat(), Y, Y.majorStride());
+            cgbmv(order, TransA, A.rows(), A.columns(), KL, KU, alpha.asFloat(), A, A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
 
     }
 
@@ -147,9 +148,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void geru(char order, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zgeru(order,A.rows(),A.columns(),alpha.asDouble(),X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
+            zgeru(order,A.rows(),A.columns(),alpha.asDouble(),X,X.majorStride() / 2,Y,Y.majorStride() / 2,A,A.size(0));
         else
-            cgeru(order, A.rows(), A.columns(), alpha.asFloat(), X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
+            cgeru(order, A.rows(), A.columns(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A, A.size(0));
 
     }
 
@@ -168,9 +169,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void hbmv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhbmv(order,Uplo,X.length(),A.columns(),alpha.asDouble(),A,A.size(0),X,X.majorStride(),beta.asDouble(),Y,Y.majorStride());
+            zhbmv(order,Uplo,X.length(),A.columns(),alpha.asDouble(),A,A.size(0),X,X.majorStride() / 2,beta.asDouble(),Y,Y.majorStride() / 2);
         else
-            chbmv(order, Uplo, X.length(), A.columns(), alpha.asFloat(), A, A.size(0), X, X.majorStride(), beta.asFloat(), Y, Y.majorStride());
+            chbmv(order, Uplo, X.length(), A.columns(), alpha.asFloat(), A, A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
 
     }
 
@@ -190,9 +191,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void hemv(char order, char Uplo, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhemv(order,Uplo,A.rows(),alpha.asDouble(),A,A.size(0),X,X.majorStride(),beta.asDouble(),Y,Y.majorStride());
+            zhemv(order,Uplo,A.rows(),alpha.asDouble(),A,A.size(0),X,X.majorStride() / 2,beta.asDouble(),Y,Y.majorStride() / 2);
         else
-            chemv(order, Uplo, A.rows(), alpha.asFloat(), A, A.size(0), X, X.majorStride(), beta.asFloat(), Y, Y.majorStride());
+            chemv(order, Uplo, A.rows(), alpha.asFloat(), A, A.size(0), X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
 
     }
 
@@ -210,9 +211,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void her2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray A) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zher2(order,Uplo,A.rows(),alpha.asDouble(),X,X.majorStride(),Y,Y.majorStride(),A,A.size(0));
+            zher2(order,Uplo,A.rows(),alpha.asDouble(),X,X.majorStride() / 2,Y,Y.majorStride() / 2,A,A.size(0));
         else
-            cher2(order, Uplo, A.rows(), alpha.asFloat(), X, X.majorStride(), Y, Y.majorStride(), A, A.size(0));
+            cher2(order, Uplo, A.rows(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, A, A.size(0));
 
     }
 
@@ -233,9 +234,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void hpmv(char order, char Uplo, int N, IComplexNumber alpha, IComplexNDArray Ap, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
         if(Ap.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhpmv(order,Uplo, Ap.rows(),alpha.asDouble(),Ap,X,X.majorStride(),beta.asDouble(),Y,Y.majorStride());
+            zhpmv(order,Uplo, Ap.rows(),alpha.asDouble(),Ap,X,X.majorStride() / 2,beta.asDouble(),Y,Y.majorStride() / 2);
         else
-            chpmv(order, Uplo, Ap.rows(), alpha.asFloat(), Ap, X, X.majorStride(), beta.asFloat(), Y, Y.majorStride());
+            chpmv(order, Uplo, Ap.rows(), alpha.asFloat(), Ap, X, X.majorStride() / 2, beta.asFloat(), Y, Y.majorStride() / 2);
 
     }
 
@@ -253,9 +254,9 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void hpr2(char order, char Uplo, IComplexNumber alpha, IComplexNDArray X, IComplexNDArray Y, IComplexNDArray Ap) {
         if(X.data().dataType() == DataBuffer.Type.DOUBLE)
-            zhpr2(order,Uplo,Ap.rows(),alpha.asDouble(),X,X.majorStride(),Y,Y.majorStride(),Ap);
+            zhpr2(order,Uplo,Ap.rows(),alpha.asDouble(),X,X.majorStride() / 2,Y,Y.majorStride() / 2,Ap);
         else
-            chpr2(order, Uplo, Ap.rows(), alpha.asFloat(), X, X.majorStride(), Y, Y.majorStride(), Ap);
+            chpr2(order, Uplo, Ap.rows(), alpha.asFloat(), X, X.majorStride() / 2, Y, Y.majorStride() / 2, Ap);
 
     }
 

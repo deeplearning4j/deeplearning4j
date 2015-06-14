@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jblas.util.JblasComplex;
+import org.nd4j.linalg.util.Shape;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
@@ -115,7 +116,22 @@ public class JblasLevel2 extends BaseLevel2 {
     @Override
     protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
         float[] yData = getFloatData(Y);
-        NativeBlas.cgemv(TransA, M, N, JblasComplex.getComplexFloat(alpha), getFloatData(A), getBlasOffset(A), A.size(0), getFloatData(X), getBlasOffset(X), incX, JblasComplex.getComplexFloat(beta), yData, getBlasOffset(Y), incY);
+        A = (IComplexNDArray) Shape.toOffsetZero(A);
+        NativeBlas.cgemv(
+                TransA
+                , M
+                , N
+                , JblasComplex.getComplexFloat(alpha)
+                , getFloatData(A)
+                , getBlasOffset(A)
+                , A.size(0)
+                , getFloatData(X)
+                , getBlasOffset(X)
+                , incX
+                , JblasComplex.getComplexFloat(beta)
+                , yData
+                , getBlasOffset(Y)
+                , incY);
         setData(yData,Y);
     }
 

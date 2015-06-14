@@ -11,12 +11,15 @@ import org.nd4j.linalg.jblas.util.JblasComplex;
 import org.nd4j.linalg.util.Shape;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
+import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 
 
 /**
  *
- * A jblas delgation for level 3 routines
+ * A jblas delegation
+ * for level 3 routines
+ *
  *
  * @author Adam Gibson
  */
@@ -25,7 +28,8 @@ public class JblasLevel3 extends BaseLevel3 {
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
         DataBuffer aData = Shape.toOffsetZero(A).data();
         DataBuffer bData = Shape.toOffsetZero(B).data();
-
+        float[] aDataArr = aData.asFloat();
+        float[] bDataArr = bData.asFloat();
         float[] cData = getFloatData(C);
         NativeBlas.sgemm(
                 TransA
@@ -34,9 +38,10 @@ public class JblasLevel3 extends BaseLevel3 {
                 ,N,
                 K,
                 alpha
-                ,aData.asFloat()
+                ,aDataArr
                 ,0
-                ,lda,bData.asFloat()
+                ,lda,
+                bDataArr
                 ,0
                 ,ldb
                 ,beta
@@ -77,9 +82,10 @@ public class JblasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        DataBuffer aData = A.offset() > 0 ? A.ravel().data() : A.data();
-        DataBuffer bData = B.offset() > 0 ? B.ravel().data() : B.data();
-
+        DataBuffer aData = Shape.toOffsetZero(A).data();
+        DataBuffer bData = Shape.toOffsetZero(B).data();
+        double[] aDataArr = aData.asDouble();
+        double[] bDataArr = bData.asDouble();
         double[] cData = getDoubleData(C);
         NativeBlas.dgemm(
                 TransA
@@ -89,10 +95,11 @@ public class JblasLevel3 extends BaseLevel3 {
                 N,
                 K,
                 alpha,
-                aData.asDouble()
+               aDataArr
                 ,getBlasOffset(A)
                 ,
-                lda,bData.asDouble()
+                lda,
+                bDataArr
                 , getBlasOffset(B)
                 , ldb
                 ,
@@ -135,8 +142,28 @@ public class JblasLevel3 extends BaseLevel3 {
 
     @Override
     protected void cgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C, int ldc) {
+        DataBuffer aData = Shape.toOffsetZero(A).data();
+        DataBuffer bData = Shape.toOffsetZero(B).data();
+        float[] aDataArr = aData.asFloat();
+        float[] bDataArr = bData.asFloat();
         float[] cData = getFloatData(C);
-        NativeBlas.cgemm(TransA, TransB, M, N, K, JblasComplex.getComplexFloat(alpha), getFloatData(A), getBlasOffset(A), lda, getFloatData(B), getBlasOffset(B), ldb, JblasComplex.getComplexFloat(beta), cData, getBlasOffset(C), ldc);
+        NativeBlas.cgemm(
+                TransA
+                , TransB
+                , M
+                , N
+                , K
+                , JblasComplex.getComplexFloat(alpha)
+                ,aDataArr
+                , 0
+                , lda
+                ,bDataArr
+                ,0
+                , ldb
+                , JblasComplex.getComplexFloat(beta)
+                , cData
+                , 0
+                , ldc);
         setData(cData,C);
     }
 
@@ -172,8 +199,26 @@ public class JblasLevel3 extends BaseLevel3 {
 
     @Override
     protected void zgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
+        DataBuffer aData = Shape.toOffsetZero(A).data();
+        DataBuffer bData = Shape.toOffsetZero(B).data();
+        double[] aDataArr = aData.asDouble();
+        double[] bDataArr = bData.asDouble();
         double[] cData = getDoubleData(C);
-        NativeBlas.zgemm(TransA, TransB, M, N, K, JblasComplex.getComplexDouble(alpha), getDoubleData(A), getBlasOffset(A), lda, getDoubleData(B), getBlasOffset(B), ldb, JblasComplex.getComplexDouble(beta), cData, getBlasOffset(C), ldc);
+        NativeBlas.zgemm(
+                TransA
+                , TransB
+                , M, N, K
+                , JblasComplex.getComplexDouble(alpha)
+                , aDataArr,
+                0
+                , lda
+                , bDataArr
+                , 0
+                , ldb
+                , JblasComplex.getComplexDouble(beta)
+                , cData
+                , 0
+                , ldc);
         setData(cData,C);
     }
 

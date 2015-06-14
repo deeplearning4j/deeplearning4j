@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.complex;
 
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -1566,6 +1567,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return Nd4j.createComplex(Nd4j.scalar(d));
     }
 
+    protected INDArray createScalarForIndex(int i,boolean applyOffset) {
+        return Nd4j.createComplex(data(), new int[]{1, 1}, new int[]{1, 1}, applyOffset ? offset + i : i);
+    }
 
     /**
      * Returns the specified slice of this matrix.
@@ -2445,15 +2449,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape(), 2));
 
             if (otherArray.columns() == 1) {
-                if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
-                else
-                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), temp);
+                Nd4j.getBlasWrapper().level2().gemv(BlasBufferUtil.getCharForTranspose(temp),BlasBufferUtil.getCharForTranspose(this),Nd4j.UNIT,this,otherArray,Nd4j.ZERO,temp);
             } else {
-                if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                    Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), temp);
-                else
-                    Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), temp);
+                Nd4j.getBlasWrapper().level3().gemm(BlasBufferUtil.getCharForTranspose(temp),BlasBufferUtil.getCharForTranspose(this),BlasBufferUtil.getCharForTranspose(other),Nd4j.UNIT,this,otherArray,Nd4j.ZERO,temp);
 
             }
 
@@ -2461,16 +2459,29 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
         } else {
-            if (otherArray.columns() == 1)
-                if (data.dataType() == (DataBuffer.Type.DOUBLE))
-                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
-                else
-                    Nd4j.getBlasWrapper().gemv(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), resultArray);
-            else if (data.dataType() == (DataBuffer.Type.FLOAT))
-                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asFloat(), this, otherArray, Nd4j.ZERO.asFloat(), resultArray);
-            else
-                Nd4j.getBlasWrapper().gemm(Nd4j.UNIT.asDouble(), this, otherArray, Nd4j.ZERO.asDouble(), resultArray);
+            if (otherArray.columns() == 1) {
+                Nd4j.getBlasWrapper().level2().gemv(
+                        BlasBufferUtil.getCharForTranspose(resultArray)
+                        ,BlasBufferUtil.getCharForTranspose(this)
+                        ,Nd4j.UNIT
+                        ,this
+                        ,otherArray
+                        ,Nd4j.ZERO
+                        ,resultArray);
+            }
 
+
+            else {
+                Nd4j.getBlasWrapper().level3().gemm(
+                        BlasBufferUtil.getCharForTranspose(resultArray)
+                        ,BlasBufferUtil.getCharForTranspose(this)
+                        ,BlasBufferUtil.getCharForTranspose(other)
+                        ,Nd4j.UNIT
+                        ,this
+                        ,otherArray
+                        ,Nd4j.ZERO
+                        ,resultArray);
+            }
         }
         return resultArray;
 

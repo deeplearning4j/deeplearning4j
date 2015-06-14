@@ -192,14 +192,14 @@ public interface BlasWrapper {
      */
     INDArray ger(float alpha, INDArray x,
                  INDArray y, INDArray a);
-
+    @Deprecated
     IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a,
                          IComplexNDArray x, IComplexDouble beta, IComplexNDArray y);
 
-
+    @Deprecated
     IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta, IComplexNDArray y);
 
-
+    @Deprecated
     IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y);
     @Deprecated
     IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a);
@@ -244,6 +244,7 @@ public interface BlasWrapper {
     INDArray gemm(float alpha, INDArray a,
                   INDArray b, float beta, INDArray c);
 
+    @Deprecated
     IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a,
                          IComplexNDArray b, IComplexNumber beta, IComplexNDArray c);
 
