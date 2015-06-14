@@ -90,10 +90,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     }
 
 
-    @Test
-    public void testPutSlice() {
 
-    }
 
 
     @Test
@@ -584,22 +581,6 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
     }
 
-
-
-    @Test
-    public void testGemmWithOffset() {
-        IComplexNDArray arr = Nd4j.complexLinSpace(1,4,4).reshape(2, 2);
-        IComplexNDArray row1 = arr.getRow(1).ravel();
-        IComplexNDArray row1T = row1.transpose();
-        IComplexNDArray result = Nd4j.createComplex(2,2);
-        Nd4j.getBlasWrapper().gemm(Nd4j.UNIT, row1T, row1, Nd4j.ZERO, result);
-        IComplexNDArray assertion = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[][]{
-                {4,8},
-                {8,16}
-        }));
-
-        assertEquals(assertion,result);
-    }
 
 
 

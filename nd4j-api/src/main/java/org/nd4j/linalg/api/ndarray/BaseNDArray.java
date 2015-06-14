@@ -557,8 +557,8 @@ public abstract class BaseNDArray implements INDArray {
         if(majorStride >= 0)
             return majorStride;
         if(stride.length == 0) {
-            majorStride = 1;
-            return 1;
+            majorStride = elementStride();
+            return elementStride();
         }
         if(ordering() == NDArrayFactory.C) {
             if(stride[shape().length - 1] == 1 && !isMatrix()) {
@@ -1938,7 +1938,7 @@ public abstract class BaseNDArray implements INDArray {
 
         this.length = ArrayUtil.prod(this.shape);
         if (this.stride == null) {
-            this.stride = Nd4j.getStrides(shape, ordering);
+            this.stride = getStrides(shape,ordering());
         }
 
 

@@ -20,6 +20,7 @@
 package org.nd4j.linalg;
 
 import junit.framework.TestCase;
+import junit.framework.TestResult;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,6 +61,10 @@ public abstract class BaseNd4jTest extends TestCase {
 
     }
 
+    @Override
+    protected TestResult createResult() {
+        return new Nd4jTestResult();
+    }
 
     /**
      * Get the default backend (jblas)

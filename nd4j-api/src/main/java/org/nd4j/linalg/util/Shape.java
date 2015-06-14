@@ -46,6 +46,22 @@ public class Shape {
         if(arr.offset() < 1 && arr.data().length() == arr.length())
             return arr;
 
+        if(arr.isRowVector()) {
+            if(arr instanceof IComplexNDArray) {
+                IComplexNDArray ret = Nd4j.createComplex(arr.shape());
+                for(int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
+                return ret;
+            }
+            else {
+                INDArray ret = Nd4j.create(arr.shape());
+                for(int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i,arr.getDouble(i));
+                return ret;
+            }
+        }
+
+
         if(arr instanceof IComplexNDArray) {
             IComplexNDArray ret = Nd4j.createComplex(arr.shape());
             for(int i = 0; i < ret.slices(); i++)
