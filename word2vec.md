@@ -12,6 +12,7 @@ Contents
 * <a href="#train">Training</a>
 * <a href="#windows">Moving Windows</a>
 * <a href="#grams">N-grams & Skip-grams</a>
+* <a href="#embed">Neural Word Embeddings</a>
 * <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#code">A Code Example</a>
@@ -151,6 +152,30 @@ It can also be converted into a series of skip-grams.
 A skip-gram, as you can see, is a form of discontinous n-gram.
 
 In the literature, you will often see references to a "context window." In the example above, the context window is 3. Many windows use a context window of 5. 
+
+###<a name="embed">Neural Word Embeddings</a>
+
+Representations are strange things. You use one thing to describe another, and those two things can be radically different. Elvis Costello was probably the harshest critic of representations, when he said that "Writing about music is like dancing about architecture." How can words represent sounds, and gestures represent arrangements of stone, glass and wood? You're mapping one set to another seemingly dissimilar set. 
+
+A neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. 
+
+Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so a 1000 numbers arranged in a vector can represent a word, or a group of words. 
+
+Those numbers locate each word as a point in 1000-dimensional space. (Geoff Hinton, teaching people to imagine 13-dimensional space, suggests that students first picture 3-dimensional space and then say to themselves: "Thirteen, thirteen, thirteen." :) 
+
+A well trained set of word vectors will place similar words close to each other in that high-dimensional space. The words oak, elm and birch might cluster in one corner, while war, conflict and strife huddle together in another. 
+
+This in itself is interesting, because similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can start their work. But similarity is not the only association that Word2vec can learn and represent. 
+
+These vectors are in fact the basis of a more comprehensive arithmatic of words. Not only will Rome, Paris, Berlin and Beijing cluster near each other, but they will each have similar distances in the vector space with regard to the countries whose capitals they are; i.e. Rome - Italy = Beijing - China. And if you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
+
+Let's roughly imagine some other associations:
+
+* Destruction: Oak - Ax = Society - War. 
+* Cause: Cancer - Cigarettes = Obesity - Fast Food.
+* Filiation: George H. W. Bush - George W. Bush = John Adams - John Quincy Adams.
+
+By building a sense of one word's proximity to other similar words, which do not necessarily contain the same letters, we have moved beyond hard tokens to a smoother sense of meaning. 
 
 ### <a name="dataset">The Dataset</a>
 
