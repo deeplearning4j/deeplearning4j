@@ -336,7 +336,7 @@ public abstract class BaseLayer implements Layer {
         }
 
         else if(this.dropoutMask != null)
-            this.dropoutMask = Nd4j.ones(input.rows(), conf.getnOut());
+            this.dropoutMask = Nd4j.ones(input.rows(), conf.getNOut());
 
         //actually apply drop out
         if(conf.getDropOut() > 0)
@@ -468,9 +468,9 @@ public abstract class BaseLayer implements Layer {
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
             NeuralNetConfiguration clone = conf.clone();
-            int nIn = clone.getnOut(),nOut = clone.getnIn();
-            clone.setnIn(nIn);
-            clone.setnOut(nOut);
+            int nIn = clone.getNOut(),nOut = clone.getNOut();
+            clone.setNIn(nIn);
+            clone.setNOut(nOut);
             layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
         } catch (Exception e) {
             e.printStackTrace();

@@ -55,7 +55,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
 
     protected INDArray createBias(NeuralNetConfiguration conf) {
-        INDArray ret =  Nd4j.zeros(conf.getnOut());
+        INDArray ret =  Nd4j.zeros(conf.getNOut());
         ret.data().persist();
         return ret;
     }
@@ -64,8 +64,8 @@ public class DefaultParamInitializer implements ParamInitializer {
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
         Distribution dist = Distributions.createDistribution(conf.getDist());
         INDArray ret =  WeightInitUtil.initWeights(
-                conf.getnIn(),
-                conf.getnOut(),
+                conf.getNOut(),
+                conf.getNOut(),
                 conf.getWeightInit(),
                 dist);
         ret.data().persist();
