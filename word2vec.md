@@ -45,7 +45,9 @@ Here's a graph of words associated with "China" using Word2vec:
 
 ###<a name="embed">Neural Word Embeddings</a>
 
-Representations are strange. You use one thing to describe another, and those two things can be radically different. Elvis Costello was probably the harshest critic of representations, when he said that "Writing about music is like dancing about architecture." How can words represent sounds, and gestures represent arrangements of stone, glass and wood? You're mapping one set to another seemingly dissimilar set. 
+Representations are strange. You use one thing to describe another, and those two things can be radically different. Elvis Costello was probably the harshest critic of representations, when he said that "Writing about music is like dancing about architecture." 
+
+How can words represent sounds, and gestures represent arrangements of stone, glass and wood? You're mapping one set to another seemingly dissimilar set. 
 
 A neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. 
 
@@ -69,7 +71,7 @@ By building a sense of one word's proximity to other similar words, which do not
 
 ###<a name="anatomy">Anatomy of Word2vec</a>
 
-What do we talk about when we talk about Word2vec? Deeplearning4j's natural-language processing components:
+Here are Deeplearning4j's natural-language processing components:
 
 * **SentenceIterator/DocumentIterator**: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
 * **Tokenizer/TokenizerFactory**: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence." 
