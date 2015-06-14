@@ -103,7 +103,7 @@ public class GradientAdjustment {
             }
         }
 
-        
+
         //RMSPROP
         if(conf.getRmsDecay() > 0) {
             lastStep.assign(lastStep.mul(conf.getRmsDecay()).addi(Transforms.pow(gradient,2).muli((1 - conf.getRmsDecay()))));
