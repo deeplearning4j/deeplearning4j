@@ -44,9 +44,9 @@ public class LSTMParamInitializer implements ParamInitializer {
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         Distribution dist = Distributions.createDistribution(conf.getDist());
         
-        int inputSize = conf.getnIn();
-        int hiddenSize = conf.getnIn();
-        int outputSize = conf.getnOut();
+        int inputSize = conf.getNOut();
+        int hiddenSize = conf.getNOut();
+        int outputSize = conf.getNOut();
         conf.addVariable(RECURRENT_WEIGHTS);
         conf.addVariable(DECODER_WEIGHTS);
         conf.addVariable(DECODER_BIAS);
