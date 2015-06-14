@@ -146,13 +146,8 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
             double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
 
 
-            if (neu1e.data().dataType() == DataBuffer.Type.DOUBLE) {
-                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
-            } else {
-                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
-            }
+            Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
+            Nd4j.getBlasWrapper().level1().axpy(syn1.length(),g, l1, syn1);
 
 
             changed.add(new Triple<>(point,w1.getIndex(), -1));
@@ -189,24 +184,16 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
                     g = label * (useAdaGrad ?  w1.getGradient(target, alpha) : alpha);
                 else
                     g = useAdaGrad ? w1.getGradient(target, label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) : (label - expTable[(int)((f + MAX_EXP) * (expTable.length / MAX_EXP / 2))]) *   alpha;
-                if(syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,neu1e,l1);
-                else
-                    Nd4j.getBlasWrapper().axpy((float) g,neu1e,l1);
+                    Nd4j.getBlasWrapper().level1().axpy(l1.length(),g,neu1e,l1);
 
-                if(syn1Neg.data().dataType() == DataBuffer.Type.DOUBLE)
-                    Nd4j.getBlasWrapper().axpy(g,syn1Neg,l1);
-                else
-                    Nd4j.getBlasWrapper().axpy((float) g,syn1Neg,l1);
+                Nd4j.getBlasWrapper().level1().axpy(l1.length(),g,syn1Neg,l1);
+
                 changed.add(new Triple<>(-1,-1,label));
 
             }
         }
 
-        if(neu1e.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
 
-        else
             Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
 
 

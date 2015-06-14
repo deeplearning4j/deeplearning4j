@@ -398,17 +398,6 @@ public  class RBM extends BasePretrainNetwork {
     }
 
 
-    @Override
-    public String toString() {
-        return "RBM{" +
-                ", visibleType=" + conf.getVisibleUnit() +
-                ", hiddenType=" + conf.getVisibleUnit() +
-                ", sigma=" + sigma +
-                ", hiddenSigma=" + hiddenSigma +
-                "} " + super.toString();
-    }
-
-
 
     @Override
     public void iterate(INDArray input) {

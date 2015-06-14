@@ -7,6 +7,7 @@ Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net li
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPus. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
+
 ---
 ## Main Features
 - Versatile n-dimensional array class
@@ -25,6 +26,8 @@ Deeplearning4J integrates with Hadoop and Spark and runs on several backends tha
     - zookeeper = maintain configuration for distributed systems
     - hadoop-yarn = common map-reduce distributed system
     - spark = integration with spark
+        - dl4j-spark = spark 1.2-compatible
+        - dl4j-spark-ml = spark 1.4-compatible, based on ML pipeline
 - ui = provides visual interfaces with models like nearest neighbors
 - test-resources = datasets and supporting components for tests
 
