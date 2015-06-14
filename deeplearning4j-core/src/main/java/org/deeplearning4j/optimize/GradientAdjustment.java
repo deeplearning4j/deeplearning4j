@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
@@ -50,27 +51,38 @@ public class GradientAdjustment {
      * @param adaGrad the adagrad map (per variable adagrad entries(
      * @param model the model to use
      */
-    public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,Gradient gradient,int batchSize,Map<String,AdaGrad> adaGrad,Model model) {
+    public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,Gradient gradient,int batchSize,Map<String,AdaGrad> adaGrad,Map<String,INDArray> stepCache,Model model) {
         for(String variable : gradient.gradientForVariable().keySet()) {
             AdaGrad adaGradForVariable = adaGrad.get(variable);
+            INDArray lastStepForVariable = stepCache.get(variable);
             if(adaGradForVariable == null) {
                 adaGradForVariable = new AdaGrad(model.getParam(variable).shape());
                 adaGrad.put(variable, adaGradForVariable);
             }
-            else
-                adaGradForVariable = adaGrad.get(variable);
 
-            updateGradientAccordingToParams(conf,iteration,adaGradForVariable,gradient.getGradientFor(variable),model.getParam(variable),batchSize);
+            if(lastStepForVariable == null) {
+                lastStepForVariable = Nd4j.ones((model.getParam(variable).shape()));
+                stepCache.put(variable,lastStepForVariable);
+            }
 
-
+            updateGradientAccordingToParams(
+                    conf
+                    ,iteration
+                    ,adaGradForVariable
+                    ,gradient.getGradientFor(variable)
+                    ,model.getParam(variable)
+                    ,stepCache.get(variable)
+                    ,batchSize);
         }
     }
 
     /**
-     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
+     * Update the gradient according to
+     * the configuration such as
+     * adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
      */
-    public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,AdaGrad adaGrad,INDArray gradient,INDArray params,int batchSize) {
+    public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,AdaGrad adaGrad,INDArray gradient,INDArray params,INDArray lastStep,int batchSize) {
         if(adaGrad == null)
             adaGrad = new AdaGrad(gradient.shape());
 
@@ -98,9 +110,12 @@ public class GradientAdjustment {
             gradient.muli(conf.getLr());
 
 
-
-        if (momentum > 0)
-            gradient.addi(gradient.mul(momentum).addi(gradient.mul(1 - momentum)));
+        //apply nesterov's AFTER learning rate update
+        if (momentum > 0) {
+            gradient = lastStep.mul(momentum).subi(gradient);
+            //in place update on the step cache
+            lastStep.assign(gradient);
+        }
 
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
         if(conf.isUseRegularization() && conf.getL2() > 0)

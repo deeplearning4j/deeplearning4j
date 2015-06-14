@@ -63,6 +63,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
     protected Map<String,AdaGrad> adaGradForVariable = new ConcurrentHashMap<>();
+    protected Map<String,INDArray> lastStep = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
@@ -98,12 +99,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     /**
-     * Update the gradient according to the configuration such as adagrad, momentum, and sparsity
+     * Update the gradient according to the configuration such
+     * as adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
      */
     @Override
     public void updateGradientAccordingToParams(INDArray gradient, INDArray params, int batchSize) {
-        GradientAdjustment.updateGradientAccordingToParams(conf,0,adaGrad,gradient,params,batchSize);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -138,7 +140,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
 
         //pre existing termination conditions
-         for(TerminationCondition condition : terminationConditions)
+        for(TerminationCondition condition : terminationConditions)
             if(condition.terminate(0.0,0.0,new Object[]{gradient})) {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
@@ -266,7 +268,14 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model params, int batchSize) {
-         GradientAdjustment.updateGradientAccordingToParams(conf,iteration,gradient,batchSize,adaGradForVariable,params);
+        GradientAdjustment.updateGradientAccordingToParams(
+                conf
+                ,iteration
+                ,gradient
+                ,batchSize
+                ,adaGradForVariable
+                ,lastStep
+                ,params);
     }
 
     /**
