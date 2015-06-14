@@ -347,7 +347,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             for (int i = 0; i < getnLayers(); i++) {
 
                 if (i == 0) {
-                    inputSize = layerWiseConfigurations.getConf(0).getnIn();
+                    inputSize = layerWiseConfigurations.getConf(0).getNOut();
                     if(input == null) {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
@@ -360,13 +360,13 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 if (i == 0) {
                     Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i));
                     if(type == Layer.Type.FEED_FORWARD) {
-                        layerWiseConfigurations.getConf(i).setnIn(inputSize);
-                        layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                        layerWiseConfigurations.getConf(i).setNIn(inputSize);
+                        layerWiseConfigurations.getConf(i).setNOut(hiddenLayerSizes[i]);
                     }
 
 
-                    layerWiseConfigurations.getConf(i).setnIn(inputSize);
-                    layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                    layerWiseConfigurations.getConf(i).setNIn(inputSize);
+                    layerWiseConfigurations.getConf(i).setNOut(hiddenLayerSizes[i]);
                     // construct sigmoid_layer
                     layers[i] = LayerFactories.getFactory(layerWiseConfigurations.getConf(i)).create(
                             layerWiseConfigurations.getConf(i));
@@ -393,8 +393,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(i));
                     if(type == Layer.Type.FEED_FORWARD) {
                         numHiddenLayersSizesUsed++;
-                        layerWiseConfigurations.getConf(i).setnIn(layerInput.columns());
-                        layerWiseConfigurations.getConf(i).setnOut(hiddenLayerSizes[i]);
+                        layerWiseConfigurations.getConf(i).setNIn(layerInput.columns());
+                        layerWiseConfigurations.getConf(i).setNOut(hiddenLayerSizes[i]);
                     }
 
 
@@ -410,7 +410,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
             Layer.Type type = LayerFactories.typeForFactory(layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1));
             if(type == Layer.Type.FEED_FORWARD) {
-                last.setnIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]);
+                last.setNIn(hiddenLayerSizes[hiddenLayerSizes.length - 1]);
             }
             this.layers[layers.length - 1] = LayerFactories.getFactory(last).create(last);initCalled = true;
             initMask();
@@ -1168,7 +1168,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      */
     @Override
     public void fit(INDArray examples, int[] labels) {
-        fit(examples, FeatureUtil.toOutcomeMatrix(labels, getOutputLayer().conf().getnOut()));
+        fit(examples, FeatureUtil.toOutcomeMatrix(labels, getOutputLayer().conf().getNOut()));
     }
 
     /**

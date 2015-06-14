@@ -118,6 +118,14 @@ public class MultiLayerConfiguration implements Serializable {
         return new MultiLayerConfiguration(this);
     }
 
+    public InputPreProcessor getInputPreProcess(int i) {
+        return inputPreProcessors.get(i);
+    }
+
+    public OutputPreProcessor getPreProcessor(int curr) {
+        return this.getProcessors().get(curr);
+    }
+
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();

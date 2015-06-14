@@ -167,7 +167,7 @@ public class Train extends BaseSubCommand {
         if(type.equals("multi")) {
             try {
                 MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(FileUtils.readFileToString(new File(modelPath)));
-                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getConf(0).getBatchSize(),-1,conf.getConf(conf.getConfs().size() - 1).getnOut());
+                DataSetIterator iter = new RecordReaderDataSetIterator( reader , conf.getConf(0).getBatchSize(),-1,conf.getConf(conf.getConfs().size() - 1).getNOut());
 
                 MultiLayerNetwork network = new MultiLayerNetwork(conf);
                 if(verbose) {
