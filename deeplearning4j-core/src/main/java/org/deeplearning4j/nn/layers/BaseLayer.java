@@ -468,7 +468,7 @@ public abstract class BaseLayer implements Layer {
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
             NeuralNetConfiguration clone = conf.clone();
-            int nIn = clone.getNOut(),nOut = clone.getNOut();
+            int nIn = clone.getNIn(),nOut = clone.getNOut();
             clone.setNIn(nIn);
             clone.setNOut(nOut);
             layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
