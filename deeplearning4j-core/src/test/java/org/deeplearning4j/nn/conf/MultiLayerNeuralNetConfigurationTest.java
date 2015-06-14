@@ -27,12 +27,16 @@ import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.rng.DefaultRandom;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.SerializationUtils;
 import org.junit.Test;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.*;
 import java.util.Arrays;
@@ -74,6 +78,31 @@ public class MultiLayerNeuralNetConfigurationTest {
         assertEquals(conf,conf3);
 
     }
+
+    @Test
+    public void testWeightInitializationSimple(){
+        MultiLayerNetwork network = new MultiLayerNetwork(getConf());
+        network.init();
+
+        Layer[] layers = network.getLayers();
+        for( int i=0; i<layers.length; i++ ){
+            INDArray weights = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY);
+            //System.out.println("Weights, layer " + i + " - " + weights);
+
+            INDArray isZero = weights.cond(new Condition(){
+                @Override
+                public Boolean apply(Number input) {return input.floatValue() == 0.0f;}
+
+                @Override
+                public Boolean apply(IComplexNumber input) {return null;}
+            });
+
+            int numZeroWeights = isZero.sum(Integer.MAX_VALUE).getInt(0);
+
+            assertTrue(numZeroWeights + " of " + weights.length() + " weights at layer "+i+" are 0.0",numZeroWeights==0);
+        }
+    }
+
     @Test
     public void testRandomWeightInit() {
         MultiLayerNetwork model1 = new MultiLayerNetwork(getConf());

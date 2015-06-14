@@ -72,7 +72,7 @@ public class SparkDl4jLayer implements Serializable {
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
         JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
-                , labelIndex, conf.getnOut()));
+                , labelIndex, conf.getNOut()));
         return fitDataSet(points);
 
     }
@@ -86,7 +86,7 @@ public class SparkDl4jLayer implements Serializable {
      * @return the multi layer network that was fitDataSet
      */
     public Layer fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
-        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, conf.getnOut()));
+        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, conf.getNOut()));
     }
 
     /**

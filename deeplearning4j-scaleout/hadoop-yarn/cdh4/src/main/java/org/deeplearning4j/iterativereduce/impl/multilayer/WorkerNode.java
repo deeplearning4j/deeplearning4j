@@ -142,7 +142,7 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
 
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( conf.get(MULTI_LAYER_CONF));
         this.batchSize = conf2.getConf(0).getBatchSize();
-        this.numberClasses = conf2.getConf(conf2.getConfs().size() - 1).getnOut();
+        this.numberClasses = conf2.getConf(conf2.getConfs().size() - 1).getNOut();
         labelIndex = conf.getInt(LABEL_INDEX,-1);
         if(labelIndex < 0)
             throw new IllegalStateException("Illegal label index");
