@@ -21,15 +21,20 @@ package org.deeplearning4j.models.word2vec;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
+import java.util.zip.GZIPInputStream;
 
+import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
 
@@ -63,6 +68,49 @@ public class WordVectorSerializerTest {
     public void testLoaderBinary() throws  IOException {
         Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         assertEquals(2,vec.vocab().numWords());
+
+    }
+
+
+    @Test
+    public void testBinaryDryRun() throws Exception {
+        float vector;
+        int words, size;
+
+        String path = "GoogleNews-vectors-negative300.bin.gz";
+        File modelFile = new File(path);
+
+        try (BufferedInputStream bis =
+                     new BufferedInputStream(GzipUtils.isCompressedFilename(modelFile.getName()) ?
+                             new GZIPInputStream(new FileInputStream(modelFile)) :
+                             new FileInputStream(modelFile));
+             DataInputStream dis = new DataInputStream(bis)) {
+            words = Integer.parseInt(WordVectorSerializer.readString(dis));
+            size = Integer.parseInt(WordVectorSerializer.readString(dis));
+            int wordsLoaded = 0;
+            String word;
+            for (int i = 0; i < words; i++) {
+
+                word = WordVectorSerializer.readString(dis);
+                if (word.isEmpty()) {
+                    continue;
+                }
+
+                for (int j = 0; j < size; j++) {
+                    dis.readFloat();
+                }
+
+                wordsLoaded++;
+                System.out.println("Loaded " + word + " and num words " + wordsLoaded + " out of " + words);
+
+
+            }
+
+            assertEquals(3000000,wordsLoaded);
+
+        }
+
+
 
     }
 
