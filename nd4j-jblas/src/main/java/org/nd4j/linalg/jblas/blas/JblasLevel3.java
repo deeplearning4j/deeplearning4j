@@ -26,6 +26,10 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 public class JblasLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        INDArray noOffsetA = Shape.toOffsetZero(A);
+        INDArray noOffsetB = Shape.toOffsetZero(B);
+
+
         DataBuffer aData = Shape.toOffsetZero(A).data();
         DataBuffer bData = Shape.toOffsetZero(B).data();
         float[] aDataArr = aData.asFloat();

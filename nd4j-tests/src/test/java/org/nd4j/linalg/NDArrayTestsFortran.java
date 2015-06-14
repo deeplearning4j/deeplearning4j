@@ -117,6 +117,18 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(zeroOffsetResult,offsetResult);
 
 
+        INDArray slice1 = x2.slice(1);
+        INDArray noOffset2 = Nd4j.create(slice1.shape());
+        noOffset2.assign(slice1);
+        assertEquals(slice1,noOffset2);
+
+        INDArray noOffsetResult = noOffset2.mmul(z2);
+        INDArray slice1OffsetResult = slice1.mmul(z2);
+
+        assertEquals(noOffsetResult,slice1OffsetResult);
+
+
+
     }
 
 
