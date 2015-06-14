@@ -16,16 +16,15 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor;
+package org.deeplearning4j.nn.conf.preprocessor.output;
 
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Reshape post processor
  * @author Adam Gibson
  */
-public class ReshapePreProcessor implements OutputPreProcessor {
+public class ReshapePreProcessor extends BaseOutputPreProcessor {
     private int[] shape;
 
     public ReshapePreProcessor(int...shape) {

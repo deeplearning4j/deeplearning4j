@@ -16,21 +16,20 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor;
+package org.deeplearning4j.nn.conf.preprocessor.input;
 
-
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Binomial sampling pre processor
+ * Zero mean and unit variance operation
+ *
  * @author Adam Gibson
  */
-public class BinomialSamplingPreProcessor implements OutputPreProcessor {
-
+public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
     @Override
-    public INDArray preProcess(INDArray output) {
-        return Nd4j.getDistributions().createBinomial(1,output).sample(output.shape());
+    public INDArray preProcess(INDArray input) {
+        INDArray columnMeans = input.mean(0);
+        input.subiRowVector(columnMeans);
+        return input;
     }
 }
