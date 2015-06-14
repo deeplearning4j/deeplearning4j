@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.eval;
 
+import java.text.DecimalFormat;
 import java.util.Set;
 
 import org.deeplearning4j.berkeley.Counter;
@@ -107,8 +108,12 @@ public class Evaluation {
 					builder.append("\nActual Class " + clazz + " was predicted with Predicted " + clazz2 + " with count " + count  + " times\n");
 			}
 		}
-		builder.append("\n==========================F1 Scores========================================");
-		builder.append("\n " + f1());
+		DecimalFormat df = new DecimalFormat("#.####");
+		builder.append("\n==========================Scores========================================");
+		builder.append("\n Accuracy:  " + df.format(accuracy()));
+		builder.append("\n Precision: " + df.format(precision()));
+		builder.append("\n Recall:    " + df.format(recall()));
+		builder.append("\n F1 Score:  " + f1());
 		builder.append("\n===========================================================================");
 		return builder.toString();
 	}

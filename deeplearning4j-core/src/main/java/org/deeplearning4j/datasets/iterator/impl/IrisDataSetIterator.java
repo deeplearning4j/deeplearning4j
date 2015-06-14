@@ -28,6 +28,29 @@ public class IrisDataSetIterator extends BaseDatasetIterator {
 	 */
 	private static final long serialVersionUID = -2022454995728680368L;
 
+	/**
+	 * IrisDataSetIterator handles
+	 * traversing through the Iris Data Set.
+	 * @see <a href="https://archive.ics.uci.edu/ml/datasets/Iris">https://archive.ics.uci.edu/ml/datasets/Iris</a>
+	 * 
+	 * 
+	 * Typical usage of an iterator is akin to:
+	 * 
+	 * DataSetIterator iter = ..;
+	 * 
+	 * while(iter.hasNext()) {
+	 *     DataSet d = iter.next();
+	 *     //iterate network...
+	 * }
+	 * 
+	 * 
+	 * For custom numbers of examples/batch sizes you can call:
+	 * 
+	 * iter.next(num)
+	 * 
+	 * where num is the number of examples to fetch
+	 * 
+	 */
 	public IrisDataSetIterator(int batch,int numExamples) {
 		super(batch,numExamples,new IrisDataFetcher());
 	}
