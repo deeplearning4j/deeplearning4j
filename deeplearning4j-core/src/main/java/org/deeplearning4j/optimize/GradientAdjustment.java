@@ -103,11 +103,20 @@ public class GradientAdjustment {
             }
         }
 
+        
+        //RMSPROP
+        if(conf.getRmsDecay() > 0) {
+            lastStep.assign(lastStep.mul(conf.getRmsDecay()).addi(Transforms.pow(gradient,2).muli((1 - conf.getRmsDecay()))));
+            gradient = gradient.muli(conf.getLr()).negi().divi(Transforms.sqrt(lastStep.add(Nd4j.EPS_THRESHOLD)));
+        }
+
         if (conf.isUseAdaGrad())
             gradient = adaGrad.getGradient(gradient);
 
         else
             gradient.muli(conf.getLr());
+
+
 
 
         //apply nesterov's AFTER learning rate update
