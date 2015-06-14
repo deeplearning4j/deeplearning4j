@@ -220,9 +220,9 @@ public class RNTN implements Layer {
 
     private void init() {
 
-        if(rng == null)
+        if(rng == null) {
             rng = Nd4j.getRandom();
-
+        }
         MultiDimensionalSet<String, String> binaryProductions = MultiDimensionalSet.hashSet();
         if (simplifiedModel) {
             binaryProductions.add("", "");
