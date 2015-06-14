@@ -157,7 +157,7 @@ public class WordVectorSerializer
                 }
 
                 for (int j = 0; j < size; j++) {
-                    vector = dis.readFloat();
+                    vector = readFloat(dis);
                     syn0.put(i, j, vector);
                 }
 
