@@ -79,29 +79,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     }
 
-    @Test
-    public void testWeightInitializationSimple(){
-        MultiLayerNetwork network = new MultiLayerNetwork(getConf());
-        network.init();
 
-        Layer[] layers = network.getLayers();
-        for( int i=0; i<layers.length; i++ ){
-            INDArray weights = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY);
-            //System.out.println("Weights, layer " + i + " - " + weights);
-
-            INDArray isZero = weights.cond(new Condition(){
-                @Override
-                public Boolean apply(Number input) {return input.floatValue() == 0.0f;}
-
-                @Override
-                public Boolean apply(IComplexNumber input) {return null;}
-            });
-
-            int numZeroWeights = isZero.sum(Integer.MAX_VALUE).getInt(0);
-
-            assertTrue(numZeroWeights + " of " + weights.length() + " weights at layer "+i+" are 0.0",numZeroWeights==0);
-        }
-    }
 
     @Test
     public void testRandomWeightInit() {

@@ -16,24 +16,25 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor;
+package org.deeplearning4j.nn.conf.preprocessor.input;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Unit variance operation
- *
- * @author Adma Gibson
+ * Composable input pre processor
+ * @author Adam Gibson
  */
-public class UnitVariancePrePreProcessor implements InputPreProcessor {
+public class ComposableInputPreProcessor extends BaseInputPreProcessor {
+    private InputPreProcessor[] preProcessors;
+
+    public ComposableInputPreProcessor(InputPreProcessor...preProcessors) {
+        this.preProcessors  = preProcessors;
+    }
     @Override
     public INDArray preProcess(INDArray input) {
-        INDArray columnStds = input.std(0);
-        columnStds.addi(Nd4j.EPS_THRESHOLD);
-        input.diviRowVector(columnStds);
+        for(InputPreProcessor preProcessor : preProcessors)
+        input = preProcessor.preProcess(input);
         return input;
-
     }
 }

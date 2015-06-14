@@ -16,26 +16,24 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor;
+package org.deeplearning4j.nn.conf.preprocessor.input;
 
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Composable output post processor
+ * Zero mean and unit variance operation
  *
  * @author Adam Gibson
  */
-public class ComposableOutputPostProcessor implements OutputPreProcessor {
-    private OutputPreProcessor[] outputPreProcessors;
-
-    public ComposableOutputPostProcessor(OutputPreProcessor...outputPreProcessors) {
-        this.outputPreProcessors = outputPreProcessors;
-    }
+public class ZeroMeanAndUnitVariancePrePreProcessor extends BaseInputPreProcessor {
     @Override
-    public INDArray preProcess(INDArray output) {
-        for(OutputPreProcessor outputPreProcessor : outputPreProcessors)
-          output = outputPreProcessor.preProcess(output);
-        return output;
+    public INDArray preProcess(INDArray input) {
+        INDArray columnMeans = input.mean(0);
+        INDArray columnStds = input.std(0);
+        input.subiRowVector(columnMeans);
+        columnStds.addi(Nd4j.EPS_THRESHOLD);
+        input.diviRowVector(columnStds);
+        return input;
     }
 }
