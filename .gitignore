@@ -1,5 +1,6 @@
 pom.xml.releaseBackup 
 target/
+dependency-reduced-pom.xml
 *.ser
 application.home_IS_UNDEFINEiD
 README.md~
@@ -22,4 +23,4 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 *.log
 .project
 .classpath
-
+metastore_db

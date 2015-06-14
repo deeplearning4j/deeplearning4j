@@ -232,8 +232,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
             }
 
              else {
-                Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy(g, l1, syn1);
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(),g, syn1, neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(),g, l1, syn1);
 
             }
 
