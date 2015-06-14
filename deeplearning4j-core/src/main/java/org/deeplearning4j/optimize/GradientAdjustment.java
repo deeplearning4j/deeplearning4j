@@ -99,8 +99,6 @@ public class GradientAdjustment {
 
 
 
-
-
         if (momentum > 0)
             gradient.addi(gradient.mul(momentum).addi(gradient.mul(1 - momentum)));
 
@@ -108,7 +106,7 @@ public class GradientAdjustment {
         if(conf.isUseRegularization() && conf.getL2() > 0)
             gradient.subi(params.mul(conf.getL2() * conf.getLr()));
         else if(conf.isUseRegularization() && conf.getL1() < 0)
-            gradient.muli(Transforms.sign(params)).muli(conf.getL1());
+            gradient.subi(gradient.mul(Transforms.sign(params)).muli(conf.getL1() * conf.getLr()));
 
 
 
