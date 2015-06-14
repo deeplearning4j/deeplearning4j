@@ -36,7 +36,6 @@ public class IrisUtils {
         List<String> lines = IOUtils.readLines(resource.getInputStream());
         List<DataSet> list = new ArrayList<>();
         INDArray ret = Nd4j.ones(Math.abs(to - from), 4);
-        List<String> outcomeTypes = new ArrayList<>();
         double[][] outcomes = new double[lines.size()][3];
         int putCount = 0;
 
@@ -47,15 +46,13 @@ public class IrisUtils {
             addRow(ret,putCount++,split);
 
             String outcome = split[split.length - 1];
-            if(!outcomeTypes.contains(outcome))
-                outcomeTypes.add(outcome);
             double[] rowOutcome = new double[3];
-            rowOutcome[outcomeTypes.indexOf(outcome)] = 1;
+            rowOutcome[Integer.parseInt(outcome)] = 1;
             outcomes[i] = rowOutcome;
         }
 
         for(int i = 0; i < ret.rows(); i++)
-            list.add(new DataSet(ret.getRow(i), Nd4j.create(outcomes[i])));
+            list.add(new DataSet(ret.getRow(i), Nd4j.create(outcomes[from+i])));
 
         return list;
     }
