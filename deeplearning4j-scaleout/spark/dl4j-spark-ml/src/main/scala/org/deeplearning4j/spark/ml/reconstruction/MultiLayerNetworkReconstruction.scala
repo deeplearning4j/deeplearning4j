@@ -31,7 +31,7 @@ import org.deeplearning4j.spark.ml.param.shared.{HasEpochs, HasLayerIndex, HasMu
 import org.deeplearning4j.spark.ml.util.{Identifiable, SchemaUtils}
 import org.deeplearning4j.spark.ml.{UnsupervisedLearner, UnsupervisedLearnerParams, UnsupervisedModel}
 import org.deeplearning4j.spark.sql.types.VectorUDT
-import org.deeplearning4j.spark.util.MLLibUtil
+import org.deeplearning4j.spark.util.conversions._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
@@ -110,7 +110,7 @@ class NeuralNetworkReconstruction(override val uid: String)
         prepared.rdd, (network:MultiLayerNetwork, rows:Iterator[Row]) => {
           
           // features
-          val featureArrays = rows.map(row => MLLibUtil.fromVector(row.getAs[Vector](0)))
+          val featureArrays = rows.map(row => row.getAs[Vector](0):INDArray)
           val featureMatrix = Nd4j.vstack(featureArrays.toArray: _*)
          
           network.fit(featureMatrix)
@@ -150,9 +150,9 @@ class NeuralNetworkReconstructionModel private[ml] (
   }
   
   protected def reconstruct(features: Vector, layerIndex: Int): Vector = {
-    val examples: INDArray = MLLibUtil.fromVector(features)
-    val reconstruction: INDArray = network().reconstruct(examples, layerIndex)
-    MLLibUtil.toVector(reconstruction)
+    val examples: INDArray = features
+    val reconstruction: Vector = network().reconstruct(examples, layerIndex)
+    reconstruction
   }
 
   override def copy(extra: ParamMap): NeuralNetworkReconstructionModel = {
