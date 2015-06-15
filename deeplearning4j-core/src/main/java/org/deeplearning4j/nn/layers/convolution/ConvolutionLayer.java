@@ -62,7 +62,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient error(INDArray input) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
 
@@ -75,37 +75,38 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Gradient errorSignal(Gradient error, INDArray input) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void merge(Layer layer, int batchSize) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public INDArray activationMean() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray preOutput(INDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray activate() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -153,7 +154,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void setIterationListeners(Collection<IterationListener> listeners) {
-         this.listeners = new ArrayList<>(listeners);
+        this.listeners = new ArrayList<>(listeners);
     }
 
     @Override

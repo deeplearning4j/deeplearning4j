@@ -64,7 +64,7 @@ public class DefaultParamInitializer implements ParamInitializer {
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
         Distribution dist = Distributions.createDistribution(conf.getDist());
         INDArray ret =  WeightInitUtil.initWeights(
-                conf.getNOut(),
+                conf.getNIn(),
                 conf.getNOut(),
                 conf.getWeightInit(),
                 dist);

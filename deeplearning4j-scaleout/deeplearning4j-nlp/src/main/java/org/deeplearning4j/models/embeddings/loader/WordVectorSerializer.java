@@ -18,16 +18,7 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -166,7 +157,7 @@ public class WordVectorSerializer
                 }
 
                 for (int j = 0; j < size; j++) {
-                    vector = dis.readFloat();
+                    vector = readFloat(dis);
                     syn0.put(i, j, vector);
                 }
 
@@ -183,6 +174,39 @@ public class WordVectorSerializer
         ret.setLookupTable(lookupTable);
         return ret;
     }
+
+
+    /**
+     * Read a float from a data input stream Credit to:
+     * https://github.com/NLPchina/Word2VEC_java/blob/master/src/com/ansj/vec/Word2VEC.java
+     *
+     * @param is
+     * @return
+     * @throws IOException
+     */
+    public static float readFloat(InputStream is) throws IOException {
+        byte[] bytes = new byte[4];
+        is.read(bytes);
+        return getFloat(bytes);
+    }
+
+    /**
+     * Read a string from a data input stream Credit to:
+     * https://github.com/NLPchina/Word2VEC_java/blob/master/src/com/ansj/vec/Word2VEC.java
+     *
+     * @param b
+     * @return
+     * @throws IOException
+     */
+    public static float getFloat(byte[] b) {
+        int accum = 0;
+        accum = accum | (b[0] & 0xff) << 0;
+        accum = accum | (b[1] & 0xff) << 8;
+        accum = accum | (b[2] & 0xff) << 16;
+        accum = accum | (b[3] & 0xff) << 24;
+        return Float.intBitsToFloat(accum);
+    }
+
 
     /**
      * Read a string from a data input stream Credit to:

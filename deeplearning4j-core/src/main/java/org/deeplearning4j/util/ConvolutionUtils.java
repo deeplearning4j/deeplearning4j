@@ -63,6 +63,19 @@ public class ConvolutionUtils {
         return new int[] {shape[shape.length - 1],shape[shape.length - 2]};
     }
 
+    /**
+     * Returns the number of
+     * feature maps for a given shape (must be at least 3 dimensions
+     * @param shape the shape to get the
+     *              number of feature maps for
+     * @return the number of feature maps
+     * for a particular shape
+     */
+    public static int numChannels(int[] shape) {
+        if(shape.length < 4)
+            return 1;
+        return shape[1];
+    }
 
     /**
      * Returns the number of
@@ -75,7 +88,7 @@ public class ConvolutionUtils {
     public static int numFeatureMap(int[] shape) {
         if(shape.length < 4)
             return 1;
-        return shape[1];
+        return shape[0];
     }
 
 }

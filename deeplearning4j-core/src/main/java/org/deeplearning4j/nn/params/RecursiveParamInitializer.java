@@ -45,7 +45,7 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         Distribution dist = Distributions.createDistribution(conf.getDist());
         
-        int vis = conf.getNOut();
+        int vis = conf.getNIn();
         int out = vis * 2;
 
         params.put(W, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), dist));

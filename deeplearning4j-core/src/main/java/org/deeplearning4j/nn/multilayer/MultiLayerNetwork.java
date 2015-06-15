@@ -996,7 +996,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                         ,i
                         ,update
                         ,input.slices()
-                        ,getLayers()[k].getOptimizer().adaGradForVariables()
+                        ,getLayers()[k].getOptimizer().adaGradForVariables(),
+                        getLayers()[k].getOptimizer().getLastStep()
                         ,getLayers()[k]);
                 getLayers()[k].update(update);
             }
@@ -1018,7 +1019,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         this.listeners = listeners;
 
         if(layers == null) {
-           init();
+            init();
         }
         for(Layer layer : layers) {
             layer.setIterationListeners(listeners);
