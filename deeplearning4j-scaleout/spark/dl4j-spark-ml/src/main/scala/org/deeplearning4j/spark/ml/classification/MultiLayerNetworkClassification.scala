@@ -29,7 +29,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.spark.ml.nn.ParameterAveragingTrainingStrategy
 import org.deeplearning4j.spark.ml.param.shared.{HasEpochs, HasMultiLayerConfiguration}
 import org.deeplearning4j.spark.ml.util.Identifiable
-import org.deeplearning4j.spark.util.MLLibUtil
+import org.deeplearning4j.spark.util.conversions._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.util.FeatureUtil
@@ -107,7 +107,7 @@ class NeuralNetworkClassification(override val uid: String)
           // features & labels
           val (features, labels) = rows.map { row =>
             (
-              MLLibUtil.fromVector(row.getAs[Vector](1)),
+              row.getAs[Vector](1):INDArray,
               FeatureUtil.toOutcomeVector(row.getDouble(0).toInt, numClasses)
             )
           }.toIterable.unzip
@@ -138,10 +138,11 @@ class NeuralNetworkClassificationModel private[ml] (
   with NeuralNetworkClassificationParams {
 
   override protected def predictRaw(features: Vector): Vector = {
-    val examples: INDArray = MLLibUtil.fromVector(features)
+    val examples: INDArray = features
 
     // produces a probability distribution
-    MLLibUtil.toVector(network().output(examples))
+    val raw: Vector = network().output(examples)
+    raw
   }
 
   override def copy(extra: ParamMap): NeuralNetworkClassificationModel = {
