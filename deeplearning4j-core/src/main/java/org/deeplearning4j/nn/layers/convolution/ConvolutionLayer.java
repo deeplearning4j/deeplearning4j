@@ -112,7 +112,7 @@ public class ConvolutionLayer implements Layer {
     @Override
     public INDArray activate(INDArray input) {
         int featureMaps = ConvolutionUtils.numFeatureMap(conf);
-        int inputFeatureMaps = ConvolutionUtils.numFeatureMap(input.shape());
+        int inputFeatureMaps = ConvolutionUtils.numChannels(input.shape());
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),featureMaps},conf.getFeatureMapSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
