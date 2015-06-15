@@ -88,7 +88,7 @@ public class ConvolutionUtils {
     public static int numFeatureMap(int[] shape) {
         if(shape.length < 4)
             return 1;
-        return shape[0];
+        return shape[1];
     }
 
 }

@@ -153,7 +153,7 @@ public class MultiLayerTest {
                 .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(4).nOut(3).list(2)
-                .hiddenLayerSizes(new int[]{3})
+                .hiddenLayerSizes(3)
                 .override(1, new ClassifierOverride(1)).build();
 
             NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
