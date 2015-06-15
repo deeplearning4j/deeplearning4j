@@ -37,13 +37,6 @@ public class CpuBackend extends Nd4jBackend {
 
     @Override
     public boolean isAvailable() {
-        // execute JBLAS static initializer to confirm that the library is usable
-        try {
-            Class.forName("org.org.nd4j.linalg.jblas.NativeBlas");
-        } catch (Throwable e) {
-            log.warn("unable to load Jblas backend", e);
-            return false;
-        }
         return true;
     }
 
