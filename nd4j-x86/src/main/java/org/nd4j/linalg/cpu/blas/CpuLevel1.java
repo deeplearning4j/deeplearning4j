@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.util.CpuComplex;
+import org.nd4j.linalg.util.Shape;
 import org.netlib.util.doubleW;
 import org.netlib.util.floatW;
 
@@ -46,12 +47,12 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void cdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
-         throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected void cdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
-         throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -103,12 +104,14 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected double dznrm2(int N, IComplexNDArray X, int incX) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         return NativeBlas.dznrm2(N,getDoubleData(X),getBlasOffset(X),incX);
 
     }
 
     @Override
     protected double dzasum(int N, IComplexNDArray X, int incX) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         return NativeBlas.dzasum(N,getDoubleData(X),getBlasOffset(X),incX);
     }
 
@@ -124,11 +127,13 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected int icamax(int N, IComplexNDArray X, int incX) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         return NativeBlas.icamax(N,getFloatData(X),getBlasOffset(X),incX);
     }
 
     @Override
     protected int izamax(int N, IComplexNDArray X, int incX) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         return NativeBlas.izamax(N,getDoubleData(X),getBlasOffset(X),incX);
     }
 
@@ -178,6 +183,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void cswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         float[] yData = getFloatData(Y);
         NativeBlas.cswap(N,getFloatData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,X);
@@ -185,6 +191,8 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void ccopy(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
         float[] yData = getFloatData(Y);
         NativeBlas.ccopy(N,getFloatData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -192,6 +200,8 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void caxpy(int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
         float[] yData = getFloatData(Y);
         NativeBlas.caxpy(N, CpuComplex.getComplexFloat(alpha),getFloatData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -213,6 +223,9 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void zaxpy(int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
+
         double[] yData = getDoubleData(Y);
         NativeBlas.zaxpy(N, CpuComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -233,7 +246,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void srot(int N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
-         throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -287,6 +300,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void cscal(int N, IComplexFloat alpha, IComplexNDArray X, int incX) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         float[] xData = getFloatData(X);
         NativeBlas.cscal(N, CpuComplex.getComplexFloat(alpha),xData,getBlasOffset(X),incX);
         setData(xData, X);
@@ -301,6 +315,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void csscal(int N, float alpha, IComplexNDArray X, int incX) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         float[] xData = getFloatData(X);
         NativeBlas.csscal(N,alpha,xData,getBlasOffset(X),incX);
         setData(xData, X);
@@ -308,6 +323,7 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected void zdscal(int N, double alpha, IComplexNDArray X, int incX) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         double[] xData = getDoubleData(X);
         NativeBlas.zdscal(N,alpha,xData,getBlasOffset(X),incX);
         setData(xData, X);

@@ -18,6 +18,9 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 public class JblasLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
+        A = Shape.toOffsetZero(A);
+        X = Shape.toOffsetZero(X);
+        Y = Shape.toOffsetZero(Y);
         float[] yData = getFloatData(Y);
         NativeBlas.sgemv(TransA,M,N,alpha,getFloatData(A),getBlasOffset(A),A.size(0),getFloatData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -66,6 +69,10 @@ public class JblasLevel2 extends BaseLevel2 {
 
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
+        A = Shape.toOffsetZero(A);
+        X = Shape.toOffsetZero(X);
+        Y =  Shape.toOffsetZero(Y);
+
         double[] yData = getDoubleData(Y);
         NativeBlas.dgemv(TransA,M,N,alpha,getDoubleData(A),getBlasOffset(A),A.size(0),getDoubleData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
         setData(yData, Y);
@@ -117,6 +124,9 @@ public class JblasLevel2 extends BaseLevel2 {
     protected void cgemv(char order, char TransA, int M, int N, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexFloat beta, IComplexNDArray Y, int incY) {
         float[] yData = getFloatData(Y);
         A = (IComplexNDArray) Shape.toOffsetZero(A);
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
+
         NativeBlas.cgemv(
                 TransA
                 , M
@@ -179,6 +189,10 @@ public class JblasLevel2 extends BaseLevel2 {
 
     @Override
     protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
+        A = (IComplexNDArray) Shape.toOffsetZero(A);
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
+
         double[] yData = getDoubleData(Y);
         NativeBlas.zgemv(TransA,M,N, JblasComplex.getComplexDouble(alpha),getDoubleData(A),getBlasOffset(A),A.size(0),getDoubleData(X),getBlasOffset(X),incX,JblasComplex.getComplexDouble(beta),yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -246,6 +260,8 @@ public class JblasLevel2 extends BaseLevel2 {
 
     @Override
     protected void sger(char order, int M, int N, float alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
+        X = Shape.toOffsetZero(X);
+        Y = Shape.toOffsetZero(Y);
         float[] aData = getFloatData(A);
         NativeBlas.sger(M,N,alpha,getFloatData(X),getBlasOffset(X),incX,getFloatData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),lda);
         setData(aData,A);
@@ -295,6 +311,8 @@ public class JblasLevel2 extends BaseLevel2 {
 
     @Override
     protected void dger(char order, int M, int N, double alpha, INDArray X, int incX, INDArray Y, int incY, INDArray A, int lda) {
+        X = Shape.toOffsetZero(X);
+        Y = Shape.toOffsetZero(Y);
         double[] aData = getDoubleData(A);
         NativeBlas.dger(M,N,alpha,getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),A.size(0));
         setData(aData,A);
@@ -344,6 +362,8 @@ public class JblasLevel2 extends BaseLevel2 {
 
     @Override
     protected void cgeru(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
         float[] aData = getFloatData(A);
         NativeBlas.cgeru(M, N, JblasComplex.getComplexFloat(alpha), getFloatData(X), getBlasOffset(X), incX, getFloatData(Y), getBlasOffset(Y), incY, aData, getBlasOffset(A), lda);
         setData(aData,A);
@@ -351,6 +371,9 @@ public class JblasLevel2 extends BaseLevel2 {
 
     @Override
     protected void cgerc(char order, int M, int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray A, int lda) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
+
         float[] aData = getFloatData(A);
         NativeBlas.cgerc(M,N,JblasComplex.getComplexFloat(alpha),getFloatData(X),getBlasOffset(X),incX,getFloatData(Y),getBlasOffset(Y),incY,aData,getBlasOffset(A),lda);
         setData(aData,A);

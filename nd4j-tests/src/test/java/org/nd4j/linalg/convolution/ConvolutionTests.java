@@ -60,14 +60,14 @@ public  class ConvolutionTests extends BaseNd4jTest {
         INDArray kernel = Nd4j.linspace(1, 3, 3);
         INDArray answer = Nd4j.create(new double[]{1.0000012});
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
-        assertEquals(answer, test);
+        assertEquals(getFailureMessage(),answer, test);
     }
 
     @Test
     public void testDownSample() {
         INDArray zeros = Nd4j.create(56,56);
         INDArray downsampled = Transforms.downSample(zeros,new int[]{2,2});
-        assertTrue(Arrays.equals(new int[]{28,28},downsampled.shape()));
+        assertTrue(getFailureMessage(),Arrays.equals(new int[]{28,28},downsampled.shape()));
     }
 
 
@@ -77,7 +77,7 @@ public  class ConvolutionTests extends BaseNd4jTest {
         INDArray kernel = Nd4j.linspace(1, 6, 6).reshape(2,3);
         INDArray answer = Nd4j.create(new double[]{56,98});
         INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
-        assertEquals(answer, test);
+        assertEquals(getFailureMessage(),answer, test);
     }
 
 
