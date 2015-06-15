@@ -66,6 +66,7 @@ public class GradientAdjustment {
             }
 
             updateGradientAccordingToParams(
+                    variable,
                     conf
                     ,iteration
                     ,adaGradForVariable
@@ -82,7 +83,7 @@ public class GradientAdjustment {
      * adagrad, momentum, and sparsity
      * @param gradient the gradient to modify
      */
-    public static void updateGradientAccordingToParams(NeuralNetConfiguration conf,int iteration,AdaGrad adaGrad,INDArray gradient,INDArray params,INDArray lastStep,int batchSize) {
+    public static void updateGradientAccordingToParams(String variableName,NeuralNetConfiguration conf,int iteration,AdaGrad adaGrad,INDArray gradient,INDArray params,INDArray lastStep,int batchSize) {
         if(adaGrad == null)
             adaGrad = new AdaGrad(gradient.shape());
 
@@ -127,10 +128,10 @@ public class GradientAdjustment {
         }
 
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
-        if(conf.isUseRegularization() && conf.getL2() > 0)
-            gradient.subi(params.mul(conf.getL2() * conf.getLr()));
-        else if(conf.isUseRegularization() && conf.getL1() < 0)
-            gradient.subi(gradient.mul(Transforms.sign(params)).muli(conf.getL1() * conf.getLr()));
+        if(conf.isUseRegularization() && conf.getL2() > 0 && !variableName.toLowerCase().contains("bias"))
+            gradient.subi(params.mul(conf.getL2()));
+        else if(conf.isUseRegularization() && conf.getL1() < 0 && !variableName.toLowerCase().contains("bias"))
+            gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
 
 
