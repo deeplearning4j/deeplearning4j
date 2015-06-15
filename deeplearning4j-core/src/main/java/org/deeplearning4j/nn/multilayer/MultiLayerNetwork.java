@@ -347,7 +347,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             for (int i = 0; i < getnLayers(); i++) {
 
                 if (i == 0) {
-                    inputSize = layerWiseConfigurations.getConf(0).getNOut();
+                    inputSize = layerWiseConfigurations.getConf(0).getNIn();
                     if(input == null) {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
