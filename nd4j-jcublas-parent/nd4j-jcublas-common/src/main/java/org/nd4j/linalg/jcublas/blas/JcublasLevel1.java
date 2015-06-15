@@ -20,12 +20,12 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
 public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected float sdsdot(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     protected double dsdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -33,8 +33,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         DataTypeValidation.assertSameDataType(X, Y);
 
         SimpleJCublas.sync();
-         CublasPointer xCPointer = new CublasPointer(X);
-         CublasPointer yCPointer = new CublasPointer(Y);
+        CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer yCPointer = new CublasPointer(Y);
 
         Pointer result;
         float[] ret = new float[1];
@@ -57,9 +57,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         double[] ret = new double[1];
         Pointer result = Pointer.to(ret);
         SimpleJCublas.sync();
-         CublasPointer xCPointer = new CublasPointer(X);
-         CublasPointer yCPointer = new CublasPointer(Y);
-
+        CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer yCPointer = new CublasPointer(Y);
 
         JCublas2.cublasDdot(
                 ContextHolder.getInstance().getHandle(),
@@ -76,21 +75,24 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void cdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
-
+       throw new UnsupportedOperationException();
     }
 
     @Override
     protected void cdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void zdotu_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotu) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void zdotc_sub(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY, IComplexNDArray dotc) {
+        throw new UnsupportedOperationException();
 
     }
 
@@ -98,7 +100,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected float snrm2(int N, INDArray X, int incX) {
         SimpleJCublas.sync();
 
-         CublasPointer cAPointer = new CublasPointer(X);
+        CublasPointer cAPointer = new CublasPointer(X);
 
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
@@ -124,7 +126,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected double dnrm2(int N, INDArray X, int incX) {
         double[] ret = new double[1];
         Pointer result = Pointer.to(ret);
-         CublasPointer cAPointer = new CublasPointer(X);
+        CublasPointer cAPointer = new CublasPointer(X);
 
         JCublas2.cublasDnrm2(
                 ContextHolder.getInstance().getHandle()
@@ -182,7 +184,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
-         CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer xCPointer = new CublasPointer(X);
         SimpleJCublas.sync();
         int ret2 = JCublas.cublasIsamax(
                 X.length(),
@@ -195,7 +197,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
-         CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer xCPointer = new CublasPointer(X);
         SimpleJCublas.sync();
         int ret2 = JCublas.cublasIdamax(
                 X.length(),
@@ -208,7 +210,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int icamax(int N, IComplexNDArray X, int incX) {
-         CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer xCPointer = new CublasPointer(X);
         int[] result = new int[1];
         Pointer resultPointer = Pointer.to(result);
         return JCublas2.cublasIcamax(ContextHolder.getInstance().getHandle(),N,xCPointer.getDevicePointer(),incX,resultPointer);
@@ -216,7 +218,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected int izamax(int N, IComplexNDArray X, int incX) {
-         CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer xCPointer = new CublasPointer(X);
         int[] result = new int[1];
         Pointer resultPointer = Pointer.to(result);
         return JCublas2.cublasIzamax(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, resultPointer);
@@ -224,8 +226,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void sswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-         CublasPointer xCPointer = new CublasPointer(X);
-         CublasPointer yCPointer = new CublasPointer(Y);
+        CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer yCPointer = new CublasPointer(Y);
         SimpleJCublas.sync();
 
 
@@ -244,8 +246,8 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void scopy(int N, INDArray X, int incX, INDArray Y, int incY) {
         SimpleJCublas.sync();
 
-         CublasPointer xCPointer = new CublasPointer(X);
-         CublasPointer yCPointer = new CublasPointer(Y);
+        CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer yCPointer = new CublasPointer(Y);
 
         JCublas2.cublasScopy(
                 ContextHolder.getInstance().getHandle()
@@ -261,8 +263,8 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
 
-         CublasPointer xAPointer = new CublasPointer(X);
-         CublasPointer xBPointer = new CublasPointer(Y);
+        CublasPointer xAPointer = new CublasPointer(X);
+        CublasPointer xBPointer = new CublasPointer(Y);
 
         SimpleJCublas.sync();
         JCublas2.cublasSaxpy(
@@ -282,8 +284,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
-         CublasPointer xCPointer = new CublasPointer(X);
-         CublasPointer yCPointer = new CublasPointer(Y);
+        CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer yCPointer = new CublasPointer(Y);
         SimpleJCublas.sync();
 
 
@@ -302,8 +304,8 @@ public class JcublasLevel1 extends BaseLevel1 {
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
         SimpleJCublas.sync();
 
-         CublasPointer xCPointer = new CublasPointer(X);
-         CublasPointer yCPointer = new CublasPointer(Y);
+        CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer yCPointer = new CublasPointer(Y);
 
         JCublas2.cublasDcopy(
                 ContextHolder.getInstance().getHandle()
@@ -318,8 +320,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
-         CublasPointer xAPointer = new CublasPointer(X);
-         CublasPointer xBPointer = new CublasPointer(Y);
+        CublasPointer xAPointer = new CublasPointer(X);
+        CublasPointer xBPointer = new CublasPointer(Y);
 
         SimpleJCublas.sync();
         JCublas2.cublasDaxpy(
@@ -338,8 +340,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void cswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-         CublasPointer xAPointer = new CublasPointer(X);
-         CublasPointer xBPointer = new CublasPointer(Y);
+        CublasPointer xAPointer = new CublasPointer(X);
+        CublasPointer xBPointer = new CublasPointer(Y);
 
         JCublas2.cublasCswap(ContextHolder.getInstance().getHandle(),N,xAPointer.getDevicePointer(),incX,xBPointer.getDevicePointer(),incY);
 
@@ -354,8 +356,8 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void caxpy(int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
 
-         CublasPointer aCPointer = new CublasPointer(X);
-         CublasPointer bCPointer = new CublasPointer(Y);
+        CublasPointer aCPointer = new CublasPointer(X);
+        CublasPointer bCPointer = new CublasPointer(Y);
         SimpleJCublas.sync();
 
         JCublas2.cublasCaxpy(
@@ -374,8 +376,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void zswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-         CublasPointer xAPointer = new CublasPointer(X);
-         CublasPointer xBPointer = new CublasPointer(Y);
+        CublasPointer xAPointer = new CublasPointer(X);
+        CublasPointer xBPointer = new CublasPointer(Y);
 
         JCublas2.cublasZswap(ContextHolder.getInstance().getHandle(), N, xAPointer.getDevicePointer(), incX, xBPointer.getDevicePointer(), incY);
 
@@ -389,8 +391,8 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void zaxpy(int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-         CublasPointer aCPointer = new CublasPointer(X);
-         CublasPointer bCPointer = new CublasPointer(Y);
+        CublasPointer aCPointer = new CublasPointer(X);
+        CublasPointer bCPointer = new CublasPointer(Y);
         SimpleJCublas.sync();
 
         JCublas2.cublasZaxpy(
@@ -408,41 +410,49 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void srotg(float a, float b, float c, float s) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void srotmg(float d1, float d2, float b1, float b2, INDArray P) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void srot(int N, INDArray X, int incX, INDArray Y, int incY, float c, float s) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void srotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void drotg(double a, double b, double c, double s) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void drotmg(double d1, double d2, double b1, double b2, INDArray P) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void drot(int N, INDArray X, int incX, INDArray Y, int incY, double c, double s) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     protected void drotm(int N, INDArray X, int incX, INDArray Y, int incY, INDArray P) {
+        throw new UnsupportedOperationException();
 
     }
 
@@ -486,7 +496,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         SimpleJCublas.sync();
 
-         CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer xCPointer = new CublasPointer(X);
 
         JCublas2.cublasCscal(
                 ContextHolder.getInstance().getHandle(),
@@ -506,7 +516,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         SimpleJCublas.sync();
 
 
-         CublasPointer xCPointer = new CublasPointer(X);
+        CublasPointer xCPointer = new CublasPointer(X);
 
         JCublas2.cublasZscal(
                 ContextHolder.getInstance().getHandle(),
@@ -525,14 +535,14 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void csscal(int N, float alpha, IComplexNDArray X, int incX) {
-         CublasPointer p = new CublasPointer(X);
+        CublasPointer p = new CublasPointer(X);
         JCublas2.cublasSscal(ContextHolder.getInstance().getHandle(),N,Pointer.to(new float[]{alpha}),p.getDevicePointer(),incX);
         p.copyToHost();
     }
 
     @Override
     protected void zdscal(int N, double alpha, IComplexNDArray X, int incX) {
-         CublasPointer p = new CublasPointer(X);
+        CublasPointer p = new CublasPointer(X);
         JCublas2.cublasZdscal(ContextHolder.getInstance().getHandle(), N, Pointer.to(new double[]{alpha}), p.getDevicePointer(), incX);
         p.copyToHost();
     }

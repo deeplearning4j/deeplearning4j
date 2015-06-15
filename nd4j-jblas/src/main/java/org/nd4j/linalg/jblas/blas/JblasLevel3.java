@@ -11,7 +11,6 @@ import org.nd4j.linalg.jblas.util.JblasComplex;
 import org.nd4j.linalg.util.Shape;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
-import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 
 

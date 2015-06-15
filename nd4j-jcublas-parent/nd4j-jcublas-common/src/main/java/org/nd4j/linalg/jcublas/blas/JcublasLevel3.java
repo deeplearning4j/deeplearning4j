@@ -5,6 +5,7 @@ import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasOperation;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -17,6 +18,7 @@ import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.util.OpUtil;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.util.Shape;
 
 /**
  * @author Adam Gibson
@@ -27,17 +29,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         int m = A.rows();
         int n = B.columns();
         int k = A.columns();
-        if(A.offset() > 0) {
-            INDArray copy = Nd4j.create(A.shape());
-            copy.assign(A);
-            A = copy;
-        }
-        if(B.offset() > 0) {
-            INDArray copy = Nd4j.create(B.shape());
-            copy.assign(B);
-            B = copy;
-        }
 
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
 
 
         SimpleJCublas.sync();
@@ -50,8 +44,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         JCublas2.cublasSgemm(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N,
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
+                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(B)),
                 m,
                 n,
                 k,
@@ -91,7 +85,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void ssyr2k(char Order, char Uplo, char Trans, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-     throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
 
     }
 
@@ -112,16 +106,9 @@ public class JcublasLevel3 extends BaseLevel3 {
         int m = A.rows();
         int n = B.columns();
         int k = A.columns();
-        if(A.offset() > 0) {
-            INDArray copy = Nd4j.create(A.shape());
-            copy.assign(A);
-            A = copy;
-        }
-        if(B.offset() > 0) {
-            INDArray copy = Nd4j.create(B.shape());
-            copy.assign(B);
-            B = copy;
-        }
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
+
 
 
         DataTypeValidation.assertDouble(A, B, C);
@@ -136,8 +123,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         JCublas2.cublasDgemm(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N, //trans
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
+                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(B)),
                 m,  // m
                 n, // n
                 k, //k,

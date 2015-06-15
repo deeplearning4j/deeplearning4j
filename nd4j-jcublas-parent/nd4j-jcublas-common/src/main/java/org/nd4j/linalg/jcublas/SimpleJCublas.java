@@ -130,7 +130,6 @@ public class SimpleJCublas {
      * Sync the device
      */
     public static void sync() {
-        JCuda.cudaDeviceSynchronize();
         ContextHolder.syncStream();
     }
 

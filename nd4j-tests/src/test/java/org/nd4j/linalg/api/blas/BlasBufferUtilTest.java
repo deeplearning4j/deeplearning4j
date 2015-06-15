@@ -5,6 +5,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 
@@ -12,6 +13,20 @@ import java.util.Arrays;
  * Created by agibsoncccc on 6/8/15.
  */
 public class BlasBufferUtilTest extends BaseNd4jTest {
+    public BlasBufferUtilTest() {
+    }
+
+    public BlasBufferUtilTest(String name) {
+        super(name);
+    }
+
+    public BlasBufferUtilTest(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
+    public BlasBufferUtilTest(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Test
     public void testFloat() {
