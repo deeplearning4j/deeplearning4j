@@ -20,7 +20,7 @@ public class BlasBufferUtilTest extends BaseNd4jTest {
         INDArray row1 = test.getRow(1);
         float[] dataAssertion = {2f,4f};
         float[] testData = BlasBufferUtil.getFloatData(row1);
-        assertTrue(Arrays.equals(dataAssertion, testData));
+        assertTrue(getFailureMessage(),Arrays.equals(dataAssertion, testData));
     }
 
 

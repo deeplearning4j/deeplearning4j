@@ -77,6 +77,10 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        A = Shape.toOffsetZero(A);
+        B =  Shape.toOffsetZero(B);
+        C =  Shape.toOffsetZero(C);
+
         DataBuffer aData = A.offset() > 0 ? A.ravel().data() : A.data();
         DataBuffer bData = B.offset() > 0 ? B.ravel().data() : B.data();
 
@@ -135,6 +139,10 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void cgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexFloat alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexFloat beta, IComplexNDArray C, int ldc) {
+        A = (IComplexNDArray) Shape.toOffsetZero(A);
+        B = (IComplexNDArray) Shape.toOffsetZero(B);
+        C = (IComplexNDArray) Shape.toOffsetZero(C);
+
         float[] cData = getFloatData(C);
         NativeBlas.cgemm(TransA, TransB, M, N, K, CpuComplex.getComplexFloat(alpha), getFloatData(A), getBlasOffset(A), lda, getFloatData(B), getBlasOffset(B), ldb, CpuComplex.getComplexFloat(beta), cData, getBlasOffset(C), ldc);
         setData(cData,C);
@@ -172,6 +180,10 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void zgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
+        A = (IComplexNDArray) Shape.toOffsetZero(A);
+        B = (IComplexNDArray) Shape.toOffsetZero(B);
+        C = (IComplexNDArray) Shape.toOffsetZero(C);
+
         double[] cData = getDoubleData(C);
         NativeBlas.zgemm(TransA, TransB, M, N, K, CpuComplex.getComplexDouble(alpha), getDoubleData(A), getBlasOffset(A), lda, getDoubleData(B), getBlasOffset(B), ldb, CpuComplex.getComplexDouble(beta), cData, getBlasOffset(C), ldc);
         setData(cData,C);
