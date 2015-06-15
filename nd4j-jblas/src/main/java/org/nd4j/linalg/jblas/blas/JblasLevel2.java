@@ -20,6 +20,7 @@ public class JblasLevel2 extends BaseLevel2 {
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         A = Shape.toOffsetZero(A);
         X = Shape.toOffsetZero(X);
+        Y = Shape.toOffsetZero(Y);
         float[] yData = getFloatData(Y);
         NativeBlas.sgemv(TransA,M,N,alpha,getFloatData(A),getBlasOffset(A),A.size(0),getFloatData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -70,6 +71,8 @@ public class JblasLevel2 extends BaseLevel2 {
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
         A = Shape.toOffsetZero(A);
         X = Shape.toOffsetZero(X);
+        Y =  Shape.toOffsetZero(Y);
+
         double[] yData = getDoubleData(Y);
         NativeBlas.dgemv(TransA,M,N,alpha,getDoubleData(A),getBlasOffset(A),A.size(0),getDoubleData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
         setData(yData, Y);
@@ -122,6 +125,7 @@ public class JblasLevel2 extends BaseLevel2 {
         float[] yData = getFloatData(Y);
         A = (IComplexNDArray) Shape.toOffsetZero(A);
         X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
 
         NativeBlas.cgemv(
                 TransA
@@ -187,6 +191,8 @@ public class JblasLevel2 extends BaseLevel2 {
     protected void zgemv(char order, char TransA, int M, int N, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray X, int incX, IComplexDouble beta, IComplexNDArray Y, int incY) {
         A = (IComplexNDArray) Shape.toOffsetZero(A);
         X = (IComplexNDArray) Shape.toOffsetZero(X);
+        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
+
         double[] yData = getDoubleData(Y);
         NativeBlas.zgemv(TransA,M,N, JblasComplex.getComplexDouble(alpha),getDoubleData(A),getBlasOffset(A),A.size(0),getDoubleData(X),getBlasOffset(X),incX,JblasComplex.getComplexDouble(beta),yData,getBlasOffset(Y),incY);
         setData(yData,Y);

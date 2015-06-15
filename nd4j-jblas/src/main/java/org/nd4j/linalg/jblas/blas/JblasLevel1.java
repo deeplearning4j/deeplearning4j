@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jblas.util.JblasComplex;
+import org.nd4j.linalg.util.Shape;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
@@ -71,24 +72,32 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected float snrm2(int N, INDArray X, int incX) {
+        X = Shape.toOffsetZero(X);
+
         float[] data = getFloatData(X);
         return NativeBlas.snrm2(N,data,getBlasOffset(X),incX);
     }
 
     @Override
     protected float sasum(int N, INDArray X, int incX) {
+        X = Shape.toOffsetZero(X);
+
         float[] data = getFloatData(X);
         return NativeBlas.sasum(N,data,getBlasOffset(X),incX);
     }
 
     @Override
     protected double dnrm2(int N, INDArray X, int incX) {
+        X = Shape.toOffsetZero(X);
+
         double[] data = getDoubleData(X);
         return NativeBlas.dnrm2(N,data,getBlasOffset(X),incX);
     }
 
     @Override
     protected double dasum(int N, INDArray X, int incX) {
+        X = Shape.toOffsetZero(X);
+
         double[] data = getDoubleData(X);
         return NativeBlas.dasum(N,data,getBlasOffset(X),incX);
     }
@@ -156,6 +165,7 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected void dswap(int N, INDArray X, int incX, INDArray Y, int incY) {
+        X = Shape.toOffsetZero(X);
         NativeBlas.dswap(N,getDoubleData(X),getBlasOffset(X),incX,getDoubleData(Y),getBlasOffset(Y),incY);
     }
 
@@ -168,6 +178,7 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
+        X = Shape.toOffsetZero(X);
         double[] yData = getDoubleData(Y);
         JavaBlas.raxpy(N,alpha,getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -189,6 +200,7 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected void caxpy(int N, IComplexFloat alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         float[] yData = getFloatData(Y);
         NativeBlas.caxpy(N, JblasComplex.getComplexFloat(alpha),getFloatData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
@@ -210,6 +222,7 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected void zaxpy(int N, IComplexDouble alpha, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
+        X = (IComplexNDArray) Shape.toOffsetZero(X);
         double[] yData = getDoubleData(Y);
         NativeBlas.zaxpy(N,JblasComplex.getComplexDouble(alpha),getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(yData,Y);
