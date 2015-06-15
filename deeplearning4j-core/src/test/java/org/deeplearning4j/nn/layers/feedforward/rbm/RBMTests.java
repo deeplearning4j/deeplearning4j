@@ -157,7 +157,7 @@ public class RBMTests {
         DataSet d2 = fetcher.next();
         
         org.nd4j.linalg.api.rng.distribution.Distribution dist = Nd4j.getDistributions().createNormal(1, 1e-5);
-        System.out.println(dist.sample(new int[]{conf.getNOut(), conf.getNOut()}));
+        System.out.println(dist.sample(new int[]{conf.getNIn(), conf.getNOut()}));
 
         INDArray input = d2.getFeatureMatrix();
 

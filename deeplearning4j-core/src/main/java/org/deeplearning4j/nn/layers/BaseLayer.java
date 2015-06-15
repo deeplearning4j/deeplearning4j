@@ -36,11 +36,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A layer with a bias and activation function
@@ -294,10 +290,7 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.getActivationFunction().equals("softmax"))
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
-        else
-            return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
 
     }
 
@@ -358,14 +351,16 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public Layer clone() {
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
 
 
         Layer layer = null;
         try {
-            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
-            layer = (Layer) c.newInstance(conf, W.dup(), b.dup(), input != null ? input.dup() : null);
+            Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
+            layer = (Layer) c.newInstance(conf);
+            Map<String,INDArray> linkedTable = new LinkedHashMap<>();
+            for(String s: params.keySet())
+                linkedTable.put(s,params.get(s).dup());
+            layer.setParamTable(linkedTable);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -446,7 +441,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public String toString() {
-        return "BaseLayer{" +
+        return getClass().getName() + "{" +
                 "conf=" + conf +
                 ", input=" + input +
                 ", params=" + params +
@@ -468,7 +463,7 @@ public abstract class BaseLayer implements Layer {
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
             NeuralNetConfiguration clone = conf.clone();
-            int nIn = clone.getNOut(),nOut = clone.getNOut();
+            int nIn = clone.getNIn(),nOut = clone.getNOut();
             clone.setNIn(nIn);
             clone.setNOut(nOut);
             layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
@@ -484,10 +479,10 @@ public abstract class BaseLayer implements Layer {
         //figure out how to set ixes and deltas
         INDArray delta = activation.transpose().mmul(ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY));
         INDArray biasDelta = delta.mean(0);
-        INDArray weightsPlusBias = getParam(DefaultParamInitializer.WEIGHT_KEY).transpose();
+        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY).transpose();
         Gradient ret = new DefaultGradient();
         INDArray errorForEach = ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray nextIx =  errorForEach.mmul(weightsPlusBias).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(previousActivation, activation).derivative()));
+        INDArray nextIx =  errorForEach.mmul(weights).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(previousActivation, activation).derivative()));
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, nextIx);
         INDArray deltaColumnSums = nextIx.isVector() ? nextIx.dup() : nextIx.mean(0);
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,deltaColumnSums);
