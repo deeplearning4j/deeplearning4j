@@ -43,6 +43,7 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
+import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
 /**
@@ -144,7 +145,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             case EXPLL:
                 return input.transpose().mmul(labels.rsub(1).divi(z));
             case RMSE_XENT:
-                return input.transpose().mmul(pow(labels.sub(z),2));
+                INDArray rmseXentDiff = labels.sub(z);
+                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
+                INDArray sqrt = sqrt(squaredrmseXentDiff);
+                return input.transpose().mmul(sqrt);
             case SQUARED_LOSS:
                 return input.transpose().mmul(pow(labels.sub(z),2));
             case NEGATIVELOGLIKELIHOOD:
@@ -301,7 +305,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void setParams(INDArray params) {
-        INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getNOut() * conf.getNOut()));
+        INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);

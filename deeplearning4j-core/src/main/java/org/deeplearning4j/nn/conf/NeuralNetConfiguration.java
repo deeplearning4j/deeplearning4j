@@ -118,6 +118,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double l1 = 0.0;
     //feature map
     protected int[] featureMapSize = {9,9};
+
+    protected double rmsDecay = 0.0;
+
+
     protected ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
 
 
@@ -396,6 +400,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static class Builder {
         private int k = 1;
         private String customLossFunction;
+        private double rmsDecay;
         @Deprecated
         private int kernel = 5;
         private double corruptionLevel = 3e-1f;
@@ -439,6 +444,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+
+        public Builder rmsDecay(double rmsDecay) {
+            this.rmsDecay = rmsDecay;
+            return this;
+        }
 
         public Builder customLossFunction(String customLossFunction) {
             this.customLossFunction = customLossFunction;
@@ -604,6 +614,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        /**
+         * Return a configuration based on this builder
+         *
+         * @return
+         */
         public NeuralNetConfiguration build() {
             NeuralNetConfiguration ret = new NeuralNetConfiguration( sparsity,  useAdaGrad,  lr,  k,
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
@@ -612,6 +627,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
                     ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1,customLossFunction);
             ret.useAdaGrad = this.useAdaGrad;
+            ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
             return ret;
         }
