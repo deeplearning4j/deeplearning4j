@@ -111,16 +111,17 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
-        int featureMaps = ConvolutionUtils.numFeatureMap(conf);
-        int inputFeatureMaps = ConvolutionUtils.numChannels(input.shape());
-        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),featureMaps},conf.getFeatureMapSize()));
+        //number of feature maps for the weights
+        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
+        //number of channels of the input
+        int inputChannels = ConvolutionUtils.numChannels(input.shape());
+        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
 
-        for(int i = 0; i < featureMaps; i++) {
-
+        for(int i = 0; i < currentFeatureMaps; i++) {
             INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), 1}, conf.getFeatureMapSize()));
-            for(int j = 0; j <  inputFeatureMaps; j++) {
+            for(int j = 0; j <  inputChannels; j++) {
                 INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
                 featureMap.addi(convolved.broadcast(featureMap.shape()));
             }
@@ -134,17 +135,17 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Layer transpose() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Layer clone() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -159,11 +160,13 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void fit() {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void update(Gradient gradient) {
+        throw new UnsupportedOperationException();
 
     }
 
