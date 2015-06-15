@@ -1,6 +1,8 @@
 package org.nd4j.linalg.cpu.blas;
 
+import com.github.fommil.netlib.BLAS;
 import org.jblas.NativeBlas;
+import org.nd4j.linalg.api.blas.impl.BaseLevel;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -11,6 +13,7 @@ import org.nd4j.linalg.cpu.util.CpuComplex;
 import org.nd4j.linalg.util.Shape;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
+import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 
 
@@ -27,23 +30,8 @@ public class CpuLevel3 extends BaseLevel3 {
         DataBuffer bData = Shape.toOffsetZero(B).data();
 
         float[] cData = getFloatData(C);
-        NativeBlas.sgemm(
-                TransA
-                ,TransB
-                ,M
-                ,N,
-                K,
-                alpha
-                ,aData.asFloat()
-                ,0
-                ,lda,bData.asFloat()
-                ,0
-                ,ldb
-                ,beta
-                ,cData
-                ,0
-                ,ldc);
-        setData(cData,C);
+        BLAS.getInstance().sgemm(String.valueOf(TransA),String.valueOf(TransB),M,N,K,alpha,aData.asFloat(),getBlasOffset(A),lda,bData.asFloat(),getBlasOffset(B),ldb,beta,cData,getBlasOffset(C),ldc);
+        setData(cData, C);
     }
 
     @Override
@@ -81,30 +69,12 @@ public class CpuLevel3 extends BaseLevel3 {
         B =  Shape.toOffsetZero(B);
         C =  Shape.toOffsetZero(C);
 
-        DataBuffer aData = A.offset() > 0 ? A.ravel().data() : A.data();
-        DataBuffer bData = B.offset() > 0 ? B.ravel().data() : B.data();
+        DataBuffer aData = Shape.toOffsetZero(A).data();
+        DataBuffer bData = Shape.toOffsetZero(B).data();
 
         double[] cData = getDoubleData(C);
-        NativeBlas.dgemm(
-                TransA
-                , TransB
-                , M
-                ,
-                N,
-                K,
-                alpha,
-                aData.asDouble()
-                ,getBlasOffset(A)
-                ,
-                lda,bData.asDouble()
-                , getBlasOffset(B)
-                , ldb
-                ,
-                beta
-                , cData
-                , getBlasOffset(C)
-                , ldc);
-        setData(cData,C);
+        BLAS.getInstance().dgemm(String.valueOf(TransA), String.valueOf(TransB), M, N, K, alpha, aData.asDouble(), getBlasOffset(A), lda, bData.asDouble(), getBlasOffset(B), ldb, beta, cData, getBlasOffset(C), ldc);
+        setData(cData, C);
     }
 
     @Override
