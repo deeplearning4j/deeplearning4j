@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.rng;
 
+import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,12 +42,20 @@ public class DefaultRandom implements Random, RandomGenerator {
     }
 
     public DefaultRandom(long seed) {
-        this.randomGenerator = new org.apache.commons.math3.random.SynchronizedRandomGenerator(new MersenneTwister(seed));
+        RandomGenerator gen = new JDKRandomGenerator();
+        gen.setSeed(seed);
+        this.randomGenerator = gen;
     }
 
 
     public DefaultRandom(RandomGenerator randomGenerator) {
         this.randomGenerator = randomGenerator;
+    }
+
+    @Override
+    public java.util.Random asRandom() {
+        JDKRandomGenerator rng = (JDKRandomGenerator) randomGenerator;
+        return rng;
     }
 
     @Override
