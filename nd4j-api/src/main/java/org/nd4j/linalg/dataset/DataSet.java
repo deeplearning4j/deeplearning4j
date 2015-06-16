@@ -22,6 +22,7 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -31,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
 
 /**
  * A data transform (example/outcome pairs)
@@ -226,7 +228,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public void addFeatureVector(INDArray toAdd) {
-        setFeatures(Nd4j.hstack(getFeatureMatrix(),toAdd));
+        setFeatures(Nd4j.hstack(getFeatureMatrix(), toAdd));
     }
 
 
@@ -499,16 +501,15 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @return the pair of datasets for the train test split
      */
     @Override
-    public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
+    public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rnd) {
 
         if (numHoldout >= numExamples())
             throw new IllegalArgumentException("Unable to split on size larger than the number of rows");
 
-
         List<DataSet> list = asList();
 
         Collections.rotate(list, 3);
-        Collections.shuffle(list);
+        Collections.shuffle(list, rnd.asRandom());
         List<List<DataSet>> partition = new ArrayList<>();
         partition.add(list.subList(0, numHoldout));
         partition.add(list.subList(numHoldout, list.size()));
@@ -516,6 +517,13 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         DataSet test = merge(partition.get(1));
         return new SplitTestAndTrain(train, test);
     }
+
+    @Override
+    public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
+        Random rnd = Nd4j.getRandom();
+        return splitTestAndTrain(numHoldout, rnd);
+    }
+
 
     /**
      * Returns the labels for the dataset

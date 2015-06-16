@@ -29,6 +29,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface Random {
 
+    /**
+     * Convert generator to java.util.Random
+     * @return this as java.util.Random
+     */
+    java.util.Random asRandom();
 
     /**
      * Sets the seed of the underlying random number generator using an
