@@ -22,7 +22,6 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -501,7 +500,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @return the pair of datasets for the train test split
      */
     @Override
-    public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rnd) {
+    public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
 
         if (numHoldout >= numExamples())
             throw new IllegalArgumentException("Unable to split on size larger than the number of rows");
@@ -509,7 +508,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         List<DataSet> list = asList();
 
         Collections.rotate(list, 3);
-        Collections.shuffle(list, rnd.asRandom());
+        Collections.shuffle(list, rng);
         List<List<DataSet>> partition = new ArrayList<>();
         partition.add(list.subList(0, numHoldout));
         partition.add(list.subList(numHoldout, list.size()));
@@ -520,8 +519,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout) {
-        Random rnd = Nd4j.getRandom();
-        return splitTestAndTrain(numHoldout, rnd);
+        return splitTestAndTrain(numHoldout, new Random());
     }
 
 

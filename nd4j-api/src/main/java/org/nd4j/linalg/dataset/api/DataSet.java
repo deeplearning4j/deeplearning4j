@@ -20,7 +20,6 @@
 package org.nd4j.linalg.dataset.api;
 
 import com.google.common.base.Function;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
@@ -99,9 +98,9 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     List<org.nd4j.linalg.dataset.DataSet> asList();
 
-    SplitTestAndTrain splitTestAndTrain(int numHoldout);
+    SplitTestAndTrain splitTestAndTrain(int numHoldout, java.util.Random rnd);
 
-    SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rnd);
+    SplitTestAndTrain splitTestAndTrain(int numHoldout);
 
     INDArray getLabels();
 

@@ -19,9 +19,9 @@
 
 package org.nd4j.linalg.api.rng;
 
-import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,44 +32,36 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class DefaultRandom implements Random, RandomGenerator {
     protected RandomGenerator randomGenerator;
-
+    protected long seed;
     /**
      * Initialize with a System.currentTimeMillis()
      * seed
      */
-    public DefaultRandom() {
-        this(System.currentTimeMillis());
-    }
+    public DefaultRandom() { this(System.currentTimeMillis()); }
 
     public DefaultRandom(long seed) {
-        RandomGenerator gen = new JDKRandomGenerator();
-        gen.setSeed(seed);
-        this.randomGenerator = gen;
+        this.seed = seed;
+        this.randomGenerator = new SynchronizedRandomGenerator(new MersenneTwister(seed));
     }
-
 
     public DefaultRandom(RandomGenerator randomGenerator) {
         this.randomGenerator = randomGenerator;
     }
 
     @Override
-    public java.util.Random asRandom() {
-        JDKRandomGenerator rng = (JDKRandomGenerator) randomGenerator;
-        return rng;
-    }
-
-    @Override
     public void setSeed(int seed) {
+        this.seed = (long) seed;
         getRandomGenerator().setSeed(seed);
     }
 
     @Override
     public void setSeed(int[] seed) {
-        getRandomGenerator().setSeed(seed);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setSeed(long seed) {
+        this.seed= seed;
         getRandomGenerator().setSeed(seed);
     }
 
@@ -166,6 +158,10 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     public synchronized RandomGenerator getRandomGenerator() {
         return randomGenerator;
+    }
+
+    public synchronized long getSeed(){
+        return this.seed;
     }
 
 }
