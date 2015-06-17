@@ -26,12 +26,10 @@ public @Data class GemmParams {
         this.m = a.rows();
         this.n = b.columns();
         this.k = a.columns();
-        this.lda = k;
-        this.ldb = n;
-        this.ldc = n;
+        this.lda = a.size(0);
+        this.ldb = b.size(0);
+        this.ldc = c.size(0);
         if(a.ordering() == NDArrayFactory.C) {
-            //  #define DGEMM_ROWMAJOR(A,B,C,m,n,k,alpha,beta,transf_A,transf_B, lda, ldb, ldc) \
-            //  DGEMM(transf_B, transf_A, n, m, k, alpha, B, ldb, A, lda, beta, C, ldc)
             int oldN = n;
             int oldM = m;
             this.m = oldN;
