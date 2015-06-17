@@ -103,7 +103,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         //input activation
         INDArray netOut = output(input);
         //difference of outputs
-        INDArray dy = labels.sub(netOut);
+        INDArray dy = netOut.sub(labels);
 
 
         INDArray wGradient = getWeightGradient();
