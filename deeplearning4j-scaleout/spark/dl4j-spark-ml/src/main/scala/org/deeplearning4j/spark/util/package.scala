@@ -41,7 +41,7 @@ package object util {
         throw new IllegalArgumentException("implicit array must be a vector")
       }
       val ret = new Array[Double](array.length)
-      for(i <- 0 to array.length)
+      for(i <- 0 to array.length - 1)
         ret(i) = array.getDouble(i)
 
       return Vectors.dense(ret)
