@@ -38,7 +38,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.DefaultRandom;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -98,7 +97,6 @@ public class BasicRNTNTest {
 
     @Test
     public void testGetValuesAndDerivativeLengths() throws Exception {
-
         RNTN rntn = new RNTN.Builder().setActivationFunction("tanh")
                 .setAdagradResetFrequency(1)
                 .setCombineClassification(true)
@@ -116,7 +114,6 @@ public class BasicRNTNTest {
     @Test
     public void testRNTNEval() throws Exception {
         RNTN rntn = new RNTN.Builder().setActivationFunction("tanh")
-                .setRng(new DefaultRandom(3))
                 .setAdagradResetFrequency(1)
                 .setCombineClassification(true)
                 .setFeatureVectors(vec)
