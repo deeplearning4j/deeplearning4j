@@ -91,6 +91,16 @@ public class WordVectorsImpl implements WordVectors {
                         break;
                     continue;
                 }
+
+                String add = vocab().wordAtIndex(sort.getInt(i));
+                if(add == null || add.equals("UNK") || add.equals("STOP")) {
+                    end++;
+                    if(end >= sort.length())
+                        break;
+                    continue;
+                }
+
+
                 ret.add(vocab().wordAtIndex(sort.getInt(i)));
             }
 
@@ -140,7 +150,7 @@ public class WordVectorsImpl implements WordVectors {
                 if(sort.getInt(i) == word2.getIndex())
                     continue;
                 String add = vocab().wordAtIndex(sort.getInt(i));
-                if(add == null || add.equals("UNK")) {
+                if(add == null || add.equals("UNK") || add.equals("STOP")) {
                     continue;
                 }
 
@@ -311,6 +321,16 @@ public class WordVectorsImpl implements WordVectors {
                         break;
                     continue;
                 }
+
+                String add = vocab().wordAtIndex(sort.getInt(i));
+                if(add == null || add.equals("UNK") || add.equals("STOP")) {
+                    end++;
+                    if(end >= sort.length())
+                        break;
+                    continue;
+                }
+
+
                 ret.add(vocab().wordAtIndex(sort.getInt(i)));
             }
 
