@@ -62,7 +62,7 @@ public class LossFunctions {
                 break;
             case MCXENT:
                 INDArray columnSums = labels.mul(log(z));
-                ret = columnSums.mean(1).mean(Integer.MAX_VALUE).getDouble(0);
+                ret = columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case XENT:
                 INDArray xEntLogZ = log(z);
