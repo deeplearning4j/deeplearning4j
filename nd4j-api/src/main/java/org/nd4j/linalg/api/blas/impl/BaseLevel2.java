@@ -82,33 +82,35 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
+        GemvParameters parameters = new GemvParameters(A,X,Y);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             zgemv(
                     order
                     , transA
-                    , A.rows()
-                    , A.columns()
+                    , parameters.getM()
+                    , parameters.getN()
                     , alpha.asDouble()
                     , A
-                    , A.size(0)
+                    , parameters.getLda()
                     , X
-                    , BlasBufferUtil.getBlasStride(X)
+                    , parameters.getIncx()
                     , beta.asDouble()
                     , Y
-                    , BlasBufferUtil.getBlasStride(Y));
+                    , parameters.getIncy());
         else
             cgemv(order
                     , transA
-                    , A.rows()
-                    , A.columns()
+                    ,parameters.getM()
+                    , parameters.getN()
                     , alpha.asFloat()
                     , A
-                    , A.size(0)
+                    , parameters.getLda()
                     , X
-                    , BlasBufferUtil.getBlasStride(X)
+                    , parameters.getIncx()
                     , beta.asFloat()
                     , Y
-                    , BlasBufferUtil.getBlasStride(Y));
+                    , parameters.getIncy());
 
     }
 

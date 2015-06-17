@@ -318,19 +318,6 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
 
 
-
-
-
-    @Test
-    public void testCopy() {
-        IComplexNDArray ones = Nd4j.complexOnes(2);
-        IComplexNDArray zeros = Nd4j.complexZeros(2);
-        Nd4j.getBlasWrapper().copy(ones,zeros);
-        assertEquals(ones,zeros);
-
-    }
-
-
     @Test
     public void testRealConversion() {
         IComplexNDArray arr = Nd4j.createComplex(1,5);
@@ -338,7 +325,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         assertEquals(arr,Nd4j.createComplex(arr1));
         IComplexNDArray arr3 = Nd4j.complexLinSpace(1,6,6).reshape(2, 3);
         INDArray linspace = Nd4j.linspace(1,6,6).reshape(2, 3);
-        assertEquals(arr3,Nd4j.createComplex(linspace));
+        assertEquals(getFailureMessage(),arr3,Nd4j.createComplex(linspace));
     }
 
 
@@ -346,7 +333,8 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     public void testTranspose() {
         IComplexNDArray ndArray = Nd4j.createComplex(new double[]{1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 4.0, 0.0, 5.0, 0.0, 6.0, 0.0, 6.999999999999999, 0.0, 8.0, 0.0, 9.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, new int[]{16, 1});
         IComplexNDArray transposed2 = ndArray.transpose();
-        assertEquals(16, transposed2.columns());
+        assertEquals(getFailureMessage(),16, transposed2.columns());
+
 
     }
 
@@ -355,7 +343,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     public void testConjugate() {
         IComplexNDArray negative = Nd4j.createComplex(new double[]{1, -1, 2, -1}, new int[]{2});
         IComplexNDArray positive = Nd4j.createComplex(new double[]{1, 1, 2, 1}, new int[]{2});
-        assertEquals(negative, positive.conj());
+        assertEquals(getFailureMessage(),negative, positive.conj());
 
     }
 
@@ -579,7 +567,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
         IComplexNDArray solution = Nd4j.createComplex(Nd4j.create(new double[][]{{23, 31}, {34, 46}}));
         IComplexNDArray test = oneThroughFour.mmul(fiveThroughEight);
-        assertEquals(solution, test);
+        assertEquals(getFailureMessage(),solution, test);
 
     }
 

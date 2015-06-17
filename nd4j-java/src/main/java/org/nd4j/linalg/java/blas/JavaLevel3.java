@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.util.Shape;
+
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
 
 
@@ -15,8 +17,18 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
 public class JavaLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
+
         float[] cData = getFloatData(C);
-        BLAS.getInstance().sgemm(String.valueOf(TransA),String.valueOf(TransB),M,N,K,alpha,getFloatData(A),getBlasOffset(A),lda,getFloatData(B),getBlasOffset(B),ldb,beta,cData,getBlasOffset(C),ldc);
+        BLAS.getInstance().sgemm(
+                String.valueOf(TransA)
+                ,String.valueOf(TransB)
+                ,M
+                ,N
+                ,K
+                ,alpha
+                ,getFloatData(A),getBlasOffset(A),lda,getFloatData(B),getBlasOffset(B),ldb,beta,cData,getBlasOffset(C),ldc);
         setData(cData,C);
     }
 
@@ -52,6 +64,9 @@ public class JavaLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
+
         double[] cData = getDoubleData(C);
         BLAS.getInstance().dgemm(String.valueOf(TransA), String.valueOf(TransB), M, N, K, alpha, getDoubleData(A), getBlasOffset(A), lda, getDoubleData(B), getBlasOffset(B), ldb, beta, cData, getBlasOffset(C), ldc);
         setData(cData,C);

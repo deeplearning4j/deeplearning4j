@@ -57,10 +57,10 @@ public class DataSetTest extends BaseNd4jTest {
 		DataSet d = new DataSet(data,labels);
 		DataSet filtered = d.filterBy(new int[]{2,3});
 		d.filterAndStrip(new int[]{2,3});
-		assertEquals(2,d.numOutcomes());
-		assertEquals(filtered.numExamples(),d.numExamples());
-		assertEquals(filtered.getFeatureMatrix(),d.getFeatureMatrix());
-        assertEquals(filtered.numExamples(), d.getLabels().rows());
+		assertEquals(getFailureMessage(),2,d.numOutcomes());
+		assertEquals(getFailureMessage(),filtered.numExamples(),d.numExamples());
+		assertEquals(getFailureMessage(),filtered.getFeatureMatrix(),d.getFeatureMatrix());
+        assertEquals(getFailureMessage(),filtered.numExamples(), d.getLabels().rows());
 
 
 	}
@@ -89,7 +89,7 @@ public class DataSetTest extends BaseNd4jTest {
 	}
 
 
-    private static void checkMMultDotProduct(INDArray rowVector,INDArray colVector){
+    private  void checkMMultDotProduct(INDArray rowVector,INDArray colVector){
         assertTrue(rowVector.isRowVector());
         assertTrue(colVector.isColumnVector());
         System.out.println("rowVector: " + rowVector);
@@ -98,24 +98,27 @@ public class DataSetTest extends BaseNd4jTest {
         float[] colFloat = asFloat(colVector);
 
         INDArray product = rowVector.mmul(colVector);
-        assertTrue(product.length()==1);
+        assertTrue(product.length() == 1);
 
         float expected = dotProduct(colFloat, rowFloat);
         float actual = product.getFloat(0);
         System.out.println("rowVector times colVector: expected = " + expected + ", actual = " + actual );
-        assertEquals(expected, actual, 0.01f);
+        assertEquals(getFailureMessage(),expected, actual, 0.01f);
     }
 
 
     public static float[] asFloat( INDArray arr ){
         int len = arr.length();
         float[] f = new float[len];
-        for( int i=0; i<len; i++ ) f[i] = arr.getFloat(i);
+        for( int i=0; i < len; i++ )
+            f[i] = arr.getFloat(i);
         return f;
     }
+
     public static float dotProduct( float[] x, float[] y ){
         float sum = 0.0f;
-        for( int i=0; i<x.length; i++ ) sum += x[i]*y[i];
+        for( int i = 0; i < x.length; i++ )
+            sum += x[i] * y[i];
         return sum;
     }
 
@@ -128,7 +131,7 @@ public class DataSetTest extends BaseNd4jTest {
         assertEquals(train.getTrain().getLabels().length(),6);
 
         SplitTestAndTrain train2 = data.splitTestAndTrain(6, new DefaultRandom(1));
-        assertEquals(train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
+        assertEquals(getFailureMessage(),train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
     }
 
 

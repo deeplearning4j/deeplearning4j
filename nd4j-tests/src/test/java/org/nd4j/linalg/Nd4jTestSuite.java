@@ -26,6 +26,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.reflections.Reflections;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -142,7 +143,7 @@ public class Nd4jTestSuite {
 
             for(Nd4jBackend backend : nd4jBackends) {
                 if(!backendsToRun.isEmpty() && !backendsToRun.contains(backend.getClass().getName()))
-                       continue;
+                    continue;
                 Properties  backendProps = backend.getProperties();
                 //only run if the hardware supports it: eg gpus
                 if(backend.canRun()) {
@@ -150,8 +151,13 @@ public class Nd4jTestSuite {
                     Constructor<BaseNd4jTest> constructor = (Constructor<BaseNd4jTest>) clazz.getConstructor(String.class,Nd4jBackend.class);
                     Method[]  methods = clazz.getDeclaredMethods();
                     for(Method method : methods) {
-                       if(!methodsToRun.isEmpty() && !methodsToRun.contains(method.getName()))
-                           continue;
+                        Annotation[] annotations = method.getDeclaredAnnotations();
+                        if(annotations == null || annotations.length < 1)
+                            continue;
+                        if(!annotations[0].annotationType().equals(org.junit.Test.class))
+                            continue;
+                        if(!methodsToRun.isEmpty() && !methodsToRun.contains(method.getName()))
+                            continue;
                         try {
                             BaseNd4jTest test = constructor.newInstance(method.getName(),backend);
                             //backout if the test ordering and backend ordering dont line up

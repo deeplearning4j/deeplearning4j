@@ -215,7 +215,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
     @Test
     public void testIamax() {
         INDArray linspace = Nd4j.linspace(1,4,4);
-        assertEquals(getFailureMessage(),3,Nd4j.getBlasWrapper().iamax(linspace));
+        assertEquals(getFailureMessage(),2,Nd4j.getBlasWrapper().iamax(linspace));
     }
 
 

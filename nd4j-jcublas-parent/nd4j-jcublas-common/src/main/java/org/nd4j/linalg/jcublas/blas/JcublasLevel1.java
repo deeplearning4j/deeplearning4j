@@ -192,7 +192,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX);
         ContextHolder.syncStream();
         SimpleJCublas.sync();
-        return  (ret2 - 1);
+        return  (ret2);
     }
 
     @Override
@@ -205,7 +205,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX);
         ContextHolder.syncStream();
         SimpleJCublas.sync();
-        return  (ret2 - 1);
+        return  (ret2);
     }
 
     @Override

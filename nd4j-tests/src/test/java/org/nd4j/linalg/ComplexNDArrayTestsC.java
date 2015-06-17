@@ -29,11 +29,13 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.ComplexUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,7 +241,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
     @Test
     public void testVectorOffsetRavel() {
-        IComplexNDArray arr = Nd4j.complexLinSpace(1,20,20).reshape(4,5);
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,20,20).reshape(4, 5);
         for(int i = 0; i < arr.slices(); i++) {
             assertEquals(arr.slice(i),arr.slice(i).ravel());
         }
@@ -279,7 +281,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
     @Test
     public void testVectorGet() {
-        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1,8}));
+        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1, 8}));
         for (int i = 0; i < arr.length(); i++) {
             IComplexNumber curr = arr.getComplex(i);
             assertEquals(Nd4j.createDouble(i + 1, 0), curr);
@@ -483,7 +485,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
         IComplexNDArray three = Nd4j.createComplex(Nd4j.create(new double[]{3, 4}, new int[]{1,2}));
         IComplexNDArray test = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2}));
         IComplexNDArray sliceRow = test.slice(0).getRow(1);
-        assertEquals(three, sliceRow);
+        assertEquals(getFailureMessage(),three, sliceRow);
 
         IComplexNDArray twoSix = Nd4j.createComplex(Nd4j.create(new double[]{2, 6}, new int[]{2, 1}));
         IComplexNDArray threeTwoSix = three.mmul(twoSix);
@@ -491,20 +493,34 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
         IComplexNDArray sliceRowTwoSix = sliceRow.mmul(twoSix);
         verifyElements(three, sliceRow);
-        assertEquals(threeTwoSix, sliceRowTwoSix);
+        assertEquals(getFailureMessage(),threeTwoSix, sliceRowTwoSix);
 
+    }
+
+
+    @Test
+    public void testIterateOverAllRows() {
+        Nd4j.EPS_THRESHOLD = 1e-1;
+        IComplexNDArray ones = Nd4j.complexOnes(5, 5);
+        VectorFFT fft = new VectorFFT(ones);
+        IComplexNDArray assertion = Nd4j.createComplex(5, 5);
+        for(int i = 0; i < assertion.rows(); i++)
+            assertion.getRow(i).putScalar(0,Nd4j.createComplexNumber(5,0));
+        Nd4j.getExecutioner().iterateOverAllRows(fft);
+        assertEquals(getFailureMessage(),assertion,ones);
     }
 
 
 
     @Test
-    public void testCopy() {
-        IComplexNDArray ones = Nd4j.complexOnes(2);
-        IComplexNDArray zeros = Nd4j.complexZeros(2);
-        Nd4j.getBlasWrapper().copy(ones,zeros);
-        assertEquals(ones,zeros);
-
+    public void testRowVectorGemm() {
+        IComplexNDArray linspace = Nd4j.complexLinSpace(1,4,4);
+        IComplexNDArray other = Nd4j.complexLinSpace(1,16,16).reshape(4, 4);
+        IComplexNDArray result = linspace.mmul(other);
+        IComplexNDArray assertion = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{90,100,110,120}));
+        assertEquals(assertion,result);
     }
+
 
 
     @Test

@@ -107,8 +107,8 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public int iamax(INDArray arr) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
-            return idamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
-        return isamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
+            return idamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr)) - 1;
+        return isamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr)) - 1;
     }
 
     /**
@@ -120,8 +120,8 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
     @Override
     public int iamax(IComplexNDArray arr) {
         if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
-            return izamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
-        return icamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr));
+            return izamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr)) - 1;
+        return icamax(arr.length(),arr,BlasBufferUtil.getBlasStride(arr)) - 1;
     }
 
     /**

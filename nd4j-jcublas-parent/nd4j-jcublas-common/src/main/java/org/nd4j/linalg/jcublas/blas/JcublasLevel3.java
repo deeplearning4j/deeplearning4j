@@ -7,6 +7,7 @@ import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasOperation;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -93,12 +94,6 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        int m = BlasBufferUtil.getDimension(A, true);
-        int n = BlasBufferUtil.getDimension(B, false);
-        int k = BlasBufferUtil.getDimension(A, false);
-
-
-
         DataTypeValidation.assertDouble(A, B, C);
 
         SimpleJCublas.sync();
@@ -113,9 +108,9 @@ public class JcublasLevel3 extends BaseLevel3 {
                 ContextHolder.getInstance().getHandle(),
                 OpUtil.getOp(TransA),
                 OpUtil.getOp(TransB),
-                m,  // m
-                n, // n
-                k, //k,
+                M,  // m
+                N, // n
+                K, //k,
                 Pointer.to(new double[]{alpha}),
                 cAPointer.getDevicePointer(), // A
                 lda,  // lda
@@ -190,17 +185,17 @@ public class JcublasLevel3 extends BaseLevel3 {
                 ContextHolder.getInstance().getHandle(),
                 cublasOperation.CUBLAS_OP_N, //trans
                 cublasOperation.CUBLAS_OP_N,
-                C.rows(),  // m
-                C.columns(), // n
-                A.columns(), //k,
+                M,  // m
+                N, // n
+                K, //k,
                 PointerUtil.getPointer(alpha2),
                 cAPointer.getDevicePointer(), // A
-                A.rows(),  // lda
+                lda,  // lda
                 cBPointer.getDevicePointer(), // x
-                B.rows(), // ldb
+                ldb, // ldb
                 PointerUtil.getPointer(beta2),  // beta
                 cCPointer.getDevicePointer(), // y
-                C.rows()); // ldc
+                ldc); // ldc
 
         SimpleJCublas.sync();
 
@@ -268,17 +263,17 @@ public class JcublasLevel3 extends BaseLevel3 {
                 ContextHolder.getInstance().getHandle(),
                 cublasOperation.CUBLAS_OP_N, //trans
                 cublasOperation.CUBLAS_OP_N,
-                C.rows(),  // m
-                C.columns(), // n
-                A.columns(), //k,
+                M,  // m
+                N, // n
+                K, //k,
                 PointerUtil.getPointer(alpha2),
                 cAPointer.getDevicePointer(), // A
-                A.size(0),  // lda
+                lda,  // lda
                 cBPointer.getDevicePointer(), // x
-                B.size(0), // ldb
+                ldb, // ldb
                 PointerUtil.getPointer(beta2),  // beta
                 cCPointer.getDevicePointer(), // y
-                C.size(0)); // ldc
+                ldc); // ldc
 
         SimpleJCublas.sync();
 

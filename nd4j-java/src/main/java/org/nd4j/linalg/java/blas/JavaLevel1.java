@@ -10,6 +10,7 @@ import org.netlib.util.doubleW;
 import org.netlib.util.floatW;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
+import static org.nd4j.linalg.api.blas.BlasBufferUtil.getFloatData;
 
 
 /**
@@ -141,8 +142,8 @@ public class JavaLevel1 extends BaseLevel1 {
     @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         float[] yData = getFloatData(Y);
-        BLAS.getInstance().saxpy(N,alpha,getFloatData(X),getBlasOffset(X),yData,incY);
-        setData(yData,Y);
+        BLAS.getInstance().saxpy(N,alpha,getFloatData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        setData(yData, Y);
     }
 
     @Override
