@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -60,8 +61,8 @@ public class DataSetTest extends BaseNd4jTest {
 		assertEquals(filtered.numExamples(),d.numExamples());
 		assertEquals(filtered.getFeatureMatrix(),d.getFeatureMatrix());
         assertEquals(filtered.numExamples(), d.getLabels().rows());
-		
-	
+
+
 	}
 
 	@Test
@@ -118,6 +119,17 @@ public class DataSetTest extends BaseNd4jTest {
         return sum;
     }
 
+    @Test
+    public void testSplitTestAndTrain() throws Exception{
+        INDArray labels = FeatureUtil.toOutcomeMatrix(new int[]{0,0,0,0,0,0,0,0},1);
+        DataSet data = new DataSet(Nd4j.rand(8,1),labels);
+
+        SplitTestAndTrain train = data.splitTestAndTrain(6, new DefaultRandom(1));
+        assertEquals(train.getTrain().getLabels().length(),6);
+
+        SplitTestAndTrain train2 = data.splitTestAndTrain(6, new DefaultRandom(1));
+        assertEquals(train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
+    }
 
 
     @Override

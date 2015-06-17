@@ -101,6 +101,8 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     SplitTestAndTrain splitTestAndTrain(int numHoldout);
 
+    SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rnd);
+
     INDArray getLabels();
 
     void setLabels(INDArray labels);
