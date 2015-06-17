@@ -527,7 +527,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     @Override
     public Gradient gradient() {
         Gradient ret = new DefaultGradient();
-        for (int i = 0; i < layers.length; i += 2) {
+        for (int i = 0; i < layers.length; i ++) {
             ret.gradientForVariable().put(String.valueOf(i), layers[i].gradient().gradient());
         }
 
