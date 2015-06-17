@@ -59,10 +59,9 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
         Layer ret = getInstance(conf);
         ret.setIterationListeners(iterationListeners);
-        Map<String,INDArray> params = getParams(conf, dist);
+        Map<String,INDArray> params = getParams(conf);
         ret.setParamTable(params);
         ret.setConf(conf);
         return (E) ret;
@@ -90,7 +89,7 @@ public class DefaultLayerFactory implements LayerFactory {
     }
 
 
-    protected Map<String,INDArray> getParams(NeuralNetConfiguration conf, Distribution dist) {
+    protected Map<String,INDArray> getParams(NeuralNetConfiguration conf) {
         ParamInitializer init = initializer();
         Map<String,INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String,INDArray>());
         init.init(params,conf);
