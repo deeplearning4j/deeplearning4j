@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
@@ -52,6 +53,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 @Data
+@NoArgsConstructor
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private double sparsity = 0;
