@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.rng;
 
+@Deprecated
 public class Randoms {
     /**
      * Static method for instantiating an nd4j random number generator from a configuration object.

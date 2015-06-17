@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.rng;
 
+@Deprecated
 public class DefaultRandom extends Random {
     
     private static final long serialVersionUID = 5569534592707776187L;

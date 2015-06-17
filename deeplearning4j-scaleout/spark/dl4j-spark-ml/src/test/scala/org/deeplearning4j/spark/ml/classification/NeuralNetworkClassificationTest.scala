@@ -4,7 +4,6 @@ import org.apache.spark.Logging
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration
 import org.deeplearning4j.nn.conf.`override`.ConfOverride
 import org.deeplearning4j.nn.conf.layers.{OutputLayer, RBM}
-import org.deeplearning4j.nn.conf.rng.DefaultRandom
 import org.deeplearning4j.spark.sql.sources.iris.DefaultSource
 import org.deeplearning4j.spark.util.TestSparkContext
 import org.junit.runner.RunWith
@@ -22,7 +21,7 @@ class NeuralNetworkClassificationTest
 
   test("iris") {
     val conf = new NeuralNetConfiguration.Builder()
-      .rng(new DefaultRandom(11L))
+      .seed(11)
       .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
       .nIn(4).nOut(3)
       .layer(new RBM)
