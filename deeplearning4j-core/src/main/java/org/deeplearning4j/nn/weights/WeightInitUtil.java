@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.weights;
 
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -74,16 +75,16 @@ public class WeightInitUtil {
   public static INDArray initWeights(int[] shape, WeightInit initScheme,
                                      Distribution dist) {
     INDArray ret;
+    Nd4j.getRandom().setSeed(Nd4j.getRandom().getSeed());
     switch (initScheme) {
       case NORMALIZED:
-        ret = Nd4j.rand(shape);
+        ret = Nd4j.rand(shape, Nd4j.getRandom());
         return ret.subi(0.5).divi(shape[0]);
       case UNIFORM:
         double a = 1 / (double) shape[0];
         return Nd4j.rand(shape, -a, a, Nd4j.getRandom());
-
       case VI:
-        ret = Nd4j.rand(shape);
+        ret = Nd4j.rand(shape, Nd4j.getRandom());
         int len = 0;
         for (int aShape : shape) {
           len += aShape;
@@ -91,7 +92,6 @@ public class WeightInitUtil {
         double r = Math.sqrt(6) / Math.sqrt(len + 1);
         ret.muli(2).muli(r).subi(r);
         return ret;
-
       case DISTRIBUTION:
         ret = dist.sample(shape);
         return ret;
