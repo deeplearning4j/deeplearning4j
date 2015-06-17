@@ -1397,7 +1397,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape) {
-        INDArray ret = INSTANCE.rand(shape);
+        INDArray ret = INSTANCE.rand(shape, Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1412,7 +1412,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns) {
-        INDArray ret = INSTANCE.rand(rows, columns);
+        INDArray ret = INSTANCE.rand(rows, columns, Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1538,7 +1538,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int[] shape) {
-        INDArray ret = INSTANCE.randn(shape);
+        INDArray ret = INSTANCE.randn(shape, Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1563,7 +1563,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray randn(int rows, int columns) {
-        INDArray ret = INSTANCE.randn(rows, columns);
+        INDArray ret = INSTANCE.randn(rows, columns, Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1794,7 +1794,7 @@ public class Nd4j {
      * @return ndarray
      */
     public static IComplexNDArray createComplex(double[] data, char order) {
-        IComplexNDArray ret = INSTANCE.createComplex(data);
+        IComplexNDArray ret = INSTANCE.createComplex(data,Nd4j.getComplexStrides(new int[]{1,data.length},order),0,order);
         logCreationIfNecessary(ret);
         return ret;
     }
