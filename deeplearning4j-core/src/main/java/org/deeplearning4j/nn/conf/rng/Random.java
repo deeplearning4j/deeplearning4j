@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
  * An abstract random number generator.
  *
  */
+@Deprecated
 @JsonTypeInfo(use=Id.NAME, include=As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = DefaultRandom.class, name = "default"),
