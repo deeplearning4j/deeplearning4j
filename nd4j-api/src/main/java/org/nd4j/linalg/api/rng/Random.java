@@ -30,12 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public interface Random {
 
     /**
-     * Convert generator to java.util.Random
-     * @return this as java.util.Random
-     */
-    java.util.Random asRandom();
-
-    /**
      * Sets the seed of the underlying random number generator using an
      * <code>int</code> seed.
      * <p>Sequences of values generated starting with the same seeds
@@ -48,7 +42,7 @@ public interface Random {
 
     /**
      * Sets the seed of the underlying random number generator using an
-     * <code>int</code> array seed.
+     * <code>int</code> seed.
      * <p>Sequences of values generated starting with the same seeds
      * should be identical.
      * </p>
@@ -56,6 +50,7 @@ public interface Random {
      * @param seed the seed value
      */
     void setSeed(int[] seed);
+
 
     /**
      * Sets the seed of the underlying random number generator using a
@@ -67,6 +62,14 @@ public interface Random {
      * @param seed the seed value
      */
     void setSeed(long seed);
+
+    /**
+     * Gets the  <code>long</code> seed of the underlying
+     * random number generator.
+     *
+     * @return the seed value
+     */
+    long getSeed();
 
     /**
      * Generates random bytes and places them into a user-supplied

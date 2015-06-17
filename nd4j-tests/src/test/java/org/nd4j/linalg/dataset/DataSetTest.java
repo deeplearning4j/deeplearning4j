@@ -20,16 +20,15 @@ package org.nd4j.linalg.dataset;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.List;
+import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class DataSetTest extends BaseNd4jTest {
 	public DataSetTest() {
@@ -55,11 +54,11 @@ public class DataSetTest extends BaseNd4jTest {
 		INDArray data = Nd4j.rand(10,10);
 		INDArray labels = FeatureUtil.toOutcomeMatrix(new int[]{0, 0, 1, 1, 2, 2, 3, 3, 3, 3}, 4);
 		DataSet d = new DataSet(data,labels);
-		DataSet filtered = d.filterBy(new int[]{2,3});
+		DataSet filtered = d.filterBy(new int[]{2, 3});
 		d.filterAndStrip(new int[]{2,3});
 		assertEquals(2,d.numOutcomes());
 		assertEquals(filtered.numExamples(),d.numExamples());
-		assertEquals(filtered.getFeatureMatrix(),d.getFeatureMatrix());
+		assertEquals(filtered.getFeatureMatrix(), d.getFeatureMatrix());
         assertEquals(filtered.numExamples(), d.getLabels().rows());
 
 
@@ -74,7 +73,7 @@ public class DataSetTest extends BaseNd4jTest {
         //Get first Iris example
         DataSet x0 = new IrisDataSetIterator(1,1).next();
         INDArray example0 = x0.getFeatureMatrix();
-        checkMMultDotProduct(example0,colVector);
+        checkMMultDotProduct(example0, colVector);
 
         System.out.println("/////////////");
 
@@ -124,13 +123,16 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray labels = FeatureUtil.toOutcomeMatrix(new int[]{0,0,0,0,0,0,0,0},1);
         DataSet data = new DataSet(Nd4j.rand(8,1),labels);
 
-        SplitTestAndTrain train = data.splitTestAndTrain(6, new DefaultRandom(1));
+        SplitTestAndTrain train = data.splitTestAndTrain(6, new Random(123));
         assertEquals(train.getTrain().getLabels().length(),6);
 
-        SplitTestAndTrain train2 = data.splitTestAndTrain(6, new DefaultRandom(1));
+        SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(123));
         assertEquals(train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
-    }
 
+        SplitTestAndTrain train3 = data.splitTestAndTrain(6, new Random(20));
+        assertNotEquals(train.getTrain().getFeatureMatrix(), train3.getTrain().getFeatureMatrix());
+
+    }
 
     @Override
     public char ordering() {
