@@ -1,6 +1,5 @@
 package org.nd4j.linalg.api.blas.impl;
 
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -217,11 +216,39 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void gemm(char Order, char TransA, char TransB, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray B, IComplexNumber beta, IComplexNDArray C) {
+        GemmParams params = new GemmParams(A,B,C);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE) {
-            zgemm(Order,TransA,TransB,A.rows(),B.columns(),A.columns(),alpha.asDouble(),A,A.size(0),B,B.size(0),beta.asDouble(),C,C.size(0));
+            zgemm(Order
+                    ,TransA
+                    ,TransB
+                    ,params.getM()
+                    ,params.getN()
+                    ,params.getK(),
+                    alpha.asDouble()
+                    ,A.ordering() == NDArrayFactory.C ? B : A
+                    ,params.getLda()
+                    ,B.ordering() == NDArrayFactory.C ? A : B
+                    ,params.getLdb()
+                    ,beta.asDouble()
+                    ,C
+                    ,params.getLdc());
         }
         else
-            cgemm(Order, TransA, TransB, A.rows(), B.columns(), A.columns(), alpha.asFloat(), A, A.size(0), B, B.size(0), beta.asFloat(), C, C.size(0));
+            cgemm(Order
+                    , TransA
+                    , TransB
+                    ,params.getM()
+                    , params.getN()
+                    ,params.getK()
+                    , alpha.asFloat()
+                    ,A.ordering() == NDArrayFactory.C ? B : A
+                    ,params.getLda()
+                    ,B.ordering() == NDArrayFactory.C ? A : B
+                    , params.getLdb()
+                    , beta.asFloat()
+                    , C
+                    ,params.getLdc());
 
     }
 

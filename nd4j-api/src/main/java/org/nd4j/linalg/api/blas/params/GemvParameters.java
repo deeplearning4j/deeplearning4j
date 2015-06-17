@@ -1,7 +1,9 @@
 package org.nd4j.linalg.api.blas.params;
 
 import lombok.Data;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.NDArrayFactory;
 
 /**
  * @author Adam Gibson
@@ -17,8 +19,17 @@ public @Data class GemvParameters {
         this.m = a.rows();
         this.n = a.columns();
         this.lda = a.rows();
+        if(a.isVector() && a.ordering() == NDArrayFactory.FORTRAN) {
+            this.lda = a.stride(0);
+            if(a instanceof IComplexNDArray)
+                this.lda /= 2;
+        }
         this.incx = x.majorStride();
         this.incy = y.majorStride();
+        if(x instanceof IComplexNDArray)
+            this.incx /= 2;
+        if(y instanceof IComplexNDArray)
+            this.incy /= 2;
 
     }
 

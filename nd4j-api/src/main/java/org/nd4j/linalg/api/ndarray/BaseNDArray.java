@@ -2587,7 +2587,8 @@ public abstract class BaseNDArray implements INDArray {
                         ,1.0
                         ,this
                         ,other
-                        ,0.0,resultArray);
+                        ,0.0
+                        ,resultArray);
 
             }
         }

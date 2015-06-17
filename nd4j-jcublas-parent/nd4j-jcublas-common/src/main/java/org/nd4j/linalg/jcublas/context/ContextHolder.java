@@ -222,6 +222,7 @@ public class ContextHolder {
     public static void syncStream() {
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
         JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+        JCuda.cudaDeviceSynchronize();
 
     }
 

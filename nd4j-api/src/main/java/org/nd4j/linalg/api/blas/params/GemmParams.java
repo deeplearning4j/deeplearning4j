@@ -26,18 +26,17 @@ public @Data class GemmParams {
         this.m = a.rows();
         this.n = b.columns();
         this.k = a.columns();
-        this.lda = a.size(0);
-        this.ldb = b.size(0);
-        this.ldc = c.size(0);
         if(a.ordering() == NDArrayFactory.C) {
             int oldN = n;
             int oldM = m;
             this.m = oldN;
             this.n = oldM;
-            this.lda = n;
-            this.ldb = k;
-
         }
+
+        this.lda = Math.max(1, m);
+        this.ldb = Math.max(1, k);
+        this.ldc = Math.max(1, m);
+
 
         validate();
     }

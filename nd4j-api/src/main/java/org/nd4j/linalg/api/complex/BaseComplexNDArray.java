@@ -2438,10 +2438,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         LinAlgExceptions.assertMultiplies(this, other);
 
         if (other.isScalar()) {
-            return muli(otherArray.getDouble(0), resultArray);
+            return muli(otherArray.getComplex(0), resultArray);
         }
         if (isScalar()) {
-            return otherArray.muli(getDouble(0), resultArray);
+            return otherArray.muli(getComplex(0), resultArray);
         }
 
         /* check sizes and resize if necessary */
@@ -2452,7 +2452,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
             /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
              * allocating a temporary object on the side and copy the result later.
              */
-            IComplexNDArray temp = Nd4j.createComplex(resultArray.shape(), ArrayUtil.calcStridesFortran(resultArray.shape(), 2));
+            IComplexNDArray temp = Nd4j.createComplex(resultArray.shape());
 
             if (otherArray.columns() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(BlasBufferUtil.getCharForTranspose(temp),BlasBufferUtil.getCharForTranspose(this),Nd4j.UNIT,this,otherArray,Nd4j.ZERO,temp);

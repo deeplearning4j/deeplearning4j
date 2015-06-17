@@ -48,10 +48,10 @@ public class Transforms {
 
 
     /**
-     * Max poolingi
+     * Max pooling
      *
      * @param input
-     * @param ds    the strides with which to sumPooling expectations
+     * @param ds    the strides with which to max pool expectations
      * @return
      * @parma ignoreBorder whether to ignore the borders of images
      */

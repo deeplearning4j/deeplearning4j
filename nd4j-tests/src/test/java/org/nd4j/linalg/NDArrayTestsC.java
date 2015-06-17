@@ -34,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ComplexUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +108,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         });
 
         INDArray test = arr.mmul(arr.transpose());
-        assertEquals(assertion, test);
+        assertEquals(getFailureMessage(),assertion, test);
 
     }
 
@@ -121,7 +122,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray slice = nd.slice(1, 0);
 
         INDArray vector = slice.reshape(1, 2);
-        assertEquals(Nd4j.create(new double[]{2,5}),vector);
+        assertEquals(Nd4j.create(new double[]{2, 5}),vector);
     }
 
 
@@ -257,18 +258,6 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testIterateOverAllRows() {
-        Nd4j.EPS_THRESHOLD = 1e-1;
-        IComplexNDArray ones = Nd4j.complexOnes(5, 5);
-        VectorFFT fft = new VectorFFT(ones);
-        IComplexNDArray assertion = Nd4j.createComplex(5,5);
-        for(int i = 0; i < assertion.rows(); i++)
-            assertion.getRow(i).putScalar(0,Nd4j.createComplexNumber(5,0));
-        Nd4j.getExecutioner().iterateOverAllRows(fft);
-        assertEquals(assertion,ones);
-    }
-
 
 
     @Test
@@ -277,8 +266,8 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray linear = test.linearView();
         linear.putScalar(2, 6);
         linear.putScalar(3, 7);
-        assertEquals(6, linear.getFloat(2), 1e-1);
-        assertEquals(7, linear.getFloat(3), 1e-1);
+        assertEquals(getFailureMessage(), 6, linear.getFloat(2), 1e-1);
+        assertEquals(getFailureMessage(),7, linear.getFloat(3), 1e-1);
     }
 
 
@@ -288,12 +277,19 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         NDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(Nd4j.create(new double[]{1, 5,2, 6}),linearViewNDArray);
+        assertEquals(getFailureMessage(),Nd4j.create(new double[]{1, 5, 2, 6}),linearViewNDArray);
 
     }
 
 
-
+    @Test
+    public void testRowVectorGemm() {
+        INDArray linspace = Nd4j.linspace(1, 4, 4);
+        INDArray other = Nd4j.linspace(1,16,16).reshape(4, 4);
+        INDArray result = linspace.mmul(other);
+        INDArray assertion = Nd4j.create(new double[]{90, 100, 110, 120});
+        assertEquals(assertion,result);
+    }
 
 
     @Test
@@ -426,7 +422,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{-1, -2, -3, -4});
         INDArray neg = Transforms.neg(n);
-        assertEquals(assertion, neg);
+        assertEquals(getFailureMessage(),assertion, neg);
 
     }
 
@@ -436,13 +432,13 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
-        assertEquals(assertion, norm3.getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),assertion, norm3.getDouble(0), 1e-1);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
         double norm2 = row1.norm2(Integer.MAX_VALUE).getDouble(0);
         double assertion2 = 5.0f;
-        assertEquals(assertion2, norm2, 1e-1);
+        assertEquals(getFailureMessage(),assertion2, norm2, 1e-1);
 
     }
 
@@ -452,13 +448,14 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
         INDArray norm3 = n.norm2(Integer.MAX_VALUE);
-        assertEquals(assertion, norm3.getFloat(0), 1e-1);
+        assertEquals(getFailureMessage(),assertion, norm3.getFloat(0), 1e-1);
+
 
         INDArray row = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
         float norm2 = row1.norm2(Integer.MAX_VALUE).getFloat(0);
         float assertion2 = 5.0f;
-        assertEquals(assertion2, norm2, 1e-1);
+        assertEquals(getFailureMessage(),assertion2, norm2, 1e-1);
 
     }
 
@@ -471,7 +468,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
-        assertEquals(1, sim, 1e-1);
+        assertEquals(getFailureMessage(),1, sim, 1e-1);
 
         INDArray vec3 = Nd4j.create(new float[]{0.2f, 0.3f, 0.4f, 0.5f});
         INDArray vec4 = Nd4j.create(new float[]{0.6f, 0.7f, 0.8f, 0.9f});
@@ -486,14 +483,14 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         double assertion = 2;
         INDArray answer = Nd4j.create(new double[]{2, 4, 6, 8});
         INDArray scal = Nd4j.getBlasWrapper().scal(assertion, answer);
-        assertEquals(answer, scal);
+        assertEquals(getFailureMessage(),answer, scal);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
         double assertion2 = 5.0;
         INDArray answer2 = Nd4j.create(new double[]{15, 20});
         INDArray scal2 = Nd4j.getBlasWrapper().scal(assertion2, row1);
-        assertEquals(answer2, scal2);
+        assertEquals(getFailureMessage(),answer2, scal2);
 
     }
 
@@ -731,18 +728,18 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray innerProduct = n.mmul(transposed);
 
         INDArray scalar = Nd4j.scalar(385);
-        assertEquals(scalar, innerProduct);
+        assertEquals(getFailureMessage(),scalar, innerProduct);
 
         INDArray outerProduct = transposed.mmul(n);
-        assertEquals(true, Shape.shapeEquals(new int[]{10, 10}, outerProduct.shape()));
+        assertEquals(getFailureMessage(),true, Shape.shapeEquals(new int[]{10, 10}, outerProduct.shape()));
 
 
 
 
-        INDArray three = Nd4j.create(new double[]{3, 4}, new int[]{2});
+        INDArray three = Nd4j.create(new double[]{3, 4}, new int[]{1,2});
         INDArray test = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
         INDArray sliceRow = test.slice(0).getRow(1);
-        assertEquals(three, sliceRow);
+        assertEquals(getFailureMessage(),three, sliceRow);
 
         INDArray twoSix = Nd4j.create(new double[]{2, 6}, new int[]{2, 1});
         INDArray threeTwoSix = three.mmul(twoSix);
@@ -761,7 +758,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray k1 = n1.transpose();
 
         INDArray testVectorVector = k1.mmul(n1);
-        assertEquals(vectorVector, testVectorVector);
+        assertEquals(getFailureMessage(),vectorVector, testVectorVector);
 
 
     }
