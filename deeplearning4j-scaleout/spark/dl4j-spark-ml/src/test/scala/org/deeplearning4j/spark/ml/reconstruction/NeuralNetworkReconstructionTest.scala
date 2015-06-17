@@ -9,10 +9,9 @@ import org.deeplearning4j.spark.sql.sources.iris.DefaultSource
 import org.deeplearning4j.spark.util.TestSparkContext
 import org.junit.runner.RunWith
 import org.nd4j.linalg.lossfunctions.LossFunctions
-import org.scalatest.FunSuite
+import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 import org.springframework.core.io.ClassPathResource
-import org.scalatest._
 
 /**
  * Test reconstruction.
