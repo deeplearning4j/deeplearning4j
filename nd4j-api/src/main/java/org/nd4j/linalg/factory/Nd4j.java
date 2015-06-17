@@ -1664,7 +1664,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape) {
-        INDArray ret = INSTANCE.rand(shape);
+        INDArray ret = INSTANCE.rand(shape,Nd4j.getRandom());
         logCreationIfNecessary(ret);
         return ret;
     }
