@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.ml.classification
+package org.deeplearning4j.spark.ml.reconstruction
 
 import org.apache.spark.Logging
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration
@@ -12,13 +12,14 @@ import org.nd4j.linalg.lossfunctions.LossFunctions
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import org.springframework.core.io.ClassPathResource
+import org.scalatest._
 
 /**
- * Test classification.
+ * Test reconstruction.
  */
 @RunWith(classOf[JUnitRunner])
-class NeuralNetworkClassificationTest
-  extends FunSuite with TestSparkContext with Logging {
+class NeuralNetworkReconstructionTest
+  extends FunSuite with TestSparkContext with Logging with Matchers {
 
   test("iris") {
     val conf = new NeuralNetConfiguration.Builder()
@@ -45,12 +46,15 @@ class NeuralNetworkClassificationTest
     val dataFrame = sqlContext.read.format(classOf[DefaultSource].getName).load(path)
     val Array(trainDF, testDF) = dataFrame.randomSplit(Array(.6,.4), 11L)
 
-    val classification = new NeuralNetworkClassification()
-      .setFeaturesCol("features").setLabelCol("label")
+    val classification = new NeuralNetworkReconstruction()
+      .setFeaturesCol("features")
+      .setReconstructionCol("reconstruction")
       .setConf(conf)
 
     val model = classification.fit(trainDF)
     val predictions = model.transform(testDF)
+
+    predictions.col("reconstruction") should not be (null)
     predictions.show()
   }
 }
