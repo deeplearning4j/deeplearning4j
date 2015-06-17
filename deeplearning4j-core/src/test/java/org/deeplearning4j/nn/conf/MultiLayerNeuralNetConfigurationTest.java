@@ -123,7 +123,7 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .layer(new RBM())
                 .nIn(2).nOut(1)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
-                .rng(new DefaultRandom(12345L)) //RNG with specified seed
+                .seed(12345l)
                 .list(2)
                 .hiddenLayerSizes(5)
                 .override(1, new ClassifierOverride())
