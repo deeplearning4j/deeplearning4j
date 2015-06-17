@@ -60,7 +60,6 @@ public class DefaultRandom implements Random, RandomGenerator {
 
     @Override
     public void setSeed(int seed) {
-        this.randomGenerator = new JDKRandomGenerator();
         getRandomGenerator().setSeed(seed);
     }
 
