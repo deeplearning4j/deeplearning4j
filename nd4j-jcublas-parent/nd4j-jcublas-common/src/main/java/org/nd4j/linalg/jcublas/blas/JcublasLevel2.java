@@ -27,8 +27,6 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         SimpleJCublas.sync();
-        A = Shape.toOffsetZero(A);
-        X = Shape.toOffsetZero(X);
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(X);
@@ -36,9 +34,9 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                A.rows(),
-                A.columns(),
+                cublasOperation.CUBLAS_OP_N,
+                M,
+                N,
                 Pointer.to(new float[]{alpha}),
                 cAPointer.getDevicePointer(),
                 lda,
@@ -96,8 +94,6 @@ public class JcublasLevel2 extends BaseLevel2 {
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
         SimpleJCublas.sync();
-        A = Shape.toOffsetZero(A);
-        X = Shape.toOffsetZero(X);
 
 
         CublasPointer cAPointer = new CublasPointer(A);
@@ -106,9 +102,9 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasDgemv(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                A.rows(),
-                A.columns(),
+                cublasOperation.CUBLAS_OP_N,
+                M,
+                N,
                 Pointer.to(new double[]{alpha}),
                 cAPointer.getDevicePointer(),
                 lda,

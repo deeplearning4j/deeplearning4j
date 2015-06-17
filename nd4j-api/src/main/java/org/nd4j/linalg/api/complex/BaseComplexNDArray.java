@@ -437,6 +437,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
     }
 
+
+    @Override
+    protected IComplexNDArray create(DataBuffer data, int[] shape, int[] strides) {
+        return Nd4j.createComplex(data,shape,strides,offset(),ordering());
+    }
+
     protected void copyRealTo(INDArray arr) {
         INDArray linear = arr.linearView();
         IComplexNDArray thisLinear = linearView();

@@ -721,6 +721,13 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         d.setData(n.data());
 
 
+        INDArray d3 = Nd4j.create(new double[]{1, 2}).reshape(2, 1);
+        INDArray d4 = Nd4j.create(new double[]{3, 4});
+        INDArray resultNDArray = d3.mmul(d4);
+        INDArray result = Nd4j.create(new double[][]{{3, 4}, {6, 8}});
+        assertEquals(result, resultNDArray);
+
+
         INDArray innerProduct = n.mmul(transposed);
 
         INDArray scalar = Nd4j.scalar(385);
@@ -729,12 +736,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray outerProduct = transposed.mmul(n);
         assertEquals(true, Shape.shapeEquals(new int[]{10, 10}, outerProduct.shape()));
 
-        INDArray d3 = Nd4j.create(new double[]{1, 2}).reshape(2, 1);
-        INDArray d4 = Nd4j.create(new double[]{3, 4});
-        INDArray resultNDArray = d3.mmul(d4);
-        INDArray result = Nd4j.create(new double[][]{{3, 4}, {6, 8}});
 
-        assertEquals(result, resultNDArray);
 
 
         INDArray three = Nd4j.create(new double[]{3, 4}, new int[]{2});

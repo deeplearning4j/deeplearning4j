@@ -125,7 +125,6 @@ public class JblasLevel2 extends BaseLevel2 {
         float[] yData = getFloatData(Y);
         A = (IComplexNDArray) Shape.toOffsetZero(A);
         X = (IComplexNDArray) Shape.toOffsetZero(X);
-        Y = (IComplexNDArray) Shape.toOffsetZero(Y);
 
         NativeBlas.cgemv(
                 TransA

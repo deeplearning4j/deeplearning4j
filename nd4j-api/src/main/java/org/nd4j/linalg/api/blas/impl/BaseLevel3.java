@@ -1,12 +1,15 @@
 package org.nd4j.linalg.api.blas.impl;
 
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level3;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.NDArrayFactory;
 
 /**
  * Base class for level 3 functions, abstract headers pulled from:
@@ -32,10 +35,38 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
+        GemmParams params = new GemmParams(A,B,C);
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgemm(Order,TransA,TransB,A.rows(),B.columns(),A.columns(),1.0,A,A.size(0),B,B.size(0),0,C,C.size(0));
+            dgemm(Order
+                    ,TransA
+                    ,TransB
+                    ,params.getM()
+                    ,params.getN()
+                    ,params.getK()
+                    ,1.0
+                    ,A.ordering() == NDArrayFactory.C ? B : A
+                    ,params.getLda()
+                    ,B.ordering() == NDArrayFactory.C ? A : B
+                    ,params.getLdb()
+                    ,0
+                    ,C
+                    ,params.getLdc());
         else
-            sgemm(Order, TransA, TransB, A.rows(), B.columns(), A.columns(), 1.0f, A, A.size(0), B, B.size(0), 0, C, C.size(0));
+            sgemm(Order
+                    , TransA
+                    , TransB
+                    , params.getM()
+                    , params.getN()
+                    , params.getK()
+                    , 1.0f
+                    , A.ordering() == NDArrayFactory.C ? B : A
+                    , params.getLda()
+                    ,B.ordering() == NDArrayFactory.C ? A : B
+                    , params.getLdb()
+                    , 0
+                    , C
+                    , params.getLdc());
 
     }
 

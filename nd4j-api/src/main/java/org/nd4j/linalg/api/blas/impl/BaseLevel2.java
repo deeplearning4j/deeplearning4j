@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.blas.impl;
 
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level2;
+import org.nd4j.linalg.api.blas.params.GemvParameters;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -33,10 +34,34 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
+        GemvParameters parameters = new GemvParameters(A,X,Y);
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            dgemv(order, transA, A.rows(), A.columns(), alpha, A, A.size(0), X, X.majorStride(), beta, Y, Y.majorStride());
+            dgemv(order
+                    , transA
+                    , parameters.getM()
+                    , parameters.getN()
+                    ,
+                    alpha
+                    , A
+                    , parameters.getLda()
+                    , X
+                    , parameters.getIncx()
+                    , beta
+                    , Y
+                    , parameters.getIncy());
         else
-            sgemv(order, transA, A.rows(), A.columns(), (float) alpha, A, A.size(0), X, X.majorStride(), (float) beta, Y, Y.majorStride());
+            sgemv(order
+                    , transA
+                    , parameters.getM()
+                    , parameters.getN()
+                    , (float) alpha
+                    , A
+                    ,parameters.getLda()
+                    , X
+                    , parameters.getIncx()
+                    , (float) beta
+                    , Y
+                    , parameters.getIncy());
 
     }
 
@@ -58,9 +83,32 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
-            zgemv(order, transA, A.rows(), A.columns(), alpha.asDouble(), A, A.size(0), X, BlasBufferUtil.getBlasStride(X), beta.asDouble(), Y, BlasBufferUtil.getBlasStride(Y));
+            zgemv(
+                    order
+                    , transA
+                    , A.rows()
+                    , A.columns()
+                    , alpha.asDouble()
+                    , A
+                    , A.size(0)
+                    , X
+                    , BlasBufferUtil.getBlasStride(X)
+                    , beta.asDouble()
+                    , Y
+                    , BlasBufferUtil.getBlasStride(Y));
         else
-            cgemv(order, transA, A.rows(), A.columns(), alpha.asFloat(), A, A.size(0), X, BlasBufferUtil.getBlasStride(X), beta.asFloat(), Y, BlasBufferUtil.getBlasStride(Y));
+            cgemv(order
+                    , transA
+                    , A.rows()
+                    , A.columns()
+                    , alpha.asFloat()
+                    , A
+                    , A.size(0)
+                    , X
+                    , BlasBufferUtil.getBlasStride(X)
+                    , beta.asFloat()
+                    , Y
+                    , BlasBufferUtil.getBlasStride(Y));
 
     }
 

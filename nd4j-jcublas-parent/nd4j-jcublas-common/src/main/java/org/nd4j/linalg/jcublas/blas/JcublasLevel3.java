@@ -26,17 +26,7 @@ import org.nd4j.linalg.util.Shape;
 public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        int m = A.rows();
-        int n = B.columns();
-        int k = A.columns();
-
-        A = Shape.toOffsetZero(A);
-        B = Shape.toOffsetZero(B);
-
-
         SimpleJCublas.sync();
-
-
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
         CublasPointer cCPointer = new CublasPointer(C);
@@ -44,16 +34,16 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         JCublas2.cublasSgemm(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(B)),
-                m,
-                n,
-                k,
+                OpUtil.getOp(TransA),
+                OpUtil.getOp(TransB),
+                M,
+                N,
+                K,
                 Pointer.to(new float[]{alpha}),
                 cAPointer.getDevicePointer(),
-                lda,  // lda
+                lda,
                 cBPointer.getDevicePointer(),
-                ldb, // ldb
+                ldb,
                 Pointer.to(new float[]{beta}),
                 cCPointer.getDevicePointer(),
                 ldc);
@@ -103,11 +93,9 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        int m = A.rows();
-        int n = B.columns();
-        int k = A.columns();
-        A = Shape.toOffsetZero(A);
-        B = Shape.toOffsetZero(B);
+        int m = BlasBufferUtil.getDimension(A, true);
+        int n = BlasBufferUtil.getDimension(B, false);
+        int k = BlasBufferUtil.getDimension(A, false);
 
 
 
@@ -123,8 +111,8 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         JCublas2.cublasDgemm(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(B)),
+                OpUtil.getOp(TransA),
+                OpUtil.getOp(TransB),
                 m,  // m
                 n, // n
                 k, //k,

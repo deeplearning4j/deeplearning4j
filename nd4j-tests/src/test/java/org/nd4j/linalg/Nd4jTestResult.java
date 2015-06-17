@@ -30,10 +30,11 @@ public class Nd4jTestResult extends TestResult {
                 }
             };
             runProtected(test, p);
+            endTest(test);
+
         }catch(UnsupportedOperationException e) {
             log.warn("Feature not supported " + test.getName());
         }
 
-        endTest(test);
     }
 }

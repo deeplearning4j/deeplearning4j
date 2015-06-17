@@ -26,8 +26,8 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        DataBuffer aData = Shape.toOffsetZero(A).data();
-        DataBuffer bData = Shape.toOffsetZero(B).data();
+        DataBuffer aData = A.data();
+        DataBuffer bData = B.data();
 
         float[] cData = getFloatData(C);
         BLAS.getInstance().sgemm(String.valueOf(TransA),String.valueOf(TransB),M,N,K,alpha,aData.asFloat(),getBlasOffset(A),lda,bData.asFloat(),getBlasOffset(B),ldb,beta,cData,getBlasOffset(C),ldc);
@@ -65,12 +65,8 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
-        A = Shape.toOffsetZero(A);
-        B =  Shape.toOffsetZero(B);
-        C =  Shape.toOffsetZero(C);
-
-        DataBuffer aData = Shape.toOffsetZero(A).data();
-        DataBuffer bData = Shape.toOffsetZero(B).data();
+        DataBuffer aData = A.data();
+        DataBuffer bData = B.data();
 
         double[] cData = getDoubleData(C);
         BLAS.getInstance().dgemm(String.valueOf(TransA), String.valueOf(TransB), M, N, K, alpha, aData.asDouble(), getBlasOffset(A), lda, bData.asDouble(), getBlasOffset(B), ldb, beta, cData, getBlasOffset(C), ldc);

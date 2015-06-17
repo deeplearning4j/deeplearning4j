@@ -2380,18 +2380,8 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray mmul(INDArray other) {
         ensureNotCleanedUp();
         int[] shape = {rows(), other.columns()};
-        INDArray result = create(shape, NDArrayFactory.FORTRAN);
-
-        if(ordering() == NDArrayFactory.FORTRAN && other.ordering() == NDArrayFactory.FORTRAN) {
-            return mmuli(other, result);
-        }
-        else {
-            INDArray newThis = create(shape(),NDArrayFactory.FORTRAN);
-            newThis.assign(this);
-            INDArray newOther = create(other.shape(),NDArrayFactory.FORTRAN);
-            newOther.assign(other);
-            return newThis.mmuli(newOther,result);
-        }
+        INDArray result = create(shape,ordering());
+        return mmuli(other, result);
     }
 
     protected INDArray create(int[] shape, char ordering) {
@@ -2532,8 +2522,8 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             return result;
-
         }
+
         LinAlgExceptions.assertMultiplies(this, other);
 
 
@@ -3331,6 +3321,13 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray transposei() {
+      /*  if(ordering() == NDArrayFactory.C) {
+            int[] reverse = ArrayUtil.reverseCopy(ArrayUtil.range(0,shape().length));
+            int[] shape = doPermuteSwap(shape(), reverse);
+            int[] strides = doPermuteSwap(stride(),reverse);
+            INDArray ret =  create(data(), shape, strides);
+            return ret;
+        }*/
         if (isRowVector()) {
             INDArray ret = create(shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()));
             if(ret instanceof IComplexNDArray) {
@@ -3399,6 +3396,10 @@ public abstract class BaseNDArray implements INDArray {
         return arr;
 
 
+    }
+
+    protected INDArray create(DataBuffer data, int[] shape, int[] strides) {
+        return Nd4j.create(data,shape,strides,offset(),ordering());
     }
 
 

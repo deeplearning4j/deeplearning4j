@@ -94,8 +94,75 @@ public class BlasBufferUtil {
      * array
      */
     public static char getCharForTranspose(INDArray arr) {
-        return arr.ordering() == NDArrayFactory.FORTRAN ? 'N' : 'T';
+        return 'N';
     }
+
+    /**
+     * Return the proper stride
+     * through a vector
+     * relative to the ordering of the array
+     * This is for incX/incY parameters in BLAS.
+     *
+     * @param arr the array to get the stride for
+     * @return the stride wrt the ordering
+     * for the given array
+     */
+    public static int getStrideForOrdering(INDArray arr) {
+        if(arr.ordering() == NDArrayFactory.FORTRAN) {
+            return getBlasStride(arr);
+        }
+        else {
+            if(arr instanceof IComplexNDArray)
+                return arr.stride(1) / 2;
+            return arr.stride(1);
+        }
+    }
+
+    /**
+     * Get the dimension associated with
+     * the given ordering.
+     *
+     * When working with blas routines, they typically assume
+     * c ordering, instead you can invert the rows/columns
+     * which enable you to do no copy blas operations.
+     *
+     *
+     *
+     * @param arr
+     * @param defaultRows
+     * @return
+     */
+    public static int getDimension(INDArray arr,boolean defaultRows) {
+        //ignore ordering for vectors
+        if(arr.isVector()) {
+            return defaultRows ? arr.rows() : arr.columns();
+        }
+        if(arr.ordering() == NDArrayFactory.C)
+            return defaultRows ? arr.columns() : arr.rows();
+        return defaultRows ? arr.rows() : arr.columns();
+    }
+
+
+    /**
+     * Get the leading dimension
+     * for a blas invocation.
+     *
+     * The lead dimension is usually
+     * arr.size(0) (this is only for fortran ordering though).
+     * It can be size(1) (assuming matrix) for C ordering though.
+     * @param arr the array to
+     * @return the leading dimension wrt the ordering of the array
+     *
+     */
+    public static int getLd(INDArray arr) {
+        //ignore ordering for vectors
+        if(arr.isVector()) {
+            return arr.size(0);
+        }
+
+        return arr.ordering() == NDArrayFactory.C ? arr.size(1) : arr.size(0);
+    }
+
 
     /**
      * Returns the float data

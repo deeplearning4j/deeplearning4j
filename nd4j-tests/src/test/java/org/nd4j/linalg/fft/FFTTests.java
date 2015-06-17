@@ -85,7 +85,7 @@ public  class FFTTests extends BaseNd4jTest {
         INDArray swapped = n.swapAxes(n.shape().length - 1, 1);
         INDArray firstSlice = swapped.slice(0).slice(0);
         IComplexNDArray test = Nd4j.createComplex(firstSlice);
-        IComplexNDArray testNoOffset = Nd4j.createComplex(new double[]{1, 0, 4, 0, 7, 0, 10, 0, 13, 0}, new int[]{5});
+        IComplexNDArray testNoOffset = Nd4j.createComplex(new double[]{1, 0, 4, 0, 7, 0, 10, 0, 13, 0}, new int[]{1,5});
         assertEquals(getFailureMessage(),Nd4j.getExecutioner().execAndReturn(new VectorFFT(testNoOffset,5)), Nd4j.getExecutioner().execAndReturn(new VectorFFT(test,5)));
 
 

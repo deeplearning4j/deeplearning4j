@@ -358,9 +358,12 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     @Override
     public INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c) {
         LinAlgExceptions.assertMatrix(a,b,c);
+
         if(a.data().dataType() == DataBuffer.Type.FLOAT) {
             return gemm((float) alpha,a,b,(float) beta,c);
         }
+
+
         level3().gemm(
                 BlasBufferUtil.getCharForTranspose(a),
                 BlasBufferUtil.getCharForTranspose(b)

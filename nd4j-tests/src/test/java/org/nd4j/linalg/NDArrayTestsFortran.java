@@ -611,7 +611,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray assertion2 = Nd4j.create(new double[][]{
                 {70,88},{79,100}
         });
-        assertEquals(assertion2, mmul);
+        assertEquals(getFailureMessage(),assertion2, mmul);
 
         INDArray mmulOffsets = square.mmul(other2);
         INDArray assertion = Nd4j.create(new double[][]{{    330.,     730.,    1130.,    1530.,    1930.,    2330.,

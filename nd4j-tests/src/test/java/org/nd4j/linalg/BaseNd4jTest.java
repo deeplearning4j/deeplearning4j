@@ -32,6 +32,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jblas.JblasBackend;
 import org.nd4j.linalg.jcublas.JCublasBackend;
 import org.nd4j.linalg.netlib.NetlibBlasBackend;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
@@ -40,6 +42,7 @@ import java.util.UUID;
  * @author Adam Gibson
  */
 public abstract class BaseNd4jTest extends TestCase {
+    private static Logger log = LoggerFactory.getLogger(BaseNd4jTest.class);
     protected Nd4jBackend backend;
     public final static String DEFAULT_BACKED = "org.nd4j.linalg.defaultbackend";
 
@@ -91,6 +94,15 @@ public abstract class BaseNd4jTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
         before();
+    }
+
+    @Override
+    public void runBare() throws Throwable {
+        try {
+            super.runBare();
+        }catch(UnsupportedOperationException e) {
+            log.warn("Un supported operation ",e);
+        }
     }
 
     @Before

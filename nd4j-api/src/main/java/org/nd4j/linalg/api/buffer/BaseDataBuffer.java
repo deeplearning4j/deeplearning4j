@@ -730,7 +730,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void doWriteObject(java.io.ObjectOutputStream out) throws IOException {
         out.defaultWriteObject();
         out.writeUTF(allocationMode.name());
-        out.writeLong(length());
+        out.writeInt(length());
         out.writeUTF(dataType().name());
         if(dataType() == Type.DOUBLE) {
             for(int i = 0; i < length(); i++)
