@@ -66,34 +66,12 @@ public  class IFFTTests extends BaseNd4jTest {
 
         assertEquals(getFailureMessage(),assertion, Nd4j.getFFt().fft(c.dup(), 2));
         IComplexNDArray iffted =  Nd4j.getFFt().ifft(Nd4j.getFFt().fft(c.dup(), 2),2);
-        assertEquals(iffted, c);
+        assertEquals(getFailureMessage(),iffted, c);
 
 
     }
 
-    @Test
-    public void testFftToIfft() {
-        IComplexNDArray linspace = Nd4j.complexLinSpace(1,8,8);
-        IComplexNDArray ffted = Nd4j.createComplex(new IComplexNumber[]{
-                Nd4j.createComplexNumber(36, 0),
-                Nd4j.createComplexNumber(-4, 9.6585425),
-                Nd4j.createComplexNumber(-4, 4),
-                Nd4j.createComplexNumber(-4, 1.65685425),
-                Nd4j.createComplexNumber(-4, 0),
-                Nd4j.createComplexNumber(-4, -1.65685425),
-                Nd4j.createComplexNumber(-4, -4),
-                Nd4j.createComplexNumber(-4, -9.65685425),
 
-        });
-
-        IComplexNDArray ffted2 = FFT.fft(linspace);
-        Nd4j.EPS_THRESHOLD = 1e-1;
-        assertEquals(ffted.eps(ffted2).sum(Integer.MAX_VALUE).getDouble(0),8,1e-1);
-
-        IComplexNDArray iffted = FFT.ifft(ffted);
-        assertEquals(iffted.eps(linspace).sum(Integer.MAX_VALUE).getDouble(0),8,1e-1);
-
-    }
 
     @Override
     public char ordering() {

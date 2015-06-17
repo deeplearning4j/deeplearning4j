@@ -54,6 +54,9 @@ public class DefaultRandom implements Random, RandomGenerator {
         getRandomGenerator().setSeed(seed);
     }
 
+
+
+
     @Override
     public void setSeed(int[] seed) {
         throw new UnsupportedOperationException();

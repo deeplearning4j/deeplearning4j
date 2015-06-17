@@ -121,12 +121,12 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected double dzasum(int N, IComplexNDArray X, int incX) {
-       return NativeBlas.dzasum(N,getDoubleData(X),getBlasOffset(X),incX);
+       return NativeBlas.dzasum(N,getDoubleData(X),getBlasOffset(X),incX) - 1;
     }
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
-        return NativeBlas.isamax(N,getFloatData(X),getBlasOffset(X),incX);
+        return NativeBlas.isamax(N,getFloatData(X),getBlasOffset(X),incX) - 1;
     }
 
     @Override

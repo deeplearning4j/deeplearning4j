@@ -45,9 +45,9 @@ public class JcublasLevel2 extends BaseLevel2 {
                 Pointer.to(new float[]{beta}),
                 cCPointer.getDevicePointer(),
                 incY);
+        SimpleJCublas.sync();
 
         cCPointer.copyToHost();
-        SimpleJCublas.sync();
     }
 
     @Override
@@ -167,8 +167,6 @@ public class JcublasLevel2 extends BaseLevel2 {
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(X);
         CublasPointer cCPointer = new CublasPointer(Y);
-        A = (IComplexNDArray) Shape.toOffsetZero(A);
-        X = (IComplexNDArray) Shape.toOffsetZero(X);
 
 
         cuComplex alpha2 = cuComplex.cuCmplx(alpha.realComponent().floatValue(), alpha.imaginaryComponent().floatValue());
@@ -177,11 +175,11 @@ public class JcublasLevel2 extends BaseLevel2 {
         JCublas2.cublasCgemv(
                 ContextHolder.getInstance().getHandle(),
                 OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                A.rows(),  // m
-                A.columns(), // n
+                M,  // m
+                N, // n
                 PointerUtil.getPointer(alpha2),
                 cAPointer.getDevicePointer(), // A
-                A.size(0),  // lda
+                lda,  // lda
                 cBPointer.getDevicePointer(), // x
                 incX, // ldb
                 PointerUtil.getPointer(beta2),  // beta
@@ -254,8 +252,8 @@ public class JcublasLevel2 extends BaseLevel2 {
         JCublas2.cublasZgemv(
                 ContextHolder.getInstance().getHandle(),
                 OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
-                A.rows(),  // m
-                A.rows(), // n
+                M,  // m
+                N, // n
                 PointerUtil.getPointer(alpha2),
                 cAPointer.getDevicePointer(), // A
                 lda,  // lda
@@ -526,15 +524,15 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasZgeru(
                 ContextHolder.getInstance().getHandle(),
-                A.rows(),   // m
-                A.columns(),// n
+                M,   // m
+                N,// n
                 PointerUtil.getPointer(alpha2),      // alpha
                 aCPointer.getDevicePointer(),        // d_A or x
-                A.rows(),   // incx
+                incX,   // incx
                 bCPointer.getDevicePointer(),        // d_B or y
-                X.rows(),   // incy
+                incY,   // incy
                 cCPointer.getDevicePointer(),        // d_C or A
-                Y.rows()    // lda
+                lda    // lda
         );
 
         SimpleJCublas.sync();

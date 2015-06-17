@@ -192,7 +192,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX);
         ContextHolder.syncStream();
         SimpleJCublas.sync();
-        return  (ret2 - 1);
+        return  ret2 - 1;
     }
 
     @Override
@@ -205,7 +205,7 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incX);
         ContextHolder.syncStream();
         SimpleJCublas.sync();
-        return  (ret2 - 1);
+        return  ret2 - 1;
     }
 
     @Override
@@ -213,7 +213,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X);
         int[] result = new int[1];
         Pointer resultPointer = Pointer.to(result);
-        return JCublas2.cublasIcamax(ContextHolder.getInstance().getHandle(),N,xCPointer.getDevicePointer(),incX,resultPointer);
+        return JCublas2.cublasIcamax(ContextHolder.getInstance().getHandle(),N,xCPointer.getDevicePointer(),incX,resultPointer) - 1;
     }
 
     @Override
@@ -221,7 +221,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X);
         int[] result = new int[1];
         Pointer resultPointer = Pointer.to(result);
-        return JCublas2.cublasIzamax(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, resultPointer);
+        return JCublas2.cublasIzamax(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, resultPointer) - 1;
     }
 
     @Override

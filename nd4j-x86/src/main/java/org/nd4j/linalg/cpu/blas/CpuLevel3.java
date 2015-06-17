@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.util.CpuComplex;
 import org.nd4j.linalg.util.Shape;
+import sun.security.provider.SHA;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getBlasOffset;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
@@ -26,6 +27,9 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
+
         DataBuffer aData = A.data();
         DataBuffer bData = B.data();
 
@@ -65,6 +69,9 @@ public class CpuLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
+
         DataBuffer aData = A.data();
         DataBuffer bData = B.data();
 
@@ -110,7 +117,23 @@ public class CpuLevel3 extends BaseLevel3 {
         C = (IComplexNDArray) Shape.toOffsetZero(C);
 
         float[] cData = getFloatData(C);
-        NativeBlas.cgemm(TransA, TransB, M, N, K, CpuComplex.getComplexFloat(alpha), getFloatData(A), getBlasOffset(A), lda, getFloatData(B), getBlasOffset(B), ldb, CpuComplex.getComplexFloat(beta), cData, getBlasOffset(C), ldc);
+        NativeBlas.cgemm(
+                TransA
+                , TransB
+                , M
+                , N
+                , K
+                , CpuComplex.getComplexFloat(alpha)
+                , getFloatData(A)
+                , getBlasOffset(A)
+                , lda
+                , getFloatData(B)
+                , getBlasOffset(B)
+                , ldb
+                , CpuComplex.getComplexFloat(beta)
+                , cData
+                , getBlasOffset(C)
+                , ldc);
         setData(cData,C);
     }
 

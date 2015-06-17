@@ -23,24 +23,44 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 
+import jcuda.Pointer;
+import jcuda.Sizeof;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.util.ComplexUtil;
+import org.nd4j.linalg.util.Shape;
+
 
 public class CublasPointerTests {
-
     @Test
-    public void testCopyMatrix() {
-        INDArray twoByThree = Nd4j.linspace(1, 784, 784).reshape(28, 28);
-        INDArray copy = Nd4j.create(28, 28);
-        Nd4j.getBlasWrapper().copy(twoByThree.linearView(), copy.linearView());
-    }
+    public void testAllocateArrays() {
+        INDArray arr1OffsetFor = Nd4j.linspace(1,12,12).reshape(4, 3);
+        //2,6,10,3,7,11
+        INDArray arr1Offset = arr1OffsetFor.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all());
+        arr1Offset = Shape.toOffsetZero(arr1Offset);
+        CublasPointer p = new CublasPointer(arr1Offset);
+        String s = p.toString();
+        float[] data = new float[6];
+        float[] assertion = {2,3,6,7,10,11};
+        float[] wholeThing = p.getFloatBuffer();
+        JCublas2.cublasGetVector(
+                6
+                , Sizeof.FLOAT
+                ,p.getDevicePointer().withByteOffset(arr1Offset.offset() * arr1Offset.data().getElementSize())
+                ,arr1Offset.majorStride()
+                , Pointer.to(data),1);
+        for(int i = 0; i < assertion.length;i++)
+            assertEquals(data[i],assertion[i],1e-1f);
 
+
+
+    }
 
     @Test
     public void testVectorAlongDimension() throws Exception {

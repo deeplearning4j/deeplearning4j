@@ -20,7 +20,9 @@ package org.nd4j.linalg.dataset;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -28,7 +30,7 @@ import org.nd4j.linalg.util.FeatureUtil;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertEquals;
 
 public class DataSetTest extends BaseNd4jTest {
 	public DataSetTest() {
@@ -46,23 +48,7 @@ public class DataSetTest extends BaseNd4jTest {
 		super(backend);
 	}
 
-	@Test
-	public void testSetNewLabels() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
 
-		INDArray data = Nd4j.rand(10,10);
-		INDArray labels = FeatureUtil.toOutcomeMatrix(new int[]{0, 0, 1, 1, 2, 2, 3, 3, 3, 3}, 4);
-		DataSet d = new DataSet(data,labels);
-		DataSet filtered = d.filterBy(new int[]{2, 3});
-		d.filterAndStrip(new int[]{2,3});
-		assertEquals(2,d.numOutcomes());
-		assertEquals(filtered.numExamples(),d.numExamples());
-		assertEquals(filtered.getFeatureMatrix(), d.getFeatureMatrix());
-        assertEquals(filtered.numExamples(), d.getLabels().rows());
-
-
-	}
 
 	@Test
 	public void testAsListMmul() {
@@ -73,7 +59,7 @@ public class DataSetTest extends BaseNd4jTest {
         //Get first Iris example
         DataSet x0 = new IrisDataSetIterator(1,1).next();
         INDArray example0 = x0.getFeatureMatrix();
-        checkMMultDotProduct(example0, colVector);
+        checkMMultDotProduct(example0,colVector);
 
         System.out.println("/////////////");
 
@@ -88,7 +74,7 @@ public class DataSetTest extends BaseNd4jTest {
 	}
 
 
-    private static void checkMMultDotProduct(INDArray rowVector,INDArray colVector){
+    private  void checkMMultDotProduct(INDArray rowVector,INDArray colVector){
         assertTrue(rowVector.isRowVector());
         assertTrue(colVector.isColumnVector());
         System.out.println("rowVector: " + rowVector);
@@ -97,24 +83,27 @@ public class DataSetTest extends BaseNd4jTest {
         float[] colFloat = asFloat(colVector);
 
         INDArray product = rowVector.mmul(colVector);
-        assertTrue(product.length()==1);
+        assertTrue(product.length() == 1);
 
         float expected = dotProduct(colFloat, rowFloat);
         float actual = product.getFloat(0);
         System.out.println("rowVector times colVector: expected = " + expected + ", actual = " + actual );
-        assertEquals(expected, actual, 0.01f);
+        assertEquals(getFailureMessage(),expected, actual, 0.01f);
     }
 
 
     public static float[] asFloat( INDArray arr ){
         int len = arr.length();
         float[] f = new float[len];
-        for( int i=0; i<len; i++ ) f[i] = arr.getFloat(i);
+        for( int i=0; i < len; i++ )
+            f[i] = arr.getFloat(i);
         return f;
     }
+
     public static float dotProduct( float[] x, float[] y ){
         float sum = 0.0f;
-        for( int i=0; i<x.length; i++ ) sum += x[i]*y[i];
+        for( int i = 0; i < x.length; i++ )
+            sum += x[i] * y[i];
         return sum;
     }
 
@@ -123,16 +112,13 @@ public class DataSetTest extends BaseNd4jTest {
         INDArray labels = FeatureUtil.toOutcomeMatrix(new int[]{0,0,0,0,0,0,0,0},1);
         DataSet data = new DataSet(Nd4j.rand(8,1),labels);
 
-        SplitTestAndTrain train = data.splitTestAndTrain(6, new Random(123));
+        SplitTestAndTrain train = data.splitTestAndTrain(6, new Random(1));
         assertEquals(train.getTrain().getLabels().length(),6);
 
-        SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(123));
-        assertEquals(train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
-
-        SplitTestAndTrain train3 = data.splitTestAndTrain(6, new Random(20));
-        assertNotEquals(train.getTrain().getFeatureMatrix(), train3.getTrain().getFeatureMatrix());
-
+        SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(1));
+        assertEquals(getFailureMessage(),train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
     }
+
 
     @Override
     public char ordering() {

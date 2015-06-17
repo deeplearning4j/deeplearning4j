@@ -76,7 +76,22 @@ public class NetlibLevel2 extends BaseLevel2 {
     @Override
     protected void dgemv(char order, char TransA, int M, int N, double alpha, INDArray A, int lda, INDArray X, int incX, double beta, INDArray Y, int incY) {
         double[] yData = getDoubleData(Y);
-        BLAS.getInstance().dgemv(String.valueOf(TransA),M,N,alpha,getDoubleData(A),getBlasOffset(A),lda,getDoubleData(X),getBlasOffset(X),incX,beta,yData,getBlasOffset(Y),incY);
+        BLAS.getInstance().dgemv(
+                String.valueOf(TransA)
+                ,M
+                ,
+                N
+                ,alpha
+                ,getDoubleData(A)
+                ,getBlasOffset(A)
+                ,lda
+                ,getDoubleData(X)
+                ,getBlasOffset(X)
+                ,incX
+                ,beta
+                ,yData
+                ,getBlasOffset(Y)
+                ,incY);
         setData(yData,Y);
     }
 

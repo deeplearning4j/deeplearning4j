@@ -226,13 +226,13 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     @Override
     public int iamax(INDArray x) {
         LinAlgExceptions.assertVector(x);
-        return level1().iamax(x);
+        return level1().iamax(x) - 1;
     }
 
     @Override
     public int iamax(IComplexNDArray x) {
         LinAlgExceptions.assertVector(x);
-        return level1().iamax(x);
+        return level1().iamax(x) - 1;
     }
 
     @Override

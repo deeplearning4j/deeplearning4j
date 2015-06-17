@@ -72,7 +72,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @return an empty dataset with 2 1x1 zero matrices
      */
     public static DataSet empty() {
-        return new DataSet(Nd4j.zeros(new int[]{1}), Nd4j.zeros(new int[]{1}));
+        return new DataSet(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
     }
 
     /**
