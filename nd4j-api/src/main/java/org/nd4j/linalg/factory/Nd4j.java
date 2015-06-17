@@ -139,6 +139,7 @@ public class Nd4j {
     public static ReferenceQueue<INDArray> refQueue() {
         return referenceQueue;
     }
+
     /**
      * The reference queue used for cleaning up
      * databuffers
@@ -148,8 +149,6 @@ public class Nd4j {
     public static ReferenceQueue<DataBuffer> bufferRefQueue() {
         return bufferQueue;
     }
-
-
 
     /**
      * Gets the instrumentation instance
@@ -184,7 +183,6 @@ public class Nd4j {
             throw new IllegalStateException("Illegal random not found");
         return random;
     }
-
 
     /**
      * Get the convolution singleton
@@ -301,7 +299,6 @@ public class Nd4j {
                 }
             }
         }
-
 
         if (index != theta.length()) {
             throw new AssertionError("Did not entirely use the theta vector");
@@ -636,27 +633,6 @@ public class Nd4j {
      */
     public static void setBlasWrapper(BlasWrapper factory) {
         BLAS_WRAPPER_INSTANCE = factory;
-    }
-
-    /**
-     * Create a complex ndarray based on the
-     * real and imaginary
-     *
-     * @param real the real numbers
-     * @param imag the imaginary components
-     * @return the complex
-     */
-    public static IComplexNDArray createComplex(INDArray real, INDArray imag) {
-        assert Shape.shapeEquals(real.shape(), imag.shape());
-        IComplexNDArray ret = Nd4j.createComplex(real.shape());
-        INDArray realLinear = real.linearView();
-        INDArray imagLinear = imag.linearView();
-        IComplexNDArray retLinear = ret.linearView();
-        for (int i = 0; i < ret.length(); i++) {
-            retLinear.putScalar(i, Nd4j.createComplexNumber(realLinear.getDouble(i), imagLinear.getDouble(i)));
-        }
-        logCreationIfNecessary(ret);
-        return ret;
     }
 
     /**
@@ -1159,16 +1135,6 @@ public class Nd4j {
     }
 
     /**
-     * Create an ndarray based on the given data layout
-     *
-     * @param data the data to use
-     * @return an ndarray with the given data layout
-     */
-    public static INDArray create(double[][] data) {
-        return INSTANCE.create(data);
-    }
-
-    /**
      * Read in an ndarray from a data input stream
      *
      * @param dis the data input stream to read from
@@ -1261,19 +1227,6 @@ public class Nd4j {
         return ret;
     }
 
-    /**
-     * Create double
-     *
-     * @param real real component
-     * @param imag imag component
-     * @return
-     */
-    public static IComplexNumber createComplexNumber(Number real, Number imag) {
-        if (dataType() == DataBuffer.Type.FLOAT)
-            return INSTANCE.createFloat(real.floatValue(), imag.floatValue());
-        return INSTANCE.createDouble(real.doubleValue(), imag.doubleValue());
-
-    }
 
     /**
      * Create double
@@ -1305,38 +1258,6 @@ public class Nd4j {
      */
     public static void copy(INDArray a, INDArray b) {
         INSTANCE.copy(a, b);
-    }
-
-    /**
-     * Generates a random matrix between min and max
-     *
-     * @param shape the number of rows of the matrix
-     * @param min   the minimum number
-     * @param max   the maximum number
-     * @param rng   the rng to use
-     * @return a drandom matrix of the specified shape and range
-     */
-    public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = INSTANCE.rand(shape, min, max, rng);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Generates a random matrix between min and max
-     *
-     * @param rows    the number of rows of the matrix
-     * @param columns the number of columns in the matrix
-     * @param min     the minimum number
-     * @param max     the maximum number
-     * @param rng     the rng to use
-     * @return a drandom matrix of the specified shape and range
-     */
-    public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
-        if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
-        INDArray ret = INSTANCE.rand(rows, columns, min, max, rng);
-        logCreationIfNecessary(ret);
-        return ret;
     }
 
     /**
@@ -1466,6 +1387,280 @@ public class Nd4j {
                 x.putScalar(i, i, func.apply(x.getComplex(i, i)));
     }
 
+
+    ////////////////////// RANDOM ///////////////////////////////
+    /**
+     * Create a random ndarray with the given shape using
+     * the current time as the seed
+     *
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(int[] shape) {
+        INDArray ret = INSTANCE.rand(shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
+    /**
+     * Create a random ndarray with the given shape using
+     * the current time as the seed
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(int rows, int columns) {
+        INDArray ret = INSTANCE.rand(rows, columns);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a random ndarray with the given shape using given seed
+     *
+     * @param shape the shape of the ndarray
+     * @param seed  the  seed to use
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(int[] shape, long seed) {
+        INDArray ret = INSTANCE.rand(shape, seed);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a random ndarray with the given shape using the given seed
+     *
+     * @param seed the seed
+     * @param shape  the shape
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(long seed,int...shape) {
+        INDArray ret = INSTANCE.rand(shape, seed);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a random ndarray with the given shape using the given seed
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the columns of the ndarray
+     * @param seed    the  seed to use
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(int rows, int columns, long seed) {
+        INDArray ret = INSTANCE.rand(rows, columns, seed);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a random ndarray with the given shape using the given RandomGenerator
+     *
+     * @param shape the shape of the ndarray
+     * @param rng     the random generator to use
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random rng) {
+        INDArray ret = INSTANCE.rand(shape, rng);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a random ndarray with the given shape using the given rng
+     *
+     * @param shape the shape of the ndarray
+     * @param dist  distribution to use
+     * @return the random ndarray with the specified shape
+     */
+    public static INDArray rand(int[] shape, Distribution dist) {
+        INDArray ret = INSTANCE.rand(shape, dist);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a random ndarray with the given shape using the given rng
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @param rng       the random generator to use
+     * @return the random ndarray with the specified shape
+     */
+    @Deprecated
+    public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random rng) {
+        INDArray ret = INSTANCE.rand(rows, columns, rng);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Generates a random matrix between min and max
+     *
+     * @param shape the number of rows of the matrix
+     * @param min   the minimum number
+     * @param max   the maximum number
+     * @param rng   the rng to use
+     * @return a drandom matrix of the specified shape and range
+     */
+    public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+        INDArray ret = INSTANCE.rand(shape, min, max, rng);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Generates a random matrix between min and max
+     *
+     * @param rows    the number of rows of the matrix
+     * @param columns the number of columns in the matrix
+     * @param min     the minimum number
+     * @param max     the maximum number
+     * @param rng     the rng to use
+     * @return a drandom matrix of the specified shape and range
+     */
+    public static INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+        if(min>max) throw new IllegalArgumentException("the maximum value supplied is smaller than the minimum");
+        INDArray ret = INSTANCE.rand(rows, columns, min, max, rng);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Random normal using the current time stamp
+     * as the seed
+     *
+     * @param shape the shape of the ndarray
+     * @return
+     */
+    public static INDArray randn(int[] shape) {
+        INDArray ret = INSTANCE.randn(shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Random normal using the specified seed
+     *
+     * @param shape the shape of the ndarray
+     * @return
+     */
+    public static INDArray randn(int[] shape, long seed) {
+        Nd4j.getRandom().setSeed(seed);
+        return randn(shape, Nd4j.getRandom());
+    }
+
+    /**
+     * Random normal using the current time stamp
+     * as the seed
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @return
+     */
+    public static INDArray randn(int rows, int columns) {
+        INDArray ret = INSTANCE.randn(rows, columns);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Random normal using the specified seed
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @return
+     */
+    public static INDArray randn(int rows, int columns, long seed) {
+        INDArray ret = INSTANCE.randn(rows, columns, seed);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Random normal using the given rng
+     *
+     * @param rows    the number of rows in the matrix
+     * @param columns the number of columns in the matrix
+     * @param r       the random generator to use
+     * @return
+     */
+    public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
+        INDArray ret = INSTANCE.randn(rows, columns, r);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Random normal using the given rng
+     *
+     * @param shape the shape of the ndarray
+     * @param r     the random generator to use
+     * @return
+     */
+    public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
+        INDArray ret = INSTANCE.randn(shape, r);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
+    ////////////////////// CREATE ///////////////////////////////
+
+    /**
+     * Creates a row vector with the data
+     *
+     * @param data the columns of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(float[] data) {
+        return create(data, order());
+    }
+
+    /**
+     * Creates an ndarray with the specified data
+     *
+     * @param data the number of columns in the row vector
+     * @return ndarray
+     */
+    public static IComplexNDArray createComplex(float[] data) {
+        return createComplex(data, Nd4j.order());
+
+    }
+
+    /**
+     * Creates a row vector with the data
+     *
+     * @param data the columns of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(double[] data) {
+        return create(data, order());
+    }
+
+    /**
+     *
+     * @param doubles
+     * @return
+     */
+    public static INDArray create(float[][] doubles) {
+        return INSTANCE.create(doubles);
+    }
+
+    /**
+     * Create an ndarray based on the given data layout
+     *
+     * @param data the data to use
+     * @return an ndarray with the given data layout
+     */
+    public static INDArray create(double[][] data) {
+        return INSTANCE.create(data);
+    }
+
     /**
      * Create a complex ndarray from the passed in indarray
      *
@@ -1477,6 +1672,61 @@ public class Nd4j {
         if (arr instanceof IComplexNDArray)
             return (IComplexNDArray) arr;
         IComplexNDArray ret = INSTANCE.createComplex(arr);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a row vector with the specified number of columns
+     *
+     * @param columns the columns of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(int columns) {
+        return create(columns, order());
+    }
+
+    /**
+     * Creates an ndarray
+     *
+     * @param columns the number of columns in the row vector
+     * @return ndarray
+     */
+    public static IComplexNDArray createComplex(int columns) {
+        return createComplex(columns, order());
+    }
+
+
+    /**
+     * Create double based on real and imaginary
+     *
+     * @param real real component
+     * @param imag imag component
+     * @return
+     */
+    public static IComplexNumber createComplexNumber(Number real, Number imag) {
+        if (dataType() == DataBuffer.Type.FLOAT)
+            return INSTANCE.createFloat(real.floatValue(), imag.floatValue());
+        return INSTANCE.createDouble(real.doubleValue(), imag.doubleValue());
+
+    }
+    /**
+     * Create a complex ndarray based on the
+     * real and imaginary
+     *
+     * @param real the real numbers
+     * @param imag the imaginary components
+     * @return the complex
+     */
+    public static IComplexNDArray createComplex(INDArray real, INDArray imag) {
+        assert Shape.shapeEquals(real.shape(), imag.shape());
+        IComplexNDArray ret = Nd4j.createComplex(real.shape());
+        INDArray realLinear = real.linearView();
+        INDArray imagLinear = imag.linearView();
+        IComplexNDArray retLinear = ret.linearView();
+        for (int i = 0; i < ret.length(); i++) {
+            retLinear.putScalar(i, Nd4j.createComplexNumber(realLinear.getDouble(i), imagLinear.getDouble(i)));
+        }
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1497,19 +1747,6 @@ public class Nd4j {
     /**
      * Create a complex ndarray from the passed in indarray
      *
-     * @param data the data to wrap
-     * @return the complex ndarray with the specified ndarray as the
-     * real components
-     */
-    public static IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a complex ndarray from the passed in indarray
-     *
      * @param arrs the arr to wrap
      * @return the complex ndarray with the specified ndarray as the
      * real components
@@ -1521,192 +1758,6 @@ public class Nd4j {
     }
 
     /**
-     * Create a random ndarray with the given shape using the given rng
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @param r       the random generator to use
-     * @return the random ndarray with the specified shape
-     */
-    @Deprecated
-    public static INDArray rand(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.rand(rows, columns, r);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a random ndarray with the given shape using the given rng
-     *
-     * @param seed the seed
-     * @param shape  the shape
-     * @return the random ndarray with the specified shape
-     */
-    public static INDArray rand(long seed,int...shape) {
-        INDArray ret = INSTANCE.rand(shape, seed);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a random ndarray with the given shape using the given rng
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the columns of the ndarray
-     * @param seed    the  seed to use
-     * @return the random ndarray with the specified shape
-     */
-    public static INDArray rand(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.rand(rows, columns, seed);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a random ndarray with the given shape using
-     * the current time as the seed
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return the random ndarray with the specified shape
-     */
-    public static INDArray rand(int rows, int columns) {
-        INDArray ret = INSTANCE.rand(rows, columns,Nd4j.getRandom());
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Random normal using the given rng
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @param r       the random generator to use
-     * @return
-     */
-    public static INDArray randn(int rows, int columns, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(rows, columns, r);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Random normal using the current time stamp
-     * as the seed
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return
-     */
-    public static INDArray randn(int rows, int columns) {
-        INDArray ret = INSTANCE.randn(rows, columns,Nd4j.getRandom());
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Random normal using the specified seed
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return
-     */
-    public static INDArray randn(int rows, int columns, long seed) {
-        INDArray ret = INSTANCE.randn(rows, columns, seed);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a random ndarray with the given shape using the given rng
-     *
-     * @param shape the shape of the ndarray
-     * @param r     the random generator to use
-     * @return the random ndarray with the specified shape
-     */
-    public static INDArray rand(int[] shape, Distribution r) {
-        INDArray ret = INSTANCE.rand(shape, r);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a random ndarray with the given shape using the given rng
-     *
-     * @param shape the shape of the ndarray
-     * @param r     the random generator to use
-     * @return the random ndarray with the specified shape
-     */
-    public static INDArray rand(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.rand(shape, r);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a random ndarray with the given shape using the given rng
-     *
-     * @param shape the shape of the ndarray
-     * @param seed  the  seed to use
-     * @return the random ndarray with the specified shape
-     */
-    public static INDArray rand(int[] shape, long seed) {
-        INDArray ret = INSTANCE.rand(shape, seed);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create a random ndarray with the given shape using
-     * the current time as the seed
-     *
-     * @param shape the shape of the ndarray
-     * @return the random ndarray with the specified shape
-     */
-    public static INDArray rand(int[] shape) {
-        INDArray ret = INSTANCE.rand(shape,Nd4j.getRandom());
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Random normal using the given rng
-     *
-     * @param shape the shape of the ndarray
-     * @param r     the random generator to use
-     * @return
-     */
-    public static INDArray randn(int[] shape, org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = INSTANCE.randn(shape, r);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Random normal using the current time stamp
-     * as the seed
-     *
-     * @param shape the shape of the ndarray
-     * @return
-     */
-    public static INDArray randn(int[] shape) {
-        INDArray ret = INSTANCE.randn(shape,Nd4j.getRandom());
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Random normal using the specified seed
-     *
-     * @param shape the shape of the ndarray
-     * @return
-     */
-    public static INDArray randn(int[] shape, long seed) {
-        Nd4j.getRandom().setSeed(seed);
-        return randn(shape, Nd4j.getRandom());
-    }
-
-    /**
      * Creates a row vector with the data
      *
      * @param data the columns of the ndarray
@@ -1714,6 +1765,12 @@ public class Nd4j {
      */
     public static INDArray create(float[] data, char order) {
         INDArray ret = INSTANCE.create(data, order);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    private static IComplexNDArray createComplex(float[] data, char order) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1737,7 +1794,7 @@ public class Nd4j {
      * @return ndarray
      */
     public static IComplexNDArray createComplex(double[] data, char order) {
-        IComplexNDArray ret = INSTANCE.createComplex(data,Nd4j.getComplexStrides(new int[]{1,data.length},order),0,order);
+        IComplexNDArray ret = INSTANCE.createComplex(data);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1767,61 +1824,979 @@ public class Nd4j {
     }
 
     /**
-     * Creates a row vector with the data
+     * Create a complex ndarray from the passed in indarray
      *
-     * @param data the columns of the ndarray
-     * @return the created ndarray
+     * @param data the data to wrap
+     * @return the complex ndarray with the specified ndarray as the
+     * real components
      */
-    public static INDArray create(float[] data) {
-        return create(data, order());
+    public static IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int offset, char order) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, order);
+        logCreationIfNecessary(ret);
+        return ret;
     }
+
 
     /**
-     * Creates a row vector with the data
+     * Create an ndrray with the specified shape
      *
-     * @param data the columns of the ndarray
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static INDArray create(double[] data) {
-        return create(data, order());
-    }
-
-    /**
-     * Creates an ndarray with the specified data
-     *
-     * @param data the number of columns in the row vector
-     * @return ndarray
-     */
-    public static IComplexNDArray createComplex(float[] data) {
-        return createComplex(data, Nd4j.order());
-
-    }
-
-    private static IComplexNDArray createComplex(float[] data, Character order) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, order);
+    public static INDArray create(float[] data, int[] shape) {
+        INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
         return ret;
     }
 
     /**
-     * Creates a row vector with the specified number of columns
+     * Create an ndrray with the specified shape
      *
-     * @param columns the columns of the ndarray
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
      * @return the created ndarray
      */
-    public static INDArray create(int columns) {
-        return create(columns, order());
+    public static IComplexNDArray createComplex(float[] data, int[] shape) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape);
+        logCreationIfNecessary(ret);
+        return ret;
     }
 
     /**
-     * Creates an ndarray
+     * Create an ndrray with the specified shape
      *
-     * @param columns the number of columns in the row vector
-     * @return ndarray
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
      */
-    public static IComplexNDArray createComplex(int columns) {
-        return createComplex(columns, order());
+    public static INDArray create(double[] data, int[] shape) {
+        INDArray ret = INSTANCE.create(data, shape);
+        logCreationIfNecessary(ret);
+        return ret;
     }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] shape) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data   the data to use with tne ndarray
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data   the data to use with tne ndarray
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(double[] data, int[] shape, int[] stride, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param data   the data to use with the ndarray
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param data    the data to use with the ndarray
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset) {
+        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param data    the data to use with the ndarray
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param data    the data to use with tne ndarray
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset) {
+        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(float[] data, int[] shape, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, offset, Nd4j.order());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(double[] data, int[] shape, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(float[] data, int[] shape, int[] stride, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(List<INDArray> list, int[] shape) {
+        INDArray ret = INSTANCE.create(list, shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int rows, int columns, int[] stride, int offset) {
+        INDArray ret = INSTANCE.create(rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int[] shape, int[] stride, int offset) {
+        INDArray ret = INSTANCE.create(shape, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int rows, int columns, int[] stride) {
+        return createComplex(rows, columns, stride, order());
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int rows, int columns, int[] stride) {
+        return create(rows, columns, stride, order());
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int[] shape, int[] stride) {
+        return createComplex(shape, stride, order());
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int[] shape, int[] stride) {
+        return create(shape, stride, order());
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int rows, int columns) {
+        return createComplex(rows, columns, order());
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int rows, int columns) {
+        return create(rows, columns, order());
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int... shape) {
+        return createComplex(shape, order());
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int... shape) {
+        return create(shape, order());
+    }
+
+
+    public static INDArray create(float[] data, int[] shape, int[] stride, char ordering, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(float[] data, int[] shape, char ordering, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(DataBuffer data, int[] shape, int[] strides, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, strides, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(DataBuffer data, int[] shape, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, getStrides(shape), offset);
+        logCreationIfNecessary(ret);
+        return ret;
+
+    }
+
+    public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] newShape, int[] newStrides, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, newShape, newStrides, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, newDims, newStrides, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     *
+     * @param data
+     * @param shape
+     * @return
+     */
+    public static INDArray create(DataBuffer data, int[] shape) {
+        INDArray ret = INSTANCE.create(data, shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     *
+     * @param data
+     * @param shape
+     * @return
+     */
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     *
+     * @param buffer
+     * @return
+     */
+    public static INDArray create(DataBuffer buffer) {
+        INDArray ret = INSTANCE.create(buffer);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a complex array from the given numbers
+     * @param iComplexNumbers the numbers to use
+     * @return the complex numbers
+     */
+    public static IComplexNDArray createComplex(IComplexNumber[] iComplexNumbers) {
+        return createComplex(iComplexNumbers,new int[]{1,iComplexNumbers.length});
+    }
+
+    /**
+     * Create a complex ndarray based on the specified matrices
+     * @param iComplexNumbers the complex numbers
+     * @return the complex numbers
+     */
+    public static IComplexNDArray createComplex(IComplexNumber[][] iComplexNumbers) {
+        IComplexNDArray shape = Nd4j.createComplex(iComplexNumbers.length, iComplexNumbers[0].length);
+        for(int i = 0; i < iComplexNumbers.length; i++) {
+            for(int j = 0; j < iComplexNumbers[i].length; j++) {
+                shape.putScalar(i, j, iComplexNumbers[i][j]);
+            }
+        }
+        return shape;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param data    the data to use with the ndarray
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param data    the data to use with the ndarray
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static INDArray create(int[] shape, DataBuffer.Type dataType) {
+        INDArray ret = INSTANCE.create(shape, dataType);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param data   the data to use with the ndarray
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(double[] data, int[] shape, char ordering) {
+        INDArray ret = INSTANCE.create(data, shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static INDArray create(float[] data, int[] shape, char ordering) {
+        INDArray ret = INSTANCE.create(data, shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data  the data to use with tne ndarray
+     * @param shape the shape of the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] shape, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data   the data to use with tne ndarray
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create an ndrray with the specified shape
+     *
+     * @param data   the data to use with tne ndarray
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the created ndarray
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param data    the data to use with tne ndarray
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(List<INDArray> list, int[] shape, char ordering) {
+        INDArray ret = INSTANCE.create(list, shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(new int[]{rows, columns}, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @param offset  the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int rows, int columns, int[] stride, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(new int[]{rows, columns}, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @param offset the offset of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int[] shape, int[] stride, int offset, char ordering) {
+        INDArray ret = INSTANCE.create(shape, stride, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(new int[]{rows, columns}, stride, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @param stride  the stride for the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int rows, int columns, int[] stride, char ordering) {
+        INDArray ret = INSTANCE.create(new int[]{rows, columns}, stride, 0, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int[] shape, int[] stride, char ordering) {
+        return createComplex(shape, stride, 0,ordering);
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape  the shape of the ndarray
+     * @param stride the stride for the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int[] shape, int[] stride, char ordering) {
+        INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int rows, int columns, char ordering) {
+        int[] shape = new int[]{rows, columns};
+        IComplexNDArray ret = INSTANCE.createComplex(shape, Nd4j.getComplexStrides(shape, ordering), 0, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param rows    the rows of the ndarray
+     * @param columns the columns of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int rows, int columns, char ordering) {
+        INDArray ret = INSTANCE.create(rows, columns, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates a complex ndarray with the specified shape
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static IComplexNDArray createComplex(int[] shape, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(createBuffer(ArrayUtil.prod(shape) * 2), shape, 0, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Creates an ndarray with the specified shape
+     *
+     * @param shape the shape of the ndarray
+     * @return the instance
+     */
+    public static INDArray create(int[] shape, char ordering) {
+        INDArray ret = INSTANCE.create(shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create complex ndarray
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @param ordering
+     * @return
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, Nd4j.getComplexStrides(shape, ordering), offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
+        return createComplex(data, shape, offset, Nd4j.order());
+    }
+
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
+    public static INDArray create(double[] data, int[] shape, int offset) {
+        INDArray ret = INSTANCE.create(data, shape, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     *
+     * @param data
+     * @param ints
+     * @param offset
+     * @param ordering
+     * @return
+     */
+    public static IComplexNDArray createComplex(double[] data, int[] ints, int offset, char ordering) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, ints, offset, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     *
+     * @param dim
+     * @return
+     */
+    public static IComplexNDArray createComplex(double[] dim) {
+        IComplexNDArray ret = INSTANCE.createComplex(dim, new int[]{1, dim.length / 2});
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
+    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    ////////////////////// OTHER ///////////////////////////////
+
 
     /**
      * Returns true if the given ndarray has either
@@ -2136,391 +3111,6 @@ public class Nd4j {
     }
 
     /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data    the data to use with the ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param data    the data to use with the ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset) {
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data   the data to use with the ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int[] shape, int[] stride, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static INDArray create(double[] data, int[] shape) {
-        INDArray ret = INSTANCE.create(data, shape);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static INDArray create(float[] data, int[] shape) {
-        INDArray ret = INSTANCE.create(data, shape);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] shape) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data   the data to use with tne ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data   the data to use with tne ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param data    the data to use with tne ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset) {
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int[] shape, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, offset, Nd4j.order());
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int[] shape, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int[] shape, int[] stride, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(List<INDArray> list, int[] shape) {
-        INDArray ret = INSTANCE.create(list, shape);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int rows, int columns, int[] stride, int offset) {
-        INDArray ret = INSTANCE.create(rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int[] shape, int[] stride, int offset) {
-        INDArray ret = INSTANCE.create(shape, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int rows, int columns, int[] stride) {
-        return createComplex(rows, columns, stride, order());
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int rows, int columns, int[] stride) {
-        return create(rows, columns, stride, order());
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int[] shape, int[] stride) {
-        return createComplex(shape, stride, order());
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int[] shape, int[] stride) {
-        return create(shape, stride, order());
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int rows, int columns) {
-        return createComplex(rows, columns, order());
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int rows, int columns) {
-        return create(rows, columns, order());
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int... shape) {
-        return createComplex(shape, order());
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int... shape) {
-        return create(shape, order());
-    }
-
-    /**
      * Create a scalar ndarray with the specified offset
      *
      * @param value  the value to initialize the scalar with
@@ -2755,471 +3345,6 @@ public class Nd4j {
         return getComplexStrides(shape, Nd4j.order());
     }
 
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data    the data to use with the ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param data    the data to use with the ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static INDArray create(int[] shape, DataBuffer.Type dataType) {
-        INDArray ret = INSTANCE.create(shape, dataType);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param data   the data to use with the ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static INDArray create(double[] data, int[] shape, char ordering) {
-        INDArray ret = INSTANCE.create(data, shape, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static INDArray create(float[] data, int[] shape, char ordering) {
-        INDArray ret = INSTANCE.create(data, shape, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data   the data to use with tne ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create an ndrray with the specified shape
-     *
-     * @param data   the data to use with tne ndarray
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the created ndarray
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param data    the data to use with tne ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(List<INDArray> list, int[] shape, char ordering) {
-        INDArray ret = INSTANCE.create(list, shape, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(new int[]{rows, columns}, stride, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int rows, int columns, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(new int[]{rows, columns}, stride, offset,ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int[] shape, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(shape, stride, offset,ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int[] shape, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(shape, stride, offset,ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int rows, int columns, int[] stride, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(new int[] {rows, columns}, stride,ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int rows, int columns, int[] stride, char ordering) {
-        INDArray ret = INSTANCE.create(new int[]{rows, columns}, stride, 0, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int[] shape, int[] stride, char ordering) {
-        return createComplex(shape, stride, 0,ordering);
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int[] shape, int[] stride, char ordering) {
-        INDArray ret = INSTANCE.create(shape, stride,0,ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int rows, int columns, char ordering) {
-        int[] shape = new int[]{rows, columns};
-        IComplexNDArray ret = INSTANCE.createComplex(shape,Nd4j.getComplexStrides(shape,ordering),0,ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int rows, int columns, char ordering) {
-        INDArray ret = INSTANCE.create(rows, columns, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates a complex ndarray with the specified shape
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
-     */
-    public static IComplexNDArray createComplex(int[] shape, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(createBuffer(ArrayUtil.prod(shape) * 2), shape, 0, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int[] shape, char ordering) {
-        INDArray ret = INSTANCE.create(shape, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     * Create complex ndarray
-     *
-     * @param data
-     * @param shape
-     * @param offset
-     * @param ordering
-     * @return
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, Nd4j.getComplexStrides(shape,ordering), offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param data
-     * @param shape
-     * @param offset
-     * @return
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] shape, int offset) {
-        return createComplex(data, shape, offset, Nd4j.order());
-    }
-
-    /**
-     *
-     * @param data
-     * @param shape
-     * @param offset
-     * @return
-     */
-    public static INDArray create(double[] data, int[] shape, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param data
-     * @param ints
-     * @param offset
-     * @param ordering
-     * @return
-     */
-    public static IComplexNDArray createComplex(double[] data, int[] ints, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, ints, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param dim
-     * @return
-     */
-    public static IComplexNDArray createComplex(double[] dim) {
-        IComplexNDArray ret = INSTANCE.createComplex(dim, new int[]{1, dim.length / 2});
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param data
-     * @param shape
-     * @param offset
-     * @return
-     */
-    public static IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param doubles
-     * @return
-     */
-    public static INDArray create(float[][] doubles) {
-        return INSTANCE.create(doubles);
-    }
 
     /**
      * Linspace with complex numbers
@@ -3232,97 +3357,6 @@ public class Nd4j {
         return Nd4j.createComplex(Nd4j.linspace(i, i1, i2));
 
     }
-
-    public static INDArray create(float[] data, int[] shape, int[] stride, char ordering, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static INDArray create(float[] data, int[] shape, char ordering, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static INDArray create(DataBuffer data, int[] shape, int[] strides, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, strides, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static INDArray create(DataBuffer data, int[] shape, int offset) {
-        INDArray ret = INSTANCE.create(data, shape, getStrides(shape), offset);
-        logCreationIfNecessary(ret);
-        return ret;
-
-    }
-
-    public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static IComplexNDArray createComplex(DataBuffer data, int[] newShape, int[] newStrides, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, newShape, newStrides, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, newDims, newStrides, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param data
-     * @param shape
-     * @return
-     */
-    public static INDArray create(DataBuffer data, int[] shape) {
-        INDArray ret = INSTANCE.create(data, shape);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param data
-     * @param shape
-     * @return
-     */
-    public static IComplexNDArray createComplex(DataBuffer data, int[] shape) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
-    /**
-     *
-     * @param buffer
-     * @return
-     */
-    public static INDArray create(DataBuffer buffer) {
-        INDArray ret = INSTANCE.create(buffer);
-        logCreationIfNecessary(ret);
-        return ret;
-    }
-
 
     /**
      * Initializes nd4j
@@ -3400,28 +3434,4 @@ public class Nd4j {
 
     }
 
-
-    /**
-     * Create a complex array from the given numbers
-     * @param iComplexNumbers the numbers to use
-     * @return the complex numbers
-     */
-    public static IComplexNDArray createComplex(IComplexNumber[] iComplexNumbers) {
-        return createComplex(iComplexNumbers,new int[]{1,iComplexNumbers.length});
-    }
-
-    /**
-     * Create a complex ndarray based on the specified matrices
-     * @param iComplexNumbers the complex numbers
-     * @return the complex numbers
-     */
-    public static IComplexNDArray createComplex(IComplexNumber[][] iComplexNumbers) {
-        IComplexNDArray shape = Nd4j.createComplex(iComplexNumbers.length,iComplexNumbers[0].length);
-        for(int i = 0; i < iComplexNumbers.length; i++) {
-            for(int j = 0; j < iComplexNumbers[i].length; j++) {
-                shape.putScalar(i, j, iComplexNumbers[i][j]);
-            }
-        }
-        return shape;
-    }
 }
