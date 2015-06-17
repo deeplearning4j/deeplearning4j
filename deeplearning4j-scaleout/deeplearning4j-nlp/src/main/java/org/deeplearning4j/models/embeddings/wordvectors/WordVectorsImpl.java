@@ -139,6 +139,13 @@ public class WordVectorsImpl implements WordVectors {
             for(int i = 0; i < n + 1; i++) {
                 if(sort.getInt(i) == word2.getIndex())
                     continue;
+                String add = vocab().wordAtIndex(sort.getInt(i));
+                if(add == null || add.equals("UNK")) {
+                    continue;
+                }
+
+
+
                 ret.add(vocab().wordAtIndex(sort.getInt(i)));
             }
 
