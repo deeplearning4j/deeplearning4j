@@ -131,7 +131,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             case MCXENT:
                 INDArray preOut = preOutput(input);
                 //input activation
-                INDArray pYGivenX = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",preOut),0);
+                INDArray pYGivenX = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",preOut),1);
                 //difference of outputs
                 INDArray dy = labels.sub(pYGivenX);
                 return input.transpose().mmul(dy);
