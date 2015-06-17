@@ -133,11 +133,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                 //input activation
                 INDArray pYGivenX = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",preOut),1);
                 //difference of outputs
-                INDArray dy = labels.sub(pYGivenX);
+                INDArray dy = pYGivenX.sub(labels);
                 return input.transpose().mmul(dy);
 
             case XENT:
-                INDArray xEntDiff = z.sub(labels);
+                INDArray xEntDiff = labels.sub(z);
                 return input.transpose().mmul(xEntDiff.div(z.mul(z.rsub(1))));
             case MSE:
                 INDArray mseDelta = labels.sub(z);
