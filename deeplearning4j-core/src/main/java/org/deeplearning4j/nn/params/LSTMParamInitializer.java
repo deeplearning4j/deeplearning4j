@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -51,7 +52,7 @@ public class LSTMParamInitializer implements ParamInitializer {
         conf.addVariable(DECODER_WEIGHTS);
         conf.addVariable(DECODER_BIAS);
         params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, conf.getWeightInit(), dist));
-        params.put(DECODER_WEIGHTS,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(),dist));
+        params.put(DECODER_WEIGHTS,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(), dist));
         params.put(DECODER_BIAS, Nd4j.zeros(outputSize));
         params.get(RECURRENT_WEIGHTS).data().persist();
         params.get(DECODER_BIAS).data().persist();
