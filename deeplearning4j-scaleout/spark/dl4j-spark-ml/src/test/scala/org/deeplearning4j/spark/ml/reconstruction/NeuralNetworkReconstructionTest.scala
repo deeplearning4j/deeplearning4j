@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.ml.classification
+package org.deeplearning4j.spark.ml.reconstruction
 
 import org.apache.spark.Logging
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration
@@ -14,10 +14,10 @@ import org.scalatest.junit.JUnitRunner
 import org.springframework.core.io.ClassPathResource
 
 /**
- * Test classification.
+ * Test reconstruction.
  */
 @RunWith(classOf[JUnitRunner])
-class NeuralNetworkClassificationTest
+class NeuralNetworkReconstructionTest
   extends FunSuite with TestSparkContext with Logging with Matchers {
 
   test("iris") {
@@ -45,15 +45,15 @@ class NeuralNetworkClassificationTest
     val dataFrame = sqlContext.read.format(classOf[DefaultSource].getName).load(path)
     val Array(trainDF, testDF) = dataFrame.randomSplit(Array(.6,.4), 11L)
 
-    val classification = new NeuralNetworkClassification()
-      .setFeaturesCol("features").setLabelCol("label")
+    val classification = new NeuralNetworkReconstruction()
+      .setFeaturesCol("features")
+      .setReconstructionCol("reconstruction")
       .setConf(conf)
 
     val model = classification.fit(trainDF)
     val predictions = model.transform(testDF)
 
-    predictions.col("rawPrediction") should not be (null)
-    predictions.col("prediction") should not be (null)
+    predictions.col("reconstruction") should not be (null)
     predictions.show()
   }
 }
