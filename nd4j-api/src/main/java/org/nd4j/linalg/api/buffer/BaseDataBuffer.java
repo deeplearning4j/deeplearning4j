@@ -430,9 +430,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public byte[] asBytes() {
         if(allocationMode == AllocationMode.HEAP) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(getElementSize() * length());
             DataOutputStream dos = new DataOutputStream(bos);
-
             if(dataType() == Type.DOUBLE) {
                 try {
                     for(int i = 0; i < doubleData.length; i++)
@@ -457,8 +456,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         }
         else {
-            byte[] ret  = new byte[dataBuffer.capacity()];
-            dataBuffer.nioBuffer().get(ret);
+            byte[] ret  = new byte[dataBuffer.nioBuffer().remaining()];
+            dataBuffer.nioBuffer().get(ret, 0, ret.length);
             return ret;
         }
     }
