@@ -144,7 +144,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testRepmat() {
-        INDArray rowVector = Nd4j.create(1,4);
+        INDArray rowVector = Nd4j.create(1, 4);
         INDArray repmat = rowVector.repmat(4, 4);
         assertTrue(Arrays.equals(new int[]{4, 4}, repmat.shape()));
     }
@@ -252,7 +252,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testVStackColumn() {
-        INDArray linspaced = Nd4j.linspace(1,3,3).reshape(3,1);
+        INDArray linspaced = Nd4j.linspace(1,3,3).reshape(3, 1);
         INDArray stacked = linspaced.dup();
         INDArray assertion = Nd4j.create(new double[]{1, 2, 3, 1, 2, 3}, new int[]{6, 1});
         assertEquals(assertion, Nd4j.vstack(linspaced, stacked));
@@ -585,7 +585,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         }
 
     }
-
 
 
 
