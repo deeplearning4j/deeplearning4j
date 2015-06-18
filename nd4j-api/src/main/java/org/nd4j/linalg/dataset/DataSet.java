@@ -793,4 +793,23 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return asList().iterator();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DataSet)) return false;
+
+        DataSet dataSet = (DataSet) o;
+
+        if (getFeatures() != null ? !getFeatures().equals(dataSet.getFeatures()) : dataSet.getFeatures() != null)
+            return false;
+        return !(getLabels() != null ? !getLabels().equals(dataSet.getLabels()) : dataSet.getLabels() != null);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getFeatures() != null ? getFeatures().hashCode() : 0;
+        result = 31 * result + (getLabels() != null ? getLabels().hashCode() : 0);
+        return result;
+    }
 }
