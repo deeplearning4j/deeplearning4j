@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
@@ -135,7 +137,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     public BaseDataBuffer(int[] data) {
-        this(data,Nd4j.copyOnOps);
+        this(data, Nd4j.copyOnOps);
     }
 
     public BaseDataBuffer(float[] data) {
@@ -427,7 +429,38 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public byte[] asBytes() {
-        return dataBuffer.array();
+        if(allocationMode == AllocationMode.HEAP) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bos);
+
+            if(dataType() == Type.DOUBLE) {
+                try {
+                    for(int i = 0; i < doubleData.length; i++)
+                        dos.writeDouble(doubleData[i]);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+            else {
+                try {
+                    for(int i = 0; i < floatData.length; i++)
+                        dos.writeFloat(floatData[i]);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+
+            }
+
+            return bos.toByteArray();
+
+        }
+        else {
+            byte[] ret  = new byte[dataBuffer.capacity()];
+            dataBuffer.nioBuffer().get(ret);
+            return ret;
+        }
     }
 
     @Override
@@ -721,7 +754,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 }
             }
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
 
 
