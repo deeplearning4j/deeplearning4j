@@ -487,6 +487,44 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         return ret;
     }
 
+
+    /**
+     * Compute activations from input to output of the output layer
+     *
+     * @return the list of activations for each layer
+     */
+    public List<INDArray> computeZ() {
+        INDArray currInput = this.input;
+
+        List<INDArray> activations = new ArrayList<>();
+        activations.add(currInput);
+
+        for (int i = 0; i < layers.length; i++) {
+            currInput = activationFromPrevLayer(i, currInput);
+            //applies drop connect to the activation
+            applyDropConnectIfNecessary(currInput);
+            activations.add(currInput);
+        }
+
+
+        return activations;
+    }
+
+    /**
+     * Compute activations from input to output of the output layer
+     *
+     * @return the list of activations for each layer
+     */
+    public List<INDArray> computeZ(INDArray input) {
+        if (input == null)
+            throw new IllegalStateException("Unable to perform feed forward; no input found");
+        else if(this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
+            this.input = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input);
+        else
+            this.input = input;
+        return computeZ();
+    }
+
     /**
      * Compute activations from input to output of the output layer
      *
@@ -947,12 +985,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
             }
         }
-
-
-
-
-
-
     }
 
     //do gradient descent for n iterations
@@ -960,7 +992,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         setInput(input);
         this.labels = labels;
 
-        feedForward();
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You can ignore this message if you just intend on using a a deep neural network with no output layer.");
             return;
@@ -974,16 +1005,15 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         Gradient[] errors = new Gradient[getnLayers()];
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
             List<INDArray> activations = feedForward();
+            List<INDArray> zs = computeZ();
             INDArray outputActivate = activations.get(activations.size() - 1);
-            INDArray ixInitial = labels.sub(outputActivate)
-                    .subi(Nd4j.getExecutioner()
-                            .execAndReturn(Nd4j.getOpFactory()
-                                    .createTransform(getOutputLayer().conf().getActivationFunction(),outputActivate).derivative()));
+
+            INDArray ixInitial = outputActivate.sub(labels);
             Gradient ix = new DefaultGradient();
             ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial);
             errors[errors.length - 1] = ix;
             for(int j = getnLayers() - 1; j >= 0; j--) {
-                ix = getLayers()[j].backwardGradient(activations.get(j),ix);
+                ix = getLayers()[j].backwardGradient(zs.get(j),ix);
                 errors[j] = ix;
             }
 
