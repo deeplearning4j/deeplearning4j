@@ -987,9 +987,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                     INDArray ret = Nd4j.create(toConcat[0].rows(), toConcat.length);
                     int count = 0;
                     for (INDArray arr : toConcat) {
-                        for (int i = 0; i < arr.length(); i++) {
-                            ret.putColumn(count++, arr);
-                        }
+                        ret.putColumn(count++, arr);
                     }
                     return ret;
                 } else if (dimension == 0) {

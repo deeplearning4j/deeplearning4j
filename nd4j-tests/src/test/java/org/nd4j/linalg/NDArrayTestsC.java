@@ -293,6 +293,15 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testConcatColumns() {
+        INDArray input1 = Nd4j.zeros(2, 1);
+        INDArray input2 = Nd4j.ones(2, 1);
+        INDArray concat = Nd4j.concat(1, input1, input2);
+        INDArray assertion = Nd4j.create(new double[][]{{0,1},{0,1}});
+        assertEquals(assertion,concat);
+    }
+
+    @Test
     public void testGetIndicesVector() {
         INDArray line = Nd4j.linspace(1, 4, 4);
         INDArray test = Nd4j.create(new float[]{2, 3});
