@@ -657,9 +657,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         for (int i = 0; i < buffers.length; i++)
             length += buffers[i].length();
 
-        if (length != n)
-            throw new IllegalArgumentException("Buffers must fill up specified length " + n);
-
         int count = 0;
         for (int i = 0; i < buffers.length; i++) {
             for (int j = offsets[i]; j < buffers[i].length(); j += strides[i]) {
