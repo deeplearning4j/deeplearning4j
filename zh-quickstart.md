@@ -5,6 +5,28 @@ layout: zh-default
 
 # 快速入门
 
+本快速入门指南假设您已经安装以下软件：
+
+1. Java
+2. 如IntelliJ 的集成开发环境（ IDE ）
+3. [Maven](../maven.html) (Java 的自动构建工具）
+4. [Canova](../canova.html) (机器学习矢量化库)
+5. Github (可选)
+
+如果您需要安装上述任何一个软件，[请阅读这入门指南](http://nd4j.org/getstarted.html)。
+
+5个简单步骤使用 DL4J 
+
+安装上述后，如果您可以按照并实行以下五个步骤，您就可以运行DL4J：
+
+1. git 克隆 这[例子](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples)。我们目前的版本是0.0.3.3.x.
+2. 使用Maven将示例作为一个项目导入IntelliJ
+3. 选择一个Blas[后端](http://nd4j.org/dependencies.html)，然后导入您的POM（应该是nd4j - jblas ）
+4. 从左侧的文件树中选择示例（先从DBNSmallMnistExample.java开始 ）
+5. 点击实行！（这会是一个绿色按钮）
+
+一旦您完成了，您可以尝试其他的例子，看看结果如何。
+
 * 首先，测试您的Java版本（也测试您是否拥有Java） ，通过键入以下文本到命令行：
 
 		java -version
@@ -26,15 +48,6 @@ layout: zh-default
 		
 		Windows
 		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
-
-* 由于DL4J的数据可视化和调试采用跨平台的工具来呼叫[Python](https://zh.wikipedia.org/wiki/Python)程式，您也必须要拥有[Anaconda](http://continuum.io/downloads)科学计算包（点击这里下载）。安装了Anaconda科学计算包后，您可以通过Python窗口中输入以下文本以测试您是拥有否有必要的科学计算包：
-
-		import numpy
-		import pylab as pl
-
-![Alt text](../img/python_shot.png)
-
-当您在训练神经网络时，这些工具将产生可视化以便让您能调试神经网络。 如果您看到正常化分布，这将会是一个好兆头。这些可视化偶尔会在苹果操作系统上产生错误，但这并不会使神经网络的训练停止。
 
 * 接下来，git 复制（git clone）DL4J的例子：
 
