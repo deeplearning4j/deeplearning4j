@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
+import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -50,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Created by agibsonccc on 12/27/14.
@@ -134,8 +136,8 @@ public class MultiLayerTest {
         DataSet test = trainTest.getTest();
         Evaluation eval = new Evaluation();
         INDArray output = network.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(),output);
-        log.info("Score " +eval.stats());
+        eval.eval(test.getLabels(), output);
+        log.info("Score " + eval.stats());
 
     }
 
@@ -183,9 +185,56 @@ public class MultiLayerTest {
 
         Evaluation eval = new Evaluation();
         INDArray output = d.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(),output);
+        eval.eval(test.getLabels(), output);
         log.info("Score " + eval.stats());
 
+    }
+
+
+    @Test
+    public void testGradientWithAsList(){
+        MultiLayerNetwork net1 = new MultiLayerNetwork(getConf());
+        MultiLayerNetwork net2 = new MultiLayerNetwork(getConf());
+        net1.init();
+        net2.init();
+
+        DataSet x1 = new IrisDataSetIterator(1,150).next();
+        DataSet all = new IrisDataSetIterator(150,150).next();
+        DataSet x2 = all.asList().get(0);
+
+        //x1 and x2 contain identical data
+        assertArrayEquals(asFloat(x1.getFeatureMatrix()), asFloat(x2.getFeatureMatrix()), 0.0f);  //OK
+        assertArrayEquals(asFloat(x1.getLabels()), asFloat(x2.getLabels()), 0.0f);                //OK
+        assertEquals(x1,x2);    //Fails, DataSet doesn't override Object.equals()
+
+        //Set inputs/outputs so gradient can be calculated:
+        net1.feedForward(x1.getFeatureMatrix());
+        net2.feedForward(x2.getFeatureMatrix());
+        ((OutputLayer)net1.getLayers()[1]).setLabels(x1.getLabels());
+        ((OutputLayer)net2.getLayers()[1]).setLabels(x2.getLabels());
+
+        net1.gradient();        //OK
+        net2.gradient();        //IllegalArgumentException: Buffers must fill up specified length 29
+    }
+
+    private static MultiLayerConfiguration getConf(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(new RBM())
+                .nIn(4).nOut(3)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .seed(12345L)
+                .list(2)
+                .hiddenLayerSizes(5)
+                .override(1, new ClassifierOverride())
+                .build();
+        return conf;
+    }
+
+    public static float[] asFloat( INDArray arr ){
+        int len = arr.length();
+        float[] f = new float[len];
+        for( int i=0; i<len; i++ ) f[i] = arr.getFloat(i);
+        return f;
     }
 
 }
