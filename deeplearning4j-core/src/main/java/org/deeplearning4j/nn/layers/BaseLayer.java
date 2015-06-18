@@ -99,9 +99,9 @@ public abstract class BaseLayer implements Layer {
     public Gradient calcGradient(Gradient layerError, INDArray activation) {
         Gradient ret = new DefaultGradient();
         INDArray weightErrorSignal = layerError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray weightError = weightErrorSignal.transpose().mmul(activation).divi(weightErrorSignal.rows()).transpose();
+        INDArray weightError = weightErrorSignal.transpose().mmul(activation).transpose();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,weightError);
-        INDArray biasGradient = weightError.sum(0).divi(weightErrorSignal.rows());
+        INDArray biasGradient = weightError.mean(0);
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasGradient);
 
         return ret;
@@ -112,7 +112,8 @@ public abstract class BaseLayer implements Layer {
         Gradient propError = error(activation);
         INDArray deriv = derivativeActivation(activation);
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,propError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY).mul(deriv));
+        INDArray finalGradient = propError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY).mul(deriv);
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,finalGradient);
         return ret;
     }
 
@@ -238,7 +239,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void initParams() {
-        paramInitializer.init(paramTable(),conf());
+        paramInitializer.init(paramTable(), conf());
     }
 
     @Override

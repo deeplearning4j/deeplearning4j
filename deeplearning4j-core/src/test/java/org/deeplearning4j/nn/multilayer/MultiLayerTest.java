@@ -116,12 +116,19 @@ public class MultiLayerTest {
     public void testBackProp() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
-                .activationFunction("tanh")
-                .nIn(4).nOut(3).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
+                .iterations(10).weightInit(WeightInit.NORMALIZED)
+                .activationFunction("sigmoid")
+                .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(3).backward(true)
-                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ClassifierOverride(2)).build();
+                .list(3).backward(true).pretrain(false)
+                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.activationFunction("softmax");
+                        builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
+                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                    }
+                }).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
