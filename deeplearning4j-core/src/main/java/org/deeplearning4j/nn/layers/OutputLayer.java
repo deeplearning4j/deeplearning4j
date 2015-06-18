@@ -54,7 +54,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
     private INDArray labels;
-    
+
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -156,6 +156,17 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         throw new IllegalStateException("Invalid loss function");
 
+    }
+
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return output(input);
+    }
+
+    @Override
+    public INDArray activate() {
+        return output(input);
     }
 
     /**
