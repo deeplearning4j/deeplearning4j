@@ -76,6 +76,7 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
 
     @Test
     public void testAsBytes() {
+        Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
         INDArray arr = Nd4j.create(5);
         byte[] d = arr.data().asBytes();
         assertEquals(8 * 5,d.length);
