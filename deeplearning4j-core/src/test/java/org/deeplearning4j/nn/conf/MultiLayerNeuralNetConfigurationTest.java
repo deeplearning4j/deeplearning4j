@@ -52,11 +52,11 @@ public class MultiLayerNeuralNetConfigurationTest {
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
-                .list(4).preProcessor(0,new ConvolutionPostProcessor())
-                .hiddenLayerSizes(3, 2, 2).build();
+                .list(2).preProcessor(0,new ConvolutionPostProcessor())
+                .hiddenLayerSizes(3).build();
         String json = conf.toJson();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);
-        assertEquals(conf,from);
+        assertEquals(conf.getConf(1),from.getConf(1));
 
         Properties props = new Properties();
         props.put("json",json);
@@ -75,7 +75,7 @@ public class MultiLayerNeuralNetConfigurationTest {
         assertEquals(props2.getProperty("json"),props.getProperty("json"));
 
         MultiLayerConfiguration conf3 = MultiLayerConfiguration.fromJson(props2.getProperty("json"));
-        assertEquals(conf,conf3);
+        assertEquals(conf.getConf(0),conf3.getConf(0));
 
     }
 
@@ -121,8 +121,10 @@ public class MultiLayerNeuralNetConfigurationTest {
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM())
-                .nIn(2).nOut(1)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .nIn(2)
+                .nOut(1)
+                .weightInit(WeightInit.DISTRIBUTION)
+                .dist(new NormalDistribution(0,1))
                 .seed(12345l)
                 .list(2)
                 .hiddenLayerSizes(5)
