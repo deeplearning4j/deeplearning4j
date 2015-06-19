@@ -49,6 +49,35 @@ public class OutputLayerTest {
 
 
     @Test
+    public void testIris2() {
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .activationFunction("identity")
+                .iterations(100).weightInit(WeightInit.UNIFORM)
+                .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
+
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+
+        DataSet next = iter.next();
+        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
+        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
+        l.fit(trainTest.getTrain());
+
+
+        DataSet test = trainTest.getTest();
+        test.normalizeZeroMeanZeroUnitVariance();
+        Evaluation eval = new Evaluation();
+        INDArray output = l.output(test.getFeatureMatrix());
+        eval.eval(test.getLabels(),output);
+        log.info("Score " +eval.stats());
+
+
+    }
+
+
+    @Test
     public void testIris() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)

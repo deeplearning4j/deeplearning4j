@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.multilayer;
 
 import java.util.Arrays;
 
+import com.google.common.collect.Lists;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -114,12 +115,13 @@ public class MultiLayerTest {
 
     @Test
     public void testBackProp() {
+        Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(10).weightInit(WeightInit.NORMALIZED)
-                .activationFunction("sigmoid")
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .iterations(10).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
+                .activationFunction("tanh")
                 .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
                 .list(3).backward(true).pretrain(false)
                 .hiddenLayerSizes(new int[]{3, 2}).override(2, new ConfOverride() {
                     @Override
@@ -130,7 +132,11 @@ public class MultiLayerTest {
                     }
                 }).build();
 
+
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        network.setListeners(Lists.<IterationListener>newArrayList(new ScoreIterationListener(1)));
+
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         DataSet next = iter.next();

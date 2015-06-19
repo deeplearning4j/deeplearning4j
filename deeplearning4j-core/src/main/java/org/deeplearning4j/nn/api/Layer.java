@@ -95,6 +95,7 @@ public interface Layer extends Serializable,Cloneable,Model {
      * @param input
      * @return
      */
+    @Deprecated
     Gradient errorSignal(Gradient error, INDArray input);
 
     /**
@@ -169,6 +170,7 @@ public interface Layer extends Serializable,Cloneable,Model {
      * @param previousActivation the previous layer's activation
      * @param activation  the activation from the previous layer
      */
+    @Deprecated
     Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation,String previousActivation);
 
 

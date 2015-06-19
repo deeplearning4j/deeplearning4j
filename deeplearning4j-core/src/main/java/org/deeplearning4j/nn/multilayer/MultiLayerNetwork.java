@@ -469,6 +469,25 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         }
     }
 
+
+    /**
+     * Calculate activation from previous layer including pre processing where necessary
+     *
+     * @param curr  the current layer
+     * @param input the input
+     * @return the activation from the previous layer
+     */
+    public INDArray zFromPrevLayer(int curr, INDArray input) {
+        if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
+            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
+        INDArray ret = layers[curr].preOutput(input);
+        if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
+            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
+            return ret;
+        }
+        return ret;
+    }
+
     /**
      * Calculate activation from previous layer including pre processing where necessary
      *
@@ -500,7 +519,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         activations.add(currInput);
 
         for (int i = 0; i < layers.length; i++) {
-            currInput = activationFromPrevLayer(i, currInput);
+            currInput = zFromPrevLayer(i, currInput);
             //applies drop connect to the activation
             applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
@@ -546,6 +565,32 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         return activations;
     }
+
+
+    /**
+     * Compute zs (z being the raw output) and their associated
+     * activations in one pass
+     * @return a pair of the zs and activations
+     */
+    public Pair<List<INDArray>,List<INDArray>> zsAndActivations() {
+        INDArray currInput = this.input;
+
+        List<INDArray> activations = new ArrayList<>();
+        List<INDArray> zs = new ArrayList<>();
+        activations.add(currInput);
+
+        for (int i = 0; i < layers.length; i++) {
+            currInput = zFromPrevLayer(i, currInput);
+            //applies drop connect to the activation
+            applyDropConnectIfNecessary(currInput);
+            zs.add(currInput);
+            activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
+        }
+
+
+        return new Pair<>(zs,activations);
+    }
+
 
     /**
      * Compute activations from input to output of the output layer
@@ -1004,8 +1049,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         //calculate the backward gradient for every layer
         Gradient[] errors = new Gradient[getnLayers()];
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
-            List<INDArray> activations = feedForward();
-            List<INDArray> zs = computeZ();
+            Pair<List<INDArray>,List<INDArray>> zsAndAtivations = zsAndActivations();
+            List<INDArray> activations = zsAndAtivations.getSecond();
+            List<INDArray> zs = zsAndAtivations.getFirst();
             INDArray outputActivate = activations.get(activations.size() - 1);
 
             INDArray ixInitial = outputActivate.sub(labels);
