@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.AdaGrad;
 
 import java.util.Map;
 

@@ -122,6 +122,9 @@ public abstract class BaseLayer implements Layer {
         fit(this.input);
     }
 
+
+
+
     @Override
     public void setScore() {
         if(this.input == null)
