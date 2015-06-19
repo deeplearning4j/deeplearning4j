@@ -37,6 +37,7 @@ import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -89,7 +90,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
     /* RNG for sampling. */
-    protected Random rng;
+    @Deprecated
+    protected DefaultRandom rng;
     protected long seed;
     //weight initialization
     protected Distribution dist;
@@ -149,7 +151,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   OptimizationAlgorithm optimizationAlgo,
                                   LossFunctions.LossFunction lossFunction,
                                   boolean constrainGradientToUnitNorm,
-                                  Random rng,
+                                  DefaultRandom rng,
                                   long seed,
                                   Distribution dist,
                                   int nIn,
@@ -196,7 +198,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.optimizationAlgo = optimizationAlgo;
         this.lossFunction = lossFunction;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
-        this.rng = rng;
+        this.rng = null;
         this.seed = seed;
         this.dist = dist;
         this.nIn = nIn;
@@ -422,7 +424,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private WeightInit weightInit = WeightInit.VI;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
-        private Random rng = Nd4j.getRandom();
+        @Deprecated
+        private DefaultRandom rng = null;
         private long seed = System.currentTimeMillis();
         private Distribution dist  = new NormalDistribution(1e-3,1);
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
@@ -613,7 +616,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         @Deprecated
-        public Builder rng(Random rng) {
+        public Builder rng(DefaultRandom rng) {
             this.rng = rng;
             return this;
         }
