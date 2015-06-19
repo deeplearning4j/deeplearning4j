@@ -72,6 +72,8 @@ public class ContextHolder {
     private Map<Integer,DeviceConfiguration> confs = new ConcurrentHashMap<>();
     private static ContextHolder INSTANCE;
     public final static String DEVICES_TO_BAN = "org.nd4j.linalg.jcuda.jcublas.ban_devices";
+    public final static String SYNC_THREADS = "org.nd4j.linalg.jcuda.jcublas.syncthreads";
+    private static boolean syncThreads = true;
     private boolean confCalled = false;
     private static Logger log = LoggerFactory.getLogger(ContextHolder.class);
     private AtomicBoolean shutdown = new AtomicBoolean(false);
@@ -85,11 +87,8 @@ public class ContextHolder {
      * @return the instance for the context holder.
      */
     public static synchronized  ContextHolder getInstance() {
+
         if(INSTANCE == null) {
-            INSTANCE = new ContextHolder();
-
-            INSTANCE.configure();
-
             Properties props = new Properties();
             try {
                 props.load(new ClassPathResource("/cudafunctions.properties").getInputStream());
@@ -97,9 +96,16 @@ public class ContextHolder {
                 throw new RuntimeException(e);
             }
 
+            INSTANCE = new ContextHolder();
+
+            INSTANCE.configure();
+
+
             //set the properties to be accessible globally
             for(String pair : props.stringPropertyNames())
                 System.getProperties().put(pair,props.getProperty(pair));
+
+
 
 
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -149,6 +155,8 @@ public class ContextHolder {
         if(confCalled)
             return;
 
+
+        syncThreads = Boolean.parseBoolean(System.getProperty(SYNC_THREADS,"true"));
         if(numDevices == 0) {
             getNumDevices();
         }
@@ -222,7 +230,8 @@ public class ContextHolder {
     public static void syncStream() {
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
         JCudaDriver.cuStreamSynchronize(getInstance().getStream());
-        JCuda.cudaThreadSynchronize();
+        if(syncThreads)
+            JCuda.cudaThreadSynchronize();
 
     }
 

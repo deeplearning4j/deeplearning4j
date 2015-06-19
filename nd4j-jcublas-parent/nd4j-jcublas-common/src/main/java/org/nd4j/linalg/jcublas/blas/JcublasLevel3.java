@@ -27,7 +27,6 @@ import org.nd4j.linalg.util.Shape;
 public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        SimpleJCublas.sync();
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
         CublasPointer cCPointer = new CublasPointer(C);

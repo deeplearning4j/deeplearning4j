@@ -432,6 +432,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(allocationMode == AllocationMode.HEAP) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(getElementSize() * length());
             DataOutputStream dos = new DataOutputStream(bos);
+            if(doubleData == null)
+                throw new IllegalStateException("Double array is null!");
+
             if(dataType() == Type.DOUBLE) {
                 try {
                     for(int i = 0; i < doubleData.length; i++)
