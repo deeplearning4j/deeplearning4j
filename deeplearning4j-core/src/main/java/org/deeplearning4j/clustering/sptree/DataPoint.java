@@ -78,6 +78,9 @@ public class DataPoint implements Serializable {
             case "manhattan" :
                 double ret3 =  Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point,point.point)).currentResult().doubleValue();
               return invert ? -ret3 : ret3;
+            case "dot" :
+                double dotRet =  Nd4j.getBlasWrapper().dot(this.point,point.point);
+                return invert ? -dotRet : dotRet;
             default: double ret4 =  Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point,point.point)).currentResult().doubleValue();
                 return invert ? -ret4 : ret4;
 
