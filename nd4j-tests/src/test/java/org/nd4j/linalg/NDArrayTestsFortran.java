@@ -137,7 +137,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray linspace = Nd4j.linspace(1, 4, 4);
         INDArray other = Nd4j.linspace(1,16,16).reshape(4, 4);
         INDArray result = linspace.mmul(other);
-        INDArray assertion = Nd4j.create(new double[]{30.,   70.,  110.,  150.});
+        INDArray assertion = Nd4j.create(new double[]{30., 70., 110., 150.});
         assertEquals(assertion,result);
     }
 
@@ -167,7 +167,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testConcatScalars() {
         INDArray first = Nd4j.arange(0,1).reshape(1,1);
         INDArray second = Nd4j.arange(0,1).reshape(1,1);
-        INDArray firstRet = Nd4j.concat(0,first,second);
+        INDArray firstRet = Nd4j.concat(0, first, second);
         assertTrue(firstRet.isColumnVector());
         INDArray secondRet = Nd4j.concat(1, first, second);
         assertTrue(secondRet.isRowVector());
@@ -196,9 +196,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray first = Nd4j.arange(0, 3).reshape(3, 1);
         INDArray ret = first.broadcast(3, 4);
         INDArray testRet = Nd4j.create(new double[][]{
-                {0,0,0,0},
-                {1,1,1,1},
-                {2,2,2,2}
+                {0, 0, 0, 0},
+                {1, 1, 1, 1},
+                {2, 2, 2, 2}
         });
         assertEquals(testRet, ret);
         INDArray r = Nd4j.arange(0, 4).reshape(1, 4);
@@ -229,7 +229,32 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testSortWithIndicesDescending() {
+        INDArray toSort = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        //indices,data
+        INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, false);
+        INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, false);
+        assertEquals(sorted[1], sorted2);
+        INDArray shouldIndex = Nd4j.create(new float[]{1, 0, 1, 0}, new int[]{2, 2});
+        assertEquals(shouldIndex, sorted[0]);
 
+
+    }
+
+
+    @Test
+    public void testSortWithIndices() {
+        INDArray toSort = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        //indices,data
+        INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, true);
+        INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, true);
+        assertEquals(sorted[1], sorted2);
+        INDArray shouldIndex = Nd4j.create(new float[]{0, 0, 1, 1}, new int[]{2, 2});
+        assertEquals(shouldIndex, sorted[0]);
+
+
+    }
 
     @Test
     public void testSwapAxesFortranOrder() {

@@ -312,7 +312,7 @@ public class ContextHolder {
      * @return the stream for the device and
      * thread
      */
-    public synchronized CUstream getStream() {
+    public  CUstream getStream() {
         Thread currentThread = Thread.currentThread();
         CUcontext ctx = getContext(getDeviceForThread());
         CUstream stream = contextStreams.get(ctx, currentThread.getName());
@@ -320,7 +320,7 @@ public class ContextHolder {
         if(stream == null) {
             stream = new CUstream();
             checkResult(JCudaDriver.cuCtxSetCurrent(ctx));
-            checkResult(JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_DEFAULT));
+            checkResult(JCudaDriver.cuStreamCreate(stream, CUstream_flags.CU_STREAM_NON_BLOCKING));
             contextStreams.put(ctx, currentThread.getName(), stream);
         }
 
