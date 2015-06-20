@@ -25,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.Future;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -66,8 +68,8 @@ public class Parallelization {
 
 
     public static void runInParallel(ExecutorService exec,Collection<Runnable> runnables) {
-           for(Runnable runnable : runnables)
-               exec.submit(runnable);
+        for(Runnable runnable : runnables)
+            exec.submit(runnable);
         exec.shutdown();
         try {
             exec.awaitTermination(1,TimeUnit.DAYS);
@@ -142,7 +144,7 @@ public class Parallelization {
 
     public static <E> void iterateInParallel(Collection<E> iterate,final RunnableWithParams<E> loop,final RunnableWithParams<E> postDone,ActorSystem actorSystem, final Object[] otherArgs) {
         final CountDownLatch c = new CountDownLatch(iterate.size());
-
+        List<Future<E>> futures = new ArrayList<>();
         for(final E e : iterate) {
             Future<E> f = Futures.future(new Callable<E>(){
 
@@ -172,13 +174,20 @@ public class Parallelization {
                     c.countDown();
                 }
             },actorSystem.dispatcher());
+
+            futures.add(f);
         }
 
-        try {
-            c.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+
+        Future<Iterable<E>> seq = Futures.sequence(futures,actorSystem.dispatcher());
+        while(!seq.isCompleted()) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
 
