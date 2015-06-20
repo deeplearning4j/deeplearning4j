@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.multilayer;
 
 import java.util.Arrays;
 
+import com.google.common.collect.Lists;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -114,16 +115,28 @@ public class MultiLayerTest {
 
     @Test
     public void testBackProp() {
+        Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(100).weightInit(WeightInit.VI).stepFunction(new GradientStepFunction())
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .iterations(10).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
                 .activationFunction("tanh")
-                .nIn(4).nOut(3).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(3).backward(true)
-                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ClassifierOverride(2)).build();
+                .nIn(4).nOut(3)
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
+                .list(3).backward(true).pretrain(false)
+                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.activationFunction("softmax");
+                        builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
+                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                    }
+                }).build();
+
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        network.setListeners(Lists.<IterationListener>newArrayList(new ScoreIterationListener(1)));
+
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         DataSet next = iter.next();

@@ -201,7 +201,7 @@ public class Word2Vec extends WordVectorsImpl  {
                         (1 - (1.0 * numWordsSoFar.get() / (double) totalWords)));
                 long now = System.currentTimeMillis();
                 long diff = Math.abs(now - lastReported.get());
-                if (numWordsSoFar.get() > 0 && diff > 10000) {
+                if (numWordsSoFar.get() > 0 && diff > 1000) {
                     lastReported.set(now);
                     log.info("Words so far " + numWordsSoFar.get() + " with alpha at " + alpha);
                 }
