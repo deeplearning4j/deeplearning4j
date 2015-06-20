@@ -54,7 +54,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
     private INDArray labels;
-    
+
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -70,7 +70,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public  double score() {
-        LinAlgExceptions.assertRows(input,labels);
+        LinAlgExceptions.assertRows(input, labels);
         INDArray output  = output(input);
         if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
             return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
@@ -88,17 +88,24 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     }
 
+
+    @Override
+    public Pair<Gradient, Double> gradientAndScore() {
+        return new Pair<>(gradient(),score());
+    }
+
+
     /**
      * Gets the gradient from one training iteration
      * @return the gradient (bias and weight matrix)
      */
     @Override
     public Gradient gradient() {
-        LinAlgExceptions.assertRows(input,labels);
+        LinAlgExceptions.assertRows(input, labels);
 
 
         //input activation
-        INDArray netOut = output(input);
+        INDArray netOut = activate(input);
         //difference of outputs
         INDArray dy = netOut.sub(labels);
 
@@ -108,15 +115,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
-        g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,bGradient);
+        g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bGradient);
 
         return g;
 
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(),score());
     }
 
 
@@ -156,6 +158,17 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         throw new IllegalStateException("Invalid loss function");
 
+    }
+
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return output(input);
+    }
+
+    @Override
+    public INDArray activate() {
+        return output(input);
     }
 
     /**
@@ -342,9 +355,13 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
         INDArray preOutput = preOutput(x);
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
-        return ret;
+        if(conf.getActivationFunction().equals("softmax")) {
+            INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
+            return ret;
+        }
 
+        this.input = x;
+        return super.activate();
 
     }
 
