@@ -44,6 +44,7 @@ public abstract class BaseNDArrayIO implements NDArrayIO {
         write(out, bos);
         bos.flush();
         bos.close();
+        fos.close();
     }
 
     /**
@@ -59,6 +60,7 @@ public abstract class BaseNDArrayIO implements NDArrayIO {
         write(out, bos);
         bos.flush();
         bos.close();
+        fos.close();
     }
 
     /**
