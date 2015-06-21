@@ -3759,10 +3759,7 @@ public abstract class BaseNDArray implements INDArray {
 
                 }
             }
-            else if(isVector()) {
-                NDArrayIndex[] subRange = Arrays.copyOfRange(indexes,1,indexes.length);
 
-            }
             else {
                 NDArrayIndex[] subRange = Arrays.copyOfRange(indexes,1,indexes.length);
                 NDArrayIndex[] putRange = NDArrayIndex.rangeOfLength(subRange);

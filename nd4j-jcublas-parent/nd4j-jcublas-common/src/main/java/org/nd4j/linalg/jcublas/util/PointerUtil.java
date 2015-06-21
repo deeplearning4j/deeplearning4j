@@ -37,7 +37,8 @@ import java.nio.FloatBuffer;
 import static jcuda.driver.JCudaDriver.cuMemAlloc;
 
 /**
- * Various methods for pointer based methods (mainly for the jcuda executioner)
+ * Various methods for pointer
+ * based methods (mainly for the jcuda executioner)
  *
  * @author Adam Gibson
  */
