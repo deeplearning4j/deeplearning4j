@@ -54,7 +54,7 @@ public class HardTanhDerivative extends BaseTransformOp {
 
     @Override
     public String name() {
-        return "hardtanh";
+        return "hardtanhderivative";
     }
 
     @Override
