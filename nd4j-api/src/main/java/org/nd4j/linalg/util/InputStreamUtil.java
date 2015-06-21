@@ -67,8 +67,11 @@ public class InputStreamUtil {
      * @throws IOException
      */
     public static int countLines(String filename) throws IOException {
-        return countLines(new BufferedInputStream(new FileInputStream(filename)));
-
-
+        FileInputStream fis = new FileInputStream(filename);
+        try{
+            return countLines(new BufferedInputStream(fis));
+        } finally {
+            fis.close();
+        }
     }
 }
