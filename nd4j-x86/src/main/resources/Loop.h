@@ -618,10 +618,4 @@ public:
 
         return  startingValue;
     }
-
-
-
-
-
-
 };
