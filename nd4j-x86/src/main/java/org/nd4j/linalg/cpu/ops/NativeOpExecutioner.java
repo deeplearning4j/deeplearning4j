@@ -39,8 +39,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     private void exec(ScalarOp op) {
         if(op.x() instanceof IComplexNDArray) {
-            throw new UnsupportedOperationException();
-        }
+           super.exec(op);
+;        }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execScalarDouble(op.x().data().asDouble(),op.z().data().asDouble(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),null);
@@ -54,7 +54,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     private void exec(TransformOp op) {
         if(op.x() instanceof IComplexNDArray) {
-            throw new UnsupportedOperationException();
+            super.exec(op);
 
         }
         else {
@@ -70,7 +70,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     private void exec(Accumulation op) {
         if(op.x() instanceof IComplexNDArray) {
-            throw new UnsupportedOperationException();
+            super.exec(op);
 
         }
         else {
