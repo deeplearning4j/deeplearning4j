@@ -26,6 +26,7 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.spark.ml.nn.ParameterAveragingTrainingStrategy
 import org.deeplearning4j.spark.ml.param.shared.{HasEpochs, HasMultiLayerConfiguration}
 import org.deeplearning4j.spark.ml.util.Identifiable
@@ -33,6 +34,8 @@ import org.deeplearning4j.spark.util.conversions._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.util.FeatureUtil
+
+import scala.collection.JavaConversions
 
 /*
  * Parameters for neural network classification.
@@ -158,6 +161,7 @@ class NeuralNetworkClassificationModel private[ml] (
       networkHolder = new ThreadLocal[MultiLayerNetwork] {
         override def initialValue(): MultiLayerNetwork = {
           val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson($(conf)))
+          network.setListeners(JavaConversions.seqAsJavaList(List(new ScoreIterationListener(1))))
           network.init()
           network.setParameters(networkParams.value)
           network
