@@ -117,13 +117,13 @@ public class MultiLayerTest {
     public void testBackProp() {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .iterations(10).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(10).weightInit(WeightInit.XAVIER).dist(new UniformDistribution(0,1))
                 .activationFunction("tanh")
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
                 .list(3).backward(true).pretrain(false)
-                .hiddenLayerSizes(new int[]{3, 2}).override(2, new ConfOverride() {
+                .hiddenLayerSizes(new int[]{3,2}).override(2, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         builder.activationFunction("softmax");
@@ -144,6 +144,7 @@ public class MultiLayerTest {
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         network.setInput(trainTest.getTrain().getFeatureMatrix());
         network.setLabels(trainTest.getTrain().getLabels());
+        network.init();
         network.fit(trainTest.getTrain());
 
         DataSet test = trainTest.getTest();
