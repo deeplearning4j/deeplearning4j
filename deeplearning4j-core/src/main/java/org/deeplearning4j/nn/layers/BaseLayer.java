@@ -33,7 +33,6 @@ import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -76,14 +75,14 @@ public abstract class BaseLayer implements Layer {
     public Gradient error(INDArray errorSignal) {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         Gradient nextLayerGradient = new DefaultGradient();
-        INDArray wErrorSignal = errorSignal.mmul(W);
+        INDArray wErrorSignal = errorSignal.mmul(W.transpose());
         nextLayerGradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wErrorSignal);
         return nextLayerGradient;
     }
 
     @Override
     public INDArray derivativeActivation(INDArray input) {
-        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), activate(input)).derivative());
+        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), input).derivative());
         return deriv;
     }
 
@@ -108,12 +107,17 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
-        Gradient propError = error(activation);
-        INDArray deriv = derivativeActivation(activation);
+    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+        //needs to be number of features by examples
+        INDArray wt = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray delta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
+        INDArray wLoss = wt.mmul(delta.transpose()).transpose();
+        INDArray deriv = derivativeActivation(z);
+        wLoss.muli(deriv);
         Gradient ret = new DefaultGradient();
-        INDArray finalGradient = propError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY).mul(deriv);
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,finalGradient);
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, wLoss);
+        //nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wLoss.transpose().mmul(activation).transpose());
         return ret;
     }
 
@@ -168,8 +172,14 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void update(Gradient gradient) {
         for(String s : conf.variables()) {
-            if(gradient.gradientForVariable().containsKey(s))
-                getParam(s).addi(gradient.gradientForVariable().get(s));
+            if(gradient.gradientForVariable().containsKey(s)) {
+                if (s.equals(DefaultParamInitializer.BIAS_KEY) && gradient.gradientForVariable().get(s).rows() > 1) {
+                    getParam(s).addi(gradient.gradientForVariable().get(s).mean(1));
+                }
+                else
+                    getParam(s).addi(gradient.gradientForVariable().get(s));
+
+            }
         }
     }
 

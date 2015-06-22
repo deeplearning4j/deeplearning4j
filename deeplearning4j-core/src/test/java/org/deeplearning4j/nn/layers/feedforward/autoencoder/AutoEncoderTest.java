@@ -90,7 +90,6 @@ public class AutoEncoderTest {
         AutoEncoder da = layerFactory.create(conf);
         Gradient g = new DefaultGradient();
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, da.decode(da.activate(input)).sub(input));
-        Gradient g2 = da.backwardGradient(da.decode(da.activate(input)),g);
 
     }
 

@@ -32,7 +32,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,7 +83,7 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray activation, Gradient errorSignal) {
+    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
         throw new UnsupportedOperationException();
     }
 
