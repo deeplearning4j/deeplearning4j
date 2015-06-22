@@ -57,17 +57,17 @@ public class LossFunctions {
             case RECONSTRUCTION_CROSSENTROPY:
                 INDArray xEntLogZ2 = log(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ2 = log(z.add(Nd4j.EPS_THRESHOLD)).rsubi(1);
                 ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
-                INDArray columnSums = labels.mul(log(z));
+                INDArray columnSums = labels.mul(log(z.add(Nd4j.EPS_THRESHOLD)));
                 ret = columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case XENT:
-                INDArray xEntLogZ = log(z);
+                INDArray xEntLogZ = log(z.add(Nd4j.EPS_THRESHOLD));
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ = log(z).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ = log(z.add(Nd4j.EPS_THRESHOLD)).rsubi(1);
                 ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case RMSE_XENT:
@@ -89,8 +89,8 @@ public class LossFunctions {
                 break;
             case NEGATIVELOGLIKELIHOOD:
                 ret = -Nd4j.mean(Nd4j.sum(
-                        labels.mul(log(z))
-                                .addi(labels.rsub(1).muli(log(z.rsub(1))))
+                        labels.mul(log(z.add(Nd4j.EPS_THRESHOLD)))
+                                .addi(labels.rsub(1).muli(log(z.rsub(1).addi(Nd4j.EPS_THRESHOLD))))
                         , 1)).getDouble(0);
                 break;
 

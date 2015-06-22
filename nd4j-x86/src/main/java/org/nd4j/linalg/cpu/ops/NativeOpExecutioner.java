@@ -60,10 +60,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                loop.execDoubleTransform(op.x().data().asDouble(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),null,op.z().data().asDouble());
+                loop.execDoubleTransform(op.x().data().asDouble(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),new double[1],op.z().data().asDouble());
             }
             else {
-                loop.execFloatTransform(op.x().data().asFloat(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),null,op.z().data().asFloat());
+                loop.execFloatTransform(op.x().data().asFloat(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),new float[1],op.z().data().asFloat());
             }
         }
     }
