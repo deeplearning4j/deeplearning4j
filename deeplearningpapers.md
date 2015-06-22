@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Deep learning: further reading
+# Deep learning: Further Reading
 
 **[Semantic Compositionality through Recursive Matrix-Vector Spaces](http://ttic.uchicago.edu/~haotang/speech/SocherHuvalManningNg_EMNLP2012.pdf)**; Richard Socher, Brody Huval, Christopher D. Manning and Andrew Y. Ng; Computer Science Department, Stanford University
 
@@ -111,6 +111,10 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 **[Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf)**; Tomas Mikolov, Quoc V. Le, Ilya Sutskever; Google
 
 **[word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf)**; Yoav Goldberg and Omer Levy
+
+**[A Few Useful Things to Know about Machine Learning](https://homes.cs.washington.edu/~pedrod/papers/cacm12.pdf)**; Pedro Domingos, University of Washington
+
+**[A Neural Conversational Model](http://arxiv.org/pdf/1506.05869v1.pdf); Vinyal Orios and Quoc Le, Google
 
 Personal pages of prominent deep-learning researchers:
 
