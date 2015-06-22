@@ -60,7 +60,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private Model function;
     private StepFunction stepFunction = new DefaultStepFunction();
     private ConvexOptimizer optimizer;
-    private int maxIterations = 100;
+    private int maxIterations = 5;
     double stpmax = 100;
 
     // termination conditions: either
@@ -210,7 +210,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             // check for convergence
             //convergence on delta x
             //if all of the parameters are < 1e-12
-            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters.linearView(), x.linearView(),x.linearView().dup(),x.length())).sum(Integer.MAX_VALUE).getDouble(0) == x.length()) {
+            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters.linearView(), x.linearView(),x.linearView(),x.length())).sum(Integer.MAX_VALUE).getDouble(0) == x.length()) {
                 function.setParams(oldParameters);
                 function.setScore();
                 f = function.score();
