@@ -93,6 +93,7 @@ public class TfIdfVectorizerTest {
                 .iterate(iter).build();
 
         vectorizer.fit();
+        vectorizer.vectorize("",null);
 
         VocabWord word = vectorizer.vocab().wordFor("file");
         assumeNotNull(word);

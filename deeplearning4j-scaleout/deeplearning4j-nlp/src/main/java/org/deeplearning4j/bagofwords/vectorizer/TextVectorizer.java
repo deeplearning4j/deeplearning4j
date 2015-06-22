@@ -66,7 +66,7 @@ public interface TextVectorizer extends Vectorizer {
      * Vectorizes the passed in text treating it as one document
      * @param text the text to vectorize
      * @param label the label of the text
-     * @return a dataset with a applyTransformToDestination of weights(relative to impl; could be word counts or tfidf scores)
+     * @return a dataset with a transform of weights(relative to impl; could be word counts or tfidf scores)
      */
     DataSet vectorize(String text,String label);
 
