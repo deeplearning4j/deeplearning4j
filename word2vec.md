@@ -84,7 +84,7 @@ Briefly, a two-layer neural net is trained with <a href="../glossary.html#downpo
 
 Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table to compose windows of training text for various tasks in natural-language processing.
 
-After lemmatization, Word2vec will conduct automatic multithreaded training based on your sentence data. Then you'll want to save the model. There are a few different components to Word2vec. One of these is the vocab cache. The normal way to save models in deeplearning4j is via the SerializationUtils (java serialization akin to python pickling)
+After lemmatization, Word2vec will conduct automatic multithreaded training based on your sentence data. Then you'll want to save the model. There are a few different components to Word2vec. One of these is the vocab cache. The normal way to save models in deeplearning4j is via the SerializationUtils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
 
         SerializationUtils.saveObject(vec, new File("mypath"));
        	 
@@ -92,7 +92,7 @@ This will save Word2vec to mypath. You can reload it into memory like this:
 
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
 
-You can then use Word2vec as a lookup table in the following way:
+You can then use Word2vec as a lookup table:
 
         INDArray wordVector = vec.getWordVectorMatrix("myword");
         double[] wordVector = vec.getWordVector("myword");
@@ -116,8 +116,6 @@ This will create a tokenizer for the text, and moving windows based on the token
 
       List<Window> windows = Windows.windows("text",tokenizerFactory);
 
-This will create a tokenizer for the text and create moving windows based on that.
-
 Notably, you can also specify the window size like so:
 
       TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
@@ -127,11 +125,9 @@ Training word sequence models is done through optimization with the [Viterbi alg
 
 The general idea is to train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
 
-Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). Here's an example snippet for setup:
+Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). 
 
-<script src="http://gist-it.appspot.com/https://github.com/agibsonccc/java-deeplearning/blob/master/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/word2vec/MovingWindowExample.java?slice=112:121"></script>
-
-From there, each line will be handled something like this:
+Each line will be handled something like this:
 
         <ORGANIZATION> IBM </ORGANIZATION> invented a question-answering robot called <ROBOT>Watson</ROBOT>.
 
