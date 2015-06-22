@@ -20,8 +20,11 @@ import org.apache.spark.AccumulatorParam
 import org.apache.spark.rdd.RDD
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+
+import scala.collection.JavaConversions
 
 /**
  * An abstract training strategy for a distributed neural network, given partitions of data.
@@ -63,9 +66,10 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
      val confJson = conf.toJson()
      
      def initialParams() = {
-       val network = new MultiLayerNetwork(conf);
-       network.init();
-       network.params(); 
+       val network = new MultiLayerNetwork(conf)
+       network.init()
+       network.setListeners(JavaConversions.seqAsJavaList(List(new ScoreIterationListener(1))))
+       network.params()
      }
    
      var networkParams = initialParams()
@@ -77,8 +81,9 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
        rdd.foreachPartition { iterator =>
          @transient val conf: MultiLayerConfiguration = MultiLayerConfiguration.fromJson(confJson)
 
-         val network = new MultiLayerNetwork(conf);
-         network.init();
+         val network = new MultiLayerNetwork(conf)
+         network.init()
+         network.setListeners(JavaConversions.seqAsJavaList(List(new ScoreIterationListener(1))))
          network.setParams(broadcastedParams.value)
          
          partitionTrainer(network, iterator)

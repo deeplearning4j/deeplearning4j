@@ -1143,6 +1143,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 feedForward();
                 if (getOutputLayer() instanceof OutputLayer) {
                     OutputLayer o = (OutputLayer) getOutputLayer();
+                    o.setIterationListeners(getListeners());
                     o.fit(o.input(),getLabels());
 
                 }
@@ -1173,6 +1174,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         OutputLayer o = (OutputLayer) getOutputLayer();
         if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             List<INDArray> activations = feedForward();
+            o.setIterationListeners(getListeners());
             o.fit(activations.get(activations.size() - 2), labels);
         }
 
