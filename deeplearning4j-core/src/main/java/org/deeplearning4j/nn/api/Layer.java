@@ -101,11 +101,13 @@ public interface Layer extends Serializable,Cloneable,Model {
     /**
      * Calculate the gradient relative to the
      * error in the next layer
+     * @param z the activation from the network
+     * @param nextLayer the next layer in the network.
+     * @param nextGradient
      * @param activation the activation from the network
-     * @param errorSignal the error signal caused by this network.
      * @return
      */
-    Gradient backwardGradient(INDArray activation,Gradient errorSignal);
+    Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation);
 
 
     /**
