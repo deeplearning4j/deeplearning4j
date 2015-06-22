@@ -80,6 +80,10 @@ public class WeightInitUtil {
       case NORMALIZED:
         ret = Nd4j.rand(shape, Nd4j.getRandom());
         return ret.subi(0.5).divi(shape[0]);
+      case XAVIER:
+        double var = 2 / (double) shape[0];
+        ret = Nd4j.getDistributions().createNormal(0,var).sample(shape);
+        return ret;
       case UNIFORM:
         double a = 1 / (double) shape[0];
         return Nd4j.rand(shape, -a, a, Nd4j.getRandom());

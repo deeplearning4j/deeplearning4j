@@ -33,6 +33,6 @@ public enum WeightInit {
 
         TBD: Sparse initialization (SI) (Martens)
      */
-    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO
+    DISTRIBUTION,NORMALIZED,SIZE,UNIFORM,VI,ZERO,XAVIER
 
 }
