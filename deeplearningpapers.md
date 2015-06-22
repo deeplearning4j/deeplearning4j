@@ -114,7 +114,7 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[A Few Useful Things to Know about Machine Learning](https://homes.cs.washington.edu/~pedrod/papers/cacm12.pdf)**; Pedro Domingos, University of Washington
 
-**[A Neural Conversational Model](http://arxiv.org/pdf/1506.05869v1.pdf); Vinyal Orios and Quoc Le, Google
+**[A Neural Conversational Model](http://arxiv.org/pdf/1506.05869v1.pdf)**; Oriol Vinyals and Quoc Le, Google
 
 Personal pages of prominent deep-learning researchers:
 
@@ -122,7 +122,7 @@ Personal pages of prominent deep-learning researchers:
 -  [Yann LeCun](http://yann.lecun.com/)
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
--  [Richard Socher](http://www.socher.org/)
 -  [Quoc V. Le](http://cs.stanford.edu/~quocle/)
+-  [Richard Socher](http://www.socher.org/)
 
 *These lists are by no means exhaustive.*
