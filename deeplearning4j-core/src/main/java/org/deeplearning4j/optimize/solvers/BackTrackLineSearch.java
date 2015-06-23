@@ -132,15 +132,15 @@ public class BackTrackLineSearch implements LineOptimizer  {
     /**
      *
      * @param initialStep the initial step size
-     * @param coefficients the parameters to optimize
+     * @param parameters the parameters to optimize
      * @param gradients the line/rate of change
      * @return the next step size
      * @throws InvalidStepException
      */
-    public double optimize (double initialStep,INDArray coefficients,INDArray gradients) throws InvalidStepException {
+    public double optimize (double initialStep,INDArray parameters,INDArray gradients) throws InvalidStepException {
         double slope, test, alamin, alam, alam2, tmplam;
         double rhs1, rhs2, a, b, disc, oldAlam;double f, fold, f2;
-        INDArray oldCoefficients = coefficients.dup();
+        INDArray oldParameters = parameters.dup();
         INDArray gDup = gradients.dup();
 
         alam2 = 0.0;
@@ -173,7 +173,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
         // converge when (delta x) / x < REL_TOLX for all coordinates.
         //  the largest step size that triggers this threshold is
         //  precomputed and saved in alamin
-        INDArray maxOldParams = abs(oldCoefficients);
+        INDArray maxOldParams = abs(oldParameters);
         Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams,1));
 
 
@@ -188,35 +188,34 @@ public class BackTrackLineSearch implements LineOptimizer  {
         int iteration;
         // look for step size in direction given by "line"
         for(iteration = 0; iteration < maxIterations; iteration++) {
-            // x = oldParameters + alam*line
             // initially, alam = 1.0, i.e. take full Newton step
             logger.trace("BackTrack loop iteration " + iteration +" : alam=" + alam +" oldAlam=" + oldAlam);
-            logger.trace ("before step, x.1norm: " + coefficients.norm1(Integer.MAX_VALUE) +  "\nalam: " + alam + "\noldAlam: " + oldAlam);
+            logger.trace ("before step, x.1norm: " + parameters.norm1(Integer.MAX_VALUE) +  "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
 
             if(stepFunction == null)
                 stepFunction =  new DefaultStepFunction();
             //scale wrt updates
-            stepFunction.step(coefficients, gradients, new Object[]{alam,oldAlam}); //step
+            stepFunction.step(parameters, gradients, new Object[]{alam,oldAlam}); //step
 
             if(logger.isDebugEnabled())  {
-                double norm1 = coefficients.norm1(Integer.MAX_VALUE).getDouble(0);
+                double norm1 = parameters.norm1(Integer.MAX_VALUE).getDouble(0);
                 logger.debug ("after step, x.1norm: " + norm1);
             }
 
             // check for convergence
             //convergence on delta x
             //if all of the parameters are < 1e-12
-            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldCoefficients.linearView(), coefficients.linearView(),
-                    coefficients.linearView(), coefficients.length())).sum(Integer.MAX_VALUE).getDouble(0) == coefficients.length()) {
-                function.setParams(oldCoefficients);
+            if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters.linearView(), parameters.linearView(),
+                    parameters.linearView(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
+                function.setParams(oldParameters);
                 function.setScore();
                 f = function.score();
                 logger.trace("EXITING BACKTRACK: Jump too small (alamin = "+ alamin + "). Exiting and using xold. Value = " + f);
                 return 0.0;
             }
 
-            function.setParams(coefficients);
+            function.setParams(parameters);
             oldAlam = alam;
             function.setScore();
             f = function.score();
@@ -241,7 +240,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 logger.warn ("Value is infinite after jump " + oldAlam + ". f="+ f +", f2=" + f2 + ". Scaling back step size...");
                 tmplam = .2 * alam;
                 if(alam < alamin) { //convergence on delta x
-                    function.setParams(oldCoefficients);
+                    function.setParams(oldParameters);
                     function.setScore();
                     f = function.score();
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+ f );
