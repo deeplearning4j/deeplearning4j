@@ -804,7 +804,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray five = Nd4j.ones(5);
         five.addi(five.dup());
         INDArray twos = Nd4j.valueArrayOf(5, 2);
-        assertEquals(twos, five);
+        assertEquals(getFailureMessage(),twos, five);
 
     }
 
@@ -815,8 +815,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertTrue(ret.sum(0).isRowVector());
         assertTrue(ret.sum(1).isScalar());
         INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2,1);
-        assertTrue(retColumn.sum(1).isRowVector());
-        assertTrue(retColumn.sum(0).isScalar());
+        assertTrue(getFailureMessage(),retColumn.sum(1).isRowVector());
+        assertTrue(getFailureMessage(),retColumn.sum(0).isScalar());
 
         INDArray m2 = Nd4j.rand(1, 2);
         Nd4j.sum(m2, 0);

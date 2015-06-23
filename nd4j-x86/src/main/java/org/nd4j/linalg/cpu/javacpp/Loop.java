@@ -19,9 +19,28 @@ public class Loop extends Pointer {
 
 
 
-    public native void execFloatTransform( float[] data, int length, int offset, int stride,int resultStride, String  operation,
-                             float[] otherParams, float[] result);
+    public native void execFloatTransform(
+            float[] data
+            , int length
+            , int offset
+            , int stride
+            ,int resultStride
+            , String  operation,
+            float[] otherParams
+            , float[] result);
 
+    public native void execFloatTransform(
+            float[] data,
+            float[] pairData
+            , int length
+            , int offset,
+            int yOffset
+            , int stride,
+            int yStride
+            ,int resultStride
+            , String  operation,
+            float[] otherParams
+            , float[] result);
 
     public native void execScalarDouble(
             double[] data
@@ -52,6 +71,19 @@ public class Loop extends Pointer {
             , String  operation,
             double[] otherParams
             ,double[] result);
+
+    public native void execDoubleTransform(
+            double[] data,
+            double[] pairData
+            , int length
+            , int offset,
+            int yOffset
+            , int stride,
+            int yStride
+            ,int resultStride
+            , String  operation,
+            double[] otherParams
+            , double[] result);
 
     public native double reduce3(
             double[] data

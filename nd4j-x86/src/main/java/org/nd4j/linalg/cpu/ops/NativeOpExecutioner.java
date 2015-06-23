@@ -40,8 +40,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     private void exec(ScalarOp op) {
         if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray) {
-           super.exec(op);
-;        }
+            super.exec(op);
+            ;        }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execScalarDouble(op.x().data().asDouble(),op.z().data().asDouble(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),new double[]{op.scalar().doubleValue()});
@@ -60,10 +60,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                loop.execDoubleTransform(op.x().data().asDouble(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),new double[1],op.z().data().asDouble());
+                if(op.y() != null) {
+                    loop.execDoubleTransform(op.x().data().asDouble(),op.y().data().asDouble(),op.n(),op.x().offset(),op.y().offset(),op.x().majorStride(),op.y().elementStride(),op.z().elementStride(),op.name(),new double[1],op.z().data().asDouble());
+                }
+                else
+                    loop.execDoubleTransform(op.x().data().asDouble(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),ArgsConverter.convertExtraArgsDouble(op),op.z().data().asDouble());
             }
             else {
-                loop.execFloatTransform(op.x().data().asFloat(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),new float[1],op.z().data().asFloat());
+                if(op.y() != null) {
+                    loop.execFloatTransform(op.x().data().asFloat(), op.y().data().asFloat(), op.n(), op.x().offset(), op.y().offset(), op.x().majorStride(), op.y().elementStride(), op.z().elementStride(), op.name(), new float[1], op.z().data().asFloat());
+
+                }
+                else
+                    loop.execFloatTransform(op.x().data().asFloat(),op.n(),op.x().offset(),op.x().elementStride(),op.z().elementStride(),op.name(),ArgsConverter.convertExtraArgsFloat(op),op.z().data().asFloat());
             }
         }
     }

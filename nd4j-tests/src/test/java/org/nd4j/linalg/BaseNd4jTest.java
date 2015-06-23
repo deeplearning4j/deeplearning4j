@@ -23,6 +23,7 @@ import junit.framework.TestCase;
 import junit.framework.TestResult;
 import org.junit.After;
 import org.junit.Before;
+import org.nd4j.linalg.cpu.CpuBackend;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.java.JavaBackend;
@@ -72,7 +73,7 @@ public abstract class BaseNd4jTest extends TestCase {
      * given command line arguments
      */
     public static Nd4jBackend getDefaultBackend() {
-        String clazz = System.getProperty(DEFAULT_BACKED,JavaBackend.class.getName());
+        String clazz = System.getProperty(DEFAULT_BACKED,CpuBackend.class.getName());
         try {
             return (Nd4jBackend) Class.forName(clazz).newInstance();
         } catch (Exception e) {

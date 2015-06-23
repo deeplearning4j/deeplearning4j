@@ -15,57 +15,174 @@ class Loop {
 public:
 
 
+    void execDoubleTransform(
+            double *data,
+            double *pairData
+            , int length
+            , int offset,
+            int yOffset
+            , int stride,
+            int yStride
+            ,int resultStride
+            , const std::string  operation,
+            double *otherParams
+            , double *result) {
+        if(operation.compare("add") == 0) {
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = data[offset + (i * stride)] + pairData[yOffset + (i * yStride)];
+            }
+        }
+        else if(operation.compare("sub") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)] - pairData[yOffset + (i * yStride)];
+
+        }
+        else if(operation.compare("rsub") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = pairData[yOffset + (i * yStride)] - data[offset + (i * stride)];
+
+        }
+        else if(operation.compare("mul") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)] * pairData[yOffset + (i * yStride)];
+
+        }
+        else if(operation.compare("div") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)] / pairData[yOffset + (i * yStride)];
+
+        }
+        else if(operation.compare("rdiv") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] =  pairData[yOffset + (i * yStride)] / data[offset + (i * stride)];
+
+        }
+        else if(operation.compare("copy") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)];
+
+        }
+    }
+
+
+    void execFloatTransform(
+            float *data,
+            float *pairData
+            , int length
+            , int offset,
+            int yOffset
+            , int stride,
+            int yStride
+            ,int resultStride
+            , const std::string  operation,
+            float *otherParams
+            , float *result) {
+        if(operation.compare("add") == 0) {
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = data[offset + (i * stride)] + pairData[yOffset + (i * yStride)];
+            }
+        }
+        else if(operation.compare("sub") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)] - pairData[yOffset + (i * yStride)];
+
+        }
+        else if(operation.compare("rsub") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = pairData[yOffset + (i * yStride)] - data[offset + (i * stride)];
+
+        }
+        else if(operation.compare("mul") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)] * pairData[yOffset + (i * yStride)];
+
+        }
+        else if(operation.compare("div") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)] / pairData[yOffset + (i * yStride)];
+
+        }
+        else if(operation.compare("rdiv") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] =  pairData[yOffset + (i * yStride)] / data[offset + (i * stride)];
+
+        }
+        else if(operation.compare("copy") == 0) {
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i * stride)];
+
+        }
+    }
+
     void execFloatTransform(float *data, int length, int offset, int stride,int resultStride, const std::string operation,
                             float *otherParams,float *result) {
         if(operation.compare("tanh") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = tanhf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = tanhf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("exp") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = expf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = expf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("cos") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = cosf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = cosf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("abs") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = fabs(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = fabs(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("acos") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = acosf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = acosf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("asin") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = asin(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = asin(data[offset + (i  * stride)]);
             }
         }
 
         else if(operation.compare("atan") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = atan(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = atan(data[offset + (i  * stride)]);
             }
         }
+        else if(operation.compare("setrange") == 0) {
+            float min = otherParams[0];
+            float max = otherParams[1];
+            for(int i = 0; i < length; i++) {
+                float origin = data[offset + (i * stride)];
+                if (origin >= min && origin <= max)
+                    result[i * resultStride] = origin;
+                else if (min == 0 && max == 1) {
+                    float val = 1 / (1 + expf(-origin));
+                    result[i * resultStride] =  floorf(val * (max - min)) + min;
+                }
+                else {
+                    result[i * resultStride] = floorf(origin * (max - min)) + min;
+
+                }
+            }
+        }
+
         else if(operation.compare("ceil") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = ceil(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = ceilf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("floor") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = floor(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = floorf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("hardtanh") == 0) {
-            for(int i = offset; i < length; i++) {
-                float tanh2 = tanhf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                float tanh2 = tanhf(data[offset + (i  * stride)]);
                 if(tanh2 < -1)
                     tanh2 = -1;
                 if(tanh2 > 1)
@@ -74,57 +191,57 @@ public:
             }
         }
         else if(operation.compare("log") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = logf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = logf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("neg") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = -data[i * stride];
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = -data[offset + (i  * stride)];
             }
         }
         else if(operation.compare("oneminus") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] =  1 - data[i * stride];
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] =  1 - data[offset + (i  * stride)];
             }
         }
         else if(operation.compare("ones") == 0) {
-            for(int i = offset; i < length; i++) {
+            for(int i = 0; i < length; i++) {
                 result[i * resultStride] =  1;
             }
         }
         else if(operation.compare("pow") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] =  powf(data[i * stride],(float) otherParams[0]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] =  powf(data[offset + (i  * stride)],(float) otherParams[0]);
             }
         }
         else if(operation.compare("sigmoid") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] =  1.0 / (1.0 + expf(-data[i * stride]));
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] =  1.0 / (1.0 + expf(-data[offset + (i  * stride)]));
             }
         }
         else if(operation.compare("sign") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = (d1 > 0) - (d1 < 0);
             }
         }
         else if(operation.compare("round") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = roundf(d1);
             }
         }
         else if(operation.compare("softmax") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = roundf(d1);
             }
         }
 
         else if(operation.compare("sqrt") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = sqrtf(d1);
             }
         }
@@ -144,75 +261,75 @@ public:
             ,double *otherParams) {
         double scalar = otherParams[0];
         if(operation.compare("equals_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 == scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("greaterthan_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 >= scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("greaterthanorequal_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 == scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("lessthan_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 < scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("lessthanorequal_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 <= scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("greaterthan_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 > scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("add_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] + scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] + scalar;
 
         }
         else if(operation.compare("div_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] / scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] / scalar;
 
         }
         else if(operation.compare("max_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = max(data[i * stride],scalar);
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = max(data[offset + (i  * stride)],scalar);
 
         }
         else if(operation.compare("mul_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] * scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] * scalar;
 
         }
         else if(operation.compare("rdiv_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = scalar / data[i * stride];
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = scalar / data[offset + (i  * stride)];
 
         }
         else if(operation.compare("rsub_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = scalar - data[i * stride];
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = scalar - data[offset + (i  * stride)];
 
         }
 
         else if(operation.compare("sub_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] - scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] - scalar;
 
         }
 
@@ -229,75 +346,75 @@ public:
             ,float *otherParams) {
         float scalar = otherParams[0];
         if(operation.compare("equals_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 == scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("greaterthan_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 >= scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("greaterthanorequal_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 == scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("lessthan_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 < scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("lessthanorequal_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 <= scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("greaterthan_scalar") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = d1 > scalar ? 1 : 0.0;
             }
         }
         else if(operation.compare("add_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] + scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] + scalar;
 
         }
         else if(operation.compare("div_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] / scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] / scalar;
 
         }
         else if(operation.compare("max_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = max(data[i * stride],scalar);
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = max(data[offset + (i  * stride)],scalar);
 
         }
         else if(operation.compare("mul_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] * scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] * scalar;
 
         }
         else if(operation.compare("rdiv_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = scalar / data[i * stride];
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = scalar / data[offset + (i  * stride)];
 
         }
         else if(operation.compare("rsub_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = scalar - data[i * stride];
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = scalar - data[offset + (i  * stride)];
 
         }
 
         else if(operation.compare("sub_scalar") == 0) {
-            for(int i = offset; i < length; i++)
-                result[i * resultStride] = data[i * stride] - scalar;
+            for(int i = 0; i < length; i++)
+                result[i * resultStride] = data[offset + (i  * stride)] - scalar;
 
         }
     }
@@ -305,49 +422,66 @@ public:
     void execDoubleTransform(double *data, int length, int offset, int stride,int resultStride, const std::string operation,
                              double *otherParams,double *result) {
         if(operation.compare("tanh") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = tanh(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = tanh(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("exp") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = exp(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = exp(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("cos") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = cos(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = cos(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("abs") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d = data[offset + (i  * stride)];
                 result[i * resultStride] = abs(d);
             }
         }
         else if(operation.compare("acos") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = acos(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = acos(data[offset + (i  * stride)]);
+            }
+        }
+        else if(operation.compare("setrange") == 0) {
+            double min = otherParams[0];
+            double max = otherParams[1];
+            for(int i = 0; i < length; i++) {
+                double origin = data[offset + (i * stride)];
+                if (origin >= min && origin <= max)
+                    result[i * resultStride] = origin;
+                else if (min == 0 && max == 1) {
+                    double val = 1 / (1 + exp(-origin));
+                    result[i * resultStride] =  floor(val * (max - min)) + min;
+                }
+                else {
+                    result[i * resultStride] = floor(origin * (max - min)) + min;
+
+                }
             }
         }
         else if(operation.compare("asin") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = asinf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = asinf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("asin") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = atan(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = atan(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("ceil") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = floorf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = floorf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("hardtanh") == 0) {
-            for(int i = offset; i < length; i++) {
-                double tanh2 = tanh(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                double tanh2 = tanh(data[offset + (i  * stride)]);
                 if(tanh2 < -1)
                     tanh2 = -1;
                 if(tanh2 > 1)
@@ -356,58 +490,58 @@ public:
             }
         }
         else if(operation.compare("log") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = log(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = log(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("neg") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] = -data[i * stride];
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] = -data[offset + (i  * stride)];
             }
         }
         else if(operation.compare("oneminus") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] =  1 - data[i * stride];
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] =  1 - data[offset + (i  * stride)];
             }
         }
         else if(operation.compare("ones") == 0) {
-            for(int i = offset; i < length; i++) {
+            for(int i = 0; i < length; i++) {
                 result[i * resultStride] =  1;
             }
         }
 
         else if(operation.compare("pow") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] =  pow(data[i * stride],(double) otherParams[0]);
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] =  pow(data[offset + (i  * stride)],(double) otherParams[0]);
             }
         }
         else if(operation.compare("sigmoid") == 0) {
-            for(int i = offset; i < length; i++) {
-                result[i * resultStride] =  1.0 / (1.0 + exp(-data[i * stride]));
+            for(int i = 0; i < length; i++) {
+                result[i * resultStride] =  1.0 / (1.0 + exp(-data[offset + (i  * stride)]));
             }
         }
         else if(operation.compare("sign") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = (d1 > 0) - (d1 < 0);
             }
         }
         else if(operation.compare("round") == 0) {
-            for(int i = offset; i < length; i++) {
-                double d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                double d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = round(d1);
             }
         }
 
         else if(operation.compare("softmax") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = roundf(d1);
             }
         }
         else if(operation.compare("sqrt") == 0) {
-            for(int i = offset; i < length; i++) {
-                float d1 = data[i * stride];
+            for(int i = 0; i < length; i++) {
+                float d1 = data[offset + (i  * stride)];
                 result[i * resultStride] = sqrt(d1);
             }
         }
@@ -446,69 +580,69 @@ public:
                   double *otherParams) {
         double startingValue = otherParams[0];
         if(operation.compare("sum") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += data[i * stride];
+            for(int i = 0; i < length; i++) {
+                startingValue += data[offset + (i  * stride)];
             }
 
         }
         else if(operation.compare("prod") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue *= data[i * stride];
+            for(int i = 0; i < length; i++) {
+                startingValue *= data[offset + (i  * stride)];
             }
 
         }
         else if(operation.compare("mean") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += data[i * stride];
+            for(int i = 0; i < length; i++) {
+                startingValue += data[offset + (i  * stride)];
             }
 
             startingValue /= (double) length;
         }
         else if(operation.compare("max") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue = max(data[i * stride],startingValue);
+            for(int i = 0; i < length; i++) {
+                startingValue = max(data[offset + (i  * stride)],startingValue);
             }
         }
         else if(operation.compare("bias") == 0) {
             double mean = otherParams[0];
-            for(int i = offset; i < length; i++) {
-                startingValue += data[i * stride] - mean;
+            for(int i = 0; i < length; i++) {
+                startingValue += data[offset + (i  * stride)] - mean;
             }
         }
         else if(operation.compare("var") == 0) {
             double bias = otherParams[1];
             double mean = otherParams[2];
-            for(int i = offset; i < length; i++) {
-                startingValue += powf(data[i * stride] - mean,2.0);
+            for(int i = 0; i < length; i++) {
+                startingValue += powf(data[offset + (i  * stride)] - mean,2.0);
             }
             startingValue = (startingValue - (pow(bias,2.0) / length)) / (double) (length - 1.0);
         }
         else if(operation.compare("std") == 0) {
             double bias = otherParams[1];
             double mean = otherParams[2];
-            for(int i = offset; i < length; i++) {
-                startingValue += powf(data[i * stride] - mean,2.0);
+            for(int i = 0; i < length; i++) {
+                startingValue += powf(data[offset + (i  * stride)] - mean,2.0);
             }
             startingValue = sqrt((startingValue - (pow(bias,2.0) / length)) / (double) (length - 1.0));
         }
         else if(operation.compare("min") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue = min(data[i * stride],startingValue);
+            for(int i = 0; i < length; i++) {
+                startingValue = min(data[offset + (i  * stride)],startingValue);
             }
         }
         else if(operation.compare("norm1") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += abs(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                startingValue += abs(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("norm2") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += pow(data[i * stride],2);
+            for(int i = 0; i < length; i++) {
+                startingValue += pow(data[offset + (i  * stride)],2);
             }
         }
         else if(operation.compare("normmax") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue = max(abs(startingValue),abs(data[i * stride]));
+            for(int i = 0; i < length; i++) {
+                startingValue = max(abs(startingValue),abs(data[offset + (i  * stride)]));
             }
         }
 
@@ -549,69 +683,69 @@ public:
                       float *otherParams) {
         float startingValue = otherParams[0];
         if(operation.compare("sum") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += data[i * stride];
+            for(int i = 0; i < length; i++) {
+                startingValue += data[offset + (i  * stride)];
             }
 
         }
         else if(operation.compare("prod") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue *= data[i * stride];
+            for(int i = 0; i < length; i++) {
+                startingValue *= data[offset + (i  * stride)];
             }
 
         }
         else if(operation.compare("mean") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += data[i * stride];
+            for(int i = 0; i < length; i++) {
+                startingValue += data[offset + (i  * stride)];
             }
 
             startingValue /= (float) length;
         }
         else if(operation.compare("max") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue = fmaxf(data[i * stride],startingValue);
+            for(int i = 0; i < length; i++) {
+                startingValue = fmaxf(data[offset + (i  * stride)],startingValue);
             }
         }
         else if(operation.compare("bias") == 0) {
             float mean = otherParams[0];
-            for(int i = offset; i < length; i++) {
-                startingValue += data[i * stride] - mean;
+            for(int i = 0; i < length; i++) {
+                startingValue += data[offset + (i  * stride)] - mean;
             }
         }
         else if(operation.compare("var") == 0) {
             float bias = otherParams[1];
             float mean = otherParams[2];
-            for(int i = offset; i < length; i++) {
-                startingValue += powf(data[i * stride] - mean,2.0);
+            for(int i = 0; i < length; i++) {
+                startingValue += powf(data[offset + (i  * stride)] - mean,2.0);
             }
             startingValue = (startingValue - (powf(bias,2.0) / length)) / (float) (length - 1.0);
         }
         else if(operation.compare("std") == 0) {
             float bias = otherParams[1];
             float mean = otherParams[2];
-            for(int i = offset; i < length; i++) {
-                startingValue += powf(data[i * stride] - mean,2.0);
+            for(int i = 0; i < length; i++) {
+                startingValue += powf(data[offset + (i  * stride)] - mean,2.0);
             }
             startingValue = sqrtf((startingValue - (powf(bias,2.0) / length)) / (float) (length - 1.0));
         }
         else if(operation.compare("min") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue = fminf(data[i * stride],startingValue);
+            for(int i = 0; i < length; i++) {
+                startingValue = fminf(data[offset + (i  * stride)],startingValue);
             }
         }
         else if(operation.compare("norm1") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += fabsf(data[i * stride]);
+            for(int i = 0; i < length; i++) {
+                startingValue += fabsf(data[offset + (i  * stride)]);
             }
         }
         else if(operation.compare("norm2") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue += powf(data[i * stride],2);
+            for(int i = 0; i < length; i++) {
+                startingValue += powf(data[offset + (i  * stride)],2);
             }
         }
         else if(operation.compare("normmax") == 0) {
-            for(int i = offset; i < length; i++) {
-                startingValue = fmaxf(abs(startingValue),abs(data[i * stride]));
+            for(int i = 0; i < length; i++) {
+                startingValue = fmaxf(abs(startingValue),abs(data[offset + (i  * stride)]));
             }
         }
 

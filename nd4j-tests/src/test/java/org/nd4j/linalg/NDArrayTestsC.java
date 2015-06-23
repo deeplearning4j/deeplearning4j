@@ -1278,10 +1278,10 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     public void testMeans() {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray mean1 = a.mean(1);
-        assertEquals(Nd4j.create(new double[]{1.5,3.5}), mean1);
-        assertEquals(Nd4j.create(new double[]{2,3}), a.mean(0));
-        assertEquals(2.5, Nd4j.linspace(1, 4, 4).mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
-        assertEquals(2.5, a.mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),Nd4j.create(new double[]{1.5,3.5}), mean1);
+        assertEquals(getFailureMessage(),Nd4j.create(new double[]{2,3}), a.mean(0));
+        assertEquals(getFailureMessage(),2.5, Nd4j.linspace(1, 4, 4).mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),2.5, a.mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
 
     }
 
@@ -1289,9 +1289,9 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     @Test
     public void testSums() {
         INDArray a = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        assertEquals(Nd4j.create(new float[]{4, 6}), a.sum(0));
-        assertEquals(Nd4j.create(new float[]{3, 7}), a.sum(1));
-        assertEquals(10, a.sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),Nd4j.create(new float[]{4, 6}), a.sum(0));
+        assertEquals(getFailureMessage(),Nd4j.create(new float[]{3, 7}), a.sum(1));
+        assertEquals(getFailureMessage(),10, a.sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
 
 
     }
