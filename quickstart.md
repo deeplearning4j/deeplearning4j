@@ -25,11 +25,11 @@ After those installs, if you can follow these five steps, you'll be up and runni
 2. Import the examples as a project into IntelliJ with Maven
 3. Pick a Blas [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (Start with *nd4j-jblas*) and make sure you have the latest version of ND4J in the properties (we're on 0.0.3.5.5.x) 
 
-   <dependency>
-     <groupId>org.nd4j</groupId>
-     <artifactId>nd4j-jblas</artifactId>
-     <version>${nd4j.version}</version>
-   </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-jblas</artifactId>
+        <version>${nd4j.version}</version>
+      </dependency>
 
 4. Select example from the lefthand file tree (Start with *DBNIrisExample.java*)
 5. Hit run! (It's the green button)
