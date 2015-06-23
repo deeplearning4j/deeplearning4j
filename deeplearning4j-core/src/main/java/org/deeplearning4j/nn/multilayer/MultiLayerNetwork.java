@@ -338,7 +338,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
         int numHiddenLayersSizesUsed = 0;
         if (this.layers == null || this.layers[0] == null) {
-            //
             if(this.layers == null)
                 this.layers = new Layer[getnLayers()];
 
@@ -359,8 +358,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                         conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                     }
                 }
-
-                else if (i < getLayers().length - 1) {
+                else if (i < getLayers().length) {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1, layerInput);
                     /**
@@ -380,16 +378,17 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      * for every layer.
                      */
                     if(type == Layer.Type.FEED_FORWARD) {
-                        numHiddenLayersSizesUsed++;
-                        conf.setNIn(layerInput.columns());
-                        conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
-                    } else if(i == layers.length-1){
-                        conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        if(i!=(layers.length-1)) {
+                            numHiddenLayersSizesUsed++;
+                            conf.setNIn(layerInput.columns());
+                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        } else {
+                            conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        }
                     }
                 }
                 layers[i] = LayerFactories.getFactory(conf).create(conf, listeners);
             }
-
             initCalled = true;
             initMask();
         }
