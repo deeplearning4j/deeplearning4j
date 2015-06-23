@@ -8,7 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class SumOpRunner implements OpRunner {
-    INDArray arr = Nd4j.create(10000,10000);
+    INDArray arr = Nd4j.create(100000);
 
 
     @Override
