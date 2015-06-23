@@ -19,22 +19,20 @@ The variable k is the number of times you run [contrastive divergence](../glossa
 
 ### Initiating a Deep-Belief Network
 
-Here's how you set up a single-thread deep-belief network: 
+Traverse the input data with the IrisDataSetInterator.
 
-To create it, you instantiate a more general class, the multi-layer neural net, and tell it how many RBMs to stack upon each other (by passing three integers into hiddenLayerSizes, you effectively tell the configuration to create three hidden layers. Higher up, the net has been instructed to create RBM layers):
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=57:62"></script>
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNFullMnistExample.java?slice=41:62"></script>
+Configure the DBN as a MultilayerNeuralNet whose layers are RBMs:
 
-That creates a deep-belief network with the specified hidden-layer sizes (three hidden layers); the number of inputs being 784; outputs 10; momentum and learning rate; the specified random number generator; sets root-means-squared cross entropy as the loss function; and implements no regularization. The hidden layer sizes are 600, 500 and 400 nodes, as you move forward through the net. 
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=42:98"></script>
 
-Next, you iterate through the dataset with the MNISTDataSetInterator, and then evaluate the performance of your classifier.
+Then evaluate the performance of the net:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNFullMnistExample.java?slice=70:77"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=107:122"></script>
 
-This will print out the f1 score of the prediction.
+Note that the *eval* class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data. This is useful for tracking how well your network trains over time. 
 
-Note that the *eval* class combines [confusion matrices](../glossary.html#confusionmatrix) and f1 scores to allow for easy display and evaluation of data by allowing input of outcome matrices. This is useful for tracking how well your network trains over time. 
-
-The f1 score will be a percentage. It's basically the probability that your guesses are correct. Eighty-six percent is industry standard; a deep-learning network that has trained well on a large number of examples should be capable of scores in the high 90s. If you run into trouble, try modifying the hidden-layer sizes, and tweaking other parameters such as learning rate and momentum to get the f1 score up.
+F1 scores are expressed as percentages. They are basically the probability that your net's guesses are correct. To improve the performance of nets, you can tune them by modifying the number and size of the hidden layers, and tweaking other parameters such as learning rate, momentum, weight distribution and various types of regularization.
 
 Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly. To read about another type of deep net, the deep autoencoder, [click here](../deepautoencoder.html). 
