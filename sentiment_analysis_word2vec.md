@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# Movie Review Sentiment Analysis With Word2Vec, DBNs and RNTNs
+# Movie Review Sentiment Analysis With Word2Vec and DBNs
 
 In this post, we're going to walk through a sentiment analysis of movie reviews using the Rotten Tomatoes dataset. 
 
@@ -126,7 +126,6 @@ On to the next step.
 We want to build tools to break the sentences in the reviews into sub-windows or contexts, grouping them by their SentenceID.
 
 * For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment. We'll be using a "sequence moving window" approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, which will be explained below.
-* For recursive neural tensor networks (RNTNs), another type of neural net, we'll demonstrate how to label trees as sub-contexts. Each sub-node of the tree matches a span, or sub-window, that also has a particular label. [Created by Richard Socher et al](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf), a recursive neural tensor network is a tree-parsing algorithm in which neural nets are attached to the individual nodes on a binary tree. The leaves of the tree are word vectors. 
 
 We focus on sub-contexts for sentiment analysis because context and subcontexts, not isolated words, are what capture sentiment signals best. A context including "not" or "no" will nullify a positive word, requiring a negative label for the whole word group. We need to be able to capture this sentiment in our feature space, otherwise it is nearly useless. 
 
