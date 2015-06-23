@@ -103,6 +103,8 @@ which will import the source and set everything up.
 * Deeplearning4j includes an **autocomplete function**. If you are unsure which commands are available, press any letter and a drop-down list like this will appear:
 ![Alt text](../img/dl4j_autocomplete.png)
 * Here's the Javadoc for all [Deeplearning4j's classes and methods](http://deeplearning4j.org/doc/).
+* As the code base grows, installing from source requires more memory. If you encounter a Permgen error during the DL4J build, you may need to add more heap space. To do that, you'll need to find and alter your hidden .bash_profile file, which adds environmental variables to bash. To see those variables, enter *env* in the command line. To add more heap space, enter this command in your console:
+      echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m" > ~/.bash_profile
 * Some problems encountered using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's excellent [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also highly instructive. While we've partially documented DL4J, many parts of the code are essentially a raw, domain-specific language for deep learning.
 
 ### <a name="results">Reproducible Results</a>
