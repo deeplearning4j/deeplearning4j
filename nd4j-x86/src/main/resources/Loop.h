@@ -639,6 +639,8 @@ public:
             for(int i = 0; i < length; i++) {
                 startingValue += pow(data[offset + (i  * stride)],2);
             }
+
+            startingValue = sqrt(startingValue);
         }
         else if(operation.compare("normmax") == 0) {
             for(int i = 0; i < length; i++) {
@@ -742,6 +744,9 @@ public:
             for(int i = 0; i < length; i++) {
                 startingValue += powf(data[offset + (i  * stride)],2);
             }
+            
+            startingValue = sqrtf(startingValue);
+
         }
         else if(operation.compare("normmax") == 0) {
             for(int i = 0; i < length; i++) {
