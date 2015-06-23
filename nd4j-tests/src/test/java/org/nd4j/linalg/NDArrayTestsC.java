@@ -91,9 +91,9 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         n.checkDimensions(n.divi(Nd4j.scalar(1.0d)));
 
         n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
-        assertEquals(27, n.sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),27, n.sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
         INDArray a = n.slice(2);
-        assertEquals(true, Arrays.equals(new int[]{3, 3}, a.shape()));
+        assertEquals(getFailureMessage(),true, Arrays.equals(new int[]{3, 3}, a.shape()));
 
     }
 
@@ -151,7 +151,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
         INDArray sub = nd.subArray(new int[]{0, 1}, new int[]{2, 2}, new int[]{3, 1});
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
-        assertEquals(Nd4j.create(new double[][]{
+        assertEquals(getFailureMessage(),Nd4j.create(new double[][]{
                 {4,7},{5,8}
         }),sub);
 
@@ -194,7 +194,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray row1 = oneThroughFour.getRow(1);
         oneThroughFour.subiRowVector(row1);
         INDArray result = Nd4j.create(new float[]{-2, -2, 0, 0}, new int[]{2, 2});
-        assertEquals(result, oneThroughFour);
+        assertEquals(getFailureMessage(),result, oneThroughFour);
 
     }
 
@@ -253,7 +253,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray row1 = oneThroughFour.getRow(1);
         row1.addi(1);
         INDArray result = Nd4j.create(new float[]{1, 2, 4, 5}, new int[]{2, 2});
-        assertEquals(result, oneThroughFour);
+        assertEquals(getFailureMessage(),result, oneThroughFour);
 
 
     }

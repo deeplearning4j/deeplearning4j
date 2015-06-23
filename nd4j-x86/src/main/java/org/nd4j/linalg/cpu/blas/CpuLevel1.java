@@ -117,24 +117,24 @@ public class CpuLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
-        return BLAS.getInstance().isamax(N, getFloatData(X), getBlasOffset(X), incX);
+        return BLAS.getInstance().isamax(N, getFloatData(X), getBlasOffset(X), incX) - 1;
     }
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
-        return BLAS.getInstance().idamax(N, getDoubleData(X), getBlasOffset(X), incX);
+        return BLAS.getInstance().idamax(N, getDoubleData(X), getBlasOffset(X), incX) - 1;
     }
 
     @Override
     protected int icamax(int N, IComplexNDArray X, int incX) {
         X = (IComplexNDArray) Shape.toOffsetZero(X);
-        return NativeBlas.icamax(N,getFloatData(X),getBlasOffset(X),incX);
+        return NativeBlas.icamax(N,getFloatData(X),getBlasOffset(X),incX) - 1;
     }
 
     @Override
     protected int izamax(int N, IComplexNDArray X, int incX) {
         X = (IComplexNDArray) Shape.toOffsetZero(X);
-        return NativeBlas.izamax(N,getDoubleData(X),getBlasOffset(X),incX);
+        return NativeBlas.izamax(N,getDoubleData(X),getBlasOffset(X),incX) - 1;
     }
 
     @Override

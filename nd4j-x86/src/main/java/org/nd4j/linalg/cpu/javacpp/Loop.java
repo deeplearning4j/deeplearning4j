@@ -22,7 +22,8 @@ public class Loop extends Pointer {
     public native void execFloatTransform(
             float[] data
             , int length
-            , int offset
+            , int offset,
+            int resultOffset
             , int stride
             ,int resultStride
             , String  operation,
@@ -34,7 +35,8 @@ public class Loop extends Pointer {
             float[] pairData
             , int length
             , int offset,
-            int yOffset
+            int yOffset,
+            int resultOffset
             , int stride,
             int yStride
             ,int resultStride
@@ -46,7 +48,8 @@ public class Loop extends Pointer {
             double[] data
             ,double[] result
             ,int length
-            ,int offset
+            ,int offset,
+            int resultOffset
             ,int stride
             ,int resultStride
             ,String  operation
@@ -56,7 +59,8 @@ public class Loop extends Pointer {
             float[] data
             , float[] result
             ,int length
-            ,int offset
+            ,int offset,
+            int resultOffset
             ,int stride
             ,int resultStride
             ,String  operation
@@ -66,6 +70,7 @@ public class Loop extends Pointer {
             double[] data
             , int length
             , int offset,
+            int resultOffset,
             int stride
             ,int resultStride
             , String  operation,
@@ -77,7 +82,8 @@ public class Loop extends Pointer {
             double[] pairData
             , int length
             , int offset,
-            int yOffset
+            int yOffset,
+            int resultOffset
             , int stride,
             int yStride
             ,int resultStride
