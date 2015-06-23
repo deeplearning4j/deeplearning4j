@@ -23,7 +23,8 @@ After those installs, if you can follow these five steps, you'll be up and runni
 
 1. *git clone* [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on version 0.0.3.3.x
 2. Import the examples as a project into IntelliJ with Maven
-3. Pick a Blas [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (Start with *nd4j-jblas*) and make sure you have the latest version of ND4J in the properties (we're on 0.0.3.5.5.x) 
+3. Pick a Blas [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (Start with *nd4j-jblas*) and make sure you have the latest version of ND4J in the properties (we're on 0.0.3.5.5.x):
+
 
       <dependency>
         <groupId>org.nd4j</groupId>
@@ -36,7 +37,7 @@ After those installs, if you can follow these five steps, you'll be up and runni
 
 You should get an F1 score about about 0.60, which is good for a small dataset like Iris.
 
-Once you do that, try the other examples and see what they look like. 
+Once you do that, try the other examples. 
 
 ## Dependencies and Backends
 
