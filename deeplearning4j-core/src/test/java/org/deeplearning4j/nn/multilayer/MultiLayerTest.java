@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.multilayer;
 import java.util.Arrays;
 
 import com.google.common.collect.Lists;
+
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -38,6 +39,7 @@ import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -48,11 +50,11 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by agibsonccc on 12/27/14.
@@ -203,6 +205,74 @@ public class MultiLayerTest {
         log.info("Score " + eval.stats());
 
     }
+    
+    @Test
+    public void testMultiLayerNinNout(){
+    	//[Nin,Nout]: [4,13], [13,3]
+    	int[] hiddenLayerSizes1 = {13};
+    	int[] expNin1 =  {4,13};
+    	int[] expNout1 = {13,3};
+    	MultiLayerConfiguration conf1 = getNinNoutIrisConfig(hiddenLayerSizes1);
+    	MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+    	net1.init();
+    	checkNinNoutForEachLayer( expNin1, expNout1, conf1, net1 );
+    	
+    	int[] hiddenLayerSizes2 = {5,7};
+    	int[] expNin2 =  {4,5,7};
+    	int[] expNout2 = {5,7,3};
+    	MultiLayerConfiguration conf2 = getNinNoutIrisConfig(hiddenLayerSizes2);
+    	MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+    	net2.init();
+    	checkNinNoutForEachLayer( expNin2, expNout2, conf2, net2 );
+    	
+    	int[] hiddenLayerSizes3 = {5,7,9};
+    	int[] expNin3 =  {4,5,7,9};
+    	int[] expNout3 = {5,7,9,3};
+    	MultiLayerConfiguration conf3 = getNinNoutIrisConfig(hiddenLayerSizes3);
+    	MultiLayerNetwork net3 = new MultiLayerNetwork(conf3);
+    	net3.init();
+    	checkNinNoutForEachLayer( expNin3, expNout3, conf3, net3 );
+    	
+    	int[] hiddenLayerSizes4 = {5,7,9,11,13,15,17};
+    	int[] expNin4 =  {4,5,7,9,11,13,15,17};
+    	int[] expNout4 = {5,7,9,11,13,15,17,3};
+    	MultiLayerConfiguration conf4 = getNinNoutIrisConfig(hiddenLayerSizes4);
+    	MultiLayerNetwork net4 = new MultiLayerNetwork(conf4);
+    	net4.init();
+    	checkNinNoutForEachLayer( expNin4, expNout4, conf4, net4 );
+    }
+    
+    private static MultiLayerConfiguration getNinNoutIrisConfig( int[] hiddenLayerSizes ){
+    	MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
+		.nIn(4).nOut(3)
+		.layer(new RBM())
+		.list(hiddenLayerSizes.length+1).hiddenLayerSizes(hiddenLayerSizes)
+		.override(hiddenLayerSizes.length, new ClassifierOverride())
+		.build();
+		return c;
+    }
+    
+    private static void checkNinNoutForEachLayer( int[] expNin, int[] expNout, MultiLayerConfiguration conf,
+    		MultiLayerNetwork network ){
+    	
+    	//Check configuration
+    	for( int i=0; i<expNin.length; i++ ){
+    		NeuralNetConfiguration layerConf = conf.getConf(i);
+    		assertTrue(layerConf.getNIn() == expNin[i]);
+    		assertTrue(layerConf.getNOut() == expNout[i]);
+    	}
+    	
+    	//Check Layer
+    	for( int i=0; i<expNin.length; i++ ){
+    		Layer layer = network.getLayers()[i];
+    		assertTrue(layer.conf().getNIn() == expNin[i]);
+    		assertTrue(layer.conf().getNOut() == expNout[i]);
+    		int[] weightShape = layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape();
+    		assertTrue(weightShape[0]==expNin[i]);
+    		assertTrue(weightShape[1]==expNout[i]);
+    	}
+    }
+    
 
 
     @Test
