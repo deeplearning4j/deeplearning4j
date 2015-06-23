@@ -337,6 +337,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
         int numHiddenLayersSizesUsed = 0;
+
         if (this.layers == null || this.layers[0] == null) {
             if(this.layers == null)
                 this.layers = new Layer[getnLayers()];
