@@ -149,6 +149,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.length = length;
         this.elementSize = elementSize;
         this.dataBuffer = Unpooled.buffer(elementSize * length, Integer.MAX_VALUE).order(ByteOrder.nativeOrder());
+        for(int i = 0; i < length; i++) {
+            if(dataType() == Type.DOUBLE) {
+                put(i,0.0);
+            }
+            else {
+                put(i,(float) 0.0);
+            }
+        }
     }
 
 
@@ -459,9 +467,27 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         }
         else {
-            byte[] ret  = new byte[dataBuffer.nioBuffer().remaining()];
-            dataBuffer.nioBuffer().get(ret, 0, ret.length);
-            return ret;
+           ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bos);
+            if(dataType() == Type.DOUBLE) {
+                for(int i = 0; i < length(); i++) {
+                    try {
+                        dos.writeDouble(getDouble(i));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            else {
+                for(int i = 0; i < length(); i++) {
+                    try {
+                        dos.writeFloat(getFloat(i));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return bos.toByteArray();
         }
     }
 

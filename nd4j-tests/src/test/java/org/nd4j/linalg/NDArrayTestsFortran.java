@@ -236,7 +236,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, false);
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, false);
         assertEquals(sorted[1], sorted2);
-        INDArray shouldIndex = Nd4j.create(new float[]{1, 0, 1, 0}, new int[]{2, 2});
+        INDArray shouldIndex = Nd4j.create(new float[]{1, 1, 0, 0}, new int[]{2, 2});
         assertEquals(getFailureMessage(),shouldIndex, sorted[0]);
 
 
@@ -347,12 +347,12 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
-        assertEquals(1, sim, 1e-1);
+        assertEquals(getFailureMessage(),1, sim, 1e-1);
 
         INDArray vec3 = Nd4j.create(new float[]{0.2f, 0.3f, 0.4f, 0.5f});
         INDArray vec4 = Nd4j.create(new float[]{0.6f, 0.7f, 0.8f, 0.9f});
         sim = Transforms.cosineSim(vec3, vec4);
-        assertEquals(0.98, sim, 1e-1);
+        assertEquals(getFailureMessage(),0.98, sim, 1e-1);
 
     }
 

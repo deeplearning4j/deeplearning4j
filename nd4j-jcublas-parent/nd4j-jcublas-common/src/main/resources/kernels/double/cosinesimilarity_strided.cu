@@ -18,7 +18,7 @@ __device__ double op(double d1,double d2,double *extraParams) {
 
 //post process result (for things like means etc)
 __device__ double postProcess(double reduction,int n,int xOffset,double *dx,int incx,double *extraParams,double *result) {
-            return reduction / extraParams[0] / extraParams[1];
+            return reduction / extraParams[1] / extraParams[2];
 }
 
 extern "C"
