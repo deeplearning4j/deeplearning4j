@@ -69,7 +69,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
-        assertEquals(getFailureMessage(),1, sim, 1e-1);
+        assertEquals(getFailureMessage(), 1, sim, 1e-1);
 
     }
 
@@ -111,9 +111,9 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testNormMax() {
-        INDArray arr = Nd4j.create(new float[]{1, 2, 3,4});
+        INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4});
         double normMax = Nd4j.getExecutioner().execAndReturn(new NormMax(arr)).currentResult().doubleValue();
-        assertEquals(getFailureMessage(),4, normMax, 1e-1);
+        assertEquals(getFailureMessage(), 4, normMax, 1e-1);
 
     }
 
@@ -210,6 +210,14 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         opExecutioner.exec(variance);
         assertEquals(getFailureMessage(),2.5, variance.currentResult().doubleValue(), 1e-1);
 
+    }
+
+    @Test
+    public void testBias() {
+        INDArray bias = Nd4j.linspace(1,4,4);
+        Bias biaOp = new Bias(bias);
+        Nd4j.getExecutioner().exec(biaOp);
+        assertEquals(0.0,biaOp.currentResult().doubleValue());
     }
 
     @Test

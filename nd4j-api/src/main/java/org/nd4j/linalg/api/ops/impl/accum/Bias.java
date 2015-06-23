@@ -61,8 +61,6 @@ public class Bias extends BaseAccumulation {
     @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-
-
         if (y() != null)
             return new Bias(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else

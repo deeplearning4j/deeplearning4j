@@ -604,9 +604,11 @@ public:
             }
         }
         else if(operation.compare("bias") == 0) {
-            double mean = otherParams[0];
+            double mean = otherParams[1];
             for(int i = 0; i < length; i++) {
-                startingValue += data[offset + (i  * stride)] - mean;
+                double val = data[offset + (i  * stride)];
+                double subMean = val - mean;
+                startingValue += subMean;
             }
         }
         else if(operation.compare("var") == 0) {
@@ -709,9 +711,11 @@ public:
             }
         }
         else if(operation.compare("bias") == 0) {
-            float mean = otherParams[0];
+            float mean = otherParams[1];
             for(int i = 0; i < length; i++) {
-                startingValue += data[offset + (i  * stride)] - mean;
+                float val = data[offset + (i  * stride)];
+                float subMean = val - mean;
+                startingValue += subMean;
             }
         }
         else if(operation.compare("var") == 0) {
@@ -744,7 +748,7 @@ public:
             for(int i = 0; i < length; i++) {
                 startingValue += powf(data[offset + (i  * stride)],2);
             }
-            
+
             startingValue = sqrtf(startingValue);
 
         }
