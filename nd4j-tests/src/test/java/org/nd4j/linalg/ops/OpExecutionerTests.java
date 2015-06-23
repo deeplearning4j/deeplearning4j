@@ -208,7 +208,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
         Variance variance = new Variance(x.dup(), true);
         opExecutioner.exec(variance);
-        assertEquals(2.5, variance.currentResult().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(),2.5, variance.currentResult().doubleValue(), 1e-1);
 
     }
 
@@ -226,11 +226,11 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
         Mean mean = new Mean(x);
         opExecutioner.exec(mean);
-        assertEquals(3.0, mean.currentResult().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(),3.0, mean.currentResult().doubleValue(), 1e-1);
 
         Variance variance = new Variance(x.dup(), true);
         opExecutioner.exec(variance);
-        assertEquals(2.5, variance.currentResult().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(),2.5, variance.currentResult().doubleValue(), 1e-1);
 
     }
 

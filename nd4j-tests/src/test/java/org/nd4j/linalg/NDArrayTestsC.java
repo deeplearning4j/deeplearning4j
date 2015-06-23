@@ -1033,7 +1033,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(assertion, columnVar);
+        assertEquals(getFailureMessage(),assertion, columnVar);
 
     }
 
@@ -1043,7 +1043,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
         INDArray columnVar = twoByThree.sum(0);
         INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(assertion, columnVar);
+        assertEquals(getFailureMessage(),assertion, columnVar);
 
     }
 
@@ -1052,7 +1052,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray rowMean = twoByThree.mean(1);
         INDArray assertion = Nd4j.create(new double[]{1.5,3.5});
-        assertEquals(assertion, rowMean);
+        assertEquals(getFailureMessage(),assertion, rowMean);
 
 
     }
@@ -1062,7 +1062,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
         INDArray rowStd = twoByThree.std(1);
         INDArray assertion = Nd4j.create(new float[]{0.7071067811865476f, 0.7071067811865476f});
-        assertEquals(assertion, rowStd);
+        assertEquals(getFailureMessage(),assertion, rowStd);
 
     }
 
