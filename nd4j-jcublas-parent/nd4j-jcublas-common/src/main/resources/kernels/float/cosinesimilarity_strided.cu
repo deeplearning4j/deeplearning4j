@@ -18,7 +18,7 @@ __device__ float op(float d1,float d2,float *extraParams) {
 
 //post process result (for things like means etc)
 __device__ float postProcess(float reduction,int n,int xOffset,float *dx,int incx,float *extraParams,float *result) {
-            return reduction / extraParams[0] / extraParams[1];
+            return reduction / extraParams[1] / extraParams[2];
 }
 
 extern "C"

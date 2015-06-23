@@ -236,8 +236,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, false);
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, false);
         assertEquals(sorted[1], sorted2);
-        INDArray shouldIndex = Nd4j.create(new float[]{1, 0, 1, 0}, new int[]{2, 2});
-        assertEquals(shouldIndex, sorted[0]);
+        INDArray shouldIndex = Nd4j.create(new float[]{1, 1, 0, 0}, new int[]{2, 2});
+        assertEquals(getFailureMessage(),shouldIndex, sorted[0]);
 
 
     }
@@ -251,7 +251,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, true);
         assertEquals(sorted[1], sorted2);
         INDArray shouldIndex = Nd4j.create(new float[]{0, 0, 1, 1}, new int[]{2, 2});
-        assertEquals(shouldIndex, sorted[0]);
+        assertEquals(getFailureMessage(),shouldIndex, sorted[0]);
 
 
     }
@@ -312,13 +312,13 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testDivide() {
         INDArray two = Nd4j.create(new float[]{2, 2, 2, 2});
         INDArray div = two.div(two);
-        assertEquals(Nd4j.ones(4), div);
+        assertEquals(getFailureMessage(),Nd4j.ones(4), div);
 
         INDArray half = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f, 0.5f}, new int[]{2, 2});
         INDArray divi = Nd4j.create(new float[]{0.3f, 0.6f, 0.9f, 0.1f}, new int[]{2, 2});
         INDArray assertion = Nd4j.create(new float[]{1.6666666f, 0.8333333f, 0.5555556f, 5}, new int[]{2, 2});
         INDArray result = half.div(divi);
-        assertEquals(assertion, result);
+        assertEquals(getFailureMessage(),assertion, result);
     }
 
 
@@ -327,7 +327,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{0.73105858f, 0.88079708f, 0.95257413f, 0.98201379f});
         INDArray sigmoid = Transforms.sigmoid(n, false);
-        assertEquals(assertion, sigmoid);
+        assertEquals(getFailureMessage(),assertion, sigmoid);
 
     }
 
@@ -336,7 +336,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         INDArray assertion = Nd4j.create(new float[]{-1, -2, -3, -4});
         INDArray neg = Transforms.neg(n);
-        assertEquals(assertion, neg);
+        assertEquals(getFailureMessage(),assertion, neg);
 
     }
 
@@ -347,12 +347,12 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray vec1 = Nd4j.create(new double[]{1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new double[]{1, 2, 3, 4});
         double sim = Transforms.cosineSim(vec1, vec2);
-        assertEquals(1, sim, 1e-1);
+        assertEquals(getFailureMessage(),1, sim, 1e-1);
 
         INDArray vec3 = Nd4j.create(new float[]{0.2f, 0.3f, 0.4f, 0.5f});
         INDArray vec4 = Nd4j.create(new float[]{0.6f, 0.7f, 0.8f, 0.9f});
         sim = Transforms.cosineSim(vec3, vec4);
-        assertEquals(0.98, sim, 1e-1);
+        assertEquals(getFailureMessage(),0.98, sim, 1e-1);
 
     }
 
@@ -368,7 +368,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         float assertion2 = 5.0f;
         INDArray answer2 = Nd4j.create(new double[]{10, 20});
         INDArray scal2 = Nd4j.getBlasWrapper().scal(assertion2, row1);
-        assertEquals(answer2, scal2);
+        assertEquals(getFailureMessage(),answer2, scal2);
 
     }
 
@@ -804,7 +804,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray five = Nd4j.ones(5);
         five.addi(five.dup());
         INDArray twos = Nd4j.valueArrayOf(5, 2);
-        assertEquals(twos, five);
+        assertEquals(getFailureMessage(),twos, five);
 
     }
 
@@ -815,8 +815,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertTrue(ret.sum(0).isRowVector());
         assertTrue(ret.sum(1).isScalar());
         INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2,1);
-        assertTrue(retColumn.sum(1).isRowVector());
-        assertTrue(retColumn.sum(0).isScalar());
+        assertTrue(getFailureMessage(),retColumn.sum(1).isRowVector());
+        assertTrue(getFailureMessage(),retColumn.sum(0).isScalar());
 
         INDArray m2 = Nd4j.rand(1, 2);
         Nd4j.sum(m2, 0);

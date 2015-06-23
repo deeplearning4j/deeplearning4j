@@ -98,7 +98,7 @@ public class SimpleJCublas {
     /**
      * Initialize JCublas2. Only called once
      */
-    public static void init() throws Exception {
+    public static synchronized void init() throws Exception {
         if (init)
             return;
 

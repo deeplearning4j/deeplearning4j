@@ -52,6 +52,8 @@ public class LossFunctions {
         double reg = 0.5 * l2;
         if (!Arrays.equals(labels.shape(), z.shape()))
             throw new IllegalArgumentException("Output and labels must be same length");
+        boolean oldEnforce = Nd4j.ENFORCE_NUMERICAL_STABILITY;
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         switch (lossFunction) {
             case CUSTOM: throw new IllegalStateException("Unable to score custom operation. Please define an alternative mechanism");
             case RECONSTRUCTION_CROSSENTROPY:
@@ -61,13 +63,14 @@ public class LossFunctions {
                 ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
-                INDArray columnSums = labels.mul(log(z.add(Nd4j.EPS_THRESHOLD)));
+                INDArray sums = log(z.add(1e-6));
+                INDArray columnSums = labels.mul(log(sums));
                 ret = columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case XENT:
                 INDArray xEntLogZ = log(z.add(Nd4j.EPS_THRESHOLD));
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ = log(z.add(Nd4j.EPS_THRESHOLD)).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ = log(z).rsubi(1);
                 ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case RMSE_XENT:
@@ -90,7 +93,7 @@ public class LossFunctions {
             case NEGATIVELOGLIKELIHOOD:
                 ret = -Nd4j.mean(Nd4j.sum(
                         labels.mul(log(z.add(Nd4j.EPS_THRESHOLD)))
-                                .addi(labels.rsub(1).muli(log(z.rsub(1).addi(Nd4j.EPS_THRESHOLD))))
+                                .addi(labels.rsub(1).muli(log(z.rsub(1))))
                         , 1)).getDouble(0);
                 break;
 
@@ -101,6 +104,7 @@ public class LossFunctions {
             ret += reg;
 
         ret /= (double) labels.rows();
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = oldEnforce;
         return ret;
 
     }
@@ -113,7 +117,7 @@ public class LossFunctions {
      * MCXENT: Multiclass Cross Entropy
      * RMSE_XENT: RMSE Cross Entropy
      * SQUARED_LOSS: Squared Loss
-     * RECONSUTRCTION_CROSSENTROPY: Reconstruction Cross Entropy
+     * RECONSTRUCTION_CROSSENTROPY: Reconstruction Cross Entropy
      * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood
      * CUSTOM: Define your own loss function
      */

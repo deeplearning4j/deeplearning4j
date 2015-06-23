@@ -239,6 +239,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(Accumulation op, int dimension) {
         if(dimension == Integer.MAX_VALUE) {
+            op.setX(op.x().linearView());
+            if(op.y() != null)
+                op.setY(op.y().linearView());
+            op.setZ(op.z().linearView());
+
             if(op.x() instanceof IComplexNDArray)
                 return Nd4j.scalar(execAndReturn(op).currentResultComplex());
             else
