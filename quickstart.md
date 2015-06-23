@@ -26,6 +26,8 @@ After those installs, if you can follow these five steps, you'll be up and runni
 3. Pick a Blas [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (Start with *nd4j-jblas*) and make sure you have the latest version of ND4J in the properties (we're on 0.0.3.5.5.x):
 
 
+
+
       <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-jblas</artifactId>
