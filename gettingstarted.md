@@ -4,7 +4,7 @@ layout: default
 
 # Getting Started
 
-To make neural nets run with Deeplearning4j, there are configuration prerequisites documented on the [ND4J.org "Getting Started" page](http://nd4j.org/getstarted.html):
+The prerequisites installs for Deeplearning4j are documented on the ["Getting Started" page](http://nd4j.org/getstarted.html) of ND4J, the linear algebra engine powering DL4J's neural nets:
 
 1. [Java](http://nd4j.org/getstarted.html#java) 
 2. [Integrated Development Environment](http://nd4j.org/getstarted.html#ide-for-java) 
@@ -12,7 +12,7 @@ To make neural nets run with Deeplearning4j, there are configuration prerequisit
 4. [Canova](http://nd4j.org/getstarted.html#canova)
 5. [GitHub](http://nd4j.org/getstarted.html#github)
 
-After that, please read the following:
+After those installs, please read the following:
 
 5. OS-specific instructions
     * <a href="#linux">Linux</a>
@@ -78,11 +78,7 @@ For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deep
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-If you want to run Deeplearning4j examples after installing from trunk, you should *git clone* ND4J, Canova and Deeplearning4j, respectively, and then install all from source, in that order, using Maven with this command:
-
-      mvn clean install -DskipTests
-
-If you receive a Javadoc error, run this:
+If you want to run Deeplearning4j examples after installing from trunk, you should *git clone* ND4J, Canova and Deeplearning4j, in that order, and then install all from source using Maven with this command:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
@@ -111,7 +107,7 @@ which will import the source and set everything up.
 
 Neural net weights are initialized randomly, which means the model begins learning from a different position in the weight space each time, which may lead it to different local optima. Users seeking reproducible results will need to use the same random weights, which they must initialize before the model is created. They can reinitialize with the same random weight with this line:
 
-      Nd4j.getRandom().setSeed (123);
+      Nd4j.getRandom().setSeed(123);
 
 ### <a name="next">Next Steps: MNIST Example & Building NNs</a>
 
@@ -119,4 +115,4 @@ In order to get started building neural nets, checkout the [Neural Nets Overview
 
 Take a look at the [MNIST tutorial](../mnist-tutorial.html) to get running quickly and checkout [custom datasets](../customdatasets.html) for other datasets to explore.
 
-Follow [ND4J Getting Started](http://nd4j.org/getstarted.html) instructions to start a new project and include necessary [POM dependencies](http://nd4j.org/dependencies.html). 
+Follow the [ND4J Getting Started](http://nd4j.org/getstarted.html) instructions to start a new project and include necessary [POM dependencies](http://nd4j.org/dependencies.html). 
