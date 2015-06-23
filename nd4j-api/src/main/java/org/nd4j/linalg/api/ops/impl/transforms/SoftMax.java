@@ -148,8 +148,14 @@ public class SoftMax extends BaseTransformOp {
     }
 
     @Override
+    public void exec() {
+        this.z = y;
+    }
+
+    @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
+        passThrough = true;
         if (x instanceof IComplexNDArray) {
             this.maxComplex = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResultComplex();
             IComplexNDArray complexX = (IComplexNDArray) x;

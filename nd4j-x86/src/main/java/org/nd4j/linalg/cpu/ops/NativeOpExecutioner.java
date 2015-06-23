@@ -22,6 +22,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
+        if(op.isPassThrough())
+            return super.exec(op);
+
         if(op instanceof ScalarOp) {
             ScalarOp s = (ScalarOp) op;
             exec(s);
