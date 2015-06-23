@@ -555,10 +555,12 @@ public:
             double constantNormalizedByNorm2X = otherParams[1];
             double constantNormalizedByNorm2Y = otherParams[2];
             for(int i = 0; i < length; i++) {
-                startingValue += (data[(i + xOffset) * xStride] * data2[(i + yOffset) * yStride]);
+                double val1 = data[(i + xOffset) * xStride];
+                double val2 = data2[(i + yOffset) * yStride];
+                startingValue += (val1 * val2);
             }
-            startingValue /=  constantNormalizedByNorm2X / constantNormalizedByNorm2Y;
-
+            startingValue =  startingValue / constantNormalizedByNorm2X / constantNormalizedByNorm2Y;
+            return startingValue;
         }
         else if(operation.compare("euclidean") == 0) {
             for(int i = 0; i < length; i++) {
@@ -658,14 +660,16 @@ public:
                        float *otherParams) {
         float startingValue = otherParams[0];
 
+
         if(operation.compare("cosinesimilarity") == 0) {
             float constantNormalizedByNorm2X = otherParams[1];
             float constantNormalizedByNorm2Y = otherParams[2];
             for(int i = 0; i < length; i++) {
-                startingValue += (data[(i + xOffset) * xStride] * data2[(i + yOffset) * yStride]);
+                float val1 = data[(i + xOffset) * xStride];
+                float val2 = data2[(i + yOffset) * yStride];
+                startingValue += (val1 * val2);
             }
-            startingValue /=  constantNormalizedByNorm2X / constantNormalizedByNorm2Y;
-
+            startingValue =  startingValue / constantNormalizedByNorm2X / constantNormalizedByNorm2Y;
         }
         else if(operation.compare("euclidean") == 0) {
             for(int i = 0; i < length; i++) {

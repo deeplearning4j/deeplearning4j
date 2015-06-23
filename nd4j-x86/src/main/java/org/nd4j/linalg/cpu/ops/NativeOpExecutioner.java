@@ -72,7 +72,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 }
                 else
-                    loop.execFloatTransform(op.x().data().asFloat(),op.n(),op.x().offset(),op.x().elementStride(),op.z().elementStride(),op.name(),ArgsConverter.convertExtraArgsFloat(op),op.z().data().asFloat());
+                    loop.execFloatTransform(op.x().data().asFloat(),op.n(),op.x().offset(),op.x().majorStride(),op.z().majorStride(),op.name(),ArgsConverter.convertExtraArgsFloat(op),op.z().data().asFloat());
             }
         }
     }

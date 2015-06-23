@@ -23,6 +23,7 @@ package org.nd4j.linalg.ops;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
@@ -66,8 +67,8 @@ public  class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testCosineSimilarity() {
-        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4});
-        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4});
+        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4,5});
+        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4,5});
         double sim = Transforms.cosineSim(vec1, vec2);
         assertEquals(getFailureMessage(), 1, sim, 1e-1);
 

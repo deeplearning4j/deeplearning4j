@@ -123,7 +123,7 @@ public class CosineSimilarity extends BaseAccumulation {
         super.init(x, y, z, n);
         this.constantNormalizedByNorm2X = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).currentResult();
         this.constantNormalizedByNorm2Y = Nd4j.getExecutioner().execAndReturn(new Norm2(y)).currentResult();
-        this.extraArgs = new Object[]{constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
+        this.extraArgs = new Object[]{0.0,constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
         this.initial = 0.0;
         this.initialComplex = Nd4j.createComplexNumber(0, 0);
 
