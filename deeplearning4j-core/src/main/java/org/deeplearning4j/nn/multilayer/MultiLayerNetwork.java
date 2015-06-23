@@ -341,7 +341,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         int numHiddenLayersSizesUsed = 0;
 
         if (this.layers == null || this.layers[0] == null) {
-            //
             if(this.layers == null)
                 this.layers = new Layer[getnLayers()];
 
@@ -362,10 +361,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                         conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                     }
                 }
-//                else if (type == Layer.Type.FEED_FORWARD)
-//                    inputSize = hiddenLayerSizes[numHiddenLayersSizesUsed];
-
-                else if (i < getLayers().length - 1) {
+                else if (i < getLayers().length) {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1, layerInput);
                     /**
@@ -385,22 +381,17 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      * for every layer.
                      */
                     if(type == Layer.Type.FEED_FORWARD) {
-                        numHiddenLayersSizesUsed++;
-                        conf.setNIn(layerInput.columns());
-                        conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        if(i!=(layers.length-1)) {
+                            numHiddenLayersSizesUsed++;
+                            conf.setNIn(layerInput.columns());
+                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        } else {
+                            conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        }
                     }
                 }
                 layers[i] = LayerFactories.getFactory(conf).create(conf, listeners);
             }
-
-            NeuralNetConfiguration lastLayer = layerWiseConfigurations.getConf(layerWiseConfigurations.getConfs().size() - 1);
-            Layer.Type type = LayerFactories.typeForFactory(lastLayer);
-
-            if(type == Layer.Type.FEED_FORWARD) {
-                lastLayer.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
-            }
-
-            this.layers[layers.length - 1] = LayerFactories.getFactory(lastLayer).create(lastLayer);
             initCalled = true;
             initMask();
         }
