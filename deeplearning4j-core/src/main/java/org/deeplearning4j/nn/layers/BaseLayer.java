@@ -174,10 +174,10 @@ public abstract class BaseLayer implements Layer {
         for(String s : conf.variables()) {
             if(gradient.gradientForVariable().containsKey(s)) {
                 if (s.equals(DefaultParamInitializer.BIAS_KEY) && gradient.gradientForVariable().get(s).rows() > 1) {
-                    getParam(s).addi(gradient.gradientForVariable().get(s).mean(1));
+                    getParam(s).subi(gradient.gradientForVariable().get(s).mean(1));
                 }
                 else
-                    getParam(s).addi(gradient.gradientForVariable().get(s));
+                    getParam(s).subi(gradient.gradientForVariable().get(s));
 
             }
         }
