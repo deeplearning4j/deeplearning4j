@@ -62,14 +62,17 @@ public class LinAlgExceptions {
 
 
     /**
-     * Asserts matrix multiply rules (columns of left == rows of right)
+     * Asserts matrix multiply rules (columns of left == rows of right or rows of left == columns of right)
      *
      * @param nd1 the left ndarray
      * @param nd2 the right ndarray
      */
     public static void assertMultiplies(INDArray nd1, INDArray nd2) {
-        if (nd1.columns() != nd2.rows())
-            throw new IllegalStateException("Column of left " + nd1.columns() + " != rows of right " + nd2.rows());
+        if (nd1.columns() == nd2.rows() || nd1.rows() == nd2.columns()){
+            return;
+        }
+        throw new IllegalStateException("Column of left array " + nd1.columns() + " != rows of right " + nd2.rows() +
+                " or rows of left array "  + nd1.rows() + " != columns of right " + nd2.columns());
     }
 
 
