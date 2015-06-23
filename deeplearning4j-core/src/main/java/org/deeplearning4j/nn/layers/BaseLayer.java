@@ -173,8 +173,8 @@ public abstract class BaseLayer implements Layer {
     public void update(Gradient gradient) {
         for(String s : conf.variables()) {
             if(gradient.gradientForVariable().containsKey(s)) {
-                if (s.equals(DefaultParamInitializer.BIAS_KEY) && gradient.gradientForVariable().get(s).rows() > 1) {
-                    getParam(s).subi(gradient.gradientForVariable().get(s).mean(1));
+            	if (s.equals(DefaultParamInitializer.BIAS_KEY) ) {
+                    getParam(s).subi(gradient.gradientForVariable().get(s).mean(0));
                 }
                 else
                     getParam(s).subi(gradient.gradientForVariable().get(s));
