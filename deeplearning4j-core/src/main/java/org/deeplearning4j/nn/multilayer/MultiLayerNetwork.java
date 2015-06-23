@@ -558,7 +558,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             //applies drop connect to the activation
             applyDropConnectIfNecessary(currInput);
             zs.add(currInput);
-            activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
+            activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup())));
         }
 
 
