@@ -11,7 +11,7 @@ Given an input record, the DBN will choose one label from a set. This goes beyon
 
 That is, the network outputs a vector containing one number per output node. The number of output nodes represented in the vector equals the number of labels to choose from. Each of those outputs are going to be a 0 or 1, and taken together, those 0s and 1s form the vector. 
 
-*(To run the Iris example, [use this file](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/iris/IrisExample.java) and explore others from our [Quick Start page](../quickstart.html).)*
+*(To run the Iris example, [use this file](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java) and explore others from our [Quick Start page](../quickstart.html).)*
 
 ### The IRIS Dataset
 
