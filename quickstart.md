@@ -30,7 +30,7 @@ After those installs, if you can follow these five steps, you'll be up and runni
 5. Select DBNIrisExample.java from the lefthand file tree
 6. Hit run! (It's the green button)
 
-You should get an F1 score about about 0.55, which is good for a small dataset like Iris. 
+You should get an F1 score about about 0.55, which is good for a small dataset like Iris. For a line by line walkthrough of the example, please refer to our [Iris DBN tutorial](../iris-flower-dataset-tutorial.html).
 
 ## Dependencies and Backends
 
