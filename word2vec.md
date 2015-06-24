@@ -23,19 +23,15 @@ Contents
 
 ###<a name="intro">Introduction to Word2Vec</a>
 
-[Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java, which works with GPUs. Word2vec was originally conceived by a research team at Google led by Tomas Mikolov. 
+[Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java, which works with GPUs. 
 
-Word2vec is a neural net that processes text before that text is handled by deep-learning algorithms. While it does not implement deep learning, Word2vec turns text into a numerical form that deep-learning nets can understand -- the vector. 
+Word2vec is a two-layer neural net that processes text before that text is handled by deep-learning algorithms. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec does not implement deep learning, it does turn text into a numerical form that deep-learning nets can understand. 
 
-(Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned.)
+Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned.
 
-Word2vec creates features without human intervention, including the context of individual words. That context comes in the form of multiword windows. Given enough data, usage and context, Word2vec can make highly accurate guesses about a word’s meaning (for the purpose of deep learning, a word's meaning is simply a signal that helps to classify larger entities; e.g. placing a document in a cluster) based on its past appearances. 
+Word2vec creates vectors that are distributed numerical representations of word features. It does so without human intervention, and those numerical features include the context of individual words. Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words, or to cluster documents or classify them by topic. Those clusters form the basis of search, sentiment analysis and recommendations. 
 
-Word2vec expects a string of sentences as its input. Each sentence -- that is, each array of words -- is vectorized and  compared to other vectorized lists of words in an n-dimensional vector space. Related words and/or groups of words appear next to each other in that space. Vectorizing them allows us to measure their similarities with some exactitude and cluster them. Those clusters form the basis of search, sentiment analysis and recommendations. 
-
-The output of the Word2vec neural net is a vocabulary with a vector attached to it, which can be fed into a deep-learning net for classification/labeling. 
-
-The skip-gram representation popularized by Mikolov and used in the DL4J implementation has proven to be more accurate than other models due to the more generalizable contexts generated. 
+The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net. 
 
 Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the distance/dissimilarity between two word vectors. A perfect 90-degree angle represents identity; i.e. France equals France, while Spain has a cosine distance of 0.678515 from France, the highest of any other country.
 
@@ -146,6 +142,8 @@ The following code saves your Viterbi implementation for later use:
 ### <a name="grams">N-grams & Skip-grams</a>
 
 Words are read into the vector one at a time, *and scanned back and forth within a certain range*, much like n-grams. (An n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram.)  
+
+The skip-gram representation popularized by Mikolov and used in the DL4J implementation has proven to be more accurate than other models due to the more generalizable contexts generated. 
 
 This n-gram is then fed into a neural network to learn the significance of a given word vector; i.e. significance is defined as its usefulness as an indicator of certain larger meanings, or labels. 
 
@@ -311,7 +309,7 @@ An example of sentiment analysis using [Word2Vec is here](http://deeplearning4j.
 
 ###<a name="patent">Google's Word2vec Patent</a>
 
-Word2vec is [a method of computing vector representations of words](http://arxiv.org/pdf/1301.3781.pdf) introduced by a team of researchers led by Tomas Mikolov in 2013. Google [hosts an open-source version of Word2vec](https://code.google.com/p/word2vec/) released under an Apache 2.0 license. In 2014, Mikolov left Google for Facebook, and in May 2015, [Google was granted a patent for the method](http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=9037464&OS=9037464&RS=9037464), which does not abrogate the Apache license under which it has been released.
+Word2vec is [a method of computing vector representations of words](http://arxiv.org/pdf/1301.3781.pdf) introduced by a team of researchers at Google led by Tomas Mikolov. Google [hosts an open-source version of Word2vec](https://code.google.com/p/word2vec/) released under an Apache 2.0 license. In 2014, Mikolov left Google for Facebook, and in May 2015, [Google was granted a patent for the method](http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=9037464&OS=9037464&RS=9037464), which does not abrogate the Apache license under which it has been released.
 
 ###<a name="foreign">Foreign Languages</a>
 
