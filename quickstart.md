@@ -54,7 +54,7 @@ The nd4j-jblas backend will look something like this:
        <version>${nd4j.version}</version>
      </dependency>
 
-*nd4j-jblas* works with all examples. 
+*nd4j-jblas* works with all examples. To install Jblas, Windows users should refer to the [Deepelearining4j Getting Started page](../gettingstarted.html).
 
 ## Next Steps
 
