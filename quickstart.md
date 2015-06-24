@@ -15,11 +15,11 @@ This Quick Start guide assumes that you have the following already installed:
 3. Maven (Automated build tool)
 4. Github 
  
-If you need to install any of the above, please read how in the [ND4J Getting Started guide](http://nd4j.org/getstarted.html).  (ND4J is the linear-algebra engine powering Deeplearning4j, and the instructions there apply to both projects.) Don't install everything cited on that page, just the software cited above. 
+If you need to install any of the above, please read how in the [ND4J Getting Started guide](http://nd4j.org/getstarted.html).  (ND4J is the linear-algebra engine powering Deeplearning4j, and the instructions there apply to both projects.) Don't install everything listed on the page, just the software cited above. 
 
 We highly recommend you join our [Gitter Live Chat](gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even some Java programmers are unfamiliar with Maven... If you're feeling anti-social or brashly independent, feel free to lurk and learn.
 
-## DL4J in 5 Easy Steps
+## DL4J in a Few Easy Steps
 
 After those installs, if you can follow these five steps, you'll be up and running:
 
