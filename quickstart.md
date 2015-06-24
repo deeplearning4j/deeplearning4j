@@ -13,7 +13,7 @@ This Quick Start guide assumes that you have the following already installed:
 1. Java 7
 2. IntelliJ (or another IDE)
 3. Maven (Automated build tool)
-4. Canova (ML Vectorization lib)
+4. Github 
  
 If you need to install any of the above, please read how in the [ND4J Getting Started guide](http://nd4j.org/getstarted.html).  (ND4J is the linear-algebra engine powering Deeplearning4j, and the instructions there apply to both projects.) Don't install
 
@@ -23,11 +23,12 @@ We highly recommend you join our [Gitter Live Chat](gitter.im/deeplearning4j/dee
 
 After those installs, if you can follow these five steps, you'll be up and running:
 
-1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on version 0.0.3.3.x.
-2. Import the examples as a project into IntelliJ with Maven.
-3. Pick a [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (**Mac** and **Linux**: Start with *nd4j-jblas* ; **Windows**: Start with *nd4j-java*)
-4. Select example from the lefthand file tree (Start with *DBNIrisExample.java*)
-5. Hit run! (It's the green button)
+1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on examples version 0.0.3.3.x.
+2. From your console, run "mvn clean install -DskipTests -Dmaven.javadoc.skip=true" on *each* of those directories
+3. Import the examples as a project into IntelliJ with Maven.
+4. Pick a [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (**Mac** and **Linux**: Start with *nd4j-jblas* ; **Windows**: Start with *nd4j-java*)
+5. Select example from the lefthand file tree (Start with *DBNIrisExample.java*)
+6. Hit run! (It's the green button)
 
 You should get an F1 score about about 0.60, which is good for a small dataset like Iris. 
 
