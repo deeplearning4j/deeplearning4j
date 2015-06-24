@@ -445,7 +445,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
 
     /**
-     * Calculate activation from previous layer including pre processing where necessary
+     * Compute input linear transformation (z) from previous layer
+     * Apply pre processing transformation where necessary
      *
      * @param curr  the current layer
      * @param input the input
@@ -482,7 +483,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
 
     /**
-     * Compute activations from input to output of the output layer
+     * * Compute input linear transformation (z) of the output layer
      *
      * @return the list of activations for each layer
      */
@@ -542,8 +543,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
 
     /**
-     * Compute zs (z being the raw output) and their associated
-     * activations in one pass
+     * Compute input linear transformation (z)
+     * Compute activations (applies activation transformation to z)
      * @return a pair of the zs and activations
      */
     public Pair<List<INDArray>,List<INDArray>> zsAndActivations() {
@@ -551,18 +552,19 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         List<INDArray> activations = new ArrayList<>();
         List<INDArray> zs = new ArrayList<>();
-        activations.add(currInput);
+        List<INDArray> derivatives = new ArrayList<>();
+//        activations.add(currInput);
+//        zs.add(currInput);
 
         for (int i = 0; i < layers.length; i++) {
-            currInput = zFromPrevLayer(i, currInput);
-            //applies drop connect to the activation
+            currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
             applyDropConnectIfNecessary(currInput);
             zs.add(currInput);
             activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup())));
+            derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup()).derivative()));
         }
-
-
-        return new Pair<>(zs,activations);
+//        return new Pair<>(zs,activations);
+        return new Pair<>(derivatives,activations);
     }
 
 
@@ -1019,55 +1021,51 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         OutputLayer output = (OutputLayer) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
+        INDArray outputValue = output.getParam("W").sum(Integer.MAX_VALUE);
+        if(outputValue.getFloat(0) == 0f){
+            throw new IllegalStateException("Output layer weights cannot be intialized to zero when using backprop.");
+        };
         output.setLabels(labels);
         //calculate the backward gradient for every layer
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
-            Pair<List<INDArray>,List<INDArray>> zsAndAtivations = zsAndActivations();
-            List<INDArray> activations = zsAndAtivations.getSecond();
-            List<INDArray> zs = zsAndAtivations.getFirst();
-            INDArray outputActivate = activations.get(activations.size() - 1);
-
-            INDArray ixInitial = outputActivate.sub(labels).transpose();
-            Gradient ix = new DefaultGradient();
-            INDArray output2 = activations.get(activations.size() - 2);
-            ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial.mmul(output2).transpose());
-
-            ix.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,ixInitial.transpose());
             /**
-             * So the indexing here probably looks weird to you.
+             * Skip the output layer for the indexing and just loop backwards updating the coefficients for each layer.
              *
-             * But it's layers n - 2! not n - 1!
+             * Activation function used in the derivative calculation is actually the current layer's activation function.
+             * Design goal for this is to reduce inter dependencies between layers.
              *
-             * Actually what happens in traditional literature is the output layer is counted in this indexing.
-             *
-             * In our implementation here we skip the output layer for the indexing and just loop backwards
-             * updating the coefficients for each layer.
-             *
-             * So the consequence of this is the activation function used in the derivative
-             * calculation is actually the current layer's activation function.
-             *
-             * The design for this is due to the fact that we want to reduce inter dependencies
-             * between layers.
-             *
-             * Also, keep in mind that in the literature you typically see the most trivial case for
-             * the error calculation: wT * weights
+             * Also, keep in mind that in the literature you typically see the most trivial case for the error calculation: wT * weights
              * In our interpretation here, we have to transpose a few things to get mini batch (calculate the gradient for more than one example)
              * to happen
              */
-            List<Gradient> updates = new ArrayList<>();
-            updates.add(ix);
-            for(int j = getnLayers() - 2; j >= 0; j--) {
-                INDArray z = zs.get(j);
+            int numLayers = getnLayers() - 1; // drops output layer in count
+            List<Gradient> weightUpdates = new ArrayList<>();
+            Pair<List<INDArray>,List<INDArray>> zsAndActivations = zsAndActivations();
+            List<INDArray> activations = zsAndActivations.getSecond();
+            List<INDArray> zs = zsAndActivations.getFirst(); //derivatives
+            INDArray outputActivation = activations.get(activations.size() - 1);
+            INDArray activationDeriv = zs.get(zs.size() - 1);
+
+            INDArray delta = outputActivation.sub(labels).transpose();
+//            INDArray output2 = activations.get(activations.size() - 2);
+
+            Gradient nextGradients = new DefaultGradient();
+//            ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial.mmul(output2).transpose());
+            nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(activationDeriv).transpose());
+            nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
+            weightUpdates.add(nextGradients);
+            for(int j = numLayers - 1; j > 0; j--) {
+                INDArray currZ = zs.get(j);
                 Layer nextLayer = getLayers()[j + 1];
                 INDArray currActivation = activations.get(j);
-                ix = getLayers()[j].backwardGradient(z,nextLayer,ix,currActivation);
-                updates.add(ix);
+                nextGradients = getLayers()[j].backwardGradient(currZ, nextLayer, nextGradients, currActivation);
+                weightUpdates.add(nextGradients);
             }
 
-            Collections.reverse(updates);
+            Collections.reverse(weightUpdates);
             //propagate updates
-            for(int k = 0; k < getnLayers(); k++) {
-                Gradient update = updates.get(k);
+            for(int k = 0; k < numLayers; k++) {
+                Gradient update = weightUpdates.get(k);
                 GradientAdjustment.updateGradientAccordingToParams(
                         getLayers()[k].conf()
                         ,i

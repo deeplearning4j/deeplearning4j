@@ -19,9 +19,11 @@
 package org.deeplearning4j.nn.multilayer;
 
 import java.util.Arrays;
+import java.util.List;
 
 import com.google.common.collect.Lists;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -296,6 +298,20 @@ public class MultiLayerTest {
         net1.gradient();        //OK
         net2.gradient();        //IllegalArgumentException: Buffers must fill up specified length 29
     }
+
+
+    @Test
+    public void testZsAndActivations(){
+        MultiLayerNetwork network = new MultiLayerNetwork(getConf());
+        network.init();
+        DataSet data = new IrisDataSetIterator(1,150).next();
+        network.fit(data);
+        Pair result = network.zsAndActivations();
+        List<INDArray> first = (List) result.getFirst();
+        List<INDArray> second = (List) result.getSecond();
+        assertEquals(first.size(), second.size());
+    }
+
 
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
