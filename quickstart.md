@@ -33,9 +33,9 @@ Once you do that, try the other examples.
 
 ## Dependencies and Backends
 
-Blas backends are what power the linear algebra operations behind DL4J's neural nets. GPUs require the Jcublas backend, while CPUs work with Jblas and Netlib Blas. You can find all of them on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ.
+Blas backends are what power the linear algebra operations behind DL4J's neural nets. Backends vary by chip, and CPUs can work with both Jblas and Netlib Blas. You can find all backends on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ. 
 
-Your Blas backend will look something like this:
+Your Jblas backend will look something like this:
 
      <dependency>
        <groupId>org.nd4j</groupId>
@@ -53,4 +53,4 @@ For core algorithms, you can simply add this snippet to your deeplearning4j POM.
 
 ## Next Steps
 
-Once you've run the examples, please visit our [Getting Started page](../gettingstarted.html) to really get going. And remember, DL4J is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn.
+Once you've run the examples, please visit our [Getting Started page](../gettingstarted.html) to really get going. And remember, DL4J is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. 
