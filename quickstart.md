@@ -25,7 +25,7 @@ After those installs, if you can follow these five steps, you'll be up and runni
 
 1. *git clone* [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on version 0.0.3.3.x
 2. Import the examples as a project into IntelliJ with Maven
-3. Pick a [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (**Mac** and **Linux**: Start with *nd4j-jblas* ; **Windows**: Start with *nd4j-java*) and make sure you have the latest version of ND4J in the *properties* section of the POM (we're on 0.0.3.5.5.x).
+3. Pick a [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (**Mac** and **Linux**: Start with *nd4j-jblas* ; **Windows**: Start with *nd4j-java*)
 4. Select example from the lefthand file tree (Start with *DBNIrisExample.java*)
 5. Hit run! (It's the green button)
 
