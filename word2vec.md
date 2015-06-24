@@ -157,8 +157,6 @@ The skip-gram representation popularized by Mikolov and used in the DL4J impleme
 
 This n-gram is then fed into a neural network to learn the significance of a given word vector; i.e. significance is defined as its usefulness as an indicator of certain larger meanings, or labels. 
 
-![enter image description here](http://i.imgur.com/SikQtsk.png)
-
 Word2vec uses different kinds of "windows" to take in words: continuous n-grams and skip-grams. 
 
 Consider the following sentence:
