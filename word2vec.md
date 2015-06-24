@@ -59,6 +59,8 @@ A well trained set of word vectors will place similar words close to each other 
 
 This in itself is interesting, because similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can start their work. But similarity is not the only association that Word2vec can learn and represent. 
 
+![Alt text](../img/word2vec_translation.png) 
+
 These vectors are in fact the basis of a more comprehensive arithmatic of words. Not only will Rome, Paris, Berlin and Beijing cluster near each other, but they will each have similar distances in the vector space with regard to the countries whose capitals they are; i.e. Rome - Italy = Beijing - China. And if you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
 
 ![Alt text](../img/countries_capitals.png) 
@@ -70,6 +72,8 @@ Let's imagine some other associations:
 * Filiation: George H. W. Bush - George W. Bush = John Adams - John Quincy Adams.
 
 By building a sense of one word's proximity to other similar words, which do not necessarily contain the same letters, we have moved beyond hard tokens to a smoother sense of meaning. 
+
+![Alt text](../img/man_woman_king_queen.png) 
 
 ###<a name="anatomy">Anatomy of Word2vec</a>
 
