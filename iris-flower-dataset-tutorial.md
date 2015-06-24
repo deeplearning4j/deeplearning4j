@@ -82,31 +82,31 @@ To create a neural network, will declare the variables and then feed them into t
 
      log.info("Build model....");
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM()) // NN layer type
-                .nIn(numRows * numColumns) // # input nodes
-                .nOut(outputNum) // # output nodes
-                .seed(seed) // Seed to lock in weight initialization for tuning
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN) // Gaussian transformation visible layer
-                .hiddenUnit(RBM.HiddenUnit.RECTIFIED) // Rectified Linear transformation visible layer
-                .iterations(iterations) // # training iterations predict/classify & backprop
-                .weightInit(WeightInit.XAVIER) // Weight initialization method
-                .activationFunction("relu") // Activation function type
-                .l2(2e-4).regularization(true).momentum(0.9).constrainGradientToUnitNorm(true)
-                .k(1) // # contrastive divergence iterations
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT) // Loss function type
-                .learningRate(1e-3f) // Backprop step size
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS) // Backprop method (calculate the gradients)
-                .list(2) // # NN layers (does not count input layer)
-                .hiddenLayerSizes(3) // # fully connected hidden layer nodes. Add list if multiple layers.
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                    }
-                }).useDropConnect(true)
-                .build();
+            .layer(new RBM()) // NN layer type
+            .nIn(numRows * numColumns) // # input nodes
+            .nOut(outputNum) // # output nodes
+            .seed(seed) // Seed to lock in weight initialization for tuning
+            .visibleUnit(RBM.VisibleUnit.GAUSSIAN) // Gaussian transformation visible layer
+            .hiddenUnit(RBM.HiddenUnit.RECTIFIED) // Rectified Linear transformation visible layer
+            .iterations(iterations) // # training iterations predict/classify & backprop
+            .weightInit(WeightInit.XAVIER) // Weight initialization method
+            .activationFunction("relu") // Activation function type
+            .l2(2e-4).regularization(true).momentum(0.9).constrainGradientToUnitNorm(true)
+            .k(1) // # contrastive divergence iterations
+            .lossFunction(LossFunctions.LossFunction.RMSE_XENT) // Loss function type
+            .learningRate(1e-3f) // Backprop step size
+            .optimizationAlgo(OptimizationAlgorithm.LBFGS) // Backprop method (calculate the gradients)
+            .list(2) // # NN layers (does not count input layer)
+            .hiddenLayerSizes(3) // # fully connected hidden layer nodes. Add list if multiple layers.
+            .override(1, new ConfOverride() {
+                @Override
+                public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                    builder.activationFunction("softmax");
+                    builder.layer(new OutputLayer());
+                    builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                }
+            }).useDropConnect(true)
+            .build();
 
 There's a lot to discuss here. The entire configuration is united in one snippet above, and now we'll go through it line by line:
 
@@ -120,7 +120,7 @@ Line 2 runs a Builder pattern, useful for many-parameter objects, on a NeuralNet
 
 The neural net config's parameters are then assigned to an instance of the MultiLayerConfiguration object. It's useful here to disambiguate the term parameter. 
 
-In computer science, parameter is a value you pass into a function. In neural net parlance, parameter is usually synonymous with weight or coefficient; i.e. the parts of the model that filter, amplify or mute the input, and are adjusted as the algorithm learns. In addition, neural nets have something called hyperparameters, which are the properties of the learning algorithm that we set in a neural net configuration. In other words, the parameters mentioned above are hyperparameters, and by tuning them right you can make net's learn better and faster.  
+In computer science, a parameter is a value you pass into a function. In neural net parlance, parameter is usually synonymous with weight or coefficient; i.e. the parts of the model that filter, amplify or mute the input, and are adjusted as the algorithm learns. In addition, neural nets have something called hyperparameters, which are the properties of the learning algorithm that we set in a neural net configuration. In other words, the parameters mentioned above are hyperparameters, and by tuning them right you can make net's learn better and faster.  
 
           .layer(new RBM()) 
 
@@ -142,7 +142,7 @@ Line 6 uses a specific, randomly generated weight initialization. If you run an 
 
 Line 7 applies a Gaussian transform to the RBM that makes up the net's input layer. The transform applies Gaussian white noise to normalize a distribution of continuous data. 
 
-.hiddenUnit(RBM.HiddenUnit.RECTIFIED) 
+					.hiddenUnit(RBM.HiddenUnit.RECTIFIED) 
 
 Line 8 applies rectified linear to how the hidden layer samples from the visible layer. Rectified linear units (ReLU) create more robust activations and tends to improve the F1 score. These transforms look like a hockey stick, flat to begin with and then sharply rising. The flatness is the so-called offset, and ReLU applies a fixed offset to the bias of each node. That offset is a thresshold below which all samples are ignored.
 
@@ -253,19 +253,19 @@ Here, the program prints out how well it labeled samples by each classification.
 
 Finally, we ask the program to print statistics such as accuracy and the F1 score. 
 
-          Actual Class 0 was predicted with Predicted 0 with count 50 times
-     
-          Actual Class 1 was predicted with Predicted 1 with count 1 times
-     
-          Actual Class 1 was predicted with Predicted 2 with count 49 times
-     
-          Actual Class 2 was predicted with Predicted 2 with count 50 times
+    Actual Class 0 was predicted with Predicted 0 with count 50 times
 
-          ==========================Scores========================================
-           Accuracy:  0.6667
-           Precision: 0.4906
-           Recall:    0.6667
-           F1 Score:  0.5652272213429799
-          ========================================================================
+    Actual Class 1 was predicted with Predicted 1 with count 2 times
+
+    Actual Class 1 was predicted with Predicted 2 with count 48 times
+
+    Actual Class 2 was predicted with Predicted 2 with count 50 times
+
+    ==========================Scores=================================
+     Accuracy:  0.6667
+     Precision: 0.4906
+     Recall:    0.6667
+     F1 Score:  0.5652272213429799
+    =================================================================
 
 In machine learning, an F1 score is a metric used to determine how well a classifier performs. It’s a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It’s basically the probability that your net’s guesses are correct. 
