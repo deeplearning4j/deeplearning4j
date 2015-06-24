@@ -114,10 +114,10 @@ Neural net weights are initialized randomly, which means the model begins learni
 
       Nd4j.getRandom().setSeed(123);
 
-### <a name="next">Next Steps: MNIST Example & Building NNs</a>
+### <a name="next">Next Steps: IRIS Example & Building NNs</a>
 
 In order to get started building neural nets, checkout the [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for more information.
 
-Take a look at the [MNIST tutorial](../mnist-tutorial.html) to get running quickly and checkout [custom datasets](../customdatasets.html) for other datasets to explore.
+Take a look at the [IRIS tutorial](../iris-flower-dataset-tutorial.html) to get running quickly and checkout [custom datasets](../customdatasets.html) for other datasets to explore.
 
 Follow the [ND4J Getting Started](http://nd4j.org/getstarted.html) instructions to start a new project and include necessary [POM dependencies](http://nd4j.org/dependencies.html). 
