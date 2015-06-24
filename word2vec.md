@@ -29,15 +29,19 @@ Word2vec is a two-layer neural net that processes text before that text is handl
 
 Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned.
 
-Word2vec creates vectors that are distributed numerical representations of word features. It does so without human intervention, and those numerical features include the context of individual words. Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words, or to cluster documents or classify them by topic. Those clusters form the basis of search, sentiment analysis and recommendations. 
+Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
+
+Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, sentiment analysis and recommendations. 
 
 The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net. 
 
-Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the distance/dissimilarity between two word vectors. A perfect 90-degree angle represents identity; i.e. France equals France, while Spain has a cosine distance of 0.678515 from France, the highest of any other country.
+Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the distance/dissimilarity between two word vectors. A perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
 
-Here's a graph of words associated with "China" using Word2vec:
+Here's a list of words associated with "Sweden" using Word2vec, in order of proximity:
 
-![Alt text](../img/word2vec.png) 
+![Alt text](../img/sweden_cosine_distance.png) 
+
+The nations of Scandinavia and several wealthy, northern European, Germanic countries are among the top nine. 
 
 ###<a name="embed">Neural Word Embeddings</a>
 
