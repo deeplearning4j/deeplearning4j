@@ -45,7 +45,7 @@ The nations of Scandinavia and several wealthy, northern European, Germanic coun
 
 ###<a name="embed">Neural Word Embeddings</a>
 
-Representations are strange. You use one thing to describe another, and those two things can be radically different. Elvis Costello was probably the harshest critic of representations, when he said that "Writing about music is like dancing about architecture." 
+A neural word embedding is a representation, and representations are strange. You use one thing to describe another, even though those two things can be radically different. Elvis Costello was probably the harshest critic of representations, when he said that "Writing about music is like dancing about architecture." 
 
 How can words represent sounds, and gestures represent arrangements of stone, glass and wood? You're mapping one set to another seemingly dissimilar set. 
 
