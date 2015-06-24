@@ -85,19 +85,19 @@ To create a neural network, will declare the variables and then feed them into t
             .layer(new RBM()) // NN layer type
             .nIn(numRows * numColumns) // # input nodes
             .nOut(outputNum) // # output nodes
-            .seed(seed) // Seed to lock in weight initialization for tuning
-            .visibleUnit(RBM.VisibleUnit.GAUSSIAN) // Gaussian transformation visible layer
-            .hiddenUnit(RBM.HiddenUnit.RECTIFIED) // Rectified Linear transformation visible layer
-            .iterations(iterations) // # training iterations predict/classify & backprop
-            .weightInit(WeightInit.XAVIER) // Weight initialization method
-            .activationFunction("relu") // Activation function type
+            .seed(seed) 
+            .visibleUnit(RBM.VisibleUnit.GAUSSIAN) 
+            .hiddenUnit(RBM.HiddenUnit.RECTIFIED) 
+            .iterations(iterations) 
+            .weightInit(WeightInit.XAVIER) 
+            .activationFunction("relu") 
             .l2(2e-4).regularization(true).momentum(0.9).constrainGradientToUnitNorm(true)
             .k(1) // # contrastive divergence iterations
-            .lossFunction(LossFunctions.LossFunction.RMSE_XENT) // Loss function type
+            .lossFunction(LossFunctions.LossFunction.RMSE_XENT) 
             .learningRate(1e-3f) // Backprop step size
-            .optimizationAlgo(OptimizationAlgorithm.LBFGS) // Backprop method (calculate the gradients)
+            .optimizationAlgo(OptimizationAlgorithm.LBFGS) 
             .list(2) // # NN layers (does not count input layer)
-            .hiddenLayerSizes(3) // # fully connected hidden layer nodes. Add list if multiple layers.
+            .hiddenLayerSizes(3) 
             .override(1, new ConfOverride() {
                 @Override
                 public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
@@ -142,7 +142,7 @@ Line 6 uses a specific, randomly generated weight initialization. If you run an 
 
 Line 7 applies a Gaussian transform to the RBM that makes up the net's input layer. The transform applies Gaussian white noise to normalize a distribution of continuous data. 
 
-					.hiddenUnit(RBM.HiddenUnit.RECTIFIED) 
+		.hiddenUnit(RBM.HiddenUnit.RECTIFIED) 
 
 Line 8 applies rectified linear to how the hidden layer samples from the visible layer. Rectified linear units (ReLU) create more robust activations and tends to improve the F1 score. These transforms look like a hockey stick, flat to begin with and then sharply rising. The flatness is the so-called offset, and ReLU applies a fixed offset to the bias of each node. That offset is a thresshold below which all samples are ignored.
 
@@ -190,13 +190,13 @@ Line 17 sets the number of neural net layers, excluding the input layer, at two.
 
 Line 18 sets the size of the hidden layers, measured in the number of nodes each contains, at three. This number can vary layer by layer, and often does. Small numbers of nodes like this are the exception -- in other deep nets, you will see layers with hundreds of nodes, or more. 
 
-          .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                    }
+     .override(1, new ConfOverride() {
+        @Override
+        public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+            builder.activationFunction("softmax");
+            builder.layer(new OutputLayer());
+            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+        }
 
 Lines 19-25 override the default layer type of RBM to create an output layer that classifies input by Iris label using a multinomial sigmoid classifier called softmax. The loss function for this layer is Monte Carlo cross entropy. 
 
