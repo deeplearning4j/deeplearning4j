@@ -107,21 +107,25 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
         //needs to be number of features by examples
-        INDArray wt = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray delta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-        INDArray wLoss = wt.mmul(delta.transpose()).transpose();
-        INDArray deriv = derivativeActivation(z);
-        wLoss.muli(deriv);
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, wLoss);
-        //nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wLoss.transpose().mmul(activation).transpose());
+
+        INDArray nextWeights = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray nextWeightDelta = nextGradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray weightDelta = nextWeights.mmul(nextWeightDelta.transpose());
+//        INDArray deriv = derivativeActivation(z);
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightDelta.mmul(derivative).transpose());
+
+        INDArray nextBiasDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, nextBiasDelta.mmul(derivative).transpose());
         return ret;
     }
 
     @Override
+
+
+
     public void fit() {
         fit(this.input);
     }
