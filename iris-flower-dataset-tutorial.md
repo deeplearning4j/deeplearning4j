@@ -68,7 +68,7 @@ In other words, learning algorithms accept labeled input data to train on, and r
 
 ### Creating a Neural Network (NN)
 
-To create a neural network, will declare the variables and then feed them into the configuration as parameters:
+To create a neural network, we'll declare the variables and then feed them into the configuration as parameters:
 
         final int numRows = 4;
         final int numColumns = 1;
@@ -79,6 +79,8 @@ To create a neural network, will declare the variables and then feed them into t
         int splitTrainNum = (int) (batchSize * .8);
         int seed = 123;
         int listenerFreq = iterations/5;
+
+Here's the configuration in full -- we'll step through it line by line below:
 
      log.info("Build model....");
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -108,7 +110,7 @@ To create a neural network, will declare the variables and then feed them into t
             }).useDropConnect(true)
             .build();
 
-There's a lot to discuss here. The entire configuration is united in one snippet above, and now we'll go through it line by line:
+There's a lot to discuss here. The entire configuration is united in one snippet above, and now we'll go through it one parameter at a time:
 
 		log.info("Build model....");
 
