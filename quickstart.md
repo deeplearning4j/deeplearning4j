@@ -50,3 +50,7 @@ For core algorithms, you can simply add this snippet to your deeplearning4j POM.
          <artifactId>deeplearning4j-core</artifactId>
          <version>${deeplearning4j.version}</version>
      </dependency>
+
+## Next Steps
+
+Once you've run the examples, please visit our [Getting Started page](../gettingstarted.html) to really get going. And remember, DL4J is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn.
