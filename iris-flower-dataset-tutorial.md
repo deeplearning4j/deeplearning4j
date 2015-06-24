@@ -166,11 +166,14 @@ Line 12 sets several parameters:
 
 * First, regularization is set to true. 
 * L1 and L2 regularization are two ways to fight overfitting by decreasing the size of the model's weights. Here we've selected L2. 
-* Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. That’s where momentum influences the gradient your model uses for the next step: i.e.new gradient = (previous gradient * momentum) - current provisional gradient
+* Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. That’s where momentum influences the gradient your model uses for the next step: i.e.
+		new gradient = (previous gradient * momentum) - current provisional gradient
+
+Line 13 sets the value of k to 1.  
 
           .k(1)
 
-Line 13 sets the value of k. The k on an RBM represents the number of samples collected for each iteration. Briefly, an RBM uses Markov Chain Monte Carlo (MCMC) to calculate the gradient, as well as an algorithm called contrastive divergence that has a k parameter you control. (k = 1 is usually sufficient.)
+The k on an RBM represents the number of samples collected for each iteration. Briefly, an RBM uses Markov Chain Monte Carlo (MCMC) to calculate the gradient, as well as an algorithm called contrastive divergence that has a k parameter you control. (k = 1 is usually sufficient.)
 
           .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
 
