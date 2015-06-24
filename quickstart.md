@@ -26,11 +26,11 @@ After those installs, if you can follow these five steps, you'll be up and runni
 1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on examples version 0.0.3.3.x.
 2. From your console, run "mvn clean install -DskipTests -Dmaven.javadoc.skip=true" on *each* of those directories
 3. Import the examples as a project into IntelliJ with Maven.
-4. Pick a [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (**Mac** and **Linux**: Start with *nd4j-jblas* ; **Windows**: Start with *nd4j-java*)
-5. Select example from the lefthand file tree (Start with *DBNIrisExample.java*)
+4. The default [backend](http://nd4j.org/dependencies.html) in the examples POM.xml is set to *nd4j-jblas* (For an easier install, Windows users should change that to *nd4j-java* in the dependencies.)
+5. Select DBNIrisExample.java from the lefthand file tree
 6. Hit run! (It's the green button)
 
-You should get an F1 score about about 0.60, which is good for a small dataset like Iris. 
+You should get an F1 score about about 0.55, which is good for a small dataset like Iris. 
 
 ## Dependencies and Backends
 
@@ -55,14 +55,6 @@ The nd4j-jblas backend will look something like this:
      </dependency>
 
 *nd4j-jblas* works with all examples. 
-
-For core algorithms, you can simply add this snippet to your deeplearning4j POM.xml file:
-
-     <dependency>
-         <groupId>org.deeplearning4j</groupId>
-         <artifactId>deeplearning4j-core</artifactId>
-         <version>${deeplearning4j.version}</version>
-     </dependency>
 
 ## Next Steps
 
