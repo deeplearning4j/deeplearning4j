@@ -61,7 +61,9 @@ This in itself is interesting, because similar things and ideas are shown to be 
 
 These vectors are in fact the basis of a more comprehensive arithmatic of words. Not only will Rome, Paris, Berlin and Beijing cluster near each other, but they will each have similar distances in the vector space with regard to the countries whose capitals they are; i.e. Rome - Italy = Beijing - China. And if you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
 
-Let's roughly imagine some other associations:
+![Alt text](../img/countries_capitals.png) 
+
+Let's imagine some other associations:
 
 * Destruction: Oak - Ax = Society - War. 
 * Cause: Cancer - Cigarettes = Obesity - Fast Food.
