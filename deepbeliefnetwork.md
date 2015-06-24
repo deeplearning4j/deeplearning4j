@@ -11,9 +11,9 @@ With the exception of the first and final layers, each hidden layer has a double
 
 Deep-belief networks are used to recognize and generate images, video sequences and motion-capture data. A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of decimals, rather than binary data. 
 
-### Parameters & k
+### Hyperparameters
 
-See the [parameters common to all multilayer networks](../multinetwork.html).
+See the [parameters common to all multilayer networks in our Iris DBN tutorial](../iris-flower-dataset-tutorial.html).
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain. In composing a deep-belief network, a typical value is one.
 
@@ -35,4 +35,4 @@ Note that the *eval* class combines [confusion matrices](../glossary.html#confus
 
 F1 scores are expressed as percentages. They are basically the probability that your net's guesses are correct. To improve the performance of nets, you can tune them by modifying the number and size of the hidden layers, and tweaking other parameters such as learning rate, momentum, weight distribution and various types of regularization.
 
-Next, we'll show you how to use [distributed and multithreaded computing](../scaleout.html) to train your networks more quickly. To read about another type of deep net, the deep autoencoder, [click here](../deepautoencoder.html). 
+Next, we'll show you how to use [distributed and multithreaded computing](../iterativereduce.html) to train your networks more quickly. To read about another type of deep net, the deep autoencoder, [click here](../deepautoencoder.html). 
