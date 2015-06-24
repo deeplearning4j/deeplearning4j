@@ -23,8 +23,8 @@ We highly recommend you join our [Gitter Live Chat](gitter.im/deeplearning4j/dee
 
 After those installs, if you can follow these five steps, you'll be up and running:
 
-1. *git clone* [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on version 0.0.3.3.x
-2. Import the examples as a project into IntelliJ with Maven
+1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on version 0.0.3.3.x.
+2. Import the examples as a project into IntelliJ with Maven.
 3. Pick a [backend](http://nd4j.org/dependencies.html), paste it in your POM.xml file (**Mac** and **Linux**: Start with *nd4j-jblas* ; **Windows**: Start with *nd4j-java*)
 4. Select example from the lefthand file tree (Start with *DBNIrisExample.java*)
 5. Hit run! (It's the green button)
