@@ -10,15 +10,15 @@ Contents
 * <a href="#intro">Introduction</a>
 * <a href="#embed">Neural Word Embeddings</a>
 * <a href="#anatomy">Anatomy of Word2Vec</a>
-* <a href="#setup">Setup</a>
-* <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
+* <a href="#setup">Setup, Load and Train</a>
 * <a href="#code">A Code Example</a>
+* <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#use">A Use Case</a>
 * <a href="#next">Next Steps</a>
 * <a href="#patent">Word2vec Patent</a>
 * <a href="#foreign">Foreign Languages</a>
 
-###<a name="intro">Introduction to Word2Vec</a>
+##<a name="intro">Introduction to Word2Vec</a>
 
 [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java, which works with GPUs. 
 
@@ -40,7 +40,7 @@ Here's a list of words associated with "Sweden" using Word2vec, in order of prox
 
 The nations of Scandinavia and several wealthy, northern European, Germanic countries are among the top nine. 
 
-###<a name="embed">Neural Word Embeddings</a>
+##<a name="embed">Neural Word Embeddings</a>
 
 A neural word embedding is a representation, and representations are strange. You use one thing to describe another, even though those two things can be radically different. Elvis Costello was probably the harshest critic of representations, when he said that "Writing about music is like dancing about architecture." 
 
@@ -72,7 +72,7 @@ By building a sense of one word's proximity to other similar words, which do not
 
 ![Alt text](../img/man_woman_king_queen.png) 
 
-###<a name="anatomy">Anatomy of Word2vec</a>
+##<a name="anatomy">Anatomy of Word2vec</a>
 
 Here are Deeplearning4j's natural-language processing components:
 
@@ -194,6 +194,8 @@ vec.similarity("word1","word2") will return the cosine similarity of the two wor
 
 ### Visualizing the Model
 
+We rely on TSNE to reduce the dimensionality of word feature vectors and project words into a two or three-dimensional space. 
+
         log.info("Plot TSNE....");
         BarnesHutTsne tsne = new BarnesHutTsne.Builder()
                 .setMaxIter(1000)
@@ -227,11 +229,19 @@ If the word isn't in the vocabulary, Word2vec returns zeros.
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
-Words are read into the vector one at a time, *and scanned back and forth within a certain range*, much like n-grams. (An n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram.)  
+Words are read into the vector one at a time, *and scanned back and forth within a certain range*. The range is an n-gram, and an n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram. A skip-gram simply drops items from the n-gram. 
 
 The skip-gram representation popularized by Mikolov and used in the DL4J implementation has proven to be more accurate than other models, such as continuous bag of words, due to the more generalizable contexts generated. 
 
 This n-gram is then fed into a neural network to learn the significance of a given word vector; i.e. significance is defined as its usefulness as an indicator of certain larger meanings, or labels. 
+
+### <a name="code">A Working Example</a>
+
+Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
+
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=28:97"></script>
+
+After following the instructions in the [Quickstart](../quickstart.html), you can open this example in IntelliJ and hit run to see it work. 
 
 ### <a name="trouble">Troubleshooting & Tuning Word2Vec</a>
 
@@ -260,14 +270,6 @@ You can shut down your Word2vec application and try to delete them.
 
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
-
-### <a name="code">A Working Example</a>
-
-Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
-
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=28:97"></script>
-
-After following the instructions in the [Quickstart](../quickstart.html), you can open this example in IntelliJ and hit run to see it work. 
 
 ###<a name="use">Use Cases</a>
 
