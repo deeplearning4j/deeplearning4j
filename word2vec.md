@@ -51,11 +51,11 @@ How can words represent sounds, and gestures represent arrangements of stone, gl
 
 A neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. 
 
-Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so a 1000 numbers arranged in a vector can represent a word, or a group of words. 
+Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so a 500 numbers arranged in a vector can represent a word, or a group of words. 
 
-Those numbers locate each word as a point in 1000-dimensional space. (Geoff Hinton, teaching people to imagine 13-dimensional space, suggests that students first picture 3-dimensional space and then say to themselves: "Thirteen, thirteen, thirteen." :) 
+Those numbers locate each word as a point in 500-dimensional space. (Geoff Hinton, teaching people to imagine 13-dimensional space, suggests that students first picture 3-dimensional space and then say to themselves: "Thirteen, thirteen, thirteen." :) 
 
-A well trained set of word vectors will place similar words close to each other in that high-dimensional space. The words *oak*, *elm* and *birch* might cluster in one corner, while *war*, *conflict* and *strife* huddle together in another. 
+A well trained set of word vectors will place similar words close to each other in that low-dimensional space. The words *oak*, *elm* and *birch* might cluster in one corner, while *war*, *conflict* and *strife* huddle together in another. 
 
 This in itself is interesting, because similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can start their work. But similarity is not the only association that Word2vec can learn and represent. It can gauge relations between words of one language, and map them to another.
 
