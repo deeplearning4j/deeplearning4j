@@ -67,6 +67,11 @@ Let's imagine some other associations:
 * Destruction: *Oak - Ax = Society - War.*
 * Cause: *Cancer - Cigarettes = Obesity - Fast Food.*
 * Filiation: *George H. W. Bush - George W. Bush = John Adams - John Quincy Adams.*
+* Geopolitics: *Iraq - Violence = Jordan*
+* *Human - Animal = Ethics*
+* *President - Power = Prime Minister*
+* *Library - Books = Hall*
+* *Stock Market ≈ Thermometer*
 
 By building a sense of one word's proximity to other similar words, which do not necessarily contain the same letters, we have moved beyond hard tokens to a smoother sense of meaning. 
 
