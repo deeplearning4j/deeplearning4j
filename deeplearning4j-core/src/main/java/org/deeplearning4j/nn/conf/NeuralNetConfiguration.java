@@ -97,7 +97,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected Distribution dist;
     protected StepFunction stepFunction = new GradientStepFunction();
     protected Layer layer;
-    
+
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
     //feed forward nets
@@ -235,7 +235,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     }
 
-   
+
     /**
      * Creates and returns a copy of this object.  The precise meaning
      * of "copy" may depend on the class of the object. The general
@@ -302,11 +302,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public List<String> variables() {
-        return variables;
+        return new ArrayList<>(variables);
     }
 
     public void addVariable(String variable) {
-        variables.add(variable);
+        if(!variables.contains(variable))
+            variables.add(variable);
     }
 
 
@@ -493,7 +494,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.layer = layer;
             return this;
         }
-        
+
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;
             return this;
@@ -521,7 +522,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 }
             }
 
-           return b;
+            return b;
         }
 
         public Builder featureMapSize(int...featureMapSize) {
