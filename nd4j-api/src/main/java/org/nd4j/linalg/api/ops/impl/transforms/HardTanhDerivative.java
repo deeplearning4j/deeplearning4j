@@ -127,8 +127,8 @@ public class HardTanhDerivative extends BaseTransformOp {
     }
 
     private double hardTanh(double num) {
-        double tanh = FastMath.tanh(num);
-        return tanh < -1.0 ? -1.0 : 1 - num > 1.0 ? 1.0 : 1 - num;
+        return num < -1.0 ? -1.0 : num > 1.0 ? 1.0 : num;
+
     }
 
     @Override
