@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +55,10 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
 
     @Override
     public Iterable<INDArray> call(Iterator<DataSet> dataSetIterator) throws Exception {
+        if(!dataSetIterator.hasNext()) {
+            return Collections.singletonList(Nd4j.zeros(params.value().shape()));
+        }
+        
         List<DataSet> collect = new ArrayList<>();
         while(dataSetIterator.hasNext()) {
             collect.add(dataSetIterator.next());
@@ -64,7 +69,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         network.init();
         network.setParameters(params.value());
         network.fit(data);
-        
+
         return Collections.singletonList(network.params());
 
     }
