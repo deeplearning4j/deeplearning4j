@@ -264,13 +264,11 @@ Kenny Helsens, a data scientist based in Belgium, [applied Deeplearning4j's impl
 
 Andreas Klintberg trained Deeplearning4j's implementation of Word2vec on Swedish, and wrote a [thorough walkthrough on Medium](https://medium.com/@klintcho/training-a-word2vec-model-for-swedish-e14b15be6cb). 
 
-Marketers might seek to establish relationships among products to build a recommendation engine. Investigators might analyze a social graph to surface members of a single group, or other relations they might have to location or financial sponsorship. The applications are inexhaustible. 
+Marketers might seek to establish relationships among products to build a recommendation engine. Investigators might analyze a social graph to surface members of a single group, or other relations they might have to location or financial sponsorship. 
 
 ### <a name="next">Next Steps</a>
 
-An example of sentiment analysis using [Word2Vec is here](http://deeplearning4j.org/sentiment_analysis_word2vec.html). 
-
-(We are still testing our recent implementation. of Doc2vec. A [GLoVE example is here](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/glove/GloveRawSentenceExample.java).)
+(We are still testing our recent implementation. of Doc2vec. An [example of Global Vectors (GLoVE) is here](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/glove/GloveRawSentenceExample.java).)
 
 ###<a name="patent">Google's Word2vec Patent</a>
 
