@@ -110,10 +110,7 @@ public  class RBM extends BasePretrainNetwork {
     @Override
     public Gradient gradient() {
 
-
-
         int k = conf.getK();
-
 
         //POSITIVE PHASE
         Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input());
@@ -371,6 +368,7 @@ public  class RBM extends BasePretrainNetwork {
 
     }
 
+
     /**
      * Reconstructs the visible input.
      * A reconstruction is a propdown of the reconstructed hidden input.
@@ -407,9 +405,6 @@ public  class RBM extends BasePretrainNetwork {
         this.input = input;
         contrastiveDivergence();
     }
-
-
-
 
 
 

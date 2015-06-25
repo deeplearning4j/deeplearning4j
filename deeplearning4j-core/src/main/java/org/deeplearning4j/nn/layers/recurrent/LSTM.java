@@ -447,8 +447,9 @@ public class LSTM extends BaseLayer {
 
 
     @Override
-    public void update(Gradient gradient) {
-        setParams(params().addi(gradient.gradient()));
+    public void update(INDArray gradient, String paramType) {
+        setParams(params().subi(gradient));
+
     }
 
     @Override

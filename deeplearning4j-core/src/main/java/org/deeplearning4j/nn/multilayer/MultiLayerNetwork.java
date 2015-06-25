@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.multilayer;
 
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.EnumUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
@@ -30,15 +31,18 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -551,15 +555,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         INDArray currInput = this.input;
 
         List<INDArray> activations = new ArrayList<>();
-        List<INDArray> zs = new ArrayList<>();
+//        List<INDArray> zs = new ArrayList<>();
         List<INDArray> derivatives = new ArrayList<>();
-//        activations.add(currInput);
-//        zs.add(currInput);
 
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
             applyDropConnectIfNecessary(currInput);
-            zs.add(currInput);
             activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup())));
             derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup()).derivative()));
         }
@@ -1012,6 +1013,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     protected void doBackWard(INDArray input,INDArray labels) {
         setInput(input);
         this.labels = labels;
+        Gradient nextGradients = new DefaultGradient();
 
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You can ignore this message if you just intend on using a a deep neural network with no output layer.");
@@ -1021,12 +1023,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         OutputLayer output = (OutputLayer) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
-        INDArray outputValue = output.getParam("W").sum(Integer.MAX_VALUE);
-        if(outputValue.getFloat(0) == 0f){
+        if(output.conf().getWeightInit() == WeightInit.ZERO){
             throw new IllegalStateException("Output layer weights cannot be intialized to zero when using backprop.");
         };
         output.setLabels(labels);
-        //calculate the backward gradient for every layer
+
+        //calculate and apply the backward gradient for every layer
         for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
             /**
              * Skip the output layer for the indexing and just loop backwards updating the coefficients for each layer.
@@ -1042,46 +1044,55 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             List<Gradient> weightUpdates = new ArrayList<>();
             Pair<List<INDArray>,List<INDArray>> zsAndActivations = zsAndActivations();
             List<INDArray> activations = zsAndActivations.getSecond();
-            List<INDArray> zs = zsAndActivations.getFirst(); //derivatives
             INDArray outputActivation = activations.get(activations.size() - 1);
-            INDArray activationDeriv = zs.get(zs.size() - 1);
+
+            List<INDArray> derivatives = zsAndActivations.getFirst();
+            INDArray activationDeriv = derivatives.get(derivatives.size() - 1);
+            INDArray layerInput = activations.get(activations.size() - 2);
 
             INDArray delta = outputActivation.sub(labels).transpose();
-//            INDArray output2 = activations.get(activations.size() - 2);
 
-            Gradient nextGradients = new DefaultGradient();
-//            ix.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,ixInitial.mmul(output2).transpose());
-            nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(activationDeriv).transpose());
+            // add other cost functions?
+            if(output.conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
+                delta.muli(activationDeriv);
+            }
+
+            nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
             nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
+
             weightUpdates.add(nextGradients);
-            for(int j = numLayers - 1; j > 0; j--) {
-                INDArray currZ = zs.get(j);
-                Layer nextLayer = getLayers()[j + 1];
+
+            // Calculate gradients for previous layers
+            for(int j = numLayers - 1; j >= 0; j--) {
+//                INDArray currZ = zs.get(j);
+                INDArray currDerivative = derivatives.get(j);
                 INDArray currActivation = activations.get(j);
-                nextGradients = getLayers()[j].backwardGradient(currZ, nextLayer, nextGradients, currActivation);
+                Layer nextLayer = getLayers()[j + 1];
+                nextGradients = getLayers()[j].backwardGradient(currDerivative, nextLayer, nextGradients, currActivation);
                 weightUpdates.add(nextGradients);
             }
 
             Collections.reverse(weightUpdates);
-            //propagate updates
+            // Update layers with gradients
             for(int k = 0; k < numLayers; k++) {
-                Gradient update = weightUpdates.get(k);
-                GradientAdjustment.updateGradientAccordingToParams(
-                        getLayers()[k].conf()
-                        ,i
-                        ,update
-                        ,input.slices()
-                        ,getLayers()[k].getOptimizer().adaGradForVariables(),
-                        getLayers()[k].getOptimizer().getLastStep()
-                        ,getLayers()[k]);
-                getLayers()[k].update(update);
+                Layer currLayer = getLayers()[k];
+                for(String paramType : weightUpdates.get(k).gradientForVariable().keySet()) {
+                    INDArray gradients = weightUpdates.get(k).getGradientFor(paramType);
+                    INDArray adjustedGradient = GradientAdjustment.updateGradientAccordingToParams(
+                            i
+                            ,input.slices()
+                            ,currLayer.conf()
+                            ,currLayer.getParam(paramType)
+                            ,gradients
+                            ,currLayer.getOptimizer().adaGradForVariables().get(paramType)
+                            ,currLayer.getOptimizer().getLastStep().get(paramType)
+                    );
+                    currLayer.update(adjustedGradient, paramType);
+                }
             }
-
             for(IterationListener listener :  listeners)
                 listener.iterationDone(getOutputLayer(),i);
         }
-
-
 
     }
 
@@ -1364,9 +1375,10 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     }
 
     @Override
-    public void update(Gradient gradient) {
+    public void update(INDArray gradient, String paramType) {
 
     }
+
 
     /**
      * Score of the model (relative to the objective function)
