@@ -25,7 +25,7 @@ Contents
 
 [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java, which works with GPUs. 
 
-Word2vec is a two-layer neural net that processes text before that text is handled by deep-learning algorithms. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec does not implement deep learning, it does turn text into a numerical form that deep-learning nets can understand. 
+Word2vec is a two-layer neural net that processes text before that text is handled by deep-learning algorithms. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a deep net, it does turn text into a numerical form that deep-learning nets can understand. 
 
 Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned.
 
@@ -55,21 +55,21 @@ Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on
 
 Those numbers locate each word as a point in 1000-dimensional space. (Geoff Hinton, teaching people to imagine 13-dimensional space, suggests that students first picture 3-dimensional space and then say to themselves: "Thirteen, thirteen, thirteen." :) 
 
-A well trained set of word vectors will place similar words close to each other in that high-dimensional space. The words oak, elm and birch might cluster in one corner, while war, conflict and strife huddle together in another. 
+A well trained set of word vectors will place similar words close to each other in that high-dimensional space. The words *oak*, *elm* and *birch* might cluster in one corner, while *war*, *conflict* and *strife* huddle together in another. 
 
-This in itself is interesting, because similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can start their work. But similarity is not the only association that Word2vec can learn and represent. 
+This in itself is interesting, because similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can start their work. But similarity is not the only association that Word2vec can learn and represent. It can gauge relations between words of one language, and map them to another.
 
 ![Alt text](../img/word2vec_translation.png) 
 
-These vectors are in fact the basis of a more comprehensive arithmatic of words. Not only will Rome, Paris, Berlin and Beijing cluster near each other, but they will each have similar distances in the vector space with regard to the countries whose capitals they are; i.e. Rome - Italy = Beijing - China. And if you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
+These vectors are in fact the basis of a more comprehensive geometry of words. Not only will Rome, Paris, Berlin and Beijing cluster near each other, but they will each have similar distances in the vector space with regard to the countries whose capitals they are; i.e. Rome - Italy = Beijing - China. And if you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
 
 ![Alt text](../img/countries_capitals.png) 
 
 Let's imagine some other associations:
 
-* Destruction: Oak - Ax = Society - War. 
-* Cause: Cancer - Cigarettes = Obesity - Fast Food.
-* Filiation: George H. W. Bush - George W. Bush = John Adams - John Quincy Adams.
+* Destruction: *Oak - Ax = Society - War.*
+* Cause: *Cancer - Cigarettes = Obesity - Fast Food.*
+* Filiation: *George H. W. Bush - George W. Bush = John Adams - John Quincy Adams.*
 
 By building a sense of one word's proximity to other similar words, which do not necessarily contain the same letters, we have moved beyond hard tokens to a smoother sense of meaning. 
 
