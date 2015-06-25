@@ -41,7 +41,7 @@
                                 </manifest>
                                 <manifestEntries>
                                     <!-- <addClasspath/> is broken: http://jira.codehaus.org/browse/MJAR-61 -->
-                                    <Class-Path>./ javacpp.jar ${project.artifactId}-linux-arm.jar ${project.artifactId}-linux-x86.jar ${project.artifactId}-linux-x86_64.jar ${project.artifactId}-macosx-x86.jar ${project.artifactId}-macosx-x86_64.jar ${project.artifactId}-windows-x86.jar ${project.artifactId}-windows-x86_64.jar</Class-Path>
+                                    <Class-Path>./javacpp.jar ${project.artifactId}.jar</Class-Path>
                                     <Name>org/nd4j/linalg/cpu/javacpp</Name>
                                     <Implementation-Title>${project.name}</Implementation-Title>
                                     <Implementation-Vendor>Skymind</Implementation-Vendor>
@@ -253,129 +253,7 @@
             </build>
         </profile>
 
-        <!-- Provide convenient profiles to set commonly used paths for Android -->
-        <profile>
-            <id>android-arm</id>
-            <activation>
-                <property>
-                    <name>platform</name>
-                    <value>android-arm</value>
-                </property>
-            </activation>
-            <properties>
-                <platform>android-arm</platform>
-                <platform.root>${user.home}/Android/android-ndk/</platform.root>
-                <platform.compiler>toolchains/arm-linux-androideabi-4.6/prebuilt/${os.name}-${os.arch}/bin/arm-linux-androideabi-g++</platform.compiler>
-            </properties>
-        </profile>
-        <profile>
-            <id>android-x86</id>
-            <activation>
-                <property>
-                    <name>platform</name>
-                    <value>android-x86</value>
-                </property>
-            </activation>
-            <properties>
-                <platform>android-x86</platform>
-                <platform.root>${user.home}/Android/android-ndk/</platform.root>
-                <platform.compiler>toolchains/x86-4.6/prebuilt/${os.name}-${os.arch}/bin/i686-linux-android-g++</platform.compiler>
-            </properties>
-        </profile>
 
-        <!-- Include platform dependency by default for modules without a C++ build script file -->
-        <profile>
-            <id>platform-dependency-default</id>
-            <activation>
-                <file>
-                    <missing>${user.dir}/cppbuild.sh</missing>
-                </file>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>${platform}</classifier>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>platform-dependency</id>
-            <activation>
-                <property>
-                    <name>platform.dependency</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>${platform}</classifier>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>platform-dependencies</id>
-            <activation>
-                <property>
-                    <name>platform.dependencies</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>${platform}</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>android-arm</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>android-x86</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>linux-x86</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>linux-x86_64</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>macosx-x86_64</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>windows-x86</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${project.artifactId}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>windows-x86_64</classifier>
-                </dependency>
-            </dependencies>
-        </profile>
 
         <!-- If someone knows a better way to do this, please do let me know! -->
         <profile>
