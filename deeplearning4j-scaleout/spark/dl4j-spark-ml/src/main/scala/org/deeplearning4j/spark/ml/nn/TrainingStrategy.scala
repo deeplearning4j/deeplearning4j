@@ -24,7 +24,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
-import scala.collection.JavaConversions
+import scala.collection.JavaConversions._
 
 /**
  * An abstract training strategy for a distributed neural network, given partitions of data.
@@ -68,7 +68,7 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
      def initialParams() = {
        val network = new MultiLayerNetwork(conf)
        network.init()
-       network.setListeners(JavaConversions.seqAsJavaList(List(new ScoreIterationListener(1))))
+       network.setListeners(List(new ScoreIterationListener(1)))
        network.params()
      }
    
@@ -83,7 +83,7 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
 
          val network = new MultiLayerNetwork(conf)
          network.init()
-         network.setListeners(JavaConversions.seqAsJavaList(List(new ScoreIterationListener(1))))
+         network.setListeners(List(new ScoreIterationListener(1)))
          network.setParams(broadcastedParams.value)
          
          partitionTrainer(network, iterator)
@@ -91,7 +91,7 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
          accumulatedParams += network.params()
        }
        
-       networkParams = accumulatedParams.value.divi(rdd.partitions.length);
+       networkParams = accumulatedParams.value.divi(rdd.partitions.length)
      }
      
      networkParams
