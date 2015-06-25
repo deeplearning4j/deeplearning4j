@@ -124,6 +124,10 @@ The neural net config's parameters are then assigned to an instance of the Multi
 
 In computer science, a parameter is a value you pass into a function. In neural net parlance, parameter is usually synonymous with weight or coefficient; i.e. the parts of the model that filter, amplify or mute the input, and are adjusted as the algorithm learns. In addition, neural nets have something called hyperparameters, which are the properties of the learning algorithm that we set in a neural net configuration. In other words, the parameters mentioned above are hyperparameters, and by tuning them right you can make net's learn better and faster.  
 
+A NeuralNetConfiguration lets you set the hyperparameters for a single shallow net, which we then replicate across all the layers of the multilayer net via the .list() operator below. All layers share the same hyperparameters unless you explicitly state otherwise (with an override, for example).
+
+A *NeuralNetConfiguration* object is the fundamental object used to construct Layers. Many single layers combined make for a deeper neural network. Note that Datasets are transformed as they are processed by each layer -- before and after each layer, they are subjected to additional pre- or post-processing such as normalization.
+
           .layer(new RBM()) 
 
 **Line 3** sets the layer type to RBM, or restricted Boltzmann machine, which is the shallow, building-block layer that is stacked to become a deep-belief network. 
@@ -190,11 +194,11 @@ In computer science, a parameter is a value you pass into a function. In neural 
 
           .list(2) 
 
-**Line 17** sets the number of neural net layers, excluding the input layer, at two. The number of layers will vary from one deep net to the other, and is an important variable to experiment with as you seek the net most appropriate for your dataset.
+**Line 17** sets the number of neural net layers, excluding the input layer, at two. The number of layers will vary from one deep net to the other, and is an important variable to experiment with as you seek the net most appropriate for your dataset. *list* is zero-indexed and includes the input and output layers, so setting list to 2 means that you told it to create one input layer, one output layer, and one hidden layer. Since it only has one hidden layer here, we'll only enter one number into the next hyperparameter, hiddenLayerSizes. List basically transitions a NeuralNetConfiguration that by definition only applies to one layer, to all the layers in a multilayer net. 
 
           .hiddenLayerSizes(3) 
 
-**Line 18** sets the size of the hidden layers, measured in the number of nodes each contains, at three. This number can vary layer by layer, and often does. Small numbers of nodes like this are the exception -- in other deep nets, you will see layers with hundreds of nodes, or more. To add hidden layers and set their sizes, you would first increase the number in the list; e.g. .list(5). Then you would add a layer size, the number of nodes per layer, for each additional layer. So for .list(5) you would do something like this .hiddenLayerSizes(3,4,5,6). 
+**Line 18** sets the size of the hidden layer(s), measured in the number of nodes each contains, at three. This number can vary layer by layer, and often does. Small numbers of nodes like this are the exception -- in other deep nets, you will see layers with hundreds of nodes, or more. To add hidden layers and set their sizes, you would first increase the number in the list; e.g. .list(5). Then you would add a layer size, the number of nodes per layer, for each additional layer. So for .list(5) you would do something like this .hiddenLayerSizes(3,4,5,6). 
 
      .override(1, new ConfOverride() {
         @Override
