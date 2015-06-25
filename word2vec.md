@@ -11,7 +11,6 @@ Contents
 * <a href="#embed">Neural Word Embeddings</a>
 * <a href="#anatomy">Anatomy of Word2Vec</a>
 * <a href="#train">Training</a>
-* <a href="#windows">Moving Windows</a>
 * <a href="#grams">N-grams & Skip-grams</a>
 * <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
@@ -84,13 +83,13 @@ Here are Deeplearning4j's natural-language processing components:
 * **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both bag of words as well as the word vector lookup table)
 * **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created.
 
-Briefly, a two-layer neural net is trained with <a href="../glossary.html#downpoursgd">Gradient Descent</a>. The connection weights for the neural net are of a specified size. *syn0* in Word2vec terms is the wordvector lookup table, *syn1* is the activation, and a hierarchical Softmax trains on the two-layer net to calculate the likelihoods of various words being near one another. The Word2vec implementation here uses <a href="../glossary.html#skipgram">skipgrams</a>.
+The Word2vec implementation here uses <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling.
 
 ## <a name="train">Training</a> 
 
-Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table to compose windows of training text for various tasks in natural-language processing.
+Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table for various tasks in natural-language processing.
 
-After lemmatization, Word2vec will conduct automatic multithreaded training based on your sentence data. Then you'll want to save the model. There are a few different components to Word2vec. One of these is the vocab cache. The normal way to save models in deeplearning4j is via the SerializationUtils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
+After tokenization, Word2vec will conduct automatic multithreaded training based on your corpus. Then you'll want to save the model. The normal way to save models in deeplearning4j is via the SerializationUtils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
 
         SerializationUtils.saveObject(vec, new File("mypath"));
        	 
@@ -104,50 +103,6 @@ You can then use Word2vec as a lookup table:
         double[] wordVector = vec.getWordVector("myword");
 
 If the word isn't in the vocabulary, Word2vec returns zeros -- nothing more.
-
-###<a name="windows">Moving Windows</a>
-
-Word2Vec works with neural networks by facilitating the moving-window model for training on word occurrences. There are two ways to get windows for text:
-
-      List<Window> windows = Windows.windows("some text");
-
-This will select moving windows of five tokens from the text (each member of a window is a token).
-
-You also may want to use your own custom tokenizer like this:
-
-      TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-      List<Window> windows = Windows.windows("text",tokenizerFactory);
-
-This will create a tokenizer for the text, and moving windows based on the tokenizer.
-
-      List<Window> windows = Windows.windows("text",tokenizerFactory);
-
-Notably, you can also specify the window size like so:
-
-      TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-      List<Window> windows = Windows.windows("text",tokenizerFactory,windowSize);
-
-Training word sequence models is done through optimization with the [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm).
-
-The general idea is to train moving windows with Word2vec and classify individual windows (with a focus word) with certain labels. This could be done for part-of-speech tagging, semantic-role labeling, named-entity recognition and other tasks.
-
-Viterbi calculates the most likely sequence of events (labels) given a transition matrix (the probability of going from one state to another). 
-
-Each line will be handled something like this:
-
-        <ORGANIZATION> IBM </ORGANIZATION> invented a question-answering robot called <ROBOT>Watson</ROBOT>.
-
-Given a set of text, Windows.windows automatically infers labels from bracketed capitalized text.
-
-If you do this:
-
-        String label = window.getLabel();
-
-on anything containing that window, it will automatically contain that label. This is used in bootstrapping a prior distribution over the set of labels in a training corpus.
-
-The following code saves your Viterbi implementation for later use:
-
-        SerializationUtils.saveObject(viterbi, new File("mypath"));
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
