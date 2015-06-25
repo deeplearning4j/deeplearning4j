@@ -4,9 +4,9 @@ layout: default
 
 # What is Deeplearning4j?
 
-Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../gpu_aws.html), DL4J is designed to be used in business environments, rather than as a research tool. 
+Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../gpu_aws.html), DL4J is designed to be used in business environments, rather than as a research tool. [Skymind](http://skymind.io) is its commercial support arm.
 
-It aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors. 
+Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors. 
 
 By following the [instructions on our Quick Start page](../quickstart.html), you can run your first examples of trained neural nets in minutes. 
 
