@@ -111,8 +111,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         model.setScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
         for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
-            INDArray adjustedGradient = updateGradientAccordingToParams(pair.getFirst().getGradientFor(paramType), model, model.batchSize(), paramType);
-            pair.getFirst().setGradientFor(paramType, adjustedGradient);
+            INDArray gradient = pair.getFirst().getGradientFor(paramType);
+            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType);
         }
         return pair;
     }
@@ -267,8 +267,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public INDArray updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType) {
-        return GradientAdjustment.updateGradientAccordingToParams(
+    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType) {
+        GradientAdjustment.updateGradientAccordingToParams(
                 iteration
                 ,batchSize
                 ,conf
@@ -276,6 +276,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 ,gradient
                 ,adaGradForVariable.get(paramType)
                 ,lastStep.get(paramType)
+                ,paramType
                 );
     }
 
