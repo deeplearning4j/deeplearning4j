@@ -10,7 +10,7 @@ Contents
 * <a href="#intro">Introduction</a>
 * <a href="#embed">Neural Word Embeddings</a>
 * <a href="#anatomy">Anatomy of Word2Vec</a>
-* <a href="#train">Training</a>
+* <a href="#setup">Setup</a>
 * <a href="#grams">N-grams & Skip-grams</a>
 * <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
@@ -85,14 +85,121 @@ Here are Deeplearning4j's natural-language processing components:
 
 The Word2vec implementation here uses <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling.
 
-## <a name="train">Training</a> 
+## <a name="setup">Word2Vec Setup</a> 
 
-Word2Vec trains on raw text. It then records the context, or usage, of each word encoded as word vectors. After training, it's used as lookup table for various tasks in natural-language processing.
+Create a new project in IntelliJ using Maven. Then specify these properties and dependencies in the POM.xml file in your project's root directory.
 
-After tokenization, Word2vec will conduct automatic multithreaded training based on your corpus. Then you'll want to save the model. The normal way to save models in deeplearning4j is via the SerializationUtils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
+                <properties>
+                  <nd4j.version>0.0.3.5.5.3</nd4j.version>
+                  <dl4j.version>0.0.3.3.3.alpha1</dl4j.version>
+                </properties>
+                
+                <dependencies>
+                  <dependency>
+                     <groupId>org.deeplearning4j</groupId>
+                     <artifactId>deeplearning4j-ui</artifactId>
+                     <version>${dl4j.version}</version>
+                   </dependency>
+                   <dependency>
+                     <groupId>org.deeplearning4j</groupId>
+                     <artifactId>deeplearning4j-nlp</artifactId>
+                     <version>${dl4j.version}</version>
+                   </dependency>
+                   <dependency>
+                     <groupId>org.nd4j</groupId>
+                     <artifactId>nd4j-jblas</artifactId>
+                     <version>${nd4j.version}</version>
+                   </dependency>
+                </dependencies>
 
-        SerializationUtils.saveObject(vec, new File("mypath"));
-       	 
+Now create and name a new class in Java. After that, you'll take the raw sentences in your .txt file, traverse them with your iterator, and subject them to some sort of preprocessing, such as converting all words to lowercase. 
+
+        log.info("Load data....");
+        ClassPathResource resource = new ClassPathResource("raw_sentences.txt");
+        SentenceIterator iter = new LineSentenceIterator(resource.getFile());
+        iter.setPreProcessor(new SentencePreProcessor() {
+            @Override
+            public String preProcess(String sentence) {
+                return sentence.toLowerCase();
+            }
+        });
+
+Word2vec needs to be fed words rather than whole sentences, so the next step is to tokenize the data. To tokenize a text is to break it up into its atomic units, creating a new token each time you hit a white space, for example. 
+
+        log.info("Tokenize data....");
+        final EndingPreProcessor preProcessor = new EndingPreProcessor();
+        TokenizerFactory tokenizer = new DefaultTokenizerFactory();
+        tokenizer.setTokenPreProcessor(new TokenPreProcess() {
+            @Override
+            public String preProcess(String token) {
+                token = token.toLowerCase();
+                String base = preProcessor.preProcess(token);
+                base = base.replaceAll("\\d", "d");
+                if (base.endsWith("ly") || base.endsWith("ing"))
+                    System.out.println();
+                return base;
+            }
+        });
+
+Now that the data is ready, you can configure the Word2vec neural net and feed in the tokens. 
+
+        int batchSize = 1000;
+        int iterations = 30;
+        int layerSize = 300;
+        
+        log.info("Build model....");
+        Word2Vec vec = new Word2Vec.Builder()
+                .batchSize(batchSize)
+                .sampling(1e-5)
+                .minWordFrequency(5)
+                .useAdaGrad(false)
+                .layerSize(layerSize)
+                .iterations(iterations)
+                .learningRate(0.025)
+                .minLearningRate(1e-2)
+                .negativeSample(10)
+                .iterate(iter)
+                .tokenizerFactory(tokenizer)
+                .build();
+        vec.fit();
+
+This configuration accepts a number of hyperparameters. 
+
+### Evaluating the Model
+
+The next step is to evaluate the quality of your feature vectors. 
+
+        log.info("Evaluate model....");
+        double sim = vec.similarity("people", "money");
+        log.info("Similarity between people and money: " + sim);
+        Collection<String> similar = vec.wordsNearest("day", 20);
+        log.info("Similar words to 'day' : " + similar);
+
+vec.similarity("word1","word2") will return the cosine similarity of the two words you enter. The closer it is to one, the more similar the net perceives them to be (see the Sweden example above). With wordsNearest, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest.
+
+### Visualizing the Model
+
+        log.info("Plot TSNE....");
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
+                .setMaxIter(1000)
+                .stopLyingIteration(250)
+                .learningRate(500)
+                .useAdaGrad(false)
+                .theta(0.5)
+                .setMomentum(0.5)
+                .normalize(true)
+                .usePca(false)
+                .build();
+        vec.lookupTable().plotVocab(tsne);
+
+### Saving, Reloading, Using the Model
+
+You'll want to save the model. The normal way to save models in deeplearning4j is via the SerializationUtils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
+
+        log.info("Save vectors....");
+        SerializationUtils.saveObject(vec, new File("vec.ser"));
+        WordVectorSerializer.writeWordVectors(vec, "words.txt");
+
 This will save Word2vec to mypath. You can reload it into memory like this:
 
         Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
@@ -102,39 +209,15 @@ You can then use Word2vec as a lookup table:
         INDArray wordVector = vec.getWordVectorMatrix("myword");
         double[] wordVector = vec.getWordVector("myword");
 
-If the word isn't in the vocabulary, Word2vec returns zeros -- nothing more.
+If the word isn't in the vocabulary, Word2vec returns zeros.
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
 Words are read into the vector one at a time, *and scanned back and forth within a certain range*, much like n-grams. (An n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram.)  
 
-The skip-gram representation popularized by Mikolov and used in the DL4J implementation has proven to be more accurate than other models due to the more generalizable contexts generated. 
+The skip-gram representation popularized by Mikolov and used in the DL4J implementation has proven to be more accurate than other models, such as continuous bag of words, due to the more generalizable contexts generated. 
 
 This n-gram is then fed into a neural network to learn the significance of a given word vector; i.e. significance is defined as its usefulness as an indicator of certain larger meanings, or labels. 
-
-Word2vec uses different kinds of "windows" to take in words: continuous n-grams and skip-grams. 
-
-Consider the following sentence:
-
-    How’s the weather up there?
-
-This can be broken down into a series of continuous trigrams.
-
-    {“How’s”, “the”, “weather”}
-    {“the”, “weather”, “up”}
-    {“weather”, “up”, “there”}
-
-It can also be converted into a series of skip-grams.
-
-    {“How’s”, “the”, “up”}
-    {“the”, “weather”, “there”}
-    {“How’s”, “weather”, “up”}
-    {“How’s”, “weather”, “there”}
-    ...
-
-A skip-gram, as you can see, is a form of discontinous n-gram.
-
-In the literature, you will often see references to a "context window." In the example above, the context window is 3. Many windows use a context window of 5. 
 
 ### <a name="dataset">The Dataset</a>
 
