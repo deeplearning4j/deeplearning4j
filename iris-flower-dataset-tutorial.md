@@ -169,12 +169,12 @@ In computer science, a parameter is a value you pass into a function. In neural 
 * Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. That’s where momentum influences the gradient your model uses for the next step:
 
 					new gradient = (previous gradient * momentum) - current provisional gradient
+* Constraining the gradient simply divides it by the norm 2 of that gradient.
 
-**Line 13** sets the value of k to 1.  
 
           .k(1)
 
-The k on an RBM represents the number of samples collected for each iteration. Briefly, an RBM uses Markov Chain Monte Carlo (MCMC) to calculate the gradient, as well as an algorithm called contrastive divergence that has a k parameter you control. (k = 1 is usually sufficient.)
+**Line 13** sets the value of k to 1. The k on an RBM represents the number of samples collected for each iteration. Briefly, an RBM uses Markov Chain Monte Carlo (MCMC) to calculate the gradient, as well as an algorithm called contrastive divergence that has a k parameter you control. (k = 1 is usually sufficient.)
 
           .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
 
@@ -194,7 +194,7 @@ The k on an RBM represents the number of samples collected for each iteration. B
 
           .hiddenLayerSizes(3) 
 
-**Line 18** sets the size of the hidden layers, measured in the number of nodes each contains, at three. This number can vary layer by layer, and often does. Small numbers of nodes like this are the exception -- in other deep nets, you will see layers with hundreds of nodes, or more. 
+**Line 18** sets the size of the hidden layers, measured in the number of nodes each contains, at three. This number can vary layer by layer, and often does. Small numbers of nodes like this are the exception -- in other deep nets, you will see layers with hundreds of nodes, or more. To add hidden layers and set their sizes, you would first increase the number in the list; e.g. .list(5). Then you would add a layer size, the number of nodes per layer, for each additional layer. So for .list(5) you would do something like this .hiddenLayerSizes(3,4,5,6). 
 
      .override(1, new ConfOverride() {
         @Override
