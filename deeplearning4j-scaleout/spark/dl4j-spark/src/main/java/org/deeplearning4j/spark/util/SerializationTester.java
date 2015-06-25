@@ -22,10 +22,8 @@ public class SerializationTester {
     public static void testSerialization(ActorSystem system,Object test) throws Exception {
         // Get the Serialization Extension
         Serialization serialization = SerializationExtension.get(system);
-
-
         // Find the Serializer for it
-        Serializer serializer = serialization.findSerializerFor(system);
+        Serializer serializer = serialization.findSerializerFor(test);
         serializer.toBinary(test);
 
 
