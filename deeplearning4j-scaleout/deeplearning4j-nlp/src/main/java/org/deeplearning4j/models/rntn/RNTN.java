@@ -1057,7 +1057,8 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public void update(Gradient gradient) {
+    public void update(INDArray gradient, String paramType) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

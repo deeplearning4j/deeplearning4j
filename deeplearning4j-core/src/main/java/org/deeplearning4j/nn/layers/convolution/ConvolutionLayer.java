@@ -99,6 +99,11 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
+    public void update(INDArray gradient, String paramType) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public INDArray preOutput(INDArray x) {
         throw new UnsupportedOperationException();
     }
@@ -159,12 +164,6 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void fit() {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public void update(Gradient gradient) {
         throw new UnsupportedOperationException();
 
     }
