@@ -81,16 +81,16 @@ Here are Deeplearning4j's natural-language processing components:
 * **SentenceIterator/DocumentIterator**: Used to iterate over a dataset. A SentenceIterator returns strings and a DocumentIterator works with inputstreams. Use the SentenceIterator wherever possible.
 * **Tokenizer/TokenizerFactory**: Used in tokenizing the text. In NLP terms, a sentence is represented as a series of tokens. A TokenizerFactory creates an instance of a tokenizer for a "sentence." 
 * **VocabCache**: Used for tracking metadata including word counts, document occurrences, the set of tokens (not vocab in this case, but rather tokens that have occurred), vocab (the features included in both bag of words as well as the word vector lookup table)
-* **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created.
+* **Inverted Index**: Stores metadata about where words occurred. Can be used for understanding the dataset. A Lucene index with the Lucene implementation[1] is automatically created. 
 
-The Word2vec implementation here uses <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling.
+While Word2vec refers to a family of related algorithms, this implementation uses <a href="../glossary.html#skipgram">Skip-Gram</a> Negative Sampling.
 
 ## <a name="setup">Word2Vec Setup</a> 
 
 Create a new project in IntelliJ using Maven. Then specify these properties and dependencies in the POM.xml file in your project's root directory.
 
                 <properties>
-                  <nd4j.version>0.0.3.5.5.3</nd4j.version>
+                  <nd4j.version>0.0.3.5.5.3</nd4j.version> // check Maven Central for latest versions
                   <dl4j.version>0.0.3.3.3.alpha1</dl4j.version>
                 </properties>
                 
@@ -107,7 +107,7 @@ Create a new project in IntelliJ using Maven. Then specify these properties and 
                    </dependency>
                    <dependency>
                      <groupId>org.nd4j</groupId>
-                     <artifactId>nd4j-jblas</artifactId>
+                     <artifactId>nd4j-jblas</artifactId> //you can choose different backends
                      <version>${nd4j.version}</version>
                    </dependency>
                 </dependencies>
@@ -149,16 +149,16 @@ Now that the data is ready, you can configure the Word2vec neural net and feed i
         
         log.info("Build model....");
         Word2Vec vec = new Word2Vec.Builder()
-                .batchSize(batchSize)
-                .sampling(1e-5)
-                .minWordFrequency(5)
-                .useAdaGrad(false)
-                .layerSize(layerSize)
-                .iterations(iterations)
-                .learningRate(0.025)
-                .minLearningRate(1e-2)
-                .negativeSample(10)
-                .iterate(iter)
+                .batchSize(batchSize) //# words per minibatch. amt to process at one time
+                .sampling(1e-5) // negative sampling. drops words out
+                .minWordFrequency(5) // 
+                .useAdaGrad(false) //
+                .layerSize(layerSize) // word feature vector size
+                .iterations(iterations) // # iterations to train
+                .learningRate(0.025) // 
+                .minLearningRate(1e-2) // learning rate decays wrt # words. floor learning
+                .negativeSample(10) // sample size 10 words
+                .iterate(iter) //
                 .tokenizerFactory(tokenizer)
                 .build();
         vec.fit();
@@ -197,7 +197,6 @@ vec.similarity("word1","word2") will return the cosine similarity of the two wor
 You'll want to save the model. The normal way to save models in deeplearning4j is via the SerializationUtils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
 
         log.info("Save vectors....");
-        SerializationUtils.saveObject(vec, new File("vec.ser"));
         WordVectorSerializer.writeWordVectors(vec, "words.txt");
 
 This will save Word2vec to mypath. You can reload it into memory like this:
