@@ -214,7 +214,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public void shuffle() {
         List<DataSet> list = asList();
         Collections.shuffle(list);
-        DataSet ret = DataSet.merge(list);
+        DataSet ret = DataSet.merge(list,false);
         setFeatures(ret.getFeatures());
         setLabels(ret.getLabels());
     }
