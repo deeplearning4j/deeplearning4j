@@ -67,6 +67,12 @@ public class DefaultGradient implements Gradient {
     }
 
     @Override
+    public INDArray setGradientFor(String variable, INDArray newGradient) {
+        return gradients.put(variable, newGradient);
+    }
+
+
+    @Override
     public String toString() {
         return "DefaultGradient{" +
                 "gradients=" + gradients +
