@@ -19,12 +19,14 @@
 
 package org.nd4j.linalg.dataset;
 
+import java.io.Serializable;
+
 /**
  * Split test and train
  *
  * @author Adam Gibson
  */
-public class SplitTestAndTrain {
+public class SplitTestAndTrain implements Serializable {
 
     private DataSet train, test;
 
