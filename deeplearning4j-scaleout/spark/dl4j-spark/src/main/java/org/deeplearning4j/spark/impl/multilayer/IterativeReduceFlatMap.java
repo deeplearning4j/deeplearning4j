@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +55,10 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
 
     @Override
     public Iterable<INDArray> call(Iterator<DataSet> dataSetIterator) throws Exception {
+        if(!dataSetIterator.hasNext()) {
+            return Collections.singletonList(Nd4j.zeros(params.value().shape()));
+        }
+
         List<DataSet> collect = new ArrayList<>();
         while(dataSetIterator.hasNext()) {
             collect.add(dataSetIterator.next());
@@ -62,9 +67,12 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         DataSet data = DataSet.merge(collect);
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
-        network.setParameters(params.value());
+        INDArray val = params.value();
+        if(val.length() != network.numParams())
+            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+        network.setParameters(val);
         network.fit(data);
-        
+
         return Collections.singletonList(network.params());
 
     }
