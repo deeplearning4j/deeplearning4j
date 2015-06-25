@@ -13,7 +13,7 @@ Contents
 * <a href="#setup">Setup, Load and Train</a>
 * <a href="#code">A Code Example</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
-* <a href="#use">A Use Case</a>
+* <a href="#use">Word2vec Use Cases</a>
 * <a href="#next">Next Steps</a>
 * <a href="#patent">Word2vec Patent</a>
 * <a href="#foreign">Foreign Languages</a>
