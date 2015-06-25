@@ -25,6 +25,7 @@ public class SerializationTester {
         // Find the Serializer for it
         Serializer serializer = serialization.findSerializerFor(test);
         serializer.toBinary(test);
+        serializer.fromBinary(serializer.toBinary(test));
 
 
     }
