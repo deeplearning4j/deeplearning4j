@@ -149,7 +149,7 @@ Now that the data is ready, you can configure the Word2vec neural net and feed i
         
         log.info("Build model....");
         Word2Vec vec = new Word2Vec.Builder()
-                .batchSize(batchSize) //# words per minibatch. amt to process at one time
+                .batchSize(batchSize) //# words per minibatch. 
                 .sampling(1e-5) // negative sampling. drops words out
                 .minWordFrequency(5) // 
                 .useAdaGrad(false) //
@@ -163,7 +163,18 @@ Now that the data is ready, you can configure the Word2vec neural net and feed i
                 .build();
         vec.fit();
 
-This configuration accepts a number of hyperparameters. 
+This configuration accepts a number of hyperparameters. A few require more explanation. 
+
+*batchSize* is the amount of words you process at any one time. 
+*minWordFrequency* is the floor on the number of times a word must appear in the corpus. Here, if it appears less than 5 times, it is not learned. Words must appear in multiple contexts to learn useful features about them. In very large corpora, it's reasonable to raise the minimum.
+*useAdaGrad* - Adagrad creates a different gradient for each feature. Here we are not concerned with that. 
+*layerSize* specifies the number of features in the word vector. This is equal to the number of dimensions in the featurespace. Words represented by 500 features become points in a 500-dimensional space.
+*iterations* this is the number of times you allow the net to update its coefficients for one batch of the data. Too few iterations mean it many not have time to learn all it can; too many will make the net's training longer.
+*learningRate* is the step size for each update of the coefficients, as words are repositioned in the feature space. 
+*minLearningRate* is the floor on the learning rate. Learning rate decays as the number of words you train on decreases. If learning rate shrinks too much, the net's learning is no longer efficient. This keeps the coefficients moving. 
+*iterate* tells the net what batch of the dataset it's training on. 
+*tokenizer* feeds it the words from the current batch. 
+*vec.fit()* tells the configured net to begin training. 
 
 ### Evaluating the Model
 
