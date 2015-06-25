@@ -54,11 +54,6 @@ public class RecursiveAutoEncoder extends BaseLayer {
     }
 
     @Override
-    public void update(Gradient gradient) {
-
-    }
-
-    @Override
     public double score() {
         return currScore;
     }

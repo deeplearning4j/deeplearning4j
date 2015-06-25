@@ -110,15 +110,13 @@ public abstract class BaseLayer implements Layer {
     public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
         //needs to be number of features by examples
         Gradient ret = new DefaultGradient();
-
         INDArray nextWeights = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray nextWeightDelta = nextGradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray weightDelta = nextWeights.mmul(nextWeightDelta.transpose());
-//        INDArray deriv = derivativeActivation(z);
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightDelta.mmul(derivative).transpose());
-
         INDArray nextBiasDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, nextBiasDelta.mmul(derivative).transpose());
+        INDArray weightDelta = nextWeights.mmul(nextBiasDelta.transpose()).transpose();
+        weightDelta.muli(derivative);
+
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightDelta.transpose().mmul(activation).transpose());
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, weightDelta);
         return ret;
     }
 
@@ -168,23 +166,18 @@ public abstract class BaseLayer implements Layer {
     public void iterate(INDArray input) {
         this.input = input;
         Gradient gradient = gradient();
-        update(gradient);
+        for(String paramType : gradient.gradientForVariable().keySet()) {
+            update(gradient.getGradientFor(paramType), paramType);
+        }
     }
 
 
-
     @Override
-    public void update(Gradient gradient) {
-        for(String s : conf.variables()) {
-            if(gradient.gradientForVariable().containsKey(s)) {
-            	if (s.equals(DefaultParamInitializer.BIAS_KEY) ) {
-                    getParam(s).subi(gradient.gradientForVariable().get(s).mean(0));
-                }
-                else
-                    getParam(s).subi(gradient.gradientForVariable().get(s));
-
-            }
-        }
+    public void update(INDArray gradient, String paramType) {
+        if (paramType.contains("b"))
+            setParam(paramType, getParam(paramType).subi(gradient.mean(0)));
+        else
+            setParam(paramType, getParam(paramType).subi(gradient));
     }
 
 
@@ -492,6 +485,7 @@ public abstract class BaseLayer implements Layer {
         return layer;
     }
 
+    @Deprecated
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
         //figure out how to set ixes and deltas
