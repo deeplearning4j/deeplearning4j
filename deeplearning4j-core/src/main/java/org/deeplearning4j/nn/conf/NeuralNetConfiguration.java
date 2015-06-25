@@ -91,7 +91,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean constrainGradientToUnitNorm = false;
     /* RNG for sampling. */
     @Deprecated
-    protected DefaultRandom rng;
+    protected transient DefaultRandom rng;
     protected long seed;
     //weight initialization
     protected Distribution dist;
