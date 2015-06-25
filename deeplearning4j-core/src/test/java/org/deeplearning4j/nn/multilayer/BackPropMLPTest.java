@@ -308,8 +308,11 @@ public class BackPropMLPTest {
 				.layer(new RBM())
 				.learningRate(0.1).useAdaGrad(false)
 
-				.regularization(false).l1(0.0).l2(0.0)
-				.dropOut(0.0).momentum(0.0)
+				.regularization(false)
+				.l1(0.0)
+				.l2(0.0)
+				.dropOut(0.0)
+				.momentum(0.0)
 				.applySparsity(false).sparsity(0.0)
 				.seed(12345L)
 
