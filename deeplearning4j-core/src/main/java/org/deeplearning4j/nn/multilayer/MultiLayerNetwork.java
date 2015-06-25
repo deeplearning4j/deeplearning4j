@@ -549,14 +549,14 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     /**
      * Compute input linear transformation (z)
      * Compute activations (applies activation transformation to z)
-     * @return a pair of the zs and activations
+     * @return a pair of activations and corresponding derivatives
      */
-    public Pair<List<INDArray>,List<INDArray>> zsAndActivations() {
+    public Pair<List<INDArray>,List<INDArray>> feedForwardActivationsAndDerivatives() {
         INDArray currInput = this.input;
 
         List<INDArray> activations = new ArrayList<>();
-//        List<INDArray> zs = new ArrayList<>();
         List<INDArray> derivatives = new ArrayList<>();
+        activations.add(currInput);
 
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
@@ -564,8 +564,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup())));
             derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup()).derivative()));
         }
-//        return new Pair<>(zs,activations);
-        return new Pair<>(derivatives,activations);
+        // Duplicating last layer derivative to keep pair list equal
+        derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(layers.length-1).getActivationFunction(), currInput.dup()).derivative()));
+        return new Pair<>(activations, derivatives);
     }
 
 
@@ -1041,12 +1042,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
              * to happen
              */
             int numLayers = getnLayers() - 1; // drops output layer in count
-            List<Gradient> weightUpdates = new ArrayList<>();
-            Pair<List<INDArray>,List<INDArray>> zsAndActivations = zsAndActivations();
-            List<INDArray> activations = zsAndActivations.getSecond();
+            List<Gradient> gradientUpdates = new ArrayList<>();
+            Pair<List<INDArray>,List<INDArray>> activationsAndDeriv = feedForwardActivationsAndDerivatives();
+            List<INDArray> activations = activationsAndDeriv.getFirst();
             INDArray outputActivation = activations.get(activations.size() - 1);
 
-            List<INDArray> derivatives = zsAndActivations.getFirst();
+            List<INDArray> derivatives = activationsAndDeriv.getSecond();
             INDArray activationDeriv = derivatives.get(derivatives.size() - 1);
             INDArray layerInput = activations.get(activations.size() - 2);
 
@@ -1060,34 +1061,36 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
             nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
 
-            weightUpdates.add(nextGradients);
+            gradientUpdates.add(nextGradients);
 
             // Calculate gradients for previous layers
             for(int j = numLayers - 1; j >= 0; j--) {
-//                INDArray currZ = zs.get(j);
-                INDArray currDerivative = derivatives.get(j);
+                // Extra values in activations and derivatives to be ignored
                 INDArray currActivation = activations.get(j);
+                INDArray currDerivative = derivatives.get(j);
                 Layer nextLayer = getLayers()[j + 1];
                 nextGradients = getLayers()[j].backwardGradient(currDerivative, nextLayer, nextGradients, currActivation);
-                weightUpdates.add(nextGradients);
+                gradientUpdates.add(nextGradients);
             }
 
-            Collections.reverse(weightUpdates);
-            // Update layers with gradients
+            Collections.reverse(gradientUpdates);
+            // Update layer weights and biases with gradients
             for(int k = 0; k < numLayers; k++) {
                 Layer currLayer = getLayers()[k];
-                for(String paramType : weightUpdates.get(k).gradientForVariable().keySet()) {
-                    INDArray gradients = weightUpdates.get(k).getGradientFor(paramType);
-                    INDArray adjustedGradient = GradientAdjustment.updateGradientAccordingToParams(
+                for(String paramType : gradientUpdates.get(k).gradientForVariable().keySet()) {
+                    INDArray gradient = gradientUpdates.get(k).getGradientFor(paramType);
+                    // Direct object reference updates gradients with adjustments
+                    GradientAdjustment.updateGradientAccordingToParams(
                             i
                             ,input.slices()
                             ,currLayer.conf()
                             ,currLayer.getParam(paramType)
-                            ,gradients
+                            ,gradient
                             ,currLayer.getOptimizer().adaGradForVariables().get(paramType)
                             ,currLayer.getOptimizer().getLastStep().get(paramType)
+                            ,paramType
                     );
-                    currLayer.update(adjustedGradient, paramType);
+                    currLayer.update(gradient, paramType);
                 }
             }
             for(IterationListener listener :  listeners)
