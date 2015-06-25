@@ -64,6 +64,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         network.init();
         network.setParameters(params.value());
         network.fit(data);
+        
         return Collections.singletonList(network.params());
 
     }
