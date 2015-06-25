@@ -65,8 +65,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
  */
 public  class RBM extends BasePretrainNetwork {
 
-    private final Random rng;
-    
+    private transient Random rng;
+
     public RBM(NeuralNetConfiguration conf) {
         super(conf);
         this.rng = Nd4j.getRandom();
