@@ -58,7 +58,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         if(!dataSetIterator.hasNext()) {
             return Collections.singletonList(Nd4j.zeros(params.value().shape()));
         }
-        
+
         List<DataSet> collect = new ArrayList<>();
         while(dataSetIterator.hasNext()) {
             collect.add(dataSetIterator.next());
@@ -67,7 +67,10 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         DataSet data = DataSet.merge(collect);
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
-        network.setParameters(params.value());
+        INDArray val = params.value();
+        if(val.length() != network.numParams())
+            throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
+        network.setParameters(val);
         network.fit(data);
 
         return Collections.singletonList(network.params());
