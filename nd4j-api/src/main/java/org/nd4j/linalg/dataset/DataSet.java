@@ -543,8 +543,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         List<List<DataSet>> partition = new ArrayList<>();
         partition.add(list.subList(0, numHoldout));
         partition.add(list.subList(numHoldout, list.size()));
-        DataSet train = merge(partition.get(0));
-        DataSet test = merge(partition.get(1));
+        DataSet train = merge(partition.get(0),false);
+        DataSet test = merge(partition.get(1),false);
         return new SplitTestAndTrain(train, test);
     }
 
