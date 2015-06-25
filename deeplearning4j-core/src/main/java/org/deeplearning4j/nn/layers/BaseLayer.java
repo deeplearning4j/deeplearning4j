@@ -175,7 +175,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void update(INDArray gradient, String paramType) {
         if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).subi(gradient.mean(0)));
+            setParam(paramType, getParam(paramType).subi(gradient).mean(0));
         else
             setParam(paramType, getParam(paramType).subi(gradient));
     }
