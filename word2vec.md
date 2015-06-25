@@ -11,8 +11,6 @@ Contents
 * <a href="#embed">Neural Word Embeddings</a>
 * <a href="#anatomy">Anatomy of Word2Vec</a>
 * <a href="#setup">Setup</a>
-* <a href="#grams">N-grams & Skip-grams</a>
-* <a href="#load">Loading Your Data</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#code">A Code Example</a>
 * <a href="#use">A Use Case</a>
@@ -235,90 +233,6 @@ The skip-gram representation popularized by Mikolov and used in the DL4J impleme
 
 This n-gram is then fed into a neural network to learn the significance of a given word vector; i.e. significance is defined as its usefulness as an indicator of certain larger meanings, or labels. 
 
-### <a name="dataset">The Dataset</a>
-
-For this example, we'll use a small dataset of articles from the Reuters newswire. 
-
-With DL4J, you can use a **[UimaSentenceIterator](https://uima.apache.org/)** to intelligently load your data. For simplicity's sake, we'll use a **FileSentenceIterator**.
-
-### <a name="load">Loading Your Data</a>
-
-DL4J makes it easy to load a corpus of documents. For this example, we have a folder in the user home directory called "reuters," containing a couple articles.
-
-Consider the following code:
-
-    String reuters= System.getProperty("user.home") +             
-    new String("/reuters/");
-    File file = new File(reuters);
-        
-    SentenceIterator iter = new FileSentenceIterator(new SentencePreProcessor() {
-    @Override
-    public String preProcess(String sentence) {
-        return new 
-        InputHomogenization(sentence).transform();
-        }
-    },file);
-
-In lines 1 and 2, we get a file pointer to the directory ‘reuters’. Then we can pass that to FileSentenceIterator. The SentenceIterator is a critical component to DL4J’s Word2Vec usage. This allows us to scan through your data easily, one sentence at a time.
-
-On lines 4-8, we prepare the data by homogenizing it (e.g. lower-case all words and remove punctuation marks), which makes it easier for processing. 
-
-### <a name="prepare">Preparing to Create a Word2Vec Object</a>
-
-Next we need the following
-
-        TokenizerFactory t = new UimaTokenizerFactory();
-
-In general, a tokenizer takes raw streams of undifferentiated text and returns discrete, tidy, tangible representations, which we call tokens and are actually words. Instead of seeing something like: 
-
-    the|brown|fox   jumped|over####spider-man.
-
-A tokenizer would give us a list of words, or tokens, that we can recognize as the following list
-
-1. the
-2. brown
-3. fox
-4. jumped
-5. over
-6. spider-man
-
-A smart tokenizer will recognize that the hyphen in *spider-man* can be part of the name. 
-
-The word “Uima” refers to an Apache project -- Unstructured Information Management applications -- that helps make sense of unstructured data, as a tokenizer does. It is, in fact, a smart tokenizer. 
-
-### <a name="create">Creating a Word2Vec object</a>
-
-Now we can actually write some code to create a Word2Vec object. Consider the following:
-
-    Word2Vec vec = new Word2Vec.Builder().windowSize(5).layerSize(300).iterate(iter).tokenizerFactory(t).build();
-
-Here we can create a word2Vec with a few parameters
-
-    windowSize : Specifies the size of the n-grams. 5 is a good default
-
-    iterate : The SentenceIterator object that we created earlier
-    
-    tokenizerFactory : Our UimaTokenizerFactory object that we created earlier
-
-After this line it's also a good idea to set up any other parameters you need.
-
-Finally, we can actually fit our data to a Word2Vec object
-
-    vec.fit();
-
-That’s it. The fit() method can take a few moments to run, but when it finishes, you are free to start querying a Word2Vec object any way you want. 
-
-    String oil = new String("oil");
-    System.out.printf("%f\n", vec.similarity(oil, oil));
-
-In this example, you should get a similarity of 1. Word2Vec uses cosine similarity, and a cosine similarity of two identical vectors will always be 1. 
-
-Here are some functions you can call:
-
-1. *similarity(String, String)* - Find the cosine similarity between words
-2. *analogyWords(String A, String B, String x)* - A is to B as x is to ?
-3. *wordsNearest(String A, int n)* - Find the n-nearest words to A
-
 ### <a name="trouble">Troubleshooting & Tuning Word2Vec</a>
 
 *Q: I get a lot of stack traces like this*
@@ -347,7 +261,7 @@ You can shut down your Word2vec application and try to delete them.
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
 
-### <a name="code">A Code Example</a>
+### <a name="code">A Working Example</a>
 
 Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
 
@@ -355,7 +269,7 @@ Now that you have a basic idea of how to set up Word2Vec, here's one example of 
 
 There are a couple parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after WindowSize. The second is the number of nodes contained in the layer, which you'll enter after LayerSize. Those two numbers will be multiplied to obtain the number of inputs. 
 
-Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](../deepautoencoder.html). For sentence parsing and other NLP tasks, we also have an implementation of [recursive neural tensor networks](../recursiveneuraltensornetwork.html).
+Word2Vec is especially useful in preparing text-based data for information retrieval and QA systems, which DL4J implements with [deep autoencoders](../deepautoencoder.html). 
 
 ###<a name="use">Use Cases</a>
 
