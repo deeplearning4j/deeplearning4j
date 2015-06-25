@@ -69,6 +69,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         this.network = network;
         this.conf = this.network.getLayerWiseConfigurations().clone();
         sc = new JavaSparkContext(this.sparkContext);
+        this.params = sc.broadcast(network.params());
     }
 
     /**
