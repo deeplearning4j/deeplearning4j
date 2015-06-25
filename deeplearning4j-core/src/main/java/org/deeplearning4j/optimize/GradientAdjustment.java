@@ -18,9 +18,7 @@
 
 package org.deeplearning4j.optimize;
 
-import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,7 +27,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 
 /**
  * Gradient adjustment
@@ -54,8 +51,8 @@ public class GradientAdjustment {
      * @param adaGrad the adagrad map (per variable adagrad entries(
      * @return updated gradient
      */
-    public static INDArray updateGradientAccordingToParams(int iteration, int batchSize, NeuralNetConfiguration conf, INDArray params,
-                                                           INDArray gradient, AdaGrad adaGrad, INDArray lastStep) {
+    public static void updateGradientAccordingToParams(int iteration, int batchSize, NeuralNetConfiguration conf, INDArray params,
+                                                           INDArray gradient, AdaGrad adaGrad, INDArray lastStep, String paramType) {
         if(adaGrad == null)
             adaGrad = new AdaGrad(params.shape());
 
@@ -107,10 +104,10 @@ public class GradientAdjustment {
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
+        if (paramType.contains("W")) {
+            gradient.divi(batchSize);
+        }
 
-        gradient.divi(batchSize);
-
-        return gradient;
 
     }
 
