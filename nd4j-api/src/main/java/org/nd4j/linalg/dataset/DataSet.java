@@ -74,6 +74,37 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public static DataSet empty() {
         return new DataSet(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
     }
+    /**
+     * Merge the list of datasets in to one list.
+     * All the rows are merged in to one dataset
+     *
+     * @param data the data to merge
+     * @param clone whether to clone the data
+     *              or use a reference
+     * @return a single dataset
+     */
+    public static DataSet merge(List<DataSet> data,boolean clone) {
+        if (data.isEmpty())
+            throw new IllegalArgumentException("Unable to merge empty dataset");
+        DataSet first = data.get(0);
+        int numExamples = totalExamples(data);
+        INDArray in = Nd4j.create(numExamples, first.getFeatures().columns());
+        INDArray out = Nd4j.create(numExamples, first.getLabels().columns());
+        int count = 0;
+
+        for (int i = 0; i < data.size(); i++) {
+            DataSet d1 = data.get(i);
+            for (int j = 0; j < d1.numExamples(); j++) {
+                DataSet example = d1.get(j);
+                in.putRow(count, clone ? example.getFeatures().dup() : example.getFeatures());
+                out.putRow(count, clone ? example.getLabels().dup() : example.getLabels());
+                count++;
+            }
+
+
+        }
+        return new DataSet(in, out);
+    }
 
     /**
      * Merge the list of datasets in to one list.
