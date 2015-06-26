@@ -21,7 +21,7 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
             labels.add(f.getName());
         }
 
-After you download a LFW dataset to work with, and place it in the right path, and feed the path into a variable called labelPath, you're ready to load the data and create an array to hold the images' labels. 
+After you download a LFW dataset to work with, place it in the right path and feed the path into a variable called labelPath, you're ready to read and load the data, and create an array to hold the images' labels. 
 
 ## Reading Records, Iterating Over Data
 
