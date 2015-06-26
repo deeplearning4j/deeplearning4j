@@ -30,7 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
 
-import java.io.File;
+import java.io.*;
 import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -175,6 +175,18 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
         DataBuffer blank = Nd4j.createBuffer(new double[]{0, 0, 0});
         blank.assign(one,twoThree);
         assertEquals(assertion, blank);
+    }
+
+    @Test
+    public void testReadWrite() {
+        DataBuffer assertion = Nd4j.createBuffer(new double[]{1, 2, 3});
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        assertion.write(dos);
+
+        DataBuffer clone = assertion.dup();
+        assertion.read(new DataInputStream(new ByteArrayInputStream(bos.toByteArray())));
+        assertEquals(assertion,clone);
     }
 
 

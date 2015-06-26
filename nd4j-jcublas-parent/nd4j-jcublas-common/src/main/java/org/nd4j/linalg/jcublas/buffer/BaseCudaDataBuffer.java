@@ -477,7 +477,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws IOException {
-        doWriteObject(stream);
+        write(stream);
         stream.writeBoolean(isPersist);
 
     }
