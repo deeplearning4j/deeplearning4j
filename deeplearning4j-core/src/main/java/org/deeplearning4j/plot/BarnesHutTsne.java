@@ -405,14 +405,14 @@ public class BarnesHutTsne extends Tsne implements Model {
      * @param i the iteration (primarily for debugging purposes)
      */
     @Override
-    public void step(INDArray p,int i) {
-        update(gradient());
+    public void step(INDArray p, int i) {
+        update(gradient().getGradientFor(Y_GRAD), Y_GRAD);
     }
 
 
     @Override
-    public void update(Gradient gradient) {
-        INDArray yGrads = gradient.gradientForVariable().get(Y_GRAD);
+    public void update(INDArray gradient, String paramType) {
+        INDArray yGrads = gradient;
 
         gains = gains.add(.2)
                 .muli(sign(yGrads)).neqi(sign(yIncs))
