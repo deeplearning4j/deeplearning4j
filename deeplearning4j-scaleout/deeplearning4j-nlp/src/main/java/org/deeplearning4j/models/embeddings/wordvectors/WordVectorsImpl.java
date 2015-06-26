@@ -303,9 +303,11 @@ public class WordVectorsImpl implements WordVectors {
 
             INDArray syn0 = l.getSyn0();
 
-            INDArray weights = mean;
+            INDArray weights = Transforms.unitVec(mean);
             INDArray distances = syn0.mmul(weights.transpose());
-            distances.diviRowVector(distances.norm2(1));
+            // We assume that syn0 is normalized.
+            // Hence, the following division is not needed anymore.
+            // distances.diviRowVector(distances.norm2(1));
             INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
