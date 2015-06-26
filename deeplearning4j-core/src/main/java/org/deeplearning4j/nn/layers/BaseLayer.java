@@ -107,21 +107,23 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
         //needs to be number of features by examples
-        INDArray wt = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray delta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-        INDArray wLoss = wt.mmul(delta.transpose()).transpose();
-        INDArray deriv = derivativeActivation(z);
-        wLoss.muli(deriv);
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, wLoss);
-        //nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wLoss.transpose().mmul(activation).transpose());
+        INDArray nextWeights = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        INDArray nextDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
+        INDArray delta = nextWeights.mmul(nextDelta.transpose()).transpose();
+        delta.muli(derivative);
+
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(activation).transpose());
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta);
         return ret;
     }
 
     @Override
+
+
+
     public void fit() {
         fit(this.input);
     }
@@ -164,23 +166,18 @@ public abstract class BaseLayer implements Layer {
     public void iterate(INDArray input) {
         this.input = input;
         Gradient gradient = gradient();
-        update(gradient);
+        for(String paramType : gradient.gradientForVariable().keySet()) {
+            update(gradient.getGradientFor(paramType), paramType);
+        }
     }
 
 
-
     @Override
-    public void update(Gradient gradient) {
-        for(String s : conf.variables()) {
-            if(gradient.gradientForVariable().containsKey(s)) {
-            	if (s.equals(DefaultParamInitializer.BIAS_KEY) ) {
-                    getParam(s).subi(gradient.gradientForVariable().get(s).mean(0));
-                }
-                else
-                    getParam(s).subi(gradient.gradientForVariable().get(s));
-
-            }
-        }
+    public void update(INDArray gradient, String paramType) {
+        if (paramType.contains("b"))
+            setParam(paramType, getParam(paramType).subi(gradient.sum(0)));
+        else
+            setParam(paramType, getParam(paramType).subi(gradient));
     }
 
 
@@ -287,11 +284,8 @@ public abstract class BaseLayer implements Layer {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
-
         INDArray ret = input().mmul(W).addiRowVector(b);
         return ret;
-
-
     }
 
 
@@ -488,6 +482,7 @@ public abstract class BaseLayer implements Layer {
         return layer;
     }
 
+    @Deprecated
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
         //figure out how to set ixes and deltas

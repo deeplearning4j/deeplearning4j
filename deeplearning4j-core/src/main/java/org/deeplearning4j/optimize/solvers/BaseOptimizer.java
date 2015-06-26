@@ -98,15 +98,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     }
 
-    /**
-     * Update the gradient according to the configuration such
-     * as adagrad, momentum, and sparsity
-     * @param gradient the gradient to modify
-     */
-    @Override
-    public void updateGradientAccordingToParams(INDArray gradient, INDArray params, int batchSize) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public double score() {
@@ -119,7 +110,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public Pair<Gradient,Double> gradientAndScore() {
         model.setScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
-        updateGradientAccordingToParams(pair.getFirst(),model,model.batchSize());
+        for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
+            INDArray gradient = pair.getFirst().getGradientFor(paramType);
+            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType);
+        }
         return pair;
     }
 
@@ -208,9 +202,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
 
-
-
-
     protected  void postFirstStep(INDArray gradient) {
         //no-op
     }
@@ -276,15 +267,17 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public void updateGradientAccordingToParams(Gradient gradient, Model params, int batchSize) {
+    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType) {
         GradientAdjustment.updateGradientAccordingToParams(
-                conf
-                ,iteration
-                ,gradient
+                iteration
                 ,batchSize
-                ,adaGradForVariable
-                ,lastStep
-                ,params);
+                ,conf
+                ,model.getParam(paramType)
+                ,gradient
+                ,adaGradForVariable.get(paramType)
+                ,lastStep.get(paramType)
+                ,paramType
+                );
     }
 
     /**
