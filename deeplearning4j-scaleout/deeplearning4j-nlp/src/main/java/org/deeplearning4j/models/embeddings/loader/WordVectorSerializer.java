@@ -38,6 +38,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,10 +100,12 @@ public class WordVectorSerializer
                 continue;
             }
 
+            float[] vector = new float[split.length - 1];
             for (int i = 1; i < split.length; i++) {
-                syn0.put(currLine, i - 1, Float.parseFloat(split[i]));
-
+                vector[i] = Float.parseFloat(split[i]);
             }
+
+            syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
 
             cache.addWordToIndex(cache.numWords(), word);
             cache.addToken(new VocabWord(1, word));
@@ -133,7 +136,6 @@ public class WordVectorSerializer
         InMemoryLookupTable lookupTable;
         VocabCache cache;
         INDArray syn0;
-        float vector;
         int words, size;
         try (BufferedInputStream bis =
                 new BufferedInputStream(GzipUtils.isCompressedFilename(modelFile.getName()) ?
@@ -156,10 +158,13 @@ public class WordVectorSerializer
                     continue;
                 }
 
+                float[] vector = new float[size];
+
                 for (int j = 0; j < size; j++) {
-                    vector = readFloat(dis);
-                    syn0.put(i, j, vector);
+                    vector[j] = readFloat(dis);
                 }
+
+                syn0.putRow(i, Transforms.unitVec(Nd4j.create(vector)));
 
                 cache.addWordToIndex(cache.numWords(), word);
                 cache.addToken(new VocabWord(1, word));
