@@ -60,7 +60,7 @@ public abstract class BaseDataFetcher implements DataSetFetcher {
 	/**
 	 * Creates an output label matrix
 	 * @param outcomeLabel the outcome label to use
-	 * @return a binary vector where 1 is applyTransformToDestination to the
+	 * @return a binary vector where 1 is transform to the
 	 * index specified by outcomeLabel
 	 */
 	protected INDArray createOutputVector(int outcomeLabel) {
