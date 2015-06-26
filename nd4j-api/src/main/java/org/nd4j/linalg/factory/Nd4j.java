@@ -22,6 +22,8 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
+import io.netty.buffer.ByteBuf;
+import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -1115,13 +1117,8 @@ public class Nd4j {
             dataOutputStream.writeInt(arr.stride()[i]);
 
         dataOutputStream.writeUTF(dataType() == DataBuffer.Type.FLOAT ? "float" : "double");
-
         dataOutputStream.writeUTF("real");
-
-        if (dataType() == DataBuffer.Type.DOUBLE)
-            ArrayUtil.write(arr.data().asDouble(), dataOutputStream);
-        else
-            ArrayUtil.write(arr.data().asFloat(), dataOutputStream);
+        arr.data().write(dataOutputStream);
 
     }
 

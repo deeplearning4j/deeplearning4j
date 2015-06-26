@@ -27,10 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.lang.ref.WeakReference;
 import java.nio.*;
 import java.nio.DoubleBuffer;
@@ -467,7 +464,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         }
         else {
-           ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bos);
             if(dataType() == Type.DOUBLE) {
                 for(int i = 0; i < length(); i++) {
@@ -669,6 +666,40 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     @Override
+    public void write(OutputStream dos) {
+        if(dos instanceof DataOutputStream) {
+            try {
+
+                write((DataOutputStream) dos);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            DataOutputStream dos2 = new DataOutputStream(dos);
+            try {
+
+                write( dos2);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    @Override
+    public void read(InputStream is) {
+        if(is instanceof DataInputStream) {
+            read((DataInputStream) is);
+        }
+
+        else {
+            DataInputStream dis2 = new DataInputStream(is);
+            read(dis2);
+        }
+    }
+
+    @Override
     public void flush() {
 
     }
@@ -732,18 +763,31 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     private void readObject(ObjectInputStream s) {
         doReadObject(s);
-
     }
 
     private void writeObject(java.io.ObjectOutputStream out)
             throws IOException {
-        doWriteObject(out);
+        out.defaultWriteObject();
+        write(out);
     }
 
 
     protected void doReadObject(ObjectInputStream s) {
         try {
             s.defaultReadObject();
+            read(s);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    protected void read(DataInputStream s) {
+        try {
             ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
             referencing = Collections.synchronizedSet(new HashSet<String>());
 
@@ -785,8 +829,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
-    protected void doWriteObject(java.io.ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
+
+    protected void write(DataOutputStream out) throws IOException {
         out.writeUTF(allocationMode.name());
         out.writeInt(length());
         out.writeUTF(dataType().name());
@@ -799,8 +843,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 out.writeFloat(getFloat(i));
         }
 
-        out.flush();
     }
+
+
+
 
     @Override
     public Object array() {

@@ -24,6 +24,8 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -465,5 +467,17 @@ public interface DataBuffer extends Serializable {
      * release all resources for this buffer
      */
     void destroy();
+
+    /**
+     * Write this buffer to the output stream
+     * @param dos the output stream to write
+     */
+    void write(OutputStream dos);
+
+    /**
+     * Write this buffer to the input stream.
+     * @param is the inpus tream to write to
+     */
+    void read(InputStream is);
 
 }
