@@ -2,8 +2,11 @@ package org.deeplearning4j.nn.multilayer;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -94,16 +97,17 @@ public class BackPropMLPTest {
 			float[] l1WeightsFloat = asFloat(l1Weights);
 			float[] l2WeightsFloat = asFloat(l2Weights);
 			float l1BiasFloat = l1Bias.getFloat(0);
-			float[] l2BiasFloat = asFloat(l2Bias);
+			float l2BiasFloat = l2Bias.getFloat(0);
+			float[] l2BiasFloatArray = asFloat(l2Bias);
 			
 			float hiddenUnitPreSigmoid = dotProduct(l1WeightsFloat,xFloat)+l1BiasFloat;	//z=w*x+b
 			float hiddenUnitPostSigmoid = sigmoid(hiddenUnitPreSigmoid);				//a=sigma(z)
-			
+
 			float[] outputPreSoftmax = new float[3];
 			//Normally a matrix multiplication here, but only one hidden unit in this trivial example
-			for( int i=0; i<3; i++ ) outputPreSoftmax[i] = hiddenUnitPostSigmoid*l2WeightsFloat[i]+l2BiasFloat[i];
+			for( int i=0; i<3; i++ ) outputPreSoftmax[i] = hiddenUnitPostSigmoid*l2WeightsFloat[i]+l2BiasFloatArray[i];
 			float[] outputPostSoftmax = softmax(outputPreSoftmax);
-			
+
 			//Do backward pass:
 			float[] deltaOut = vectorDifference(outputPostSoftmax,yFloat);	//out-labels
 			//deltaHidden = sigmaPrime(hiddenUnitZ) * sum_k (w_jk * \delta_k); here, only one j
@@ -144,8 +148,8 @@ public class BackPropMLPTest {
 			
 			for( int i=0; i<4; i++ ) expectedL1WeightsAfter[i] = l1WeightsFloat[i] - 0.1f * dLdwHidden[i];
 			for( int i=0; i<3; i++ ) expectedL2WeightsAfter[i] = l2WeightsFloat[i] - 0.1f * dLdwOut[i];
-			for( int i=0; i<3; i++ ) expectedL2BiasAfter[i] = l2BiasFloat[i] - 0.1f * dLdbOut[i];
-			
+			for( int i=0; i<3; i++ ) expectedL2BiasAfter[i] = l2BiasFloatArray[i] - 0.1f * dLdbOut[i];
+
 			if( printCalculations ){
 				System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
 				System.out.println("Expected L2 weights = " + Arrays.toString(expectedL2WeightsAfter));
@@ -323,6 +327,7 @@ public class BackPropMLPTest {
 				.override(hiddenLayerSizes.length, new ConfOverride() {
 					@Override
 					public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+						builder.activationFunction("softmax");
 						builder.layer(new OutputLayer());
 						builder.weightInit(WeightInit.DISTRIBUTION);
 						builder.dist(new NormalDistribution(0, 0.1));
