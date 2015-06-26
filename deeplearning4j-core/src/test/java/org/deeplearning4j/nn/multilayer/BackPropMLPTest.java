@@ -113,7 +113,7 @@ public class BackPropMLPTest {
 			//deltaHidden = sigmaPrime(hiddenUnitZ) * sum_k (w_jk * \delta_k); here, only one j
 			float deltaHidden = 0.0f;
 			for( int i=0; i<3; i++ ) deltaHidden += l2WeightsFloat[i]*deltaOut[i];
-			deltaHidden *= derivOfSigmoid(hiddenUnitPostSigmoid);
+			deltaHidden *= derivOfSigmoid(hiddenUnitPreSigmoid);
 
 			//Calculate weight/bias updates:
 			//dL/dw = delta * (activation of prev. layer)
@@ -276,7 +276,7 @@ public class BackPropMLPTest {
 				layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
 			}
 			
-			float eps = 0.1f;
+			float eps = 0.0001f;
 			for( int i=0; i<nLayers; i++ ){
 				float[] expWeights = asFloat(expectedWeights[i]);
 				float[] actWeights = asFloat(layerWeightsAfter[i]);
