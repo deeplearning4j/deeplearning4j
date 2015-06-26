@@ -7,11 +7,10 @@ layout: zh-default
 
 本快速入门指南假设您已经安装以下软件：
 
-1. Java
+1. Java 7
 2. 如IntelliJ 的集成开发环境（ IDE ）
 3. [Maven](../maven.html) (Java 的自动构建工具）
-4. [Canova](../canova.html) (机器学习矢量化库)
-5. Github (可选)
+4. Github (可选)
 
 如果您需要安装上述任何一个软件，[请阅读这入门指南](http://nd4j.org/getstarted.html)。
 
@@ -19,7 +18,7 @@ layout: zh-default
 
 安装上述后，如果您可以按照并实行以下五个步骤，您就可以运行DL4J：
 
-1. git 克隆 这[例子](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples)。我们目前的版本是0.0.3.3.x.
+1. "git clone" 克隆 这[例子](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples) (我们目前的版本是0.0.3.3.x.), [ND4J](https://github.com/deeplearning4j/nd4j), [Canova](https://github.com/deeplearning4j/Canova) (机器学习矢量化库), [Deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)。
 2. 使用Maven将示例作为一个项目导入IntelliJ
 3. 选择一个Blas[后端](http://nd4j.org/dependencies.html)，然后导入您的POM（应该是nd4j - jblas ）
 4. 从左侧的文件树中选择示例（先从DBNSmallMnistExample.java开始 ）
