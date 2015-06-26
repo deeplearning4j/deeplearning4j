@@ -561,11 +561,19 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
             applyDropConnectIfNecessary(currInput);
-            activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup())));
-            derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput.dup()).derivative()));
+            activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
+        }
+
+        currInput = this.input;
+        for (int i = 0; i < layers.length; i++) {
+            currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
+            applyDropConnectIfNecessary(currInput);
+            INDArray dup = currInput.dup();
+            derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative()));
+            Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput);
         }
         // Duplicating last layer derivative to keep pair list equal
-        derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(layers.length-1).getActivationFunction(), currInput.dup()).derivative()));
+        derivatives.add(derivatives.get(layers.length - 1));
         return new Pair<>(activations, derivatives);
     }
 
