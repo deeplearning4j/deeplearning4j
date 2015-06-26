@@ -111,12 +111,12 @@ public abstract class BaseLayer implements Layer {
         //needs to be number of features by examples
         Gradient ret = new DefaultGradient();
         INDArray nextWeights = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray nextBiasDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-        INDArray weightDelta = nextWeights.mmul(nextBiasDelta.transpose()).transpose();
-        weightDelta.muli(derivative);
+        INDArray nextDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
+        INDArray delta = nextWeights.mmul(nextDelta.transpose()).transpose();
+        delta.muli(derivative);
 
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightDelta.transpose().mmul(activation).transpose());
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, weightDelta);
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(activation).transpose());
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta);
         return ret;
     }
 
@@ -175,7 +175,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void update(INDArray gradient, String paramType) {
         if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).subi(gradient).sum(0));
+            setParam(paramType, getParam(paramType).subi(gradient.sum(0)));
         else
             setParam(paramType, getParam(paramType).subi(gradient));
     }
