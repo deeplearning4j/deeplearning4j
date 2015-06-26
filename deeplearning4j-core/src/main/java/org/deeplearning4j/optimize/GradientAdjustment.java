@@ -104,9 +104,7 @@ public class GradientAdjustment {
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
-        if (paramType.contains("W")) {
-            gradient.divi(batchSize);
-        }
+        gradient.divi(batchSize);
 
 
     }
