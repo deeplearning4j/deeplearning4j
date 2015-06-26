@@ -1049,7 +1049,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
              * In our interpretation here, we have to transpose a few things to get mini batch (calculate the gradient for more than one example)
              * to happen
              */
-            int numLayers = getnLayers() - 1; // drops output layer in count
+            int numLayers = getnLayers();
             List<Gradient> gradientUpdates = new ArrayList<>();
             Pair<List<INDArray>,List<INDArray>> activationsAndDeriv = feedForwardActivationsAndDerivatives();
             List<INDArray> activations = activationsAndDeriv.getFirst();
@@ -1071,8 +1071,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
             gradientUpdates.add(nextGradients);
 
-            // Calculate gradients for previous layers
-            for(int j = numLayers - 1; j >= 0; j--) {
+            // Calculate gradients for previous layers & drops output layer in count
+            for(int j = numLayers - 2; j >= 0; j--) {
                 // Extra values in activations and derivatives to be ignored
                 INDArray currActivation = activations.get(j);
                 INDArray currDerivative = derivatives.get(j);

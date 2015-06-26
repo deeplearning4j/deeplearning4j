@@ -88,7 +88,7 @@ public class BackPropMLPTest {
 			INDArray y = data.getLabels();
 			float[] xFloat = asFloat(x);
 			float[] yFloat = asFloat(y);
-			
+
 			//Do forward pass:
 			INDArray l1Weights = layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();	//Hidden layer
 			INDArray l2Weights = layers[1].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();	//Output layer
@@ -99,7 +99,7 @@ public class BackPropMLPTest {
 			float l1BiasFloat = l1Bias.getFloat(0);
 			float l2BiasFloat = l2Bias.getFloat(0);
 			float[] l2BiasFloatArray = asFloat(l2Bias);
-			
+
 			float hiddenUnitPreSigmoid = dotProduct(l1WeightsFloat,xFloat)+l1BiasFloat;	//z=w*x+b
 			float hiddenUnitPostSigmoid = sigmoid(hiddenUnitPreSigmoid);				//a=sigma(z)
 
@@ -112,9 +112,9 @@ public class BackPropMLPTest {
 			float[] deltaOut = vectorDifference(outputPostSoftmax,yFloat);	//out-labels
 			//deltaHidden = sigmaPrime(hiddenUnitZ) * sum_k (w_jk * \delta_k); here, only one j
 			float deltaHidden = 0.0f;
-			for( int i=0; i<3; i++ ) deltaHidden += l2WeightsFloat[i]*deltaOut[i]; 
-			deltaHidden *= derivOfSigmoid(hiddenUnitPreSigmoid);
-			
+			for( int i=0; i<3; i++ ) deltaHidden += l2WeightsFloat[i]*deltaOut[i];
+			deltaHidden *= derivOfSigmoid(hiddenUnitPostSigmoid);
+
 			//Calculate weight/bias updates:
 			//dL/dw = delta * (activation of prev. layer)
 			//dL/db = delta
@@ -124,7 +124,7 @@ public class BackPropMLPTest {
 			for( int i=0; i<dLdwHidden.length; i++) dLdwHidden[i] = deltaHidden * xFloat[i];
 			float[] dLdbOut = deltaOut;
 			float dLdbHidden = deltaHidden;
-			
+
 			if(printCalculations){
 				System.out.println("deltaOut = " + Arrays.toString(deltaOut));
 				System.out.println("deltaHidden = " + deltaHidden);
@@ -133,8 +133,8 @@ public class BackPropMLPTest {
 				System.out.println("dLdwHidden = " + Arrays.toString(dLdwHidden));
 				System.out.println("dLdbHidden = " + dLdbHidden);
 			}
-			
-			
+
+
 			//Calculate new parameters:
 			//w_i = w_i - (learningRate)/(batchSize) * sum_j (dL_j/dw_i)
 			//b_i = b_i - (learningRate)/(batchSize) * sum_j (dL_j/db_i)
@@ -145,7 +145,7 @@ public class BackPropMLPTest {
 			float[] expectedL2WeightsAfter = new float[3];
 			float expectedL1BiasAfter = l1BiasFloat - 0.1f * dLdbHidden;
 			float[] expectedL2BiasAfter = new float[3];
-			
+
 			for( int i=0; i<4; i++ ) expectedL1WeightsAfter[i] = l1WeightsFloat[i] - 0.1f * dLdwHidden[i];
 			for( int i=0; i<3; i++ ) expectedL2WeightsAfter[i] = l2WeightsFloat[i] - 0.1f * dLdwOut[i];
 			for( int i=0; i<3; i++ ) expectedL2BiasAfter[i] = l2BiasFloatArray[i] - 0.1f * dLdbOut[i];
@@ -156,10 +156,10 @@ public class BackPropMLPTest {
 				System.out.println("Expected L1 bias = " + expectedL1BiasAfter);
 				System.out.println("Expected L2 bias = " + Arrays.toString(expectedL2BiasAfter));
 			}
-			
+
 			//Finally, do back-prop on network, and compare parameters vs. expected parameters
 			network.fit(data);
-			
+
 			INDArray l1WeightsAfter = layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY);	//Hidden layer
 			INDArray l2WeightsAfter = layers[1].getParam(DefaultParamInitializer.WEIGHT_KEY);	//Output layer
 			INDArray l1BiasAfter = layers[0].getParam(DefaultParamInitializer.BIAS_KEY);
@@ -276,7 +276,7 @@ public class BackPropMLPTest {
 				layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
 			}
 			
-			float eps = 0.0001f;
+			float eps = 0.1f;
 			for( int i=0; i<nLayers; i++ ){
 				float[] expWeights = asFloat(expectedWeights[i]);
 				float[] actWeights = asFloat(layerWeightsAfter[i]);
@@ -361,7 +361,9 @@ public class BackPropMLPTest {
 	}
 	
 	public static float derivOfSigmoid( float in ){
-		return (float)( Math.exp(in) / Math.pow(1+Math.exp(in),2.0) );
+//		float v = (float)( Math.exp(in) / Math.pow(1+Math.exp(in),2.0) );
+        float v = in * (1-in);
+		return v;
 	}
 	
 	public static float[] derivOfSigmoid( float[] in ){
