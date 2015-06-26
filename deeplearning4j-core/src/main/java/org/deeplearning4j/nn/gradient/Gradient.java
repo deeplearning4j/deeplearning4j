@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.nn.gradient;
 
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.Serializable;
 import java.util.List;
@@ -59,6 +61,14 @@ public interface Gradient extends Serializable {
      * @return the gradient for the given variable or null
      */
     INDArray getGradientFor(String variable);
+
+    /**
+     * Update gradient for the given variable
+     * @param variable the variable to get the gradient for
+     * @param gradient the gradient values
+     * @return the gradient for the given variable or null
+     */
+    INDArray setGradientFor(String variable, INDArray gradient);
 
 
 }

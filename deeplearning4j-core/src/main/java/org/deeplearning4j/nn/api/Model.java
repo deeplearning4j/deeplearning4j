@@ -43,7 +43,8 @@ public interface Model {
      * Perform one update  applying the gradient
      * @param gradient the gradient to apply
      */
-    void update(Gradient gradient);
+    void update(INDArray gradient, String paramType);
+
 
     /**
      * The score for the model
@@ -194,5 +195,6 @@ public interface Model {
      * Clear input
      */
     void clear();
+
 
 }
