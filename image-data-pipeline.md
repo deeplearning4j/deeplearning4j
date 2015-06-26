@@ -30,7 +30,9 @@ Here's the code that helps transform raw images into data records we can work wi
         // Point to data path. 
         recordReader.initialize(new FileSplit(new File(labeledPath)));
 
-The RecordReader is a class in Canova that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements fixed in number and indexed with a unique ID. Here, LFW images have been scaled to 28 pixels x 28 pixels in the [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java), and the reader is told where to append each new label. 
+The RecordReader is a class in Canova that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements fixed in number and indexed with a unique ID. 
+
+Here, LFW images have been scaled to 28 pixels x 28 pixels. The  [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java), which extends the RecordReader, is instructed to expect 28 x 28 pixel images to parse; "true" instructs it to append a label to the record; and "labels" is the array to which that label number is appended. Without the label, all you have is a bunch of pixels. 
 
         // Canova to DL4J
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784,labels.size());
