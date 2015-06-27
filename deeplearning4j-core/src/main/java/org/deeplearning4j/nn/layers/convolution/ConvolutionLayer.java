@@ -122,7 +122,10 @@ public class ConvolutionLayer implements Layer {
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
-
+        if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
+            filters = filters.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(filters.shape()));
+        }
+        
         for(int i = 0; i < currentFeatureMaps; i++) {
             INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), 1}, conf.getFeatureMapSize()));
             for(int j = 0; j <  inputChannels; j++) {
