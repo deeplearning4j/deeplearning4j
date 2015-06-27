@@ -102,7 +102,7 @@ public class WordVectorSerializer
 
             float[] vector = new float[split.length - 1];
             for (int i = 1; i < split.length; i++) {
-                vector[i] = Float.parseFloat(split[i]);
+                vector[i - 1] = Float.parseFloat(split[i]);
             }
 
             syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
