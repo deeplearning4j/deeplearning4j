@@ -181,7 +181,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public double score(DataSet data) {
-        return score(data.getFeatureMatrix(),data.getLabels());
+        return score(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -269,7 +269,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(DataSet data) {
-        fit(data.getFeatureMatrix(),data.getLabels());
+        fit(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -339,10 +339,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void iterate(INDArray input) {
-
+       throw new UnsupportedOperationException();
     }
-
-
 
 
     /**
@@ -354,6 +352,19 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @return a probability distribution for each row
      */
     public  INDArray output(INDArray x) {
+        return output(x,false);
+
+    }
+
+    /**
+     * Classify input
+     * @param x the input (can either be a matrix or vector)
+     * If it's a matrix, each row is considered an example
+     * and associated rows are classified accordingly.
+     * Each row will be the likelihood of a label given that example
+     * @return a probability distribution for each row
+     */
+    public  INDArray output(INDArray x,boolean test) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
@@ -363,7 +374,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             return ret;
         }
 
-        this.input = x;
+        this.input = x.dup();
+        if(!test)
+            applyDropOutIfNecessary(input());
+
         return super.activate();
 
     }

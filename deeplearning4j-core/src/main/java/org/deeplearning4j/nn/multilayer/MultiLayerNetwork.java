@@ -1244,7 +1244,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        setInput(examples);
+        setInput(examples.dup());
 
 
 
