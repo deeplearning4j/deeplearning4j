@@ -172,13 +172,13 @@ public  class RBM extends BasePretrainNetwork {
 
         if(conf.getSparsity() != 0)
             //all hidden units must stay around this number
-            hBiasGradient = probHidden.getSecond().rsub(conf.getSparsity()).mean(0);
+            hBiasGradient = probHidden.getSecond().rsub(conf.getSparsity()).sum(0);
         else
             //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-            hBiasGradient = probHidden.getSecond().sub(nhMeans).mean(0);
+            hBiasGradient = probHidden.getSecond().sub(nhMeans).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  vBiasGradient = input.sub(nvSamples).mean(0);
+        INDArray  vBiasGradient = input.sub(nvSamples).sum(0);
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
@@ -387,7 +387,7 @@ public  class RBM extends BasePretrainNetwork {
     }
 
     /**
-     * Note: k is the first input iken params.
+     * Note: k is the first input hidden params.
      */
     @Override
     public void fit(INDArray input) {

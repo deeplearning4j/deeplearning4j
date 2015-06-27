@@ -112,7 +112,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
         INDArray wGradient = getWeightGradient();
-        INDArray bGradient = dy.mean(0);
+        INDArray bGradient = dy.sum(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
