@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.eval;
 
+import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.Set;
 
@@ -29,7 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  *
  */
-public class Evaluation {
+public class Evaluation implements Serializable {
 
 	private Counter<Integer> truePositives = new Counter<>();
 	private Counter<Integer> falsePositives = new Counter<>();

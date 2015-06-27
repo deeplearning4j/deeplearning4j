@@ -17,6 +17,7 @@
  */
 
 package org.deeplearning4j.eval;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
@@ -26,7 +27,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Ordering;
 
-public class ConfusionMatrix<T extends Comparable<? super T>> {
+public class ConfusionMatrix<T extends Comparable<? super T>> implements Serializable {
   private Map<T, Multiset<T>> matrix;
 
   private SortedSet<T> classes;
