@@ -115,6 +115,9 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
+        if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect()) {
+            input = input.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()));
+        }
         //number of feature maps for the weights
         int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
         //number of channels of the input
@@ -125,7 +128,7 @@ public class ConvolutionLayer implements Layer {
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
             filters = filters.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(filters.shape()));
         }
-        
+
         for(int i = 0; i < currentFeatureMaps; i++) {
             INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), 1}, conf.getFeatureMapSize()));
             for(int j = 0; j <  inputChannels; j++) {
