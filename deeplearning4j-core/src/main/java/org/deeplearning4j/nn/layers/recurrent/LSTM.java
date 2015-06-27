@@ -98,6 +98,7 @@ public class LSTM extends BaseLayer {
 
 
 
+
         INDArray dIFog = Nd4j.zeros(iFog.shape());
         INDArray dIFogF = Nd4j.zeros(iFogF.shape());
         INDArray dRecurrentWeights = Nd4j.zeros(recurrentWeights.shape());

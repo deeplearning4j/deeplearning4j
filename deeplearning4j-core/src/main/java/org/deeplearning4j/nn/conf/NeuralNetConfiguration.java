@@ -105,6 +105,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     protected String activationFunction;
 
+    protected boolean useDropConnect = false;
+
     //RBMs
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
@@ -448,6 +450,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean minimize = false;
         private ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
         private double l1 = 0.0;
+        private boolean useDropConnect = false;
+
+
+        /**
+         * Use drop connect: multiply the coefficients
+         * by a binomial sampling wrt the dropout probability
+         * @param useDropConnect whether to use drop connect or not
+         * @return the
+         */
+        public Builder useDropConnect(boolean useDropConnect) {
+            this.useDropConnect = useDropConnect;
+            return this;
+        }
 
         public Builder l1(double l1) {
             this.l1 = l1;

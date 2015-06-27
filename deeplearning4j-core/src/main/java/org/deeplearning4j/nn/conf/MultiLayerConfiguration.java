@@ -43,6 +43,7 @@ public class MultiLayerConfiguration implements Serializable {
 
     protected int[] hiddenLayerSizes;
     protected List<NeuralNetConfiguration> confs;
+    @Deprecated
     protected boolean useDropConnect = false;
     protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
