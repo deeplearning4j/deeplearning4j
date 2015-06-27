@@ -61,6 +61,14 @@ public abstract class BaseLayer implements Layer {
         this.conf = conf;
     }
 
+    public INDArray getInput() {
+        return input;
+    }
+
+    public void setInput(INDArray input) {
+        this.input = input;
+    }
+
     @Override
     public Collection<IterationListener> getIterationListeners() {
         return iterationListeners;

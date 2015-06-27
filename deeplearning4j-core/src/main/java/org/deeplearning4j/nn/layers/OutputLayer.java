@@ -85,7 +85,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public void setScore() {
         LinAlgExceptions.assertRows(input,labels);
         INDArray output  = output(input);
-        score =  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
+        score =  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
 
     }
 
@@ -112,7 +112,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
         INDArray wGradient = getWeightGradient();
-        INDArray bGradient = dy.sum(0);
+        INDArray bGradient = dy.mean(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);

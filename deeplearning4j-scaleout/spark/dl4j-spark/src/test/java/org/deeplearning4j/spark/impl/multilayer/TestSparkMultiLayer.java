@@ -25,6 +25,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -71,17 +72,23 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-               .momentum(0.9).constrainGradientToUnitNorm(true)
-                .activationFunction("tanh")
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).dropOut(0.3)
-                .iterations(3).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .batchSize(10).constrainGradientToUnitNorm(true).useDropConnect(true)
-                .l2(2e-4).regularization(true).weightInit(WeightInit.XAVIER)
+               .momentum(0.5).seed(123)
+                .activationFunction("tanh").lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
+                .iterations(10).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .weightInit(WeightInit.XAVIER)
                 .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(3).hiddenLayerSizes(3,2)
-                .override(2, new ClassifierOverride()).build();
+                .override(2, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        builder.activationFunction("softmax");
+                        builder.layer(new OutputLayer());
+                    }
+                }).build();
 
 
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
