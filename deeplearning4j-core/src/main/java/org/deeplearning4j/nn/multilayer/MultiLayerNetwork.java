@@ -331,11 +331,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public void init() {
         if (layerWiseConfigurations == null || layers == null)
             intializeConfigurations();
-       if(initCalled)
-           return;
+        if(initCalled)
+            return;
 
         INDArray layerInput = input();
-        int inputSize = 0;
+        int inputSize;
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
@@ -528,7 +528,17 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      *
      * @return the list of activations for each layer
      */
-    public List<INDArray> feedForward() {
+    public List<INDArray> feedForward(INDArray input,boolean test) {
+        this.input = input;
+        return feedForward(test);
+    }
+
+    /**
+     * Compute activations from input to output of the output layer
+     *
+     * @return the list of activations for each layer
+     */
+    public List<INDArray> feedForward(boolean test) {
         INDArray currInput = this.input;
 
         List<INDArray> activations = new ArrayList<>();
@@ -537,12 +547,22 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         for (int i = 0; i < layers.length; i++) {
             currInput = activationFromPrevLayer(i, currInput);
             //applies drop connect to the activation
-            applyDropConnectIfNecessary(currInput);
+            if(!test)
+                applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
         }
 
 
         return activations;
+    }
+
+    /**
+     * Compute activations from input to output of the output layer
+     *
+     * @return the list of activations for each layer
+     */
+    public List<INDArray> feedForward() {
+        return feedForward(false);
     }
 
 
@@ -1271,6 +1291,28 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         fit(examples, FeatureUtil.toOutcomeMatrix(labels, getOutputLayer().conf().getNOut()));
     }
 
+
+    /**
+     * Label the probabilities of the input
+     *
+     * @param x the input to label
+     * @param test whether the output
+     *             is test or train. This mainly
+     *             affect hyper parameters such as
+     *             drop out where certain things should
+     *             be applied with activations
+     * @return a vector of probabilities
+     * given each label.
+     * <p/>
+     * This is typically of the form:
+     * [0.5, 0.5] or some other probability distribution summing to one
+     */
+    public INDArray output(INDArray x,boolean test) {
+        List<INDArray> activations = feedForward(x,test);
+        //last activation is input
+        return activations.get(activations.size() - 1);
+    }
+
     /**
      * Label the probabilities of the input
      *
@@ -1282,11 +1324,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray x) {
-        List<INDArray> activations = feedForward(x);
-
-
-        //last activation is input
-        return activations.get(activations.size() - 1);
+        return output(x,false);
     }
 
 
