@@ -402,7 +402,8 @@ public  class RBM extends BasePretrainNetwork {
         if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
             this.sigma = input.var(0).divi(input.rows());
 
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         contrastiveDivergence();
     }
 
