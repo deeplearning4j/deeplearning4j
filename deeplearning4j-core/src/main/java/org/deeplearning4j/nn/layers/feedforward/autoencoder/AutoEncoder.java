@@ -62,13 +62,19 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
     // Encode
     public INDArray encode(INDArray x) {
+        if(conf.getDropOut() > 0) {
+            x.muli(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(x.shape()));
+        }
+
+
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
         INDArray preAct = x.mmul(W).addiRowVector(hBias);
 
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
 
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
+        return ret;
     }
 
     // Decode
@@ -104,8 +110,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
         INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));
 
-        INDArray hBiasGradient = hiddenLoss.mean(0);
-        INDArray vBiasGradient = visibleLoss.mean(0);
+        INDArray hBiasGradient = hiddenLoss.sum(0);
+        INDArray vBiasGradient = visibleLoss.sum(0);
 
         return createGradient(wGradient, vBiasGradient, hBiasGradient);
     }

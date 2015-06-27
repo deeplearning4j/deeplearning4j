@@ -44,7 +44,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
 /**
- * Output layer with different objective cooccurrences for different objectives.
+ * Output layer with different objective
+ * incooccurrences for different objectives.
  * This includes classification as well as prediction
  * @author Adam Gibson
  *
@@ -111,7 +112,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
         INDArray wGradient = getWeightGradient();
-        INDArray bGradient = dy.mean(0);
+        INDArray bGradient = dy.sum(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
@@ -180,7 +181,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public double score(DataSet data) {
-        return score(data.getFeatureMatrix(),data.getLabels());
+        return score(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -251,7 +252,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        this.input = examples;
+        this.input = examples.dup();
+        applyDropOutIfNecessary(this.input);
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
@@ -267,7 +269,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(DataSet data) {
-        fit(data.getFeatureMatrix(),data.getLabels());
+        fit(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -337,10 +339,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void iterate(INDArray input) {
-
+       throw new UnsupportedOperationException();
     }
-
-
 
 
     /**
@@ -352,15 +352,32 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @return a probability distribution for each row
      */
     public  INDArray output(INDArray x) {
+        return output(x,false);
+
+    }
+
+    /**
+     * Classify input
+     * @param x the input (can either be a matrix or vector)
+     * If it's a matrix, each row is considered an example
+     * and associated rows are classified accordingly.
+     * Each row will be the likelihood of a label given that example
+     * @return a probability distribution for each row
+     */
+    public  INDArray output(INDArray x,boolean test) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
+
         INDArray preOutput = preOutput(x);
         if(conf.getActivationFunction().equals("softmax")) {
             INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
             return ret;
         }
 
-        this.input = x;
+        this.input = x.dup();
+        if(!test)
+            applyDropOutIfNecessary(input());
+
         return super.activate();
 
     }
