@@ -298,8 +298,10 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
-
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        if(conf.getDropOut() > 0)
+            ret.linearView().muli(dropoutMask);
+        return ret;
     }
 
     @Override
