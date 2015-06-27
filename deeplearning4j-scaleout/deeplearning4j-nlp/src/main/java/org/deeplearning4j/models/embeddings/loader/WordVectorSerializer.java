@@ -153,7 +153,7 @@ public class WordVectorSerializer
             for (int i = 0; i < words; i++) {
 
                 word = readString(dis);
-                log.info("Loading " + word + " with word " + i);
+                log.trace("Loading " + word + " with word " + i);
                 if (word.isEmpty()) {
                     continue;
                 }
