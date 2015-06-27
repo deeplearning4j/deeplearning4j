@@ -110,8 +110,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
         INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));
 
-        INDArray hBiasGradient = hiddenLoss.mean(0);
-        INDArray vBiasGradient = visibleLoss.mean(0);
+        INDArray hBiasGradient = hiddenLoss.sum(0);
+        INDArray vBiasGradient = visibleLoss.sum(0);
 
         return createGradient(wGradient, vBiasGradient, hBiasGradient);
     }
