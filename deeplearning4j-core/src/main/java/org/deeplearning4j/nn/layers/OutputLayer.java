@@ -44,7 +44,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
 /**
- * Output layer with different objective cooccurrences for different objectives.
+ * Output layer with different objective
+ * incooccurrences for different objectives.
  * This includes classification as well as prediction
  * @author Adam Gibson
  *
@@ -251,7 +252,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        this.input = examples;
+        this.input = examples.dup();
+        applyDropOutIfNecessary(this.input);
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
@@ -354,6 +356,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public  INDArray output(INDArray x) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
+
         INDArray preOutput = preOutput(x);
         if(conf.getActivationFunction().equals("softmax")) {
             INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
