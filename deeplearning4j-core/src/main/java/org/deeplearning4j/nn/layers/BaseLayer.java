@@ -164,7 +164,8 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public void iterate(INDArray input) {
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         Gradient gradient = gradient();
         for(String paramType : gradient.gradientForVariable().keySet()) {
             update(gradient.getGradientFor(paramType), paramType);
@@ -199,7 +200,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setParam(String key, INDArray val) {
-        params.put(key,val);
+        params.put(key, val);
     }
 
     /**
@@ -214,7 +215,7 @@ public abstract class BaseLayer implements Layer {
             length += params.get(s).length();
         }
 
-        INDArray ret = Nd4j.create(1,length);
+        INDArray ret = Nd4j.create(1, length);
         int count = 0;
         for(String s : params.keySet()) {
             INDArray get = params.get(s).linearView();
@@ -280,10 +281,15 @@ public abstract class BaseLayer implements Layer {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        this.input = x;
+        this.input = x.dup();
+        applyDropOutIfNecessary(x);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+            }
+        }
         INDArray ret = input().mmul(W).addiRowVector(b);
         return ret;
     }
@@ -298,13 +304,19 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
-
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+            }
+        }
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        return ret;
     }
 
     @Override
     public  INDArray activate(INDArray input) {
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         return activate();
     }
 
@@ -313,6 +325,11 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+            }
+        }
         return input().mmul(W).addiRowVector(b);
     }
 
@@ -332,17 +349,10 @@ public abstract class BaseLayer implements Layer {
     }
 
     protected void applyDropOutIfNecessary(INDArray input) {
-        if(conf.getDropOut() > 0) {
+        if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
             this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
+            input.muli(dropoutMask);
         }
-
-        else if(this.dropoutMask != null)
-            this.dropoutMask = Nd4j.ones(input.rows(), conf.getNOut());
-
-        //actually apply drop out
-        if(conf.getDropOut() > 0)
-            input.linearView().muli(dropoutMask);
-
     }
 
     /**
@@ -397,8 +407,10 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void fit(INDArray input) {
-        if(input != null)
-            this.input = input;
+        if(input != null) {
+            this.input = input.dup();
+            applyDropOutIfNecessary(this.input);
+        }
         Solver solver = new Solver.Builder()
                 .model(this).configure(conf()).listeners(getIterationListeners())
                 .build();
