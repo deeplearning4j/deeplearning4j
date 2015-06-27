@@ -67,8 +67,12 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
         INDArray preAct = x.mmul(W).addiRowVector(hBias);
 
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
+        if(conf.getDropOut() > 0) {
+            ret.linearView().muli(dropoutMask);
+        }
 
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
+        return ret;
     }
 
     // Decode
