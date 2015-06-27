@@ -500,7 +500,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput);
             //applies drop connect to the activation
-            applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
         }
 
@@ -547,8 +546,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         for (int i = 0; i < layers.length; i++) {
             currInput = activationFromPrevLayer(i, currInput);
             //applies drop connect to the activation
-            if(!test)
-                applyDropConnectIfNecessary(currInput);
             activations.add(currInput);
         }
 
@@ -580,14 +577,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
-            applyDropConnectIfNecessary(currInput);
             activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
         }
 
         currInput = this.input;
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
-            applyDropConnectIfNecessary(currInput);
             INDArray dup = currInput.dup();
             derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative()));
             Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput);
@@ -634,6 +629,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      *
      * @param input the input to apply drop connect to
      */
+    @Deprecated
     protected void applyDropConnectIfNecessary(INDArray input) {
         if (layerWiseConfigurations.isUseDropConnect()) {
             INDArray mean = Nd4j.valueArrayOf(input.slices(), input.columns(), 0.5);
@@ -675,7 +671,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         for (int i = getnLayers() - 1; i >= 0; i--) {
             //W^t * error^l + 1
             deltas[i] = activations.get(i).transpose().mmul(rix);
-            applyDropConnectIfNecessary(deltas[i]);
 
             if (i > 0)
                 rix = rix.mmul(weights.get(i).addRowVector(biases.get(i)).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activations.get(i)).derivative()));
@@ -752,7 +747,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         for (int i = weights.size() - 1; i >= 0; i--) {
             deltas[i] = activations.get(i).transpose().mmul(ix);
             preCons[i] = Transforms.pow(activations.get(i).transpose(), 2).mmul(Transforms.pow(ix, 2)).muli(labels.slices());
-            applyDropConnectIfNecessary(deltas[i]);
 
             if (i > 0) {
                 //W[i] + b[i] * f'(z[i - 1])
