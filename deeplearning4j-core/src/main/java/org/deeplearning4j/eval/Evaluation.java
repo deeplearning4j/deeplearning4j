@@ -190,12 +190,11 @@ public class Evaluation {
 	}
 	
 	/**
-	 * Total negatives true negatives + falseNegatives
+	 * Total negatives true negatives + false positives
 	 * @return the overall negative count
 	 */
 	public double negative() {
-		return trueNegatives() + falseNegatives.totalCount();
-		
+		return trueNegatives() + falsePositive();
 	}
 	
 	/**
@@ -209,7 +208,7 @@ public class Evaluation {
 	
 	/**
 	 * Accuracy: 
-	 * TP + TN / (P + N)
+	 * (TP + TN) / (P + N)
 	 * @return the accuracy of the guesses so far
 	 */
 	public double accuracy() {
