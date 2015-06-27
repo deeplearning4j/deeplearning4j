@@ -63,36 +63,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     private static final Logger log = LoggerFactory.getLogger(TestSparkMultiLayer.class);
 
 
-    @Test
-    public void testIris() throws Exception {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-            .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
-                .activationFunction("tanh").list(2).hiddenLayerSizes(3)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 1) {
-                            builder.activationFunction("softmax");
-                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                        }
-                    }
-                }).build();
-
-        MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.init();
-        int numParams = network.numParams();
-        INDArray params = network.params();
-        assertEquals(numParams,params.length());
-        SparkDl4jMultiLayer sparkDl4jMultiLayer = new SparkDl4jMultiLayer(sc,conf);
-        String path = new ClassPathResource("data/irisSvmLight.txt").getFile().toURI().toString();
-        sparkDl4jMultiLayer.fit(path,4,new SVMLightRecordReader());
-
-    }
 
     @Test
     public void testIris2() throws Exception {
@@ -139,7 +109,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         writeTo.delete();
         Evaluation evaluation = new Evaluation();
         evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
-
+        System.out.println(evaluation.stats());
     }
 
     @Test

@@ -187,19 +187,16 @@ public class SparkDl4jMultiLayer implements Serializable {
             network.init();
             final INDArray params = network.params();
             this.params = sc.broadcast(params);
+            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
 
             for(int i = 0; i < iterations; i++) {
-
-
                 int paramsLength = network.numParams();
                 if(params.length() != paramsLength)
                     throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-                JavaRDD<INDArray> miniBatchParams = rdd.map(new IterativeReduce(this.params,conf.toJson()));
 
-                INDArray add = miniBatchParams.reduce(new Add());
-                this.params =  sc.broadcast(add.divi(rdd.partitions().size()));
+                INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()), new Add());
+                newParams.divi(rdd.partitions().size());
             }
-
 
             network.setParameters(this.params.value());
             this.network = network;
