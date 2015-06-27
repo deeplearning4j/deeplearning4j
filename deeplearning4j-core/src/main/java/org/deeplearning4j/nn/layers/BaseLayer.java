@@ -164,7 +164,8 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public void iterate(INDArray input) {
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         Gradient gradient = gradient();
         for(String paramType : gradient.gradientForVariable().keySet()) {
             update(gradient.getGradientFor(paramType), paramType);
@@ -280,7 +281,8 @@ public abstract class BaseLayer implements Layer {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        this.input = x;
+        this.input = x.dup();
+        applyDropOutIfNecessary(x);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
 
@@ -299,14 +301,13 @@ public abstract class BaseLayer implements Layer {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
-        if(conf.getDropOut() > 0)
-            ret.linearView().muli(dropoutMask);
         return ret;
     }
 
     @Override
     public  INDArray activate(INDArray input) {
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         return activate();
     }
 
@@ -336,14 +337,9 @@ public abstract class BaseLayer implements Layer {
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0) {
             this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
+            input.muli(dropoutMask);
+
         }
-
-        else if(this.dropoutMask != null)
-            this.dropoutMask = Nd4j.ones(input.rows(), conf.getNOut());
-
-        //actually apply drop out
-        if(conf.getDropOut() > 0)
-            input.linearView().muli(dropoutMask);
 
     }
 
@@ -399,8 +395,10 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void fit(INDArray input) {
-        if(input != null)
-            this.input = input;
+        if(input != null) {
+            this.input = input.dup();
+            applyDropOutIfNecessary(this.input);
+        }
         Solver solver = new Solver.Builder()
                 .model(this).configure(conf()).listeners(getIterationListeners())
                 .build();

@@ -62,15 +62,17 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
     // Encode
     public INDArray encode(INDArray x) {
+        if(conf.getDropOut() > 0) {
+            x.muli(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(x.shape()));
+        }
+
+
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
         INDArray preAct = x.mmul(W).addiRowVector(hBias);
 
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
-        if(conf.getDropOut() > 0) {
-            ret.linearView().muli(dropoutMask);
-        }
 
         return ret;
     }
