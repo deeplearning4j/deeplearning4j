@@ -200,7 +200,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setParam(String key, INDArray val) {
-        params.put(key,val);
+        params.put(key, val);
     }
 
     /**
@@ -215,7 +215,7 @@ public abstract class BaseLayer implements Layer {
             length += params.get(s).length();
         }
 
-        INDArray ret = Nd4j.create(1,length);
+        INDArray ret = Nd4j.create(1, length);
         int count = 0;
         for(String s : params.keySet()) {
             INDArray get = params.get(s).linearView();
@@ -285,7 +285,11 @@ public abstract class BaseLayer implements Layer {
         applyDropOutIfNecessary(x);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+            }
+        }
         INDArray ret = input().mmul(W).addiRowVector(b);
         return ret;
     }
@@ -300,6 +304,11 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+            }
+        }
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
         return ret;
     }
@@ -316,6 +325,11 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+            }
+        }
         return input().mmul(W).addiRowVector(b);
     }
 
@@ -335,12 +349,10 @@ public abstract class BaseLayer implements Layer {
     }
 
     protected void applyDropOutIfNecessary(INDArray input) {
-        if(conf.getDropOut() > 0) {
+        if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
             this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
             input.muli(dropoutMask);
-
         }
-
     }
 
     /**

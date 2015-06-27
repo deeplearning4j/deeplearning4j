@@ -232,7 +232,6 @@ public  class RBM extends BasePretrainNetwork {
             }
             case GAUSSIAN: {
                 h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
-
                 //apply dropout
                 applyDropOutIfNecessary(h1Sample);
                 break;
@@ -314,6 +313,11 @@ public  class RBM extends BasePretrainNetwork {
      */
     public INDArray propUp(INDArray v) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+            }
+        }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
         if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
