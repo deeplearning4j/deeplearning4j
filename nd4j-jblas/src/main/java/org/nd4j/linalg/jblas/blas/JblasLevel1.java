@@ -131,12 +131,12 @@ public class JblasLevel1 extends BaseLevel1 {
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
-        return NativeBlas.idamax(N, getDoubleData(X), getBlasOffset(X), incX);
+        return NativeBlas.idamax(N, getDoubleData(X), getBlasOffset(X), incX) -1;
     }
 
     @Override
     protected int icamax(int N, IComplexNDArray X, int incX) {
-        return NativeBlas.icamax(N,getFloatData(X),getBlasOffset(X),incX);
+        return NativeBlas.icamax(N,getFloatData(X),getBlasOffset(X),incX) - 1;
     }
 
     @Override

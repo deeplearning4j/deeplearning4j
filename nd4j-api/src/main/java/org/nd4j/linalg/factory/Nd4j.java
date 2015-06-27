@@ -748,6 +748,7 @@ public class Nd4j {
              * This allows us to retain the indices
              * and how they were rearranged.
              */
+        
             Arrays.sort(index, new Comparator<Double>() {
                 @Override
                 public int compare(Double o1, Double o2) {
