@@ -161,8 +161,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         int batchSize = conf.getConf(0).getBatchSize();
         if(batchSize == 0)
             batchSize = 10;
-        int newBatchSize = (int) (count / batchSize);
-        rdd = rdd.repartition(newBatchSize);
+
         log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
         if(!averageEachIteration) {
             MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -173,8 +172,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             int paramsLength = network.numParams();
             if(params.length() != paramsLength)
                 throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-
-            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(),this.params));
+            JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
             log.debug("Ran iterative reduce...averaging results now.");
             INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()),new Add());
             newParams.divi(rdd.partitions().size());
@@ -188,9 +186,10 @@ public class SparkDl4jMultiLayer implements Serializable {
             network.init();
             final INDArray params = network.params();
             this.params = sc.broadcast(params);
-            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
 
             for(int i = 0; i < iterations; i++) {
+                JavaRDD<INDArray> results = rdd.sample(true,0.3).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
+
                 int paramsLength = network.numParams();
                 if(params.length() != paramsLength)
                     throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
