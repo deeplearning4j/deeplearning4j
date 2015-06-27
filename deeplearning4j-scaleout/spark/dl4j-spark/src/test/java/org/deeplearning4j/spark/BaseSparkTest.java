@@ -52,8 +52,8 @@ public abstract class BaseSparkTest  implements Serializable
         if(sc != null)
             return sc;
         // set to test mode
-        SparkConf sparkConf = new SparkConf().set(SparkDl4jMultiLayer.AVERAGE_EACH_ITERATION,"true")
-                .setMaster("local[8]")
+        SparkConf sparkConf = new SparkConf().set(SparkDl4jMultiLayer.AVERAGE_EACH_ITERATION,"false")
+                .setMaster("local[*]")
                 .setAppName("sparktest");
 
 

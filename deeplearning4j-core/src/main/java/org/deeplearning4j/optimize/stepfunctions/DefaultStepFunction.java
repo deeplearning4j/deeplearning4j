@@ -32,14 +32,10 @@ public class DefaultStepFunction implements StepFunction {
     public void step(INDArray x, INDArray line, Object[] params) {
         double alam = (double) params[0];
         double oldAlam = (double) params[1];
-        if(x.data().dataType() == DataBuffer.Type.DOUBLE) {
-            Nd4j.getBlasWrapper().axpy(alam - oldAlam, line, x);
-        }
-        else {
-            float diff = (float) (alam - oldAlam);
-            Nd4j.getBlasWrapper().axpy(diff,line,x);
+        double scalar = alam - oldAlam;
+        Nd4j.getBlasWrapper().level1().axpy(line.length(),scalar, line, x);
 
-        }
+
     }
 
     @Override
