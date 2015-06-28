@@ -69,21 +69,22 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     public void testIris2() throws Exception {
 
 
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-               .momentum(0.5).seed(123)
-                .activationFunction("identity").lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(1000).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .weightInit(WeightInit.XAVIER).numLineSearchIterations(1)
+               .momentum(0.9).seed(123)
+                .activationFunction("relu")
+                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .iterations(10).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .weightInit(WeightInit.XAVIER).numLineSearchIterations(1).constrainGradientToUnitNorm(true)
                 .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(2).hiddenLayerSizes(3).backward(true)
+                .list(2).hiddenLayerSizes(3).backward(false)
                 .override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.weightInit(WeightInit.ZERO);
                         builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         builder.activationFunction("softmax");
                         builder.layer(new OutputLayer());
@@ -91,7 +92,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 }).build();
 
 
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
