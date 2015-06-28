@@ -276,7 +276,7 @@ public class BackPropMLPTest {
 				layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
 			}
 			
-			float eps = 0.0001f;
+			float eps = 1e-1f;
 			for( int i=0; i<nLayers; i++ ){
 				float[] expWeights = asFloat(expectedWeights[i]);
 				float[] actWeights = asFloat(layerWeightsAfter[i]);
