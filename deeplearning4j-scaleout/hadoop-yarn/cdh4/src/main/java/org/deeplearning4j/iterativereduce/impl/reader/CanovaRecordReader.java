@@ -41,6 +41,7 @@ public class CanovaRecordReader extends RecordReader<Long, Collection<Writable>>
     }
 
     public void initialize(InputSplit inputSplit) throws IOException, InterruptedException {
+        recordReader.initialize(new CanovaMapRedInputSplit(inputSplit));
     }
 
 
