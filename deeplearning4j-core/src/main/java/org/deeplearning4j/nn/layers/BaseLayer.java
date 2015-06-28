@@ -358,8 +358,8 @@ public abstract class BaseLayer implements Layer {
 
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
-            this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
-            input.muli(dropoutMask.divi(conf.getDropOut()));
+            this.dropoutMask = Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()).divi(conf.getDropOut());
+            input.muli(dropoutMask);
         }
     }
 
