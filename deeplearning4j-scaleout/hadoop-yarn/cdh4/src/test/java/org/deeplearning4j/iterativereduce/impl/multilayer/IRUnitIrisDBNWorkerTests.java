@@ -55,34 +55,6 @@ public class IRUnitIrisDBNWorkerTests {
         }
     }
 
-    private InputSplit[] generateDebugSplits(Path input_path, JobConf job) {
-
-        long block_size = localFs.getDefaultBlockSize();
-
-        System.out.println("default block size: " + (block_size / 1024 / 1024)
-                + "MB");
-
-        // ---- set where we'll read the input files from -------------
-        FileInputFormat.setInputPaths(job, input_path);
-
-        // try splitting the file in a variety of sizes
-        TextInputFormat format = new TextInputFormat();
-        format.configure(job);
-
-        int numSplits = 1;
-
-        InputSplit[] splits = null;
-
-        try {
-            splits = format.getSplits(job, numSplits);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        return splits;
-
-    }
 
     @Test
     public void before() {
