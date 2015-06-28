@@ -295,7 +295,7 @@ public abstract class BaseLayer implements Layer {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
             if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
             }
         }
         INDArray ret = input().mmul(W).addiRowVector(b);
@@ -314,7 +314,7 @@ public abstract class BaseLayer implements Layer {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
             if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
             }
         }
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
@@ -335,7 +335,7 @@ public abstract class BaseLayer implements Layer {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
             if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
             }
         }
         return input().mmul(W).addiRowVector(b);
@@ -359,7 +359,7 @@ public abstract class BaseLayer implements Layer {
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
             this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
-            input.muli(dropoutMask);
+            input.muli(dropoutMask.divi(conf.getDropOut()));
         }
     }
 
