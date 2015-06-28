@@ -73,10 +73,10 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                .momentum(0.9).seed(123)
                 .activationFunction("relu")
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .iterations(10).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .weightInit(WeightInit.XAVIER).numLineSearchIterations(1).constrainGradientToUnitNorm(true)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .iterations(100).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .weightInit(WeightInit.XAVIER).numLineSearchIterations(10).constrainGradientToUnitNorm(true)
                 .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
@@ -84,7 +84,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.weightInit(WeightInit.ZERO);
+                        builder.weightInit(WeightInit.XAVIER);
                         builder.lossFunction(LossFunctions.LossFunction.MCXENT);
                         builder.activationFunction("softmax");
                         builder.layer(new OutputLayer());

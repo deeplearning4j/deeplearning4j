@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -56,14 +57,19 @@ public class DL4jWorker implements Function<DataSet, INDArray> {
 
     @Override
     public INDArray call(DataSet v1) throws Exception {
-       try {
-           Layer network = (Layer) this.network;
-           network.fit(v1.getFeatureMatrix());
-           return network.params();
-       }catch(Exception e) {
-           System.err.println("Error with dataset " + v1.numExamples());
-           throw e;
-       }
+        try {
+            Layer network = (Layer) this.network;
+            if(network instanceof OutputLayer) {
+                OutputLayer o = (OutputLayer) network;
+                o.fit(v1);
+            }
+            else
+                network.fit(v1.getFeatureMatrix());
+            return network.params();
+        }catch(Exception e) {
+            System.err.println("Error with dataset " + v1.numExamples());
+            throw e;
+        }
 
     }
 }
