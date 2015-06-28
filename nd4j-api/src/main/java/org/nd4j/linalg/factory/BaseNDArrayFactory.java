@@ -138,11 +138,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+        Nd4j.getRandom().setSeed(rng.getSeed());
         return Nd4j.getDistributions().createUniform(min, max).sample(shape);
     }
 
     @Override
     public INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
+        Nd4j.getRandom().setSeed(rng.getSeed());
         return rand(new int[]{rows, columns}, min, max, rng);
     }
 

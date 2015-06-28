@@ -1503,7 +1503,7 @@ public class Nd4j {
      * @param min   the minimum number
      * @param max   the maximum number
      * @param rng   the rng to use
-     * @return a drandom matrix of the specified shape and range
+     * @return a random matrix of the specified shape and range
      */
     public static INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         INDArray ret = INSTANCE.rand(shape, min, max, rng);

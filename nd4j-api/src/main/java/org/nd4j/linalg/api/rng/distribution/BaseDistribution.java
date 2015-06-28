@@ -259,7 +259,7 @@ public abstract class BaseDistribution implements Distribution {
         INDArray ret = Nd4j.create(shape);
         INDArray linear = ret.linearView();
         for (int i = 0; i < linear.length(); i++) {
-            ret.putScalar(i, sample());
+            linear.putScalar(i, sample());
         }
         return ret;
     }
