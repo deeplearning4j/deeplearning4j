@@ -315,7 +315,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
             if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()));
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
             }
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
