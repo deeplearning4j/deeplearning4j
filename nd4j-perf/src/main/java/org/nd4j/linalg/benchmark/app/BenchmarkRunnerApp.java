@@ -4,6 +4,7 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.nd4j.linalg.benchmark.api.BenchMarkPerformer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.reflections.Reflections;
 
@@ -58,13 +59,15 @@ public class BenchmarkRunnerApp {
         for(Class<? extends BenchMarkPerformer> perfClazz : performers) {
             if(Modifier.isAbstract(perfClazz.getModifiers()) || !run.isEmpty() && !run.contains(perfClazz.getName()))
                 continue;
-
-            Constructor<BenchMarkPerformer> performerConstructor = (Constructor<BenchMarkPerformer>) perfClazz.getConstructor(int.class);
-            BenchMarkPerformer performer = performerConstructor.newInstance(nTrials);
             String begin = "=========================";
             String end = "===========================";
             System.out.println(begin + " Benchmark: " + perfClazz.getName() + " " + end);
             for(Nd4jBackend backend : backends) {
+                Nd4j nd4j = new Nd4j();
+                nd4j.initWithBackend(backend);
+                Constructor<BenchMarkPerformer> performerConstructor = (Constructor<BenchMarkPerformer>) perfClazz.getConstructor(int.class);
+                BenchMarkPerformer performer = performerConstructor.newInstance(nTrials);
+                System.out.println("Running " + backend.getClass().getName());
                 performer.run(backend);
                 System.out.println("Backend " + backend.getClass().getName() + " took (in nanoseconds) " + performer.averageTime() + " (in milliseconds) " + TimeUnit.MILLISECONDS.convert(performer.averageTime(),TimeUnit.NANOSECONDS));
             }
