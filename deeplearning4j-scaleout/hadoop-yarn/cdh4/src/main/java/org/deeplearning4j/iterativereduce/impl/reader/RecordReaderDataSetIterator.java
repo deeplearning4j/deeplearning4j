@@ -79,6 +79,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
+            if(record == null)
+                throw new IllegalStateException("No data found");
+
             List<Writable> currList;
             if(record instanceof List)
                 currList = (List<Writable>) record;
