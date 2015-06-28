@@ -73,15 +73,15 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                .momentum(0.5).seed(123)
-                .activationFunction("tanh").lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                .iterations(10).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .weightInit(WeightInit.XAVIER)
+                .activationFunction("identity").lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .iterations(1000).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .weightInit(WeightInit.XAVIER).numLineSearchIterations(1)
                 .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(3).hiddenLayerSizes(3,2)
-                .override(2, new ConfOverride() {
+                .list(2).hiddenLayerSizes(3).backward(true)
+                .override(1, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         builder.lossFunction(LossFunctions.LossFunction.MCXENT);
