@@ -63,9 +63,9 @@ public class LossFunctions {
                 ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
-                INDArray sums = log(z.add(1e-6));
+                INDArray sums = log(z);
                 INDArray columnSums = labels.mul(log(sums));
-                ret = columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = -columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case XENT:
                 INDArray xEntLogZ = log(z.add(Nd4j.EPS_THRESHOLD));

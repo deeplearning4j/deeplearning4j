@@ -159,7 +159,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if (labels == null)
             return ret;
         for (int i = 0; i < labels.rows(); i++) {
-            int maxIdx = Nd4j.getBlasWrapper().iamax(labels.getRow(i));
+            INDArray label = labels.getRow(i);
+            int maxIdx = Nd4j.getBlasWrapper().iamax(label);
+            if(maxIdx < 0)
+                throw new IllegalStateException("Please check the iamax implementation for " + Nd4j.getBlasWrapper().getClass().getName());
             if (ret.get(maxIdx) == null)
                 ret.put(maxIdx, 1.0);
             else
