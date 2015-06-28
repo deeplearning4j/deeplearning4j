@@ -21,7 +21,7 @@ package org.deeplearning4j.spark.impl.layer;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -29,11 +29,14 @@ import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.spark.canova.RDDMiniBatches;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
+import org.deeplearning4j.spark.impl.common.Add;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
+import parquet.org.slf4j.Logger;
+import parquet.org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
@@ -48,6 +51,9 @@ public class SparkDl4jLayer implements Serializable {
     private transient JavaSparkContext sc;
     private NeuralNetConfiguration conf;
     private Layer layer;
+    private Broadcast<INDArray> params;
+    private boolean averageEachIteration = false;
+    private static Logger log = LoggerFactory.getLogger(SparkDl4jLayer.class);
 
 
     public SparkDl4jLayer(SparkContext sparkContext, NeuralNetConfiguration conf) {
@@ -95,21 +101,52 @@ public class SparkDl4jLayer implements Serializable {
      * @return the fit layer
      */
     public Layer fitDataSet(JavaRDD<DataSet> rdd) {
+        int iterations = conf.getNumIterations();
+        long count = rdd.count();
         int batchSize = conf.getBatchSize();
-        JavaRDD<DataSet> miniBatches = new RDDMiniBatches(batchSize,rdd).miniBatchesJava();
-        Layer layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
-        INDArray params = layer.params();
-        int paramsLength = layer.numParams();
-        if(params.length() != paramsLength)
-            throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-        INDArray newParams = miniBatches.map(new DL4jWorker(conf.toJson(),params)).reduce(new Function2<INDArray, INDArray, INDArray>() {
-            @Override
-            public INDArray call(INDArray v1, INDArray v2) throws Exception {
-                return v1.addi(v2);
+        if(batchSize == 0)
+            batchSize = 10;
+
+        log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
+        if(!averageEachIteration) {
+            Layer layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
+            final INDArray params = layer.params();
+            this.params = sc.broadcast(params);
+            log.info("Broadcasting initial parameters of length " + params.length());
+            int paramsLength = layer.numParams();
+            if(params.length() != paramsLength)
+                throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+            JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
+            log.debug("Ran iterative reduce...averaging results now.");
+            INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()),new Add());
+            newParams.divi(rdd.partitions().size());
+            layer.setParams(newParams);
+            this.layer = layer;
+        }
+        else {
+            conf.setNumIterations(1);
+            Layer layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
+            final INDArray params = layer.params();
+            this.params = sc.broadcast(params);
+
+            for(int i = 0; i < iterations; i++) {
+                JavaRDD<INDArray> results = rdd.sample(true,0.3).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
+
+                int paramsLength = layer.numParams();
+                if(params.length() != paramsLength)
+                    throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+
+                INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()), new Add());
+                newParams.divi(rdd.partitions().size());
             }
-        }).divi(miniBatches.count());
-        layer.setParams(newParams);
-        this.layer = layer;
+
+            layer.setParams(this.params.value());
+            this.layer = layer;
+
+
+        }
+
+
         return layer;
     }
 
