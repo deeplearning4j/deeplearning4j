@@ -90,9 +90,11 @@ public class RecursiveAutoEncoder extends BaseLayer {
     @Override
     public Gradient gradient() {
        /**
-         * Going up the tree involves repeated calculations using the output of the previous autoencoder
+         * Going up the tree involves repeated calculations
+        * using the output of the previous autoencoder
          * for the next.
-         * This starts with a base case at x[0] and x[1] and expands to subsequent layers.
+         * This starts with a base case at x[0] and x[1]
+        * and expands to subsequent layers.
          *
          * The error is the sum going up the tree.
          */
