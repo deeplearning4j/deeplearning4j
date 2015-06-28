@@ -58,7 +58,6 @@ public class RecursiveAutoEncoderTest {
 
         RecursiveAutoEncoder da = LayerFactories.getFactory(conf).create(conf,
                 Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
-        da.setParams(da.params());
         da.fit(input);
     }
 

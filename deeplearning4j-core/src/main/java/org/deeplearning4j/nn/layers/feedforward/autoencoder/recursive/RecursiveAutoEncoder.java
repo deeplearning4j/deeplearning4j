@@ -62,10 +62,18 @@ public class RecursiveAutoEncoder extends BaseLayer {
         return 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
     }
 
+    @Override
+    public void setScore() {
+        gradient();
+        score = scoreSnapShot();
+    }
 
     @Override
     public INDArray transform(INDArray data) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), data.mmul(params.get(RecursiveParamInitializer.W)).addiRowVector(params.get(RecursiveParamInitializer.C))));
+        INDArray w = getParam(RecursiveParamInitializer.W);
+        INDArray c = getParam(RecursiveParamInitializer.C);
+        INDArray inputTimesW = data.mmul(w);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
     }
 
 
