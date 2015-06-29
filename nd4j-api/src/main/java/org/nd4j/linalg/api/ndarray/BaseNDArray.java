@@ -535,7 +535,11 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if(isVector())
             linearView = this;
-        linearView = new LinearViewNDArray(this);
+        else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
+            linearView = Nd4j.create(data(),new int[]{1,length()},new int[]{1,elementStride()},offset);
+        }
+        else
+            linearView = new LinearViewNDArray(this);
 
 
     }
@@ -2739,7 +2743,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
 
-        Nd4j.getExecutioner().exec(new AddOp(linearView(), other, result));
+        Nd4j.getExecutioner().exec(new AddOp(linearView(), other.linearView(), result.linearView()));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

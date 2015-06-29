@@ -1478,8 +1478,14 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     }
 
 
-
-
+    @Test
+    public void testElementWiseAdd() {
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray linspace2 = linspace.dup();
+        INDArray assertion = Nd4j.create(new double[][]{{2,4},{6,8}});
+        linspace.addi(linspace2);
+        assertEquals(assertion,linspace);
+    }
 
     @Test
     public void testSquareMatrix() {

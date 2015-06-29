@@ -748,7 +748,7 @@ public class Nd4j {
              * This allows us to retain the indices
              * and how they were rearranged.
              */
-        
+
             Arrays.sort(index, new Comparator<Double>() {
                 @Override
                 public int compare(Double o1, Double o2) {
@@ -1091,15 +1091,10 @@ public class Nd4j {
         if (!type.equals("real"))
             throw new IllegalArgumentException("Trying to read in a complex ndarray");
 
-        if (dataType.equals("double")) {
-            double[] data = ArrayUtil.readDouble(ArrayUtil.prod(shape), dis);
-            return create(data, shape, stride, 0);
-        }
+        DataBuffer buf = Nd4j.createBuffer(ArrayUtil.prod(shape));
+        buf.read(dis);
+        return create(buf,shape,stride,0);
 
-        else {
-            float[] data = ArrayUtil.readFloat(ArrayUtil.prod(shape), dis);
-            return create(data, shape, stride, 0);
-        }
 
     }
 
