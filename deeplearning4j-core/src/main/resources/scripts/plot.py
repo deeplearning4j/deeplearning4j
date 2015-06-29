@@ -43,10 +43,9 @@ def render_activation_probability(dataPath, filename):
     hidden_mean = load_file(dataPath)
     # Should sigmoid be moved earlier?
     img = Image.fromarray(sigmoid(hidden_mean) * 256)
-    img.save(filename, 'PNG')
-    time.sleep(15)
+    # img.save(filename, 'PNG')
     img.show()
-    time.sleep(15)
+    time.sleep(5)
     img.close()
 
 def plot_matrices(orig_path, plot_type, filename):
@@ -63,7 +62,7 @@ def plot_matrices(orig_path, plot_type, filename):
     plt.tight_layout()
     plt.savefig(filename, format='png')
     plt.show(block=False)
-    time.sleep(15)
+    time.sleep(5)
     plt.close()
 
 
