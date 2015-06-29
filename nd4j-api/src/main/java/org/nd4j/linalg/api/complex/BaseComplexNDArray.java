@@ -499,6 +499,9 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         ensureNotCleanedUp();
         if(isVector())
             linearView = this;
+        else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
+            linearView = Nd4j.createComplex(data(),new int[]{1,length()},new int[]{1,elementStride()},offset);
+        }
         else
             linearView = new LinearViewComplexNDArray(this);
     }
