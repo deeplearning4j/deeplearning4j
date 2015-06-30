@@ -17,7 +17,6 @@ Contents
 * <a href="#next">Next Steps</a>
 * <a href="#patent">Word2vec Patent</a>
 * <a href="#foreign">Foreign Languages</a>
-* <a href="#model">Trained Model</a>
 
 ##<a name="intro">Introduction to Word2Vec</a>
 
@@ -235,11 +234,13 @@ If the word isn't in the vocabulary, Word2vec returns zeros.
 
 ### Importing Models
 
-If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit) or Gensimm; i.e. if you want to import a trained model from elsewhere. 
+The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz) we use to test the accuracy of our trained nets is hosted on S3. Users whose current hardware takes a long time to train on large corpora can simply download it.
+
+If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit) or Gensimm, this line will import the model.
 
     Word2Vec vec = WordVectorSerializer.loadGoogleModel(toDl, true);
 
-There are two modes: True is for binary, false is for text. 
+There are two modes: True is for binary; false is for text. 
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
@@ -313,7 +314,3 @@ While words in all languages may be converted into vectors with Word2vec, and th
 
     It's like numbers are language, like all the letters in the language are turned into numbers, and so it's something that everyone understands the same way. You lose the sounds of the letters and whether they click or pop or touch the palate, or go ooh or aah, and anything that can be misread or con you with its music or the pictures it puts in your mind, all of that is gone, along with the accent, and you have a new understanding entirely, a language of numbers, and everything becomes as clear to everyone as the writing on the wall. So as I say there comes a certain time for the reading of the numbers.
         -- E.L. Doctorow, Billy Bathgate
-
-###<a name="model">Trained Word2vec Model</a>
-
-The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz) we use to test the accuracy of our trained nets is hosted on S3. Users whose current hardware takes a long time to train on large corpora can simply download it.
