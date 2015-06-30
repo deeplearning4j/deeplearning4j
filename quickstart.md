@@ -56,6 +56,24 @@ The nd4j-jblas backend will look something like this:
 
 *nd4j-jblas* works with all examples. To install Jblas, Windows users should refer to the [Deepelearining4j Getting Started page](../gettingstarted.html).
 
+## Advanced: Using the Command Line on AWS
+
+If you install Deeplearning4j on an AWS server with a Linux OS, you may want to use the command line to run your first examples, rather than relying on an IDE. In that case, run the *git clone*s and *mvn clean install*s according to the instruction above. With the installs completed, you can run an actual example with one line of code in the command line. The line will vary depending on the repo version and the specific example you choose. 
+
+Here is a template:
+
+    java -cp target/nameofjar.jar fully.qualified.class.name
+
+And here is a concrete example, to show you roughly what your command should look like:
+
+    java -cp target/deeplearning4j-examples-0.0.3.3.3-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
+
+That is, there are two wild cards that will change as we update and you go through the examples:
+
+    java -cp target/*.jar org.deeplearning4j.*
+
+To make changes to the examples from the command line and run that changed file, you could, for example, tweak *MLPBackpropIrisExample* in *src/main/java/org/deeplearning4j/multilayer* and then maven-build the examples again. 
+
 ## Next Steps
 
 Once you've run the examples, please visit our [Getting Started page](../gettingstarted.html) to explore further. And remember, DL4J is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. 
