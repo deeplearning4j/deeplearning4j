@@ -24,7 +24,7 @@ After those installs, please read the following:
 7. <a href="#eclipse">Eclipse</a>
 8. <a href="#trouble">Troubleshooting</a>
 9. <a href="#results">Reproducible Results</a>
-9. <a href="#next">Next Steps</a>
+10. <a href="#next">Next Steps</a>
 
 ### <a name="linux">Linux</a>
 
