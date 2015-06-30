@@ -97,6 +97,8 @@ Calling next on the iterator advances it one step, and returns the new value it 
 
 ## Evaluating the Model
 
+With this example, we havne't shown you how to split your training dataset from your test set. Instead you'll see this:
+
         // Testing -- We're not doing split test and train
         // Using the same training data as test. 
         
@@ -109,3 +111,12 @@ Calling next on the iterator advances it one step, and returns the new value it 
         }
         
         System.out.println(eval.stats());
+
+On Iris, which doesn't employ an Iterator because of the dataset's small size, we split, test and train datasets like this:
+
+        log.info("Split data....");
+        SplitTestAndTrain testAndTrain = next.splitTestAndTrain(splitTrainNum, new Random(seed));
+        DataSet train = testAndTrain.getTrain();
+        DataSet test = testAndTrain.getTest();
+
+To split test and train on large datasets, you'll have to iterate through both the test and training datasets. For the moment, we'll leave that to you. 
