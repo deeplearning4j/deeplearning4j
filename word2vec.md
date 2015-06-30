@@ -224,7 +224,7 @@ You'll want to save the model. The normal way to save models in deeplearning4j i
 
 This will save Word2vec to mypath. You can reload it into memory like this:
 
-        Word2Vec vec = SerializationUtils.readObject(new File("mypath"));
+        Word2Vec vec = WordVectorSerializer.readTextModel(textFile, false);
 
 You can then use Word2vec as a lookup table:
 
@@ -232,6 +232,14 @@ You can then use Word2vec as a lookup table:
         double[] wordVector = vec.getWordVector("myword");
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
+
+### Importing Models
+
+If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit) or Gensimm; i.e. if you want to import a trained model from elsewhere. 
+
+    Word2Vec vec = WordVectorSerializer.loadGoogleModel(toDl, true);
+
+There are two modes: True is for binary, false is for text. 
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
@@ -276,6 +284,10 @@ You can shut down your Word2vec application and try to delete them.
 
         Word2Vec vec = new Word2Vec.Builder().layerSize(300).windowSize(5)
                 .layerSize(300).iterate(iter).tokenizerFactory(t).build();
+
+*Q: I did everything you said and the results still don't look right.*
+
+*A: If you are using Ubuntu, the serialized data may not be getting loaded properly. This is a problem with Ubuntu. We recommend testing this version of Wordvec on another version of Linux.*
 
 ###<a name="use">Use Cases</a>
 
