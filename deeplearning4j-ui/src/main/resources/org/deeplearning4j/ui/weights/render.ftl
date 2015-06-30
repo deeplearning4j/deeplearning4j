@@ -83,28 +83,33 @@
 
 
     setInterval(function() {
-
-        d3.json('/weights/data',function(error,json) {
-            var model = json['model'];
-            var gradient = json['gradient'];
-            //clear out body of where the chart content will go
-            $('#model .charts').html('');
-            $('#gradient .charts').html('');
-            var keys = Object.keys(model);
-            for(var i = 0; i < keys.length; i++) {
-                var key = keys[i];
-                //model id class charts
-                var selectorModel = '#model .charts';
-                var selectorGradient = '#gradient .charts';
-                //append div to each node where the chart content will
-                //go and pass that in to the chart renderer
-                var div = '<div class="' + key + '"><h4>' + key + '</h4></div>';
-                $(selectorModel).append(div);
-                $(selectorGradient).append(div);
-                appendHistogram(model[key],selectorModel + ' .' + key);
-                appendHistogram(gradient[key],selectorGradient + ' .' + key);
+        $.get( "/weights/updated", function( data ) {
+            var status = data['status'];
+            if(status) {
+                d3.json('/weights/data',function(error,json) {
+                    var model = json['model'];
+                    var gradient = json['gradient'];
+                    //clear out body of where the chart content will go
+                    $('#model .charts').html('');
+                    $('#gradient .charts').html('');
+                    var keys = Object.keys(model);
+                    for(var i = 0; i < keys.length; i++) {
+                        var key = keys[i];
+                        //model id class charts
+                        var selectorModel = '#model .charts';
+                        var selectorGradient = '#gradient .charts';
+                        //append div to each node where the chart content will
+                        //go and pass that in to the chart renderer
+                        var div = '<div class="' + key + '"><h4>' + key + '</h4></div>';
+                        $(selectorModel).append(div);
+                        $(selectorGradient).append(div);
+                        appendHistogram(model[key],selectorModel + ' .' + key);
+                        appendHistogram(gradient[key],selectorGradient + ' .' + key);
+                    }
+                });
             }
         });
+
     },1000);
 
 
