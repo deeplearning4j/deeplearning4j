@@ -1,5 +1,5 @@
 import math
-from matplotlib.pyplot import hist, title, subplot, scatter
+from matplotlib.pyplot import hist, title, subplot, scatter, plot
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
@@ -13,6 +13,7 @@ Optimization Methods Visualalization
 Graph tools to help visualize how optimization is performing
 '''
 
+GLOBAL_TIME = 3
 
 def load_file(path):
     return np.loadtxt(path, delimiter=',')
@@ -38,15 +39,25 @@ def render_plot(values, plot_type='histogram', chart_title=''):
     chart_title += ' ' + magnitude
     title(chart_title)
 
-
 def render_activation_probability(dataPath, filename):
     hidden_mean = load_file(dataPath)
-    # Should sigmoid be moved earlier?
     img = Image.fromarray(sigmoid(hidden_mean) * 256)
-    # img.save(filename, 'PNG')
-    img.show()
-    time.sleep(5)
-    img.close()
+    if img.mode != 'RGB':
+        new_img = img.convert('RGB')
+    new_img.save(filename, 'PNG')
+    new_img.show()
+    new_img.close()
+
+def plot_loss(dataPath, filename):
+    path, chart_title = dataPath.split(',')
+    values = load_file(path)
+    print 'Loading matrix ' + chart_title + '\n'
+    plt.plot(values, 'b')
+    plt.title(chart_title)
+    plt.savefig(filename, format='png')
+    plt.show(block=False)
+    time.sleep(GLOBAL_TIME)
+    plt.close()
 
 def plot_matrices(orig_path, plot_type, filename):
     paths = orig_path.split(',')
@@ -62,7 +73,7 @@ def plot_matrices(orig_path, plot_type, filename):
     plt.tight_layout()
     plt.savefig(filename, format='png')
     plt.show(block=False)
-    time.sleep(5)
+    time.sleep(GLOBAL_TIME)
     plt.close()
 
 
@@ -102,6 +113,8 @@ if __name__ == '__main__':
         plot_matrices(path, plot_type, filename)
     elif plot_type == 'scatter':
         plot_matrices(path, plot_type, filename)
+    elif plot_type == 'loss':
+        plot_loss(path, filename)
     elif sys.argv[1] == 'filter':
         n_rows = int(sys.argv[4])
         n_cols = int(sys.argv[5])

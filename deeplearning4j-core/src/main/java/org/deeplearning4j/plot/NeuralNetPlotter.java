@@ -25,6 +25,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
@@ -38,7 +39,7 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * Credit to :
  * http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf
- *
+ * https://cs231n.github.io/neural-networks-3/
  *
  * for visualizations
  * @author Adam Gibson
@@ -104,7 +105,7 @@ public class NeuralNetPlotter implements Serializable {
         }catch(IOException e) {
             log.warn("Image closed");
             throw new RuntimeException(e);
-    }
+        }
     }
 
     /**
@@ -142,17 +143,24 @@ public class NeuralNetPlotter implements Serializable {
         for(String s : vars) {
             titles.add(s + "-gradient");
         }
+
+        INDArray[] variablesAndGradients = new INDArray[network.conf().variables().size() * 2];
+        int count = 0;
+        for(int i = 0; i < network.conf().variables().size(); i++) {
+            String variable = network.conf().variables().get(i);
+            variablesAndGradients[count++] = network.getParam(variable);
+        }
+
+        for(int i = 0; i < network.conf().variables().size(); i++) {
+            String variable = network.conf().variables().get(i);
+            variablesAndGradients[count++] = gradient.getGradientFor(variable);
+
+        }
+
         graphPlotType(
                 "histogram",
                 titles,
-                new INDArray[]{
-                        network.getParam(DefaultParamInitializer.WEIGHT_KEY),
-                        network.getParam(PretrainParamInitializer.BIAS_KEY),
-                        network.getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY),
-                        gradient.gradientForVariable().get(DefaultParamInitializer.WEIGHT_KEY),
-                        gradient.gradientForVariable().get(DefaultParamInitializer.BIAS_KEY),
-                        gradient.gradientForVariable().get(PretrainParamInitializer.VISIBLE_BIAS_KEY)
-                },
+                variablesAndGradients,
                 localPath + "weightHistograms.png"
                 );
     }
@@ -212,40 +220,43 @@ public class NeuralNetPlotter implements Serializable {
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...", e);
             e.printStackTrace();
-
         }
-
     }
 
-
     /**
-     * plotNetworkGradient used for debugging gradients with different data visualizations
-     * top layer is
-     * @param network the trained neural net model
+     * plotNetworkGradient used for debugging RBM gradients with different data visualizations
+     *
+     * @param layer the neural net layer
      * @param gradient latest updates to weights and biases
      **/
-    public void plotNetworkGradient(Layer network,Gradient gradient,int patchesPerRow) {
-        INDArray weight = network.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        plotWeightHistograms(network, gradient);
-        plotActivations(network);
+    public void plotNetworkGradient(Layer layer,Gradient gradient,int patchesPerRow) {
+        INDArray weight = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
+        plotWeightHistograms(layer, gradient);
+        plotActivations(layer);
         renderFilter(weight, patchesPerRow);
 
     }
 
-    public void plotNetworkGradient(Layer network,INDArray gradient,int patchesPerRow) {
-        INDArray weight =  network.getParam(DefaultParamInitializer.WEIGHT_KEY);
+    public void plotNetworkGradient(Layer layer,INDArray gradient,int patchesPerRow) {
+        INDArray weight =  layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
         graphPlotType(
                 "histogram",
                 Arrays.asList("W", "w-gradient"),
                 new INDArray[]{
-                        network.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                        layer.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         gradient
                 },
                 localPath + "weightHistograms.png"
         );
-        plotActivations(network);
+        plotActivations(layer);
         renderFilter(weight, patchesPerRow);
     }
 
+    public void plotLossFunction(String filePath) {
+        renderGraph("loss", filePath, localPath +"loss.png");
+//        plotAccuracy(network);
+//        plotWeightUpdates(weights, gradients);
+
+    }
 
 }
