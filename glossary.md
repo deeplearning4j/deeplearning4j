@@ -6,7 +6,7 @@ layout: default
 # Glossary
 
 ### <a name="activation">Activation</a> 
-An activation for a neural network is defined as the mapping of the input to the output via a [non-linear transform function](#nonlineartransformfunction). Activation algorithms are the gates that determine, at each node in the net, whether and to what extent to transmit the signal the node has received from the previous layer. A combination of coefficients and biases work on the input data from the previous layer to determine whether that signal surpasses a given treshhold and is deemed significant. Those weights and biases are slowly altered as the neural net minimizes its error; i.e. nodes' activations change with learning.
+An activation for a neural network is defined as the mapping of the input to the output via a [non-linear transform function](#nonlineartransformfunction) at each "node", which is simply a locus of computation within the net. Each layer in a neural net consists of many nodes. Activation algorithms are the gates that determine, at each node in the net, whether and to what extent to transmit the signal the node has received from the previous layer. A combination of coefficients and biases work on the input data from the previous layer to determine whether that signal surpasses a given treshhold and is deemed significant. Those weights and biases are slowly altered as the neural net minimizes its error; i.e. nodes' activations change with learning.
 
 ###<a name="binarization">Binarization</a> 
 The process of transforming data in to a set of zeros and ones. An example would be gray-scaling an image by transforming a picture from the 0-255 spectrum to a 0-1 spectrum. 
