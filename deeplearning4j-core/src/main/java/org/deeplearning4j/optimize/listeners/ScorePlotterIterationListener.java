@@ -24,6 +24,7 @@ public class ScorePlotterIterationListener implements IterationListener {
     private int iterations = 1;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();
     private boolean renderFirst = false;
+    private static String ID_FOR_SESSION = UUID.randomUUID().toString();
     private ArrayList<Double> scores = new ArrayList<>();
     private ArrayList<Double> accuracy = new ArrayList<>();
     private ArrayList<Double> weightUpdates = new ArrayList<>();
@@ -38,13 +39,13 @@ public class ScorePlotterIterationListener implements IterationListener {
 
     protected String storeData(ArrayList data)  {
         try {
-            String filePath = System.getProperty("java.io.tmpdir") + File.separator +  UUID.randomUUID().toString();
+            String filePath = System.getProperty("java.io.tmpdir") + File.separator +  ID_FOR_SESSION;
             File write = new File(filePath);
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
             write.deleteOnExit();
 
             StringBuilder sb = new StringBuilder();
-            for(Object value: data) {
+            for(Object value : data) {
                 sb.append(String.format("%.10f", (Double) value));
                 sb.append(",");
             }
@@ -53,7 +54,7 @@ public class ScorePlotterIterationListener implements IterationListener {
             bos.write(line.getBytes());
             bos.flush();
             bos.close();
-            return filePath+",loss";
+            return filePath + "-loss";
 
         } catch(IOException e){
             throw new RuntimeException(e);
