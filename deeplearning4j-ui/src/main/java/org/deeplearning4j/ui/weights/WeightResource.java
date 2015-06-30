@@ -42,7 +42,7 @@ import java.util.Map;
 @Produces(MediaType.TEXT_HTML)
 public class WeightResource {
     private ModelAndGradient current;
-    private boolean updated = false;
+    private boolean updated = true;
     @GET
     public View get() {
         return new WeightView();
@@ -52,17 +52,22 @@ public class WeightResource {
     @Path("/updated")
     @Produces(MediaType.APPLICATION_JSON)
     public Response updated() {
-        return Response.ok(Collections.singletonMap("message",updated)).build();
+        return Response.ok(Collections.singletonMap("status",updated)).build();
     }
 
     @GET
     @Path("/data")
     @Produces(MediaType.APPLICATION_JSON)
     public Response data() {
+        //initialized with empty data
         if(current == null) {
+            //initialize with empty
             current = new ModelAndGradient();
             updated = true;
+            return Response.ok(current).build();
+
         }
+        //cache response; don't refetch data
         updated = false;
         return Response.ok(current).build();
     }
