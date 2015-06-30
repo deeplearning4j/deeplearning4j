@@ -64,7 +64,7 @@ public class NeuralNetPlotter implements Serializable {
             throw new IllegalStateException("Unable to load python file");
 
         }
-         
+
 
         return plotPath.getAbsolutePath();
     }
@@ -96,6 +96,12 @@ public class NeuralNetPlotter implements Serializable {
         }
     }
 
+    /**
+     * Calls out to python for rendering charts
+     * @param action the action to take
+     * @param dataPath the path to the data
+     * @param saveFilePath the saved file path for output of graphs
+     */
     public void renderGraph(String action, String dataPath, String saveFilePath) {
 
         try {
