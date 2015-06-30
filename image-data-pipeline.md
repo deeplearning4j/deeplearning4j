@@ -97,9 +97,8 @@ Calling next on the iterator advances it one step, and returns the new value it 
 
 ## Evaluating the Model
 
-With this example, we havne't shown you how to split your training dataset from your test set. Instead you'll see this:
+With this example, we haven't shown you how to split your training dataset from your test set. Instead you'll see this:
 
-        // Testing -- We're not doing split test and train
         // Using the same training data as test. 
         
         iter.reset();
