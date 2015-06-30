@@ -49,6 +49,29 @@ import java.util.List;
  */
 public class MLLibUtil {
 
+
+    /**
+     * This is for the edge case where
+     * you have a single output layer
+     * and need to convert the output layer to
+     * an index
+     * @param vector the vector to get the classifier prediction for
+     * @return the prediction for the given vector
+     */
+    public static double toClassifierPrediction(Vector vector) {
+        double max = Double.NEGATIVE_INFINITY;
+        int maxIndex = 0;
+        for(int i = 0; i < vector.size(); i++) {
+            double curr = vector.apply(i);
+            if(curr > max) {
+                maxIndex = i;
+                max = curr;
+            }
+        }
+
+        return maxIndex;
+    }
+
     /**
      * Convert an ndarray to a matrix.
      * Note that the matrix will be con

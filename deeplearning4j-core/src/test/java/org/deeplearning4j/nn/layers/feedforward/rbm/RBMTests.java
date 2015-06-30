@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.feedforward.rbm;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -34,6 +35,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.optimize.listeners.ScorePlotterIterationListener;
 import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -162,8 +164,8 @@ public class RBMTests {
         INDArray input = d2.getFeatureMatrix();
 
         RBM rbm = LayerFactories.getFactory(conf).create(conf,
-                Arrays.<IterationListener>asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5))));
-
+                Arrays.<IterationListener>asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5)),
+                new ScorePlotterIterationListener(10)));
         rbm.fit(input);
 
     }
