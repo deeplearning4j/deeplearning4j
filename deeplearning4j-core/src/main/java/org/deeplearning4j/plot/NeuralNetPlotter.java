@@ -49,12 +49,12 @@ public class NeuralNetPlotter implements Serializable {
 
     private static 	ClassPathResource script = new ClassPathResource("scripts/plot.py");
     private static final Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);
-    private static String localPath = "graph-tmp/";
+    private static String localPath = System.getProperty("java.io.tmpdir") + File.separator + "graph-tmp/";
     private static String localPlotPath = loadIntoTmp();
 
     private static String loadIntoTmp() {
 
-        File plotPath = new File(localPath+"plot.py");
+        File plotPath = new File(localPath,"plot.py");
 
         try {
             List<String> lines = IOUtils.readLines(script.getInputStream());
@@ -64,6 +64,7 @@ public class NeuralNetPlotter implements Serializable {
             throw new IllegalStateException("Unable to load python file");
 
         }
+         
 
         return plotPath.getAbsolutePath();
     }
@@ -253,7 +254,7 @@ public class NeuralNetPlotter implements Serializable {
     }
 
     public void plotLossFunction(String filePath) {
-        renderGraph("loss", filePath, localPath +"loss.png");
+        renderGraph("loss", filePath, localPath + "-loss.png");
 //        plotAccuracy(network);
 //        plotWeightUpdates(weights, gradients);
 
