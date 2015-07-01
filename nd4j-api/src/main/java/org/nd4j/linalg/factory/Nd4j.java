@@ -132,6 +132,118 @@ public class Nd4j {
         nd4j.initContext();
     }
 
+
+
+
+    public  enum PadMode {
+        CONSTANT
+        ,EDGE
+        ,LINEAR_RAMP
+        ,MAXIMUM
+        ,MEAN
+        ,MEDIAN
+        ,MINIMUM
+        ,REFLECT
+        ,SYMMETRIC
+        ,WRAP
+
+    }
+
+
+
+    /**
+     * Pad the given ndarray to the size along each dimension
+     * @param toPad the ndarray to pad
+     * @param padWidth the width to pad along each dimension
+     * @param constantValues the values to append for each dimension
+     * @param padMode the mode to pad in
+     * @return the padded ndarray
+     * based on the specified mode
+     */
+    public static INDArray pad(INDArray toPad,int[] padWidth,List<double[]> constantValues,PadMode padMode) {
+        switch(padMode) {
+            case CONSTANT:
+                if(padWidth.length != toPad.rank())
+                    throw new IllegalArgumentException("Please specify a pad width for each dimension");
+                List<int[]> sizes = new ArrayList<>();
+                for(int i = 0; i < toPad.rank(); i++) {
+                    sizes.add(padWidth);
+                }
+
+
+
+                INDArray ret = toPad.dup();
+                for(int i = 0; i < toPad.rank(); i++) {
+                    int[] pad = sizes.get(i);
+                    double[] constant = constantValues.get(i);
+                    int padBefore = pad[0];
+                    int padAfter = pad[1];
+                    double beforeVal = constant[0];
+                    double afterVal = constant[1];
+                    ret = Nd4j.prepend(ret,padBefore,beforeVal,i);
+                    ret = Nd4j.append(ret,padAfter,afterVal,i);
+
+                }
+
+                return ret;
+
+            default: throw new UnsupportedOperationException();
+
+        }
+    }
+
+
+
+    /**
+     * Pad the given ndarray to the size along each dimension
+     * @param toPad the ndarray to pad
+     * @param padWidth the width to pad along each dimension
+     * @param padMode the mode to pad in
+     * @return the padded ndarray
+     * based on the specified mode
+     */
+    public static INDArray pad(INDArray toPad,int[] padWidth,PadMode padMode) {
+       return pad(toPad,padWidth,ArrayUtil.zerosMatrix(padWidth),padMode);
+    }
+
+
+    /**
+     * Append the given
+     * array with the specified value size
+     * along a particular axis
+     * @param arr the array to append to
+     * @param padAmount the pad amount of the array to be returned
+     * @param val the value to append
+     * @param axis the axis to append to
+     * @return the newly created array
+     */
+    public static INDArray append(INDArray arr,int padAmount,double val,int axis) {
+        int[] paShape = ArrayUtil.copy(arr.shape());
+        if(axis < 0)
+            axis = axis + arr.shape().length;
+        paShape[axis] = padAmount;
+        return Nd4j.concat(axis,arr,Nd4j.valueArrayOf(paShape,val));
+    }
+
+    /**
+     * Append the given
+     * array with the specified value size
+     * along a particular axis
+     * @param arr the array to append to
+     * @param padAmount the pad amount of the array to be returned
+     * @param val the value to append
+     * @param axis the axis to append to
+     * @return the newly created array
+     */
+    public static INDArray prepend(INDArray arr,int padAmount,double val,int axis) {
+        int[] paShape = ArrayUtil.copy(arr.shape());
+        if(axis < 0)
+            axis = axis + arr.shape().length;
+        paShape[axis] = padAmount;
+        return Nd4j.concat(axis,Nd4j.valueArrayOf(paShape,val),arr);
+    }
+
+
     /**
      * The reference queue used for cleaning up
      * ndarrays

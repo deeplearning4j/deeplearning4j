@@ -40,11 +40,12 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.*;
 
 /**
  * NDArrayTests for fortran ordering
@@ -80,6 +81,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
+
     @Test
     public void testScalarOps() throws Exception {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
@@ -96,6 +98,80 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testPrepend() {
+        INDArray appendTo = Nd4j.ones(3, 3);
+        INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
+        assertArrayEquals(new int[]{3, 6}, ret.shape());
+
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1, 1, 1, 1, 3},
+                {1, 1, 1, 2, 4}
+        });
+
+        INDArray prepend = Nd4j.prepend(linspace, 3, 1.0, -1);
+        assertEquals(assertion, prepend);
+
+    }
+
+    @Test
+    public void testAppend() {
+        INDArray appendTo = Nd4j.ones(3, 3);
+        INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
+        assertArrayEquals(new int[]{3, 6}, ret.shape());
+
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray otherAppend = Nd4j.append(linspace, 3, 1.0, -1);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1, 3, 1, 1, 1},
+                {2, 4, 1, 1, 1}
+        });
+
+        assertEquals(assertion, otherAppend);
+
+
+    }
+
+
+    @Test
+    public void testConcatMatrices() {
+        INDArray a = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray b = a.dup();
+
+
+        INDArray concat1 = Nd4j.concat(1, a, b);
+        INDArray oneAssertion = Nd4j.create(new double[][]{{1, 3, 1, 3}, {2, 4, 2, 4}});
+        assertEquals(oneAssertion,concat1);
+
+        INDArray concat = Nd4j.concat(0, a, b);
+        INDArray zeroAssertion = Nd4j.create(new double[][]{{1, 3}, {2, 4}, {1, 3}, {2, 4}});
+        assertEquals(zeroAssertion,concat);
+    }
+
+    @Test
+    public void testPad() {
+        INDArray start = Nd4j.linspace(1,9,9).reshape(3,3);
+        INDArray ret = Nd4j.pad(start, new int[]{5, 5}, Nd4j.PadMode.CONSTANT);
+        double[][] data = new double[][]
+                {{ 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,1,4,7,0,0,0,0,0.},
+                        { 0,0,0,0,0,2,5,8,0,0,0,0,0.},
+                        { 0,0,0,0,0,3,6,9,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.},
+                        { 0,0,0,0,0,0,0,0,0,0,0,0,0.}};
+        INDArray assertion = Nd4j.create(data);
+        assertEquals(assertion,ret);
+
+
+    }
 
 
     @Test

@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -88,7 +89,7 @@ public class DataSetTest extends BaseNd4jTest {
         float expected = dotProduct(colFloat, rowFloat);
         float actual = product.getFloat(0);
         System.out.println("rowVector times colVector: expected = " + expected + ", actual = " + actual );
-        assertEquals(getFailureMessage(),expected, actual, 0.01f);
+        assertEquals(getFailureMessage(), expected, actual, 0.01f);
     }
 
 
@@ -117,6 +118,19 @@ public class DataSetTest extends BaseNd4jTest {
 
         SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(1));
         assertEquals(getFailureMessage(),train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
+    }
+
+    @Test
+    public void testLabelCounts() {
+        DataSet x0 = new IrisDataSetIterator(150,150).next();
+        assertEquals(0,x0.get(0).outcome());
+        assertEquals(0,x0.get(1).outcome());
+        assertEquals(2, x0.get(149).outcome());
+        Map<Integer,Double> counts = x0.labelCounts();
+        assertEquals(50,counts.get(0),1e-1);
+        assertEquals(50,counts.get(1),1e-1);
+        assertEquals(50,counts.get(2),1e-1);
+
     }
 
 
