@@ -99,6 +99,7 @@ which will import the source and set everything up.
 ### <a name="trouble">Troubleshooting</a>
 
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
+
       * Operating System (Windows, OSX, Linux) and version 
       * Java version (7, 8 ...) : type java -version in your terminal/CMD
       * Maven version : type mvn --version in your terminal/CMD
