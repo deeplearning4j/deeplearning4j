@@ -123,13 +123,13 @@ public class DataSetTest extends BaseNd4jTest {
     @Test
     public void testLabelCounts() {
         DataSet x0 = new IrisDataSetIterator(150,150).next();
-        assertEquals(0,x0.get(0).outcome());
-        assertEquals(0,x0.get(1).outcome());
-        assertEquals(2, x0.get(149).outcome());
+        assertEquals(getFailureMessage(),0,x0.get(0).outcome());
+        assertEquals(getFailureMessage(),0,x0.get(1).outcome());
+        assertEquals(getFailureMessage(),2, x0.get(149).outcome());
         Map<Integer,Double> counts = x0.labelCounts();
-        assertEquals(50,counts.get(0),1e-1);
-        assertEquals(50,counts.get(1),1e-1);
-        assertEquals(50,counts.get(2),1e-1);
+        assertEquals(getFailureMessage(),50,counts.get(0),1e-1);
+        assertEquals(getFailureMessage(),50,counts.get(1),1e-1);
+        assertEquals(getFailureMessage(),50,counts.get(2),1e-1);
 
     }
 

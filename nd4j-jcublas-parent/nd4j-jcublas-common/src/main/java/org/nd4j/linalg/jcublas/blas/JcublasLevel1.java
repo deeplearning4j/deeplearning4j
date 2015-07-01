@@ -190,7 +190,6 @@ public class JcublasLevel1 extends BaseLevel1 {
                 X.length(),
                 xCPointer.getDevicePointer(),
                 incX);
-        ContextHolder.syncStream();
         SimpleJCublas.sync();
         return  ret2 - 1;
     }
@@ -203,7 +202,6 @@ public class JcublasLevel1 extends BaseLevel1 {
                 X.length(),
                 xCPointer.getDevicePointer(),
                 incX);
-        ContextHolder.syncStream();
         SimpleJCublas.sync();
         return  ret2 - 1;
     }

@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
+import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.fft.JcudaFft;
 import org.nd4j.linalg.jcublas.util.FFTUtils;
@@ -59,6 +60,7 @@ public class JCudaVectorFFT extends VectorFFT {
     public void exec() {
         if(!x.isVector() || executed)
             return;
+        SimpleJCublas.sync();
         INDArray workerArea = Nd4j.create(x.length() * 2);
         try(CublasPointer inputPointer = new CublasPointer(x);
             CublasPointer workerPointer = new CublasPointer(workerArea)) {
@@ -103,6 +105,7 @@ public class JCudaVectorFFT extends VectorFFT {
 
         executed = true;
         this.z = x;
+        SimpleJCublas.sync();
 
     }
 }

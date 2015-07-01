@@ -107,12 +107,12 @@ public class JavaLevel1 extends BaseLevel1 {
 
     @Override
     protected int isamax(int N, INDArray X, int incX) {
-        return BLAS.getInstance().isamax(N,getFloatData(X),getBlasOffset(X),incX) - 1;
+        return BLAS.getInstance().isamax(N,getFloatData(X),getBlasOffset(X),incX);
     }
 
     @Override
     protected int idamax(int N, INDArray X, int incX) {
-        return BLAS.getInstance().idamax(N,getDoubleData(X),getBlasOffset(X),incX) - 1;
+        return BLAS.getInstance().idamax(N,getDoubleData(X),getBlasOffset(X),incX);
     }
 
     @Override
