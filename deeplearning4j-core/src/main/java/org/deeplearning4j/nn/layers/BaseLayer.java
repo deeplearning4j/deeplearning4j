@@ -51,6 +51,7 @@ public abstract class BaseLayer implements Layer {
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected int index=0;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -68,6 +69,17 @@ public abstract class BaseLayer implements Layer {
     public void setInput(INDArray input) {
         this.input = input;
     }
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
 
     @Override
     public Collection<IterationListener> getIterationListeners() {

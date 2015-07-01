@@ -29,7 +29,7 @@ public class BackTrackLineSearchTest {
                 .iterations(10).weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
         DataSet d = new IrisDataSetIterator(1,1).next();
         d.normalizeZeroMeanZeroUnitVariance();
         l.setInput(d.getFeatureMatrix());

@@ -20,6 +20,11 @@ import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.optimize.listeners.ScorePlotterIterationListener;
+import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -47,7 +52,9 @@ public class BackPropMLPTest {
 		System.out.println(conf);
 		MultiLayerNetwork network = new MultiLayerNetwork(conf);
 		network.init();
-		
+
+		network.setListeners(Arrays.asList(new NeuralNetPlotterIterationListener(10),
+				new ScorePlotterIterationListener(10)));
 		DataSetIterator iter = new IrisDataSetIterator(10,100);
 		
 		while( iter.hasNext() ) network.fit(iter.next());
