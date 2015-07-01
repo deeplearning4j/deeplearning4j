@@ -472,14 +472,6 @@ public class ContextHolder {
         if(shutdown.get())
             return;
 
-
-        for(CUstream stream : contextStreams.values()) {
-            cuStreamDestroy(stream);
-        }
-
-        for(cublasHandle handle : handleMap.values())
-            JCublas2.cublasDestroy(handle);
-
         shutdown.set(true);
 
 
