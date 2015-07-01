@@ -29,18 +29,6 @@ public class JCudaFftTest {
 
     }
 
-    @Test
-    public void test2d() {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
-        INDArray swapped = n.swapAxes(n.shape().length - 1, 1);
-        INDArray firstSlice = swapped.slice(0).slice(0);
-        IComplexNDArray testAssertion = Nd4j.createComplex(firstSlice);
-        IComplexNDArray testNoOffsetAssertion = Nd4j.createComplex(new double[]{1, 0, 4, 0, 7, 0, 10, 0, 13, 0}, new int[]{1, 5});
-        IComplexNDArray test = instance.fft(testAssertion, 5);
-        IComplexNDArray testNoOffset = instance.fft(testNoOffsetAssertion, 5);
-        assertEquals(test,testNoOffset);
-
-    }
 
 
 

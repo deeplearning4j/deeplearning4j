@@ -35,12 +35,14 @@ import jcuda.driver.CUresult;
 import jcuda.driver.CUstream;
 import jcuda.driver.CUstream_flags;
 import jcuda.driver.JCudaDriver;
+import jcuda.jcufft.JCufft;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 
 import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
+import org.nd4j.linalg.jcublas.fft.JcudaFft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -228,8 +230,12 @@ public class ContextHolder {
      * every operation.
      */
     public static void syncStream() {
-        JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
         JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+        JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
+        JCublas2.cublasGetStream(ContextHolder.getInstance().getHandle(), ContextHolder.getInstance().getCudaStream());
+        JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+        JcudaFft fft = (JcudaFft) Nd4j.getFFt();
+        JCufft.cufftSetStream(fft.getHandle(),ContextHolder.getInstance().getCudaStream());
 
     }
 
@@ -467,9 +473,7 @@ public class ContextHolder {
         if(shutdown.get())
             return;
 
-        for(cudaStream_t stream : cudaStreams.values()) {
-            JCuda.cudaStreamDestroy(stream);
-        }
+
         for(CUstream stream : contextStreams.values()) {
             cuStreamDestroy(stream);
         }

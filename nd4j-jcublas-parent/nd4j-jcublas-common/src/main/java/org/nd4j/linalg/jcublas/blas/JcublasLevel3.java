@@ -22,6 +22,8 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.util.Shape;
 
 /**
+ * Level 3 implementation of matrix matrix operations
+ *
  * @author Adam Gibson
  */
 public class JcublasLevel3 extends BaseLevel3 {

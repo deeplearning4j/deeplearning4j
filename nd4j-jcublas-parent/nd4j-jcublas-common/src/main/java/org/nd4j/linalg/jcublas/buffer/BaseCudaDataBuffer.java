@@ -485,8 +485,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private void readObject(java.io.ObjectInputStream stream)
             throws IOException, ClassNotFoundException {
 
-        doReadObject(stream);
-        isPersist = stream.readBoolean();
+        read(stream);
         pointersToContexts = HashBasedTable.create();
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         freed = new AtomicBoolean(false);

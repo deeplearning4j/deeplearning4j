@@ -239,7 +239,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(length);
         int count = 0;
         for(INDArray arr : matrices) {
-            INDArray linear = arr.linearView();
+            INDArray linear = arr.ravel();
             for(int j = 0; j < linear.length(); j++)
                 ret.putScalar(count++,linear.getDouble(j));
         }
