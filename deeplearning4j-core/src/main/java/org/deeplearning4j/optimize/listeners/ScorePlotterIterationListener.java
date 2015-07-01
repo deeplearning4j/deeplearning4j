@@ -13,18 +13,18 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Created by merlin on 6/29/15.
+ * Reference: https://cs231n.github.io/neural-networks-3/
  */
 public class ScorePlotterIterationListener implements IterationListener {
     private int iterations = 1;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();
     private boolean renderFirst = false;
-    private static String ID_FOR_SESSION = UUID.randomUUID().toString();
     private ArrayList<Double> scores = new ArrayList<>();
     private ArrayList<Double> accuracy = new ArrayList<>();
     private ArrayList<Double> weightUpdates = new ArrayList<>();
@@ -39,11 +39,11 @@ public class ScorePlotterIterationListener implements IterationListener {
 
     protected String storeData(ArrayList data)  {
         try {
-            String filePath = System.getProperty("java.io.tmpdir") + File.separator +  ID_FOR_SESSION;
-            File write = new File(filePath);
+            String filePath = plotter.getDataFilePath();
+            String tmpFilePath = UUID.randomUUID().toString();
+            File write = new File(filePath,tmpFilePath);
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
             write.deleteOnExit();
-
             StringBuilder sb = new StringBuilder();
             for(Object value : data) {
                 sb.append(String.format("%.10f", (Double) value));
@@ -54,7 +54,7 @@ public class ScorePlotterIterationListener implements IterationListener {
             bos.write(line.getBytes());
             bos.flush();
             bos.close();
-            return filePath + "-loss";
+            return filePath+tmpFilePath;
 
         } catch(IOException e){
             throw new RuntimeException(e);
@@ -65,13 +65,12 @@ public class ScorePlotterIterationListener implements IterationListener {
     @Override
     public void iterationDone(Model model, int iteration) {
         scores.add(-model.score());
-//        accuracy.add();
-//        weightUpdates.add();
+        //        accuracy.add();\
+        //        weightUpdates.add();
 
-        // store
         if(iteration == 0 && renderFirst || iteration > 0 && iteration % this.iterations == 0) {
-            String filePath = storeData(scores);
-            plotter.plotLossFunction(filePath);
+            String dataFilePath = storeData(scores);
+            plotter.renderGraph("loss", dataFilePath, plotter.getGraphFilePath() + "loss.png");
         }
     }
 

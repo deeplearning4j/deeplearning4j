@@ -43,17 +43,14 @@ def render_activation_probability(dataPath, filename):
     hidden_mean = load_file(dataPath)
     img = Image.fromarray(sigmoid(hidden_mean) * 256)
     if img.mode != 'RGB':
-        new_img = img.convert('RGB')
-    new_img.save(filename, 'PNG')
-    new_img.show()
-    new_img.close()
+        img = img.convert('RGB')
+    img.save(filename, 'PNG')
 
 def plot_loss(dataPath, filename):
-    path, chart_title = dataPath.split(',')
+    print 'Rendering Loss Function graph...'
     values = load_file(path)
-    print 'Loading matrix ' + chart_title + '\n'
     plt.plot(values, 'b')
-    plt.title(chart_title)
+    plt.title("Loss Function Plot")
     plt.savefig(filename, format='png')
     plt.show(block=False)
     time.sleep(GLOBAL_TIME)
@@ -76,26 +73,27 @@ def plot_matrices(orig_path, plot_type, filename):
     time.sleep(GLOBAL_TIME)
     plt.close()
 
-
 # TODO Finish adapting. Code still does not fully run through.
-def render_filter(data_path, n_rows, n_cols, filename):
-    weight_data = load_file(data_path).reshape((n_rows, n_cols))
-    patch_width = weight_data.shape[1]
-    patch_height = 1
+def render_filter(data_path, filename, filter_width=10, filter_height=10):
+    print 'Rendering filter image...'
+    weight_data = load_file(data_path)
+    n_rows = weight_data.shape[0]
+    n_cols = weight_data.shape[1]
+    padding = 1
 
     # Initialize background to dark gray
-    filter_frame = np.ones((n_rows*patch_width, n_cols * patch_height), dtype='uint8')
+    filter_frame = np.ones(((filter_width+padding) * filter_width, (filter_height+padding) * filter_height), dtype='uint8') * 51
 
-    for row in xrange(int(n_rows/n_cols)):
+    for row in xrange(n_rows):
         for col in xrange(n_cols):
-            patch = weight_data[row * n_cols + col].reshape((patch_width, patch_height))
+            patch = weight_data[row * n_cols + col].reshape((filter_width, filter_height))
             norm_patch = ((patch - patch.min()) / (patch.max() - patch.min() + 1e-6))
-            filter_frame[row * patch_width: row * patch_width + patch_width,
-                  col * patch_height:col * patch_height + patch_height] = norm_patch * 255
-    img = Image.fromarray(filter_frame)
+            filter_frame[row * (filter_height+padding): row * (filter_height+padding)+filter_height, col * (filter_width+padding): col * (filter_width+padding)+filter_width] = norm_patch * 255
+            filter_frame[row * (filter_height+padding): row * (filter_height+padding) + filter_height, col * (filter_width+padding): col *(filter_width+padding) + filter_width]
+        img = Image.fromarray(filter_frame)
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
     img.savefig(filename)
-    img.show()
-
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
@@ -116,8 +114,6 @@ if __name__ == '__main__':
     elif plot_type == 'loss':
         plot_loss(path, filename)
     elif sys.argv[1] == 'filter':
-        n_rows = int(sys.argv[4])
-        n_cols = int(sys.argv[5])
-        length = int(sys.argv[6])
-        print 'Rendering ' + sys.argv[3] + ' x ' + sys.argv[4] + ' matrix'
-        render_filter(path, n_rows, n_cols, length, filename)
+        filter_width = int(sys.argv[4])
+        filter_height = int(sys.argv[5])
+        render_filter(path, n_rows, n_cols, filename, filter_height, filter_width)
