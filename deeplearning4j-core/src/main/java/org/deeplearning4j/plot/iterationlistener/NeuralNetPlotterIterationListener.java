@@ -90,6 +90,7 @@ public class NeuralNetPlotterIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         if(iteration == 0 && renderFirst || iteration > 0 && iteration % this.iterations == 0) {
             Layer layer = (Layer) model;
+            plotter.updateGraphDirectory(layer);
             plotter.plotNetworkGradient(layer,layer.gradient(),patchesPerRow);
         }
     }
