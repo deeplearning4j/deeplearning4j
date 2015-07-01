@@ -55,9 +55,11 @@ public interface LayerFactory {
      *
      * Create a layer based on the based in configuration
      * @param conf the configuration to create the layer based on
+     * @param iterationListeners the list of iterations listners
+     * @param index the layer number
      * @return the created layer
      */
-    <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners);
+    <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index);
 
 
     /**

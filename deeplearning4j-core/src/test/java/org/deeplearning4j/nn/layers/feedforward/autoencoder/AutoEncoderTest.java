@@ -61,7 +61,7 @@ public class AutoEncoderTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
         assertEquals(da.params(),da.params());
         assertEquals(471784,da.params().length());
         da.setParams(da.params());

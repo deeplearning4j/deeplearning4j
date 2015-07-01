@@ -100,7 +100,8 @@ public class NeuralNetPlotter implements Serializable {
     public void updateGraphDirectory(Layer layer){
         String layerType = layer.getClass().toString();
         String[] layerPath = layerType.split("\\.");
-        String newPath = graphFilePath + File.separator + layerPath[layerPath.length-1] + File.separator;
+        String layerName = layerPath[layerPath.length - 1] +  Integer.toString(layer.getIndex());
+        String newPath = graphFilePath + File.separator + layerName + File.separator;
         if (!new File(newPath).exists()) {
             setupDirectory(newPath);
             setLayerGraphFilePath(newPath);
