@@ -39,7 +39,6 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * Credit to :
  * http://yosinski.com/media/papers/Yosinski2012VisuallyDebuggingRestrictedBoltzmannMachine.pdf
- * https://cs231n.github.io/neural-networks-3/
  *
  * for visualizations
  * @author Adam Gibson
@@ -49,30 +48,52 @@ public class NeuralNetPlotter implements Serializable {
 
     private static 	ClassPathResource script = new ClassPathResource("scripts/plot.py");
     private static final Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);
-    private static String localPath = System.getProperty("java.io.tmpdir") + File.separator + "graph-tmp/";
+    private static String ID_FOR_SESSION = UUID.randomUUID().toString();
+    private static String localPath = System.getProperty("java.io.tmpdir") + File.separator;
+    private static String dataFilePath = localPath + "data/";
+    private static String graphPath = localPath + "graphs/";
+    private static String graphFilePath = graphPath + ID_FOR_SESSION + File.separator;
     private static String localPlotPath = loadIntoTmp();
 
+    public String getDataFilePath() { return dataFilePath; }
+
+    public String getGraphFilePath() { return graphFilePath; }
+
+    public static void printDataFilePath() { log.info("Data stored at " + dataFilePath); }
+
+    public static void printGraphFilePath() { log.warn("Graphs stored at " + graphFilePath + ". " +
+            "You must manually delete the folder when you are done."); }
+
     private static String loadIntoTmp() {
-
-        File plotPath = new File(localPath,"plot.py");
-
-        try {
-            List<String> lines = IOUtils.readLines(script.getInputStream());
-            FileUtils.writeLines(plotPath, lines);
-
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to load python file");
-
+        File dPath = new File(dataFilePath);
+        File gPath = new File(graphFilePath);
+        if (!dPath.isDirectory() || !gPath.isDirectory()) {
+            dPath.mkdir();
+            gPath.mkdir();
         }
+        dPath.deleteOnExit();
 
+        File plotPath = new File(graphPath,"plot.py");
+        if (!plotPath.exists()) {
+            try {
+                List<String> lines = IOUtils.readLines(script.getInputStream());
+                FileUtils.writeLines(plotPath, lines);
+
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to load python file");
+
+            }
+        }
+        printDataFilePath();
+        printGraphFilePath();
 
         return plotPath.getAbsolutePath();
     }
 
     protected String writeMatrix(INDArray matrix)  {
         try {
-            String filePath = System.getProperty("java.io.tmpdir") + File.separator +  UUID.randomUUID().toString();
-            File write = new File(filePath);
+            String tmpFilePath = dataFilePath + UUID.randomUUID().toString();
+            File write = new File(tmpFilePath);
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
             write.deleteOnExit();
             for(int i = 0; i < matrix.rows(); i++) {
@@ -89,7 +110,7 @@ public class NeuralNetPlotter implements Serializable {
                     bos.flush();
             }
             bos.close();
-            return filePath;
+            return tmpFilePath;
 
         } catch(IOException e){
             throw new RuntimeException(e);
@@ -105,7 +126,7 @@ public class NeuralNetPlotter implements Serializable {
     public void renderGraph(String action, String dataPath, String saveFilePath) {
 
         try {
-            log.info("Rendering " + action + " graphs for data analysis... ");
+            log.info("Rendering " + action + " graphs for data analysis...");
             Process is = Runtime.getRuntime().exec("python " + localPlotPath + " " + action + " " + dataPath + " " + saveFilePath);
             log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
             log.error("Std error " + IOUtils.readLines(is.getErrorStream()).toString());
@@ -114,6 +135,29 @@ public class NeuralNetPlotter implements Serializable {
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Calls out to python for rendering charts
+     * @param action the action to take
+     * @param dataPath the path to the data
+     * @param saveFilePath the saved file path for output of graphs
+     * @param feature_width width of feature
+     * @param feature_height height of feature
+     */
+    public void renderGraph(String action, String dataPath, String saveFilePath, int feature_width, int feature_height) {
+
+        try {
+            log.info("Rendering " + action + " graphs for data analysis...");
+            Process is = Runtime.getRuntime().exec("python " + localPlotPath + " " + action + " " + dataPath + " " + saveFilePath
+            + " " + feature_width + " " + feature_height);
+            log.info("Std out " + IOUtils.readLines(is.getInputStream()).toString());
+            log.error("Std error " + IOUtils.readLines(is.getErrorStream()).toString());
+        }catch(IOException e) {
+            log.warn("Image closed");
+            throw new RuntimeException(e);
+        }
+    }
+
 
     /**
      * graphPlotType sets up data to pass to scripts that render graphs
@@ -168,7 +212,7 @@ public class NeuralNetPlotter implements Serializable {
                 "histogram",
                 titles,
                 variablesAndGradients,
-                localPath + "weightHistograms.png"
+                graphFilePath + "weightHistograms.png"
                 );
     }
 
@@ -179,26 +223,27 @@ public class NeuralNetPlotter implements Serializable {
 
     /**
     * plotActivations show how hidden neurons are used, how often on vs. off and correlation
-     * @param network the trained neural net model
+     * @param layer the trained neural net layer
      **/
-    public void plotActivations(Layer network) {
+    public void plotActivations(Layer layer) {
 
-        if(network.input() == null)
+        if(layer.input() == null)
             throw new IllegalStateException("Unable to plot; missing input");
 
         // TODO hidden_mean coming back with only 4 values - need further digging to understand issue
-        INDArray hbiasMean = network.activationMean();
+        INDArray hbiasMean = layer.activationMean();
         String dataPath = writeMatrix(hbiasMean);
 
-        renderGraph("activations", dataPath, localPath + "activationPlot.png");
+        renderGraph("activations", dataPath, graphFilePath + "activationPlot.png");
 
     }
 
     /**
      * renderFilter plot learned filter for each hidden neuron
-     * @param weight the trained neural net model
+     * @param layer the trained neural net layer in the model
      **/
-    public void renderFilter(INDArray weight, int patchesPerRow) {
+    public void renderFilter(Layer layer, int patchesPerRow) {
+        INDArray weight = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray w = weight.dup();
         FilterRenderer render = new FilterRenderer();
 
@@ -206,7 +251,7 @@ public class NeuralNetPlotter implements Serializable {
             if(w.shape().length > 2) {
                 INDArray render2 = w.transpose();
                 render.renderFilters(render2,
-                        localPath + "renderFilter.png",
+                        graphFilePath + "renderFilter.png",
                         w.columns(),
                         w.rows(),
                         w.slices());
@@ -214,16 +259,16 @@ public class NeuralNetPlotter implements Serializable {
             }
             else {
                 render.renderFilters(w,
-                        localPath + "renderFilter.png",
+                        graphFilePath + "renderFilter.png",
                         (int) Math.sqrt(w.rows()),
                         (int) Math.sqrt(w.columns()),
                         patchesPerRow);
-
+        }
                 //Alternative python approach
 //                String dataPath = writeMatrix(w);
-//                renderGraph("filter", dataPath, nRows, nCols);
+//                renderGraph("filter", dataPath, graphFilePath + "renderFilter.png", w.shape()[0], w.shape()[1]);
 
-            }
+
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...", e);
             e.printStackTrace();
@@ -237,15 +282,13 @@ public class NeuralNetPlotter implements Serializable {
      * @param gradient latest updates to weights and biases
      **/
     public void plotNetworkGradient(Layer layer,Gradient gradient,int patchesPerRow) {
-        INDArray weight = layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
         plotWeightHistograms(layer, gradient);
         plotActivations(layer);
-        renderFilter(weight, patchesPerRow);
+        renderFilter(layer, patchesPerRow);
 
     }
 
     public void plotNetworkGradient(Layer layer,INDArray gradient,int patchesPerRow) {
-        INDArray weight =  layer.getParam(DefaultParamInitializer.WEIGHT_KEY);
         graphPlotType(
                 "histogram",
                 Arrays.asList("W", "w-gradient"),
@@ -253,17 +296,11 @@ public class NeuralNetPlotter implements Serializable {
                         layer.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         gradient
                 },
-                localPath + "weightHistograms.png"
+                graphFilePath + "weightHistograms.png"
         );
         plotActivations(layer);
-        renderFilter(weight, patchesPerRow);
+        renderFilter(layer, patchesPerRow);
     }
 
-    public void plotLossFunction(String filePath) {
-        renderGraph("loss", filePath, localPath + "-loss.png");
-//        plotAccuracy(network);
-//        plotWeightUpdates(weights, gradients);
-
-    }
 
 }
