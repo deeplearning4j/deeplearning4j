@@ -392,7 +392,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                         }
                     }
                 }
-                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners);
+                layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i);
             }
             initCalled = true;
             initMask();

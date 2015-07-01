@@ -49,18 +49,19 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf, int index, int numLayers, Collection<IterationListener> iterationListeners) {
-        return create(conf, iterationListeners);
+        return create(conf, iterationListeners, index);
     }
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf) {
-        return create(conf,new ArrayList<IterationListener>());
+        return create(conf,new ArrayList<IterationListener>(),0);
     }
 
     @Override
-    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners) {
+    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index) {
         Layer ret = getInstance(conf);
         ret.setIterationListeners(iterationListeners);
+        ret.setIndex(index);
         Map<String,INDArray> params = getParams(conf);
         ret.setParamTable(params);
         ret.setConf(conf);

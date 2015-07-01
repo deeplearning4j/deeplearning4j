@@ -49,9 +49,21 @@ public class ConvolutionLayer implements Layer {
     private Map<String,INDArray> params;
     protected ParamInitializer paramInitializer;
     private List<IterationListener> listeners = new ArrayList<>();
+    protected int index=0;
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
+    }
+
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     @Override
@@ -63,8 +75,6 @@ public class ConvolutionLayer implements Layer {
     public Gradient error(INDArray input) {
         throw new UnsupportedOperationException();
     }
-
-
 
     @Override
     public INDArray derivativeActivation(INDArray input) {

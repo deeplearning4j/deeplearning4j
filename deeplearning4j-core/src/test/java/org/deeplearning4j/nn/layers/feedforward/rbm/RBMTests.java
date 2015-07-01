@@ -27,10 +27,14 @@ import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
@@ -74,7 +78,7 @@ public class RBMTests {
                 .nIn(d.numInputs()).nOut(nOut).build();
 
         RBM rbm = LayerFactories.getFactory(conf)
-                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
 
         rbm.fit(d.getFeatureMatrix());
 
@@ -116,6 +120,7 @@ public class RBMTests {
         r.fit(d.getFeatureMatrix());
 
     }
+
 
     @Test
     public void testBasic() {
@@ -165,7 +170,7 @@ public class RBMTests {
 
         RBM rbm = LayerFactories.getFactory(conf).create(conf,
                 Arrays.<IterationListener>asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5)),
-                new ScorePlotterIterationListener(10)));
+                new ScorePlotterIterationListener(10)),0);
         rbm.fit(input);
 
     }
@@ -205,7 +210,8 @@ public class RBMTests {
                 .learningRate(1e-1f).nIn(6).nOut(4)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .build();
-        RBM rbm = LayerFactories.getFactory(conf).create(conf);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf, Arrays.asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10),
+                        new ScoreIterationListener(5)), new ScorePlotterIterationListener(10)),0);
         double value = rbm.score();
         rbm.fit(input);
         value = rbm.score();
