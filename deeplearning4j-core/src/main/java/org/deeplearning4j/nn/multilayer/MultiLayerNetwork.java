@@ -1233,12 +1233,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     /**
      * Fit the model
      *
-     * @param examples the examples to classify (one example in each row)
+     * @param data the examples to classify (one example in each row)
      * @param labels   the example labels(a binary outcome matrix)
      */
     @Override
-    public void fit(INDArray examples, INDArray labels) {
-        setInput(examples.dup());
+    public void fit(INDArray data, INDArray labels) {
+        setInput(data.dup());
 
 
 
@@ -1252,6 +1252,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     }
 
+    /**
+     * Fit the unsupervised model
+     *
+     * @param data the examples to classify (one example in each row)
+     */
 
     @Override
     public void fit(INDArray data) {

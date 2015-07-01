@@ -69,8 +69,9 @@ public class ScorePlotterIterationListener implements IterationListener {
         //        weightUpdates.add();
 
         if(iteration == 0 && renderFirst || iteration > 0 && iteration % this.iterations == 0) {
+            plotter.updateGraphDirectory((Layer) model);
             String dataFilePath = storeData(scores);
-            plotter.renderGraph("loss", dataFilePath, plotter.getGraphFilePath() + "loss.png");
+            plotter.renderGraph("loss", dataFilePath, plotter.getLayerGraphFilePath() + "loss.png");
         }
     }
 

@@ -26,7 +26,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.factory.*;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -54,10 +56,13 @@ public class NeuralNetPlotter implements Serializable {
     private static String graphPath = localPath + "graphs/";
     private static String graphFilePath = graphPath + ID_FOR_SESSION + File.separator;
     private static String localPlotPath = loadIntoTmp();
+    private static String layerGraphFilePath = graphFilePath;
 
     public String getDataFilePath() { return dataFilePath; }
 
-    public String getGraphFilePath() { return graphFilePath; }
+    public String getLayerGraphFilePath() { return layerGraphFilePath; }
+
+    public void setLayerGraphFilePath(String newPath) { this.layerGraphFilePath=newPath; }
 
     public static void printDataFilePath() { log.info("Data stored at " + dataFilePath); }
 
@@ -65,13 +70,10 @@ public class NeuralNetPlotter implements Serializable {
             "You must manually delete the folder when you are done."); }
 
     private static String loadIntoTmp() {
-        File dPath = new File(dataFilePath);
-        File gPath = new File(graphFilePath);
-        if (!dPath.isDirectory() || !gPath.isDirectory()) {
-            dPath.mkdir();
-            gPath.mkdir();
-        }
-        dPath.deleteOnExit();
+        setupDirectory(dataFilePath);
+        setupDirectory(graphFilePath);
+        printDataFilePath();
+        printGraphFilePath();
 
         File plotPath = new File(graphPath,"plot.py");
         if (!plotPath.exists()) {
@@ -84,10 +86,26 @@ public class NeuralNetPlotter implements Serializable {
 
             }
         }
-        printDataFilePath();
-        printGraphFilePath();
 
         return plotPath.getAbsolutePath();
+    }
+
+    protected static void setupDirectory(String path){
+        File newPath = new File(path);
+        if (!newPath.isDirectory())
+            newPath.mkdir();
+        newPath.deleteOnExit(); //TODO drop this to avoid deleting graphs
+    }
+
+    public void updateGraphDirectory(Layer layer){
+        String layerType = layer.getClass().toString();
+        String[] layerPath = layerType.split("\\.");
+        String newPath = graphFilePath + File.separator + layerPath[layerPath.length-1] + File.separator;
+        if (!new File(newPath).exists()) {
+            setupDirectory(newPath);
+            setLayerGraphFilePath(newPath);
+        }
+
     }
 
     protected String writeMatrix(INDArray matrix)  {
@@ -212,7 +230,7 @@ public class NeuralNetPlotter implements Serializable {
                 "histogram",
                 titles,
                 variablesAndGradients,
-                graphFilePath + "weightHistograms.png"
+                layerGraphFilePath + "weightHistograms.png"
                 );
     }
 
@@ -234,7 +252,7 @@ public class NeuralNetPlotter implements Serializable {
         INDArray hbiasMean = layer.activationMean();
         String dataPath = writeMatrix(hbiasMean);
 
-        renderGraph("activations", dataPath, graphFilePath + "activationPlot.png");
+        renderGraph("activations", dataPath, layerGraphFilePath + "activationPlot.png");
 
     }
 
@@ -251,7 +269,7 @@ public class NeuralNetPlotter implements Serializable {
             if(w.shape().length > 2) {
                 INDArray render2 = w.transpose();
                 render.renderFilters(render2,
-                        graphFilePath + "renderFilter.png",
+                        layerGraphFilePath + "renderFilter.png",
                         w.columns(),
                         w.rows(),
                         w.slices());
@@ -259,14 +277,14 @@ public class NeuralNetPlotter implements Serializable {
             }
             else {
                 render.renderFilters(w,
-                        graphFilePath + "renderFilter.png",
+                        layerGraphFilePath + "renderFilter.png",
                         (int) Math.sqrt(w.rows()),
                         (int) Math.sqrt(w.columns()),
                         patchesPerRow);
         }
                 //Alternative python approach
 //                String dataPath = writeMatrix(w);
-//                renderGraph("filter", dataPath, graphFilePath + "renderFilter.png", w.shape()[0], w.shape()[1]);
+//                renderGraph("filter", dataPath, layerGraphFilePath + "renderFilter.png", w.shape()[0], w.shape()[1]);
 
 
         } catch (Exception e) {
@@ -281,7 +299,7 @@ public class NeuralNetPlotter implements Serializable {
      * @param layer the neural net layer
      * @param gradient latest updates to weights and biases
      **/
-    public void plotNetworkGradient(Layer layer,Gradient gradient,int patchesPerRow) {
+    public void plotNetworkGradient(Layer layer, Gradient gradient, int patchesPerRow) {
         plotWeightHistograms(layer, gradient);
         plotActivations(layer);
         renderFilter(layer, patchesPerRow);
@@ -296,7 +314,7 @@ public class NeuralNetPlotter implements Serializable {
                         layer.getParam(DefaultParamInitializer.WEIGHT_KEY),
                         gradient
                 },
-                graphFilePath + "weightHistograms.png"
+                layerGraphFilePath + "weightHistograms.png"
         );
         plotActivations(layer);
         renderFilter(layer, patchesPerRow);
