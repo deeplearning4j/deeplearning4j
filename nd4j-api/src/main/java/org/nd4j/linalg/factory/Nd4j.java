@@ -172,7 +172,7 @@ public class Nd4j {
 
 
 
-                INDArray ret = toPad;
+                INDArray ret = toPad.dup();
                 for(int i = 0; i < toPad.rank(); i++) {
                     int[] pad = sizes.get(i);
                     double[] constant = constantValues.get(i);

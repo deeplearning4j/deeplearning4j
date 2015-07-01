@@ -237,19 +237,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             length += m.length();
 
         INDArray ret = Nd4j.create(length);
-        DataBuffer[] buffers = new DataBuffer[matrices.size()];
-        int[] strides = new int[matrices.size()];
-        int[] offsets = new int[matrices.size()];
         int count = 0;
-        for (INDArray matrix : matrices) {
-            buffers[count] = matrix.data();
-            strides[count] = matrix.majorStride();
-            offsets[count] = matrix.offset();
-            count++;
+        for(INDArray arr : matrices) {
+            INDArray linear = arr.linearView();
+            for(int j = 0; j < linear.length(); j++)
+                ret.putScalar(count++,linear.getDouble(j));
         }
 
-
-        ret.data().assign(offsets, strides, buffers);
         return ret;
 
     }
@@ -1012,41 +1006,38 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             }
         }
 
-        else if(toConcat[0].isMatrix()) {
-            int sumAlongDim = 0;
-            for (int i = 0; i < toConcat.length; i++)
-                sumAlongDim += toConcat[i].shape()[dimension];
-            int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
+        int sumAlongDim = 0;
+        for (int i = 0; i < toConcat.length; i++)
+            sumAlongDim += toConcat[i].shape()[dimension];
+        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
-            outputShape[dimension] = sumAlongDim;
+        outputShape[dimension] = sumAlongDim;
 
-            //the output ndarray
-            INDArray ret = Nd4j.create(outputShape);
-            int count = 0;
-            if(dimension == 1) {
-                for(INDArray arr : toConcat) {
-                    for(int i = 0; i < arr.columns(); i++) {
-                        ret.putColumn(count++,arr.getColumn(i));
-                    }
+        //the output ndarray
+        INDArray ret = Nd4j.create(outputShape);
+        int vectorOffset = 0;
+        int arrVecLength = 0;
+        boolean notIncremented = true;
+        for(INDArray arr : toConcat) {
+            for(int i = 0; i < arr.vectorsAlongDimension(dimension); i++) {
+                INDArray retVec = ret.vectorAlongDimension(i,dimension);
+                INDArray arrVec = arr.vectorAlongDimension(i,dimension);
+                if(notIncremented) {
+                    arrVecLength += arrVec.length();
+                    notIncremented = false;
                 }
-            }
-            else {
-                for(INDArray arr : toConcat) {
-                    for(int i = 0; i < arr.rows(); i++) {
-                        ret.putRow(count++,arr.getRow(i));
-                    }
-                }
+                for(int j = 0; j < arrVec.length(); j++)
+                    retVec.putScalar(j + vectorOffset,arrVec.getDouble(j));
             }
 
-            return ret;
+            vectorOffset += arrVecLength;
+            notIncremented = true;
+
         }
 
 
-        else {
-            throw new UnsupportedOperationException();
-        }
+        return ret;
 
-        return null;
     }
 
     /**
