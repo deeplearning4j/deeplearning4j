@@ -44,6 +44,8 @@ public class JcudaFft extends DefaultFFTInstance {
     }
 
 
+
+
     /**
      * Get the handle for the current thread
      * @return the handle for the current thread
