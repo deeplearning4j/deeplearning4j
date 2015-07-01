@@ -101,7 +101,7 @@ which will import the source and set everything up.
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
 
       * Operating System (Windows, OSX, Linux) and version 
-      * Java version (7, 8 ...) : type java -version in your terminal/CMD
+      * Java version (7, 8) : type java -version in your terminal/CMD
       * Maven version : type mvn --version in your terminal/CMD
       * Stacktrace: Please past the error code on [Gist](https://gist.github.com/) and share the link with us on Gitter.
 * If you have installed DL4J before and now see the examples throwing errors, run a git clone on [ND4J](http://nd4j.org/getstarted.html) in the same root directory as DL4J; run a clean Maven install within ND4J; install DL4J again; run a clean Maven install within DL4J, and see if that fixes things.
