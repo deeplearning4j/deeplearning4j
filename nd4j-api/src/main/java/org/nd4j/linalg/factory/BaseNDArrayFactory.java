@@ -695,7 +695,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(double[] data) {
-        return create(data, new int[]{1,data.length});
+        return create(data, new int[]{1, data.length});
     }
 
     /**
@@ -786,7 +786,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexZeros(int columns) {
-        return createComplex(new int[]{1,columns});
+        return createComplex(new int[]{1, columns});
     }
 
     /**
@@ -1012,32 +1012,38 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             }
         }
 
-        else {
-            validateConcat(dimension, toConcat);
-
+        else if(toConcat[0].isMatrix()) {
             int sumAlongDim = 0;
             for (int i = 0; i < toConcat.length; i++)
                 sumAlongDim += toConcat[i].shape()[dimension];
-
-
             int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
             outputShape[dimension] = sumAlongDim;
 
-
+            //the output ndarray
             INDArray ret = Nd4j.create(outputShape);
-            INDArray linear = ret.linearView();
             int count = 0;
-            for (int i = 0; i < toConcat.length; i++) {
-                INDArray flattened = toConcat[i].linearView();
-
-                for (int j = 0; j < flattened.length(); j++) {
-                    linear.putScalar(count++, flattened.getDouble(j));
+            if(dimension == 1) {
+                for(INDArray arr : toConcat) {
+                    for(int i = 0; i < arr.columns(); i++) {
+                        ret.putColumn(count++,arr.getColumn(i));
+                    }
+                }
+            }
+            else {
+                for(INDArray arr : toConcat) {
+                    for(int i = 0; i < arr.rows(); i++) {
+                        ret.putRow(count++,arr.getRow(i));
+                    }
                 }
             }
 
-
             return ret;
+        }
+
+
+        else {
+            throw new UnsupportedOperationException();
         }
 
         return null;

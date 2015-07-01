@@ -742,6 +742,18 @@ public class ArrayUtil {
 
 
     /**
+     * Multiply the given array
+     * by the given scalar
+     * @param arr the array to multily
+     * @param mult the scalar to multiply by
+     */
+    public static void multiplyBy(int[] arr,int mult) {
+        for(int i = 0; i < arr.length; i++)
+            arr[i] *= mult;
+
+    }
+
+    /**
      * Reverse the passed in array in place
      *
      * @param e the array to reverse
@@ -753,6 +765,15 @@ public class ArrayUtil {
             e[e.length - i - 1] = temp;
         }
 
+    }
+
+
+    public static List<double[]> zerosMatrix(int...dimensions) {
+        List<double[]> ret = new ArrayList<>();
+        for(int i = 0; i < dimensions.length; i++) {
+            ret.add(new double[dimensions[i]]);
+        }
+        return ret;
     }
 
 
