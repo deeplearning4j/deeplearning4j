@@ -59,8 +59,6 @@ public class NeuralNetPlotter implements Serializable {
     private static String layerGraphFilePath = graphFilePath;
 
 
-    public String getDataFilePath() { return dataFilePath; }
-
     public String getLayerGraphFilePath() { return layerGraphFilePath; }
 
     public void setLayerGraphFilePath(String newPath) { this.layerGraphFilePath=newPath; }
@@ -68,7 +66,7 @@ public class NeuralNetPlotter implements Serializable {
     public static void printDataFilePath() { log.info("Data stored at " + dataFilePath); }
 
     public static void printGraphFilePath() { log.warn("Graphs stored at " + graphFilePath + ". " +
-            "You must manually delete the folder when you are done."); }
+            "Warning: You must manually delete the folder when you are done."); }
 
     private static String loadIntoTmp() {
         setupDirectory(dataFilePath);
@@ -100,7 +98,7 @@ public class NeuralNetPlotter implements Serializable {
     public void updateGraphDirectory(Layer layer){
         String layerType = layer.getClass().toString();
         String[] layerPath = layerType.split("\\.");
-        String layerName = layerPath[layerPath.length - 1] +  Integer.toString(layer.getIndex());
+        String layerName = Integer.toString(layer.getIndex()) + layerPath[layerPath.length - 1] ;
         String newPath = graphFilePath + File.separator + layerName + File.separator;
         if (!new File(newPath).exists()) {
             setupDirectory(newPath);
@@ -135,6 +133,30 @@ public class NeuralNetPlotter implements Serializable {
             throw new RuntimeException(e);
         }
     }
+
+    public String writeArray(ArrayList data)  {
+        try {
+            String tmpFilePath = dataFilePath + UUID.randomUUID().toString();
+            File write = new File(tmpFilePath);
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(write,true));
+            write.deleteOnExit();
+            StringBuilder sb = new StringBuilder();
+            for(Object value : data) {
+                sb.append(String.format("%.10f", (Double) value));
+                sb.append(",");
+            }
+            String line = sb.toString();
+            line = line.substring(0, line.length()-1);
+            bos.write(line.getBytes());
+            bos.flush();
+            bos.close();
+            return tmpFilePath;
+
+        } catch(IOException e){
+            throw new RuntimeException(e);
+        }
+    }
+
 
     /**
      * Calls out to python for rendering charts
@@ -283,10 +305,9 @@ public class NeuralNetPlotter implements Serializable {
                         (int) Math.sqrt(w.columns()),
                         patchesPerRow);
         }
-                //Alternative python approach
-//                String dataPath = writeMatrix(w);
-//                renderGraph("filter", dataPath, layerGraphFilePath + "renderFilter.png", w.shape()[0], w.shape()[1]);
-
+//        Alternative python approach - work in progress
+//            String dataPath = writeMatrix(w);
+//            renderGraph("filter", dataPath, layerGraphFilePath + "renderFilter.png");
 
         } catch (Exception e) {
             log.error("Unable to plot filter, continuing...", e);
@@ -300,14 +321,13 @@ public class NeuralNetPlotter implements Serializable {
      * @param layer the neural net layer
      * @param gradient latest updates to weights and biases
      **/
-    public void plotNetworkGradient(Layer layer, Gradient gradient, int patchesPerRow) {
+    public void plotNetworkGradient(Layer layer, Gradient gradient) {
         plotWeightHistograms(layer, gradient);
         plotActivations(layer);
-        renderFilter(layer, patchesPerRow);
 
     }
 
-    public void plotNetworkGradient(Layer layer,INDArray gradient,int patchesPerRow) {
+    public void plotNetworkGradient(Layer layer,INDArray gradient) {
         graphPlotType(
                 "histogram",
                 Arrays.asList("W", "w-gradient"),
@@ -318,7 +338,6 @@ public class NeuralNetPlotter implements Serializable {
                 layerGraphFilePath + "weightHistograms.png"
         );
         plotActivations(layer);
-        renderFilter(layer, patchesPerRow);
     }
 
 
