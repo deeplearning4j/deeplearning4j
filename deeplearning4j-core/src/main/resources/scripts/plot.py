@@ -13,7 +13,7 @@ Optimization Methods Visualalization
 Graph tools to help visualize how optimization is performing
 '''
 
-GLOBAL_TIME = 2
+GLOBAL_TIME = 1.5
 
 def load_file(path):
     return np.loadtxt(path, delimiter=',')
@@ -91,26 +91,46 @@ def plot_matrices(orig_path, plot_type, filename):
 #     img.savefig(filename)
 #     img.show()
 #
-def render_filter(data_path, filename, filter_width=10, filter_height=10):
-    print 'Rendering filter image...'
-    weight_data = load_file(data_path)
-    n_rows = weight_data.shape[0]
-    n_cols = weight_data.shape[1]
-    padding = 1
+# def render_filter(data_path, filename, filter_width=10, filter_height=10):
+#     print 'Rendering filter image...'
+#     weight_data = load_file(data_path)
+#     n_rows = weight_data.shape[0]
+#     n_cols = weight_data.shape[1]
+#     padding = 1
+#
+#     # Initialize background to dark gray
+#     filter_frame = np.ones(((filter_width+padding) * filter_width, (filter_height+padding) * filter_height), dtype='uint8') * 51
+#
+#     for row in xrange(n_rows):
+#         for col in xrange(n_cols):
+#             patch = weight_data[row * n_cols + col].reshape((filter_width, filter_height))
+#             norm_patch = ((patch - patch.min()) / (patch.max() - patch.min() + 1e-6))
+#             filter_frame[row * (filter_height+padding): row * (filter_height+padding)+filter_height, col * (filter_width+padding): col * (filter_width+padding)+filter_width] = norm_patch * 255
+#             filter_frame[row * (filter_height+padding): row * (filter_height+padding) + filter_height, col * (filter_width+padding): col *(filter_width+padding) + filter_width]
+#         img = Image.fromarray(filter_frame)
+#     if img.mode != 'RGB':
+#         img = img.convert('RGB')
+#     img.save(filename)
 
-    # Initialize background to dark gray
-    filter_frame = np.ones(((filter_width+padding) * filter_width, (filter_height+padding) * filter_height), dtype='uint8') * 51
-
-    for row in xrange(n_rows):
-        for col in xrange(n_cols):
-            patch = weight_data[row * n_cols + col].reshape((filter_width, filter_height))
-            norm_patch = ((patch - patch.min()) / (patch.max() - patch.min() + 1e-6))
-            filter_frame[row * (filter_height+padding): row * (filter_height+padding)+filter_height, col * (filter_width+padding): col * (filter_width+padding)+filter_width] = norm_patch * 255
-            filter_frame[row * (filter_height+padding): row * (filter_height+padding) + filter_height, col * (filter_width+padding): col *(filter_width+padding) + filter_width]
-        img = Image.fromarray(filter_frame)
-    if img.mode != 'RGB':
-        img = img.convert('RGB')
-    img.savefig(filename)
+# def vis_square(data_path, filename, n_rows=28, n_cols=28, padsize=1, padval=0):
+#     data = load_file(data_path)
+#     data = data.reshape(n_rows, n_cols)
+#
+#     data -= data.min()
+#     data /= data.max()
+#
+#     # force the number of filters to be square
+#     n = int(np.ceil(np.sqrt(data.shape[0])))
+#     padding = ((0, n ** 2 - data.shape[0]), (0, padsize), (0, padsize)) + ((0, 0),) * (data.ndim - 3)
+#     data = np.pad(data, padding, mode='constant', constant_values=(padval, padval))
+#
+#     # tile the filters into an image
+#     data = data.reshape((n, n) + data.shape[1:]).transpose((0, 2, 1, 3) + tuple(range(4, data.ndim + 1)))
+#     data = data.reshape((n * data.shape[1], n * data.shape[3]) + data.shape[4:])
+#
+#     plt.imshow(data)
+#     time.sleep(GLOBAL_TIME)
+#     plt.savefig(data, filename)
 
 
 
@@ -134,7 +154,16 @@ if __name__ == '__main__':
         plot_single_graph(path, plot_type, filename)
     elif plot_type == 'accuracy':
         plot_single_graph(path, plot_type, filename)
-    elif sys.argv[1] == 'filter':
-        filter_width = int(sys.argv[4])
-        filter_height = int(sys.argv[5])
-        render_filter(path, n_rows, n_cols, filename, filter_height, filter_width)
+    # elif sys.argv[1] == 'filter':
+    #     if sys.argv[7]:
+    #         n_rows = int(sys.argv[4])
+    #         n_cols = int(sys.argv[5])
+    #         filter_width = int(sys.argv[6])
+    #         filter_height = int(sys.argv[7])
+    #         render_filter(path, filename, n_rows, n_cols, filter_height, filter_width)
+    #     elif sys.argv[5]:
+    #         n_rows = int(sys.argv[4])
+    #         n_cols = int(sys.argv[5])
+    #         render_filter(path,  filename, n_rows, n_cols)
+    #     else:
+    #         render_filter(path, filename)
