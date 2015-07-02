@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 public class ScoreIterationListener implements IterationListener {
     private int printIterations = 10;
     private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
+    private boolean invoked = false;
 
     public ScoreIterationListener(int printIterations) {
         this.printIterations = printIterations;
@@ -38,6 +39,12 @@ public class ScoreIterationListener implements IterationListener {
 
     public ScoreIterationListener() {
     }
+
+    @Override
+    public boolean invoked(){ return invoked; }
+
+    @Override
+    public void invoke() { this.invoked = true; }
 
     @Override
     public void iterationDone(Model model, int iteration) {

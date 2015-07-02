@@ -2,11 +2,8 @@ package org.deeplearning4j.nn.multilayer;
 
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -16,15 +13,15 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.plot.iterationlistener.LossPlotterIterationListener;
+import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 public class BackPropMLPTest {
@@ -47,7 +44,9 @@ public class BackPropMLPTest {
 		System.out.println(conf);
 		MultiLayerNetwork network = new MultiLayerNetwork(conf);
 		network.init();
-		
+
+		network.setListeners(Arrays.asList(new NeuralNetPlotterIterationListener(10),
+				new LossPlotterIterationListener(10)));
 		DataSetIterator iter = new IrisDataSetIterator(10,100);
 		
 		while( iter.hasNext() ) network.fit(iter.next());
