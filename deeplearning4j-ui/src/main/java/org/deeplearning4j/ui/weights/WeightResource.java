@@ -19,8 +19,7 @@
 package org.deeplearning4j.ui.weights;
 
 import io.dropwizard.views.View;
-import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.ui.tsne.TsneView;
+
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -28,10 +27,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+
 
 /**
  * Weight renderings
@@ -67,6 +64,7 @@ public class WeightResource {
             return Response.ok(current).build();
 
         }
+
         //cache response; don't refetch data
         updated = false;
         return Response.ok(current).build();
