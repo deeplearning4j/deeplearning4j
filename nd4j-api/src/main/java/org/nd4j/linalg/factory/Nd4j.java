@@ -188,10 +188,6 @@ public class Nd4j {
                     double[] constant = constantValues.get(i);
                     int padBefore = pad[0];
                     int padAfter = pad[1];
-                    if(padBefore < 1)
-                        padBefore = 1;
-                    if(padAfter < 1)
-                        padAfter = 1;
                     double beforeVal = constant[0];
                     double afterVal = constant[1];
                     ret = Nd4j.prepend(ret,padBefore,beforeVal,i);
@@ -236,11 +232,6 @@ public class Nd4j {
                     double[] constant = constantValues.get(i);
                     int padBefore = pad[0];
                     int padAfter = pad[1];
-                    if(padBefore < 1)
-                        padBefore = 1;
-                    if(padAfter < 1)
-                        padAfter = 1;
-
                     double beforeVal = constant[0];
                     double afterVal = constant[1];
                     ret = Nd4j.prepend(ret,padBefore,beforeVal,i);
