@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -364,6 +365,35 @@ public class MultiLayerTest {
         model.init();
         model.setListeners(Arrays.asList(new NeuralNetPlotterIterationListener(1),
                 new ScorePlotterIterationListener(1)));
+        model.fit(d.getFeatureMatrix(), d.getLabels());
+    }
+
+    @Test
+    public void testAccuracyGraphsRBMLayers() {
+        DataSetIterator iter = new IrisDataSetIterator(150,150);
+        DataSet d = iter.next();
+        d.normalizeZeroMeanZeroUnitVariance();
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED).learningRate(1e-1f)
+                .nIn(d.numInputs()).nOut(3).iterations(2)
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM()).list(3).hiddenLayerSizes(10, 5)
+                .override(2, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.activationFunction("softmax");
+                        builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
+                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        builder.optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT);
+                    }
+                })
+
+                .build();
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+        model.setListeners(Collections.singletonList((IterationListener) new ScorePlotterIterationListener(1, model, d)));
         model.fit(d.getFeatureMatrix(), d.getLabels());
     }
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.listeners;
 
+import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -7,6 +8,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.NeuralNetPlotter;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.BufferedOutputStream;
@@ -22,16 +24,51 @@ import java.util.UUID;
  * Reference: https://cs231n.github.io/neural-networks-3/
  */
 public class ScorePlotterIterationListener implements IterationListener {
+    private MultiLayerNetwork network;
+    private INDArray input;
+    private INDArray labels;
     private int iterations = 1;
     private NeuralNetPlotter plotter = new NeuralNetPlotter();
     private boolean renderFirst = false;
     private ArrayList<Double> scores = new ArrayList<>();
     private ArrayList<Double> accuracy = new ArrayList<>();
-    private ArrayList<Double> weightUpdates = new ArrayList<>();
+    private boolean renderAccuracy = false;
 
     /**
      *
      * @param iterations the number of iterations to render every plot
+     * @param network the model which must be multiple layers
+     * @param input the training data input
+     * @param labels the training data labels
+     */
+    public ScorePlotterIterationListener(int iterations, MultiLayerNetwork network, INDArray input, INDArray labels) {
+        this.iterations = iterations;
+        this.network = network;
+        this.input = input;
+        this.labels = labels;
+        this.renderAccuracy = true;
+
+    }
+
+    /**
+     *
+     * @param iterations the number of iterations to render every plot
+     * @param network the model which must be multiple layers
+     * @param data the training data input
+     */
+    public ScorePlotterIterationListener(int iterations, MultiLayerNetwork network, DataSet data) {
+        this.iterations = iterations;
+        this.network = network;
+        this.input = data.getFeatures();
+        this.labels = data.getLabels();
+        this.renderAccuracy = true;
+
+    }
+
+
+    /**
+     *
+     * @param iterations the number of iterations to render every
      */
     public ScorePlotterIterationListener(int iterations) {
         this.iterations = iterations;
@@ -61,17 +98,29 @@ public class ScorePlotterIterationListener implements IterationListener {
         }
     }
 
+    protected double calculateAccuracy() {
+        Evaluation eval = new Evaluation();
+        INDArray output = network.output(input);
+        eval.eval(labels, output);
+        return eval.accuracy();
+    }
 
     @Override
     public void iterationDone(Model model, int iteration) {
         scores.add(-model.score());
-        //        accuracy.add();\
-        //        weightUpdates.add();
+        if (renderAccuracy) {
+            double iterationAccuracy = this.calculateAccuracy();
+            accuracy.add(iterationAccuracy);
+        }
 
-        if(iteration == 0 && renderFirst || iteration > 0 && iteration % this.iterations == 0) {
+        if (iteration == 0 && renderFirst || iteration > 0 && iteration % this.iterations == 0) {
             plotter.updateGraphDirectory((Layer) model);
             String dataFilePath = storeData(scores);
             plotter.renderGraph("loss", dataFilePath, plotter.getLayerGraphFilePath() + "loss.png");
+            if (renderAccuracy) {
+                dataFilePath = storeData(accuracy);
+                plotter.renderGraph("accuracy", dataFilePath, plotter.getLayerGraphFilePath() + "accuracy.png");
+            }
         }
     }
 

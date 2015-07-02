@@ -168,8 +168,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     getLayers()[i].fit(next.getFeatureMatrix());
                     log.info("Training on layer " + (i + 1) + " with " + input.slices() + " examples");
 
-
-                }
+                    }
 
                 iter.reset();
             } else {
@@ -1159,7 +1158,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     OutputLayer o = (OutputLayer) getOutputLayer();
                     o.setIterationListeners(getListeners());
                     o.fit(o.input(),getLabels());
-
                 }
             } else {
                 throw new UnsupportedOperationException();
