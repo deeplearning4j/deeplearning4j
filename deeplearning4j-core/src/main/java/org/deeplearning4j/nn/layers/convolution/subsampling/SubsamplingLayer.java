@@ -54,9 +54,20 @@ public class SubsamplingLayer implements Layer {
     private Layer convLayer;
     protected ParamInitializer paramInitializer;
     private Map<String,INDArray> params;
+    protected int index=0;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
+    }
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     @Override
@@ -87,6 +98,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+
         return null;
     }
 

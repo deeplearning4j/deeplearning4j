@@ -49,7 +49,7 @@ public class LSTMTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.LSTM()).optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .nIn(4).nOut(4).build();
-        LSTM l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
+        LSTM l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(10)),0);
         INDArray predict = FeatureUtil.toOutcomeMatrix(new int[]{0,1,2,3},4);
         l.fit(predict);
         INDArray out = l.activate(predict);
