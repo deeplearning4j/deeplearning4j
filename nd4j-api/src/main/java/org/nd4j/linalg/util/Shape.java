@@ -143,8 +143,12 @@ public class Shape {
      * @return the array with all of the singleton dimensions removed
      */
     public static int[] squeeze(int[] shape) {
+        if(isColumnVectorShape(shape))
+            return shape;
+
         List<Integer> ret = new ArrayList<>();
 
+        //strip all but last dimension
         for (int i = 0; i < shape.length; i++)
             if (shape[i] != 1)
                 ret.add(shape[i]);

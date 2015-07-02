@@ -21,7 +21,10 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
+import org.nd4j.linalg.util.Shape;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,6 +62,17 @@ public class LinearViewNDArray  extends BaseNDArray {
         else if(isMatrix()) {
             for(int i = 0; i < slice.rows(); i++)
                 vectors.add(slice.getRow(i));
+        }
+        else if(!slice.isVector() && slice.size(0) == 1) {
+            slice = Nd4j.create(slice.data(),Shape.squeeze(slice.shape()));
+            if(Shape.isVector(slice.shape())) {
+                vectors.add(slice);
+            }
+            else {
+                for(int i = 0; i < slice.slices(); i++)
+                    collectRows(slice.slice(i));
+            }
+
         }
         else
             for(int i = 0; i < slice.slices(); i++)

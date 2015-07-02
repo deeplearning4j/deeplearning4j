@@ -481,6 +481,18 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertTrue(n.isScalar());
     }
 
+
+    @Test
+    public void testVectorAlongDimension1() {
+        INDArray arr = Nd4j.create(1,5,5);
+        assertEquals(arr.vectorsAlongDimension(0),5);
+        assertEquals(arr.vectorsAlongDimension(1),5);
+        for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
+           assertEquals(5,arr.vectorAlongDimension(i,0).length());
+        }
+
+    }
+
     @Test
     public void testWrap() throws Exception {
         int[] shape = {2, 4};
@@ -1287,9 +1299,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         }
 
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
-        INDArray slice1 = fourD.slice(0);
-        INDArray slice2 = fourD.slice(1);
-
         INDArray broadCasted3 = fourD.broadcast(1, 1, 36, 36);
         assertTrue(Arrays.equals(new int[]{1, 2, 36, 36}, broadCasted3.shape()));
     }
