@@ -58,6 +58,7 @@ public class NeuralNetPlotter implements Serializable {
     private static String localPlotPath = loadIntoTmp();
     private static String layerGraphFilePath = graphFilePath;
 
+
     public String getDataFilePath() { return dataFilePath; }
 
     public String getLayerGraphFilePath() { return layerGraphFilePath; }
@@ -76,6 +77,7 @@ public class NeuralNetPlotter implements Serializable {
         printGraphFilePath();
 
         File plotPath = new File(graphPath,"plot.py");
+        plotPath.deleteOnExit();
         if (!plotPath.exists()) {
             try {
                 List<String> lines = IOUtils.readLines(script.getInputStream());
@@ -86,7 +88,6 @@ public class NeuralNetPlotter implements Serializable {
 
             }
         }
-
         return plotPath.getAbsolutePath();
     }
 
@@ -94,7 +95,6 @@ public class NeuralNetPlotter implements Serializable {
         File newPath = new File(path);
         if (!newPath.isDirectory())
             newPath.mkdir();
-        newPath.deleteOnExit(); //TODO drop this to avoid deleting graphs
     }
 
     public void updateGraphDirectory(Layer layer){
@@ -249,7 +249,7 @@ public class NeuralNetPlotter implements Serializable {
         if(layer.input() == null)
             throw new IllegalStateException("Unable to plot; missing input");
 
-        // TODO hidden_mean coming back with only 4 values - need further digging to understand issue
+        // TODO simplify hbiasMean as a sample of the data vs all examples (cut by % if over 40 examples & 100 neurons)
         INDArray hbiasMean = layer.activationMean();
         String dataPath = writeMatrix(hbiasMean);
 
