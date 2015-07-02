@@ -31,6 +31,7 @@ import java.util.Collection;
  */
 public class ComposableIterationListener implements IterationListener {
     private Collection<IterationListener> listeners = new ArrayList<>();
+    private boolean invoked = false;
 
     public ComposableIterationListener(IterationListener...iterationListener) {
         listeners.addAll(Arrays.asList(iterationListener));
@@ -39,6 +40,12 @@ public class ComposableIterationListener implements IterationListener {
     public ComposableIterationListener(Collection<IterationListener> listeners) {
         this.listeners = listeners;
     }
+
+    @Override
+    public boolean invoked(){ return invoked; }
+
+    @Override
+    public void invoke() { this.invoked = true; }
 
     @Override
     public void iterationDone(Model model,int iteration) {

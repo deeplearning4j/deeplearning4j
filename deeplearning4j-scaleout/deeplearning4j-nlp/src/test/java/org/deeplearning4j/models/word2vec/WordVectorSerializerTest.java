@@ -76,7 +76,7 @@ public class WordVectorSerializerTest {
     public void testBinaryDryRun() throws Exception {
         double vector;
         int words, size;
-        String url = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz";
+        String url = "";
 
         String path = "GoogleNews-vectors-negative300.bin.gz";
         File modelFile = new File(path);

@@ -171,6 +171,7 @@ public class RNTN implements Layer {
 
 
     private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
+    protected int index=0;
 
 
 
@@ -308,6 +309,16 @@ public class RNTN implements Layer {
         unaryClassificationSize = numOuts * (numHidden + 1);
         classWeights = new HashMap<>();
 
+    }
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     public Collection<IterationListener> getIterationListeners() {
