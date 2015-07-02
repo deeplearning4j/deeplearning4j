@@ -18,7 +18,17 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -94,6 +104,7 @@ public class WordVectorSerializer
         int currLine = 0;
         while ((line = reader.readLine()) != null) {
             String[] split = line.split(" ");
+            assert split.length == layerSize + 1;
             String word = split[0];
 
             if (word.isEmpty()) {
@@ -111,6 +122,7 @@ public class WordVectorSerializer
             cache.addToken(new VocabWord(1, word));
             cache.putVocabWord(word);
 
+            currLine++;
         }
 
         lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
