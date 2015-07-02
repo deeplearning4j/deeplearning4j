@@ -25,6 +25,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 import jcuda.Pointer;
 import jcuda.Sizeof;
+import jcuda.runtime.JCuda;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -85,20 +86,6 @@ public class CublasPointerTests {
     }
 
 
-    @Test
-    public void testColumnStd() throws Exception {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
-        CublasPointer p = new CublasPointer(twoByThree);
-        p.close();
-        INDArray columnStd = twoByThree.std(0);
-        Nd4j.EPS_THRESHOLD = 1e-1;
-        INDArray assertion = Nd4j.create(new float[]{43.44f, 43.446f, 43.44f, 43.44f});
-        assertEquals(assertion, columnStd);
-
-    }
-
 
     @Test
     public void testAllocateAndCopyBackToHost() throws Exception {
@@ -148,29 +135,6 @@ public class CublasPointerTests {
         assertEquals(columnDup, column);
         Nd4j.factory().setOrder('f');
 
-    }
-    /**
-     * Test that when using offsets, the data is not corrupted
-     * @throws Exception
-     */
-    @Test
-    public void testRowOffsettingCopyBackToHost() throws Exception {
-        for(int i = 1; i < 100; i++) {
-            INDArray test = Nd4j.rand(i,i);
-
-            INDArray testDupe = test.dup();
-
-            // Create an offsetted set of pointers and copy to and from device, this should copy back to the same offset it started at.
-            for(int x = 0; x < i; x++) {
-                INDArray test2 = test.getRow(x);
-                CublasPointer p1 = new CublasPointer(test2);
-                p1.copyToHost();
-                p1.close();
-            }
-
-
-            assertArrayEquals(testDupe.data().asBytes(), test.data().asBytes());
-        }
     }
 
 }

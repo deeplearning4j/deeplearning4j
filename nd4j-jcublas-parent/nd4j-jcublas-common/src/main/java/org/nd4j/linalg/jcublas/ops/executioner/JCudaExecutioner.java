@@ -368,7 +368,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         buffer.unPersist();
         //free the buffer after un persisting
         JCudaBuffer buf = (JCudaBuffer) buffer;
-        buf.freeDevicePointer(0);
+        buf.freeDevicePointer(0,buffer.length());
     }
 
     @Override
