@@ -113,7 +113,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testMatrix() {
-        INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
@@ -181,7 +181,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testExecSubArray() {
-        INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
+        INDArray nd = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new int[]{2, 3});
 
         INDArray sub = nd.subArray(new int[]{0, 1}, new int[]{2, 2}, new int[]{3, 1});
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
@@ -713,7 +713,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     @Test
     public void testSum() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-        INDArray test = Nd4j.create(new float[]{3,11,7,15}, new int[]{2, 2});
+        INDArray test = Nd4j.create(new float[]{3, 11, 7, 15}, new int[]{2, 2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test, sum);
 
@@ -879,7 +879,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray columnVector = Nd4j.create(data, new int[]{6, 1});
         assertEquals(6, columnVector.rows());
         assertEquals(1, columnVector.columns());
-        INDArray rowVector = Nd4j.create(data, new int[]{1,6});
+        INDArray rowVector = Nd4j.create(data, new int[]{1, 6});
         assertEquals(1, rowVector.rows());
         assertEquals(6, rowVector.columns());
     }
@@ -899,7 +899,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
 
         INDArray linspaced = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray transposed = Nd4j.create(new float[]{1,3,2, 4}, new int[]{2, 2});
+        INDArray transposed = Nd4j.create(new float[]{1, 3, 2, 4}, new int[]{2, 2});
         INDArray linSpacedT = linspaced.transpose();
         assertEquals(transposed, linSpacedT);
 
@@ -951,7 +951,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         n.putSlice(0, newSlice);
         assertEquals(newSlice, n.slice(0));
 
-        INDArray firstDimensionAs1 = newSlice.reshape(1,3,3);
+        INDArray firstDimensionAs1 = newSlice.reshape(1, 3, 3);
         n.putSlice(0, firstDimensionAs1);
 
 
@@ -961,7 +961,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     public void testAppend() {
         INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
         //_append_const(zero_append,[3,3],1.0)
-        INDArray otherAppend = Nd4j.append(linspace,3,1.0,-1);
+        INDArray otherAppend = Nd4j.append(linspace, 3, 1.0, -1);
         INDArray assertion = Nd4j.create(new double[][]{
                 {1, 2, 1, 1, 1},
                 {3, 4, 1, 1, 1}
@@ -1064,6 +1064,22 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     }
 
+
+    @Test
+    public void putExample2(){
+        //Idea: [0,0,0,0] -> [1,1,0,0]
+        INDArray row4 = Nd4j.zeros(4);
+        INDArray row2 = Nd4j.ones(2);
+
+
+        //These should all be equivalent?
+        row4.put(new NDArrayIndex[]{new NDArrayIndex(0), new NDArrayIndex(0,1)},row2);  //Output: [1.0, 0.0, 0.0, 0.0]
+        row4.put(new NDArrayIndex[]{new NDArrayIndex(0), NDArrayIndex.interval(0,2)},row2);          //Output: [1.0, 0.0, 0.0, 0.0]
+        row4.put(new NDArrayIndex[]{NDArrayIndex.all(), new NDArrayIndex(0,1)},row2);   //java.lang.IllegalArgumentException: Unable to get linear index >= 2
+        row4.put(new NDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0,2)},row2);           //java.lang.IllegalArgumentException: Unable to get linear index >= 2
+
+        System.out.println(row4);
+    }
 
 
     @Test
