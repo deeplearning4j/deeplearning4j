@@ -99,16 +99,48 @@ public class ImageLoader {
     }
 
 
-    public static BufferedImage toImage(INDArray matrix) {
-        BufferedImage img = new BufferedImage(matrix.rows(), matrix.columns(), BufferedImage.TYPE_INT_ARGB);
-        WritableRaster r = img.getRaster();
-        int[] equiv = new int[matrix.length()];
-        for(int i = 0; i < equiv.length; i++) {
-            equiv[i] = (int) matrix.getScalar(i).element();
+    /**
+     * Convert the given image to an rgb image
+     * @param arr the array to use
+     */
+    public static  BufferedImage toBufferedImageRGB(INDArray arr) {
+        if(arr.rank() < 3)
+            throw new IllegalArgumentException("Arr must be 3d");
+        BufferedImage image = new BufferedImage(arr.size(-2), arr.size(-1), BufferedImage.TYPE_INT_ARGB);
+
+        if (arr.size(-2) > 0 && arr.size(-1) > 0)
+            image = toBufferedImage(image.getScaledInstance(arr.size(-2),arr.size(-1), Image.SCALE_SMOOTH));
+        for (int i = 0; i < image.getWidth(); i++) {
+            for (int j = 0; j < image.getHeight(); j++) {
+                int r = arr.slice(0).getInt(i,j);
+                int g = arr.slice(1).getInt(i,j);
+                int b = arr.slice(2).getInt(i,j);
+                int a = 1;
+                int col = (a << 24) | (r << 16) | (g << 8) | b;
+                image.setRGB(i,j,col);
+            }
         }
 
+        return image;
 
-        r.setDataElements(0,0,matrix.rows(),matrix.columns(),equiv);
+    }
+
+    public static BufferedImage toImage(INDArray matrix) {
+        BufferedImage img = new BufferedImage(matrix.size(-2), matrix.size(-1), BufferedImage.TYPE_INT_ARGB);
+        if(matrix.isMatrix()) {
+            WritableRaster r = img.getRaster();
+            int[] equiv = new int[matrix.length()];
+            for(int i = 0; i < equiv.length; i++) {
+                equiv[i] = (int) matrix.getScalar(i).getDouble(i);
+            }
+
+
+            r.setDataElements(0,0,matrix.rows(),matrix.columns(),equiv);
+        }
+
+        else {
+
+        }
         return img;
     }
 

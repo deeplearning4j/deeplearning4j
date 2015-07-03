@@ -8,7 +8,7 @@
 
 <body>
 <div id="embed">
-    <img src="/render/img"/>
+    <img src="/filters/img"/>
 </div>
 
 </body>
