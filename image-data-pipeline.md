@@ -9,6 +9,7 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
 *Canova* is our machine-learning vectorization library, and it is useful for customizing how you prepare data that a neural net can learn. This tutorial will walk through how it loads *Labeled Faces in the Wild*, a supervised set of 13,233 photographs representing 5,749 relatively famous people. (The full code example [lives on Github](https://github.com/deeplearning4j/Canova-examples/blob/master/src/main/java/datapipelines/ImageClassifierExample.java).)
 
 ## Loading Labels
+Download the LFW dataset and place it in the right path (location on your computer). Use the following code to feed the path into a variable called labelPath. Now you're ready to read and load the data, and create an array to hold the images' labels.
 
         // Set path to the labeled images
         String labeledPath = System.getProperty("user.home")+"/lfw";
@@ -21,31 +22,32 @@ Deeplearning4j's examples run on benchmark datasets that don't present any obsta
             labels.add(f.getName());
         }
 
-After you download a LFW dataset to work with, place it in the right path and feed the path into a variable called labelPath, you're ready to read and load the data, and create an array to hold the images' labels. 
-
 ## Reading Records, Iterating Over Data
 
-Here's the code that helps transform raw images into data records we can work with:
+The following code helps transform raw images into a format that will work well with DL4J and ND4J:
 
         // Instantiating RecordReader. Specify height and width of images.
         RecordReader recordReader = new ImageRecordReader(28, 28, true,labels);
+
         // Point to data path. 
         recordReader.initialize(new FileSplit(new File(labeledPath)));
 
 The RecordReader is a class in Canova that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements fixed in number and indexed with a unique ID. 
 
-Here, LFW images have been scaled to 28 pixels x 28 pixels (rescaling images to other dimensions will means you change the parameters you feed to the ImageRecorder above, as well as the nIn hyperparameter below). The  [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java), which extends the RecordReader, is instructed to expect 28 x 28 pixel images to parse (you'll change the dimensions to match your custom images); "true" instructs it to append a label to the record; and "labels" is the array to which that label number is appended. Without the label, all you have is a bunch of pixels. 
+The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as well as the nIn hyperparameter.
+
+Other parameters shown above inclue "true" which instructs it to append a label to the record, and "labels" which is the array supervised values (e.g. targets) used to validate neural net model results.
+
+The DataSetIterator is a Deeplearning4J class that traverses the elements of a list. Iterators pass through the data list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
 
         // Canova to DL4J
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784,labels.size());
 
-With this line, we move to a Deeplearning4j class called DataSetIterator. Like all Iterators, this one traverses the elements of a list. It makes a pass through the list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
-
-The DataSetIterator, suprisingly enough, iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line of elements, rather than a 28 x 28 grid; it also specifies the number of labels possible. 
+The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
 
 ## Configuring the Model
 
-Below is a neural net configuration. Many of the hyperparameters have been covered in the [Iris tutorial](../iris-flower-dataset-tutorial.html), so we'll focus here on just a few distinguishing characteristics. 
+Below is a neural net configuration example. Many of the hyperparameters have been explained in the [Iris tutorial](../iris-flower-dataset-tutorial.html); thus, we'll summarize a few distinguishing characteristics.
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
@@ -70,11 +72,10 @@ Below is a neural net configuration. Many of the hyperparameters have been cover
                 }).build();
 
 * *optimizationAlgo* relies on conjugate gradient, rather than LBFGS. 
-* *iterations* are set to just 100. 
-* *nIn* is set to 784, so each pixel in an image gets an input node. If your images change dimensions, nIn should, too.
-* *layer* is set to RBM, and the zero-indexed *list* operator below that is set to 4, which means three RBM hidden layers, which together form a deep-belief network. 
+* *nIn* is set to 784, so each image pixel becomes an input node. If your images change dimensions (meaning more or less pixels total), nIn should, too.
+* *list* operator is set to 4, which means three RBM hidden layers and one output layer. More than one RBM becomes a DBN.
 * *hiddenLayerSizes* sets the number of nodes in each hidden layer, making them progressively smaller. This is dimensionality reduction at work. 
-* *override* creates a classification layer at the end with a softmax function. Softmax is a sigmoid function that allows for multinomial classification. 
+* *override* creates a classification layer at the end with a softmax function is the output classification layer.
 * *lossFunction* is set to Monte Carlo Cross Entropy. This loss function will be used to train the classification layer. 
 
 ## Building and Training the Model
@@ -83,11 +84,18 @@ At the end of the configuration, call build and pass the network's configuration
 
                 }).build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
-        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
 
-The second line sets the iteration listeners, which keep track of their progress across the dataset, and monitor the error produced at the end of each iteration. 
+To set iteration listeners that show performance and help tune while training the neural net, use one of these examples:
 
-Calling next on the iterator advances it one step, and returns the new value it points to. We call that method below the neural net's configuration, and the call looks like this. 
+        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10), new GradientPlotterIterationListener(10)));
+
+        OR
+
+        network.setListeners(Collections.singletonList((IterationListener) new ScoreIterationListener(listenerFreq)));
+
+## Training the Model
+
+Once the data is loaded, the model framework is built, train the model to fit the data. Call next on the data iterator to advance it through the data based on the batch size. It will return a certain amount of data based on batch size each time. The code below shows how to loop through the dataset iterator and then to run fit on the model in order to train it on the data.
 
         // Training
         while(iter.hasNext()){
@@ -97,7 +105,7 @@ Calling next on the iterator advances it one step, and returns the new value it 
 
 ## Evaluating the Model
 
-With this example, we haven't shown you how to split your training dataset from your test set. Instead you'll see this:
+After the model has been trained, run data through it to test and evaluate its performance. Typically its a good idea to use cross validation by splitting up the dataset and using data the model hasn't seen before. In this case we have just show you below how to reset the current iterator, initialize the evaluation object and run data through it to get performance information.
 
         // Using the same training data as test. 
         
@@ -111,9 +119,9 @@ With this example, we haven't shown you how to split your training dataset from 
         
         System.out.println(eval.stats());
 
-On Iris, which doesn't employ an Iterator because of the dataset's small size, we split, test and train datasets like this:
 
-        log.info("Split data....");
+An alternative approach to apply cross validation in this effort, would be to load all the data and split it up into a train and test set. Iris is a small enough dataset to load all the data and accomplish the split. Many datasets used for production neural nets are not. For the alternative approach in this example, use the following code:
+
         SplitTestAndTrain testAndTrain = next.splitTestAndTrain(splitTrainNum, new Random(seed));
         DataSet train = testAndTrain.getTrain();
         DataSet test = testAndTrain.getTest();
