@@ -43,6 +43,8 @@ public interface WordVectors extends Serializable {
      */
     boolean hasWord(String word);
 
+    Collection<String> wordsNearest(INDArray words, int top);
+
     /**
      * Get the top n words most similar to the given word
      * @param word the word to compare
