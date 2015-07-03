@@ -1053,24 +1053,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         assertEquals(assertion,tile);
     }
 
-    @Test
-    public void testIrisStatsDouble() throws IOException {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        ClassPathResource res = new ClassPathResource("/iris.txt");
-        File file = res.getFile();
-        INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
-        INDArray mean = Nd4j.create(new double[]{5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672});
-        INDArray std = Nd4j.create(new double[]{0.8280661279778629, 0.4335943113621737, 1.7644204199522617, 0.7631607417008414});
 
-        INDArray testSum = Nd4j.create(new double[]{876.4999990463257, 458.1000003814697, 563.7999982833862, 179.7999987155199});
-        INDArray sum = data.sum(0);
-        INDArray test = data.mean(0);
-        INDArray testStd = data.std(0);
-        assertEquals(sum, testSum);
-        assertEquals(mean, test);
-        assertEquals(std, testStd);
-
-    }
 
     @Test
     public void testSmallSum() {
@@ -1079,26 +1062,6 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray assertion = Nd4j.create(new double[]{5.84333433, 3.054001});
         assertEquals(assertion, base);
 
-    }
-
-    @Test
-    public void testIrisStats() throws IOException {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        ClassPathResource res = new ClassPathResource("/iris.txt");
-        File file = res.getFile();
-        INDArray data = Nd4j.readTxt(file.getAbsolutePath(), "\t");
-        INDArray sum = data.sum(0);
-        INDArray mean = Nd4j.create(new double[]{5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672});
-        INDArray std = Nd4j.create(new double[]{0.8280661279778629, 0.4335943113621737, 1.7644204199522617, 0.7631607417008414});
-
-        INDArray testSum = Nd4j.create(new double[]{876.4999990463257, 458.1000003814697, 563.7999982833862, 179.7999987155199});
-        assertEquals(testSum, sum);
-
-        INDArray testMean = data.mean(0);
-        assertEquals(mean, testMean);
-
-        INDArray testStd = data.std(0);
-        assertEquals(std, testStd);
     }
 
     @Test
