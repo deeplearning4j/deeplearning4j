@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
@@ -97,6 +98,17 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testWriteTxt() throws Exception {
+        INDArray row = Nd4j.create(new double[][]{{1,2},{3,4}});
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        Nd4j.write(bos, row);
+        String s = new String(bos.toByteArray());
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        INDArray ret = Nd4j.read(bis);
+        assertEquals(row,ret);
+
+    }
 
 
     @Test
@@ -105,9 +117,18 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
-        assertEquals(Nd4j.create(new double[]{-4, -4}),arr.getRow(0));
+        assertEquals(Nd4j.create(new double[]{-4, -4}), arr.getRow(0));
 
     }
+
+    @Test
+    public void testParseComplexNumber() {
+        IComplexNumber assertion = Nd4j.createComplexNumber(1,1);
+        String parse = "1 + 1i";
+        IComplexNumber parsed = Nd4j.parseComplexNumber(parse);
+        assertEquals(assertion,parsed);
+    }
+
 
 
     @Test

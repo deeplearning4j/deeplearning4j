@@ -257,7 +257,7 @@ public class Nd4j {
      * based on the specified mode
      */
     public static INDArray pad(INDArray toPad,int[] padWidth,PadMode padMode) {
-        return pad(toPad, padWidth, ArrayUtil.zerosMatrix(padWidth),padMode);
+        return pad(toPad, padWidth, ArrayUtil.zerosMatrix(padWidth), padMode);
     }
 
 
@@ -278,7 +278,7 @@ public class Nd4j {
         if(axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        return Nd4j.concat(axis,arr,Nd4j.valueArrayOf(paShape,val));
+        return Nd4j.concat(axis, arr, Nd4j.valueArrayOf(paShape, val));
     }
 
     /**
@@ -1153,54 +1153,111 @@ public class Nd4j {
      * @return the read txt method
      */
     public static void writeTxt(INDArray write, String filePath, String split) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
-        for (int i = 0; i < write.rows(); i++) {
-            StringBuffer sb = new StringBuffer();
-            INDArray row = write.getRow(i);
-            for (int j = 0; j < row.columns(); j++) {
-                sb.append(row.getDouble(j));
-                sb.append(split);
+        FileOutputStream fos = new FileOutputStream(filePath);
+        write(fos, write);
+        fos.flush();
+        fos.close();
+    }
+
+
+
+    /**
+     * Write an ndarray to a writer
+     * @param writer the writer to write to
+     * @param write the ndarray to write
+     * @throws IOException
+     */
+    public static void write(OutputStream writer,INDArray write) throws IOException {
+        DataOutputStream dos = new DataOutputStream(writer);
+        dos.writeChar(write instanceof IComplexNDArray ? 'c' : 'r');
+        dos.writeInt(write.rank());
+        dos.writeChar(write.ordering());
+        for(int i = 0; i < write.rank(); i++)
+            dos.writeInt(write.size(i));
+        for(int i = 0; i < write.rank(); i++)
+            dos.writeInt(write.stride(i));
+        dos.writeInt(write.offset());
+        if(write instanceof IComplexNDArray) {
+            for(int i = 0; i < write.data().length() / 2; i++) {
+                dos.writeUTF(String.valueOf(write.data().getComplex(i)));
+                dos.writeUTF("\n");
             }
-            sb.append("\n");
-            writer.write(sb.toString());
+        }
+        else {
+            for(int i = 0; i < write.data().length(); i++) {
+                dos.writeUTF(String.valueOf(write.data().getDouble(i)));
+                dos.writeUTF("\n");
+            }
+        }
+    }
+
+    /**
+     * Raad an ndarray from an input stream
+     * @param reader the input stream to use
+     * @return the given ndarray
+     * @throws IOException
+     */
+    public static INDArray read(InputStream reader) throws IOException {
+        DataInputStream dis = new DataInputStream(reader);
+        char read =  dis.readChar();
+        int rank = dis.readInt();
+        char ordering =  dis.readChar();
+        int[] shape = new int[rank];
+        int[] stride = new int[rank];
+        for(int i = 0; i < rank; i++) {
+            shape[i] = dis.readInt();
+        }
+        for(int i = 0; i < rank; i++) {
+            stride[i] = dis.readInt();
         }
 
-        writer.flush();
-        writer.close();
+        int offset = dis.readInt();
 
+        String line;
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(reader));
+        int count = 0;
+
+        if(read == 'c') {
+            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape) * 2);
+            while((line = bufferedReader.readLine()) != null) {
+                IComplexNumber num = Nd4j.parseComplexNumber(line);
+                buf.put(count++,num);
+            }
+
+            IComplexNDArray arr = Nd4j.createComplex(buf,shape,stride,offset,ordering);
+            return arr;
+
+        }
+        else {
+            DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape));
+
+            while((line = bufferedReader.readLine()) != null) {
+                double val = Double.valueOf(line);
+                buf.put(count++,val);
+            }
+
+            INDArray arr = Nd4j.create(buf,shape,stride,offset,ordering);
+            return arr;
+        }
 
     }
 
     /**
-     * Read line via input streams
-     *
-     * @param filePath the input stream ndarray
-     * @param split    the split separator
-     * @return the read txt method
+     * Parse a complex number
+     * @param val the string to parse
+     * @return the parsed complex number
      */
-    public static INDArray readTxt(InputStream filePath, String split) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(filePath));
-        String line;
-        List<float[]> data2 = new ArrayList<>();
-        int numColumns = -1;
-        INDArray ret;
-        while ((line = reader.readLine()) != null) {
-            String[] data = line.trim().split(split);
-            if (numColumns < 0) {
-                numColumns = data.length;
-
-            } else
-                assert data.length == numColumns : "Data has inconsistent number of columns";
-            data2.add(read(data));
-
-
-        }
-
-        ret = Nd4j.create(data2.size(), numColumns);
-        for (int i = 0; i < data2.size(); i++)
-            ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));
-        return ret;
+    public static IComplexNumber parseComplexNumber(String val) {
+        // real + " - " + (-imag) + "i"
+        String[] split = val.split(" ");
+        double real = Double.valueOf(split[0]);
+        char op = split[1].charAt(0);
+        //grab all but the i
+        double imag = Double.valueOf(split[2].substring(0,split[2].length() - 1));
+        return Nd4j.createComplexNumber(real,op == '-' ? -imag : imag);
     }
+
+
 
     private static float[] read(String[] split) {
         float[] ret = new float[split.length];
@@ -1214,31 +1271,18 @@ public class Nd4j {
      * Read line via input streams
      *
      * @param filePath the input stream ndarray
-     * @param split    the split separator
-     * @return the read txt method
-     */
-    public static INDArray readTxt(String filePath, String split) throws IOException {
-        return readTxt(new FileInputStream(filePath), split);
-    }
-
-    /**
-     * Read line via input streams
-     *
-     * @param filePath the input stream ndarray
      * @return the read txt method
      */
     public static INDArray readTxt(String filePath) throws IOException {
-        return readTxt(filePath, "\t");
-    }
-
-    private static INDArray loadRow(String[] data) {
-        INDArray ret = Nd4j.create(data.length);
-        for (int i = 0; i < data.length; i++) {
-            ret.putScalar(i, Double.parseDouble(data[i]));
-        }
-
+        FileInputStream fis = new FileInputStream(filePath);
+        INDArray ret =  read(fis);
+        fis.close();
         return ret;
     }
+
+
+
+
 
     /**
      * Read in an ndarray from a data input stream
