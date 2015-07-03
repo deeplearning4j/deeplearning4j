@@ -1292,15 +1292,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
-        System.err.println("arr=" + arr);
         INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
-        System.err.println("brr = " + brr);
         INDArray row = arr.getRow(0);
-        CublasPointer pointer = new CublasPointer(row);
-        String s = pointer.toString();
         row.subi(brr);
         assertEquals(Nd4j.create(new double[]{-4,-3}),arr.getRow(0));
-        System.err.println("arr=" + arr);
 
     }
 
