@@ -16,6 +16,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -51,7 +53,8 @@ public class RenderTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1),listener));
+        Collection<IterationListener> listeners = Arrays.asList(new ScoreIterationListener(1), listener);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, listeners,0);
         da.fit(input);
 
     }
