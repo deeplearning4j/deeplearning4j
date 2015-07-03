@@ -424,11 +424,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public void copy(INDArray a, INDArray b) {
-        a = a.linearView();
-        b = b.linearView();
-        for (int i = 0; i < a.length(); i++) {
-            b.put(i, a.getScalar(i));
-        }
+        b.assign(a);
     }
 
     /**
