@@ -25,6 +25,6 @@ import io.dropwizard.views.View;
  */
 public class WeightView extends View {
     protected WeightView() {
-        super("weight.ftl");
+        super("render.ftl");
     }
 }

@@ -45,6 +45,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -275,13 +276,13 @@ public class Glove  extends WordVectorsImpl {
 
         }
 
-        glove.lookupTable().setSyn0(weights(glove,wordVectors));
+        glove.lookupTable().setSyn0(weights(glove, wordVectors));
 
 
 
         iter.close();
 
-        glove.lookupTable().setBias(Nd4j.readTxt(biases," "));
+        glove.lookupTable().setBias(Nd4j.read(biases));
 
         return glove;
 

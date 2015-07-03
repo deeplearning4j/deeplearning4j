@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.ui;
 
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
@@ -25,13 +26,19 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.renders.RendersResource;
+import org.deeplearning4j.ui.serializers.GradientSerializer;
+import org.deeplearning4j.ui.serializers.ModelSerializer;
+import org.deeplearning4j.ui.serializers.VectorSerializer;
 import org.deeplearning4j.ui.tsne.TsneResource;
 import org.deeplearning4j.ui.uploads.FileResource;
 import org.deeplearning4j.ui.weights.WeightResource;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.springframework.core.io.ClassPathResource;
 
 import javax.servlet.DispatcherType;
@@ -63,6 +70,14 @@ public class UiServer extends Application<UIConfiguration> {
 
     @Override
     public void initialize(Bootstrap<UIConfiguration> bootstrap) {
+        //custom serializers for the json serde
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(Gradient.class,new GradientSerializer());
+        module.addSerializer(Model.class,new ModelSerializer());
+        module.addSerializer(INDArray.class,new VectorSerializer());
+        bootstrap.getObjectMapper().registerModule(module);
+
+
         bootstrap.addBundle(new ViewBundle<UIConfiguration>() {
             @Override
             public ImmutableMap<String, ImmutableMap<String, String>> getViewConfiguration(
