@@ -18,10 +18,11 @@
 
 package org.deeplearning4j.ui.renders;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.activation.MimetypesFileTypeMap;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.File;
 
 /**
  * Created by agibsonccc on 10/8/14.
@@ -29,10 +30,36 @@ import javax.ws.rs.core.MediaType;
 @Path("/render")
 @Produces(MediaType.TEXT_HTML)
 public class RendersResource {
+    private String imagePath = "render.png";
 
     @GET
     public RenderView get() {
         return new RenderView();
     }
+
+
+    @GET
+    @Path("/img")
+    @Produces({"image/png"})
+    public Response image() {
+        if(imagePath == null) {
+            throw new WebApplicationException(404);
+        }
+
+        File f = new File(imagePath);
+
+        if (!f.exists()) {
+            throw new WebApplicationException(404);
+        }
+
+        String mt = new MimetypesFileTypeMap().getContentType(f);
+        return Response.ok(f, mt).build();
+    }
+
+
+
+
+
+
 
 }
