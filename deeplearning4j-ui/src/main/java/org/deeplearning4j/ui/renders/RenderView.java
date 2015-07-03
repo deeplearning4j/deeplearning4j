@@ -27,7 +27,7 @@ import io.dropwizard.views.View;
  */
 public class RenderView extends View {
     public RenderView() {
-        super("index.ftl");
+        super("render.ftl");
 
     }
 }
