@@ -64,6 +64,16 @@ public class PlotFiltersIterationListener implements IterationListener {
     }
 
     @Override
+    public boolean invoked() {
+        return false;
+    }
+
+    @Override
+    public void invoke() {
+
+    }
+
+    @Override
     public void iterationDone(Model model, int iteration) {
         if(iteration % this.iteration == 0) {
             INDArray weights = model.getParam(variables.get(0));
@@ -75,6 +85,7 @@ public class PlotFiltersIterationListener implements IterationListener {
                     weights = weights.reshape(Ints.concat(new int[]{1},weights.shape()));
                 }
             }
+
             INDArray plot = filters.render(weights, 1);
             BufferedImage image = ImageLoader.toBufferedImageRGB(plot);
             try {
