@@ -122,6 +122,57 @@ public class WordVectorsImpl implements WordVectors {
 
 
     }
+    /**
+     * Words nearest based on positive and negative words
+     * * @param top the top n words
+     * @return the words nearest the mean of the words
+     */
+    @Override
+    public Collection<String> wordsNearest(INDArray words,int top) {
+
+        if(lookupTable() instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
+            INDArray syn0 = l.getSyn0();
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
+            INDArray distances = syn0.mulRowVector(weights).sum(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
+            List<String> ret = new ArrayList<>();
+            if(top > sort.length())
+                top = sort.length();
+            //there will be a redundant word
+            int end = top + 1;
+            for(int i = 0; i < end; i++) {
+                String add = vocab().wordAtIndex(sort.getInt(i));
+                if(add == null || add.equals("UNK") || add.equals("STOP")) {
+                    end++;
+                    if(end >= sort.length())
+                        break;
+                    continue;
+                }
+
+
+                ret.add(vocab().wordAtIndex(sort.getInt(i)));
+            }
+
+
+            return ret;
+        }
+
+        Counter<String> distances = new Counter<>();
+
+        for(String s : vocab().words()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(words, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+
+        distances.keepTopNKeys(top);
+        return distances.keySet();
+
+
+    }
 
 
     /**
