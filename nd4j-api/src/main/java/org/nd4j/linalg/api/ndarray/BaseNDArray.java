@@ -2922,10 +2922,11 @@ public abstract class BaseNDArray implements INDArray {
                 throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
         }
-        else if(slice == -1) {
-            return slice(shape().length - 1);
-        }
-        //slice of a vector is a scalar
+
+        if(slice < 0)
+            slice += shape.length;
+
+            //slice of a vector is a scalar
         else if (shape.length == 1) {
             if (size(0) == 1)
                 return create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);

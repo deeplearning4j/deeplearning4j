@@ -123,7 +123,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testParseComplexNumber() {
-        IComplexNumber assertion = Nd4j.createComplexNumber(1,1);
+        IComplexNumber assertion = Nd4j.createComplexNumber(1, 1);
         String parse = "1 + 1i";
         IComplexNumber parsed = Nd4j.parseComplexNumber(parse);
         assertEquals(assertion,parsed);
@@ -134,7 +134,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     @Test
     public void testMMul() {
         INDArray arr = Nd4j.create(new double[][]{
-                {1,2,3},{4,5,6}
+                {1, 2, 3}, {4, 5, 6}
         });
 
         INDArray assertion = Nd4j.create(new double[][]{
@@ -185,9 +185,9 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
         INDArray sub = nd.subArray(new int[]{0, 1}, new int[]{2, 2}, new int[]{3, 1});
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
-        assertEquals(getFailureMessage(),Nd4j.create(new double[][]{
-                {4,7},{5,8}
-        }),sub);
+        assertEquals(getFailureMessage(), Nd4j.create(new double[][]{
+                {4, 7}, {5, 8}
+        }), sub);
 
     }
 
@@ -331,7 +331,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         INDArray input1 = Nd4j.zeros(2, 1);
         INDArray input2 = Nd4j.ones(2, 1);
         INDArray concat = Nd4j.concat(1, input1, input2);
-        INDArray assertion = Nd4j.create(new double[][]{{0,1},{0,1}});
+        INDArray assertion = Nd4j.create(new double[][]{{0, 1}, {0, 1}});
         assertEquals(assertion,concat);
     }
 
@@ -833,7 +833,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testVectorsAlongDimension() {
-        INDArray arr = Nd4j.linspace(1,24,24).reshape(4,3,2);
+        INDArray arr = Nd4j.linspace(1,24,24).reshape(4, 3, 2);
         assertEquals(12,arr.vectorsAlongDimension(2));
         INDArray assertionMatrix = Nd4j.create(new double[][]{
                 {1, 2},
@@ -974,11 +974,11 @@ public  class NDArrayTestsC extends BaseNd4jTest {
     public void testPrepend() {
         INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray assertion = Nd4j.create(new double[][]{
-                {1,1,1,1, 2},
-                {1, 1, 1,3, 4}
+                {1, 1, 1, 1, 2},
+                {1, 1, 1, 3, 4}
         });
 
-        INDArray prepend = Nd4j.prepend(linspace,3,1.0,-1);
+        INDArray prepend = Nd4j.prepend(linspace, 3, 1.0, -1);
         assertEquals(assertion,prepend);
     }
 
@@ -1047,7 +1047,7 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     @Test
     public void testTile() {
-        INDArray ret = Nd4j.create(new double[]{0,1,2});
+        INDArray ret = Nd4j.create(new double[]{0, 1, 2});
         INDArray tile = Nd4j.tile(ret, 2);
         INDArray assertion = Nd4j.create(new double[]{0,1,2,0,1,2});
         assertEquals(assertion,tile);
@@ -1063,6 +1063,8 @@ public  class NDArrayTestsC extends BaseNd4jTest {
         assertEquals(assertion, base);
 
     }
+
+
 
     @Test
     public void testColumnVariance() {
