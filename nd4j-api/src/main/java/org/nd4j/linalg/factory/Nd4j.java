@@ -148,8 +148,59 @@ public class Nd4j {
         ,WRAP
 
     }
+    /**
+     * Pad the given ndarray to the size along each dimension
+     * @param toPad the ndarray to pad
+     * @param padWidth the width to pad along each dimension
+     * @param padMode the mode to pad in
+     * @return the padded ndarray
+     * based on the specified mode
+     */
+    public static INDArray pad(INDArray toPad,int[][] padWidth,PadMode padMode) {
+        return pad(toPad,padWidth,ArrayUtil.zerosMatrix(toPad.shape()),padMode);
+    }
+    /**
+     * Pad the given ndarray to the size along each dimension
+     * @param toPad the ndarray to pad
+     * @param padWidth the width to pad along each dimension
+     * @param constantValues the values to append for each dimension
+     * @param padMode the mode to pad in
+     * @return the padded ndarray
+     * based on the specified mode
+     */
+    public static INDArray pad(INDArray toPad,int[][] padWidth,List<double[]> constantValues,PadMode padMode) {
+        switch(padMode) {
+            case CONSTANT:
+                if(padWidth.length < toPad.rank())
+                    throw new IllegalArgumentException("Please specify a pad width for each dimension");
+                toPad = Nd4j.stripOnes(toPad);
+
+                List<int[]> sizes = new ArrayList<>();
+                for(int i = 0; i < toPad.rank(); i++) {
+                    sizes.add(padWidth[i]);
+                }
 
 
+
+                INDArray ret = toPad;
+                for(int i = 0; i < toPad.rank(); i++) {
+                    int[] pad = sizes.get(i);
+                    double[] constant = constantValues.get(i);
+                    int padBefore = pad[0];
+                    int padAfter = pad[1];
+                    double beforeVal = constant[0];
+                    double afterVal = constant[1];
+                    ret = Nd4j.prepend(ret,padBefore,beforeVal,i);
+                    ret = Nd4j.append(ret,padAfter,afterVal,i);
+
+                }
+
+                return ret;
+
+            default: throw new UnsupportedOperationException();
+
+        }
+    }
 
     /**
      * Pad the given ndarray to the size along each dimension
@@ -163,8 +214,11 @@ public class Nd4j {
     public static INDArray pad(INDArray toPad,int[] padWidth,List<double[]> constantValues,PadMode padMode) {
         switch(padMode) {
             case CONSTANT:
-                if(padWidth.length != toPad.rank())
+                if(padWidth.length < toPad.rank())
                     throw new IllegalArgumentException("Please specify a pad width for each dimension");
+
+                toPad = Nd4j.stripOnes(toPad);
+
                 List<int[]> sizes = new ArrayList<>();
                 for(int i = 0; i < toPad.rank(); i++) {
                     sizes.add(padWidth);
@@ -172,7 +226,7 @@ public class Nd4j {
 
 
 
-                INDArray ret = toPad.dup();
+                INDArray ret = toPad;
                 for(int i = 0; i < toPad.rank(); i++) {
                     int[] pad = sizes.get(i);
                     double[] constant = constantValues.get(i);
@@ -203,7 +257,7 @@ public class Nd4j {
      * based on the specified mode
      */
     public static INDArray pad(INDArray toPad,int[] padWidth,PadMode padMode) {
-       return pad(toPad,padWidth,ArrayUtil.zerosMatrix(padWidth),padMode);
+        return pad(toPad, padWidth, ArrayUtil.zerosMatrix(padWidth),padMode);
     }
 
 
@@ -218,6 +272,8 @@ public class Nd4j {
      * @return the newly created array
      */
     public static INDArray append(INDArray arr,int padAmount,double val,int axis) {
+        if(padAmount == 0)
+            return arr;
         int[] paShape = ArrayUtil.copy(arr.shape());
         if(axis < 0)
             axis = axis + arr.shape().length;
@@ -236,6 +292,9 @@ public class Nd4j {
      * @return the newly created array
      */
     public static INDArray prepend(INDArray arr,int padAmount,double val,int axis) {
+        if(padAmount == 0)
+            return arr;
+
         int[] paShape = ArrayUtil.copy(arr.shape());
         if(axis < 0)
             axis = axis + arr.shape().length;
@@ -1899,7 +1958,7 @@ public class Nd4j {
      * @return ndarray
      */
     public static IComplexNDArray createComplex(double[] data, char order) {
-        IComplexNDArray ret = INSTANCE.createComplex(data,Nd4j.getComplexStrides(new int[]{1,data.length},order),0,order);
+        IComplexNDArray ret = INSTANCE.createComplex(data, Nd4j.getComplexStrides(new int[]{1, data.length},order),0,order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3132,6 +3191,20 @@ public class Nd4j {
         INDArray ret = INSTANCE.vstack(arrs);
         logCreationIfNecessary(ret);
         return ret;
+    }
+
+    /**
+     * Reshapes an ndarray to remove leading 1s
+     * @param toStrip the ndarray to reshape
+     * @return the reshaped ndarray
+     */
+    public static INDArray stripOnes(INDArray toStrip) {
+        if(toStrip.isVector())
+            return toStrip;
+        else {
+            int[] shape = Shape.squeeze(toStrip.shape());
+            return toStrip.reshape(shape);
+        }
     }
 
     /**

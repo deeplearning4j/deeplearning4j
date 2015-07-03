@@ -10,6 +10,8 @@ __device__ void transform(int n,int xOffset,int yOffset, double *dx, double *dy,
     int tid = threadIdx.x;
     int i = blockIdx.x * blockDim.x + tid;
 
+
+
     if (incy == 0) {
         if ((blockIdx.x == 0) && (tid == 0)) {
             int ix = (incx < 0) ? ((1 - n) * incx) : 0;

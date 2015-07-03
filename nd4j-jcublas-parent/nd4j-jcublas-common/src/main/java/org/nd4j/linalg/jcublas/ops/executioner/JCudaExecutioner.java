@@ -368,7 +368,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         buffer.unPersist();
         //free the buffer after un persisting
         JCudaBuffer buf = (JCudaBuffer) buffer;
-        buf.freeDevicePointer(0);
+        buf.freeDevicePointer(0,buffer.length());
     }
 
     @Override
@@ -569,7 +569,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
                 invokeFunction(op, kParams.getKernelParameters());
-                kParams.close();
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }
@@ -588,7 +587,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
                 invokeFunction(op, kParams.getKernelParameters());
-                kParams.close();
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }

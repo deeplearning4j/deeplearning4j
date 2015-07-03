@@ -610,6 +610,16 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if(dimension == 0 && isVector() || isRowVector())
             return 1;
+        if(size(dimension) == 1 && !isVector()) {
+            for(int i = dimension; i < rank(); i++) {
+                if(size(i) != 1)
+                    return vectorsAlongDimension(i);
+            }
+
+            return length();
+
+        }
+
         if (dimension >= shape.length)
             return length / size(shape.length - 1);
         return length / size(dimension);
@@ -648,9 +658,21 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
 
+            int realDimension = dimension;
+            //get rid of leading dimensions and correct
+            //for weird behavior when 1 is a leading dimension
+            //of say: a tensor
+            if(size(dimension) == 1) {
+                for(int i = dimension + 1; i < shape.length; i++) {
+                    if(size(i) != 1) {
+                        realDimension = i;
+                        break;
+                    }
+                }
+            }
             return create(data,
-                    new int[]{1, shape[dimension]}
-                    , stride[dimension] != 1 ? new int[]{stride[dimension], elementStride()} : new int[]{elementStride(),stride[dimension]},
+                    new int[]{1, shape[realDimension]}
+                    , stride[realDimension] != 1 ? new int[]{stride[realDimension], elementStride()} : new int[]{elementStride(),stride[realDimension]},
                     calcoffset(index));
 
         }
@@ -674,7 +696,7 @@ public abstract class BaseNDArray implements INDArray {
                             new int[]{1, shape[dimension]}
                             , ArrayUtil.of(elementStride(),stride[dimension]),
                             calcoffset(index));
-                //fortran ordering
+                //c ordering
                 return create(data,
                         new int[]{1, shape[dimension]}
                         , new int[]{stride[dimension],elementStride()},

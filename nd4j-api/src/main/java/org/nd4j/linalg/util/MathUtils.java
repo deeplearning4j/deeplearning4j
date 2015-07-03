@@ -21,6 +21,7 @@ package org.nd4j.linalg.util;
 
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.util.FastMath;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,9 @@ import java.util.Random;
  */
 public class MathUtils {
 
+
+
+
     /**
      * The natural logarithm of 2.
      */
@@ -42,6 +46,20 @@ public class MathUtils {
      * The small deviation allowed in double comparisons.
      */
     public static double SMALL = 1e-6;
+
+
+    public static double pow(double base, double exponent) {
+        double result = 1;
+
+        if (exponent == 0) {
+            return result;
+        }
+        if (exponent < 0) {
+            return 1 / pow(base, exponent * -1);
+        }
+
+        return FastMath.pow(base,exponent);
+    }
 
     /**
      * Normalize a value

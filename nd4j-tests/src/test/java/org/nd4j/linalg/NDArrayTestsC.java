@@ -97,6 +97,19 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
     }
 
+
+
+    @Test
+    public void testMatrix() {
+        INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
+        INDArray row = arr.getRow(0);
+        row.subi(brr);
+        assertEquals(Nd4j.create(new double[]{-4, -4}),arr.getRow(0));
+
+    }
+
+
     @Test
     public void testMMul() {
         INDArray arr = Nd4j.create(new double[][]{

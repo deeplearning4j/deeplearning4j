@@ -38,7 +38,8 @@ public interface MemoryStrategy {
      * Free the buffer wrt the
      * allocation strategy
      * @param buffer the buffer to free
+     * @param offset the offset to free
+     * @param length the length to free
      */
-    void free(DataBuffer buffer,int offset);
-
+    void free(DataBuffer buffer, int offset, int length);
 }

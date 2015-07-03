@@ -18,7 +18,8 @@ public class PageableArrayMemoryStrategy implements MemoryStrategy {
     }
 
     @Override
-    public void free(DataBuffer buffer,int offset) {
-       throw new UnsupportedOperationException();
+    public void free(DataBuffer buffer, int offset, int length) {
+        throw new UnsupportedOperationException();
     }
+
 }

@@ -26,7 +26,9 @@ import java.util.Map;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * A Jcuda buffer
@@ -65,6 +67,16 @@ public interface JCudaBuffer extends DataBuffer {
     Pointer getHostPointer(int offset);
 
 
+    /**
+     * Get the device pointer with the given offset and stride
+     * @param arr the array to get the device pointer for
+     * @param stride the stride for the device pointer
+     * @param offset the offset for the device pointer
+     * @return the device pointer with the given
+     * offset and stride
+     * @param length the length of the pointer
+     */
+    Pointer getDevicePointer(INDArray arr,int stride, int offset,int length);
 
     /**
      * Get the device pointer with the given offset and stride
@@ -85,9 +97,10 @@ public interface JCudaBuffer extends DataBuffer {
     void set(Pointer pointer);
 
 
-    boolean freeDevicePointer(int offset);
 
-    void copyToHost(int offset);
+    boolean freeDevicePointer(int offset, int length);
+
+    void copyToHost(int offset,int length);
 
     /**
      * Pointer to context map.
@@ -95,7 +108,7 @@ public interface JCudaBuffer extends DataBuffer {
      * mapping thread name to offset
      * @return the pointer info containing allocated poitners
      */
-    Table<String, Integer, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
+    Table<String, Pair<Integer, Integer>, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
 
     /**
      * Returns true if the buffer has

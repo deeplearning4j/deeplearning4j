@@ -25,6 +25,7 @@ import jcuda.jcublas.JCublas2;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,6 +53,7 @@ public class CublasPointer  implements AutoCloseable {
     private boolean closed = false;
     private INDArray arr;
 
+
     /**
      * frees the underlying
      * device memory allocated for this pointer
@@ -60,9 +62,9 @@ public class CublasPointer  implements AutoCloseable {
     public void close() throws Exception {
         if(!closed) {
             if(arr != null)
-                buffer.freeDevicePointer(arr.offset());
+                buffer.freeDevicePointer(arr.offset(),arr.length());
             else
-                buffer.freeDevicePointer(0);
+                buffer.freeDevicePointer(0,buffer.length());
             closed = true;
         }
     }
@@ -79,10 +81,12 @@ public class CublasPointer  implements AutoCloseable {
      * copies the result to the host buffer
      */
     public void copyToHost() {
-        if(arr != null)
-            buffer.copyToHost(arr.offset());
+        if(arr != null) {
+            int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
+            buffer.copyToHost(arr.offset(),compLength);
+        }
         else {
-            buffer.copyToHost(0);
+            buffer.copyToHost(0,buffer.length());
         }
     }
 
@@ -138,58 +142,37 @@ public class CublasPointer  implements AutoCloseable {
         this.arr = array;
         //no striding for upload if we are using the whole buffer
 
-        if(array instanceof IComplexNDArray) {
-            this.devicePointer = buffer
-                    .getDevicePointer(
-                            array.majorStride()
-                            ,array.offset()
-                            ,array.length());
+        this.devicePointer = buffer
+                .getDevicePointer(
+                        array,
+                        array.majorStride()
+                        ,array.offset()
+                        ,array.length());
 
-
-            // Copy the data to the device iff the whole buffer hasn't been copied
-            if(!buffer.copied(name)) {
-                JCublas.cublasSetVectorAsync(
-                        buffer.length()
-                        , array.data().getElementSize()
-                        , buffer.getHostPointer()
-                        , 1
-                        , buffer.getPointersToContexts().get(name, 0).getPointer()
-                        , 1
-                        , ContextHolder.getInstance().getCudaStream());
-                //mark the buffer copied
-                buffer.setCopied(name);
-
-            }
-
-
-        }
-        else {
-            this.devicePointer = buffer
-                    .getDevicePointer(
-                            array.majorStride()
-                            ,array.offset()
-                            ,array.length());
-
-            // Copy the data to the device iff the whole buffer hasn't been copied
-            if(!buffer.copied(name)) {
-                JCublas.cublasSetVectorAsync(
-                        buffer.length()
-                        , array.data().getElementSize()
-                        , buffer.getHostPointer()
-                        , 1
-                        , buffer.getPointersToContexts().get(name, 0).getPointer()
-                        , 1
-                        , ContextHolder.getInstance().getCudaStream());
-                //mark the buffer copied
-                buffer.setCopied(name);
-
-            }
-
+        /**
+         * Neat edge case here.
+         *
+         * The striding will overshoot the original array
+         * when the offset is zero (the case being when offset is zero
+         * sayon a getRow(0) operation.
+         *
+         * We need to allocate the data differently here
+         * due to how the striding works out.
+         */
+        // Copy the data to the device iff the whole buffer hasn't been copied
+        if(!buffer.copied(name)) {
+            JCublas.cublasSetVectorAsync(
+                    buffer.length()
+                    , array.data().getElementSize()
+                    , buffer.getHostPointer()
+                    , 1
+                    , buffer.getPointersToContexts().get(name, new Pair<>(0,buffer.length())).getPointer()
+                    , 1
+                    , ContextHolder.getInstance().getCudaStream());
+            //mark the buffer copied
+            buffer.setCopied(name);
 
         }
-
-
-
     }
 
 
@@ -225,7 +208,7 @@ public class CublasPointer  implements AutoCloseable {
                             buffer.length()
                             , buffer.getElementSize()
                             , devicePointer
-                            , arr.majorStride()
+                            , 1
                             , Pointer.to(set)
                             , 1
                             , ContextHolder.getInstance().getCudaStream());
@@ -237,7 +220,7 @@ public class CublasPointer  implements AutoCloseable {
                             buffer.length()
                             , buffer.getElementSize()
                             , devicePointer
-                            , arr.majorStride()
+                            , 1
                             , Pointer.to(set)
                             , 1
                             , ContextHolder.getInstance().getCudaStream());
@@ -275,7 +258,7 @@ public class CublasPointer  implements AutoCloseable {
                     length
                     , buffer.getElementSize()
                     , devicePointer
-                    , 1
+                    , arr.majorStride()
                     , Pointer.to(set)
                     , 1, ContextHolder.getInstance().getCudaStream());
             ContextHolder.syncStream();
