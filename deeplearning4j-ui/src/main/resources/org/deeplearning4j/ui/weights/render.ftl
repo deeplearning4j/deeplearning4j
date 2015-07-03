@@ -1,66 +1,128 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Tsne renders</title>
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
 
-    <!-- jQuery -->
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
-    <script src="/assets/d3.min.js"></script>
-    <script src="/assets/render.js"></script>
-    <link href='http://fonts.googleapis.com/css?family=Roboto:400,300' rel='stylesheet' type='text/css'>
+    body {
+        font: 10px sans-serif;
+    }
+
+    .bar rect {
+        fill: steelblue;
+        shape-rendering: crispEdges;
+    }
+
+    .bar text {
+        fill: #fff;
+    }
+
+    .axis path, .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+</style>
+<body>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script>
+    function appendHistogram(values,selector) {
+        // A formatter for counts.
+        var formatCount = d3.format(",.0f");
+
+        var margin = {top: 10, right: 30, bottom: 30, left: 30},
+                width = 960 - margin.left - margin.right,
+                height = 500 - margin.top - margin.bottom;
+
+        var x = d3.scale.linear()
+                .domain([0, 1])
+                .range([0, width]);
+
+        // Generate a histogram using twenty uniformly-spaced bins.
+        var data = d3.layout.histogram()
+                .bins(x.ticks(20))
+        (values);
+
+        var y = d3.scale.linear()
+                .domain([0, d3.max(data, function(d) { return d.y; })])
+                .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+        var svg = d3.select(selector).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var bar = svg.selectAll(".bar")
+                .data(data)
+                .enter().append("g")
+                .attr("class", "bar")
+                .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+        bar.append("rect")
+                .attr("x", 1)
+                .attr("width", x(data[0].dx) - 1)
+                .attr("height", function(d) { return height - y(d.y); });
+
+        bar.append("text")
+                .attr("dy", ".75em")
+                .attr("y", 6)
+                .attr("x", x(data[0].dx) / 2)
+                .attr("text-anchor", "middle")
+                .text(function(d) { return formatCount(d.y); });
+
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+    }
 
 
+    setInterval(function() {
+        $.get( "/weights/updated", function( data ) {
+            var status = data['status'];
+            if(status) {
+                d3.json('/weights/data',function(error,json) {
+                    var model = json['model'];
+                    var gradient = json['gradient'];
+                    //clear out body of where the chart content will go
+                    $('#model .charts').html('');
+                    $('#gradient .charts').html('');
+                    var keys = Object.keys(model);
+                    for(var i = 0; i < keys.length; i++) {
+                        var key = keys[i];
+                        //model id class charts
+                        var selectorModel = '#model .charts';
+                        var selectorGradient = '#gradient .charts';
+                        //append div to each node where the chart content will
+                        //go and pass that in to the chart renderer
+                        var div = '<div class="' + key + '"><h4>' + key + '</h4></div>';
+                        $(selectorModel).append(div);
+                        $(selectorGradient).append(div);
+                        appendHistogram(model[key],selectorModel + ' .' + key);
+                        appendHistogram(gradient[key],selectorGradient + ' .' + key);
+                    }
+                });
+            }
+        });
 
+    },1000);
 
-    <style>
-        body {
-        font-family: 'Roboto', sans-serif;
-        color: #333;
-        font-weight: 300;
-        font-size: 16px;
-        }
-        svg {
-        border: 1px solid #333;
-        }
-        #wrap {
-        width: 800px;
-        margin-left: auto;
-        margin-right: auto;
-        }
-        #embed {
-        margin-top: 10px;
-        }
-        h1 {
-        text-align: center;
-        font-weight: normal;
-        }
-        .tt {
-        margin-top: 10px;
-        background-color: #EEE;
-        border-bottom: 1px solid #333;
-        padding: 5px;
-        }
-        .txth {
-        color: #F55;
-        }
-        .cit {
-        font-family: courier;
-        padding-left: 20px;
-        font-size: 14px;
-        }
-    </style>
-
-    <script>
 
 
 </script>
 
-</head>
-
 <body>
-<div id="embed"></div>
-
+<div id="model">
+    <h4>Model</h4>
+    <div class="charts"></div>
+</div>
+<div id="gradient">
+    <h4>Gradient</h4>
+    <div class="charts"></div>
+</div>
 </body>
-
-</html>

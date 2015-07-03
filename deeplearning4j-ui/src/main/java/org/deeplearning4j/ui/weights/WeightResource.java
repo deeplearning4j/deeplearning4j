@@ -19,23 +19,68 @@
 package org.deeplearning4j.ui.weights;
 
 import io.dropwizard.views.View;
-import org.deeplearning4j.ui.tsne.TsneView;
+
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.Collections;
+
 
 /**
- * Created by agibsonccc on 10/8/14.
+ * Weight renderings
+ *
+ * @author Adam Gibson
  */
 @Path("/weights")
 @Produces(MediaType.TEXT_HTML)
 public class WeightResource {
-
+    private ModelAndGradient current;
+    private boolean updated = true;
     @GET
     public View get() {
-        return new TsneView();
+        return new WeightView();
     }
+
+    @GET
+    @Path("/updated")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updated() {
+        return Response.ok(Collections.singletonMap("status",updated)).build();
+    }
+
+    @GET
+    @Path("/data")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response data() {
+        //initialized with empty data
+        if(current == null) {
+            //initialize with empty
+            current = new ModelAndGradient();
+            updated = true;
+            return Response.ok(current).build();
+
+        }
+
+        //cache response; don't refetch data
+        updated = false;
+        return Response.ok(current).build();
+    }
+
+
+    @POST
+    @Path("/update")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response update(ModelAndGradient modelAndGrad) {
+        this.current = modelAndGrad;
+        updated = true;
+        return Response.ok(Collections.singletonMap("status","ok")).build();
+    }
+
+
+
 
 }
