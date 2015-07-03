@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class FilterRenderer {
 
     public  JFrame frame;

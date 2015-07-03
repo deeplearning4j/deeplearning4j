@@ -1,7 +1,6 @@
-package org.deeplearning4j.ui.renders;
+package org.deeplearning4j.plot;
 
 import com.google.common.primitives.Ints;
-import org.apache.commons.math.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -16,7 +15,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class FilterRenderer {
+public class PlotFilters {
     /**
      * Render the given data
      * as filters
@@ -28,7 +27,7 @@ public class FilterRenderer {
         data.subi(data.mean(Integer.MAX_VALUE));
         data.divi(data.max(Integer.MAX_VALUE));
         // n = int(np.ceil(np.sqrt(data.shape[0])))
-        int n = (int) Math.ceil(FastMath.sqrt(data.size(0)));
+        int n = (int) Math.ceil(Math.sqrt(data.size(0)));
         int[][] padding = new int[4][];
         double end = Math.pow( n,2) - data.size(0);
         padding[0] = new int[]{0,(int) end};
@@ -57,7 +56,7 @@ public class FilterRenderer {
         data.subi(data.mean(Integer.MAX_VALUE));
         data.divi(data.max(Integer.MAX_VALUE));
         // n = int(np.ceil(np.sqrt(data.shape[0])))
-        int n = (int) Math.ceil(FastMath.sqrt(data.size(0)));
+        int n = (int) Math.ceil(Math.sqrt(data.size(0)));
         int[][] padding = new int[4][];
         double end = Math.pow( n,2) - data.size(0);
         padding[0] = new int[]{0,(int) end};
