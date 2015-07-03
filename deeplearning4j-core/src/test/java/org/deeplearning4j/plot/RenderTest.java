@@ -40,10 +40,10 @@ public class RenderTest {
         PlotFiltersIterationListener listener = new PlotFiltersIterationListener(Arrays.asList(DefaultParamInitializer.WEIGHT_KEY));
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .corruptionLevel(0.6)
                 .iterations(1)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(784).nOut(600)
                 .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
                 .build();
