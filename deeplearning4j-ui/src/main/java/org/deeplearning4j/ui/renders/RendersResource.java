@@ -27,7 +27,7 @@ import java.io.File;
 /**
  * Created by agibsonccc on 10/8/14.
  */
-@Path("/render")
+@Path("/filters")
 @Produces(MediaType.TEXT_HTML)
 public class RendersResource {
     private String imagePath = "render.png";
