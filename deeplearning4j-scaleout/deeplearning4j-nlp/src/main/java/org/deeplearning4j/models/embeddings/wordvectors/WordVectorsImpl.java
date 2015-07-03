@@ -298,6 +298,22 @@ public class WordVectorsImpl implements WordVectors {
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
+        return wordsNearest(mean,top,union) ;
+    }
+    
+    /**
+     * Words nearest based on a vector
+     * @param vector
+     * @param top the top n words
+     * @return the words nearest the input vector
+     */
+    public Collection<String> wordsNearest(double[] vector,int top) {
+        INDArray mean = Nd4j.create(vector);
+        return wordsNearest(mean,top,null) ;
+    }
+    
+    
+    private Collection<String> wordsNearest(INDArray mean,int top,Set<String> skip) {
         if(lookupTable() instanceof  InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
 
@@ -317,7 +333,7 @@ public class WordVectorsImpl implements WordVectors {
             int end = top + 1;
             for(int i = 0; i < end; i++) {
                 String word = vocab().wordAtIndex(sort.getInt(i));
-                if(union.contains(word)) {
+                if(skip!=null && skip.contains(word)) {
                     end++;
                     if(end >= sort.length())
                         break;
@@ -351,7 +367,6 @@ public class WordVectorsImpl implements WordVectors {
 
         distances.keepTopNKeys(top);
         return distances.keySet();
-
 
     }
 
