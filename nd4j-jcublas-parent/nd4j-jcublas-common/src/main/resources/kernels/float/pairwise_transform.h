@@ -4,7 +4,7 @@
 __device__ float op(float d1,float d2,float *params);
 __device__ float op(float d1,float *params);
 
-__device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,int incx,int incy,float *params,float *result) {
+__device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,int incx,int incy,float *params,float *result,int incz) {
 
     int totalThreads = gridDim.x * blockDim.x;
     int tid = threadIdx.x;
@@ -12,9 +12,8 @@ __device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,in
 
     if (incy == 0) {
         if ((blockIdx.x == 0) && (tid == 0)) {
-            int ix = (incx < 0) ? ((1 - n) * incx) : 0;
             for (; i < n; i++) {
-                result[i * incx] = op(dx[i * incx],params);
+                result[i * incz] = op(dx[i * incx],params);
             }
 
         }
@@ -23,18 +22,18 @@ __device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,in
         if (incx == 1) {
             /* both increments equal to 1 */
             for (; i < n; i += totalThreads) {
-                  result[i] = op(dx[i],dy[i],params);
+                  result[i * incz] = op(dx[i],dy[i],params);
             }
         } else {
             /* equal, positive, non-unit increments. */
             for (; i < n; i += totalThreads) {
-                result[i * incy] = op(dx[i * incx],dy[i * incy],params);
+                result[i * incz] = op(dx[i * incx],dy[i * incy],params);
             }
         }
     } else {
         /* unequal or nonpositive increments */
         for (; i < n; i += totalThreads) {
-            result[i] = op(dx[i * incx],dy[i * incy],params);
+            result[i * incz] = op(dx[i * incx],dy[i * incy],params);
         }
     }
 }

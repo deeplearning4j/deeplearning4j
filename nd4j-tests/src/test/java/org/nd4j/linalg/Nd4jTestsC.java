@@ -24,22 +24,18 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
-import org.nd4j.linalg.api.ops.impl.transforms.VectorFFT;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ComplexUtil;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -52,23 +48,22 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public  class NDArrayTestsC extends BaseNd4jTest {
-    private static Logger log = LoggerFactory.getLogger(NDArrayTestsC.class);
+public  class Nd4jTestsC extends BaseNd4jTest {
+    private static Logger log = LoggerFactory.getLogger(Nd4jTestsC.class);
 
 
-    public NDArrayTestsC() {
-        System.out.println();
+    public Nd4jTestsC() {
     }
 
-    public NDArrayTestsC(String name) {
+    public Nd4jTestsC(String name) {
         super(name);
     }
 
-    public NDArrayTestsC(Nd4jBackend backend) {
+    public Nd4jTestsC(Nd4jBackend backend) {
         super(backend);
     }
 
-    public NDArrayTestsC(String name, Nd4jBackend backend) {
+    public Nd4jTestsC(String name, Nd4jBackend backend) {
         super(name, backend);
     }
 
@@ -1066,19 +1061,74 @@ public  class NDArrayTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void putExample2(){
-        //Idea: [0,0,0,0] -> [1,1,0,0]
-        INDArray row4 = Nd4j.zeros(4);
-        INDArray row2 = Nd4j.ones(2);
+    public void test2DArraySlice(){
+        INDArray array2D = Nd4j.ones(5,7);
+        /**
+         * This should be reverse.
+         * This is compatibility with numpy.
+         *
+         * If you do numpy.sum along dimension
+         * 1 you will find its row sums.
+         *
+         * 0 is columns sums.
+         *
+         * slice(0,axis)
+         * should be consistent with this behavior
+         */
+        for( int i = 0; i < 5; i++ ){
+            INDArray slice = array2D.slice(i,1);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{1, 7}));
+        }
 
+        for( int i = 0; i < 7; i++ ){
+            INDArray slice = array2D.slice(i,0);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{5, 1}));
+        }
+    }
 
-        //These should all be equivalent?
-        row4.put(new NDArrayIndex[]{new NDArrayIndex(0), new NDArrayIndex(0,1)},row2);  //Output: [1.0, 0.0, 0.0, 0.0]
-        row4.put(new NDArrayIndex[]{new NDArrayIndex(0), NDArrayIndex.interval(0,2)},row2);          //Output: [1.0, 0.0, 0.0, 0.0]
-        row4.put(new NDArrayIndex[]{NDArrayIndex.all(), new NDArrayIndex(0,1)},row2);   //java.lang.IllegalArgumentException: Unable to get linear index >= 2
-        row4.put(new NDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.interval(0,2)},row2);           //java.lang.IllegalArgumentException: Unable to get linear index >= 2
+    @Test
+    public void test3DArraySlice(){
+        INDArray array3D = Nd4j.ones(5,7,9);
 
-        System.out.println(row4);
+        for( int i = 0; i < 5; i++ ){
+            INDArray slice = array3D.slice(i,0);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{7, 9}));
+        }
+
+        for( int i=0; i < 7; i++ ){
+            INDArray slice = array3D.slice(i,1);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{5, 9}));
+        }
+
+        for( int i=0; i < 9; i++ ){
+            INDArray slice = array3D.slice(i,2);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{5, 7}));
+        }
+    }
+
+    @Test
+    public void test4DArraySlice(){
+        INDArray array4D = Nd4j.ones(5,7,9,11);
+
+        for( int i=0; i < 5; i++ ){
+            INDArray slice = array4D.slice(i,0);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{7, 9, 11}));
+        }
+
+        for( int i=0; i < 7; i++ ){
+            INDArray slice = array4D.slice(i,1);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{5, 9, 11}));
+        }
+
+        for( int i=0; i < 9; i++ ){
+            INDArray slice = array4D.slice(i,2);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{5, 7, 11}));
+        }
+
+        for( int i=0; i < 11; i++ ){
+            INDArray slice = array4D.slice(i,3);
+            assertTrue(Arrays.equals(slice.shape(), new int[]{5, 7, 9}));
+        }
     }
 
 

@@ -637,7 +637,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
         IComplexNDArray result = Nd4j.createComplex(Nd4j.create(new double[]{2, 6}, new int[]{1, 2}));
 
         assertEquals(result, column2);
-        assertEquals(true, Shape.shapeEquals(new int[]{1,2}, column2.shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{2,1}, column2.shape()));
         IComplexNDArray column = Nd4j.createComplex(new double[]{11, 0, 12, 0}, new int[]{1,2});
         arr.putColumn(1, column);
 
@@ -648,7 +648,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
         IComplexNDArray column1 = Nd4j.createComplex(new double[]{5, 0, 6, 0}, new int[]{1,2});
         arr.putColumn(1, column1);
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getColumn(1).shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{2,1}, arr.getColumn(1).shape()));
         IComplexNDArray testC = arr.getColumn(1);
         assertEquals(column1, testC);
 

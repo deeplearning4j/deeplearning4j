@@ -1048,17 +1048,6 @@ public class KernelLauncher {
 
     }
 
-    /**
-     * Sync the current context for the thread
-     * Syncs the current context for the thread.
-     */
-    public void syncContext() {
-        JCudaDriver.cuCtxSetCurrent(ContextHolder.getInstance().getContext());
-        JCudaDriver.cuCtxAttach(ContextHolder.getInstance().getContext(), 0);
-        JCudaDriver.cuCtxSynchronize();
-    }
-
-
 
     /**
      * The extension of the given file name is replaced with "ptx".

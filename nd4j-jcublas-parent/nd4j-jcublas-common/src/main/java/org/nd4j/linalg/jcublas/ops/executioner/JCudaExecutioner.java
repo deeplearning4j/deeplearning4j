@@ -564,7 +564,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.x().majorStride(),
                     op.y().majorStride(),
                     toArgs(op.extraArgs(), getType(op)),
-                    op.z()
+                    op.z(),
+                    op.z().majorStride()
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {

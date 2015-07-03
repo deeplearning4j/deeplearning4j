@@ -3068,8 +3068,6 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        if (slice == shape.length - 1)
-            return slice(dimension);
 
         INDArray slice2 = create(data,
                 ArrayUtil.removeIndex(shape, dimension),

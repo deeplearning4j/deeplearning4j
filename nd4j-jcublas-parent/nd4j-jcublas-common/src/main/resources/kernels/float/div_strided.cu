@@ -8,6 +8,6 @@ __device__ float op(float d1,float *params) {
 }
 
 extern "C"
-__global__ void div_strided_float(int n,int xOffset,int yOffset, float *dx, float *dy,int incx,int incy,float *params,float *result) {
-    transform(n,xOffset,yOffset,dx,dy,incx,incy,params,result);
+__global__ void div_strided_float(int n,int xOffset,int yOffset, float *dx, float *dy,int incx,int incy,float *params,float *result,int incz) {
+    transform(n,xOffset,yOffset,dx,dy,incx,incy,params,result,incz);
 }

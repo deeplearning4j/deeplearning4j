@@ -371,7 +371,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 else if(offset == 0 && compareLength < arr.data().length()) {
                     DevicePointerInfo info2 = pointersToContexts.get(name, new Pair<>(0, this.length));
-                    DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointer(),arr.data().length(),arr.majorStride(),arr.offset());
+                    DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointer(),this.length,arr.majorStride(),arr.offset());
                     /**
                      * Need a pointer that
                      * points at the buffer but doesnt extend all the way to the end.
@@ -397,6 +397,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
          * we need to return with it respect to the specified array
          * not the array's underlying buffer.
          */
+        if(devicePointerInfo == null && offset == 0 && length < length()) {
+            DevicePointerInfo origin = pointersToContexts.get(Thread.currentThread().getName(),new Pair<>(0,length()));
+            DevicePointerInfo newInfo = new DevicePointerInfo(origin.getPointer(),length,stride,0);
+            return newInfo.getPointer();
+        }
+
+
         return devicePointerInfo.getPointer().withByteOffset(offset * getElementSize());
     }
 
@@ -558,7 +565,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         length
                         , getElementSize()
                         , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
-                        , 1
+                        , deviceStride
                         , getHostPointer(deviceOffset)
                         , deviceStride
                         , ContextHolder.getInstance().getCudaStream());
