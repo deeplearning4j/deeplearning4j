@@ -45,6 +45,8 @@ public interface WordVectors extends Serializable {
 
     Collection<String> wordsNearest(INDArray words, int top);
 
+    Collection<String> wordsNearestSum(INDArray words, int top);
+
     /**
      * Get the top n words most similar to the given word
      * @param word the word to compare
