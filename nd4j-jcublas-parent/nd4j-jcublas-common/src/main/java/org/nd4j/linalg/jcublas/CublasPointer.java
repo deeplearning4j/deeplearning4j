@@ -53,6 +53,7 @@ public class CublasPointer  implements AutoCloseable {
     private boolean closed = false;
     private INDArray arr;
 
+
     /**
      * frees the underlying
      * device memory allocated for this pointer
@@ -158,20 +159,8 @@ public class CublasPointer  implements AutoCloseable {
          * We need to allocate the data differently here
          * due to how the striding works out.
          */
-        int compareLength = array instanceof IComplexNDArray ? array.length() * 2 : array.length();
-        if(compareLength < array.data().length() && array.offset() == 0) {
-            JCublas.cublasSetVectorAsync(
-                    buffer.length()
-                    , array.data().getElementSize()
-                    , buffer.getHostPointer()
-                    , array.majorStride()
-                    , devicePointer
-                    , 1
-                    , ContextHolder.getInstance().getCudaStream());
-        }
-
         // Copy the data to the device iff the whole buffer hasn't been copied
-        else if(!buffer.copied(name)) {
+        if(!buffer.copied(name)) {
             JCublas.cublasSetVectorAsync(
                     buffer.length()
                     , array.data().getElementSize()
@@ -219,7 +208,7 @@ public class CublasPointer  implements AutoCloseable {
                             buffer.length()
                             , buffer.getElementSize()
                             , devicePointer
-                            , arr.majorStride()
+                            , 1
                             , Pointer.to(set)
                             , 1
                             , ContextHolder.getInstance().getCudaStream());
@@ -231,7 +220,7 @@ public class CublasPointer  implements AutoCloseable {
                             buffer.length()
                             , buffer.getElementSize()
                             , devicePointer
-                            , arr.majorStride()
+                            , 1
                             , Pointer.to(set)
                             , 1
                             , ContextHolder.getInstance().getCudaStream());
@@ -269,7 +258,7 @@ public class CublasPointer  implements AutoCloseable {
                     length
                     , buffer.getElementSize()
                     , devicePointer
-                    , 1
+                    , arr.majorStride()
                     , Pointer.to(set)
                     , 1, ContextHolder.getInstance().getCudaStream());
             ContextHolder.syncStream();

@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
@@ -214,7 +215,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray other = Nd4j.linspace(1,16,16).reshape(4, 4);
         INDArray result = linspace.mmul(other);
         INDArray assertion = Nd4j.create(new double[]{30., 70., 110., 150.});
-        assertEquals(assertion,result);
+        assertEquals(assertion, result);
     }
 
 
@@ -1294,7 +1295,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         System.err.println("arr=" + arr);
         INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
         System.err.println("brr = " + brr);
-        arr.getRow(0).subi(brr);
+        INDArray row = arr.getRow(0);
+        CublasPointer pointer = new CublasPointer(row);
+        String s = pointer.toString();
+        row.subi(brr);
         assertEquals(Nd4j.create(new double[]{-4,-3}),arr.getRow(0));
         System.err.println("arr=" + arr);
 

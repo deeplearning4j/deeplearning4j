@@ -24,7 +24,7 @@ __device__ void transform(int n,int xOffset,int yOffset, float *dx, float *dy,in
             /* both increments equal to 1 */
             for (; i < n; i += totalThreads) {
                   result[i] = op(dx[i],dy[i],params);
-              }
+            }
         } else {
             /* equal, positive, non-unit increments. */
             for (; i < n; i += totalThreads) {

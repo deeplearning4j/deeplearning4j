@@ -314,14 +314,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             if(devicePointerInfo == null) {
                 int compareLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
-                if(arr.offset() == 0 && compareLength < arr.data().length()) {
-                    devicePointerInfo = (DevicePointerInfo)
-                            ContextHolder.getInstance()
-                                    .getConf()
-                                    .getMemoryStrategy()
-                                    .alloc(this, arr.majorStride(), 0, compareLength);
-                    pointersToContexts.put(name,new Pair<>(0,arr.length()),devicePointerInfo);
-                }
                 /**
                  * Add zero first no matter what.
                  * Allocate the whole buffer on the gpu
@@ -344,6 +336,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                     pointersToContexts.put(name, new Pair<>(0,this.length), devicePointerInfo);
                 }
+
 
                 if(offset > 0) {
                     /**
@@ -374,6 +367,20 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     pointersToContexts.put(name, new Pair<>(offset,arr.length()), devicePointerInfo);
                     return ret;
 
+                }
+
+                else if(offset == 0 && compareLength < arr.data().length()) {
+                    DevicePointerInfo info2 = pointersToContexts.get(name, new Pair<>(0, this.length));
+                    DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointer(),arr.data().length(),arr.majorStride(),arr.offset());
+                    /**
+                     * Need a pointer that
+                     * points at the buffer but doesnt extend all the way to the end.
+                     * This is for data like the first row of a matrix
+                     * that has zero offset but does not extend all the way to the end of the buffer.
+                     */
+
+                    pointersToContexts.put(name, new Pair<>(offset,arr.length()), info3);
+                    return info3.getPointer();
                 }
 
 
@@ -533,15 +540,40 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         if (devicePointerInfo != null) {
             ContextHolder.syncStream();
+            int deviceStride = devicePointerInfo.getStride();
+            int  deviceOffset = devicePointerInfo.getOffset();
+            long deviceLength = devicePointerInfo.getLength();
+            if(deviceOffset == 0 && length < length()) {
+                /**
+                 * The way the data works out the stride for retrieving the data
+                 * should be 1.
+                 *
+                 * The device stride should be used for resetting the data.
+                 *
+                 * This is for the edge case where the offset is zero and
+                 * the length of the pointer is < the actual buffer length itself.
+                 *
+                 */
+                JCublas2.cublasGetVectorAsync(
+                        length
+                        , getElementSize()
+                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
+                        , 1
+                        , getHostPointer(deviceOffset)
+                        , deviceStride
+                        , ContextHolder.getInstance().getCudaStream());
+            }
+            else {
+                JCublas2.cublasGetVectorAsync(
+                        (int) deviceLength
+                        , getElementSize()
+                        , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
+                        , deviceStride
+                        , getHostPointer(deviceOffset)
+                        , deviceStride
+                        , ContextHolder.getInstance().getCudaStream());
+            }
 
-            JCublas2.cublasGetVectorAsync(
-                    (int) devicePointerInfo.getLength()
-                    , getElementSize()
-                    , devicePointerInfo.getPointer().withByteOffset(offset * getElementSize())
-                    , devicePointerInfo.getStride()
-                    , getHostPointer(devicePointerInfo.getOffset())
-                    , devicePointerInfo.getStride()
-                    , ContextHolder.getInstance().getCudaStream());
 
             ContextHolder.syncStream();
 

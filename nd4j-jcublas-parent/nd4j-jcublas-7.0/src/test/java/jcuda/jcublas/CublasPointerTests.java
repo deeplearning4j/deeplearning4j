@@ -27,6 +27,7 @@ import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.runtime.JCuda;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -76,7 +77,7 @@ public class CublasPointerTests {
 
     @Test
     public void testTwoByTwoBuffer() throws Exception {
-        IComplexNDArray arr = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{2,6}),new int[]{2,1});
+        IComplexNDArray arr = Nd4j.createComplex(ComplexUtil.complexNumbersFor(new double[]{2, 6}), new int[]{2, 1});
         IComplexNDArray dup = arr.dup();
         CublasPointer pointer = new CublasPointer(arr);
         pointer.copyToHost();
@@ -85,6 +86,25 @@ public class CublasPointerTests {
 
     }
 
+
+    @Test
+    public void testBufferPointer() throws Exception {
+        DataBuffer buff = Nd4j.createBuffer(new double[]{1});
+        DataBuffer clone = buff.dup();
+        CublasPointer pointer  = new CublasPointer((JCudaBuffer) buff);
+        pointer.copyToHost();
+        pointer.close();
+        assertEquals(clone,buff);
+
+        INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        System.err.println("arr=" + arr);
+        INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
+        System.err.println("brr = " + brr);
+        INDArray row = arr.getRow(0);
+        CublasPointer pointer2 = new CublasPointer(row);
+        pointer2.copyToHost();
+
+    }
 
 
     @Test

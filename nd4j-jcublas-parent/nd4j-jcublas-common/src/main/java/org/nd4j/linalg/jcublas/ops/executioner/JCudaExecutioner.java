@@ -569,7 +569,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
                 invokeFunction(op, kParams.getKernelParameters());
-                kParams.close();
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }
@@ -588,7 +587,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
                 invokeFunction(op, kParams.getKernelParameters());
-                kParams.close();
             } catch(Exception e) {
                 throw new RuntimeException("Could not execute kernel", e);
             }
