@@ -1623,7 +1623,6 @@ public interface INDArray extends Serializable  {
     DataBuffer data();
 
 
-    void setData(float[] data);
 
     IComplexNDArray rdiv(IComplexNumber n);
 
