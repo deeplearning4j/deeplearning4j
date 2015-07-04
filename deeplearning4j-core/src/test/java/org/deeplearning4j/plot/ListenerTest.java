@@ -53,21 +53,7 @@ public class ListenerTest {
         assertEquals(listener.invoked(), true);
     }
 
-    // TODO Finish hooking up render filter to make this work
-//    @Test
-//    public void testRenderFilterCaptured() throws IOException {
-//        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{40}, "sigmoid"));
-//        network.init();
-//        DataSetIterator mnistIter = new MnistDataSetIterator(50,50);
-//        DataSet data = mnistIter.next();
-//        IterationListener listener = new RenderFilterIterationListener(1);
-//
-//        network.setListeners(Collections.singletonList(listener));
-//        network.fit(data.getFeatureMatrix(), data.getLabels());
-//        assertNotNull(network.getListeners().get(0).toString());
-//        assertEquals(listener, true);
 
-//    }
 
 
     @Test
@@ -75,7 +61,7 @@ public class ListenerTest {
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10}, "sigmoid", 10));
         network.init();
         DataSet data = irisIter.next();
-        IterationListener listener = new AccuracyPlotterIterationListener(9, network, data);
+        IterationListener listener = new AccuracyPlotterIterationListener(1, network, data);
 
         network.setListeners(Collections.singletonList(listener));
         network.fit(data.getFeatureMatrix(), data.getLabels());

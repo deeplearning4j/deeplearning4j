@@ -23,9 +23,13 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
+import java.util.Collections;
+import java.util.Map;
 
 /**
- * Created by agibsonccc on 10/8/14.
+ * Renders filters
+ *
+ * @author Adam Gibson
  */
 @Path("/filters")
 @Produces(MediaType.TEXT_HTML)
@@ -35,6 +39,14 @@ public class RendersResource {
     @GET
     public RenderView get() {
         return new RenderView();
+    }
+
+    @POST
+    @Path(("/update"))
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response update(PathUpdate path) {
+        this.imagePath = path.getPath();
+        return Response.ok(Collections.singletonMap("status","updated path")).build();
     }
 
 
