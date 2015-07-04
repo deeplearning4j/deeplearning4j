@@ -81,7 +81,7 @@ public abstract class MnistDbFile extends RandomAccessFile {
             if (curr < 0 || curr > count) {
                 throw new RuntimeException(curr + " is not in the range 0 to " + count);
             }
-            seek(getHeaderSize() + (curr - 1) * getEntryLength());
+            seek(getHeaderSize() + curr * getEntryLength());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
