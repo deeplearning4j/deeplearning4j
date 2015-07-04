@@ -30,7 +30,7 @@ import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 public class MnistDataSetIterator extends BaseDatasetIterator {
 
 	public MnistDataSetIterator(int batch,int numExamples) throws IOException {
-		this(batch,numExamples,true);
+		this(batch,numExamples,false);
 	}
 
     /**
