@@ -544,11 +544,7 @@ public abstract class BaseNDArray implements INDArray {
 
     }
 
-    @Override
-    public void setData(float[] data) {
-        ensureNotCleanedUp();
-        this.data = Nd4j.createBuffer(data);
-    }
+
 
     @Override
     public int elementStride() {

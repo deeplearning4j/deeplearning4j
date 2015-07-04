@@ -13,17 +13,18 @@ import java.io.IOException;
 /**
  * @author Adam Gibson
  */
+
 public class VectorDeSerializer extends JsonDeserializer<INDArray> {
     @Override
     public INDArray deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {
         JsonNode node = jp.getCodec().readTree(jp);
-        JsonNode arr = node.get("data");
-        int rank = node.get("rank").asInt();
+        JsonNode arr = node.get("dataBuffer");
+        int rank = node.get("rankField").asInt();
         int numElements = node.get("numElements").asInt();
-        int offset = node.get("offset").asInt();
-        JsonNode shape = node.get("shape");
-        JsonNode stride = node.get("stride");
-        String type = node.get("type").asText();
+        int offset = node.get("offsetField").asInt();
+        JsonNode shape = node.get("shapeField");
+        JsonNode stride = node.get("strideField");
+        String type = node.get("typeField").asText();
         int[] realShape = new int[rank];
         int[] realStride = new int[rank];
         DataBuffer buff = Nd4j.createBuffer(numElements);
@@ -31,7 +32,7 @@ public class VectorDeSerializer extends JsonDeserializer<INDArray> {
             buff.put(i,arr.get(i).asDouble());
         }
 
-        String ordering = node.get("ordering").asText();
+        String ordering = node.get("orderingField").asText();
         for(int i = 0; i < rank; i++) {
             realShape[i] = shape.get(i).asInt();
             realStride[i] = stride.get(i).asInt();
