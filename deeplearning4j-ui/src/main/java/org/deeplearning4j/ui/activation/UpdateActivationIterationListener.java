@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.activation;
 
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.plot.iterationlistener.ActivationMeanIterationListener;
 import org.deeplearning4j.plot.iterationlistener.PlotFiltersIterationListener;
 
 import javax.ws.rs.client.Client;
@@ -14,10 +15,10 @@ import java.util.List;
 /**
  * @author Adam Gibson
  */
-public class UpdateFilterIterationListener implements IterationListener {
+public class UpdateActivationIterationListener implements IterationListener {
     private Client client = ClientBuilder.newClient();
-    private WebTarget target = client.target("http://localhost:8080").path("filters").path("update");
-    private PlotFiltersIterationListener listener;
+    private WebTarget target = client.target("http://localhost:8080").path("activations").path("update");
+    private ActivationMeanIterationListener listener;
     private int iterations = 1;
 
     /**
@@ -25,8 +26,8 @@ public class UpdateFilterIterationListener implements IterationListener {
      * @param variables the variables ot render filters for
      * @param iterations the number of iterations to update on
      */
-    public UpdateFilterIterationListener(List<String> variables,int iterations) {
-        listener = new PlotFiltersIterationListener(variables);
+    public UpdateActivationIterationListener(List<String> variables, int iterations) {
+        listener = new ActivationMeanIterationListener(variables,iterations);
         this.iterations = iterations;
     }
 
