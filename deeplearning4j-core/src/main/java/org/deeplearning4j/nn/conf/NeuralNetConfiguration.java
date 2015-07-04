@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.deserializers.*;
@@ -355,7 +356,37 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
     }
+    /**
+     * Return this configuration as json
+     * @return this configuration represented as json
+     */
+    public String toYaml() {
+        ObjectMapper mapper = mapperYaml();
 
+        try {
+            String ret =  mapper.writeValueAsString(this);
+            return ret
+                    .replaceAll("\"activationFunction\",","");
+
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create a neural net configuration from json
+     * @param json the neural net configuration from json
+     * @return
+     */
+    public static NeuralNetConfiguration fromYaml(String json) {
+        ObjectMapper mapper = mapperYaml();
+        try {
+            NeuralNetConfiguration ret =  mapper.readValue(json, NeuralNetConfiguration.class);
+            return ret;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Return this configuration as json
@@ -387,6 +418,24 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Object mapper for serialization of configurations
+     * @return
+     */
+    public static ObjectMapper mapperYaml() {
+        ObjectMapper ret = new ObjectMapper(new YAMLFactory());
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+        SimpleModule module = new SimpleModule();
+
+        module.addSerializer(OutputPreProcessor.class,new PreProcessorSerializer());
+        module.addDeserializer(OutputPreProcessor.class,new PreProcessorDeSerializer());
+
+        ret.registerModule(module);
+        return ret;
     }
 
     /**
