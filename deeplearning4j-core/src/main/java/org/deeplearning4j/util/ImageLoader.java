@@ -109,13 +109,6 @@ public class ImageLoader {
             throw new IllegalArgumentException("Arr must be 3d");
         BufferedImage image = new BufferedImage(arr.size(-2), arr.size(-1), BufferedImage.TYPE_INT_ARGB);
 
-        FilterRenderer renderer = new FilterRenderer();
-        try {
-            for(int i = 0; i < arr.slices(); i++)
-                renderer.renderFilters(arr.slice(i),"/home/agibsonccc/Desktop/renderold" + i + ".png",28,28,28);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         for (int i = 0; i < image.getWidth(); i++) {
             for (int j = 0; j < image.getHeight(); j++) {
                 //  double patch_normal = (  column.getDouble(0) - col_min ) / ( col_max - col_min + 0.000001f );
