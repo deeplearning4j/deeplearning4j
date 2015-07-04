@@ -83,6 +83,31 @@ public class NeuralNetConfigurationTest {
         String json = conf.toJson();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromJson(json);
 
+        assertEquals(conf, read);
+    }
+
+
+
+    @Test
+    public void testYaml() {
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(new RBM())
+                .nIn(trainingSet.numInputs())
+                .nOut(trainingSet.numOutcomes())
+                .weightInit(WeightInit.SIZE)
+                .iterations(3)
+                .useAdaGrad(false)
+                .regularization(false)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .build();
+
+        assertFalse(conf.useRegularization);
+        String json = conf.toYaml();
+        NeuralNetConfiguration read = NeuralNetConfiguration.fromYaml(json);
+
         assertEquals(conf,read);
     }
 
