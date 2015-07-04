@@ -79,6 +79,37 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     }
 
+    @Test
+    public void testYaml() throws Exception {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
+                .list(2).preProcessor(0,new ConvolutionPostProcessor())
+                .hiddenLayerSizes(3).build();
+        String json = conf.toYaml();
+        MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
+        assertEquals(conf.getConf(1),from.getConf(1));
+
+        Properties props = new Properties();
+        props.put("json",json);
+        String key = props.getProperty("json");
+        assertEquals(json,key);
+        File f = new File("props");
+        f.deleteOnExit();
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(f));
+        props.store(bos,"");
+        bos.flush();
+        bos.close();
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f));
+        Properties props2 = new Properties();
+        props2.load(bis);
+        bis.close();
+        assertEquals(props2.getProperty("json"),props.getProperty("json"));
+        String yaml = props2.getProperty("json");
+        MultiLayerConfiguration conf3 = MultiLayerConfiguration.fromYaml(yaml);
+        assertEquals(conf.getConf(0),conf3.getConf(0));
+
+    }
+
 
 
     @Test
