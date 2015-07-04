@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.plot.FilterRenderer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -108,15 +109,21 @@ public class ImageLoader {
             throw new IllegalArgumentException("Arr must be 3d");
         BufferedImage image = new BufferedImage(arr.size(-2), arr.size(-1), BufferedImage.TYPE_INT_ARGB);
 
-        if (arr.size(-2) > 0 && arr.size(-1) > 0)
-            image = toBufferedImage(image.getScaledInstance(arr.size(-2),arr.size(-1), Image.SCALE_SMOOTH));
+        FilterRenderer renderer = new FilterRenderer();
+        try {
+            for(int i = 0; i < arr.slices(); i++)
+                renderer.renderFilters(arr.slice(i),"/home/agibsonccc/Desktop/renderold" + i + ".png",28,28,28);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         for (int i = 0; i < image.getWidth(); i++) {
             for (int j = 0; j < image.getHeight(); j++) {
-                int r = arr.slice(0).getInt(i,j);
-                int g = arr.slice(1).getInt(i,j);
-                int b = arr.slice(2).getInt(i,j);
-                int a = 1;
-                int col = (a << 24) | (r << 16) | (g << 8) | b;
+                //  double patch_normal = (  column.getDouble(0) - col_min ) / ( col_max - col_min + 0.000001f );
+
+                int r = 255 * Math.abs(arr.slice(0).getInt(i, j));
+                int g = 255 * Math.abs(arr.slice(1).getInt(i, j));
+                int b = 255 * Math.abs(arr.slice(2).getInt(i, j));
+                int col = (r << 16) | (g << 8) | b;
                 image.setRGB(i,j,col);
             }
         }
@@ -143,18 +150,6 @@ public class ImageLoader {
         }
         return img;
     }
-
-
-    private static int[] rasterData(INDArray matrix) {
-        int[] ret = new int[matrix.length()];
-        for(int i = 0; i < ret.length; i++)
-            ret[i] = (int) Math.round((double) matrix.getScalar(i).element());
-        return ret;
-    }
-
-
-
-
 
 
     /**

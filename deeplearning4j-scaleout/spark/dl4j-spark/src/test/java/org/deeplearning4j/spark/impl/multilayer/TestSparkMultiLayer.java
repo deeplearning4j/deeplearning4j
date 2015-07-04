@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -111,8 +112,8 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         INDArray params = network2.params();
         File writeTo = new File(UUID.randomUUID().toString());
-        Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
-        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath(),",");
+        Nd4j.writeTxt(params, writeTo.getAbsolutePath(), ",");
+        INDArray load = Nd4j.read(new FileInputStream(writeTo.getAbsolutePath()));
         assertEquals(params,load);
         writeTo.delete();
         Evaluation evaluation = new Evaluation();
@@ -147,7 +148,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         INDArray params = network.params();
         File writeTo = new File(UUID.randomUUID().toString());
         Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
-        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath(),",");
+        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath());
         assertEquals(params,load);
         writeTo.delete();
 
