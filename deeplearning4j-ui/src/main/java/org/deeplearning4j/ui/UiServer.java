@@ -33,6 +33,7 @@ import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.ui.activation.ActivationsResource;
 import org.deeplearning4j.ui.exception.GenericExceptionMapper;
 import org.deeplearning4j.ui.exception.JsonExceptionMapper;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
@@ -86,6 +87,7 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new TsneResource(conf.getUploadPath()));
         environment.jersey().register(new NearestNeighborsResource(conf.getUploadPath()));
         environment.jersey().register(new WeightResource());
+        environment.jersey().register(new ActivationsResource());
         environment.jersey().register(new RendersResource());
         environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));

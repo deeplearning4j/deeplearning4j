@@ -7,7 +7,7 @@
     <script type="text/javascript">
         setInterval(function() {
             var d = new Date();
-            $("#pic").attr("src", "/activation/img?"+d.getTime());
+            $("#pic").attr("src", "/activations/img?"+d.getTime());
         },1000);
     </script>
 </head>
@@ -16,7 +16,7 @@
 
 <body>
 <div id="embed">
-    <img src="/activation/img" id="pic"/>
+    <img src="/activations/img" id="pic"/>
 </div>
 
 </body>
