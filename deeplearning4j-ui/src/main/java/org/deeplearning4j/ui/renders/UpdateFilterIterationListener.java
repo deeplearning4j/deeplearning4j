@@ -18,9 +18,16 @@ public class UpdateFilterIterationListener implements IterationListener {
     private Client client = ClientBuilder.newClient();
     private WebTarget target = client.target("http://localhost:8080").path("filters").path("update");
     private PlotFiltersIterationListener listener;
+    private int iterations = 1;
 
-    public UpdateFilterIterationListener(List<String> variables) {
+    /**
+     * Initializes with the variables to render filters for
+     * @param variables the variables ot render filters for
+     * @param iterations the number of iterations to update on
+     */
+    public UpdateFilterIterationListener(List<String> variables,int iterations) {
         listener = new PlotFiltersIterationListener(variables);
+        this.iterations = iterations;
     }
 
     @Override
@@ -35,12 +42,15 @@ public class UpdateFilterIterationListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        PathUpdate update = new PathUpdate();
-        //update the weights
-        listener.iterationDone(model, iteration);
-        //ensure path is set
-        update.setPath(listener.getOutputFile().getPath());
-        //ensure the server is hooked up with the path
-        target.request(MediaType.APPLICATION_JSON).post(Entity.entity(update, MediaType.APPLICATION_JSON));
+        if(iteration % iterations == 0) {
+            PathUpdate update = new PathUpdate();
+            //update the weights
+            listener.iterationDone(model, iteration);
+            //ensure path is set
+            update.setPath(listener.getOutputFile().getPath());
+            //ensure the server is hooked up with the path
+            target.request(MediaType.APPLICATION_JSON).post(Entity.entity(update, MediaType.APPLICATION_JSON));
+        }
+
     }
 }

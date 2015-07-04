@@ -33,9 +33,16 @@
         var margin = {top: 10, right: 30, bottom: 30, left: 30},
                 width = 960 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
+        var data = values;
+        var min = 0;
+        var max = 0;
+        for(var i = 0; i < data.length; i++) {
+            min = Math.min(min,data[i]);
+            max = Math.max(max,data[i]);
+        }
 
         var x = d3.scale.linear()
-                .domain([0, 1])
+                .domain([min, max])
                 .range([0, width]);
 
         // Generate a histogram using twenty uniformly-spaced bins.
@@ -83,12 +90,15 @@
 
 
     setInterval(function() {
+
         $.get( "/weights/updated", function( data ) {
-            var status = data['status'];
-            if(status) {
                 d3.json('/weights/data',function(error,json) {
-                    var model = json['model'];
-                    var gradient = json['gradient'];
+                    var model = json['parameters'];
+                    var gradient = json['gradients'];
+                    var score = json['score'];
+                    if(!model || !gradient || !score)
+                        return;
+                    $('.score').html('' + score);
                     //clear out body of where the chart content will go
                     $('#model .charts').html('');
                     $('#gradient .charts').html('');
@@ -103,11 +113,11 @@
                         var div = '<div class="' + key + '"><h4>' + key + '</h4></div>';
                         $(selectorModel).append(div);
                         $(selectorGradient).append(div);
-                        appendHistogram(model[key],selectorModel + ' .' + key);
-                        appendHistogram(gradient[key],selectorGradient + ' .' + key);
+                        appendHistogram(model[key]['dataBuffer'],selectorModel + ' .' + key);
+                        appendHistogram(gradient[key]['dataBuffer'],selectorGradient + ' .' + key);
                     }
                 });
-            }
+
         });
 
     },1000);
@@ -117,6 +127,10 @@
 </script>
 
 <body>
+<div id="score">
+    <h4>Score</h4>
+    <div class="score"></div>
+</div>
 <div id="model">
     <h4>Model</h4>
     <div class="charts"></div>
