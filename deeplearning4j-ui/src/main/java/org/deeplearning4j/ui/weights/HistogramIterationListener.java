@@ -24,6 +24,16 @@ public class HistogramIterationListener implements IterationListener {
 
 
     @Override
+    public boolean invoked() {
+        return false;
+    }
+
+    @Override
+    public void invoke() {
+
+    }
+
+    @Override
     public void iterationDone(Model model, int iteration) {
         ModelAndGradient g = new ModelAndGradient(model);
         target.request(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));

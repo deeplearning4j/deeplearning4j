@@ -35,7 +35,7 @@ public class ModelAndGradient implements Serializable {
                 .iterations(10).weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
         this.model = l;
         l.setInput(Nd4j.ones(4));
         l.setLabels(Nd4j.ones(3));

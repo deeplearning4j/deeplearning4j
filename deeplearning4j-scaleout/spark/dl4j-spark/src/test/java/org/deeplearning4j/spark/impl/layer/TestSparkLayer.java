@@ -86,7 +86,7 @@ public class TestSparkLayer extends BaseSparkTest {
         INDArray params = network2.params();
         File writeTo = new File(UUID.randomUUID().toString());
         Nd4j.writeTxt(params, writeTo.getAbsolutePath(), ",");
-        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath(),",");
+        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath());
         assertEquals(params, load);
         writeTo.delete();
         Evaluation evaluation = new Evaluation();
