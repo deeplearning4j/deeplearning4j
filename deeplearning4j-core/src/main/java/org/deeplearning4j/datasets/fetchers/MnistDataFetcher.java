@@ -115,20 +115,14 @@ public class MnistDataFetcher extends BaseDataFetcher {
                 INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImage()));
                 if(binarize) {
                     for(int d = 0; d < in.length(); d++) {
-                        if(binarize) {
-                            if(in.getDouble(d) > 30) {
-                                in.putScalar(d,1);
-                            }
-                            else {
-                                in.putScalar(d,0);
-                            }
-
+                        if(in.getDouble(d) > 30) {
+                            in.putScalar(d,1);
                         }
-
-
+                        else {
+                            in.putScalar(d,0);
+                        }
                     }
-                }
-                else {
+                } else {
                     in.divi(255);
                 }
 
