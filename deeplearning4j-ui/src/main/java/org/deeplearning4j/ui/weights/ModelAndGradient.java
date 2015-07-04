@@ -1,68 +1,62 @@
 package org.deeplearning4j.ui.weights;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.ui.serializers.GradientSerializer;
-import org.deeplearning4j.ui.serializers.ModelSerializer;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Adam Gibson
  */
+
 public class ModelAndGradient implements Serializable {
-    @JsonSerialize(using = GradientSerializer.class, as = Gradient.class)
-    private Gradient gradient;
-    @JsonSerialize(using = ModelSerializer.class, as= Model.class)
-    private Model model;
+    private Map<String,INDArray> parameters;
+    private Map<String,INDArray> gradients;
+    private double score;
 
     public ModelAndGradient() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .activationFunction("softmax")
-                .iterations(10).weightInit(WeightInit.XAVIER)
-                .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
-
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
-        this.model = l;
-        l.setInput(Nd4j.ones(4));
-        l.setLabels(Nd4j.ones(3));
-        this.gradient = l.gradient();
+        parameters = new HashMap<>();
+        gradients = new HashMap<>();
     }
 
     public ModelAndGradient(Model model) {
-        this.model = model;
-        this.gradient = model.gradient();
+        this.gradients = model.gradient().gradientForVariable();
+        this.parameters = model.paramTable();
+        this.score = model.score();
     }
 
-    @JsonProperty
-    public Gradient getGradient() {
-        return gradient;
+
+
+
+    public double getScore() {
+        return score;
     }
 
-    @JsonProperty
-    public void setGradient(Gradient gradient) {
-        this.gradient = gradient;
+    public void setScore(double score) {
+        this.score = score;
     }
 
-    public Model getModel() {
-        return model;
+
+    public Map<String, INDArray> getParameters() {
+        return parameters;
     }
 
-    public void setModel(Model model) {
-        this.model = model;
+    public void setParameters(Map<String, INDArray> parameters) {
+        this.parameters = parameters;
+    }
+
+
+    public Map<String, INDArray> getGradients() {
+        return gradients;
+    }
+
+    public void setGradients(Map<String, INDArray> gradients) {
+        this.gradients = gradients;
     }
 
     @Override
@@ -72,15 +66,20 @@ public class ModelAndGradient implements Serializable {
 
         ModelAndGradient that = (ModelAndGradient) o;
 
-        if (gradient != null ? !gradient.equals(that.gradient) : that.gradient != null) return false;
-        return !(model != null ? !model.equals(that.model) : that.model != null);
+        if (Double.compare(that.score, score) != 0) return false;
+        if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
+        return !(gradients != null ? !gradients.equals(that.gradients) : that.gradients != null);
 
     }
 
     @Override
     public int hashCode() {
-        int result = gradient != null ? gradient.hashCode() : 0;
-        result = 31 * result + (model != null ? model.hashCode() : 0);
+        int result;
+        long temp;
+        result = parameters != null ? parameters.hashCode() : 0;
+        result = 31 * result + (gradients != null ? gradients.hashCode() : 0);
+        temp = Double.doubleToLongBits(score);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
         return result;
     }
 }

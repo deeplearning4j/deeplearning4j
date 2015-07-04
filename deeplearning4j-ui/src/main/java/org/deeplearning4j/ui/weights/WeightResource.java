@@ -18,16 +18,17 @@
 
 package org.deeplearning4j.ui.weights;
 
+import com.codahale.metrics.annotation.ExceptionMetered;
 import io.dropwizard.views.View;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.gradient.Gradient;
 
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.HashMap;
 
 
 /**
@@ -36,11 +37,11 @@ import java.util.Collections;
  * @author Adam Gibson
  */
 @Path("/weights")
-@Produces(MediaType.TEXT_HTML)
 public class WeightResource {
     private ModelAndGradient current;
     private boolean updated = true;
     @GET
+    @Produces(MediaType.TEXT_HTML)
     public View get() {
         return new WeightView();
     }
@@ -49,7 +50,7 @@ public class WeightResource {
     @Path("/updated")
     @Produces(MediaType.APPLICATION_JSON)
     public Response updated() {
-        return Response.ok(Collections.singletonMap("status",updated)).build();
+        return Response.ok(Collections.singletonMap("status",true)).build();
     }
 
     @GET
@@ -59,9 +60,8 @@ public class WeightResource {
         //initialized with empty data
         if(current == null) {
             //initialize with empty
-            current = new ModelAndGradient();
-            updated = true;
-            return Response.ok(current).build();
+            updated = false;
+            return Response.ok(new HashMap<>()).build();
 
         }
 
@@ -73,13 +73,14 @@ public class WeightResource {
 
     @POST
     @Path("/update")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
+    @ExceptionMetered
     public Response update(ModelAndGradient modelAndGrad) {
         this.current = modelAndGrad;
         updated = true;
         return Response.ok(Collections.singletonMap("status","ok")).build();
     }
-
 
 
 

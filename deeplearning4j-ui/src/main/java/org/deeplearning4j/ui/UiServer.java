@@ -18,27 +18,33 @@
 
 package org.deeplearning4j.ui;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
+import io.dropwizard.jersey.jackson.JsonProcessingExceptionMapper;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.ui.exception.GenericExceptionMapper;
+import org.deeplearning4j.ui.exception.JsonExceptionMapper;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.renders.RendersResource;
-import org.deeplearning4j.ui.serializers.GradientSerializer;
-import org.deeplearning4j.ui.serializers.ModelSerializer;
-import org.deeplearning4j.ui.serializers.VectorSerializer;
 import org.deeplearning4j.ui.tsne.TsneResource;
-import org.deeplearning4j.ui.uploads.FileResource;
 import org.deeplearning4j.ui.weights.WeightResource;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.serde.jackson.VectorDeSerializer;
+import org.nd4j.serde.jackson.VectorSerializer;
 import org.springframework.core.io.ClassPathResource;
 
 import javax.servlet.DispatcherType;
@@ -49,33 +55,52 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.EnumSet;
 
+
 /**
  * @author Adam Gibson
  */
 public class UiServer extends Application<UIConfiguration> {
-
+    private static UiServer INSTANCE;
     private UIConfiguration conf;
+    private Environment env;
+    public UiServer() {
+        INSTANCE = this;
+    }
+
+    public static UiServer getInstance() {
+        return INSTANCE;
+    }
+
+    public Environment getEnv() {
+        return env;
+    }
 
     @Override
     public void run(UIConfiguration uiConfiguration, Environment environment) throws Exception {
         this.conf = uiConfiguration;
+        this.env = environment;
         environment.jersey().register(MultiPartFeature.class);
+        environment.jersey().register(new GenericExceptionMapper());
+        environment.jersey().register(new JsonProcessingExceptionMapper());
+
         environment.jersey().register(new TsneResource(conf.getUploadPath()));
         environment.jersey().register(new NearestNeighborsResource(conf.getUploadPath()));
         environment.jersey().register(new WeightResource());
         environment.jersey().register(new RendersResource());
+        environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));
+        environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        environment.getObjectMapper().registerModule(module());
+
         configureCors(environment);
     }
 
     @Override
     public void initialize(Bootstrap<UIConfiguration> bootstrap) {
         //custom serializers for the json serde
-        SimpleModule module = new SimpleModule();
-        module.addSerializer(Gradient.class,new GradientSerializer());
-        module.addSerializer(Model.class,new ModelSerializer());
-        module.addSerializer(INDArray.class,new VectorSerializer());
-        bootstrap.getObjectMapper().registerModule(module);
+        bootstrap.getObjectMapper().registerModule(module());
 
 
         bootstrap.addBundle(new ViewBundle<UIConfiguration>() {
@@ -88,6 +113,13 @@ public class UiServer extends Application<UIConfiguration> {
         bootstrap.addBundle(new AssetsBundle());
     }
 
+
+    private SimpleModule module() {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(INDArray.class, new VectorSerializer());
+        module.addDeserializer(INDArray.class,new VectorDeSerializer());
+        return module;
+    }
 
     public static void main(String[] args) throws Exception {
         ClassPathResource resource = new ClassPathResource("dropwizard.yml");
