@@ -1,7 +1,6 @@
 package org.deeplearning4j.ui.weights;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
