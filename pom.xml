@@ -156,6 +156,7 @@
         <module>nd4j-tests</module>
         <module>nd4j-perf</module>
         <module>nd4j-x86</module>
+        <module>nd4j-serde</module>
     </modules>
 
     <properties>
