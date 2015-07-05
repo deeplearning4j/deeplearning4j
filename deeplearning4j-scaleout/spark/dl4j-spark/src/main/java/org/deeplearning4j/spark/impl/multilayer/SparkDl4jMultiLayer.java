@@ -173,7 +173,7 @@ public class SparkDl4jMultiLayer implements Serializable {
             if(params.length() != paramsLength)
                 throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
             JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
-            log.debug("Ran iterative reduce...averaging results now.");
+            log.info("Ran iterative reduce...averaging results now.");
             INDArray newParams = results.aggregate(Nd4j.zeros(params.shape()), new Add(), new Add());
             newParams.divi(rdd.partitions().size());
             network.setParameters(newParams);
