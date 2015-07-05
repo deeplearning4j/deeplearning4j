@@ -73,7 +73,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
             collect.add(dataSetIterator.next());
         }
 
-        DataSet data = DataSet.merge(collect);
+        DataSet data = DataSet.merge(collect,false);
         log.debug("Training on " + data.labelCounts());
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
         LayerFactory layerFactory = LayerFactories.getFactory(conf.getLayer());
