@@ -613,7 +613,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             throws IOException {
         stream.defaultWriteObject();
         write(stream);
-        stream.writeBoolean(isPersist);
 
     }
 
