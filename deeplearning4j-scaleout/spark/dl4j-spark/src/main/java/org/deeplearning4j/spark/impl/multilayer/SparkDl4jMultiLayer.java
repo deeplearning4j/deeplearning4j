@@ -193,7 +193,7 @@ public class SparkDl4jMultiLayer implements Serializable {
                 int paramsLength = network.numParams();
                 if(params.length() != paramsLength)
                     throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-
+                log.info("Ran a sample at iteration " + i);
                 INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()), new Add());
                 newParams.divi(rdd.partitions().size());
             }
