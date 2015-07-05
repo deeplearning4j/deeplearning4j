@@ -314,7 +314,7 @@ public class Nd4j {
         if(axis < 0)
             axis = axis + arr.shape().length;
         paShape[axis] = padAmount;
-        return Nd4j.concat(axis,Nd4j.valueArrayOf(paShape,val),arr);
+        return Nd4j.concat(axis, Nd4j.valueArrayOf(paShape, val), arr);
     }
 
 
@@ -1205,6 +1205,36 @@ public class Nd4j {
             }
         }
     }
+
+
+    /**
+     * Convert an ndarray to a byte array
+     * @param arr the array to convert
+     * @return the converted byte array
+     * @throws IOException
+     */
+    public static byte[] toByteArray(INDArray arr) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(arr.length() * arr.data().getElementSize());
+        DataOutputStream dos = new DataOutputStream(bos);
+        write(arr, dos);
+        byte[] ret = bos.toByteArray();
+        return ret;
+    }
+
+    /**
+     * Read an ndarray from a byte array
+     * @param arr the array to read from
+     * @return the deserialized ndarray
+     * @throws IOException
+     */
+    public static INDArray fromByteArray(byte[] arr) throws IOException {
+        ByteArrayInputStream bis = new ByteArrayInputStream(arr);
+        INDArray ret =  read(bis);
+        return ret;
+    }
+
+
+
 
     /**
      * Raad an ndarray from an input stream

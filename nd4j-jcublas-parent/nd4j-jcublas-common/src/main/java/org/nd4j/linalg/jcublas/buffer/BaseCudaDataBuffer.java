@@ -611,6 +611,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private void writeObject(java.io.ObjectOutputStream stream)
             throws IOException {
+        stream.defaultWriteObject();
         write(stream);
         stream.writeBoolean(isPersist);
 
@@ -619,7 +620,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     private void readObject(java.io.ObjectInputStream stream)
             throws IOException, ClassNotFoundException {
 
-        read(stream);
+        doReadObject(stream);
         copied = new HashMap<>();
         pointersToContexts = HashBasedTable.create();
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
