@@ -24,19 +24,13 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
-import org.deeplearning4j.nn.conf.rng.DefaultRandom;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.util.SerializationUtils;
 import org.junit.Test;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.*;
 import java.util.Arrays;
@@ -73,8 +67,8 @@ public class MultiLayerNeuralNetConfigurationTest {
         props2.load(bis);
         bis.close();
         assertEquals(props2.getProperty("json"),props.getProperty("json"));
-
-        MultiLayerConfiguration conf3 = MultiLayerConfiguration.fromJson(props2.getProperty("json"));
+        String json2 = props2.getProperty("json");
+        MultiLayerConfiguration conf3 = MultiLayerConfiguration.fromJson(json2);
         assertEquals(conf.getConf(0),conf3.getConf(0));
 
     }

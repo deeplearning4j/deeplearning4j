@@ -6,6 +6,8 @@ server:
       port: 8080
       acceptorThreads: 5
       selectorThreads: 3
+      bindHost: 0.0.0.0 # only bind to loopback
+
   maxThreads : 30
   minThreads : 2
   adminMinThreads: 3
@@ -13,6 +15,8 @@ server:
   adminConnectors:
     - type: http
       port: 8081
+      bindHost: 0.0.0.0 # only bind to loopback
+
 
 
 # Logging settings.
