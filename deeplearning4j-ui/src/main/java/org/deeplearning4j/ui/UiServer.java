@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.ui;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -30,19 +29,14 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.ui.activation.ActivationsResource;
 import org.deeplearning4j.ui.exception.GenericExceptionMapper;
-import org.deeplearning4j.ui.exception.JsonExceptionMapper;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.renders.RendersResource;
 import org.deeplearning4j.ui.tsne.TsneResource;
 import org.deeplearning4j.ui.weights.WeightResource;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.glassfish.jersey.server.ResourceConfig;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.jackson.VectorDeSerializer;
 import org.nd4j.serde.jackson.VectorSerializer;
