@@ -93,6 +93,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    
+
     @Test
     public void testWriteTxt() throws Exception {
         INDArray row = Nd4j.create(new double[][]{{1,2},{3,4}});

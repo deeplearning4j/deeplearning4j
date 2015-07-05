@@ -43,10 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -623,6 +620,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             throws IOException, ClassNotFoundException {
 
         read(stream);
+        copied = new HashMap<>();
         pointersToContexts = HashBasedTable.create();
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         freed = new AtomicBoolean(false);
