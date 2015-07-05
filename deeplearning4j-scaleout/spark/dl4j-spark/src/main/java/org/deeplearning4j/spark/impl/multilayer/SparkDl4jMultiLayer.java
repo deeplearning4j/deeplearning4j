@@ -157,11 +157,6 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
         int iterations = conf.getConf(0).getNumIterations();
-        long count = rdd.count();
-        int batchSize = conf.getConf(0).getBatchSize();
-        if(batchSize == 0)
-            batchSize = 10;
-
         log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
         if(!averageEachIteration) {
             MultiLayerNetwork network = new MultiLayerNetwork(conf);
