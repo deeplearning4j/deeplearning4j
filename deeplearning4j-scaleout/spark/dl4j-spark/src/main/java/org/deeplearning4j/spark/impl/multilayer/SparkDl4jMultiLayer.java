@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Add;
+import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -167,11 +168,16 @@ public class SparkDl4jMultiLayer implements Serializable {
             int paramsLength = network.numParams();
             if(params.length() != paramsLength)
                 throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-            JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
+            JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params)).cache();
             log.info("Ran iterative reduce...averaging results now.");
-            INDArray newParams = results.aggregate(Nd4j.zeros(params.shape()), new Add(), new Add());
+            Adder a = new Adder(params.length());
+            results.foreach(a);
+            INDArray newParams = a.getAccumulator().value();
+            log.info("Accumulated parameters");
             newParams.divi(rdd.partitions().size());
+            log.info("Divided by partitions");
             network.setParameters(newParams);
+            log.info("Set parameters");
             this.network = network;
         }
         else {
