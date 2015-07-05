@@ -131,6 +131,13 @@ public interface NDArrayFactory {
      */
     void setDType(DataBuffer.Type dtype);
 
+    /**
+     * Create an ndarray with the given shape
+     * and data
+     * @param shape the shape to use
+     * @param buffer the buffer to use
+     * @return the ndarray
+     */
     INDArray create(int[] shape, DataBuffer buffer);
 
     /**
@@ -1237,76 +1244,345 @@ public interface NDArrayFactory {
      */
     IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
     INDArray create(float[] data, int[] shape, int offset);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param ordering
+     * @return
+     */
     INDArray create(float[] data, int[] shape, char ordering);
 
-
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @param ordering
+     * @return
+     */
     IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
     IComplexNDArray createComplex(float[] data, int[] shape, int offset);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     * @return
+     */
     IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering);
 
+    /**
+     *
+     * @param floats
+     * @return
+     */
     INDArray create(float[][] floats);
 
+    /**
+     *
+     * @param dim
+     * @return
+     */
     IComplexNDArray createComplex(float[] dim);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     * @return
+     */
     INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering);
 
+    /**
+     *
+     * @param flatten
+     * @return
+     */
     IComplexNDArray complexFlatten(List<IComplexNDArray> flatten);
 
+    /**
+     *
+     * @param flatten
+     * @return
+     */
     IComplexNDArray complexFlatten(IComplexNDArray[] flatten);
 
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param offset
+     * @return
+     */
     INDArray create(DataBuffer buffer, int[] shape, int offset);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @return
+     */
     IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset);
 
+    /**
+     *
+     * @param shape
+     * @param ordering
+     * @return
+     */
     INDArray create(int[] shape, char ordering);
 
+    /**
+     *
+     * @param data
+     * @param newShape
+     * @param newStride
+     * @param offset
+     * @param ordering
+     * @return
+     */
     INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering);
 
+    /**
+     *
+     * @param data
+     * @param newDims
+     * @param newStrides
+     * @param offset
+     * @param ordering
+     * @return
+     */
     IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering);
 
+    /**
+     *
+     * @param rows
+     * @param columns
+     * @param min
+     * @param max
+     * @param rng
+     * @return
+     */
     INDArray rand(int rows, int columns, double min, double max, org.nd4j.linalg.api.rng.Random rng);
 
+    /**
+     *
+     * @param data
+     * @param order
+     * @return
+     */
     IComplexNDArray createComplex(float[] data, Character order);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @param order
+     * @return
+     */
     INDArray create(float[] data, int[] shape, int offset, Character order);
 
+    /**
+     *
+     * @param data
+     * @param rows
+     * @param columns
+     * @param stride
+     * @param offset
+     * @param ordering
+     * @return
+     */
     INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param ordering
+     * @return
+     */
     INDArray create(double[] data, int[] shape, char ordering);
 
+    /**
+     *
+     * @param list
+     * @param shape
+     * @param ordering
+     * @return
+     */
     INDArray create(List<INDArray> list, int[] shape, char ordering);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
     INDArray create(double[] data, int[] shape, int offset);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     * @return
+     */
     INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering);
 
+    /**
+     *
+     * @param shape
+     * @param min
+     * @param max
+     * @param rng
+     * @return
+     */
     INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng);
 
+    /**
+     *
+     * @param ints
+     * @param ints1
+     * @param stride
+     * @param offset
+     * @return
+     */
     IComplexNDArray createComplex(int[] ints, int[] ints1, int[] stride, int offset);
 
+    /**
+     *
+     * @param ints
+     * @param ints1
+     * @param stride
+     * @param offset
+     * @return
+     */
     INDArray create(int[] ints, int[] ints1, int[] stride, int offset);
 
+    /**
+     *
+     * @param shape
+     * @param ints1
+     * @param stride
+     * @param order
+     * @param offset
+     * @return
+     */
     INDArray create(int[] shape, int[] ints1, int[] stride, char order, int offset);
 
+    /**
+     *
+     * @param rows
+     * @param columns
+     * @param ordering
+     * @return
+     */
     INDArray create(int rows, int columns, char ordering);
 
+    /**
+     *
+     * @param shape
+     * @param dataType
+     * @return
+     */
     INDArray create(int[] shape, DataBuffer.Type dataType);
 
+    /**
+     *
+     * @param data
+     * @param order
+     * @return
+     */
     INDArray create(float[] data, char order);
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param order
+     * @param offset
+     * @return
+     */
     INDArray create(float[] data, int[] shape, int[] stride, char order, int offset);
 
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param stride
+     * @param order
+     * @param offset
+     * @return
+     */
     INDArray create(DataBuffer buffer, int[] shape, int[] stride, char order, int offset);
 
+    /**
+     *
+     * @param data
+     * @param order
+     * @return
+     */
     INDArray create(double[] data, char order);
 
-    INDArray create(double[] data, int[] ints, int[] ints1, char order, int offset);
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param order
+     * @param offset
+     * @return
+     */
+    INDArray create(double[] data, int[] shape, int[] stride, char order, int offset);
 
+    /**
+     *
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     * @return
+     */
     INDArray create(int[] shape, int[] stride, int offset, char ordering);
 
+    /**
+     *
+     * @param shape
+     * @param complexStrides
+     * @param offset
+     * @param ordering
+     * @return
+     */
     IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering);
 }

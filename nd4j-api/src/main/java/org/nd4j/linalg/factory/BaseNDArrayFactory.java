@@ -438,6 +438,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray rand(int[] shape, float min, float max, org.nd4j.linalg.api.rng.Random rng) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return Nd4j.getDistributions().createUniform(min, max).sample(shape);
     }
 
@@ -841,6 +845,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public IComplexNDArray createComplex(int[] shape, int[] complexStrides, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),shape,complexStrides,offset,ordering);
     }
 
@@ -861,6 +869,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(int[] shape, int[] stride, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return create(Nd4j.createBuffer(ArrayUtil.prod(shape)),shape,stride,offset,ordering);
     }
 
@@ -929,6 +941,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(float[] data, int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape), 0, ordering);
     }
 
@@ -1189,6 +1205,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray ones(int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         INDArray ret = create(shape);
         ret.assign(1);
         return ret;
@@ -1251,7 +1271,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param offset the offset of the ndarray
      * @return the instance
      */
-    public abstract IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset);
+    public  IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+        return createComplex(Nd4j.createBuffer(data),shape,stride,offset,Nd4j.order());
+    }
 
 
     /**
@@ -1287,7 +1313,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(float[] data, int[] shape) {
-
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return create(data, shape, Nd4j.getStrides(shape), 0);
     }
 
@@ -1300,6 +1329,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return createComplex(data, shape, Nd4j.getComplexStrides(shape), 0);
     }
 
@@ -1312,6 +1345,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(float[] data, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return createComplex(data, shape, Nd4j.getComplexStrides(shape), 0);
     }
 
@@ -1326,6 +1363,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return createComplex(data, shape, stride, 0);
     }
 
@@ -1475,6 +1516,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int[] shape, int[] stride, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return create(Nd4j.createBuffer(shape), shape, stride, offset);
 
     }
@@ -1580,6 +1625,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return create(shape, Nd4j.getStrides(shape), 0);
     }
 
@@ -1865,11 +1914,19 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer buffer, int[] shape, int[] stride, char order, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return create(buffer, shape, stride, offset, order);
     }
 
     @Override
     public INDArray create(int[] data, int[] shape, int[] stride, char order, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         return create(Nd4j.createBuffer(data), shape, stride, order, offset);
     }
 }

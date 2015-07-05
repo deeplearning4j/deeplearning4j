@@ -776,14 +776,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
         try {
             s.defaultReadObject();
             read(s);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+           throw new RuntimeException(e);
         }
 
 
     }
+
+
 
 
     protected void read(DataInputStream s) {

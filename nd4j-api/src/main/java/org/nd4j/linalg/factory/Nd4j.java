@@ -1992,6 +1992,11 @@ public class Nd4j {
      * real components
      */
     public static IComplexNDArray createComplex(IComplexNumber[] data, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2005,6 +2010,10 @@ public class Nd4j {
      * real components
      */
     public static IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         IComplexNDArray ret = INSTANCE.createComplex(arrs, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2047,7 +2056,7 @@ public class Nd4j {
      * @return ndarray
      */
     public static IComplexNDArray createComplex(double[] data, char order) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, Nd4j.getComplexStrides(new int[]{1, data.length},order),0,order);
+        IComplexNDArray ret = INSTANCE.createComplex(data, Nd4j.getComplexStrides(new int[]{1, data.length}, order), 0, order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2059,7 +2068,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(int columns, char order) {
-        INDArray ret = INSTANCE.create(new int[]{1, columns}, Nd4j.getStrides(new int[]{1, columns}, order));
+        INDArray ret = INSTANCE.create(new int[]{1, columns}, Nd4j.getStrides(new int[]{1, columns}, order),0,order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2071,7 +2080,8 @@ public class Nd4j {
      * @return ndarray
      */
     public static IComplexNDArray createComplex(int columns, char order) {
-        IComplexNDArray ret = INSTANCE.createComplex(columns);
+        int[] shape = new int[]{1,columns};
+        IComplexNDArray ret = INSTANCE.createComplex(new int[]{1,columns},Nd4j.getComplexStrides(shape,order),0,order);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2084,6 +2094,11 @@ public class Nd4j {
      * real components
      */
     public static IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int offset, char order) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, order);
         logCreationIfNecessary(ret);
         return ret;
@@ -2098,6 +2113,11 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(float[] data, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2111,6 +2131,11 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2124,6 +2149,11 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(double[] data, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2137,6 +2167,11 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(double[] data, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2151,6 +2186,11 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
         logCreationIfNecessary(ret);
         return ret;
@@ -2165,6 +2205,11 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride);
         logCreationIfNecessary(ret);
         return ret;
@@ -2179,6 +2224,11 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -2193,6 +2243,11 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int[] shape, int[] stride, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -2285,6 +2340,11 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int[] shape, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, offset, Nd4j.order());
         logCreationIfNecessary(ret);
         return ret;
@@ -2298,7 +2358,12 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int[] shape, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), offset);
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2312,6 +2377,11 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int[] shape, int[] stride, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -2324,6 +2394,11 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(List<INDArray> list, int[] shape) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(list, shape);
         logCreationIfNecessary(ret);
         return ret;
@@ -2382,6 +2457,11 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape, int[] stride, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(shape, stride, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -2477,56 +2557,167 @@ public class Nd4j {
     }
 
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param ordering
+     * @param offset
+     * @return
+     */
     public static INDArray create(float[] data, int[] shape, int[] stride, char ordering, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param ordering
+     * @param offset
+     * @return
+     */
     public static INDArray create(float[] data, int[] shape, char ordering, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param strides
+     * @param offset
+     * @return
+     */
     public static INDArray create(DataBuffer data, int[] shape, int[] strides, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, strides, offset);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
     public static INDArray create(DataBuffer data, int[] shape, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, getStrides(shape), offset);
         logCreationIfNecessary(ret);
         return ret;
 
     }
 
+    /**
+     *
+     * @param data
+     * @param newShape
+     * @param newStride
+     * @param offset
+     * @param ordering
+     * @return
+     */
     public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
         INDArray ret = INSTANCE.create(data, newShape, newStride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
 
-    public static IComplexNDArray createComplex(DataBuffer data, int[] newShape, int[] newStrides, int offset) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, newShape, newStrides, offset);
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param newStrides
+     * @param offset
+     * @return
+     */
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] newStrides, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, newStrides, offset);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @return
+     */
     public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset);
         logCreationIfNecessary(ret);
         return ret;
     }
 
-    public static IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, newDims, newStrides, offset, ordering);
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param newStrides
+     * @param offset
+     * @param ordering
+     * @return
+     */
+    public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] newStrides, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, newStrides, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @param ordering
+     * @return
+     */
     public static IComplexNDArray createComplex(DataBuffer data, int[] shape, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2602,7 +2793,13 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
+        int[] shape = new int[]{rows,columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        IComplexNDArray ret = INSTANCE.createComplex(data,shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2618,12 +2815,24 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset, ordering);
+        int[] shape = new int[]{rows,columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
 
     public static INDArray create(int[] shape, DataBuffer.Type dataType) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         INDArray ret = INSTANCE.create(shape, dataType);
         logCreationIfNecessary(ret);
         return ret;
@@ -2639,6 +2848,12 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2653,6 +2868,12 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2666,6 +2887,12 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(double[] data, int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         INDArray ret = INSTANCE.create(data, shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2679,6 +2906,12 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(float[] data, int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         INDArray ret = INSTANCE.create(data, shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2692,6 +2925,12 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2705,6 +2944,12 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(double[] data, int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2719,6 +2964,12 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2733,6 +2984,11 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2748,7 +3004,14 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(double[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, rows, columns, stride, offset);
+        int[] shape = new int[]{rows,columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2764,7 +3027,13 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int rows, int columns, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
+        int[] shape = new int[]{rows,columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        INDArray ret = INSTANCE.create(Nd4j.createBuffer(data), shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2778,7 +3047,12 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset);
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, stride, offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2792,6 +3066,11 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2804,6 +3083,12 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(List<INDArray> list, int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+
         INDArray ret = INSTANCE.create(list, shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2834,7 +3119,13 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride, int offset, char ordering) {
-        INDArray ret = INSTANCE.create(new int[]{rows, columns}, stride, offset, ordering);
+        int[] shape  = new int[]{rows,columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        INDArray ret = INSTANCE.create(shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2862,6 +3153,11 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape, int[] stride, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2877,7 +3173,13 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int rows, int columns, int[] stride, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(new int[]{rows, columns}, stride, ordering);
+        int[] shape = new int[]{rows,columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        IComplexNDArray ret = INSTANCE.createComplex(shape, stride, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2891,7 +3193,13 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, int[] stride, char ordering) {
-        INDArray ret = INSTANCE.create(new int[]{rows, columns}, stride, 0, ordering);
+        int[] shape = new int[]{rows,columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -2915,6 +3223,10 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape, int[] stride, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         INDArray ret = INSTANCE.create(shape, stride, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2929,6 +3241,11 @@ public class Nd4j {
      */
     public static IComplexNDArray createComplex(int rows, int columns, char ordering) {
         int[] shape = new int[]{rows, columns};
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(shape, Nd4j.getComplexStrides(shape, ordering), 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2942,9 +3259,7 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int rows, int columns, char ordering) {
-        INDArray ret = INSTANCE.create(rows, columns, ordering);
-        logCreationIfNecessary(ret);
-        return ret;
+        return create(new int[]{rows,columns},ordering);
     }
 
     /**
@@ -2954,6 +3269,11 @@ public class Nd4j {
      * @return the instance
      */
     public static IComplexNDArray createComplex(int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(createBuffer(ArrayUtil.prod(shape) * 2), shape, 0, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2966,6 +3286,10 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
         INDArray ret = INSTANCE.create(shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -2981,6 +3305,11 @@ public class Nd4j {
      * @return
      */
     public static IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         IComplexNDArray ret = INSTANCE.createComplex(data, shape, Nd4j.getComplexStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
@@ -3005,6 +3334,11 @@ public class Nd4j {
      * @return
      */
     public static INDArray create(double[] data, int[] shape, int offset) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
         INDArray ret = INSTANCE.create(data, shape, offset);
         logCreationIfNecessary(ret);
         return ret;
@@ -3013,13 +3347,18 @@ public class Nd4j {
     /**
      *
      * @param data
-     * @param ints
+     * @param shape
      * @param offset
      * @param ordering
      * @return
      */
-    public static IComplexNDArray createComplex(double[] data, int[] ints, int offset, char ordering) {
-        IComplexNDArray ret = INSTANCE.createComplex(data, ints, offset, ordering);
+    public static IComplexNDArray createComplex(double[] data, int[] shape, int offset, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if(shape.length == 1 && shape[0] == 0) {
+            shape = new int[]{1,1};
+        }
+
+        IComplexNDArray ret = INSTANCE.createComplex(data, shape, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }

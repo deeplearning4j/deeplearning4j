@@ -522,7 +522,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray linearView() {
         ensureNotCleanedUp();
-        if (isVector())
+        if (isVector() || isScalar() || length() == 1 || length() == size(0))
             return this;
         if (linearView == null)
             resetLinearView();
@@ -533,7 +533,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public void resetLinearView() {
         ensureNotCleanedUp();
-        if(isVector())
+        if(isVector() || isScalar() || length() == 1)
             linearView = this;
         else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
             linearView = Nd4j.create(data(),new int[]{1,length()},new int[]{1,elementStride()},offset);
@@ -1307,19 +1307,13 @@ public abstract class BaseNDArray implements INDArray {
             isScalar = true;
             return true;
         }
-        else if (shape.length == 1 && shape[0] == 1) {
-            isScalar = true;
+        else if(shape.length == 2 && length() == 1)
             return true;
-        }
-        else if (shape.length >= 2) {
-            for (int i = 0; i < shape.length; i++)
-                if (shape[i] != 1) {
-                    isScalar = false;
-                    return false;
-                }
-        }
+        else
+           isScalar = false;
 
-        isScalar = length == 1;
+
+        isScalar = length == 1 && shape.length <= 2;
         return isScalar;
     }
 
