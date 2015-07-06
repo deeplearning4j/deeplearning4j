@@ -618,7 +618,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     private void readObject(java.io.ObjectInputStream stream)
             throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
         doReadObject(stream);
         copied = new HashMap<>();
         pointersToContexts = HashBasedTable.create();
