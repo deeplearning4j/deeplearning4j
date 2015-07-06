@@ -617,16 +617,8 @@ public abstract class BaseNDArray implements INDArray {
 
         }
         else if(size(0) == 1 && !isVector()) {
-            int numLeadingOnes = 0;
-            for(int i = 0; i < rank(); i++) {
-                if(size(i) == 1)
-                    numLeadingOnes++;
-            }
-
-            int realDimension = rank() - numLeadingOnes;
+            int realDimension = rank() - getLeadingOnes();
             return length / size(realDimension);
-
-
         }
 
         if (dimension >= shape.length)
@@ -3051,7 +3043,10 @@ public abstract class BaseNDArray implements INDArray {
         return false;
     }
 
-    private int getLeadingOnes() {
+
+
+    @Override
+    public int getLeadingOnes() {
         if(this.numLeadingOnes >= 0)
             return this.numLeadingOnes;
 

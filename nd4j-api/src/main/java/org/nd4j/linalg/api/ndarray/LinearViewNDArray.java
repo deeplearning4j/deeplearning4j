@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ndarray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.Shape;
 
 import java.util.ArrayList;
@@ -43,6 +44,14 @@ public class LinearViewNDArray  extends BaseNDArray {
      * @param wrapped the array to wrap
      */
     public LinearViewNDArray(INDArray wrapped) {
+        if(wrapped.getLeadingOnes() > 0) {
+            int[] newShape = new int[wrapped.rank() - wrapped.getLeadingOnes()];
+            for(int i = wrapped.getLeadingOnes(); i < wrapped.rank(); i++) {
+                newShape[i - wrapped.getLeadingOnes()] = wrapped.size(i);
+            }
+
+            wrapped = Nd4j.create(wrapped.data(),newShape,wrapped.offset());
+        }
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
         this.data = wrapped.data();

@@ -45,6 +45,15 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
      *                base the linear view on
      */
     public LinearViewComplexNDArray(IComplexNDArray wrapped) {
+        if(wrapped.getLeadingOnes() > 0) {
+            int[] newShape = new int[wrapped.rank() - wrapped.getLeadingOnes()];
+            for(int i = wrapped.getLeadingOnes(); i < wrapped.rank(); i++) {
+                newShape[i - wrapped.getLeadingOnes()] = wrapped.size(i);
+            }
+
+            wrapped = Nd4j.createComplex(wrapped.data(),newShape,wrapped.offset());
+        }
+
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
         this.data = wrapped.data();
