@@ -182,8 +182,6 @@ public class WordVectorSerializer
                 cache.addWordToIndex(cache.numWords(), word);
                 cache.addToken(new VocabWord(1, word));
                 cache.putVocabWord(word);
-
-                readString(dis);    // line break
             }
         }
 
