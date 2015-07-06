@@ -97,6 +97,7 @@ public abstract class BaseNDArray implements INDArray {
     protected boolean cleanedUp = false;
     protected transient WeakReference<INDArray> ref;
     protected int firstNonOneStride = -1;
+    protected int numLeadingOnes = -1;
     protected int majorStride = -1;
     protected Boolean isVector = null;
     protected Boolean isScalar = null;
@@ -615,6 +616,18 @@ public abstract class BaseNDArray implements INDArray {
             return length();
 
         }
+        else if(size(0) == 1 && !isVector()) {
+            int numLeadingOnes = 0;
+            for(int i = 0; i < rank(); i++) {
+                if(size(i) == 1)
+                    numLeadingOnes++;
+            }
+
+            int realDimension = rank() - numLeadingOnes;
+            return length / size(realDimension);
+
+
+        }
 
         if (dimension >= shape.length)
             return length / size(shape.length - 1);
@@ -655,6 +668,8 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             int realDimension = dimension;
+            int numLeadingOnes = 0;
+
             //get rid of leading dimensions and correct
             //for weird behavior when 1 is a leading dimension
             //of say: a tensor
@@ -666,10 +681,18 @@ public abstract class BaseNDArray implements INDArray {
                     }
                 }
             }
-            return create(data,
+
+            //account for leading ones
+            else if(size(0) == 1 && !isVector() && !isMatrix()) {
+                realDimension = rank() - getLeadingOnes();
+            }
+
+
+            INDArray ret =  create(data,
                     new int[]{1, shape[realDimension]}
-                    , stride[realDimension] != 1 ? new int[]{stride[realDimension], elementStride()} : new int[]{elementStride(),stride[realDimension]},
+                    , stride[realDimension] != 1  && numLeadingOnes < 1 ? new int[]{stride[realDimension], elementStride()} : new int[]{elementStride(), stride[realDimension]},
                     calcoffset(index));
+            return ret;
 
         }
 
@@ -797,6 +820,7 @@ public abstract class BaseNDArray implements INDArray {
         return elementStride();
 
     }
+
     private int getFirstNonOneStride() {
         if(firstNonOneStride >= 0)
             return firstNonOneStride;
@@ -1310,7 +1334,7 @@ public abstract class BaseNDArray implements INDArray {
         else if(shape.length == 2 && length() == 1)
             return true;
         else
-           isScalar = false;
+            isScalar = false;
 
 
         isScalar = length == 1 && shape.length <= 2;
@@ -3027,10 +3051,25 @@ public abstract class BaseNDArray implements INDArray {
         return false;
     }
 
+    private int getLeadingOnes() {
+        if(this.numLeadingOnes >= 0)
+            return this.numLeadingOnes;
+
+        int numLeadingOnes = 0;
+        for(int i = 0; i < rank(); i++) {
+            if(size(i) == 1)
+                numLeadingOnes++;
+        }
+
+        this.numLeadingOnes = numLeadingOnes;
+        return numLeadingOnes;
+    }
+
 
     protected int calcoffset(int index) {
-        if(stride[stride.length - 1] == 1 && NDArrayFactory.FORTRAN == ordering())
+        if(stride[stride.length - 1] == 1 && NDArrayFactory.FORTRAN == ordering() || getLeadingOnes() > 0 && rank() > 2)
             return offset + index;
+
         return offset + index * majorStride();
     }
 

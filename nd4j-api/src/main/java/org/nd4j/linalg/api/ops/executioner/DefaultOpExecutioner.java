@@ -445,7 +445,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (op.x() instanceof IComplexNDArray) {
                 IComplexNDArray complexX = (IComplexNDArray) op.x().linearView();
                 op.update(op.op(complexX.getComplex(x)));
-            } else
+            }
+            else
                 op.update(op.op(op.x().linearView().getDouble(x)));
         }
 
