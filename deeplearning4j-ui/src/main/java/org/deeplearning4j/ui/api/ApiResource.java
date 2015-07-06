@@ -20,18 +20,18 @@ package org.deeplearning4j.ui.api;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
+import org.deeplearning4j.ui.uploads.FileResource;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -41,19 +41,36 @@ import java.util.List;
  */
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
-public class ApiResource  {
+public class ApiResource extends FileResource {
     private List<String> coords;
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
+
+    /**
+     * The file path for uploads
+     *
+     * @param filePath the file path for uploads
+     */
+    public ApiResource(String filePath) {
+        super(filePath);
+    }
+    /**
+     * The file path for uploads
+     *
+     */
+    public ApiResource() {
+        this(".");
+    }
+
+
 
 
     @POST
     @Path("/update")
-    public Response update(UrlResource resource) {
-
-        if(coords.isEmpty())
-            throw new IllegalStateException("Unable to get coordinates; empty");
-        List<String> list = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(List.class);
-        this.coords = list;
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response update(UrlResource resource) throws IOException {
+        String content = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
+        List<String> testLines = IOUtils.readLines(new ByteArrayInputStream(content.getBytes()));
+        this.coords = testLines;
         return Response.ok(coords).build();
     }
 
@@ -72,4 +89,8 @@ public class ApiResource  {
     }
 
 
+    @Override
+    public void handleUpload(File path) {
+
+    }
 }
