@@ -1,10 +1,14 @@
 package org.deeplearning4j.ui;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.springframework.core.io.ClassPathResource;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -15,6 +19,7 @@ import java.io.InputStream;
  */
 public abstract class BaseUiServerTest {
     protected static UiServer uiServer;
+    protected static Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
 
     @BeforeClass
     public static void before() throws Exception {
