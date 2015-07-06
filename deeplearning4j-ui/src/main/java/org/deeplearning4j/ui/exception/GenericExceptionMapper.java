@@ -13,7 +13,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
     @Override
     public Response toResponse(Throwable ex) {
         return Response.status(500)
-                .entity("WTF")
+                .entity("Error occurred")
                 .type(MediaType.APPLICATION_JSON)
                 .build();
     }

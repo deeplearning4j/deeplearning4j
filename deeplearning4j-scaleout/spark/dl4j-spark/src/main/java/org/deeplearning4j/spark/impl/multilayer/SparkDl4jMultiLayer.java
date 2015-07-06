@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Add;
+import org.deeplearning4j.spark.impl.common.Adder;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -157,28 +158,10 @@ public class SparkDl4jMultiLayer implements Serializable {
      */
     public MultiLayerNetwork fitDataSet(JavaRDD<DataSet> rdd) {
         int iterations = conf.getConf(0).getNumIterations();
-        long count = rdd.count();
-        int batchSize = conf.getConf(0).getBatchSize();
-        if(batchSize == 0)
-            batchSize = 10;
-
         log.info("Running distributed training averaging each iteration " + averageEachIteration + " and " + rdd.partitions().size() + " partitions");
-        if(!averageEachIteration) {
-            MultiLayerNetwork network = new MultiLayerNetwork(conf);
-            network.init();
-            final INDArray params = network.params();
-            this.params = sc.broadcast(params);
-            log.info("Broadcasting initial parameters of length " + params.length());
-            int paramsLength = network.numParams();
-            if(params.length() != paramsLength)
-                throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-            JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
-            log.debug("Ran iterative reduce...averaging results now.");
-            INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()),new Add());
-            newParams.divi(rdd.partitions().size());
-            network.setParameters(newParams);
-            this.network = network;
-        }
+        if(!averageEachIteration)
+              runIteration(rdd);
+
         else {
             for(NeuralNetConfiguration conf : this.conf.getConfs())
                 conf.setNumIterations(1);
@@ -187,26 +170,37 @@ public class SparkDl4jMultiLayer implements Serializable {
             final INDArray params = network.params();
             this.params = sc.broadcast(params);
 
-            for(int i = 0; i < iterations; i++) {
-                JavaRDD<INDArray> results = rdd.sample(true,0.3).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params));
-
-                int paramsLength = network.numParams();
-                if(params.length() != paramsLength)
-                    throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-
-                INDArray newParams = results.fold(Nd4j.zeros(results.first().shape()), new Add());
-                newParams.divi(rdd.partitions().size());
-            }
-
-            network.setParameters(this.params.value());
-            this.network = network;
-
+            for(int i = 0; i < iterations; i++)
+                runIteration(rdd);
 
         }
 
 
         return network;
     }
+
+    private void runIteration(JavaRDD<DataSet> rdd) {
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        final INDArray params = network.params();
+        this.params = sc.broadcast(params);
+        log.info("Broadcasting initial parameters of length " + params.length());
+        int paramsLength = network.numParams();
+        if(params.length() != paramsLength)
+            throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
+        JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params)).cache();
+        log.info("Ran iterative reduce...averaging results now.");
+        Adder a = new Adder(params.length());
+        results.foreach(a);
+        INDArray newParams = a.getAccumulator().value();
+        log.info("Accumulated parameters");
+        newParams.divi(rdd.partitions().size());
+        log.info("Divided by partitions");
+        network.setParameters(newParams);
+        log.info("Set parameters");
+        this.network = network;
+    }
+
 
     /**
      * Train a multi layer network
