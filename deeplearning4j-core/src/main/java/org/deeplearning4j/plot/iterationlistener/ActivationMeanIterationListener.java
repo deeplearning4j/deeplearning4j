@@ -18,26 +18,13 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ActivationMeanIterationListener implements IterationListener {
-    private List<String> variables;
     private int iteration = 1;
     private PlotFilters filters = new PlotFilters();
     private File outputFile = new File("activations.png");
 
-    public ActivationMeanIterationListener(List<String> variables) {
-        this.variables = variables;
-    }
 
-    public ActivationMeanIterationListener(List<String> variables, int iteration) {
-        this.variables = variables;
+    public ActivationMeanIterationListener(int iteration) {
         this.iteration = iteration;
-    }
-
-    public List<String> getVariables() {
-        return variables;
-    }
-
-    public void setVariables(List<String> variables) {
-        this.variables = variables;
     }
 
     public int getIteration() {
