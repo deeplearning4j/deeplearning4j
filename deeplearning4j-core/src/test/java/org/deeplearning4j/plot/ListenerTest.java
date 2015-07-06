@@ -22,6 +22,7 @@ import org.deeplearning4j.plot.iterationlistener.*;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.*;
 
@@ -52,8 +53,6 @@ public class ListenerTest {
         assertNotNull(network.getListeners().get(0));
         assertEquals(listener.invoked(), true);
     }
-
-
 
 
     @Test
@@ -154,6 +153,65 @@ public class ListenerTest {
                 .list(hiddenLayerSizes.length + 1)
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .backward(true).pretrain(false)
+                .useDropConnect(false)
+
+                .override(hiddenLayerSizes.length, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.activationFunction("softmax");
+                        builder.layer(new OutputLayer());
+                        builder.weightInit(WeightInit.DISTRIBUTION);
+                        builder.dist(new NormalDistribution(0, 0.1));
+                    }
+                }).build();
+
+
+        return c;
+    }
+
+
+    @Test
+    public void testBackTrackLine() {
+        Nd4j.MAX_SLICES_TO_PRINT = -1;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
+
+        DataSetIterator irisIter = new IrisDataSetIterator(1,1);
+        DataSet data = irisIter.next();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(getIris1ItConfig(new int[]{5}, "sigmoid", 1));
+        network.init();
+
+        network.fit(data.getFeatureMatrix(), data.getLabels());
+    }
+
+
+    private static MultiLayerConfiguration getIris1ItConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
+        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
+                .nIn(4).nOut(3)
+                .weightInit(WeightInit.DISTRIBUTION)
+                .dist(new NormalDistribution(0, 0.1))
+
+                .activationFunction(activationFunction)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+
+                .iterations(iterations)
+                .batchSize(1)
+                .constrainGradientToUnitNorm(false)
+                .corruptionLevel(0.0)
+
+                .layer(new RBM())
+                .learningRate(0.1).useAdaGrad(false)
+                .numLineSearchIterations(1)
+                .regularization(false)
+                .l1(0.0)
+                .l2(0.0)
+                .dropOut(0.0)
+                .momentum(0.0)
+                .applySparsity(false).sparsity(0.0)
+                .seed(12345L)
+
+                .list(hiddenLayerSizes.length + 1).hiddenLayerSizes(hiddenLayerSizes)
                 .useDropConnect(false)
 
                 .override(hiddenLayerSizes.length, new ConfOverride() {
