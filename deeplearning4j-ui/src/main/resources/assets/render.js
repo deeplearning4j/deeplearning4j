@@ -1,4 +1,4 @@
-  /*
+/*
  *
  *  * Copyright 2015 Skymind,Inc.
  *  *
@@ -17,8 +17,8 @@
  */
 
 var x = [];
-  var y = [];
-  var name3 = [];
+var y = [];
+var name3 = [];
 
 
 
@@ -26,16 +26,16 @@ var x = [];
 var tx=0, ty=0;
 var ss=1;
 function zoomHandler() {
-  tx = d3.event.translate[0];
-  ty = d3.event.translate[1];
-  ss = d3.event.scale;
-  console.log('zoom called');
-  svg.selectAll('.u')
-      .data(name3)
-      .attr("transform", function(d, i) { return "translate(" +
-                                            ((x[i]*20*ss + tx) + 400) + "," +
-                                            ((y[i]*20*ss + ty) + 400) + ")";
-});
+    tx = d3.event.translate[0];
+    ty = d3.event.translate[1];
+    ss = d3.event.scale;
+    console.log('zoom called');
+    svg.selectAll('.u')
+        .data(name3)
+        .attr("transform", function(d, i) { return "translate(" +
+            ((x[i]*20*ss + tx) + 400) + "," +
+            ((y[i]*20*ss + ty) + 400) + ")";
+        });
 }
 
 var svg;
@@ -46,32 +46,32 @@ function drawEmbedding() {
 
 
     svg = div.append("svg") // svg is global
-    .attr("width", 2000)
-    .attr("height", 2000);
+        .attr("width", 2000)
+        .attr("height", 2000);
 
     var g = svg.selectAll(".b")
-      .data(name3)
-      .enter().append("g")
-      .attr("class", "u");
+        .data(name3)
+        .enter().append("g")
+        .attr("class", "u");
 
 
     g.append("text")
-      .attr("text-anchor", "top")
-      .attr("font-size", 12)
-      .attr("fill", "#333")
-      .text(function(d) { return d; });
+        .attr("text-anchor", "top")
+        .attr("font-size", 12)
+        .attr("fill", "#333")
+        .text(function(d) { return d; });
 
 
     svg.selectAll('.u')
-    .data(name3)
-    .attr("transform", function(d, i) { return "translate(" +
-                                          ((x[i]*20*ss + tx) + 400) + "," +
-                                          ((y[i]*20*ss + ty) + 400) + ")"; });
+        .data(name3)
+        .attr("transform", function(d, i) { return "translate(" +
+            ((x[i]*20*ss + tx) + 400) + "," +
+            ((y[i]*20*ss + ty) + 400) + ")"; });
 
     var zoomListener = d3.behavior.zoom()
-      .scaleExtent([0.1, 10])
-      .center([0,0])
-      .on("zoom", zoomHandler);
+        .scaleExtent([0.1, 10])
+        .center([0,0])
+        .on("zoom", zoomHandler);
     zoomListener(svg);
 }
 
@@ -80,23 +80,23 @@ function drawEmbedding() {
 
 
 $(window).load(function() {
-  $.ajax({
-    url: "/api/coords",
-    cache: false
-  })
-    .done(function( data ) {
-      for(var i = 0; i < data.length; i++) {
-         var split = data[i].split(',');
-         console.log(split.length);
-         var xCoord = split[0];
-         var yCoord = split[1];
-         var name2 = split[2];
-         x.push(xCoord);
-         y.push(yCoord);
-         name3.push(name2);
-      }
+    $.ajax({
+        url: "/api/coords",
+        cache: false
+    })
+        .done(function( data ) {
+            for(var i = 0; i < data.length; i++) {
+                var split = data[i].split(',');
+                console.log(split.length);
+                var xCoord = split[0];
+                var yCoord = split[1];
+                var name2 = split[2];
+                x.push(xCoord);
+                y.push(yCoord);
+                name3.push(name2);
+            }
 
-      drawEmbedding();
-    });
+            drawEmbedding();
+        });
 
 });
