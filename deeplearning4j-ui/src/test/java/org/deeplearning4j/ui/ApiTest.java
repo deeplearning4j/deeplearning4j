@@ -2,7 +2,6 @@ package org.deeplearning4j.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.berkeley.StringUtils;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.ui.api.UrlResource;
 import org.junit.Test;
@@ -14,7 +13,6 @@ import org.springframework.core.io.ClassPathResource;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
