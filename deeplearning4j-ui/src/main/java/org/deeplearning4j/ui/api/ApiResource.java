@@ -18,11 +18,18 @@
 
 package org.deeplearning4j.ui.api;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
@@ -36,6 +43,19 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 public class ApiResource  {
     private List<String> coords;
+    private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
+
+
+    @POST
+    @Path("/update")
+    public Response update(UrlResource resource) {
+
+        if(coords.isEmpty())
+            throw new IllegalStateException("Unable to get coordinates; empty");
+        List<String> list = client.target(resource.getUrl()).request(MediaType.TEXT_PLAIN_TYPE).get(List.class);
+        this.coords = list;
+        return Response.ok(coords).build();
+    }
 
     @GET
     @Path("/coords")

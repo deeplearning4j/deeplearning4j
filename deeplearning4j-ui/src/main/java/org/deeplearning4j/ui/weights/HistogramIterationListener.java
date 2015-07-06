@@ -1,23 +1,10 @@
 package org.deeplearning4j.ui.weights;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import io.dropwizard.jackson.Jackson;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
-import org.glassfish.jersey.client.ClientConfig;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.serde.jackson.VectorDeSerializer;
-import org.nd4j.serde.jackson.VectorSerializer;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
