@@ -22,6 +22,7 @@ package org.deeplearning4j.ui.uploads;
 
 
 
+import org.apache.commons.io.FileUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.slf4j.Logger;
@@ -40,7 +41,26 @@ import java.io.*;
 
 public abstract class FileResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileResource.class);
-    private String filePath = System.getProperty("java.io.tmpdir");
+    protected String filePath = System.getProperty("java.io.tmpdir");
+
+    @GET
+    @Path("/{path}")
+    @Produces({"application/json","text/plain"})
+    public Response serve(@PathParam("path") String path) throws Exception {
+        File currentFile = new File(this.filePath,path);
+        if(!currentFile.exists())
+            return Response.status(Response.Status.NOT_FOUND).build();
+        else {
+            String content = FileUtils.readFileToString(currentFile);
+
+            if(path.endsWith(".json")) {
+                return Response.ok(content,MediaType.APPLICATION_JSON).build();
+            }
+            else {
+                return Response.ok(content,MediaType.TEXT_PLAIN_TYPE).build();
+            }
+        }
+    }
 
     /**
      * The file path for uploads

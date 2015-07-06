@@ -30,6 +30,7 @@ import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.activation.ActivationsResource;
+import org.deeplearning4j.ui.api.ApiResource;
 import org.deeplearning4j.ui.exception.GenericExceptionMapper;
 import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.renders.RendersResource;
@@ -83,6 +84,7 @@ public class UiServer extends Application<UIConfiguration> {
         environment.jersey().register(new WeightResource());
         environment.jersey().register(new ActivationsResource());
         environment.jersey().register(new RendersResource());
+        environment.jersey().register(new ApiResource());
         environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new org.deeplearning4j.ui.nearestneighbors.word2vec.NearestNeighborsResource(conf.getUploadPath()));
         environment.getObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
