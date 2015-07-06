@@ -3,6 +3,7 @@ package org.deeplearning4j.plot;
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.Shape;
 
 import java.util.ArrayList;
@@ -43,6 +44,8 @@ public class PlotFilters {
         if(data.rank() == 4)
             data = data.reshape(n * data.size(1),n * data.size(3));
 
+        data = Transforms.round(Transforms.abs(data)).muli(255);
+
         return data;
     }
 
@@ -71,7 +74,9 @@ public class PlotFilters {
         //# tile the filters into an image
         int[] baseFilterShape = Ints.concat(new int[]{n,n}, Arrays.copyOfRange(data.shape(),1,data.shape().length));
         data = data.reshape(baseFilterShape).permute(0,2,1,3);
-        data = data.reshape(n * data.size(1),n * data.size(3));
+        data = data.reshape(n * data.size(1), n * data.size(3));
+        data = Transforms.round(Transforms.abs(data)).muli(255);
+
         return data;
     }
 

@@ -49,6 +49,11 @@ public class TestRenders extends BaseUiServerTest {
     }
 
     @Test
+    public void testCoordUpdate() {
+
+    }
+
+    @Test
     public void renderActivation() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
@@ -65,7 +70,7 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(Collections.singletonList(PretrainParamInitializer.WEIGHT_KEY),1)),0);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0);
         da.setParams(da.params());
         da.fit(input);
     }
