@@ -82,7 +82,7 @@ public class WordVectorsImpl implements WordVectors {
             if(top > sort.length())
                 top = sort.length();
             //there will be a redundant word
-            int end = top + 1;
+            int end = top;
             for(int i = 0; i < end; i++) {
                 String word = vocab.wordAtIndex(sort.getInt(i));
                 if(union.contains(word)) {
@@ -141,7 +141,7 @@ public class WordVectorsImpl implements WordVectors {
             if(top > sort.length())
                 top = sort.length();
             //there will be a redundant word
-            int end = top + 1;
+            int end = top;
             for(int i = 0; i < end; i++) {
                 String add = vocab().wordAtIndex(sort.getInt(i));
                 if(add == null || add.equals("UNK") || add.equals("STOP")) {
@@ -192,7 +192,7 @@ public class WordVectorsImpl implements WordVectors {
             if(top > sort.length())
                 top = sort.length();
             //there will be a redundant word
-            int end = top + 1;
+            int end = top;
             for(int i = 0; i < end; i++) {
                 String add = vocab().wordAtIndex(sort.getInt(i));
                 if(add == null || add.equals("UNK") || add.equals("STOP")) {
@@ -415,7 +415,7 @@ public class WordVectorsImpl implements WordVectors {
             if(top > sort.length())
                 top = sort.length();
             //there will be a redundant word
-            int end = top + 1;
+            int end = top;
             for(int i = 0; i < end; i++) {
                 String word = vocab().wordAtIndex(sort.getInt(i));
                 if(union.contains(word)) {
