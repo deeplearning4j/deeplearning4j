@@ -1234,6 +1234,74 @@ public class Nd4j {
     }
 
 
+    /**
+     * Read line via input streams
+     *
+     * @param filePath the input stream ndarray
+     * @param split    the split separator
+     * @return the read txt method
+     */
+    public static INDArray readNumpy(InputStream filePath, String split) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(filePath));
+        String line;
+        List<float[]> data2 = new ArrayList<>();
+        int numColumns = -1;
+        INDArray ret;
+        while ((line = reader.readLine()) != null) {
+            String[] data = line.trim().split(split);
+            if (numColumns < 0) {
+                numColumns = data.length;
+
+            } else
+                assert data.length == numColumns : "Data has inconsistent number of columns";
+            data2.add(readSplit(data));
+
+
+        }
+
+        ret = Nd4j.create(data2.size(), numColumns);
+        for (int i = 0; i < data2.size(); i++)
+            ret.putRow(i, Nd4j.create(Nd4j.createBuffer(data2.get(i))));
+        return ret;
+    }
+
+    private static float[] readSplit(String[] split) {
+        float[] ret = new float[split.length];
+        for (int i = 0; i < split.length; i++) {
+            ret[i] = Float.parseFloat(split[i]);
+        }
+        return ret;
+    }
+
+    /**
+     * Read line via input streams
+     *
+     * @param filePath the input stream ndarray
+     * @param split    the split separator
+     * @return the read txt method
+     */
+    public static INDArray readNumpy(String filePath, String split) throws IOException {
+        return readNumpy(new FileInputStream(filePath), split);
+    }
+
+    /**
+     * Read line via input streams
+     *
+     * @param filePath the input stream ndarray
+     * @return the read txt method
+     */
+    public static INDArray readNumpy(String filePath) throws IOException {
+        return readNumpy(filePath, "\t");
+    }
+
+    private static INDArray loadRow(String[] data) {
+        INDArray ret = Nd4j.create(data.length);
+        for (int i = 0; i < data.length; i++) {
+            ret.putScalar(i, Double.parseDouble(data[i]));
+        }
+
+        return ret;
+    }
 
 
     /**
