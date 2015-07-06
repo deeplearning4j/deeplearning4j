@@ -68,7 +68,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
             collect.add(dataSetIterator.next());
         }
 
-        DataSet data = DataSet.merge(collect);
+        DataSet data = DataSet.merge(collect,false);
         log.debug("Training on " + data.labelCounts());
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();

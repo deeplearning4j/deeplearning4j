@@ -23,11 +23,10 @@ public class UpdateActivationIterationListener implements IterationListener {
 
     /**
      * Initializes with the variables to render filters for
-     * @param variables the variables ot render filters for
      * @param iterations the number of iterations to update on
      */
-    public UpdateActivationIterationListener(List<String> variables, int iterations) {
-        listener = new ActivationMeanIterationListener(variables,iterations);
+    public UpdateActivationIterationListener(int iterations) {
+        listener = new ActivationMeanIterationListener(iterations);
         this.iterations = iterations;
     }
 

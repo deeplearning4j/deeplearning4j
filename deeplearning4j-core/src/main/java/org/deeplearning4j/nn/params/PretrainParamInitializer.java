@@ -36,7 +36,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         super.init(params, conf);
-        params.put(VISIBLE_BIAS_KEY, Nd4j.zeros(conf.getNIn()));
+        params.put(VISIBLE_BIAS_KEY, Nd4j.valueArrayOf(conf.getNIn(),0.2));
         conf.addVariable(VISIBLE_BIAS_KEY);
         params.get(VISIBLE_BIAS_KEY).data().persist();
     }
