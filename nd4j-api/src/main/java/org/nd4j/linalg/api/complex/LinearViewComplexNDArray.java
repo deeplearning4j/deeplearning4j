@@ -51,7 +51,11 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
                 newShape[i - wrapped.getLeadingOnes()] = wrapped.size(i);
             }
 
-            wrapped = Nd4j.createComplex(wrapped.data(),newShape,wrapped.offset());
+            //ensure linear view covers whole buffer
+            if(ArrayUtil.prod(newShape) != wrapped.length())
+                newShape[newShape.length - 1] = wrapped.length();
+
+            wrapped = Nd4j.createComplex(wrapped.data(), newShape, wrapped.offset());
         }
 
         this.wrapped = wrapped;
