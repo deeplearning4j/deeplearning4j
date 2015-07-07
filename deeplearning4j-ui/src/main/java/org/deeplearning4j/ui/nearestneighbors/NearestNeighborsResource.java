@@ -79,7 +79,7 @@ public class NearestNeighborsResource extends FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response updateFilePath(UrlResource resource) {
         if(!resource.getUrl().startsWith("http")) {
-            this.localFile = new File(resource.getUrl());
+            this.localFile = new File(".",resource.getUrl());
             handleUpload(localFile);
         }
         else {
@@ -102,9 +102,16 @@ public class NearestNeighborsResource extends FileResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getVocab() {
         List<String> words = new ArrayList<>();
-        for(VocabWord word : this.words) {
-            words.add(word.getWord());
+
+        if(wordVectors != null) {
+            words.addAll(wordVectors.vocab().words());
         }
+        else {
+            for(VocabWord word : this.words) {
+                words.add(word.getWord());
+            }
+        }
+
         return Response.ok((new ArrayList<>(words))).build();
     }
 
@@ -152,7 +159,7 @@ public class NearestNeighborsResource extends FileResource {
 
             }
             else if(path.getAbsolutePath().contains("Google")) {
-                WordVectors vectors = WordVectorSerializer.loadGoogleModel(path, true);
+                WordVectors vectors = WordVectorSerializer.loadGoogleModel(path, true,true);
                 this.wordVectors = vectors;
             }
 
