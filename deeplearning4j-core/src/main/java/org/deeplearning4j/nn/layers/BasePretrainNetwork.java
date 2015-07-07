@@ -58,25 +58,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     }
 
 
-    @Override
-    public void setScore() {
-        if(this.input == null)
-            return;
-
-        INDArray output = transform(input);
-        score = -LossFunctions.score(
-                input,
-                conf.getLossFunction(),
-                output,
-                conf.getL2(),
-                conf.isUseRegularization());
-        //minimization target
-        if(conf.isMinimize())
-            score = -score;
-
-
-    }
-
     /**
      * Corrupts the given input by doing a binomial sampling
      * given the corruption level
