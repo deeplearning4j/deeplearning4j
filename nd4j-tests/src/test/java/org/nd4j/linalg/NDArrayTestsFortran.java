@@ -1414,7 +1414,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray arr = Nd4j.ones(1,10,1);
         arr.toString();
         System.out.println(arr);
-
+        INDArray array = Nd4j.zeros(new int[]{1,10,1});
+        INDArray slice = array.slice(0,2);
+        System.out.println(Arrays.toString(slice.shape())); //Expect: [1,10] -> OK
+        System.out.println(slice);
     }
 
 

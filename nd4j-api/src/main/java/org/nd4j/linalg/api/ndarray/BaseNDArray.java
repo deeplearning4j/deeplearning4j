@@ -3092,11 +3092,30 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
+        int realDimension = dimension;
+        int numLeadingOnes = getLeadingOnes();
+
+        //get rid of leading dimensions and correct
+        //for weird behavior when 1 is a leading dimension
+        //of say: a tensor
+        if(numLeadingOnes > 0) {
+            for(int i = 0; i < shape.length; i++) {
+                if(size(i) != 1) {
+                    realDimension = i;
+                    break;
+                }
+            }
+        }
+
+        //account for leading ones
+        else if(size(0) == 1 && !isVector() && !isMatrix()) {
+            realDimension = rank() - getLeadingOnes();
+        }
 
         INDArray slice2 = create(data,
-                ArrayUtil.removeIndex(shape, dimension),
-                ArrayUtil.removeIndex(stride, dimension),
-                offset + slice * stride[dimension], ordering);
+                ArrayUtil.removeIndex(shape, realDimension),
+                ArrayUtil.removeIndex(stride, realDimension),
+                offset + slice * stride[realDimension], ordering);
         return slice2;
     }
 
