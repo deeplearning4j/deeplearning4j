@@ -68,7 +68,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Cygwin is not supported. You must install DL4J from **DOS Windows**.  
 
-* Once you've completed these steps, you're ready to start solving problems with Deeplearning4j. 
+* Once you've completed these steps, you're ready to start training neural networks with Deeplearning4j. 
 
 ###<a name="source">Working With Source</a>
 
