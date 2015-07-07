@@ -159,7 +159,7 @@ public class NearestNeighborsResource extends FileResource {
 
             }
             else if(path.getAbsolutePath().contains("Google")) {
-                WordVectors vectors = WordVectorSerializer.loadGoogleModel(path, true,true);
+                WordVectors vectors = WordVectorSerializer.loadGoogleModel(path, true);
                 this.wordVectors = vectors;
             }
 
