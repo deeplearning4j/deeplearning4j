@@ -41,7 +41,7 @@ import java.io.*;
 
 public abstract class FileResource {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileResource.class);
-    protected String filePath = System.getProperty("java.io.tmpdir");
+    protected String filePath = ".";
 
     @GET
     @Path("/{path}")
