@@ -1291,11 +1291,11 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testMatrix() {
-        INDArray arr = Nd4j.create(new float[]{1,2,3,4},new int[]{2,2});
+        INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
-        assertEquals(Nd4j.create(new double[]{-4,-3}),arr.getRow(0));
+        assertEquals(Nd4j.create(new double[]{-4, -3}), arr.getRow(0));
 
     }
 
@@ -1337,7 +1337,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         array4d.sum(2); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 910 and stride of 10
         array4d.sum(3); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 100 and stride of 100
 
-        INDArray array5d = Nd4j.ones(1,10,10,10,10);
+        INDArray array5d = Nd4j.ones(1, 10, 10, 10, 10);
         array5d.sum(0); //OK
         array5d.sum(1); //OK
         array5d.sum(2); //java.lang.IllegalArgumentException: Illegal index 10000 derived from 9 with offset of 9910 and stride of 10
@@ -1409,6 +1409,13 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testLeadingOnesAndTrailingOnes() {
+        INDArray arr = Nd4j.ones(1,10,1);
+        arr.toString();
+        System.out.println(arr);
+
+    }
 
 
 

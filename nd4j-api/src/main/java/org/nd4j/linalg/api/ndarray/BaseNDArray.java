@@ -2952,7 +2952,7 @@ public abstract class BaseNDArray implements INDArray {
             if (size(0) == 1) {
                 INDArray slice2 = create(data,
                         Arrays.copyOfRange(shape, 1, shape.length),
-                        sliceStride(),
+                         Arrays.copyOfRange(stride,1,stride.length),
                         offset, ordering);
                 return slice2;
             } else {
