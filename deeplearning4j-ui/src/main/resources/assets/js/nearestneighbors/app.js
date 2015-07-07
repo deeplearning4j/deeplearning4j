@@ -28,11 +28,40 @@ $(document).ready(function() {
     $('#form').fileUpload({success : function(data, textStatus, jqXHR){
         document.getElementById('form').reset();
         $('#form').hide();
+        loadVocab();
+    },error : function(err) {
+        console.log(err);
+    }});
 
+    $('#urlsubmit').click(function() {
+        var val = $('#urlval').val();
+        $.ajax({
+            url: '/nearestneighbors/update',
+            type: 'POST',
+            dataType: 'json',
+            contentType : 'application/json',
+            data: JSON.stringify({"url" : val}),
+            cache: false,
+            success: function(data, textStatus, jqXHR) {
+                loadVocab();
+
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                // Handle errors here
+                console.log('ERRORS: ' + textStatus);
+            },
+            complete: function() {
+            }
+        });
+    });
+
+
+
+    function loadVocab() {
         $.ajax({
             url: '/nearestneighbors/vocab',
             type: 'POST',
-            data: data,
+            data: JSON.stringify({}),
             cache: false,
             success: function(data, textStatus, jqXHR)
             {
@@ -40,16 +69,17 @@ $(document).ready(function() {
                 {
                     // Success so call function to process the form
                     console.log('SUCCESS');
-                    $(document).ready(function() {
-                        $('#kform').show();
-                        var html = '<ul class="sidebar-nav">';
-                        var keys = Object.keys(data);
-                        for (var i = 0; i < keys.length; i++) {
-                            html = html + '<li class="sidebar-brand"><a class ="word" href="#">' + data[keys[i]] + "</a></li>";
-                        }
-                        html += "</ul>";
-                        document.getElementById("sidebar-wrapper").innerHTML = html;
-                    });
+                    $('#kform').show();
+                    $('#form').hide();
+                    $('#url').hide();
+                    var html = '<ul class="sidebar-nav">';
+                    var keys = Object.keys(data);
+                    for (var i = 0; i < keys.length; i++) {
+                        html = html + '<li class="sidebar-brand"><a class ="word" href="#">' + data[keys[i]] + "</a></li>";
+                    }
+                    html += "</ul>";
+                    document.getElementById("sidebar-wrapper").innerHTML = html;
+
                     //on click of any word, render the k nearest neighbors
                     $('.word').on('click', function(evt) {
                         var data = $(this).html();
@@ -73,9 +103,8 @@ $(document).ready(function() {
                 // STOP LOADING SPINNER
             }
         });
-    },error : function(err) {
-        console.log(err);
-    }});
+    }
+
 
     function renderNearestNeighbors(word, numWords) {
         $.ajax({

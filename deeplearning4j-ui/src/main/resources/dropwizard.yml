@@ -8,10 +8,10 @@ server:
       selectorThreads: 3
       bindHost: 0.0.0.0 # only bind to loopback
 
-  maxThreads : 30
+  maxThreads : 100
   minThreads : 2
   adminMinThreads: 3
-  adminMaxThreads: 10
+  adminMaxThreads: 100
   adminConnectors:
     - type: http
       port: 8081
