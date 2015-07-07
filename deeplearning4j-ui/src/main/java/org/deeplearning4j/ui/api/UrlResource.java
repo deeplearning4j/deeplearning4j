@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
  */
 public @Data @AllArgsConstructor @NoArgsConstructor
  class UrlResource {
+    @JsonProperty
     private String url;
 
 }

@@ -23,8 +23,8 @@ var name3 = [];
 
 
 
-var tx=0, ty=0;
-var ss=1;
+var tx = 0, ty = 0;
+var ss = 1;
 function zoomHandler() {
     tx = d3.event.translate[0];
     ty = d3.event.translate[1];
@@ -46,8 +46,8 @@ function drawEmbedding() {
 
 
     svg = div.append("svg") // svg is global
-        .attr("width", 2000)
-        .attr("height", 2000);
+        .attr("width", 60000)
+        .attr("height", 60000);
 
     var g = svg.selectAll(".b")
         .data(name3)
@@ -76,10 +76,7 @@ function drawEmbedding() {
 }
 
 
-
-
-
-$(window).load(function() {
+function drawTsne() {
     $.ajax({
         url: "/api/coords",
         cache: false
@@ -99,4 +96,11 @@ $(window).load(function() {
             drawEmbedding();
         });
 
+}
+
+
+
+$(document).ready(function() {
+
 });
+

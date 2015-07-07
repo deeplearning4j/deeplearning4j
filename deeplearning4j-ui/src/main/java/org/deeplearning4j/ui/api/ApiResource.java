@@ -91,6 +91,13 @@ public class ApiResource extends FileResource {
 
     @Override
     public void handleUpload(File path) {
+        List<String> testLines = null;
+        try {
+            testLines = FileUtils.readLines(path);
+            this.coords = testLines;
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
