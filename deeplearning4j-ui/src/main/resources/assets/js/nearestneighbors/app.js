@@ -28,7 +28,19 @@ $(document).ready(function() {
     $('#form').fileUpload({success : function(data, textStatus, jqXHR){
         document.getElementById('form').reset();
         $('#form').hide();
+         loadVocab();
+    },error : function(err) {
+        console.log(err);
+    }});
 
+    $('#urlsubmit').click(function() {
+
+        loadVocab();
+    });
+
+
+
+    function loadVocab() {
         $.ajax({
             url: '/nearestneighbors/vocab',
             type: 'POST',
@@ -73,9 +85,8 @@ $(document).ready(function() {
                 // STOP LOADING SPINNER
             }
         });
-    },error : function(err) {
-        console.log(err);
-    }});
+    }
+
 
     function renderNearestNeighbors(word, numWords) {
         $.ajax({
