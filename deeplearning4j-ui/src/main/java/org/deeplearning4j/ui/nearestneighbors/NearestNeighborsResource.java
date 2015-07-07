@@ -165,7 +165,7 @@ public class NearestNeighborsResource extends FileResource {
 
             else {
                 Pair<InMemoryLookupTable, VocabCache> vocab = WordVectorSerializer.loadTxt(path);
-                this.wordVectors = WordVectorSerializer.fromPair(vocab);ush
+                this.wordVectors = WordVectorSerializer.fromPair(vocab);
 
             }
 
