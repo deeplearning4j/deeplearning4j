@@ -1253,7 +1253,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray dup() {
         ensureNotCleanedUp();
-        INDArray ret = create(data.dup(), shape(),stride(),offset());
+        INDArray ret = Shape.toOffsetZeroCopy(this);
         return ret;
     }
 

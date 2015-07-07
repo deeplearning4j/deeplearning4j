@@ -1391,7 +1391,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray n2 = Nd4j.scalar(2);
         INDArray nClone = n1.add(n2);
         assertEquals(Nd4j.scalar(3), nClone);
-        assertFalse(getFailureMessage(),n1.add(n2).equals(n1));
+        INDArray n1PlusN2 = n1.add(n2);
+        assertFalse(getFailureMessage(),n1PlusN2.equals(n1));
 
         INDArray n3 = Nd4j.scalar(3);
         INDArray n4 = Nd4j.scalar(4);

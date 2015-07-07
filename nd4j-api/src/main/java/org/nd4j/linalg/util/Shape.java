@@ -76,6 +76,45 @@ public class Shape {
         }
     }
 
+    /**
+     * Create a copy of the matrix
+     * where the new offset is zero
+     * @param arr the array to copy to offset 0
+     * @return the same array if offset is zero
+     * otherwise a copy of the array with
+     * elements set to zero
+     */
+    public static INDArray toOffsetZeroCopy(INDArray arr) {
+        if(arr.isRowVector()) {
+            if(arr instanceof IComplexNDArray) {
+                IComplexNDArray ret = Nd4j.createComplex(arr.shape());
+                for(int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
+                return ret;
+            }
+            else {
+                INDArray ret = Nd4j.create(arr.shape());
+                for(int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i,arr.getDouble(i));
+                return ret;
+            }
+        }
+
+
+        if(arr instanceof IComplexNDArray) {
+            IComplexNDArray ret = Nd4j.createComplex(arr.shape());
+            for(int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i,arr.slice(i));
+            return ret;
+        }
+        else {
+            INDArray ret = Nd4j.create(arr.shape());
+            for(int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i,arr.slice(i));
+            return ret;
+        }
+    }
+
 
     /**
      * Gets rid of any singleton dimensions of the given array
