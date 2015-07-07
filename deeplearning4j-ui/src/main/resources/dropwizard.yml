@@ -8,7 +8,7 @@ server:
       selectorThreads: 3
       bindHost: 0.0.0.0 # only bind to loopback
 
-  maxThreads : 1cd 0
+  maxThreads : 100
   minThreads : 2
   adminMinThreads: 3
   adminMaxThreads: 100
