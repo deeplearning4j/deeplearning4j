@@ -23,14 +23,18 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.*;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.plot.BarnesHutTsne;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -67,7 +71,7 @@ public class WordVectorSerializerTest {
     @Test
     public void testLoaderBinary() throws  IOException {
         Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
-        assertEquals(2,vec.vocab().numWords());
+        assertEquals(2, vec.vocab().numWords());
 
     }
 
@@ -154,6 +158,19 @@ public class WordVectorSerializerTest {
         assertEquals(3000000,vec.vocab().numWords());
 
     }
+
+    @Test
+    public void testTsne() throws Exception {
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+        ClassPathResource resource = new ClassPathResource("words.txt");
+        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
+                .theta(0.5).learningRate(500).setMaxIter(2000).build();
+        WordVectors vec = WordVectorSerializer.loadTxtVectors(resource.getFile());
+        InMemoryLookupTable table = (InMemoryLookupTable) vec.lookupTable();
+        List<String> labels = new ArrayList<>(vec.vocab().words());
+        tsne.plot(table.getSyn0().divRowVector(table.getSyn0().norm2(0)),2,labels);
+    }
+
 
 
 }
