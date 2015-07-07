@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -64,31 +65,29 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         super(conf, input);
     }
 
-    /**
-     * Objective function:  the specified objective
-     * @return the score for the objective
-     */
-
-    @Override
-    public  double score() {
-        LinAlgExceptions.assertRows(input, labels);
-        INDArray output  = output(input);
-        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-            return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
-
-        return  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
-
-
-    }
-
     @Override
     public void setScore() {
-        LinAlgExceptions.assertRows(input,labels);
-        INDArray output  = output(input);
-        score =  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
+        LinAlgExceptions.assertRows(input, labels);
+        if(input == null)
+            return;
+        INDArray output = output(input);
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
+            create.exec();
+            score = -create.currentResult().doubleValue();
+        } else {
+            score = -LossFunctions.score(
+                    labels,
+                    conf.getLossFunction(),
+                    output,
+                    conf.getL2(),
+                    conf.isUseRegularization());
+        }
 
+        //minimization target
+        if(conf.isMinimize())
+            score = -score;
     }
-
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
