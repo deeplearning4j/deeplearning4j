@@ -66,6 +66,8 @@ public class BarnesHutTsne extends Tsne implements Model {
     private INDArray rows;
     private INDArray cols;
     private INDArray vals;
+    private String simiarlityFunction = "cosinesimilarity";
+    private boolean invert = true;
     private INDArray x;
     private int numDimensions = 0;
     public final static String Y_GRAD = "yIncs";
@@ -96,7 +98,21 @@ public class BarnesHutTsne extends Tsne implements Model {
         this.switchMomentumIteration = momentumSwitchIteration;
     }
 
+    public String getSimiarlityFunction() {
+        return simiarlityFunction;
+    }
 
+    public void setSimiarlityFunction(String simiarlityFunction) {
+        this.simiarlityFunction = simiarlityFunction;
+    }
+
+    public boolean isInvert() {
+        return invert;
+    }
+
+    public void setInvert(boolean invert) {
+        this.invert = invert;
+    }
 
     /**
      * Convert data to probability
@@ -125,7 +141,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         final INDArray beta =  ones(N, 1);
 
         final double logU =  FastMath.log(u);
-        VPTree tree = new VPTree(d);
+        VPTree tree = new VPTree(d,simiarlityFunction,invert);
 
         log.info("Calculating probabilities of data similarities...");
         for(int i = 0; i < N; i++) {
@@ -603,6 +619,20 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     public static class Builder extends  Tsne.Builder {
         private double theta = 0.0;
+        private boolean invert = true;
+        private String similarityFunction = "cosinesimilarity";
+
+
+
+        public Builder similarityFunction(String similarityFunction) {
+            this.similarityFunction = similarityFunction;
+            return this;
+        }
+
+        public Builder invertDistanceMetric(boolean invert){
+            this.invert = invert;
+            return this;
+        }
 
         public Builder theta(double theta) {
             this.theta = theta;
