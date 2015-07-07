@@ -45,7 +45,7 @@
                 </div>
                 <div class="row" id="url">
                     <label for="url">Enter a url</label>
-                    <input type="text" id="url">
+                    <input type="text" id="urlval">
                     <button value="Submit" id="urlsubmit">Submit</button>
                 </div>
 
