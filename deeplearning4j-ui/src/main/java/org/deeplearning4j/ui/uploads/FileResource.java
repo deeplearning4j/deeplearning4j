@@ -81,7 +81,7 @@ public abstract class FileResource {
         LOGGER.info(uploadedFileLocation);
         // save it
         writeToFile(uploadedInputStream, uploadedFileLocation);
-        String output = "{\"value\": \"File uploaded to : " + uploadedFileLocation + "\"}";
+        String output = "{\"name\": \"" + fileDetail.getFileName() + "\"}";
 
         return Response.ok(output).build();
     }
