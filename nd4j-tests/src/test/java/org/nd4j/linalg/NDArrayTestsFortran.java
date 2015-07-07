@@ -395,7 +395,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray divi = Nd4j.create(new float[]{0.3f, 0.6f, 0.9f, 0.1f}, new int[]{2, 2});
         INDArray assertion = Nd4j.create(new float[]{1.6666666f, 0.8333333f, 0.5555556f, 5}, new int[]{2, 2});
         INDArray result = half.div(divi);
-        assertEquals(getFailureMessage(),assertion, result);
+        assertEquals(getFailureMessage(), assertion, result);
     }
 
 
@@ -888,7 +888,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray ret = Nd4j.linspace(1, 2, 2).reshape(1, 2);
         assertTrue(ret.sum(0).isRowVector());
         assertTrue(ret.sum(1).isScalar());
-        INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2,1);
+        INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2, 1);
         assertTrue(getFailureMessage(),retColumn.sum(1).isRowVector());
         assertTrue(getFailureMessage(),retColumn.sum(0).isScalar());
 
@@ -926,7 +926,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray n = Nd4j.linspace(1,27,27).reshape(3, 3, 3);
         INDArray newSlice = Nd4j.zeros(3, 3);
         n.putSlice(0, newSlice);
-        assertEquals(getFailureMessage(),newSlice, n.slice(0));
+        assertEquals(getFailureMessage(), newSlice, n.slice(0));
 
     }
 
@@ -1017,9 +1017,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testSlice() {
         INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
         INDArray assertion = Nd4j.create(new double[][]{
-                {1,13}
-                ,{5,17}
-                ,{9,21}
+                {1, 13}
+                , {5, 17}
+                , {9, 21}
         });
 
         INDArray firstSlice = arr.slice(0);
@@ -1135,14 +1135,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray ones = Nd4j.ones(3, 3, 3);
         assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
         ones.assign(tensor);
-        assertEquals(tensor,ones);
+        assertEquals(tensor, ones);
     }
 
     @Test
     public void testAddScalar() {
         INDArray div = Nd4j.valueArrayOf(new int[]{1, 4}, 4);
         INDArray rdiv = div.add(1);
-        INDArray answer = Nd4j.valueArrayOf(new int[]{1,4}, 5);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{1, 4}, 5);
         assertEquals(answer, rdiv);
     }
 
@@ -1359,7 +1359,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         array4d.sum(2);
         array4d.sum(3);
 
-        INDArray array5d = Nd4j.ones(2,10,10,10,10);
+        INDArray array5d = Nd4j.ones(2, 10, 10, 10, 10);
         array5d.sum(0);
         array5d.sum(1);
         array5d.sum(2);
@@ -1392,7 +1392,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray nClone = n1.add(n2);
         assertEquals(Nd4j.scalar(3), nClone);
         INDArray n1PlusN2 = n1.add(n2);
-        assertFalse(getFailureMessage(),n1PlusN2.equals(n1));
+        assertFalse(getFailureMessage(), n1PlusN2.equals(n1));
 
         INDArray n3 = Nd4j.scalar(3);
         INDArray n4 = Nd4j.scalar(4);
@@ -1411,15 +1411,116 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testLeadingOnesAndTrailingOnes() {
-        INDArray arr = Nd4j.ones(1,10,1);
+        INDArray arr = Nd4j.ones(1, 10, 1);
         arr.toString();
         System.out.println(arr);
-        INDArray array = Nd4j.zeros(new int[]{1,10,1});
-        INDArray slice = array.slice(0,2);
+        INDArray array = Nd4j.zeros(new int[]{1, 10, 1});
+        INDArray slice = array.slice(0, 2);
+        assertArrayEquals(new int[]{1,10},slice.shape());
         System.out.println(Arrays.toString(slice.shape())); //Expect: [1,10] -> OK
         System.out.println(slice);
     }
 
+    @Test
+    public void testDupLeadingTrailingZeros(){
+        testDupHelper(1,1);
+        testDupHelper(1,10);
+        testDupHelper(10,1);
+        testDupHelper(1,10,1);
+        testDupHelper(1,10,1,1);
+        testDupHelper(1,10,2);
+        testDupHelper(2,10,1,1);
+        testDupHelper(1,1,1,10);
+        testDupHelper(10,1,1,1);
+    }
+
+    private static void testDupHelper(int... shape ){
+        INDArray arr = Nd4j.ones(shape);
+        INDArray arr2 = arr.dup();
+        assertArrayEquals(arr.shape(),arr2.shape());
+        assertTrue(arr.equals(arr2));
+    }
+
+    @Test
+    public void testSumLeadingTrailingZeros(){
+        testSumHelper(1,5,5);
+        testSumHelper(5,5,1);
+        testSumHelper(1,5,1);
+
+        testSumHelper(1,5,5,5);
+        testSumHelper(5,5,5,1);
+        testSumHelper(1,5,5,1);
+
+        testSumHelper(1,5,5,5,5);
+        testSumHelper(5,5,5,5,1);
+        testSumHelper(1,5,5,5,1);
+
+        testSumHelper(1,5,5,5,5,5);
+        testSumHelper(5,5,5,5,5,1);
+        testSumHelper(1,5,5,5,5,1);
+
+    }
+
+    private static void testSumHelper( int... shape ){
+        INDArray array = Nd4j.ones(shape);
+        for( int i=0; i<shape.length; i++ ) array.sum(i);
+    }
+
+    @Test
+    public void testSliceLeadingTrailingOnes(){
+        INDArray arr1 = Nd4j.ones(10,10,10);
+        testSliceHelper(arr1,0,new int[]{10,10});
+        testSliceHelper(arr1,1,new int[]{10,10});
+        testSliceHelper(arr1,2,new int[]{10,10});
+
+        INDArray arr2 = Nd4j.ones(1,10,10);
+        testSliceHelper(arr2,0,new int[]{10,10});
+        testSliceHelper(arr2,1,new int[]{1,10});
+        testSliceHelper(arr2,2,new int[]{1,10});
+
+        INDArray arr3 = Nd4j.ones(10,10,1);
+        testSliceHelper(arr3,0,new int[]{10,1});
+        testSliceHelper(arr3,1,new int[]{10,1});
+        testSliceHelper(arr3,2,new int[]{10,10});
+
+        INDArray arr3a = Nd4j.ones(1,10,1);
+        testSliceHelper(arr3a,0,new int[]{10,1});
+        testSliceHelper(arr3a,1,new int[]{1,1});
+        testSliceHelper(arr3a,2,new int[]{1,10});
+
+        INDArray arr4 = Nd4j.ones(10,10,10,10);
+        testSliceHelper(arr4,0,new int[]{10,10,10});
+        testSliceHelper(arr4,1,new int[]{10,10,10});
+        testSliceHelper(arr4,2,new int[]{10,10,10});
+        testSliceHelper(arr4,3,new int[]{10,10,10});
+
+        INDArray arr5 = Nd4j.ones(1,10,10,10);
+        testSliceHelper(arr5,0,new int[]{10,10,10});
+        testSliceHelper(arr5,1,new int[]{1,10,10});
+        testSliceHelper(arr5,2,new int[]{1,10,10});
+        testSliceHelper(arr5,3,new int[]{1,10,10});
+
+        INDArray arr6 = Nd4j.ones(10,10,10,1);
+        testSliceHelper(arr6,0,new int[]{10,10,1});
+        testSliceHelper(arr6,1,new int[]{10,10,1});
+        testSliceHelper(arr6,2,new int[]{10,10,1});
+        testSliceHelper(arr6,3,new int[]{10,10,10});
+
+        INDArray arr7 = Nd4j.ones(1,10,10,1);
+        testSliceHelper(arr7,0,new int[]{10,10,1});
+        testSliceHelper(arr7,1,new int[]{1,10,1});
+        testSliceHelper(arr7,2,new int[]{1,10,1});
+        testSliceHelper(arr7,3,new int[]{1,10,10});
+    }
+
+    private static void testSliceHelper(INDArray in, int dimension, int[] expectedShape ){
+        int[] shape = in.shape();
+        for( int i=0; i<shape[dimension]; i++ ){
+            INDArray slice = in.slice(i,dimension);
+            int[] sliceShape = slice.shape();
+            assertArrayEquals(sliceShape,expectedShape);
+        }
+    }
 
 
     @Test

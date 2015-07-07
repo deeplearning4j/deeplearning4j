@@ -109,26 +109,12 @@ public class Shape {
         }
         else {
             INDArray ret = Nd4j.create(arr.shape());
-            for(int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i,arr.slice(i));
+            for(int i = 0; i < ret.slices(); i++) {
+                INDArray putSlice = arr.slice(i);
+                ret.putSlice(i, putSlice);
+            }
             return ret;
         }
-    }
-
-
-    /**
-     * Gets rid of any singleton dimensions of the given array
-     *
-     * @param shape the shape to squeeze
-     * @return the array with all of the singleton dimensions removed
-     */
-    public static int[] squeeze(int[] shape, int[] stride) {
-        List<Integer> ret = new ArrayList<>();
-
-        for (int i = 0; i < shape.length; i++)
-            if (shape[i] != 1)
-                ret.add(shape[i]);
-        return ArrayUtil.toArray(ret);
     }
 
 

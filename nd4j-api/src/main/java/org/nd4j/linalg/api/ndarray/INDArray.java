@@ -1395,6 +1395,8 @@ public interface INDArray extends Serializable  {
     int slices();
 
 
+    int getTrailingOnes();
+
     int getLeadingOnes();
 
     /**

@@ -46,15 +46,7 @@ public class LinearViewNDArray  extends BaseNDArray {
      */
     public LinearViewNDArray(INDArray wrapped) {
         if(wrapped.getLeadingOnes() > 0) {
-            int[] newShape = new int[wrapped.rank() - wrapped.getLeadingOnes()];
-            for(int i = wrapped.getLeadingOnes(); i < wrapped.rank(); i++) {
-                newShape[i - wrapped.getLeadingOnes()] = wrapped.size(i);
-            }
-            //ensure linear view covers whole buffer
-            if(ArrayUtil.prod(newShape) != wrapped.length())
-                newShape[newShape.length - 1] = wrapped.length();
-
-            wrapped = Nd4j.create(wrapped.data(),newShape,wrapped.offset());
+            wrapped = Nd4j.create(wrapped.data(),Shape.squeeze(wrapped.shape()),wrapped.offset());
         }
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};

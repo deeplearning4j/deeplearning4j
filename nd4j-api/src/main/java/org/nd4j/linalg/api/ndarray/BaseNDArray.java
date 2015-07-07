@@ -98,6 +98,7 @@ public abstract class BaseNDArray implements INDArray {
     protected transient WeakReference<INDArray> ref;
     protected int firstNonOneStride = -1;
     protected int numLeadingOnes = -1;
+    protected int numTrailingOnes = -1;
     protected int majorStride = -1;
     protected Boolean isVector = null;
     protected Boolean isScalar = null;
@@ -573,6 +574,11 @@ public abstract class BaseNDArray implements INDArray {
             int ret =  getFirstNonOneStride();
             majorStride = ret;
             return ret;
+        }
+
+        if(rank() > 2 && size(0) == length()) {
+            majorStride = elementStride();
+            return majorStride;
         }
 
         int majorStride =  stride[0];
@@ -2952,7 +2958,7 @@ public abstract class BaseNDArray implements INDArray {
             if (size(0) == 1) {
                 INDArray slice2 = create(data,
                         Arrays.copyOfRange(shape, 1, shape.length),
-                         Arrays.copyOfRange(stride,1,stride.length),
+                        Arrays.copyOfRange(stride,1,stride.length),
                         offset, ordering);
                 return slice2;
             } else {
@@ -3043,6 +3049,20 @@ public abstract class BaseNDArray implements INDArray {
         return false;
     }
 
+    @Override
+    public int getTrailingOnes() {
+        if(this.numLeadingOnes >= 0)
+            return this.numLeadingOnes;
+
+        int numLeadingOnes = 0;
+        for(int i = rank() - 1; i >= 0; i--) {
+            if(size(i) == 1)
+                numLeadingOnes++;
+        }
+
+        this.numLeadingOnes = numLeadingOnes;
+        return numLeadingOnes;
+    }
 
 
     @Override
@@ -3111,10 +3131,18 @@ public abstract class BaseNDArray implements INDArray {
         else if(size(0) == 1 && !isVector() && !isMatrix()) {
             realDimension = rank() - getLeadingOnes();
         }
+        if(realDimension != dimension) {
+            int[] newShape = ArrayUtil.removeIndex(shape, dimension);
+            INDArray slice2 = create(data,
+                    ArrayUtil.removeIndex(shape, dimension),
+                    calcStrides(newShape),
+                    offset + slice * stride[realDimension], ordering);
+            return slice2;
+        }
 
         INDArray slice2 = create(data,
-                ArrayUtil.removeIndex(shape, realDimension),
-                ArrayUtil.removeIndex(stride, realDimension),
+                ArrayUtil.removeIndex(shape, dimension),
+                ArrayUtil.removeIndex(stride, dimension),
                 offset + slice * stride[realDimension], ordering);
         return slice2;
     }
