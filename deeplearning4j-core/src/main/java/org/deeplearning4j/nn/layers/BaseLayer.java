@@ -148,21 +148,17 @@ public abstract class BaseLayer implements Layer {
         fit(this.input);
     }
 
-
-
-
     @Override
     public void setScore() {
-        if(this.input == null)
+        if (this.input == null)
             return;
 
         INDArray output = transform(input);
-        if(conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(),input,output);
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
             create.exec();
             score = -create.currentResult().doubleValue();
-        }
-        else {
+        } else{
             score = -LossFunctions.score(
                     input,
                     conf.getLossFunction(),
@@ -176,6 +172,16 @@ public abstract class BaseLayer implements Layer {
             score = -score;
     }
 
+
+    /**
+     * Objective function:  the specified objective
+     * @return the score for the objective
+     */
+
+    @Override
+    public double score() {
+        return score;
+    }
 
     /**
      * iterate one iteration of the network
@@ -442,11 +448,6 @@ public abstract class BaseLayer implements Layer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(),score());
-    }
-
-    @Override
-    public double score() {
-        return score;
     }
 
     @Override
