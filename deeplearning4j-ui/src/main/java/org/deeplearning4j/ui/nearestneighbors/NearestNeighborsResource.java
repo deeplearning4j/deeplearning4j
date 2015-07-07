@@ -165,15 +165,7 @@ public class NearestNeighborsResource extends FileResource {
 
             else {
                 Pair<InMemoryLookupTable, VocabCache> vocab = WordVectorSerializer.loadTxt(path);
-                InMemoryLookupTable table = vocab.getFirst();
-                table.getSyn0().divi(table.getSyn0().norm2(Integer.MAX_VALUE));
-                tree = new VPTree(table.getSyn0(),"dot",true);
-                words = new ArrayList<>(vocab.getSecond().vocabWords());
-                theVocab = new HashMap<>();
-                for(VocabWord word : words) {
-                    theVocab.put(word.getIndex(),word);
-                }
-                this.vocab = vocab.getSecond();
+                this.wordVectors = WordVectorSerializer.fromPair(vocab);ush
 
             }
 
