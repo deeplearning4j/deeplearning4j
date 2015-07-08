@@ -643,12 +643,8 @@ public abstract class BaseNDArray implements INDArray {
             return linearView();
         }
 
-        if (index >= vectorsAlongDimension)
-            throw new IllegalArgumentException("Index greater than possible number of vectors along dimension " + dimension);
 
         if(ordering() == NDArrayFactory.FORTRAN) {
-            if (index >= vectorsAlongDimension)
-                throw new IllegalArgumentException("Index greater than possible number of vectors along dimension " + dimension);
             if(isMatrix()) {
                 if(dimension == 0) {
                     return create(data,
@@ -669,7 +665,7 @@ public abstract class BaseNDArray implements INDArray {
 
             //account for leading ones
             int vectorSize = size(shapeDimension);
-            if(vectorSize == 1 && getLeadingOnes() > 0 && dimension == 0 && getTrailingOnes() == 0) {
+            if(vectorSize == 1 && getLeadingOnes() > 0 && dimension == 0 && getTrailingOnes() == 0 && rank() > 2) {
                 for(int i = 1; i < rank(); i++) {
                     if(size(i) != 1) {
                         vectorSize = size(i);
@@ -678,7 +674,7 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
 
-            else if(getTrailingOnes() > 0) {
+            else if(getTrailingOnes() > 0  && rank() > 2) {
                 for(int  i = rank() - 1; i >= 0; i--) {
                     if(size(i) != 1) {
                         vectorSize = size(i);
@@ -687,7 +683,7 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
 
-            else if(getTrailingOnes() > 0 && getLeadingOnes() > 0) {
+            else if(getTrailingOnes() > 0 && getLeadingOnes() > 0 && rank() > 2) {
                 for(int  i = rank() - 1; i >= 0; i--) {
                     if(size(i) != 1) {
                         vectorSize = size(i);

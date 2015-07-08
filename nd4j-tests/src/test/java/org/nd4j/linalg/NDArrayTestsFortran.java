@@ -1501,6 +1501,21 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
     @Test
+    public void testGetColumnGetRow(){
+        INDArray row = Nd4j.ones(5);
+        for( int i = 0; i < 5; i++ ){
+            INDArray col = row.getColumn(i);
+            assertArrayEquals(col.shape(),new int[]{1,1});
+        }
+
+        INDArray col = Nd4j.ones(5,1);
+        for( int i = 0; i < 5; i++ ){
+            INDArray row2 = col.getRow(i);
+            assertArrayEquals(row2.shape(),new int[]{1,1});
+        }
+    }
+
+    @Test
     public void testSliceLeadingTrailingOnes(){
         INDArray arr1 = Nd4j.ones(10,10,10);
         testSliceHelper(arr1,0,new int[]{10,10});
