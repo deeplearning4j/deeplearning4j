@@ -474,7 +474,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(arr.vectorsAlongDimension(0),5);
         assertEquals(arr.vectorsAlongDimension(1), 5);
         for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
-            assertEquals(5,arr.vectorAlongDimension(i,0).length());
+            if(i < arr.vectorsAlongDimension(0) - 1 && i > 0)
+                assertEquals(25,arr.vectorAlongDimension(i,0).length());
         }
 
     }
@@ -989,10 +990,20 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
         INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new int[]{2, 2, 2});
-        INDArray permuted = toPermute.permute(2, 1, 0).linearView();
-        INDArray assertion = Nd4j.create(new float[]{0,2,4,6,1,3,5,7}).linearView();
-        INDArray permutedLinear = permuted.linearView();
-        assertEquals(permutedLinear, assertion);
+        INDArray permuted = toPermute.permute(2, 1, 0);
+        assertNotEquals(toPermute,permuted);
+        assertEquals('c',permuted.ordering());
+
+        INDArray permuteOther = toPermute.permute(1, 2, 0);
+        for(int i = 0; i < permuteOther.slices(); i++) {
+            INDArray toPermutesliceI = toPermute.slice(i);
+            INDArray permuteOtherSliceI = permuteOther.slice(i);
+            permuteOtherSliceI.toString();
+            assertNotEquals(toPermutesliceI,permuteOtherSliceI);
+        }
+        assertArrayEquals(permuteOther.shape(), toPermute.shape());
+        assertNotEquals(toPermute, permuteOther);
+
 
     }
 
@@ -1150,7 +1161,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testRdivScalar() {
         INDArray div = Nd4j.valueArrayOf(2, 4);
         INDArray rdiv = div.rdiv(1);
-        INDArray answer = Nd4j.valueArrayOf(new int[]{1,4}, 0.25);
+        INDArray answer = Nd4j.valueArrayOf(new int[]{1, 4}, 0.25);
         assertEquals(rdiv, answer);
     }
 
@@ -1292,7 +1303,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testMatrix() {
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
-        INDArray brr = Nd4j.create(new float[]{5,6},new int[]{1,2});
+        INDArray brr = Nd4j.create(new float[]{5, 6}, new int[]{1, 2});
         INDArray row = arr.getRow(0);
         row.subi(brr);
         assertEquals(Nd4j.create(new double[]{-4, -3}), arr.getRow(0));
@@ -1416,7 +1427,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         System.out.println(arr);
         INDArray array = Nd4j.zeros(new int[]{1, 10, 1});
         INDArray slice = array.slice(0, 2);
-        assertArrayEquals(new int[]{1,10},slice.shape());
+        assertArrayEquals(new int[]{1, 10}, slice.shape());
         System.out.println(Arrays.toString(slice.shape())); //Expect: [1,10] -> OK
         System.out.println(slice);
     }
@@ -1426,19 +1437,37 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         testDupHelper(1,1);
         testDupHelper(1,10);
         testDupHelper(10,1);
-        testDupHelper(1,10,1);
-        testDupHelper(1,10,1,1);
+        testDupHelper(1, 10, 1);
+        testDupHelper(1, 10, 1, 1);
         testDupHelper(1,10,2);
-        testDupHelper(2,10,1,1);
-        testDupHelper(1,1,1,10);
-        testDupHelper(10,1,1,1);
+        testDupHelper(2, 10, 1, 1);
+        testDupHelper(1, 1, 1, 10);
+        testDupHelper(10, 1, 1, 1);
     }
 
     private static void testDupHelper(int... shape ){
         INDArray arr = Nd4j.ones(shape);
         INDArray arr2 = arr.dup();
-        assertArrayEquals(arr.shape(),arr2.shape());
+        assertArrayEquals(arr.shape(), arr2.shape());
         assertTrue(arr.equals(arr2));
+    }
+
+    @Test
+    public void testLeadingOnes() {
+        INDArray arr = Nd4j.create(1,5,5);
+        assertEquals(1,arr.getLeadingOnes());
+        INDArray arr2 = Nd4j.create(2,2);
+        assertEquals(0,arr2.getLeadingOnes());
+        INDArray arr4 = Nd4j.create(1,1,5,5);
+        assertEquals(2,arr4.getLeadingOnes());
+    }
+
+    @Test
+    public void testTrailingOnes() {
+        INDArray arr2 = Nd4j.create(5,5,1);
+        assertEquals(1,arr2.getTrailingOnes());
+        INDArray arr4 = Nd4j.create(5,5,1,1);
+        assertEquals(2,arr4.getTrailingOnes());
     }
 
     @Test
@@ -1456,14 +1485,19 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         testSumHelper(1,5,5,5,1);
 
         testSumHelper(1,5,5,5,5,5);
-        testSumHelper(5,5,5,5,5,1);
-        testSumHelper(1,5,5,5,5,1);
+        testSumHelper(5, 5, 5, 5, 5, 1);
+        testSumHelper(1, 5, 5, 5, 5, 1);
 
     }
 
     private static void testSumHelper( int... shape ){
         INDArray array = Nd4j.ones(shape);
-        for( int i=0; i<shape.length; i++ ) array.sum(i);
+        for( int i = 0; i < shape.length; i++) {
+            for(int j = 0; j < array.vectorsAlongDimension(i); j++) {
+                INDArray vec = array.vectorAlongDimension(j,i);
+            }
+            array.sum(i);
+        }
     }
 
     @Test

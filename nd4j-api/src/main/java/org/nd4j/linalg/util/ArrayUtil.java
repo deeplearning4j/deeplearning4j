@@ -631,6 +631,22 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Returns true if the given
+     * two arrays are reverse copies of each other
+     * @param first
+     * @param second
+     * @return
+     */
+    public static boolean isInverse(int[] first,int[] second) {
+        int backWardCount = second.length - 1;
+        for(int i = 0; i < first.length; i++) {
+            if(first[i] != second[backWardCount--])
+                return false;
+        }
+        return true;
+    }
+
     public static int[] plus(int[] ints, int mult) {
         int[] ret = new int[ints.length];
         for (int i = 0; i < ints.length; i++)

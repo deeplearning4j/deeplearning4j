@@ -45,8 +45,8 @@ public class LinearViewNDArray  extends BaseNDArray {
      * @param wrapped the array to wrap
      */
     public LinearViewNDArray(INDArray wrapped) {
-        if(wrapped.getLeadingOnes() > 0) {
-            wrapped = Nd4j.create(wrapped.data(),Shape.squeeze(wrapped.shape()),wrapped.offset());
+        if(wrapped.getLeadingOnes() > 0 || wrapped.getTrailingOnes() > 0) {
+            wrapped = Nd4j.create(wrapped.data(),Shape.squeeze(wrapped.shape()));
         }
         this.wrapped = wrapped;
         this.shape = new int[] {1,wrapped.length()};
@@ -171,7 +171,6 @@ public class LinearViewNDArray  extends BaseNDArray {
 
 
         int idx =  i - offset;
-
         return currVector.getDouble(idx);
     }
 

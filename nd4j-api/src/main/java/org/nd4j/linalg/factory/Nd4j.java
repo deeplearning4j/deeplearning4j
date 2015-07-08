@@ -1723,6 +1723,21 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * Create a random ndarray with the given shape using
+     * the current time as the seed
+     *
+     * @param shape the shape of the ndarray
+     * @return the random ndarray with the specified shape
+     */
+    public static IComplexNDArray complexRand(int...shape) {
+        INDArray based = Nd4j.rand(new int[]{1, ArrayUtil.prod(shape) * 2});
+        IComplexNDArray ret = Nd4j.createComplex(based.data(),shape);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+
 
     /**
      * Create a random ndarray with the given shape using

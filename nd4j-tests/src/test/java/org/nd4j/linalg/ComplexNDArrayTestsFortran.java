@@ -37,6 +37,8 @@ import org.nd4j.linalg.util.ComplexUtil;
 import org.nd4j.linalg.util.Shape;
 
 
+import static org.junit.Assert.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -76,6 +78,25 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         super.after();
     }
 
+
+
+    @Test
+    public void testLeadingOnes() {
+        IComplexNDArray complexRand = Nd4j.complexRand(100,1,28,28);
+        assertArrayEquals(new int[]{100,1,28,28},complexRand.shape());
+        IComplexNDArray arr = complexRand.linearView();
+        for(int i = 0; i < arr.length(); i++) {
+            arr.putScalar(i,arr.getComplex(i));
+        }
+
+        IComplexNDArray complexRand2 = Nd4j.complexRand(28,28,1);
+        assertArrayEquals(new int[]{28,28,1},complexRand2.shape());
+        IComplexNDArray arr2 = complexRand.linearView();
+        for(int i = 0; i < arr2.length(); i++) {
+            arr2.putScalar(i,arr2.getComplex(i));
+        }
+
+    }
 
 
     @Test

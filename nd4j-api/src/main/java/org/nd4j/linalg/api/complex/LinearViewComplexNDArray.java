@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.Shape;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,17 +46,8 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
      *                base the linear view on
      */
     public LinearViewComplexNDArray(IComplexNDArray wrapped) {
-        if(wrapped.getLeadingOnes() > 0) {
-            int[] newShape = new int[wrapped.rank() - wrapped.getLeadingOnes()];
-            for(int i = wrapped.getLeadingOnes(); i < wrapped.rank(); i++) {
-                newShape[i - wrapped.getLeadingOnes()] = wrapped.size(i);
-            }
-
-            //ensure linear view covers whole buffer
-            if(ArrayUtil.prod(newShape) != wrapped.length())
-                newShape[newShape.length - 1] = wrapped.length();
-
-            wrapped = Nd4j.createComplex(wrapped.data(), newShape, wrapped.offset());
+        if(wrapped.getLeadingOnes() > 0 || wrapped.getTrailingOnes() > 0) {
+            wrapped = Nd4j.createComplex(wrapped.data(), Shape.squeeze(wrapped.shape()));
         }
 
         this.wrapped = wrapped;
