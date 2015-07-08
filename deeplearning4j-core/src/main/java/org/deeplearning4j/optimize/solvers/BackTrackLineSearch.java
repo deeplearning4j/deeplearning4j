@@ -67,7 +67,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     //   a) abs(delta x/x) < REL_TOLX for all coordinates
     //   b) abs(delta x) < ABS_TOLX for all coordinates
     //   c) sufficient function increase (uses ALF)
-    private double relTolx = 1e-10f;
+    private double relTolx = 1e-7f;
     private double absTolx = 1e-4f; // tolerance on absolute value difference
     final double ALF = 1e-4f;
 
@@ -130,8 +130,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     // returns 0.0 if could not step in direction
 
     private double getNewScore(INDArray oldParameters){
-        layer.setParams(oldParameters);
-        layer.setScore();
+        layer.setParams(oldParameters); // currently setParams setScore - consider splitting out
         return layer.score();
     }
 
@@ -248,7 +247,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 if(alam == 1.0) // first time through
                     tmplam = -slope / (2.0 * ( f - fold - slope ));
                 else {
-                    rhs1 = f - fold- alam * slope;
+                    rhs1 = f - fold - alam * slope;
                     rhs2 = f2 - fold - alam2 * slope;
                     if(alam == alam2)
                         throw new IllegalStateException("FAILURE: dividing by alam-alam2. alam=" + alam);
