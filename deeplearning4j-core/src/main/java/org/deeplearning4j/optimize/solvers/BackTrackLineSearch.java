@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 public class BackTrackLineSearch implements LineOptimizer  {
     private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
-    private Model function;
+    private Model layer;
     private StepFunction stepFunction = new DefaultStepFunction();
     private ConvexOptimizer optimizer;
     private int maxIterations = 5;
@@ -67,18 +67,18 @@ public class BackTrackLineSearch implements LineOptimizer  {
     //   a) abs(delta x/x) < REL_TOLX for all coordinates
     //   b) abs(delta x) < ABS_TOLX for all coordinates
     //   c) sufficient function increase (uses ALF)
-    private double relTolx = 1e-10f;
+    private double relTolx = 1e-7f;
     private double absTolx = 1e-4f; // tolerance on absolute value difference
     final double ALF = 1e-4f;
 
     /**
      *
-     * @param function
+     * @param layer
      * @param stepFunction
      * @param optimizer
      */
-    public BackTrackLineSearch(Model function, StepFunction stepFunction, ConvexOptimizer optimizer) {
-        this.function = function;
+    public BackTrackLineSearch(Model layer, StepFunction stepFunction, ConvexOptimizer optimizer) {
+        this.layer = layer;
         this.stepFunction = stepFunction;
         this.optimizer = optimizer;
     }
@@ -129,6 +129,11 @@ public class BackTrackLineSearch implements LineOptimizer  {
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
 
+    private double getNewScore(INDArray oldParameters){
+        layer.setParams(oldParameters); // currently setParams setScore - consider splitting out
+        return layer.score();
+    }
+
     /**
      *
      * @param initialStep the initial step size
@@ -137,124 +142,114 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @return the next step size
      * @throws InvalidStepException
      */
-    public double optimize (double initialStep,INDArray parameters,INDArray gradients) throws InvalidStepException {
-        double slope, test, alamin, alam, alam2, tmplam;
-        double rhs1, rhs2, a, b, disc, oldAlam;double f, fold, f2;
+    public double optimize (double initialStep, INDArray parameters, INDArray gradients) throws InvalidStepException {
+        double test, alamin, alam, alam2, oldAlam, tmplam;
+        double rhs1, rhs2, a, b, disc, f, fold, f2;
+
         INDArray oldParameters = parameters.dup();
         INDArray gDup = gradients.dup();
+        double sum = gradients.norm2(Integer.MAX_VALUE).getDouble(0);
+        double slope = Nd4j.getBlasWrapper().dot(gDup, gradients);
 
+        INDArray maxOldParams = abs(oldParameters);
+        Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams, 1));
+        INDArray testMatrix = abs(gradients).divi(maxOldParams);
+        test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
+
+        alam  = 1.0; // initially, alam = 1.0, i.e. take full Newton step
+        alamin = relTolx / test; // relative convergence tolerance
+        oldAlam = 0.0;
         alam2 = 0.0;
-        f2 = fold = optimizer.score();
+
+        f2 = fold = layer.score();
 
         if (logger.isDebugEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLinnSearch, value = " + fold + ",\ndirection.oneNorm:"
-                    +	gDup.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+ FastMath.max(Float.NEGATIVE_INFINITY,abs(gDup).max(Integer.MAX_VALUE).getDouble(0)));
+                    +	gDup.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
+                    FastMath.max(Float.NEGATIVE_INFINITY,abs(gDup).max(Integer.MAX_VALUE).getDouble(0)));
         }
 
-        double sum = gradients.norm2(Integer.MAX_VALUE).getDouble(0);
         if(sum > stpmax) {
             logger.warn("attempted step too big. scaling: sum= " + sum +
                     ", stpmax= "+ stpmax);
             gradients.muli(stpmax / sum);
         }
 
-        //dot product
-        slope = Nd4j.getBlasWrapper().dot(gDup, gradients);
         logger.debug("slope = " + slope);
 
         if (slope < 0)
             throw new InvalidStepException("Slope = " + slope + " is negative");
-
-        if (slope == 0)
+        else if (slope == 0)
             throw new InvalidStepException ("Slope = " + slope + " is zero");
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
-        //  the largest step size that triggers this threshold is
-        //  precomputed and saved in alamin
-        INDArray maxOldParams = abs(oldParameters);
-        Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams,1));
-
-
-
-        INDArray testMatrix = abs(gradients).divi(maxOldParams);
-        test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
-
-        alamin = relTolx / test;
-
-        alam  = 1.0;
-        oldAlam = 0.0;
-        int iteration;
+        // the largest step size that triggers this threshold is precomputed and saved in alamin
         // look for step size in direction given by "line"
-        for(iteration = 0; iteration < maxIterations; iteration++) {
-            // initially, alam = 1.0, i.e. take full Newton step
+
+        for(int iteration = 0; iteration < maxIterations; iteration++) {
             logger.trace("BackTrack loop iteration " + iteration +" : alam=" + alam +" oldAlam=" + oldAlam);
-            logger.trace ("before step, x.1norm: " + parameters.norm1(Integer.MAX_VALUE) +  "\nalam: " + alam + "\noldAlam: " + oldAlam);
+            logger.trace("before step, x.1norm: " + parameters.norm1(Integer.MAX_VALUE) + "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
 
             if(stepFunction == null)
                 stepFunction =  new DefaultStepFunction();
             //scale wrt updates
             stepFunction.step(parameters, gradients, new Object[]{alam,oldAlam}); //step
+            oldAlam = alam;
 
             if(logger.isDebugEnabled())  {
                 double norm1 = parameters.norm1(Integer.MAX_VALUE).getDouble(0);
-                logger.debug ("after step, x.1norm: " + norm1);
+                logger.debug("after step, x.1norm: " + norm1);
             }
 
-            // check for convergence
-            //convergence on delta x
-            //if all of the parameters are < 1e-12
+            // check for convergence on delta x
+            // if all of the parameters are < 1e-12
 
             if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, parameters,
                     parameters.dup(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
-                function.setParams(oldParameters);
-                function.setScore();
-                f = function.score();
+                f = getNewScore(oldParameters);
                 logger.trace("EXITING BACKTRACK: Jump too small (alamin = "+ alamin + "). Exiting and using xold. Value = " + f);
                 return 0.0;
             }
 
-            function.setParams(parameters);
-            oldAlam = alam;
-            function.setScore();
-            f = function.score();
-
+            f = getNewScore(oldParameters);
             logger.debug("value = " + f);
 
-            // sufficient function increase (Wolf condition)
+            // sufficient increase (Wolf condition)
+
             if(f >= fold + ALF * alam * slope) {
 
                 logger.debug("EXITING BACKTRACK: value=" + f);
-
                 if (f < fold)
                     throw new IllegalStateException
                             ("Function did not increase: f = " + f + " < " + fold + " = fold");
                 return alam;
             }
 
-
             // if value is infinite, i.e. we've
             // jumped to unstable territory, then scale down jump
+
             else if(Double.isInfinite(f) || Double.isInfinite(f2)) {
                 logger.warn ("Value is infinite after jump " + oldAlam + ". f="+ f +", f2=" + f2 + ". Scaling back step size...");
                 tmplam = .2 * alam;
                 if(alam < alamin) { //convergence on delta x
-                    function.setParams(oldParameters);
-                    function.setScore();
-                    f = function.score();
+                    f = getNewScore(oldParameters);
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+ f );
                     return 0.0;
                 }
             }
-            else { // backtrack
+
+            // backtrack
+
+            else {
                 if(alam == 1.0) // first time through
                     tmplam = -slope / (2.0 * ( f - fold - slope ));
                 else {
-                    rhs1 = f - fold- alam * slope;
+                    rhs1 = f - fold - alam * slope;
                     rhs2 = f2 - fold - alam2 * slope;
-                    if((alam - alam2) == 0)
+                    if(alam == alam2)
                         throw new IllegalStateException("FAILURE: dividing by alam-alam2. alam=" + alam);
                     a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 /  ( FastMath.pow(alam2, 2) )) / (alam - alam2);
                     b = ( -alam2 * rhs1/( alam* alam ) + alam * rhs2 / ( alam2 *  alam2 )) / ( alam - alam2);
