@@ -73,13 +73,10 @@ public class GravesLSTM extends BaseLayer {
 		INDArray nextDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
 		
 		//Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
-		int[] deltaShape = nextDelta.shape();
-		boolean is2dInput = deltaShape.length < 3;	//Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
-		
 		int hiddenLayerSize = recurrentWeights.rows();	//i.e., n^L
 		int prevLayerSize = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS).shape()[0];
-		int miniBatchSize = deltaShape[0];
-		int timeSeriesLength = (is2dInput ? 1 : deltaShape[2]);
+		int miniBatchSize = nextDelta.size(0);
+		int timeSeriesLength = (nextDelta.rank()<3 ? 1 : nextDelta.size(2));	//Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
 		
 		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
 		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2*hiddenLayerSize));
@@ -132,7 +129,7 @@ public class GravesLSTM extends BaseLayer {
 				deltaiNext.muliColumnVector(maskColumn);
 				deltafNext.muliColumnVector(maskColumn);
 				deltaoNext.muliColumnVector(maskColumn);
-				deltafNext.muliColumnVector(maskColumn);
+				deltagNext.muliColumnVector(maskColumn);
 			}*/
 			
 			//LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
@@ -250,6 +247,13 @@ public class GravesLSTM extends BaseLayer {
 		int miniBatchSize = dataShape[0];
 		int nIn = inputWeights.shape()[0];		//Size of previous layer (or input)
 		
+		//Apply dropconnect to input (not recurrent) weights only:
+		//TODO: double check train vs. test time for this
+		if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                inputWeights = inputWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(inputWeights.shape()).divi(conf.getDropOut()));
+            }
+        }
 		
 		//Extract weights and biases:
 		INDArray wi = inputWeights.get(interval(0,nIn),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize

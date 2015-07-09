@@ -32,7 +32,7 @@ public class MultiLayerTestRNN {
 		network.init();
 		
 		//Ensure that we have the correct number weights and biases, that these have correct shape etc.
-		Layer layer = network.getLayers()[0];
+		Layer layer = network.getLayer(0);
 		assertTrue(layer instanceof GravesLSTM);
 		
 		Map<String,INDArray> paramTable = layer.paramTable();
@@ -70,7 +70,7 @@ public class MultiLayerTestRNN {
 		
 		//Ensure that we have the correct number weights and biases, that these have correct shape etc. for each layer
 		for( int i=0; i<nHiddenUnits.length; i++ ){
-			Layer layer = network.getLayers()[i];
+			Layer layer = network.getLayer(i);
 			assertTrue(layer instanceof GravesLSTM);
 			
 			Map<String,INDArray> paramTable = layer.paramTable();
