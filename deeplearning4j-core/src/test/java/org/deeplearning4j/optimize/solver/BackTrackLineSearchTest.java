@@ -43,6 +43,7 @@ public class BackTrackLineSearchTest {
         assertEquals(0.0,step,1e-1);
     }
 
+    // TODO finish adapting to test specific parameter results - currently using to step through backtrack
     @Test
     public void testBackTrackLine() {
         Nd4j.MAX_SLICES_TO_PRINT = -1;
