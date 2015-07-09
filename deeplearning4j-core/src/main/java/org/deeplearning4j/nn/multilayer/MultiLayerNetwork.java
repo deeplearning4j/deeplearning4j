@@ -20,7 +20,6 @@ package org.deeplearning4j.nn.multilayer;
 
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.EnumUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
@@ -37,7 +36,6 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.MultiLayerUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -358,7 +356,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     }
                     conf.setNIn(inputSize);
 
-                    if (type == Layer.Type.FEED_FORWARD) {
+                    if (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
                         conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                     }
                 }
@@ -381,10 +379,10 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      * order in the array without having to create an override
                      * for every layer.
                      */
-                    if(type == Layer.Type.FEED_FORWARD) {
+                    if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) { 
                         if(i!=(layers.length-1)) {
                             numHiddenLayersSizesUsed++;
-                            conf.setNIn(layerInput.columns());
+                            conf.setNIn(layerInput.size(1));
                             conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         } else {
                             conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
@@ -1669,6 +1667,10 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     public Layer[] getLayers() {
         return layers;
+    }
+    
+    public Layer getLayer( int i ){
+    	return layers[i];
     }
 
     public void setLayers(Layer[] layers) {
