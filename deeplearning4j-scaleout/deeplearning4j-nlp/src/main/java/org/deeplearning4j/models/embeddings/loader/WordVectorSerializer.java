@@ -120,7 +120,7 @@ public class WordVectorSerializer
         int layerSize = Integer.parseInt(initial[1]);
         syn0 = Nd4j.create(words, layerSize);
 
-        cache = new InMemoryLookupCache();
+        cache = new InMemoryLookupCache(false);
 
         int currLine = 0;
         while ((line = reader.readLine()) != null) {
