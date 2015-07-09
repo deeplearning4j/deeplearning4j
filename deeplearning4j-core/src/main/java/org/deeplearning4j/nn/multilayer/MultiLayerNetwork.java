@@ -382,7 +382,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) { 
                         if(i!=(layers.length-1)) {
                             numHiddenLayersSizesUsed++;
-                            conf.setNIn(layerInput.shape()[1]);	//RNN activations may be 3D not 2D (can't just use layerInput.columns())
+                            conf.setNIn(layerInput.size(1));
                             conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         } else {
                             conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
@@ -1667,6 +1667,10 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     public Layer[] getLayers() {
         return layers;
+    }
+    
+    public Layer getLayer( int i ){
+    	return layers[i];
     }
 
     public void setLayers(Layer[] layers) {
