@@ -49,7 +49,7 @@ public class ConvolutionLayer implements Layer {
     private Map<String,INDArray> params;
     protected ParamInitializer paramInitializer;
     private List<IterationListener> listeners = new ArrayList<>();
-    protected int index=0;
+    protected int index = 0;
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -94,6 +94,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+
         throw new UnsupportedOperationException();
     }
 
