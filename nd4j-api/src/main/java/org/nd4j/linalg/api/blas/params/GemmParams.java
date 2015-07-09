@@ -31,6 +31,9 @@ public @Data class GemmParams {
             int oldM = m;
             this.m = oldN;
             this.n = oldM;
+            //invert the operation
+            this.a = b;
+            this.b = a;
         }
 
         this.lda = Math.max(1, m);

@@ -2628,7 +2628,7 @@ public abstract class BaseNDArray implements INDArray {
                         ,BlasBufferUtil.getCharForTranspose(this)
                         ,1.0
                         ,this
-                        ,otherArray
+                        ,other
                         ,0.0,
                         resultArray);
             else {

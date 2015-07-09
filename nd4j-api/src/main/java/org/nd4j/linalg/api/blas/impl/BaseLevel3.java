@@ -44,9 +44,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     ,params.getN()
                     ,params.getK()
                     ,1.0
-                    ,A.ordering() == NDArrayFactory.C ? B : A
+                    ,params.getA()
                     ,params.getLda()
-                    ,B.ordering() == NDArrayFactory.C ? A : B
+                    ,params.getB()
                     ,params.getLdb()
                     ,0
                     ,C
@@ -59,9 +59,9 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     , params.getN()
                     , params.getK()
                     , 1.0f
-                    , A.ordering() == NDArrayFactory.C ? B : A
+                    , params.getA()
                     , params.getLda()
-                    ,B.ordering() == NDArrayFactory.C ? A : B
+                    , params.getB()
                     , params.getLdb()
                     , 0
                     , C
