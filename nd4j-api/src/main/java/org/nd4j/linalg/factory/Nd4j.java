@@ -495,6 +495,15 @@ public class Nd4j {
     }
 
 
+    /**
+     * Tensor matrix multiplication.
+     * Both tensors must be the same rank
+     *
+     * @param a the left tensor
+     * @param b the  right tensor
+     * @param axes the axes for each array to do matrix multiply along
+     * @return
+     */
     public static INDArray tensorMmul(INDArray a,INDArray b,int[][] axes) {
         if(a.rank() != b.rank())
             throw new IllegalArgumentException("a and b must be same rank");
