@@ -52,6 +52,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private Iterator<Collection<Writable>> sequenceIter;
     private DataSet last;
     private boolean useCurrent = false;
+    private boolean regression = false;
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1, -1);
     }
@@ -69,13 +70,16 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), 10, labelIndex, numPossibleLabels);
     }
-
-    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels) {
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels,boolean regression) {
         this.recordReader = recordReader;
         this.converter = converter;
         this.batchSize = batchSize;
         this.labelIndex = labelIndex;
         this.numPossibleLabels = numPossibleLabels;
+        this.regression = regression;
+    }
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels) {
+        this(recordReader,converter,batchSize,labelIndex,numPossibleLabels,false);
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter) {
@@ -150,6 +154,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         if (numPossibleLabels >= 1 && labelIndex < 0) {
             labelIndex = record.size() - 1;
         }
+
+
         INDArray label = null;
         INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
         int count = 0;
@@ -166,8 +172,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     } catch (WritableConverterException e) {
                         e.printStackTrace();
                     }
-                int curr = Double.valueOf(current.toString()).intValue();
-                label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
+                if(regression) {
+                    label = Nd4j.scalar(Double.valueOf(current.toString()));
+                }
+                else {
+                    int curr = Double.valueOf(current.toString()).intValue();
+                    label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
+                }
+
             } else {
                 Writable current = currList.get(j);
                 if (current.toString().isEmpty())
@@ -193,7 +205,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             useCurrent = true;
             return next.numInputs();
         }
-       else
+        else
             return last.numInputs();
 
     }
