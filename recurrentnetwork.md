@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Recurrent Nets
+# Recurrent Networks
 
 Recurrent nets are a powerful set of artificial neural nets especially useful for processing sequential data such as sound, time series (sensor) data or written natural language. A version of recurrent networks was used by DeepMind in their work playing video games with autonomous agents.* 
 
