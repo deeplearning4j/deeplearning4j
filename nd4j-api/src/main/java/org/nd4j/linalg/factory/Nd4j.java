@@ -494,6 +494,51 @@ public class Nd4j {
 
     }
 
+    /**
+     *  Roll the specified axis backwards,
+     *  until it lies in a given position.
+     *  Starting ends up being zero.
+     *  See numpy's rollaxis
+     * @param a the array to roll
+     * @param axis the axis to roll backwards
+     * @return the rolled ndarray
+     */
+    public static INDArray rollAxis(INDArray a,int axis) {
+        return rollAxis(a,axis,0);
+
+    }
+
+    /**
+     *  Roll the specified axis backwards,
+     *  until it lies in a given position.
+     *  See numpy's rollaxis
+     * @param a the array to roll
+     * @param axis the axis to roll backwards
+     * @param start the starting point
+     * @return the rolled ndarray
+     */
+    public static INDArray rollAxis(INDArray a,int axis,int start) {
+        if(axis < 0)
+            axis += a.rank();
+        if(start < 0)
+            start += a.rank();
+        if(axis == start)
+            return a;
+        if(axis < start)
+            start--;
+        if (!(axis >= 0 && axis < a.rank()))
+            throw new IllegalArgumentException("Axis must be >= 0 && < start");
+        if(!(start >= 0 && axis < a.rank() + 1))
+            throw new IllegalArgumentException("Axis must be >= 0 && < start");
+
+        List<Integer> range = Ints.asList(ArrayUtil.range(0, a.rank()));
+        range.remove(axis);
+        range.add(start,axis);
+        int[] newRange = Ints.toArray(range);
+        return a.permute(newRange);
+
+    }
+
 
     /**
      * Tensor matrix multiplication.
@@ -507,7 +552,7 @@ public class Nd4j {
     public static INDArray tensorMmul(INDArray a,INDArray b,int[][] axes) {
         if(a.rank() != b.rank())
             throw new IllegalArgumentException("a and b must be same rank");
-          for(int i = 0; i < axes[0].length; i++) {
+        for(int i = 0; i < axes[0].length; i++) {
             if(a.size(axes[0][i]) != b.size(axes[1][i]))
                 throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
             if(axes[0][i] < 0)
