@@ -637,7 +637,6 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray vectorAlongDimension(int index, int dimension) {
         if(dimension < 0)
             dimension = stride.length + dimension;
-        int vectorsAlongDimension = vectorsAlongDimension(dimension);
         //return the whole thing
         if(dimension == shape.length - 1 && size(dimension) == 1 && rank() > 2 || rank() > 2 && dimension == 0 && size(dimension) == 1) {
             return linearView();
@@ -1523,10 +1522,7 @@ public abstract class BaseNDArray implements INDArray {
 
     protected INDArray newShape(int[] newShape, char ordering) {
         ensureNotCleanedUp();
-        if (Arrays.equals(newShape, this.shape()))
-            return this;
-
-        else if (Shape.isVector(newShape) && isVector()) {
+        if (Shape.isVector(newShape) && isVector()) {
             if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
                 int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.copy(stride()) : getStrides(new int[]{columns(),1},ordering());
                 return create(data, newShape,stride,offset);
@@ -1542,23 +1538,31 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-        INDArray newCopy = this;
-        int[] newStrides = null;
-        //needed to copy data
-        if (newStrides == null) {
-            //need new strides for shape (the first stride messes with it)
-            newStrides = this instanceof IComplexNDArray ? Nd4j.getComplexStrides(newShape, ordering()) : Nd4j.getStrides(newShape, ordering());
+
+        if(ordering() != ordering) {
+            INDArray raveled = ravel();
+            return create(raveled.data(),newShape,Nd4j.getStrides(newShape,ordering));
+        }
+        else {
+            INDArray newCopy = this;
+            int[] newStrides = null;
+            //needed to copy data
+            if (newStrides == null) {
+                //need new strides for shape (the first stride messes with it)
+                newStrides = this instanceof IComplexNDArray ? Nd4j.getComplexStrides(newShape, ordering()) : Nd4j.getStrides(newShape, ordering());
+            }
+
+            //create a new copy of the ndarray
+            if (shape().length > 1 || this.ordering != ordering || newShape.length != shape().length) {
+                if(this instanceof IComplexNDArray)
+                    return  create(data,newShape,newStrides,offset,ordering);
+                newCopy = create(data, newShape, newStrides, offset, ordering).dup();
+                return newCopy;
+            }
+
+            return create(newCopy.data(), newShape, newStrides, offset);
         }
 
-        //create a new copy of the ndarray
-        if (shape().length > 1 || this.ordering != ordering || newShape.length != shape().length) {
-            if(this instanceof IComplexNDArray)
-                return  create(data,newShape,newStrides,offset,ordering);
-            newCopy = create(data, newShape, newStrides, offset, ordering);
-            return newCopy;
-        }
-
-        return create(newCopy.data(), newShape, newStrides, offset);
 
 
     }
@@ -2624,7 +2628,7 @@ public abstract class BaseNDArray implements INDArray {
                         ,BlasBufferUtil.getCharForTranspose(this)
                         ,1.0
                         ,this
-                        ,otherArray
+                        ,other
                         ,0.0,
                         resultArray);
             else {
@@ -3464,16 +3468,115 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.create(data,shape,strides,offset(),ordering());
     }
 
+    @Override
+    public INDArray reshape(char order, int... newShape) {
+        int numberNegativesOnes = 0;
+        int[] shape = newShape;
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] < 0) {
+                if(numberNegativesOnes >= 1)
+                    throw new IllegalArgumentException("Only one dimension can be negative ones");
+
+                numberNegativesOnes++;
+
+                int shapeLength = 1;
+                for(int j = 0; j < shape.length; j++)
+                    if(shape[j] >= 1)
+                        shapeLength *= shape[j];
+                int realShape = Math.abs(length() / shapeLength);
+                int[] thisNewShape = new int[shape.length];
+                for(int j = 0; j < shape.length; j++) {
+                    if(i != j) {
+                        thisNewShape[j] = shape[j];
+                    }
+                    else
+                        thisNewShape[j] = realShape;
+                }
+
+                shape = thisNewShape;
+                break;
+
+            }
+
+        }
+
+
+
+        assert ArrayUtil.prod(shape) == ArrayUtil.prod(this.shape()) : "Illegal reshape must be of same length as data";
+        ensureNotCleanedUp();
+        if (Shape.isVector(shape) && isVector()) {
+            if (isRowVector() && Shape.isColumnVectorShape(shape)) {
+                int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.copy(stride()) : getStrides(new int[]{columns(),1},ordering());
+                return create(data, shape,stride,offset);
+            }
+            //handle case where row vector is reshaped to row vector
+            else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {
+                this.shape = shape;
+            }
+
+            else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
+                return create(data, shape, new int[]{stride[0],1}, offset);
+
+            }
+        }
+
+
+        INDArray raveled = ravel();
+        return create(raveled.data(),shape,Nd4j.getStrides(shape,order));
+
+
+
+    }
+
+    @Override
+    public INDArray reshape(char order, int rows, int columns) {
+        return reshape(order,new int[]{rows,columns});
+    }
 
     /**
      * Reshape the ndarray in to the specified dimensions,
      * possible errors being thrown for invalid shapes
      *
-     * @param shape
-     * @return
+     * Note here that one dimension can be -1.
+     * The dimension that is -1 will be inferred from the shape and
+     * the length of the ndarray
+     *
+     * @param shape the shape of the ndarray.
+     * @return the new reshaped nd array
      */
     @Override
-    public INDArray reshape(int[] shape) {
+    public INDArray reshape(int...shape) {
+        int numberNegativesOnes = 0;
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] < 0) {
+                if(numberNegativesOnes >= 1)
+                    throw new IllegalArgumentException("Only one dimension can be negative ones");
+
+                numberNegativesOnes++;
+
+                int shapeLength = 1;
+                for(int j = 0; j < shape.length; j++)
+                    if(shape[j] >= 1)
+                        shapeLength *= shape[j];
+                int realShape = Math.abs(length() / shapeLength);
+                int[] thisNewShape = new int[shape.length];
+                for(int j = 0; j < shape.length; j++) {
+                    if(i != j) {
+                        thisNewShape[j] = shape[j];
+                    }
+                    else
+                        thisNewShape[j] = realShape;
+                }
+
+                shape = thisNewShape;
+                break;
+
+            }
+
+        }
+
+
+
         assert ArrayUtil.prod(shape) == ArrayUtil.prod(this.shape()) : "Illegal reshape must be of same length as data";
         return newShape(shape, ordering);
     }
@@ -3689,8 +3792,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray reshape(int newRows, int newColumns) {
-        ensureNotCleanedUp();
-        assert newRows * newColumns == length : "Illegal new shape " + newRows + " x " + newColumns;
         return reshape(new int[]{newRows, newColumns});
     }
 
@@ -4274,8 +4375,8 @@ public abstract class BaseNDArray implements INDArray {
                 data(),
                 newShape,
                 newStride,
-                offset,
-                ordering);
+                offset(),
+                ordering());
 
 
         return value;

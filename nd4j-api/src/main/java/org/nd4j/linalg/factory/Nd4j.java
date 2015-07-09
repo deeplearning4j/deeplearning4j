@@ -494,8 +494,70 @@ public class Nd4j {
 
     }
 
+
+    public static INDArray tensorMmul(INDArray a,INDArray b,int[][] axes) {
+        if(a.rank() != b.rank())
+            throw new IllegalArgumentException("a and b must be same rank");
+          for(int i = 0; i < axes[0].length; i++) {
+            if(a.size(axes[0][i]) != b.size(axes[1][i]))
+                throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
+            if(axes[0][i] < 0)
+                axes[0][i] += a.rank();
+            if(axes[1][i] < 0)
+                axes[1][i] += b.rank();
+
+        }
+
+        List<Integer> listA = new ArrayList<>();
+        for(int i = 0; i < a.rank(); i++) {
+            if(!Ints.contains(axes[0],i))
+                listA.add(i);
+        }
+
+        int[] newAxesA = Ints.concat(Ints.toArray(listA),axes[0]);
+
+
+        List<Integer> listB = new ArrayList<>();
+        for(int i = 0; i < b.rank(); i++) {
+            if(!Ints.contains(axes[1],i))
+                listB.add(i);
+        }
+
+        int[] newAxesB = Ints.concat(axes[1],Ints.toArray(listB));
+
+        int n2 = 1;
+        for(int i = 0; i < axes[0].length; i++) {
+            n2 *= a.size(axes[0][i]);
+        }
+
+        int[] newShapeA = {-1,n2};
+        int[] oldShapeA = Ints.toArray(listA);
+        for(int i = 0; i < oldShapeA.length; i++)
+            oldShapeA[i] = a.size(oldShapeA[i]);
+
+        int n3 = 1;
+        for(int i = 0; i < axes[1].length; i++) {
+            n3 *= a.size(axes[1][i]);
+        }
+
+        int[] newShapeB = {n3,-1};
+        int[] oldShapeB = Ints.toArray(listB);
+        for(int i = 0; i < oldShapeA.length; i++)
+            oldShapeB[i] = b.size(oldShapeB[i]);
+
+
+
+        INDArray at = a.permute(newAxesA).reshape('c',newShapeA);
+        INDArray bt = b.permute(newAxesB).reshape('c',newShapeB);
+        INDArray ret = at.mmul(bt);
+
+        int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
+        return ret.reshape(aPlusB);
+    }
+
+
     /**
-     * Given a sequence of Iterators over a applyTransformToDestination of matrices, fill in all of
+     * Given a sequence of Iterators over a transform of matrices, fill in all of
      * the matrices with the entries in the theta vector.  Errors are
      * thrown if the theta vector does not exactly fill the matrices.
      */
@@ -1548,6 +1610,16 @@ public class Nd4j {
         return ret;
     }
 
+
+    /**
+     * Array of evenly spaced values.
+     *
+     * @param end   the end of the range
+     * @return the range vector
+     */
+    public static INDArray arange(double end) {
+        return arange(0,end);
+    }
 
     /**
      * Create double

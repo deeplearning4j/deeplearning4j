@@ -654,6 +654,16 @@ public class ArrayUtil {
         return ret;
     }
 
+
+    public static int[] plus(int[] ints, int[] mult) {
+        if(ints.length != mult.length)
+            throw new IllegalArgumentException("Both arrays must have the same length");
+        int[] ret = new int[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = ints[i] + mult[i];
+        return ret;
+    }
+
     public static int[] times(int[] ints, int mult) {
         int[] ret = new int[ints.length];
         for (int i = 0; i < ints.length; i++)
@@ -668,6 +678,9 @@ public class ArrayUtil {
             ret[i] = ints[i] * mult[i];
         return ret;
     }
+
+
+
 
 
     /**
