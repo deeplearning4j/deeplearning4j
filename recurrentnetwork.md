@@ -50,4 +50,4 @@ An explanation of the hyperparameters is given in our [Iris tutorial](http://dee
 
 ### Credit Assignment
 
-*Much research in recurrent nets has been led by Juergen Schmidhuber and his students, notably Sepp Hochreiter, who identified the vanishing gradient problem confronted by very deep networks and later invented Long Short-Term Memory (LSTM) recurrent nets, as well as Alex Graves, now at DeepMind.*
+*Much research in recurrent nets has been led by Juergen Schmidhuber and his students, notably Sepp Hochreiter, who identified the vanishing gradient problem confronted by very deep networks and later invented Long Short-Term Memory (LSTM) recurrent nets, as well as Alex Graves, now at DeepMind. Two other researchers of note are Felix Gers, who invented LSTM forget gates, and Justin Bayer, who came up with a way to automatically evolve various kinds of LSTM topologies in a problem-specific fashion.*
