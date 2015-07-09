@@ -1426,6 +1426,26 @@ public interface INDArray extends Serializable  {
      */
     int offset();
 
+
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray)
+     *
+     * @param newShape the new shape of the ndarray
+     * @return the reshaped ndarray
+     */
+    INDArray reshape(char order,int... newShape);
+
+
+    /**
+     * Reshapes the ndarray (can't change the length of the ndarray)
+     *
+     * @param rows    the rows of the matrix
+     * @param columns the columns of the matrix
+     * @return the reshaped ndarray
+     */
+    INDArray reshape(char order,int rows, int columns);
+
+
     /**
      * Reshapes the ndarray (can't change the length of the ndarray)
      *
