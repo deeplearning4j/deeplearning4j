@@ -38,4 +38,16 @@ An explanation of the hyperparameters is given in our [Iris tutorial](http://dee
 * [LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/LSTM.java)
 * [Graves LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesLSTM.java) (Useful for sensor data and time series)
 
-* *Much research in recurrent nets has been led by Juergen Schmidhuber and his students, notably Sepp Hochreiter, who identified the vanishing gradient problem confronted by very deep networks and later invented Long Short-Term Memory (LSTM) recurrent nets, as well as Alex Graves, now at DeepMind.*
+### Resources
+
+* [Recurrent Neural Networks](http://people.idsia.ch/~juergen/rnn.html); Juergen Schmidhuber
+* [Modeling Sequences With RNNs and LSTMs](https://class.coursera.org/neuralnets-2012-001/lecture/77); Geoff Hinton
+* [The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/); Andrej Karpathy
+
+### Definition
+
+		Recurrent neural networks "allow for both parallel and sequential computation, and in principle can compute anything a traditional computer can compute. Unlike traditional computers, however, RNN are similar to the human brain, which is a large feedback network of connected neurons that somehow can learn to translate a lifelong sensory input stream into a sequence of useful motor outputs. The brain is a remarkable role model as it can solve many problems current machines cannot yet solve." - Juergen Schmidhuber
+
+### Credit Assignment
+
+*Much research in recurrent nets has been led by Juergen Schmidhuber and his students, notably Sepp Hochreiter, who identified the vanishing gradient problem confronted by very deep networks and later invented Long Short-Term Memory (LSTM) recurrent nets, as well as Alex Graves, now at DeepMind.*
