@@ -152,7 +152,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
         double slope = Nd4j.getBlasWrapper().dot(gDup, gradients);
 
         INDArray maxOldParams = abs(oldParameters);
-        Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams,1));
+        Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams, 1));
         INDArray testMatrix = abs(gradients).divi(maxOldParams);
         test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
 
@@ -190,7 +190,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         for(int iteration = 0; iteration < maxIterations; iteration++) {
             logger.trace("BackTrack loop iteration " + iteration +" : alam=" + alam +" oldAlam=" + oldAlam);
-            logger.trace ("before step, x.1norm: " + parameters.norm1(Integer.MAX_VALUE) +  "\nalam: " + alam + "\noldAlam: " + oldAlam);
+            logger.trace("before step, x.1norm: " + parameters.norm1(Integer.MAX_VALUE) + "\nalam: " + alam + "\noldAlam: " + oldAlam);
             assert(alam != oldAlam) : "alam == oldAlam";
 
             if(stepFunction == null)
@@ -201,7 +201,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
             if(logger.isDebugEnabled())  {
                 double norm1 = parameters.norm1(Integer.MAX_VALUE).getDouble(0);
-                logger.debug ("after step, x.1norm: " + norm1);
+                logger.debug("after step, x.1norm: " + norm1);
             }
 
             // check for convergence on delta x
