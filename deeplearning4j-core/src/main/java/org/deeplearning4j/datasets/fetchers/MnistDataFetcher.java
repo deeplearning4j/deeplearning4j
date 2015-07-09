@@ -69,17 +69,8 @@ public class MnistDataFetcher extends BaseDataFetcher {
         numOutcomes = 10;
         this.binarize = binarize;
         totalExamples = NUM_EXAMPLES;
-        //1 based cursor
         cursor = 0;
-        man.setCurrent(cursor+1);
-        int[][] image;
-        try {
-            image = man.readImage();
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to read image");
-        }
-        inputColumns = ArrayUtil.flatten(image).length;
-
+        inputColumns = man.getImages().getEntryLength();
 
     }
 
@@ -92,8 +83,6 @@ public class MnistDataFetcher extends BaseDataFetcher {
         if(!hasMore()) {
             throw new IllegalStateException("Unable to getFromOrigin more; there are no more images");
         }
-
-
 
         //we need to ensure that we don't overshoot the number of examples total
         List<DataSet> toConvert = new ArrayList<>();
@@ -109,26 +98,20 @@ public class MnistDataFetcher extends BaseDataFetcher {
                     throw new RuntimeException(e);
                 }
             }
-            man.setCurrent(cursor+1);
+            man.setCurrent(cursor);
             //note data normalization
             try {
                 INDArray in = ArrayUtil.toNDArray(ArrayUtil.flatten(man.readImage()));
                 if(binarize) {
                     for(int d = 0; d < in.length(); d++) {
-                        if(binarize) {
-                            if(in.getDouble(d) > 30) {
-                                in.putScalar(d,1);
-                            }
-                            else {
-                                in.putScalar(d,0);
-                            }
-
+                        if(in.getDouble(d) > 30) {
+                            in.putScalar(d,1);
                         }
-
-
+                        else {
+                            in.putScalar(d,0);
+                        }
                     }
-                }
-                else {
+                } else {
                     in.divi(255);
                 }
 

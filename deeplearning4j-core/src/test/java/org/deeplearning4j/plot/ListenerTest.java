@@ -22,6 +22,7 @@ import org.deeplearning4j.plot.iterationlistener.*;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.*;
 
@@ -52,8 +53,6 @@ public class ListenerTest {
         assertNotNull(network.getListeners().get(0));
         assertEquals(listener.invoked(), true);
     }
-
-
 
 
     @Test
@@ -169,6 +168,7 @@ public class ListenerTest {
 
         return c;
     }
+
 
 
 }
