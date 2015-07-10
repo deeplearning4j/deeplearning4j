@@ -108,49 +108,50 @@ public class WordVectorSerializer
      * @throws NumberFormatException
      */
     private static Word2Vec readTextModel(File modelFile)
-        throws IOException, NumberFormatException
-    {
+            throws IOException, NumberFormatException {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
         INDArray syn0;
-        BufferedReader reader = new BufferedReader(new FileReader(modelFile));
-        String line = reader.readLine();
-        String[] initial = line.split(" ");
-        int words = Integer.parseInt(initial[0]);
-        int layerSize = Integer.parseInt(initial[1]);
-        syn0 = Nd4j.create(words, layerSize);
+        Word2Vec ret = new Word2Vec();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                GzipUtils.isCompressedFilename(modelFile.getName())
+                        ? new GZIPInputStream(new FileInputStream(modelFile))
+                        : new FileInputStream(modelFile)))) {
+            String line = reader.readLine();
+            String[] initial = line.split(" ");
+            int words = Integer.parseInt(initial[0]);
+            int layerSize = Integer.parseInt(initial[1]);
+            syn0 = Nd4j.create(words, layerSize);
 
-        cache = new InMemoryLookupCache(false);
+            cache = new InMemoryLookupCache(false);
 
-        int currLine = 0;
-        while ((line = reader.readLine()) != null) {
-            String[] split = line.split(" ");
-            assert split.length == layerSize + 1;
-            String word = split[0];
+            int currLine = 0;
+            while ((line = reader.readLine()) != null) {
+                String[] split = line.split(" ");
+                assert split.length == layerSize + 1;
+                String word = split[0];
 
-            float[] vector = new float[split.length - 1];
-            for (int i = 1; i < split.length; i++) {
-                vector[i - 1] = Float.parseFloat(split[i]);
+                float[] vector = new float[split.length - 1];
+                for (int i = 1; i < split.length; i++) {
+                    vector[i - 1] = Float.parseFloat(split[i]);
+                }
+
+                syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
+
+                cache.addWordToIndex(cache.numWords(), word);
+                cache.addToken(new VocabWord(1, word));
+                cache.putVocabWord(word);
+
+                currLine++;
             }
 
-            syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
+            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().
+                    cache(cache).vectorLength(layerSize).build();
+            lookupTable.setSyn0(syn0);
 
-            cache.addWordToIndex(cache.numWords(), word);
-            cache.addToken(new VocabWord(1, word));
-            cache.putVocabWord(word);
-
-            currLine++;
+            ret.setVocab(cache);
+            ret.setLookupTable(lookupTable);
         }
-
-        lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
-                .vectorLength(layerSize).build();
-        lookupTable.setSyn0(syn0);
-
-        Word2Vec ret = new Word2Vec();
-        ret.setVocab(cache);
-        ret.setLookupTable(lookupTable);
-
-        reader.close();
         return ret;
     }
 
