@@ -121,6 +121,17 @@ public class Pow extends BaseTransformOp {
     }
 
     @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Pow(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), pow);
+        else
+            return new Pow(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), pow);
+
+    }
+
+    @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         this.extraArgs = new Object[]{pow};
     }

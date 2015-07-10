@@ -105,4 +105,15 @@ public class Negative extends BaseTransformOp {
             return new Negative(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Negative(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Negative(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length());
+
+    }
 }

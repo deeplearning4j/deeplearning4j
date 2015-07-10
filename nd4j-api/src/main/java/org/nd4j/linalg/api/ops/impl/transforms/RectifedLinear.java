@@ -129,4 +129,15 @@ public class RectifedLinear extends BaseTransformOp {
         else
             return new Pow(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Pow(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+        else
+            return new Pow(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+
+    }
 }

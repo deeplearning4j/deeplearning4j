@@ -84,7 +84,7 @@ public interface OpExecutioner {
      *
      * @param op the operation to execute
      */
-    Op exec(Op op, int dimension);
+    Op exec(Op op, int...dimension);
 
 
     /**
@@ -93,7 +93,7 @@ public interface OpExecutioner {
      * @param dimension the dimension
      * @return the accmulation op
      */
-    INDArray exec(Accumulation accumulation, int dimension);
+    INDArray exec(Accumulation accumulation, int...dimension);
 
 
 
@@ -102,18 +102,9 @@ public interface OpExecutioner {
      *
      * @param op the operation to execute
      */
-    INDArray execAndReturn(TransformOp op, int dimension);
+    INDArray execAndReturn(TransformOp op, int...dimension);
 
 
-
-
-    /**
-     * Execute and return the result from an accumulation
-     *
-     * @param op the operation to execute
-     * @return the accumulated result
-     */
-    INDArray execAndReturn(ScalarOp op, int dimension);
 
     /**
      * Execute and return  a result
@@ -122,4 +113,12 @@ public interface OpExecutioner {
      * @return the result from the operation
      */
     INDArray execAndReturn(Op op);
+
+    /**
+     * Execute and return the result from an accumulation
+     *
+     * @param op the operation to execute
+     * @return the accumulated result
+     */
+    INDArray execAndReturn(ScalarOp op, int... dimension);
 }

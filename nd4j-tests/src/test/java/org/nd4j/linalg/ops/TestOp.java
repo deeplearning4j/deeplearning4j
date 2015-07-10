@@ -91,4 +91,9 @@ public class TestOp extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         return null;
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        return null;
+    }
 }

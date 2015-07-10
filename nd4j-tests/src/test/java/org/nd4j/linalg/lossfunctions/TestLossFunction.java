@@ -47,4 +47,9 @@ public class TestLossFunction extends BaseLossFunction {
     public Op opForDimension(int index, int dimension) {
         return null;
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        return null;
+    }
 }

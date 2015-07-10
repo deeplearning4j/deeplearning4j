@@ -114,4 +114,12 @@ public class ScalarMultiplication extends BaseScalarOp {
         else
             return new ScalarMultiplication(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarMultiplication(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarMultiplication(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

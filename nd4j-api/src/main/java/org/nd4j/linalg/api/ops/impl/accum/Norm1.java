@@ -88,4 +88,14 @@ public class Norm1 extends BaseAccumulation {
             return new Norm1(x.vectorAlongDimension(index, dimension));
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Norm1(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Norm1(x.tensorAlongDimension(index, dimension));
+    }
 }

@@ -105,4 +105,12 @@ public class ScalarGreaterThan extends BaseScalarOp {
         else
             return new ScalarGreaterThan(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarGreaterThan(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarGreaterThan(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

@@ -216,7 +216,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public Op exec(Op op, int dimension) {
+    public Op exec(Op op, int...dimension) {
+        if(dimension.length == 1)
+            return exec(op,dimension[0]);
+        else
+            throw new UnsupportedOperationException();
+    }
+
+    protected Op exec(Op op,int dimension) {
         //only accumulate along a particular dimension
         if (op instanceof Accumulation) {
             Accumulation a = (Accumulation) op;
@@ -237,7 +244,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(Accumulation op, int dimension) {
+    public INDArray exec(Accumulation op, int...dimension) {
+        if(dimension.length == 1)
+            return execVector(op,dimension[0]);
+        else
+            throw new UnsupportedOperationException();
+    }
+
+
+    protected INDArray execVector(Accumulation op,int dimension) {
         if(dimension == Integer.MAX_VALUE) {
             op.setX(op.x().linearView());
             if(op.y() != null)
@@ -344,25 +359,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         }
 
-
     }
+
+    @Override
+    public INDArray execAndReturn(TransformOp op, int...dimension) {
+       if(dimension.length == 1)
+           return execAndReturnVector(op,dimension[0]);
+        else
+           throw new UnsupportedOperationException();
+    }
+
+   protected INDArray execAndReturnVector(TransformOp op,int dimension) {
+       for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+           Op op2 = op.opForDimension(i, dimension);
+           exec(op2);
+           op.z().vectorAlongDimension(i, dimension).assign(op2.z());
+       }
+       return op.z();
+   }
 
 
     @Override
-    public INDArray execAndReturn(TransformOp op, int dimension) {
-        for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-            Op op2 = op.opForDimension(i, dimension);
-            exec(op2);
-            op.z().vectorAlongDimension(i, dimension).assign(op2.z());
-        }
-        return op.z();
-    }
-
-
-
-
-    @Override
-    public INDArray execAndReturn(ScalarOp op, int dimension) {
+    public INDArray execAndReturn(ScalarOp op, int... dimension) {
         return exec(op, dimension).z();
     }
 

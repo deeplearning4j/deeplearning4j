@@ -117,6 +117,16 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
     @Test
+    public void testTensorAlongDimension() {
+        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2,2,3);
+        INDArray tensors = twoTwoByThree.tensorAlongDimension(0,1,2);
+        assertEquals(2,twoTwoByThree.tensorssAlongDimension(1,2));
+    }
+
+    
+
+
+    @Test
     public void testAppend() {
         INDArray appendTo = Nd4j.ones(3, 3);
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);

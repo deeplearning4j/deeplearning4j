@@ -109,4 +109,12 @@ public class ScalarDivision extends BaseScalarOp {
         else
             return new ScalarDivision(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarDivision(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarDivision(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

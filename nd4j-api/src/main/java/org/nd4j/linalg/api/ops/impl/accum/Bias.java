@@ -68,6 +68,15 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+        if (y() != null)
+            return new Bias(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Bias(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
     public void update(Number result) {
         double dev = result.doubleValue() - mean;
         currentResult = currentResult().doubleValue() + dev;

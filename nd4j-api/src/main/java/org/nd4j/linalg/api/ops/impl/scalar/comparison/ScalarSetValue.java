@@ -111,4 +111,12 @@ public class ScalarSetValue extends BaseScalarOp {
         else
             return new ScalarSetValue(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarSetValue(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarSetValue(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

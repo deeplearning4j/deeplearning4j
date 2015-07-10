@@ -92,4 +92,15 @@ public class NormMax extends BaseAccumulation {
             return new NormMax(x.vectorAlongDimension(index, dimension));
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new NormMax(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new NormMax(x.tensorAlongDimension(index, dimension));
+
+    }
 }

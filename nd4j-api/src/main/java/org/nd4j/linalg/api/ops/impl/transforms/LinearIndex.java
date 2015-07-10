@@ -185,5 +185,16 @@ public class LinearIndex extends BaseTransformOp {
         else
             return new LinearIndex(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length(),false);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new LinearIndex(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),false);
+        else
+            return new LinearIndex(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length(),false);
+
+    }
 }
 

@@ -133,6 +133,16 @@ public class VectorFFT extends BaseTransformOp {
     }
 
     @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+        if (y() != null)
+            return new VectorFFT(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+        else
+            return new VectorFFT(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+
+    }
+
+    @Override
     public void exec() {
         if(!x.isVector())
             return;

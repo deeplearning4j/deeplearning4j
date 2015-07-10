@@ -134,4 +134,12 @@ public class ManhattanDistance extends BaseAccumulation {
             return new ManhattanDistance(x.vectorAlongDimension(index, dimension));
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (y() != null)
+            return new ManhattanDistance(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), x.length());
+        else
+            return new ManhattanDistance(x.tensorAlongDimension(index, dimension));
+    }
 }

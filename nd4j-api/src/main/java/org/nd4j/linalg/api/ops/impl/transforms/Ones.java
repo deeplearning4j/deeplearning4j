@@ -106,4 +106,15 @@ public class Ones extends BaseTransformOp {
             return new Ones(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Ones(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Ones(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+    }
 }

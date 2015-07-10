@@ -110,4 +110,9 @@ public class TestAccumulation extends BaseAccumulation {
     public Op opForDimension(int index, int dimension) {
         return null;
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        return null;
+    }
 }

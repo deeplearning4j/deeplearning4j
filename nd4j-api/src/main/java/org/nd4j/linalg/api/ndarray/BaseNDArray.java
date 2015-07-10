@@ -596,6 +596,23 @@ public abstract class BaseNDArray implements INDArray {
         return majorStride();
     }
 
+    @Override
+    public int tensorssAlongDimension(int... dimension) {
+        if(dimension.length == 1)
+            return vectorsAlongDimension(dimension[0]);
+        int[] tensorShape = ArrayUtil.keep(shape(),dimension);
+        return length / ArrayUtil.prod(tensorShape);
+    }
+
+    @Override
+    public INDArray tensorAlongDimension(int index, int... dimension) {
+        if(dimension.length == 1)
+            return vectorAlongDimension(index,dimension[0]);
+        int[] tensorShape = ArrayUtil.keep(shape(),dimension);
+        int[] stride = ArrayUtil.keep(stride(),dimension);
+        return create(data(),tensorShape,stride,offset(),ordering());
+    }
+
     /**
      * Returns the number of possible vectors for a given dimension
      *
@@ -1824,22 +1841,7 @@ public abstract class BaseNDArray implements INDArray {
         return permute(shape);
     }
 
-    /**
-     * Gives the indices for the ending of each slice
-     *
-     * @return the off sets for the beginning of each slice
-     */
-    @Override
-    public int[] endsForSlices() {
-        ensureNotCleanedUp();
-        int[] ret = new int[slices()];
-        int currOffset = offset + stride[0] - 1;
-        for (int i = 0; i < slices(); i++) {
-            ret[i] = currOffset;
-            currOffset += stride[0];
-        }
-        return ret;
-    }
+
 
     @Override
     public DataBuffer data() {
@@ -2807,7 +2809,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the norm1 along the specified dimension
      */
     @Override
-    public INDArray normmax(int dimension) {
+    public INDArray normmax(int...dimension) {
         return Nd4j.getExecutioner().exec(new NormMax(this), dimension);
     }
 
@@ -3384,10 +3386,6 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
-
-
-
-
     /**
      *
      * Return transposed version of this matrix.
@@ -3597,7 +3595,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the product along the specified dimension
      */
     @Override
-    public INDArray prod(int dimension) {
+    public INDArray prod(int...dimension) {
         return Nd4j.getExecutioner().exec(new Prod(this),dimension);
     }
 
@@ -3608,7 +3606,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    public INDArray mean(int dimension) {
+    public INDArray mean(int...dimension) {
         return Nd4j.getExecutioner().exec(new Mean(this),dimension);
     }
 
@@ -3619,7 +3617,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    public INDArray var(int dimension) {
+    public INDArray var(int...dimension) {
         return Nd4j.getExecutioner().exec(new Variance(this),dimension);
     }
 
@@ -3630,7 +3628,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    public INDArray max(int dimension) {
+    public INDArray max(int...dimension) {
         return Nd4j.getExecutioner().exec(new Max(this),dimension);
     }
 
@@ -3641,7 +3639,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    public INDArray min(int dimension) {
+    public INDArray min(int...dimension) {
         return Nd4j.getExecutioner().exec(new Min(this),dimension);
     }
 
@@ -3652,7 +3650,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the sum along the specified dimension of this ndarray
      */
     @Override
-    public INDArray sum(int dimension) {
+    public INDArray sum(int...dimension) {
         return Nd4j.getExecutioner().exec(new Sum(this),dimension);
     }
 
@@ -3664,7 +3662,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the norm1 along the specified dimension
      */
     @Override
-    public INDArray norm1(int dimension) {
+    public INDArray norm1(int...dimension) {
         return Nd4j.getExecutioner().exec(new Norm1(this),dimension);
     }
 
@@ -3676,7 +3674,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the standard deviation along a particular dimension
      */
     @Override
-    public INDArray std(int dimension) {
+    public INDArray std(int...dimension) {
         return Nd4j.getExecutioner().exec(new StandardDeviation(this),dimension);
     }
 
@@ -3688,7 +3686,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the norm2 along the specified dimension
      */
     @Override
-    public INDArray norm2(int dimension) {
+    public INDArray norm2(int...dimension) {
         return Nd4j.getExecutioner().exec(new Norm2(this),dimension);
     }
 

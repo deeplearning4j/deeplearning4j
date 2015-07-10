@@ -3880,7 +3880,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static INDArray zeros(int[] shape) {
+    public static INDArray zeros(int...shape) {
         INDArray ret = INSTANCE.zeros(shape);
         logCreationIfNecessary(ret);
         return ret;

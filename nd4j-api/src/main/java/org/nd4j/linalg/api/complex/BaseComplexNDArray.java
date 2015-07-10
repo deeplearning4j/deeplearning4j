@@ -1184,52 +1184,52 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
-    public IComplexNDArray normmax(int dimension) {
+    public IComplexNDArray normmax(int...dimension) {
         return Nd4j.createComplex(super.normmax(dimension));
     }
 
     @Override
-    public IComplexNDArray prod(int dimension) {
+    public IComplexNDArray prod(int...dimension) {
         return Nd4j.createComplex(super.prod(dimension));
     }
 
     @Override
-    public IComplexNDArray mean(int dimension) {
+    public IComplexNDArray mean(int...dimension) {
         return Nd4j.createComplex(super.mean(dimension));
     }
 
     @Override
-    public IComplexNDArray var(int dimension) {
+    public IComplexNDArray var(int...dimension) {
         return Nd4j.createComplex(super.var(dimension));
     }
 
     @Override
-    public IComplexNDArray max(int dimension) {
+    public IComplexNDArray max(int...dimension) {
         return Nd4j.createComplex(super.max(dimension));
     }
 
     @Override
-    public IComplexNDArray sum(int dimension) {
+    public IComplexNDArray sum(int...dimension) {
         return Nd4j.createComplex(super.sum(dimension));
     }
 
     @Override
-    public IComplexNDArray min(int dimension) {
+    public IComplexNDArray min(int...dimension) {
         return Nd4j.createComplex(super.min(dimension));
     }
 
     @Override
-    public IComplexNDArray norm1(int dimension) {
+    public IComplexNDArray norm1(int...dimension) {
         return Nd4j.createComplex(super.norm1(dimension));
     }
 
     @Override
-    public IComplexNDArray std(int dimension) {
+    public IComplexNDArray std(int...dimension) {
         return Nd4j.createComplex(super.std(dimension));
     }
 
     @Override
-    public IComplexNDArray norm2(int dimension) {
+    public IComplexNDArray norm2(int...dimension) {
         return Nd4j.createComplex(super.norm2(dimension));
     }
 

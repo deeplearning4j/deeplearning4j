@@ -107,4 +107,15 @@ public class Floor extends BaseTransformOp {
             return new Floor(xAlongDimension, z.vectorAlongDimension(index, dimension), x.length());
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Floor(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Floor(xAlongDimension, z.tensorAlongDimension(index, dimension), x.length());
+
+    }
 }

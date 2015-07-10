@@ -111,4 +111,15 @@ public class EqualTo extends BaseTransformOp {
 
     }
 
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new EqualTo(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new EqualTo(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+    }
+
 }

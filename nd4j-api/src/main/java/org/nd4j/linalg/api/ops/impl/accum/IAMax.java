@@ -102,4 +102,14 @@ public class IAMax extends BaseAccumulation {
             return new IAMax(x.vectorAlongDimension(index, dimension));
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new IAMax(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new IAMax(x.tensorAlongDimension(index, dimension));
+    }
 }

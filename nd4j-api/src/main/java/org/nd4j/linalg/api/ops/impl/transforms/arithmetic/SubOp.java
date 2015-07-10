@@ -107,6 +107,18 @@ public class SubOp extends BaseTransformOp {
 
     }
 
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+
+        if (y() != null)
+            return new SubOp(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new SubOp(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+    }
+
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {

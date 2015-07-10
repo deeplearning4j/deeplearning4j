@@ -106,4 +106,12 @@ public class ScalarLessThan extends BaseScalarOp {
         else
             return new ScalarLessThan(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarLessThan(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarLessThan(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

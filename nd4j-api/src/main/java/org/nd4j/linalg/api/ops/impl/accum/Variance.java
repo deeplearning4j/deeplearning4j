@@ -129,6 +129,17 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+
+        if (y() != null)
+            return new Variance(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Variance(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
         if (biasCorrected)

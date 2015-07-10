@@ -97,5 +97,15 @@ public class Min extends BaseAccumulation {
 
     }
 
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Min(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Min(x.tensorAlongDimension(index, dimension));
+    }
+
 
 }
