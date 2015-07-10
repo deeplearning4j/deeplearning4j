@@ -108,4 +108,15 @@ public class Abs extends BaseTransformOp {
             return new Abs(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Abs(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Abs(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+    }
 }

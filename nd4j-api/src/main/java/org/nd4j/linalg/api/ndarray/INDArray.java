@@ -121,6 +121,23 @@ public interface INDArray extends Serializable  {
      * @return the vector along a particular dimension
      */
     INDArray vectorAlongDimension(int index, int dimension);
+    /**
+     * Returns the number of possible vectors for a given dimension
+     *
+     * @param dimension the dimension to calculate the number of vectors for
+     * @return the number of possible vectors along a dimension
+     */
+    int tensorssAlongDimension(int...dimension);
+
+    /**
+     * Get the vector along a particular dimension
+     *
+     * @param index     the index of the vector to getScalar
+     * @param dimension the dimension to getScalar the vector from
+     * @return the vector along a particular dimension
+     */
+    INDArray tensorAlongDimension(int index, int...dimension);
+
 
     /**
      * Cumulative sum along a dimension
@@ -678,13 +695,12 @@ public interface INDArray extends Serializable  {
 
     void checkDimensions(INDArray other);
 
-    /**
-     * Gives the indices for the ending of each slice
-     *
-     * @return the off sets for the beginning of each slice
-     */
-    int[] endsForSlices();
 
+
+    /**
+     *
+     * @param list
+     */
     void sliceVectors(List<INDArray> list);
 
 
@@ -1233,7 +1249,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    INDArray normmax(int dimension);
+    INDArray normmax(int...dimension);
 
 
     /**
@@ -1242,7 +1258,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
      */
-    INDArray norm2(int dimension);
+    INDArray norm2(int...dimension);
 
 
     /**
@@ -1251,7 +1267,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the norm1 along
      * @return the norm1 along the specified dimension
      */
-    INDArray norm1(int dimension);
+    INDArray norm1(int...dimension);
 
 
     /**
@@ -1260,7 +1276,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the std along
      * @return the standard deviation along a particular dimension
      */
-    INDArray std(int dimension);
+    INDArray std(int...dimension);
 
     /**
      * Returns the product along a given dimension
@@ -1268,7 +1284,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the product along
      * @return the product along the specified dimension
      */
-    INDArray prod(int dimension);
+    INDArray prod(int...dimension);
 
 
     /**
@@ -1277,7 +1293,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray mean(int dimension);
+    INDArray mean(int...dimension);
 
 
     /**
@@ -1286,7 +1302,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray var(int dimension);
+    INDArray var(int...dimension);
 
 
     /**
@@ -1295,7 +1311,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray max(int dimension);
+    INDArray max(int...dimension);
 
     /**
      * Returns the overall min of this ndarray
@@ -1303,7 +1319,7 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
-    INDArray min(int dimension);
+    INDArray min(int...dimension);
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -1311,9 +1327,12 @@ public interface INDArray extends Serializable  {
      * @param dimension the dimension to getScalar the sum along
      * @return the sum along the specified dimension of this ndarray
      */
-    INDArray sum(int dimension);
+    INDArray sum(int...dimension);
 
-
+    /**
+     * stride setter
+     * @param stride
+     */
     void setStride(int[] stride);
 
     /**
@@ -1332,9 +1351,18 @@ public interface INDArray extends Serializable  {
      */
     INDArray getScalar(int[] indices);
 
-
+    /**
+     *
+     * @param indices
+     * @return
+     */
     int getInt(int... indices);
 
+    /**
+     *
+     * @param indices
+     * @return
+     */
     double getDouble(int... indices);
 
     /**
@@ -1346,8 +1374,19 @@ public interface INDArray extends Serializable  {
     float getFloat(int[] indices);
 
 
+    /**
+     *
+     * @param i
+     * @return
+     */
     double getDouble(int i);
 
+    /**
+     *
+     * @param i
+     * @param j
+     * @return
+     */
     double getDouble(int i, int j);
 
     /**
@@ -1604,6 +1643,11 @@ public interface INDArray extends Serializable  {
      */
     int[] stride();
 
+    /**
+     * Return the ordering (fortran or c)
+     * of this ndarray
+     * @return the ordering of this ndarray
+     */
     char ordering();
 
     /**
@@ -1647,60 +1691,184 @@ public interface INDArray extends Serializable  {
     DataBuffer data();
 
 
-
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray rdiv(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray rdivi(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray rsub(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray rsubi(IComplexNumber n);
 
-
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray div(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray divi(IComplexNumber n);
 
-
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray mul(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray muli(IComplexNumber n);
 
-
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray sub(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray subi(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray add(IComplexNumber n);
 
+    /**
+     *
+     * @param n
+     * @return
+     */
     IComplexNDArray addi(IComplexNumber n);
 
-
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray rdivi(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray rsub(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result);
 
-
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray div(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray divi(IComplexNumber n, IComplexNDArray result);
 
-
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray mul(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray muli(IComplexNumber n, IComplexNDArray result);
 
-
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray sub(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray subi(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray add(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray addi(IComplexNumber n, IComplexNDArray result);
 
 

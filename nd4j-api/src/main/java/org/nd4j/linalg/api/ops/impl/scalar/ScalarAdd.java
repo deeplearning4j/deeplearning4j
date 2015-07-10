@@ -115,4 +115,12 @@ public class ScalarAdd extends BaseScalarOp {
         else
             return new ScalarAdd(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarAdd(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarAdd(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

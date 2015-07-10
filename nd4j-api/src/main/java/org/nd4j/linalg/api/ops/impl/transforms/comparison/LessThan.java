@@ -110,4 +110,15 @@ public class LessThan extends BaseTransformOp {
             return new LessThan(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new LessThan(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new LessThan(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+    }
 }

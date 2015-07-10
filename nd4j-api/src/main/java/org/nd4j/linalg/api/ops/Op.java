@@ -157,6 +157,14 @@ public interface Op {
      */
     Op opForDimension(int index, int dimension);
 
+    /**
+     * A copy of this operation for a particular dimension of the input
+     *
+     * @param index     the index of the op to iterate over
+     * @param dimension the dimension to ge the input for
+     * @return the operation for that dimension
+     */
+    Op opForDimension(int index, int...dimension);
 
     /**
      * Initialize the operation based on the parameters

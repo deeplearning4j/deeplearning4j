@@ -78,4 +78,14 @@ public class StandardDeviation extends Variance {
             return new StandardDeviation(xAlongDimension);
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new StandardDeviation(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new StandardDeviation(xAlongDimension);
+    }
 }

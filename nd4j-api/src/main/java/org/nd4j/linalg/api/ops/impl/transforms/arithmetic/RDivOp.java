@@ -105,6 +105,17 @@ public class RDivOp extends BaseTransformOp {
 
     }
 
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new RDivOp(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new RDivOp(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+    }
+
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {

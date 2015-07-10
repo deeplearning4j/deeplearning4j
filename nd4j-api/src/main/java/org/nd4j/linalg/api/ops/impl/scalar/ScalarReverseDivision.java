@@ -110,4 +110,12 @@ public class ScalarReverseDivision extends BaseScalarOp {
         else
             return new ScalarReverseDivision(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarReverseDivision(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarReverseDivision(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

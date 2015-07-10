@@ -116,6 +116,14 @@ public class ScalarMax extends BaseScalarOp {
     }
 
     @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarMax(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarMax(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
+
+    @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
         if (num != null)

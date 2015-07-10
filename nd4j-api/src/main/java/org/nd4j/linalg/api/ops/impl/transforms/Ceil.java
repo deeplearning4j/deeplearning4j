@@ -106,4 +106,15 @@ public class Ceil extends BaseTransformOp {
             return new Ceil(xAlongDimension, z.vectorAlongDimension(index, dimension));
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Ceil(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Ceil(xAlongDimension, z.tensorAlongDimension(index, dimension));
+
+    }
 }

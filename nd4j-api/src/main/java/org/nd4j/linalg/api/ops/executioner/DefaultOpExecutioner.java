@@ -216,7 +216,31 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public Op exec(Op op, int dimension) {
+    public Op exec(Op op, int...dimension) {
+        if(dimension.length == 1)
+            return exec(op,dimension[0]);
+        else {
+            //only accumulate along a particular dimension
+            if (op instanceof Accumulation) {
+                Accumulation a = (Accumulation) op;
+                return exec(a);
+            }
+            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                exec(op2);
+                if (op instanceof TransformOp) {
+                    TransformOp t = (TransformOp) op;
+                    TransformOp t2 = (TransformOp) op2;
+                    t.z().tensorAlongDimension(i, dimension).assign(t2.z());
+                }
+
+
+            }
+            return op;
+        }
+    }
+
+    protected Op exec(Op op,int dimension) {
         //only accumulate along a particular dimension
         if (op instanceof Accumulation) {
             Accumulation a = (Accumulation) op;
@@ -237,7 +261,44 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(Accumulation op, int dimension) {
+    public INDArray exec(Accumulation op, int...dimension) {
+        if(dimension.length == 1)
+            return execVector(op,dimension[0]);
+        else {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+            //ensure vector is proper shape
+            if(retShape.length == 1)
+                retShape = new int[] {1,retShape[0]};
+            if(op instanceof IComplexNDArray) {
+                IComplexNDArray ret = Nd4j.complexZeros(retShape);
+                IComplexNDArray linear = ret.linearView();
+                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
+                    linear.putScalar(i, result);
+
+                }
+
+                return ret;
+            }
+            else {
+                INDArray ret = Nd4j.zeros(retShape);
+                INDArray linear = ret.linearView();
+                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
+                    linear.putScalar(i, result);
+
+                }
+
+                return ret;
+            }
+
+        }
+    }
+
+
+    protected INDArray execVector(Accumulation op,int dimension) {
         if(dimension == Integer.MAX_VALUE) {
             op.setX(op.x().linearView());
             if(op.y() != null)
@@ -344,12 +405,25 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         }
 
-
     }
 
-
     @Override
-    public INDArray execAndReturn(TransformOp op, int dimension) {
+    public INDArray execAndReturn(TransformOp op, int...dimension) {
+        if(dimension.length == 1)
+            return execAndReturnVector(op,dimension[0]);
+        else {
+            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                exec(op2);
+                op.z().tensorAlongDimension(i, dimension).assign(op2.z());
+            }
+
+            return op.z();
+
+        }
+    }
+
+    protected INDArray execAndReturnVector(TransformOp op,int dimension) {
         for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);
@@ -359,10 +433,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-
-
     @Override
-    public INDArray execAndReturn(ScalarOp op, int dimension) {
+    public INDArray execAndReturn(ScalarOp op, int... dimension) {
         return exec(op, dimension).z();
     }
 

@@ -111,4 +111,15 @@ public class LessThanOrEqual extends BaseTransformOp {
             return new LessThanOrEqual(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new LessThanOrEqual(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new LessThanOrEqual(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+
+    }
 }

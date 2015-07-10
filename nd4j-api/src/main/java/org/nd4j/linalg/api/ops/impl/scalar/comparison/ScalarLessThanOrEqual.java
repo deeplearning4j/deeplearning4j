@@ -109,4 +109,12 @@ public class ScalarLessThanOrEqual extends BaseScalarOp {
         else
             return new ScalarLessThanOrEqual(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarLessThanOrEqual(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarLessThanOrEqual(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

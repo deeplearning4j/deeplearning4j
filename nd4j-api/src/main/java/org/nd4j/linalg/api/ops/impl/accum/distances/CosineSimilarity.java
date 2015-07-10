@@ -119,6 +119,14 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (y() != null)
+            return new CosineSimilarity(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), x.length());
+        else
+            return new CosineSimilarity(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
         this.constantNormalizedByNorm2X = Nd4j.getExecutioner().execAndReturn(new Norm2(x)).currentResult();

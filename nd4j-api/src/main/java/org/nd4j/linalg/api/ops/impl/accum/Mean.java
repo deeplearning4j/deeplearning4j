@@ -95,4 +95,15 @@ public class Mean extends BaseAccumulation {
             return new Mean(x.vectorAlongDimension(index, dimension));
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+
+        if (y() != null)
+            return new Mean(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Mean(x.tensorAlongDimension(index, dimension));
+    }
 }

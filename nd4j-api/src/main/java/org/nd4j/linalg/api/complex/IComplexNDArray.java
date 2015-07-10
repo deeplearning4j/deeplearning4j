@@ -102,7 +102,7 @@ public interface IComplexNDArray extends INDArray {
      * @param condition the condition to be fulfilled
      * @return
      */
-    public IComplexNDArray cond(Condition condition);
+    IComplexNDArray cond(Condition condition);
 
     /**
      * 1 in an ndarray when condition is fulfilled,
@@ -111,7 +111,7 @@ public interface IComplexNDArray extends INDArray {
      * @param condition the condition to be fulfilled
      * @return
      */
-    public IComplexNDArray condi(Condition condition);
+    IComplexNDArray condi(Condition condition);
 
     @Override
     IComplexNDArray neq(INDArray other);
@@ -132,22 +132,22 @@ public interface IComplexNDArray extends INDArray {
      * @param arr the elements to assign
      * @return this
      */
-    public IComplexNDArray assign(IComplexNDArray arr);
+    IComplexNDArray assign(IComplexNDArray arr);
 
 
-    public IComplexNDArray put(NDArrayIndex[] indices, IComplexNumber element);
+    IComplexNDArray put(NDArrayIndex[] indices, IComplexNumber element);
 
 
-    public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element);
+    IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element);
 
 
-    public IComplexNDArray put(NDArrayIndex[] indices, Number element);
+    IComplexNDArray put(NDArrayIndex[] indices, Number element);
 
 
-    public IComplexNDArray putScalar(int i, IComplexNumber value);
+    IComplexNDArray putScalar(int i, IComplexNumber value);
 
 
-    public IComplexNDArray putScalar(int i, double value);
+    IComplexNDArray putScalar(int i, double value);
 
 
     /**
@@ -485,7 +485,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    IComplexNDArray min(int dimension);
+    IComplexNDArray min(int...dimension);
 
     /**
      * Returns the overall max of this ndarray
@@ -494,7 +494,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    IComplexNDArray max(int dimension);
+    IComplexNDArray max(int...dimension);
 
     /**
      * Inserts the element at the specified index
@@ -597,13 +597,7 @@ public interface IComplexNDArray extends INDArray {
     @Override
     void checkDimensions(INDArray other);
 
-    /**
-     * Gives the indices for the ending of each slice
-     *
-     * @return the off sets for the beginning of each slice
-     */
-    @Override
-    int[] endsForSlices();
+
 
     /**
      * Set the value of the ndarray to the specified value
@@ -691,20 +685,20 @@ public interface IComplexNDArray extends INDArray {
      *
      * @return the hermitian of this ndarray
      */
-    public IComplexNDArray hermitian();
+    IComplexNDArray hermitian();
 
     /**
      * Compute complex conj.
      */
 
-    public IComplexNDArray conj();
+    IComplexNDArray conj();
 
 
     /**
      * Compute complex conj (in-place).
      */
 
-    public IComplexNDArray conji();
+    IComplexNDArray conji();
 
     /**
      * Gets the real portion of this complex ndarray
@@ -1143,7 +1137,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the norm1 along the specified dimension
      */
     @Override
-    IComplexNDArray normmax(int dimension);
+    IComplexNDArray normmax(int...dimension);
 
 
     /**
@@ -1153,7 +1147,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the norm2 along the specified dimension
      */
     @Override
-    IComplexNDArray norm2(int dimension);
+    IComplexNDArray norm2(int...dimension);
 
 
     /**
@@ -1163,7 +1157,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the norm1 along the specified dimension
      */
     @Override
-    IComplexNDArray norm1(int dimension);
+    IComplexNDArray norm1(int...dimension);
 
 
     /**
@@ -1173,7 +1167,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the product along the specified dimension
      */
     @Override
-    IComplexNDArray prod(int dimension);
+    IComplexNDArray prod(int...dimension);
 
 
     /**
@@ -1183,7 +1177,7 @@ public interface IComplexNDArray extends INDArray {
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
-    IComplexNDArray mean(int dimension);
+    IComplexNDArray mean(int...dimension);
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -1192,24 +1186,45 @@ public interface IComplexNDArray extends INDArray {
      * @return the sum along the specified dimension of this ndarray
      */
     @Override
-    IComplexNDArray sum(int dimension);
+    IComplexNDArray sum(int...dimension);
 
 
     @Override
-    IComplexNDArray var(int dimension);
+    IComplexNDArray var(int...dimension);
 
     @Override
-    IComplexNDArray std(int dimension);
+    IComplexNDArray std(int...dimension);
 
+    /**
+     *
+     * @param i
+     * @return
+     */
     IComplexNumber getComplex(int i);
 
-
+    /**
+     *
+     * @param i
+     * @param j
+     * @return
+     */
     IComplexNumber getComplex(int i, int j);
 
-
+    /**
+     *
+     * @param i
+     * @param result
+     * @return
+     */
     IComplexNumber getComplex(int i, IComplexNumber result);
 
-
+    /**
+     *
+     * @param i
+     * @param j
+     * @param result
+     * @return
+     */
     IComplexNumber getComplex(int i, int j, IComplexNumber result);
 
     /**

@@ -88,4 +88,14 @@ public class Prod extends BaseAccumulation {
 
     }
 
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
+
+        if (y() != null)
+            return new Prod(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        else
+            return new Prod(x.tensorAlongDimension(index, dimension));
+    }
+
 }

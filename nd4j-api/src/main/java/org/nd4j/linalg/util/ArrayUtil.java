@@ -474,6 +474,48 @@ public class ArrayUtil {
      * @return the new array with the omitted
      * item
      */
+    public static int[] keep(int[] data, int...index) {
+        int[] ret = new int[index.length];
+        int count = 0;
+        for(int i = 0; i < data.length; i++)
+            if(Ints.contains(index,i))
+                ret[count++] = data[i];
+
+
+        return ret;
+    }
+
+
+    /**
+     * Return a copy of this array with the
+     * given index omitted
+     *
+     * @param data  the data to copy
+     * @param index the index of the item to remove
+     * @return the new array with the omitted
+     * item
+     */
+    public static int[] removeIndex(int[] data, int...index) {
+        int[] ret = new int[data.length - index.length];
+        int count = 0;
+        for(int i = 0; i < data.length; i++)
+            if(!Ints.contains(index,i))
+                ret[count++] = data[i];
+
+
+        return ret;
+    }
+
+
+    /**
+     * Return a copy of this array with the
+     * given index omitted
+     *
+     * @param data  the data to copy
+     * @param index the index of the item to remove
+     * @return the new array with the omitted
+     * item
+     */
     public static int[] removeIndex(int[] data, int index) {
         if(data == null)
             return null;

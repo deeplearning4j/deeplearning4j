@@ -136,4 +136,12 @@ public class EuclideanDistance extends BaseAccumulation {
             return new EuclideanDistance(x.vectorAlongDimension(index, dimension));
 
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (y() != null)
+            return new EuclideanDistance(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), x.length());
+        else
+            return new EuclideanDistance(x.tensorAlongDimension(index, dimension));
+    }
 }

@@ -115,4 +115,12 @@ public class ScalarSubtraction extends BaseScalarOp {
         else
             return new ScalarSubtraction(x.vectorAlongDimension(index, dimension), complexNumber);
     }
+
+    @Override
+    public Op opForDimension(int index, int... dimension) {
+        if (num != null)
+            return new ScalarSubtraction(x.tensorAlongDimension(index, dimension), num);
+        else
+            return new ScalarSubtraction(x.tensorAlongDimension(index, dimension), complexNumber);
+    }
 }

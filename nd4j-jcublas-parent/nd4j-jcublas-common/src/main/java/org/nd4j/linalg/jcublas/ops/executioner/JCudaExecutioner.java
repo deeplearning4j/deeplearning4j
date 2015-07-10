@@ -210,7 +210,35 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public Op exec(Op op, int dimension) {
+    public Op exec(Op op, int...dimension) {
+        if(dimension.length == 1)
+            return exec(op,dimension[0]);
+        else {
+            persist(op);
+            //only accumulate along a particular dimension
+            if (op instanceof Accumulation) {
+                Accumulation a = (Accumulation) op;
+                return exec(a);
+            }
+            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                exec(op2);
+                if (op instanceof TransformOp) {
+                    TransformOp t = (TransformOp) op;
+                    TransformOp t2 = (TransformOp) op2;
+                    t.z().tensorAlongDimension(i, dimension).assign(t2.z());
+                }
+
+
+            }
+
+            unPersistAndFree(op);
+
+            return op;
+        }
+    }
+
+    protected Op exec(Op op,int dimension) {
         persist(op);
         //only accumulate along a particular dimension
         if (op instanceof Accumulation) {
@@ -234,8 +262,49 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         return op;
     }
 
+
+
     @Override
-    public INDArray exec(Accumulation op, int dimension) {
+    public INDArray exec(Accumulation op, int...dimension) {
+        if(dimension.length == 1)
+            return exec(op,dimension[0]);
+        else {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+            //ensure vector is proper shape
+            if(retShape.length == 1)
+                retShape = new int[] {1,retShape[0]};
+            if(op instanceof IComplexNDArray) {
+                persist(op);
+                IComplexNDArray ret = Nd4j.complexZeros(retShape);
+                IComplexNDArray linear = ret.linearView();
+                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
+                    linear.putScalar(i, result);
+
+                }
+
+                unPersistAndFree(op);
+                return ret;
+            }
+            else {
+                persist(op);
+                INDArray ret = Nd4j.zeros(retShape);
+                INDArray linear = ret.linearView();
+                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
+                    linear.putScalar(i, result);
+
+                }
+
+                unPersistAndFree(op);
+                return ret;
+            }
+        }
+    }
+
+    protected INDArray exec(Accumulation op,int dimension) {
         if(dimension == Integer.MAX_VALUE) {
             op.setX(op.x().linearView());
             if(op.x() instanceof IComplexNDArray)
@@ -317,7 +386,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public INDArray execAndReturn(TransformOp op, int dimension) {
+    public INDArray execAndReturn(TransformOp op, int...dimension) {
+        return execAndReturn(op,dimension[0]);
+    }
+
+    protected INDArray execAndReturn(TransformOp op,int dimension) {
         //don't free device pointer until after operation is done
         persist(op);
         for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
@@ -334,6 +407,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         return op.z();
     }
+
 
     //save the pointers till they are all done being used
     private void persist(Op op) {
@@ -372,7 +446,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public INDArray execAndReturn(ScalarOp op, int dimension) {
+    public INDArray execAndReturn(ScalarOp op, int...dimension) {
         return exec(op, dimension).z();
     }
 
