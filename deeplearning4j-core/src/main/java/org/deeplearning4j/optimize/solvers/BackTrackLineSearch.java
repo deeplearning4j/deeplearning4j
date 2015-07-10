@@ -129,8 +129,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
     // returns fraction of step size (alam) if found a good step
     // returns 0.0 if could not step in direction
 
-    private double getNewScore(INDArray oldParameters){
-        layer.setParams(oldParameters); // currently setParams setScore - consider splitting out
+    private double getNewScore(INDArray parameters){
+        layer.setParams(parameters); // currently setParams setScore - consider splitting out
         return layer.score();
     }
 
@@ -214,7 +214,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 return 0.0;
             }
 
-            f = getNewScore(oldParameters);
+            f = getNewScore(parameters);
             logger.debug("value = " + f);
 
             // sufficient increase (Wolf condition)

@@ -48,12 +48,12 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class NeuralNetPlotter implements Serializable {
 
-    private static 	ClassPathResource script = new ClassPathResource("scripts/plot.py");
+    private static 	ClassPathResource script = new ClassPathResource("scripts" + File.separator + "plot.py");
     private static final Logger log = LoggerFactory.getLogger(NeuralNetPlotter.class);
     private static String ID_FOR_SESSION = UUID.randomUUID().toString();
     private static String localPath = System.getProperty("java.io.tmpdir") + File.separator;
-    private static String dataFilePath = localPath + "data/";
-    private static String graphPath = localPath + "graphs/";
+    private static String dataFilePath = localPath + "data" + File.separator;
+    private static String graphPath = localPath + "graphs" + File.separator;
     private static String graphFilePath = graphPath + ID_FOR_SESSION + File.separator;
     private static String localPlotPath = loadIntoTmp();
     private static String layerGraphFilePath = graphFilePath;
