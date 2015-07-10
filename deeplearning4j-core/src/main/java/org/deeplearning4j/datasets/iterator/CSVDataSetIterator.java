@@ -29,6 +29,7 @@ import java.io.InputStream;
  * CSV reader for a dataset file
  * @author Adam Gibson
  */
+@Deprecated
 public class CSVDataSetIterator extends BaseDatasetIterator {
 
     /**
