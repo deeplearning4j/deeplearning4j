@@ -1298,6 +1298,8 @@ public interface IComplexNDArray extends INDArray {
      */
     IComplexNumber getComplex(int...indices);
 
+
+
     /**
      * Mainly here for people coming from numpy.
      * This is equivalent to a call to permute
@@ -1316,10 +1318,8 @@ public interface IComplexNDArray extends INDArray {
      * @return the newly permuted array
      */
     @Override
-    IComplexNDArray permute(int[] rearrange);
+    IComplexNDArray permute(int...rearrange);
 
-
-    IComplexNumber[] toArray();
 
     /**
      * Returns the specified column.

@@ -147,6 +147,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
 
 
+
     @Test
     public void testAssignOffset() {
         IComplexNDArray arr = Nd4j.complexOnes(5, 5);
@@ -272,11 +273,11 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         });
 
         IComplexNDArray testSlice1 = Nd4j.createComplex(new IComplexNumber[]{
-                Nd4j.createComplexNumber(2,0),
-                Nd4j.createComplexNumber(4,0),
-                Nd4j.createComplexNumber(6,0),
-                Nd4j.createComplexNumber(8,0),
-                Nd4j.createComplexNumber(10,0),
+                Nd4j.createComplexNumber(2, 0),
+                Nd4j.createComplexNumber(4, 0),
+                Nd4j.createComplexNumber(6, 0),
+                Nd4j.createComplexNumber(8, 0),
+                Nd4j.createComplexNumber(10, 0),
 
         });
 
@@ -342,7 +343,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     @Test
     public void testRealConversion() {
         IComplexNDArray arr = Nd4j.createComplex(1,5);
-        INDArray arr1 = Nd4j.create(1,5);
+        INDArray arr1 = Nd4j.create(1, 5);
         assertEquals(arr,Nd4j.createComplex(arr1));
         IComplexNDArray arr3 = Nd4j.complexLinSpace(1,6,6).reshape(2, 3);
         INDArray linspace = Nd4j.linspace(1,6,6).reshape(2, 3);
@@ -441,7 +442,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
     @Test
     public void testLinearIndex() {
-        IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1,8}));
+        IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1, 8}));
         for (int i = 0; i < n.length(); i++) {
             int linearIndex = n.linearIndex(i);
             assertEquals(i * 2, linearIndex);
@@ -450,6 +451,20 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
             assertEquals(getFailureMessage(),i + 1, curr, 1e-1);
         }
     }
+
+    @Test
+    public void testPermute() {
+        IComplexNDArray arr = Nd4j.complexLinSpace(1,8,8).reshape(2,2,2);
+        IComplexNDArray permute = arr.permute(2, 1, 0);
+        IComplexNDArray assertion = Nd4j.createComplex(2, 2, 2);
+        IComplexNDArray assertionSlice1 = Nd4j.createComplex(Nd4j.create(new double[][]{{1,2},{3,4}}));
+        IComplexNDArray assertionSlice2 = Nd4j.createComplex(Nd4j.create(new double[][]{{5,6},{7,8}}));
+        assertion.putSlice(0,assertionSlice1);
+        assertion.putSlice(1,assertionSlice2);
+        assertEquals(assertion,permute);
+
+    }
+
 
     @Test
     public void testPutAndGet() {

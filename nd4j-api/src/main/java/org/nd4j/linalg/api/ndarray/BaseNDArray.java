@@ -1572,9 +1572,7 @@ public abstract class BaseNDArray implements INDArray {
 
             //create a new copy of the ndarray
             if (shape().length > 1 || this.ordering != ordering || newShape.length != shape().length) {
-                if(this instanceof IComplexNDArray)
-                    return  create(data,newShape,newStrides,offset,ordering);
-                newCopy = create(data, newShape, newStrides, offset, ordering).dup();
+                newCopy = create(data, newShape, newStrides, offset, ordering);
                 return newCopy;
             }
 
@@ -2987,7 +2985,7 @@ public abstract class BaseNDArray implements INDArray {
                 //enforce 1 x m
                 if(Shape.isRowVectorShape(sliceShape) && retStride.length < 2) {
                     sliceShape = new int[] {1,sliceShape[0]};
-                    retStride = ArrayUtil.of(1,retStride[0]);
+                    retStride = ordering() == 'f'  ?  ArrayUtil.of(retStride[0],elementStride()) : ArrayUtil.of(elementStride(),retStride[0]);
                 }
 
                 INDArray slice2 = create(data,
@@ -3056,11 +3054,11 @@ public abstract class BaseNDArray implements INDArray {
 
 
     protected int calcoffset(int index) {
-        if(getLeadingOnes() > 0 || getTrailingOnes() > 0) {
-            if(getLeadingOnes() > 0 && getTrailingOnes() > 0) {
+        if(getLeadingOnes() > 0 || getTrailingOnes() > 0 && rank() > 2) {
+            if(getLeadingOnes() > 0 && getTrailingOnes() > 0  && rank() > 2) {
                 return offset + index;
             }
-            else
+            else if(rank() > 2)
                 return offset + index * elementStride();
 
         }
