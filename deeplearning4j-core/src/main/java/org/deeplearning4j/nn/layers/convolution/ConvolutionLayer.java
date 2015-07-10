@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -94,8 +95,16 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
-
-        throw new UnsupportedOperationException();
+        INDArray gy = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        INDArray biasGradient = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
+        getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
+        INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
+        gcol = Nd4j.rollAxis(gcol,3);
+        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);
+        Gradient retGradient = new DefaultGradient();
+        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
+        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
+        return retGradient;
     }
 
     @Override
