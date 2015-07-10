@@ -160,6 +160,7 @@
         <module>deeplearning4j-cli</module>
         <module>deeplearning4j-ui</module>
         <module>dl4j-test-resources</module>
+        <module>dl4j-caffe</module>
     </modules>
 
     <licenses>

@@ -1,0 +1,63 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>deeplearning4j-parent</artifactId>
+        <groupId>org.deeplearning4j</groupId>
+        <version>0.0.3.3.5.alpha2-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dl4j-caffe</artifactId>
+    <packaging>jar</packaging>
+
+    <name>dl4j-caffe</name>
+
+
+    <properties>
+        <jackson.core.version>2.6.0-rc3</jackson.core.version>
+        <lombok.version>1.16.4</lombok.version>
+        <guava.version>15.0</guava.version>
+        <jackson.proto.version>2.6.0-rc3</jackson.proto.version>
+        <spring.version>3.2.5.RELEASE</spring.version>
+        <google.protobuf.version>2.6.1</google.protobuf.version>
+        <google.gson.version>2.3.1</google.gson.version>
+        <org.json.version>20141113</org.json.version>
+        <protobuf.test.version>1.1</protobuf.test.version>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${google.protobuf.version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <tasks>
+                                <exec executable="protoc">
+                                    <arg value="--java_out=src/main/java" />
+                                    <arg value="src/resources/proto/caffe.proto" />
+                                </exec>
+                            </tasks>
+                            <sourceRoot>src/main/java</sourceRoot>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
