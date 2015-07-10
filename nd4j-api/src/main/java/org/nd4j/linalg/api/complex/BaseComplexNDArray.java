@@ -3171,19 +3171,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     /**
-     * Converts the matrix to a one-dimensional array of doubles.
-     */
-    @Override
-    public IComplexNumber[] toArray() {
-        length = ArrayUtil.prod(shape);
-        IComplexNumber[] ret = new IComplexNumber[length];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = getComplex(i);
-        return ret;
-    }
-
-
-    /**
      * Reshape the matrix. Number of elements must not change.
      *
      * @param newRows
