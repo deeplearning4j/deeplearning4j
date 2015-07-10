@@ -118,12 +118,26 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testTensorAlongDimension() {
-        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2,2,3);
-        INDArray tensors = twoTwoByThree.tensorAlongDimension(0,1,2);
+        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
+        INDArray tensors = twoTwoByThree.tensorAlongDimension(0, 1, 2);
+        assertArrayEquals(new int[]{2,3},tensors.shape());
         assertEquals(2,twoTwoByThree.tensorssAlongDimension(1,2));
+        INDArray firstTensor = Nd4j.create(new double[][]{{1,3},{2,4}});
+        assertEquals(firstTensor,twoTwoByThree.tensorAlongDimension(0,0,1));
+        INDArray secondTensor = Nd4j.create(new double[][]{{5,7},{6,8}});
+        assertEquals(secondTensor,twoTwoByThree.tensorAlongDimension(1,0,1));
+
     }
 
-    
+
+    @Test
+    public void testMultiDimSum() {
+        INDArray assertion = Nd4j.create(new double[]{10,26,42});
+        INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
+        INDArray multiSum = twoTwoByThree.sum(0,1);
+        assertEquals(assertion,multiSum);
+    }
+
 
 
     @Test

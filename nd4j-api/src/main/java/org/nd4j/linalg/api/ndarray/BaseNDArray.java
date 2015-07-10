@@ -600,17 +600,18 @@ public abstract class BaseNDArray implements INDArray {
     public int tensorssAlongDimension(int... dimension) {
         if(dimension.length == 1)
             return vectorsAlongDimension(dimension[0]);
-        int[] tensorShape = ArrayUtil.keep(shape(),dimension);
+        int[] tensorShape = ArrayUtil.keep(shape(), dimension);
         return length / ArrayUtil.prod(tensorShape);
     }
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
         if(dimension.length == 1)
-            return vectorAlongDimension(index,dimension[0]);
+            return vectorAlongDimension(index, dimension[0]);
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
-        int[] stride = ArrayUtil.keep(stride(),dimension);
-        return create(data(),tensorShape,stride,offset(),ordering());
+        int[] stride = ArrayUtil.keep(stride(), dimension);
+        int idx = offset + index * ArrayUtil.prod(ArrayUtil.removeIndex(stride(),dimension));
+        return create(data(),tensorShape,stride,idx,ordering());
     }
 
     /**
