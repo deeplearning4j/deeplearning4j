@@ -550,8 +550,6 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int majorStride() {
         ensureNotCleanedUp();
-        if(majorStride >= 0)
-            return majorStride;
         if(stride.length == 0) {
             majorStride = elementStride();
             return elementStride();
@@ -570,12 +568,19 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
-        if(size(0) == length() && getTrailingOnes() > 0 || getLeadingOnes() > 0 && rank() > 2) {
+        if(rank() > 2 && (size(0) == length() && getTrailingOnes() > 0  || getLeadingOnes() > 0 && !isVector())) {
             return elementStride();
         }
 
 
-        int majorStride =  stride[0];
+        if(Shape.isColumnVectorShape(shape())) {
+            int majorStride = ordering() == 'c' ? stride(1) : stride(0);
+            this.majorStride = majorStride;
+            return majorStride;
+        }
+
+
+        int majorStride = stride(0);
         this.majorStride = majorStride;
         return majorStride;
     }
@@ -723,22 +728,21 @@ public abstract class BaseNDArray implements INDArray {
 
         if(isMatrix()) {
             if(dimension == 0) {
-                if(ordering() == NDArrayFactory.C)
-                    return create(data,
-                            new int[]{shape[dimension],1}
-                            ,  new int[]{stride[dimension],elementStride()},
-                            offset + index * stride[stride.length - 1]);
-                else
-                    return create(data,
-                            new int[]{shape[dimension],1}
-                            ,  new int[]{stride[dimension],elementStride()},
-                            calcoffset(index));
+                int[] shape2 =  new int[]{shape[dimension],1};
+                int realOffset = offset + (index * (ordering() == 'f' ? stride(0) : stride(1)));
+                int[] retStride = ordering() == NDArrayFactory.FORTRAN ? new int[]{majorStride(),elementStride()} : new int[] {elementStride(),majorStride()};
+                return create(data,
+                        shape2
+                        ,retStride,
+                        realOffset);
             }
             else if(dimension == 1) {
+                int[] shape2 =  new int[]{1,shape[dimension]};
+
                 if(ordering() == NDArrayFactory.C)
                     return create(data,
                             new int[]{1, shape[dimension]}
-                            , ArrayUtil.of(elementStride(),stride[dimension]),
+                            , Nd4j.getComplexStrides(shape2, ordering()),
                             calcoffset(index));
                 //c ordering
                 return create(data,
@@ -2908,7 +2912,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray assign(Number value) {
-        data().assign(value);
+        Nd4j.getExecutioner().exec(new ScalarSet(this,value));
         return this;
     }
 
@@ -4346,7 +4350,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the newly permuted array
      */
     @Override
-    public INDArray permute(int[] rearrange) {
+    public INDArray permute(int...rearrange) {
         ensureNotCleanedUp();
         if (rearrange.length != shape.length)
             return dup();

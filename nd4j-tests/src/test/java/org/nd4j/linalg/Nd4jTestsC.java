@@ -93,7 +93,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
-    
+
+    @Test
+    public void testGetDouble() {
+        INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
+        INDArray swapped = n2.swapAxes(n2.shape().length - 1, 1);
+
+    }
 
     @Test
     public void testWriteTxt() throws Exception {

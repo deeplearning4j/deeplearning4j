@@ -442,10 +442,11 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
         assertEquals(slice0, testSlice0);
         assertEquals(slice2, testSlice1);
 
-
+        //weird slice striding issues here. try to avoid hacks related to if() the problem is not complex related
         INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
         INDArray swapped = n2.swapAxes(n2.shape().length - 1, 1);
         INDArray firstSlice2 = swapped.slice(0).slice(0);
+        //problem ends  here. Something with slicing?
         IComplexNDArray testSlice = Nd4j.createComplex(firstSlice2);
         IComplexNDArray testNoOffset = Nd4j.createComplex(new double[]{1, 0, 3, 0, 5, 0, 7, 0, 9, 0}, new int[]{1,5});
         assertEquals(testSlice, testNoOffset);
@@ -659,8 +660,9 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
         assertEquals(sliceColumn, testColumn);
 
         IComplexNDArray testColumn2 = Nd4j.createComplex(Nd4j.create(new double[]{17, 19, 21, 23}, new int[]{1,4}));
-        IComplexNDArray testSlice2 = multiSlice.slice(2).getColumn(0);
-        assertEquals(testColumn2, testSlice2);
+        IComplexNDArray testSlice2 = multiSlice.slice(2);
+        IComplexNDArray testSlice2ColumnZero = testSlice2.getColumn(0);
+        assertEquals(testColumn2, testSlice2ColumnZero);
 
         IComplexNDArray testColumn3 = Nd4j.createComplex(Nd4j.create(new double[]{18, 20, 22, 24}, new int[]{1,4}));
         IComplexNDArray testSlice3 = multiSlice.slice(2).getColumn(1);
