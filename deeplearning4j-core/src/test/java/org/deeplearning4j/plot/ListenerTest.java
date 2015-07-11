@@ -60,7 +60,7 @@ public class ListenerTest {
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10}, "sigmoid", 10));
         network.init();
         DataSet data = irisIter.next();
-        IterationListener listener = new AccuracyPlotterIterationListener(1, network, data);
+        IterationListener listener = new AccuracyPlotterIterationListener(9, network, data);
 
         network.setListeners(Collections.singletonList(listener));
         network.fit(data.getFeatureMatrix(), data.getLabels());
