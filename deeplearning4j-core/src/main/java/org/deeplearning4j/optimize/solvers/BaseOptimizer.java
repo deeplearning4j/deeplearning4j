@@ -139,6 +139,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
             }
+
         //some algorithms do pre processing of gradient and
         //need to test possible directions. (LBFGS)
         boolean testLineSearch = preFirstStepProcess(gradient);
@@ -146,7 +147,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //ensure we can take a step
             try {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step,params,gradient);
+                step = lineMaximizer.optimize(step, params, gradient);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
 
@@ -162,26 +163,28 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
         for(int i = 0; i < conf.getNumIterations(); i++) {
+            int v = conf.getNumIterations();
             //line normalization where relevant
             preProcessLine(gradient);
+
             //perform one step
             try {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step,params,gradient);
+                step = lineMaximizer.optimize(step, params, gradient);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
             }
 
+            //record old score for deltas and other termination conditions
+            oldScore = score;
+            pair = gradientAndScore();
+            setupSearchState(pair);
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
 
-            //record old score for deltas and other termination conditions
-            oldScore = score;
-            pair = gradientAndScore();
-            setupSearchState(pair);
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions)
                 if(condition.terminate(score,oldScore,new Object[]{gradient}))
@@ -194,6 +197,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             for(TerminationCondition condition : terminationConditions)
                 if(condition.terminate(score,oldScore,new Object[]{gradient}))
                     return true;
+
 
 
         }
