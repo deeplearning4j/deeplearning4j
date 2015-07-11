@@ -550,18 +550,17 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public int majorStride() {
         ensureNotCleanedUp();
-        if(majorStride >= 0)
-            return majorStride;
         if(stride.length == 0) {
             majorStride = elementStride();
             return elementStride();
         }
         if(ordering() == NDArrayFactory.C) {
-            if(stride[shape().length - 1] == 1 && !isMatrix()) {
+            if(stride[shape().length - 1] == 1 && !isMatrix() || Shape.isRowVectorShape(shape())) {
                 int ret =  getFirstNonOneStride();
                 majorStride = ret;
                 return ret;
             }
+
         }
 
         if(ordering() == NDArrayFactory.FORTRAN && size(0) == 1) {
@@ -570,12 +569,19 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
-        if(size(0) == length() && getTrailingOnes() > 0 || getLeadingOnes() > 0 && rank() > 2) {
+        if(rank() > 2 && (size(0) == length() && getTrailingOnes() > 0  || getLeadingOnes() > 0 && !isVector())) {
             return elementStride();
         }
 
 
-        int majorStride =  stride[0];
+        if(Shape.isColumnVectorShape(shape())) {
+            int majorStride = ordering() == 'c' ? stride(1) : stride(0);
+            this.majorStride = majorStride;
+            return majorStride;
+        }
+
+
+        int majorStride = stride(0);
         this.majorStride = majorStride;
         return majorStride;
     }
@@ -723,22 +729,21 @@ public abstract class BaseNDArray implements INDArray {
 
         if(isMatrix()) {
             if(dimension == 0) {
-                if(ordering() == NDArrayFactory.C)
-                    return create(data,
-                            new int[]{shape[dimension],1}
-                            ,  new int[]{stride[dimension],elementStride()},
-                            offset + index * stride[stride.length - 1]);
-                else
-                    return create(data,
-                            new int[]{shape[dimension],1}
-                            ,  new int[]{stride[dimension],elementStride()},
-                            calcoffset(index));
+                int[] shape2 =  new int[]{shape[dimension],1};
+                int realOffset = offset + (index * (ordering() == 'f' ? stride(0) : stride(1)));
+                int[] retStride = ordering() == NDArrayFactory.FORTRAN ? new int[]{majorStride(),elementStride()} : new int[] {elementStride(),majorStride()};
+                return create(data,
+                        shape2
+                        ,retStride,
+                        realOffset);
             }
             else if(dimension == 1) {
+                int[] shape2 =  new int[]{1,shape[dimension]};
+
                 if(ordering() == NDArrayFactory.C)
                     return create(data,
                             new int[]{1, shape[dimension]}
-                            , ArrayUtil.of(elementStride(),stride[dimension]),
+                            , Nd4j.getComplexStrides(shape2, ordering()),
                             calcoffset(index));
                 //c ordering
                 return create(data,
@@ -748,7 +753,7 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-        int arrOffset = offset + index * stride[0];
+        int arrOffset = offset == 0 && dimension > 0 ? offset + index * majorStride() : offset + index;
 
         /**
          * The offset is greater than the dimensions.
@@ -834,17 +839,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
-    private int getFirstNonOneStrideIdx() {
-        for(int j = 0; j < stride().length; j++) {
-            if(stride[j] == 1)
-                continue;
 
-            return j;
-        }
-
-        return elementStride();
-
-    }
 
     private int getFirstNonOneStride() {
         if(firstNonOneStride >= 0)
@@ -1551,7 +1546,10 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
-                return create(data, newShape, new int[]{stride[0],1}, offset);
+                if(ordering() == 'f')
+                    return create(data, newShape, new int[]{stride[0],elementStride()}, offset);
+                 else
+                    return create(data, newShape, new int[]{elementStride(),stride(-1)}, offset);
 
             }
         }
@@ -2908,7 +2906,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray assign(Number value) {
-        data().assign(value);
+        Nd4j.getExecutioner().exec(new ScalarSet(this,value));
         return this;
     }
 
@@ -2979,20 +2977,40 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             else {
-                int[] sliceShape = !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(shape, 1, shape.length) : shape();
-                int[] retStride =  !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(stride,1,stride.length) : stride();
+                if(stride(-1) == 1 && rank() > 2) {
+                    int[] sliceShape = !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(shape, 1, shape.length) : shape();
+                    //trailing ones should not count
+                    int[] retStride =  getStrides(sliceShape,ordering());
 
-                //enforce 1 x m
-                if(Shape.isRowVectorShape(sliceShape) && retStride.length < 2) {
-                    sliceShape = new int[] {1,sliceShape[0]};
-                    retStride = ordering() == 'f'  ?  ArrayUtil.of(retStride[0],elementStride()) : ArrayUtil.of(elementStride(),retStride[0]);
+                    //enforce 1 x m
+                    if(Shape.isRowVectorShape(sliceShape) && retStride.length < 2) {
+                        sliceShape = new int[] {1,sliceShape[0]};
+                        retStride = ordering() == 'f'  ?  ArrayUtil.of(retStride[0],elementStride()) : ArrayUtil.of(elementStride(),retStride[0]);
+                    }
+
+                    INDArray slice2 = create(data,
+                            sliceShape,
+                            retStride,
+                            offset, ordering);
+                    return slice2;
+                }
+                else {
+                    int[] sliceShape = !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(shape, 1, shape.length) : shape();
+                    int[] retStride =  !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(stride,1,stride.length) : stride();
+
+                    //enforce 1 x m
+                    if(Shape.isRowVectorShape(sliceShape) && retStride.length < 2) {
+                        sliceShape = new int[] {1,sliceShape[0]};
+                        retStride = ordering() == 'f'  ?  ArrayUtil.of(retStride[0],elementStride()) : ArrayUtil.of(elementStride(),retStride[0]);
+                    }
+
+                    INDArray slice2 = create(data,
+                            sliceShape,
+                            retStride,
+                            offset, ordering);
+                    return slice2;
                 }
 
-                INDArray slice2 = create(data,
-                        sliceShape,
-                        retStride,
-                        offset, ordering);
-                return slice2;
             }
 
 
@@ -3935,7 +3953,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         int[] stride = this.stride();
-        if(offsets[0] > 0 && ordering() == NDArrayFactory.C) {
+        if(ordering() == NDArrayFactory.C) {
             stride = ArrayUtil.reverseCopy(getStrides(shape,ordering));
         }
         else if(ordering() == NDArrayFactory.FORTRAN && Shape.isRowVectorShape(shape))
@@ -4346,7 +4364,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the newly permuted array
      */
     @Override
-    public INDArray permute(int[] rearrange) {
+    public INDArray permute(int...rearrange) {
         ensureNotCleanedUp();
         if (rearrange.length != shape.length)
             return dup();
