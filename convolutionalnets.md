@@ -31,6 +31,8 @@ Convolutional nets perform more operations on input than just convolutions thems
 
 After a convolutional layer, input is passed through a nonlinear transform such as *tanh* or *rectified linear* unit, which will squash input values into a range between -1 and 1. 
 
+### Max Pooling / Downsampling
+
 Then the signal progresses to the next major stage of convolutional nets: max pooling, also known as downsampling. Downsampling, by definition, reduces the volume of information passing through the net, which is important, since images are costly to process.
 
 Max pooling aggregates the feature maps (subsections of subsections) onto one space to get an overall “expectation” of where features occur. This expectation is then projected onto a 2D space relative to the hidden layer size of the convolutional layer.
