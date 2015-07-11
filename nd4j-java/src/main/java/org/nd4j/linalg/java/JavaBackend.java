@@ -48,6 +48,6 @@ public class JavaBackend extends Nd4jBackend {
 
     @Override
     public Resource getConfigurationResource() {
-        return new ClassPathResource(LINALG_PROPS, JavaBackend.class);
+        return new ClassPathResource(LINALG_PROPS, JavaBackend.class.getClassLoader());
     }
 }

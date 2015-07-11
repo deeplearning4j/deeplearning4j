@@ -93,7 +93,7 @@ public class ContextHolder {
         if(INSTANCE == null) {
             Properties props = new Properties();
             try {
-                props.load(new ClassPathResource("/cudafunctions.properties").getInputStream());
+                props.load(new ClassPathResource("/cudafunctions.properties", ContextHolder.class.getClassLoader()).getInputStream());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -164,7 +164,7 @@ public class ContextHolder {
         }
 
         for(int i = 0; i < numDevices; i++) {
-            ClassPathResource confFile = new ClassPathResource("devices/" + i);
+            ClassPathResource confFile = new ClassPathResource("devices/" + i, ContextHolder.class.getClassLoader());
             if(confFile.exists()) {
                 Properties props = new Properties();
                 try {

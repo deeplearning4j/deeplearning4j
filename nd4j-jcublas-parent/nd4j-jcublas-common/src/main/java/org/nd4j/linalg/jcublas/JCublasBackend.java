@@ -63,7 +63,7 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public Resource getConfigurationResource() {
-        return new ClassPathResource(LINALG_PROPS);
+        return new ClassPathResource(LINALG_PROPS, JCublasBackend.class.getClassLoader());
     }
 
 
