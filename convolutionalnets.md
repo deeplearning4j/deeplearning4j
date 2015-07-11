@@ -7,29 +7,37 @@ layout: default
 
 Convolutional nets perform object recognition with images. They can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. Convolutional nets overlap with text analysis via optical character recognition, but they are also useful when analyzing words as discrete textual units, as well as sound. 
 
-From the Latin, *to convolve* is to roll together. For our mathematical purposes, a convolution is a integral measuring how much two functions overlap as one passes over the other. 
-
-Imagine a tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Now imagine a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). 
-
-The static, underlying function is the input image being analyzed, and the second, mobile function is known as the filter, because it picks up the signal of the image. The two functions relate through multiplication. To visualize them as matrices rather than as bell curves, please see [Andrej Karpathy's excellent animation](https://cs231n.github.io/convolutional-networks/) under the heading "Convolution Demo."
-
 The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
-Convolutional nets take slices of the feature space, say, of an image, and learn them one by one. By learning different portions of a feature space, convolutional nets allow for easily scalable and robust feature engineering.
+From the Latin, *to convolve* is to roll together. For mathematical purposes, a convolution is a integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
 
-Note that convolutional nets analyze images differently than RBMs. While RBMs learn to reconstruct and identify the features of each image as a whole, convolutional nets learn images in pieces that we call feature maps. 
+Imagine a tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Now imagine a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). S two functions are being "rolled together."
 
-Convolutional networks perform a sort of search. Picture a small window sliding left to right across a larger image, and recommencing at the left once it reaches the end of one pass (like typewriters do). That moving window is capable recognizing only one thing, say, a short vertical line. Three dark pixels stacked atop one another. It moves that vertical-line-recognizing filter over the actual pixels of the image, looking for matches.
+The static, underlying function is the input image being analyzed, and the second, mobile function is known as the filter, because it picks up the signal of the image. The two functions relate through multiplication. To visualize convolutions as matrices rather than as bell curves, please see [Andrej Karpathy's excellent animation](https://cs231n.github.io/convolutional-networks/) under the heading "Convolution Demo."
+
+The next thing to understand about convolutional nets is that they are passing many filters for the image, each one picking up different signals. One way to imagine it would be to think of them passing a horizontal line filter, a vertical line filter, and a diagonal line filter to create a map of the edges in the image. 
+
+Convolutional nets take those slices of the feature space of an image and learn them one by one. By learning different portions of a feature space, convolutional nets allow for easily scalable and robust feature engineering.
+
+(Note that convolutional nets analyze images differently than RBMs. While RBMs learn to reconstruct and identify the features of each image as a whole, convolutional nets learn images in pieces that we call feature maps.) 
+
+So convolutional networks perform a sort of search. Picture a small magnifying glass sliding left to right across a larger image, and recommencing at the left once it reaches the end of one pass (like typewriters do). That moving window is capable recognizing only one thing, say, a short vertical line. Three dark pixels stacked atop one another. It moves that vertical-line-recognizing filter over the actual pixels of the image, looking for matches.
 
 Each time a match is found, it is mapped onto a feature space particular to that visual element. In that space, the location of each vertical line match is recorded, a bit like birdwatchers leave pins in a map to mark where they last saw a great blue heron. A convolutional net runs many, many searches over a single image – horizontal lines, diagonal ones, as many as there are visual elements to be sought. 
 
 ![Alt text](../img/convnet.png) 
 
-Those signals are then passed through a nonlinear transform such as tanh to the second major stage of convolutional nets: pooling, which has two flavors: max or average. The pooling aggregates the feature maps (subsections of subsections) onto one space to get an overall “expectation” of where features occur. This expectation is then projected onto a 2D space relative to the hidden layer size of the convolutional layer.
+Convolutional nets perform more operations on input than just convolutions themselves. 
 
-With max pooling, only the locations on the image that showed the strongest correlation to the feature (the maximum value) are preserved. Much information about lesser values is lost in this step, also known as downsampling, and that has spurred research into alternative methods. But downsampling has the advantage, precisely because information is lost, of decreasing the amount of storage required by the net. 
+After a convolutional layer, input is passed through a nonlinear transform such as *tanh* or *rectified linear* unit, which will squash input values into a range between -1 and 1. 
 
-Convolutional neural networks are related to signal processing. In signal processing, a convolution is the mathematical product of two functions reflecting their overlap, or correlation. Think of a convolution as a way of mixing two inputs by multiplying them. 
+Then the signal progresses to the next major stage of convolutional nets: max pooling, also known as downsampling. Downsampling, by definition, reduces the volume of information passing through the net, which is important, since images are costly to process.
+
+Max pooling aggregates the feature maps (subsections of subsections) onto one space to get an overall “expectation” of where features occur. This expectation is then projected onto a 2D space relative to the hidden layer size of the convolutional layer.
+
+Only the locations on the image that showed the strongest correlation to the feature (the maximum value) are preserved, and those maximum values are combined in a lower-dimensional space. 
+
+Much information about lesser values is lost in this step, also known as downsampling, and that has spurred research into alternative methods. But downsampling has the advantage, precisely because information is lost, of decreasing the amount of storage and processing required by the net. 
 
 ### DL4J Code Example
 
