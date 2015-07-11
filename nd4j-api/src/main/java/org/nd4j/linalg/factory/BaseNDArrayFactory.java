@@ -1030,7 +1030,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int vectorOffset = 0;
         int arrVecLength = 0;
         boolean notIncremented = true;
+        int retVectorsAlongDimension = ret.vectorsAlongDimension(dimension);
         for(INDArray arr : toConcat) {
+            int arrVectorsAlongDimension = arr.vectorsAlongDimension(dimension);
+            if(arrVectorsAlongDimension != retVectorsAlongDimension)
+                throw new IllegalStateException("Vectors along dimension must be same");
             for(int i = 0; i < arr.vectorsAlongDimension(dimension); i++) {
                 INDArray retVec = ret.vectorAlongDimension(i,dimension);
                 INDArray arrVec = arr.vectorAlongDimension(i,dimension);

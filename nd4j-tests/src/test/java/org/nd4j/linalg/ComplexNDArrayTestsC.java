@@ -714,7 +714,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     @Test
     public void testGetReal() {
         DataBuffer data = Nd4j.linspace(1, 8, 8).data();
-        int[] shape = new int[]{8};
+        int[] shape = new int[]{1,8};
         IComplexNDArray arr = Nd4j.createComplex(shape);
         for (int i = 0; i < arr.length(); i++)
             arr.put(i, Nd4j.scalar(data.getFloat(i)));
