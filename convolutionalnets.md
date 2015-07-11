@@ -3,11 +3,17 @@ title:
 layout: default
 ---
 
-# Convolutional Nets
+# Convolutional Networks
 
-Convolutional nets perform object recognition with images. They can identify faces, individuals, street signs, eggplants, platypuses, and many other aspects of visual data. Convolutional nets overlap with text analysis via optical character recognition, but they are also useful when analyzing words as discrete textual units, as well as sound. 
+Convolutional nets perform object recognition with images. They can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. Convolutional nets overlap with text analysis via optical character recognition, but they are also useful when analyzing words as discrete textual units, as well as sound. 
 
-The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to the power of deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
+From the Latin, *to convolve* is to roll together. For our mathematical purposes, a convolution is a integral measuring how much two functions overlap as one passes over the other. 
+
+Imagine a tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Now imagine a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). 
+
+The static, underlying function is the input image being analyzed, and the second, mobile function is known as the filter, because it picks up the signal of the image. The two functions relate through multiplication. To visualize them as matrices rather than as bell curves, please see [Andrej Karpathy's excellent animation](https://cs231n.github.io/convolutional-networks/) under the heading "Convolution Demo."
+
+The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
 Convolutional nets take slices of the feature space, say, of an image, and learn them one by one. By learning different portions of a feature space, convolutional nets allow for easily scalable and robust feature engineering.
 
