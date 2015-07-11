@@ -76,7 +76,8 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
      
      for(epoch <- (1 to epochs)) {
        val broadcastedParams = sc.broadcast(networkParams)
-       val accumulatedParams = sc.accumulator(Nd4j.zeros(networkParams.shape()))(INDArrayAccumulatorParam)
+       val zeros = Nd4j.create(networkParams.shape() : _*)
+       val accumulatedParams = sc.accumulator(zeros)(INDArrayAccumulatorParam)
      
        rdd.foreachPartition { iterator =>
          @transient val conf: MultiLayerConfiguration = MultiLayerConfiguration.fromJson(confJson)
@@ -100,5 +101,5 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
 
 private[spark] object INDArrayAccumulatorParam extends AccumulatorParam[INDArray] {
   def addInPlace(t1: INDArray, t2: INDArray): INDArray = { t1.addi(t2); t1 }
-  def zero(initialValue: INDArray): INDArray = Nd4j.zeros(initialValue.shape())
+  def zero(initialValue: INDArray): INDArray = Nd4j.create(initialValue.shape() : _*)
 }

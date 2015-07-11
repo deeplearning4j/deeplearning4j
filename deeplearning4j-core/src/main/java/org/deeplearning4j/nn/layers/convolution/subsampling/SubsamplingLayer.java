@@ -77,7 +77,8 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient error(INDArray input) {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -88,12 +89,12 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Gradient errorSignal(Gradient error, INDArray input) {
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     @Override
@@ -104,22 +105,23 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public void merge(Layer layer, int batchSize) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public INDArray activationMean() {
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray preOutput(INDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray activate() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -131,7 +133,7 @@ public class SubsamplingLayer implements Layer {
             if(ret == null) {
                 ret = Nd4j.create(Ints.concat(new int[]{input.slices(),numFeatureMaps},downSampled.shape()));
             }
-           ret.putSlice(i, downSampled);
+            ret.putSlice(i, downSampled);
         }
         return ret;
     }
@@ -143,7 +145,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Layer clone() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
+import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -93,11 +94,13 @@ public class Word2Vec implements Serializable {
         Huffman huffman = new Huffman(vocabAndNumWords.getFirst().vocabWords());
         huffman.build();
 
-
+        log.info("Built huffman tree");
 
         JavaRDD<Pair<List<VocabWord>, AtomicLong>> r = rdd
                 .map(new TokenizerFunction(tokenizerFactoryClazz))
                 .map(new TokentoVocabWord(vocabCacheBroadcast));
+
+        log.info("Built vocab..");
 
         final Word2VecParam param = new Word2VecParam.Builder()
                 .negative(lookupTable.getNegative()).window(conf.getInt(Word2VecPerformer.WINDOW,5))
@@ -109,18 +112,26 @@ public class Word2Vec implements Serializable {
 
 
         final List<Long> wordsSeen = new ArrayList<>();
-        long runningTotal = 0;
-        final List<AtomicLong> frequencies = r.map(new Function<Pair<List<VocabWord>,AtomicLong>, AtomicLong>() {
+        final JavaRDD<AtomicLong> frequencies = r.map(new Function<Pair<List<VocabWord>,AtomicLong>, AtomicLong>() {
             @Override
             public AtomicLong call(Pair<List<VocabWord>, AtomicLong> listAtomicLongPair) throws Exception {
                 return listAtomicLongPair.getSecond();
             }
-        }).collect();
+        }).cache();
 
-        for(int j = 0; j < frequencies.size(); j++) {
-            wordsSeen.add(runningTotal + frequencies.get(j).get());
-            runningTotal += frequencies.get(j).get();
-        }
+        final Accumulator<Double> acc = sc.accumulator(0L);
+        frequencies.foreach(new VoidFunction<AtomicLong>() {
+            @Override
+            public void call(AtomicLong atomicLong) throws Exception {
+                acc.add((double) atomicLong.get());
+                wordsSeen.add((long) (acc.value() + atomicLong.get()));
+
+            }
+        });
+        
+
+
+
         JavaRDD<List<VocabWord>> words = r.map(new Function<Pair<List<VocabWord>, AtomicLong>, List<VocabWord>>() {
             @Override
             public List<VocabWord> call(Pair<List<VocabWord>, AtomicLong> listAtomicLongPair) throws Exception {
@@ -135,8 +146,9 @@ public class Word2Vec implements Serializable {
             }
         }).cache();
 
+        log.info("Calculated word frequencies");
 
-
+        log.info("Training word 2vec");
         //calculate all the errors
         for(int i = 0; i < conf.getInt(Word2VecPerformerVoid.ITERATIONS,5); i++) {
             final Broadcast<Word2VecParam> finalParamBroadcast = sc.broadcast(param);
