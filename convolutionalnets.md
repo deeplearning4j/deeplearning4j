@@ -28,7 +28,7 @@ The width and height of an image are easily understood. The depth is due to how 
 
 ### Definition
 
-From the Latin, *to convolve* is to roll together. For mathematical purposes, a convolution is a integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
+From the Latin *convolvere*, *to convolve* is to roll together. For mathematical purposes, a convolution is a integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
 
 Imagine a tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Now imagine a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). S two functions are being "rolled together."
 
