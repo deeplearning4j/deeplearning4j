@@ -1443,14 +1443,16 @@ public class Nd4j {
         int offset = dis.readInt();
 
         String line;
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(reader));
         int count = 0;
 
         if(read == 'c') {
             DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape) * 2);
-            while((line = bufferedReader.readLine()) != null) {
-                IComplexNumber num = Nd4j.parseComplexNumber(line);
-                buf.put(count++,num);
+            for(int i = 0; i < ArrayUtil.prod(shape); i+= 2) {
+                String val = dis.readUTF();
+                IComplexNumber num = Nd4j.parseComplexNumber(val);
+                buf.put(i,num);
+                //line
+                dis.readUTF();
             }
 
             IComplexNDArray arr = Nd4j.createComplex(buf,shape,stride,offset,ordering);
@@ -1459,12 +1461,12 @@ public class Nd4j {
         }
         else {
             DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape));
-
-            while((line = bufferedReader.readLine()) != null) {
-                double val = Double.valueOf(line);
-                buf.put(count++,val);
+            for(int i = 0; i < ArrayUtil.prod(shape); i++) {
+                String val = dis.readUTF();
+                buf.put(i,Double.valueOf(val));
+                //line
+                dis.readUTF();
             }
-
             INDArray arr = Nd4j.create(buf,shape,stride,offset,ordering);
             return arr;
         }
