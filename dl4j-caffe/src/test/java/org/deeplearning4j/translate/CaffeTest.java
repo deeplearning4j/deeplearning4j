@@ -5,9 +5,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import java.io.IOException;
-import java.nio.file.Paths;
-
 /**
  * Created by jeffreytang on 7/11/15.
  */
