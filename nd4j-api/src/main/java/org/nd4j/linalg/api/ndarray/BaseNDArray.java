@@ -1548,7 +1548,7 @@ public abstract class BaseNDArray implements INDArray {
             else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
                 if(ordering() == 'f')
                     return create(data, newShape, new int[]{stride[0],elementStride()}, offset);
-                 else
+                else
                     return create(data, newShape, new int[]{elementStride(),stride(-1)}, offset);
 
             }
@@ -2906,7 +2906,9 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray assign(Number value) {
-        Nd4j.getExecutioner().exec(new ScalarSet(this,value));
+        for(int i = 0; i < linearView().length(); i++) {
+            linearView().putScalar(i,value.doubleValue());
+        }
         return this;
     }
 

@@ -21,14 +21,12 @@ package org.nd4j.linalg;
 
 
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
@@ -121,10 +119,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
         INDArray tensors = twoTwoByThree.tensorAlongDimension(0, 1, 2);
         assertArrayEquals(new int[]{2,3},tensors.shape());
-        assertEquals(2,twoTwoByThree.tensorssAlongDimension(1,2));
+        assertEquals(2, twoTwoByThree.tensorssAlongDimension(1, 2));
         INDArray firstTensor = Nd4j.create(new double[][]{{1,3},{2,4}});
         assertEquals(firstTensor,twoTwoByThree.tensorAlongDimension(0,0,1));
-        INDArray secondTensor = Nd4j.create(new double[][]{{5,7},{6,8}});
+        INDArray secondTensor = Nd4j.create(new double[][]{{5, 7}, {6, 8}});
         assertEquals(secondTensor,twoTwoByThree.tensorAlongDimension(1,0,1));
 
     }
@@ -132,9 +130,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testMultiDimSum() {
-        INDArray assertion = Nd4j.create(new double[]{10,26,42});
+        INDArray assertion = Nd4j.create(new double[]{10, 26, 42});
         INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
-        INDArray multiSum = twoTwoByThree.sum(0,1);
+        INDArray multiSum = twoTwoByThree.sum(0, 1);
         assertEquals(assertion,multiSum);
     }
 
@@ -146,7 +144,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray ret = Nd4j.append(appendTo, 3, 1, -1);
         assertArrayEquals(new int[]{3, 6}, ret.shape());
 
-        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2, 2);
         INDArray otherAppend = Nd4j.append(linspace, 3, 1.0, -1);
         INDArray assertion = Nd4j.create(new double[][]{
                 {1, 3, 1, 1, 1},
@@ -263,6 +261,19 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(write, read);
 
     }
+
+    @Test
+    public void testReadWriteTxt() throws Exception {
+        INDArray write = Nd4j.create(5);
+        File writeTo = new File(UUID.randomUUID().toString());
+        Nd4j.writeTxt(write,writeTo.getAbsolutePath(),"\t");
+        INDArray read = Nd4j.readTxt(writeTo.getAbsolutePath());
+        assertEquals(write,read);
+
+    }
+
+
+
 
     @Test
     public void testConcatScalars() {

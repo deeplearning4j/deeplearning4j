@@ -1554,7 +1554,7 @@ public class Nd4j {
         for (int i = 0; i < arr.shape().length; i++)
             dataOutputStream.writeInt(arr.size(i));
         for (int i = 0; i < arr.stride().length; i++)
-            dataOutputStream.writeInt(arr.stride()[i]);
+            dataOutputStream.writeInt(arr.stride(i));
 
         dataOutputStream.writeUTF(dataType() == DataBuffer.Type.FLOAT ? "float" : "double");
         dataOutputStream.writeUTF("real");
