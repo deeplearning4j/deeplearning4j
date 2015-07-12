@@ -107,24 +107,33 @@ public class ImageLoader {
     public static  BufferedImage toBufferedImageRGB(INDArray arr) {
         if(arr.rank() < 3)
             throw new IllegalArgumentException("Arr must be 3d");
-        BufferedImage image = new BufferedImage(arr.size(-2), arr.size(-1), BufferedImage.TYPE_INT_ARGB);
 
-        for (int i = 0; i < image.getWidth(); i++) {
-            for (int j = 0; j < image.getHeight(); j++) {
-                //  double patch_normal = (  column.getDouble(0) - col_min ) / ( col_max - col_min + 0.000001f );
+        int height = arr.size(-2);
+        int width = arr.size(-1);
 
-                int r = 255 * Math.abs(arr.slice(0).getInt(i, j));
-                int g = 255 * Math.abs(arr.slice(1).getInt(i, j));
-                int b = 255 * Math.abs(arr.slice(2).getInt(i, j));
-                int col = (r << 16) | (g << 8) | b;
-                image.setRGB(i,j,col);
+        BufferedImage image = new BufferedImage(width,height ,BufferedImage.TYPE_INT_ARGB);
+        int[] data = new int[arr.size(-1) * arr.size(-2)];
+        int i = 0;
+        for (int y = 0; y < height; y++) {
+            int red = (y * 255) / (height - 1);
+            for (int x = 0; x < width; x++) {
+                int green = (x * 255) / (width - 1);
+                int blue = 128;
+                data[i++] = (red << 16) | (green << 8) | blue;
             }
         }
+
+        image.setRGB(0, 0, width, height, data, 0, width);
 
         return image;
 
     }
 
+    /**
+     *
+     * @param matrix
+     * @return
+     */
     public static BufferedImage toImage(INDArray matrix) {
         BufferedImage img = new BufferedImage(matrix.size(-2), matrix.size(-1), BufferedImage.TYPE_INT_ARGB);
         if(matrix.isMatrix()) {

@@ -8,8 +8,13 @@
         setInterval(function() {
             var d = new Date();
             $("#pic").attr("src", "/activations/img?"+d.getTime());
-        },1000);
+        },3000);
     </script>
+    <style type="text/css">
+        #embed {
+            background: #2F4F4F;
+        }
+    </style>
 </head>
 
 

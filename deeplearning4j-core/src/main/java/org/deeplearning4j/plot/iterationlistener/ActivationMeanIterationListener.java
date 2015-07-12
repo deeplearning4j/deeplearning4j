@@ -7,6 +7,8 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.util.ImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -19,7 +21,6 @@ import java.util.List;
  */
 public class ActivationMeanIterationListener implements IterationListener {
     private int iteration = 1;
-    private PlotFilters filters = new PlotFilters();
     private File outputFile = new File("activations.png");
 
 
@@ -35,13 +36,6 @@ public class ActivationMeanIterationListener implements IterationListener {
         this.iteration = iteration;
     }
 
-    public PlotFilters getFilters() {
-        return filters;
-    }
-
-    public void setFilters(PlotFilters filters) {
-        this.filters = filters;
-    }
 
     public File getOutputFile() {
         return outputFile;
@@ -65,7 +59,7 @@ public class ActivationMeanIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         if(iteration % this.iteration == 0) {
             Layer l = (Layer) model;
-            INDArray weights = l.activationMean();
+            INDArray weights = Transforms.sigmoid(l.activationMean());
             if(weights.rank() < 4) {
                 if(weights.rank() == 2) {
                     weights = weights.reshape(1,1, weights.rows(), weights.columns());
@@ -75,8 +69,8 @@ public class ActivationMeanIterationListener implements IterationListener {
                 }
             }
 
-            INDArray plot = filters.render(weights, 1);
-            BufferedImage image = ImageLoader.toBufferedImageRGB(plot);
+          
+            BufferedImage image = ImageLoader.toImage(weights);
             try {
                 ImageIO.write(image, "png", outputFile);
             } catch (IOException e) {
