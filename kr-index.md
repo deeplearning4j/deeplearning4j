@@ -13,31 +13,31 @@ Deeplearning4j는 설정(configuration)이기보다는 규칙(convention)을 겨
 
 ### 딥 러닝 활용 사례
 
-•	얼굴/이미지 인식
-•	음성 검색
-•	음성-텍스트 전환 (전사)
-•	스팸 필터링 (이상 탐지)
-•	전자 상거래 사기 탐지
+* 얼굴/이미지 인식
+* 음성 검색
+* 음성-텍스트 전환 (전사)
+* 스팸 필터링 (이상 탐지)
+* 전자 상거래 사기 탐지
 
 ### DL4J의 주요 특징
 
-•	다기능의 N 차원 배열 클래스(n-dimensional array class)
-•	GPU 통합
-•	하둡, 스파크 및 Akka + AWS et al 상 확장 가능
+* 다기능의 N 차원 배열 클래스(n-dimensional array class)
+* GPU 통합
+* 하둡, 스파크 및 Akka + AWS et al 상 확장 가능
 
 Deeplearning4j는 배포된 멀티 스레드 딥 러닝 프레임 워크와 일반 단일 스레드 딥 러닝 프레임 워크를 모두 포함합니다. 학습은 군집(cluster)로 이뤄지며 이는 신속하게 대량의 데이터를 처리할 수 있슴을 의미합니다. 망들(nets)은 반복 감소를 통해 병렬로 학습되며, 자바, 스칼라 및 Clojure와 균일하게 호환 가능합니다. 오픈 스택의 모듈식 구성 요소로서의 Deeplearning4j의 역할이 마이크로 서비스 아키텍처에 적합한 최초의 딥 러닝 프레임 워크를 가능하게 합니다.
 
 ### DL4J의 신경망(neural nets)
 
-•	제한 볼츠만 머신(Restricted Boltzmann machines)
-•	합성곱 망(Convolutional Nets) (이미지)
-•	누적된 잡음 제거용 오토인코더(Stacked Denoising Autoencoders)
-•	순환 망(Recurrent Nets)/LSTMs (시계열)
-•	재귀 오토인코더(Recursive autoencoders)
-•	심층 신뢰 네트워크(Deep-belief networks)
-•	딥 오토인코더(Deep autoencoders) (QA/데이터 압축)
-•	순환 뉴럴 텐서 네트워크(Neural Tensor Networks) (장면, 구문 분석)
-•	저희의 "신경망을 선택하는 방법" 페이지를 참조하십시오.
+* 제한 볼츠만 머신(Restricted Boltzmann machines)
+* 합성곱 망(Convolutional Nets) (이미지)
+* 누적된 잡음 제거용 오토인코더(Stacked Denoising Autoencoders)
+* 순환 망(Recurrent Nets)/LSTMs (시계열)
+* 재귀 오토인코더(Recursive autoencoders)
+* 심층 신뢰 네트워크(Deep-belief networks)
+* 딥 오토인코더(Deep autoencoders) (QA/데이터 압축)
+* 순환 뉴럴 텐서 네트워크(Neural Tensor Networks) (장면, 구문 분석)
+* 저희의 "신경망을 선택하는 방법" 페이지를 참조하십시오.
 
 심층 신경망은 기록에 남길만한 정확성을 가지고 있습니다. 신경망에 관한 간단한 소개는 저희의 개요 페이지에 있습니다. 간단히 말해서, Deeplearning4j는 소위 층(layer)이라 불리는 얕은(shallow)망으로부터 심층(deep)망을 구성할 수 있게 합니다. 이러한 유연성은 제한 볼츠만 머신, 다른 오토인코더, 합성곱 망과 순환 망을 CPU 또는 GPU 상의 스파크와 하둡과 연동할 배포된 생산 수준의 프레임 워크와 결합하게 합니다.
 
