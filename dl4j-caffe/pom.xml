@@ -14,18 +14,18 @@
 
 
     <properties>
-        <jackson.core.version>2.6.0-rc3</jackson.core.version>
-        <lombok.version>1.16.4</lombok.version>
-        <guava.version>15.0</guava.version>
-        <jackson.proto.version>2.6.0-rc3</jackson.proto.version>
         <spring.version>3.2.5.RELEASE</spring.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
-        <google.gson.version>2.3.1</google.gson.version>
-        <org.json.version>20141113</org.json.version>
-        <protobuf.test.version>1.1</protobuf.test.version>
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>com.google.protobuf</groupId>
@@ -33,31 +33,11 @@
             <version>${google.protobuf.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-sources</id>
-                        <phase>generate-sources</phase>
-                        <configuration>
-                            <tasks>
-                                <exec executable="protoc">
-                                    <arg value="--java_out=src/main/java" />
-                                    <arg value="src/resources/proto/caffe.proto" />
-                                </exec>
-                            </tasks>
-                            <sourceRoot>src/main/java</sourceRoot>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>
