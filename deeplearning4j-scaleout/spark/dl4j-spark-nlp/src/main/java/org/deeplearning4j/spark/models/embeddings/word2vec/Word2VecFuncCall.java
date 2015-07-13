@@ -25,7 +25,9 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Created by agibsoncccc on 4/20/15.
+ * Map operation for word2vec
+ *
+ * @author dAdam Gibson
  */
 public class Word2VecFuncCall implements Serializable {
     private Broadcast<Word2VecParam> param;
