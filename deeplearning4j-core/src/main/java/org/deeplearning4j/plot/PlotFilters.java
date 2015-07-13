@@ -44,7 +44,7 @@ public class PlotFilters {
         if(data.rank() == 4)
             data = data.reshape(n * data.size(1),n * data.size(3));
 
-        data = Transforms.round(Transforms.abs(data)).muli(255);
+        data.muli(255);
 
         return data;
     }
