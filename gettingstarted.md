@@ -68,8 +68,6 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Cygwin is not supported. You must install DL4J from **DOS Windows**.  
 
-* Once you've completed these steps, you're ready to start training neural networks with Deeplearning4j. 
-
 ###<a name="source">Working With Source</a>
 
 We highly recommend downloading the [Deeplearning4j JAR files from Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), rather than working with source, unless you plan on making significant commits to the project (which are always welcome, of course). To download from Maven, please follow the [instructions on the ND4J site](http://nd4j.org/getstarted.html#maven).
@@ -112,6 +110,7 @@ which will import the source and set everything up.
 * Older versions of Maven, such as 3.0.4, are likely to throw exceptions like a NoSuchMethodError. This can be fixed by upgrading to the latest version of Maven. 
 * To compile some ND4J dependencies, you need to install some dev tools for C and C++. [Please see our ND4J guide](http://nd4j.org/getstarted.html#devtools).
 * Some problems encountered using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's excellent [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also highly instructive. While we've partially documented DL4J, many parts of the code are essentially a raw, domain-specific language for deep learning.
+* The include path for [Java CPP](https://github.com/bytedeco/javacpp) doesn't always work on **Windows**. One workaround is to take the the header files from the include directory of Visual Studio, and put them in the include directory of the Java Run-Time Environment (JRE), where Java is installed. This will affect files such as standardio.h.)
 
 ### <a name="results">Reproducible Results</a>
 
