@@ -39,7 +39,7 @@ public class BackTrackLineSearchTest {
         layer.setLabels(data.getLabels());
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
 
-        double step = lineSearch.optimize(1.0, layer.params(), layer.gradient().gradient());
+        double step = lineSearch.optimize(1.0, layer.params(), layer.gradient().gradient(), layer.gradient().gradient().dup());
         assertEquals(0.0,step,1e-1);
     }
 
