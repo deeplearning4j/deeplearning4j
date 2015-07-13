@@ -1104,19 +1104,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             for(int k = 0; k < numLayers; k++) {
                 Layer currLayer = getLayers()[k];
                 for(String paramType : gradientUpdates.get(k).gradientForVariable().keySet()) {
-                    INDArray gradient = gradientUpdates.get(k).getGradientFor(paramType);
-                    // Direct object reference updates gradients with adjustments
-                    GradientAdjustment.updateGradientAccordingToParams(
-                            i
-                            ,input.slices()
-                            ,currLayer.conf()
-                            ,currLayer.getParam(paramType)
-                            ,gradient
-                            ,currLayer.getOptimizer().updaterForVariables().get(paramType)
-                            ,currLayer.getOptimizer().getLastStep().get(paramType)
-                            ,paramType
-                    );
-                    currLayer.update(gradient, paramType);
+                    currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k).getGradientFor(paramType),currLayer,input.size(0),paramType);
+                    currLayer.update(gradientUpdates.get(k).getGradientFor(paramType), paramType);
                 }
             }
             for(IterationListener listener :  listeners)
