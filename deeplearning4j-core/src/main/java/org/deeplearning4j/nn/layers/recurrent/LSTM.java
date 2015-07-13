@@ -455,8 +455,13 @@ public class LSTM extends BaseLayer {
 
     @Override
     public double score() {
+        return score;
+    }
+
+        @Override
+    public void setScore() {
         INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
-        return LossFunctions.score(xs,conf.getLossFunction(),forward,conf.getL2(),conf.isUseRegularization());
+        score = LossFunctions.score(xs,conf.getLossFunction(),forward,conf.getL2(),conf.isUseRegularization());
     }
 
     @Override
@@ -497,6 +502,7 @@ public class LSTM extends BaseLayer {
                 decoderBiasLinear.putScalar(count++,params.getDouble(i));
 
         }
+        setScore();
     }
 
     @Override
