@@ -20,9 +20,13 @@ package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -45,10 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class BaseOptimizer implements ConvexOptimizer {
 
-
-
     protected NeuralNetConfiguration conf;
-    protected GradientUpdater adaGrad;
     protected int iteration = 0;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     protected StepFunction stepFunction;
@@ -56,6 +57,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
+    protected Updater updater;
     protected double step;
     private int batchSize = 10;
     protected double score,oldScore;
@@ -247,42 +249,18 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //no-op
     }
 
-    @Override
-    public Map<String, INDArray> getLastStep() {
-        return lastStep;
-    }
 
-    public void setLastStep(Map<String, INDArray> lastStep) {
-        this.lastStep = lastStep;
-    }
 
-    @Override
-    public GradientUpdater getUpdater() {
-        return adaGrad;
-    }
-
-    @Override
-    public Map<String, GradientUpdater> updaterForVariables() {
-        return adaGradForVariable;
-    }
-
-    @Override
-    public GradientUpdater getUpdaterForVariable(String variable) {
-        return adaGradForVariable.get(variable);
-    }
 
     @Override
     public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType) {
-        GradientAdjustment.updateGradientAccordingToParams(
-                iteration
-                ,batchSize
-                ,conf
-                ,model.getParam(paramType)
-                ,gradient
-                ,adaGradForVariable.get(paramType)
-                ,lastStep.get(paramType)
-                ,paramType
-                );
+        if(updater == null)
+            updater = UpdaterCreator.getUpdater(model.conf());
+        Layer layer = (Layer) model;
+        Gradient g = new DefaultGradient();
+        g.setGradientFor(paramType,gradient);
+        updater.update(layer,g);
+
     }
 
     /**
