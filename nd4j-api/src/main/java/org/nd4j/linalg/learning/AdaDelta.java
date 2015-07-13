@@ -14,7 +14,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public class AdaDelta implements Serializable {
+public class AdaDelta implements Serializable,GradientUpdater {
     private INDArray msg;
     private INDArray msdx;
     private double rho = 0.95;
@@ -58,6 +58,7 @@ public class AdaDelta implements Serializable {
      *                 updated gradient for
      * @return the update gradient
      */
+    @Override
     public INDArray getGradient(INDArray gradient) {
         if(msg == null)
             msg = Nd4j.zeros(gradient.shape());

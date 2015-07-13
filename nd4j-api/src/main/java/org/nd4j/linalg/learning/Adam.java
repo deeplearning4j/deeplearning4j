@@ -12,7 +12,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public class Adam implements Serializable {
+public class Adam implements Serializable,GradientUpdater {
 
     private double alpha = 1e-3;
     private double beta1 = 0.9;
@@ -37,6 +37,7 @@ public class Adam implements Serializable {
      * @param gradient the gradient to get the update for
      * @return the gradient
      */
+    @Override
     public INDArray getGradient(INDArray gradient) {
         if(m == null) {
             m = Nd4j.zeros(gradient.shape());
