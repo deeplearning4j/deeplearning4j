@@ -82,7 +82,8 @@ public interface ConvexOptimizer extends Serializable {
      */
     void setupSearchState(Pair<Gradient, Double> pair);
 
-    Map<String, INDArray> getLastStep();
+
+
 
 
 
