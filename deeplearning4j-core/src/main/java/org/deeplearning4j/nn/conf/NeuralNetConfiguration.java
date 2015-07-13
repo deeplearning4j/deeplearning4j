@@ -94,7 +94,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* RNG for sampling. */
     @Deprecated
     protected transient DefaultRandom rng;
-    //adadelta
+    //adadelta - weight for how much to consider previous history
     protected double rho;
     protected long seed;
     //weight initialization
