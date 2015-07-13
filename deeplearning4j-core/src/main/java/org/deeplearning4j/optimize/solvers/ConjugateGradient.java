@@ -120,13 +120,16 @@ public class ConjugateGradient extends BaseOptimizer {
     public void setupSearchState(Pair<Gradient, Double> pair) {
         super.setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        INDArray searchDirection = gradient.dup();
         searchState.put("h",gradient.dup());
         searchState.put("xi",gradient.dup());
         searchState.put("gg",0.0);
         searchState.put("gam",0.0);
         searchState.put("dgg",0.0);
+        searchState.put("searchDirection",searchDirection);
 
     }
+
 
 
 }

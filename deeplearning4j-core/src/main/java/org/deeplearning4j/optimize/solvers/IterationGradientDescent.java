@@ -48,13 +48,13 @@ public class IterationGradientDescent extends BaseOptimizer {
     @Override
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            Pair<Gradient,Double> score = gradientAndScore();
-            for(String paramType : score.getFirst().gradientForVariable().keySet()) {
-                model.update(score.getFirst().getGradientFor(paramType), paramType);
+            Pair<Gradient,Double> pair = gradientAndScore();
+            for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
+                model.update(pair.getFirst().getGradientFor(paramType), paramType);
             }
 
             for(IterationListener listener : iterationListeners)
-                listener.iterationDone(model,i);
+                listener.iterationDone(model, i);
         }
         return true;
     }

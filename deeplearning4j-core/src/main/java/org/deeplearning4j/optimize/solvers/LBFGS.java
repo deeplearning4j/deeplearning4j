@@ -62,12 +62,14 @@ public class LBFGS extends BaseOptimizer {
         super.setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray params = (INDArray) searchState.get(PARAMS_KEY);
+        INDArray searchDirection = gradient.dup();
         searchState.put("s",new LinkedList());
         searchState.put("y",new LinkedList());
         searchState.put("rho",new LinkedList());
         searchState.put("alpha", Nd4j.create(m));
         searchState.put("oldparams",params.dup());
         searchState.put("oldgradient",gradient.dup());
+        searchState.put("searchDirection",searchDirection);
 
 
     }

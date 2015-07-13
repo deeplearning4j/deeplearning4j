@@ -27,8 +27,10 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * Vectorized Stochastic Gradient Ascent
@@ -54,8 +56,6 @@ public class GradientAscent extends BaseOptimizer {
         if(norm2 > stpMax)
             line.muli(stpMax / norm2);
 
-
-
     }
 
     @Override
@@ -65,7 +65,15 @@ public class GradientAscent extends BaseOptimizer {
 
     @Override
     public void setupSearchState(Pair<Gradient, Double> pair) {
+
         super.setupSearchState(pair);
+        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        INDArray params = (INDArray) searchState.get(PARAMS_KEY);
+        INDArray searchDirection = gradient.dup();
+        searchState.put("oldparams",params.dup());
+        searchState.put("oldgradient",gradient.dup());
+        searchState.put("searchDirection",searchDirection);
+
     }
 
 

@@ -63,6 +63,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
+    public final static String SEARCH_DIR = "searchDirection";
     protected Map<String,GradientUpdater> adaGradForVariable = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
@@ -132,6 +133,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         score = pair.getSecond();
         //check initial gradient
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        INDArray searchDirection = (INDArray) searchState.get(SEARCH_DIR);
 
         //pre existing termination conditions
         for(TerminationCondition condition : terminationConditions)
@@ -146,8 +148,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         if(testLineSearch) {
             //ensure we can take a step
             try {
-                INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, params, gradient);
+                INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
+                step = lineMaximizer.optimize(step, parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
 
@@ -169,8 +171,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //perform one step
             try {
-                INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, params, gradient,getPoint(gradient));
+                INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
+                step = lineMaximizer.optimize(step, parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
             }
@@ -206,9 +208,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return true;
     }
 
-
-    @Override
-    public INDArray getPoint(INDArray gradient) {
+    public INDArray getSearchDirection(INDArray gradient) {
         return gradient.dup();
     }
 
@@ -221,7 +221,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return false;
     }
 
-
     @Override
     public int batchSize() {
         return batchSize;
@@ -231,8 +230,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }
-
-
 
 
     /**
@@ -251,8 +248,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public  void postStep() {
         //no-op
     }
-
-
 
 
     @Override
@@ -274,9 +269,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public  void setupSearchState(Pair<Gradient, Double> pair) {
         INDArray gradient = pair.getFirst().gradient(conf.variables());
         INDArray params = model.params();
+        INDArray searchDirection = gradient.dup();
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
+        searchState.put("searchDirection",searchDirection);
         score = pair.getSecond();
 
     }
