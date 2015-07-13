@@ -74,9 +74,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
             create.exec();
-            score = -create.currentResult().doubleValue();
+            score = create.currentResult().doubleValue();
         } else {
-            score = -LossFunctions.score(
+            score = LossFunctions.score(
                     labels,
                     conf.getLossFunction(),
                     output,
@@ -178,7 +178,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    @Override
     public double score(DataSet data) {
         return score(data.getFeatureMatrix(), data.getLabels());
     }
@@ -193,7 +192,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param labels   the true labels
      * @return the scores for each ndarray
      */
-    @Override
     public double score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
