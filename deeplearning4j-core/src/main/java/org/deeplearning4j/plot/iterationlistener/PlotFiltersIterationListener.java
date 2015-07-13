@@ -87,7 +87,7 @@ public class PlotFiltersIterationListener implements IterationListener {
             }
 
             INDArray plot = filters.render(weights, 1);
-            BufferedImage image = ImageLoader.toBufferedImageRGB(plot);
+            BufferedImage image = ImageLoader.toImage(plot);
             try {
                 outputFile.createNewFile();
                 ImageIO.write(image, "png", outputFile);
