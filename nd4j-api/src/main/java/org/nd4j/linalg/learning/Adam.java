@@ -1,5 +1,6 @@
 package org.nd4j.linalg.learning;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -135,7 +136,10 @@ public class Adam implements Serializable,GradientUpdater {
     private double lr() {
         double fix1 = 1. - Math.pow(beta1,t);
         double fix2 = 1 - Math.pow(beta2,t);
-        return alpha * Math.sqrt(fix2) / fix1;
+        double ret =  alpha * FastMath.sqrt(fix2) / fix1;
+        if(Double.isNaN(ret))
+            return Nd4j.EPS_THRESHOLD;
+        return ret;
     }
 
 }

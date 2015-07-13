@@ -57,20 +57,20 @@ public class LossFunctions {
         switch (lossFunction) {
             case CUSTOM: throw new IllegalStateException("Unable to score custom operation. Please define an alternative mechanism");
             case RECONSTRUCTION_CROSSENTROPY:
-                INDArray xEntLogZ2 = log(z);
+                INDArray xEntLogZ2 = log(z.addi(Nd4j.EPS_THRESHOLD));
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = log(z.add(Nd4j.EPS_THRESHOLD)).rsubi(1);
                 ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
-                INDArray sums = log(z);
-                INDArray columnSums = labels.mul(log(sums));
+                INDArray sums = log(z.addi(Nd4j.EPS_THRESHOLD));
+                INDArray columnSums = labels.mul(log(sums.addi(Nd4j.EPS_THRESHOLD)));
                 ret = -columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case XENT:
                 INDArray xEntLogZ = log(z.add(Nd4j.EPS_THRESHOLD));
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ = log(z).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ = log(z.addi(Nd4j.EPS_THRESHOLD)).rsubi(1);
                 ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case RMSE_XENT:
@@ -91,11 +91,11 @@ public class LossFunctions {
                 ret = pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case NEGATIVELOGLIKELIHOOD:
-                ret = -Nd4j.mean(Nd4j.sum(
-                        labels.mul(log(z.add(Nd4j.EPS_THRESHOLD)))
-                                .addi(labels.rsub(1).muli(log(z.rsub(1))))
-                        , 1)).getDouble(0);
-                break;
+                ret = -Nd4j.sum(
+                        labels.mul(log(z.addi(Nd4j.EPS_THRESHOLD)))
+                                .addi(labels.rsub(1).muli(log(z.rsub(1).addi(Nd4j.EPS_THRESHOLD))))
+                        , 1).getDouble(0);
+
 
 
         }
