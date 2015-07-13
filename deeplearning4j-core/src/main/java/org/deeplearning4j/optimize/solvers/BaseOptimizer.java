@@ -32,6 +32,7 @@ import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.GradientUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     protected NeuralNetConfiguration conf;
-    protected AdaGrad adaGrad;
+    protected GradientUpdater adaGrad;
     protected int iteration = 0;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     protected StepFunction stepFunction;
@@ -62,7 +63,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
-    protected Map<String,AdaGrad> adaGradForVariable = new ConcurrentHashMap<>();
+    protected Map<String,GradientUpdater> adaGradForVariable = new ConcurrentHashMap<>();
     protected Map<String,INDArray> lastStep = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
@@ -256,17 +257,17 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public AdaGrad getAdaGrad() {
+    public GradientUpdater getUpdater() {
         return adaGrad;
     }
 
     @Override
-    public Map<String, AdaGrad> adaGradForVariables() {
+    public Map<String, GradientUpdater> updaterForVariables() {
         return adaGradForVariable;
     }
 
     @Override
-    public AdaGrad getAdaGradForVariable(String variable) {
+    public GradientUpdater getUpdaterForVariable(String variable) {
         return adaGradForVariable.get(variable);
     }
 
