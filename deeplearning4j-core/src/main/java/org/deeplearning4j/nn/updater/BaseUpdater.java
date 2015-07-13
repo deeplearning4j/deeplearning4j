@@ -27,12 +27,18 @@ public abstract class BaseUpdater implements Updater {
         }
     }
 
+    /**
+     * Apply the regularization
+     * @param layer
+     * @param gradient
+     * @param param
+     */
     public void postApply(Layer layer,INDArray gradient,String param) {
         NeuralNetConfiguration conf = layer.conf();
         INDArray params = layer.getParam(param);
-        if(conf.isUseRegularization() && conf.getL2() > 0 && !(gradient.equals(DefaultParamInitializer.BIAS_KEY)))
+        if(conf.isUseRegularization() && conf.getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(params.mul(conf.getL2()));
-        else if(conf.isUseRegularization() && conf.getL1() < 0 && !(gradient.equals(DefaultParamInitializer.BIAS_KEY)))
+        else if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
 
