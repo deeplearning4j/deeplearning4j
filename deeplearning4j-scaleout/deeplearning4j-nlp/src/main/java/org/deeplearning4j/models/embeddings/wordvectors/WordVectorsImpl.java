@@ -456,7 +456,7 @@ public class WordVectorsImpl implements WordVectors {
             }
         };
 
-        PriorityQueue<Double[]> queue = new PriorityQueue<>(comparator);
+        PriorityQueue<Double[]> queue = new PriorityQueue<Double[]>(comparator);
 
         for (int j = 0; j < vec.length(); j++) {
             final Double[] pair = new Double[]{vec.getDouble(j), (double) j};
