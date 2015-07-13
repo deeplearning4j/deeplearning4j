@@ -63,6 +63,7 @@ import java.util.Map;
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private double sparsity = 0;
+    @Deprecated
     private boolean useAdaGrad = true;
     private double lr = 1e-1;
     protected double corruptionLevel = 0.3;
