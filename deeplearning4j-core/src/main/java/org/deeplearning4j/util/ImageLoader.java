@@ -135,8 +135,8 @@ public class ImageLoader {
      * @return
      */
     public static BufferedImage toImage(INDArray matrix) {
-        BufferedImage img = new BufferedImage(matrix.size(-1), matrix.size(-2), BufferedImage.TYPE_INT_RGB);
         if(matrix.isMatrix()) {
+            BufferedImage img = new BufferedImage(matrix.size(-1), matrix.size(-2), BufferedImage.TYPE_INT_RGB);
             INDArray toRound = matrix;
             WritableRaster r = img.getRaster();
             int[] equiv = new int[matrix.length()];
@@ -146,12 +146,23 @@ public class ImageLoader {
 
 
             r.setDataElements(0,0,matrix.columns(),matrix.rows(),equiv);
+            return img;
         }
 
         else {
+            BufferedImage img = new BufferedImage(matrix.size(-1), matrix.size(-2), BufferedImage.TYPE_INT_ARGB);
+            INDArray toRound = matrix;
+            WritableRaster r = img.getRaster();
+            int[] equiv = new int[matrix.length()];
+            for(int i = 0; i < equiv.length; i++) {
+                equiv[i] = (int) toRound.linearView().getDouble(i) * 256;
+            }
 
+
+            r.setDataElements(0,0,matrix.size(-1),matrix.size(-2),equiv);
+            return img;
         }
-        return img;
+
     }
 
 
@@ -169,7 +180,7 @@ public class ImageLoader {
         }
 
         // Create a buffered image with transparency
-        BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_RGB);
 
         // Draw the image on to the buffered image
         Graphics2D bGr = bimage.createGraphics();
