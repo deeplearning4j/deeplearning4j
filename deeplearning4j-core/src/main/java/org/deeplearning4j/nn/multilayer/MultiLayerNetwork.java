@@ -1434,7 +1434,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     @Override
     public void setScore() {
-
     }
 
     @Override
