@@ -108,6 +108,7 @@ public class Word2Vec implements Serializable {
                 .setMinAlpha(1e-2).setVectorLength(lookupTable.getVectorLength())
                 .useAdaGrad(lookupTable.isUseAdaGrad()).weights(lookupTable)
                 .build();
+
         param.setTotalWords(vocabAndNumWords.getSecond().intValue());
 
 
@@ -152,6 +153,9 @@ public class Word2Vec implements Serializable {
         //calculate all the errors
         for(int i = 0; i < conf.getInt(Word2VecPerformerVoid.ITERATIONS,5); i++) {
             final Broadcast<Word2VecParam> finalParamBroadcast = sc.broadcast(param);
+            if(finalParamBroadcast.value() == null)
+                throw new IllegalStateException("Value not found for param broadcast");
+            
             JavaRDD<Word2VecFuncCall> call = wordsAndWordsSeen.map(new Word2VecSetup(finalParamBroadcast));
             JavaRDD<Word2VecChange> change2 = call.map(new SentenceBatch());
             change2.foreach(new VoidFunction<Word2VecChange>() {
