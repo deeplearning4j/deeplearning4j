@@ -64,7 +64,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
     public final static String SEARCH_DIR = "searchDirection";
-    protected Map<String,GradientUpdater> adaGradForVariable = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
@@ -264,6 +263,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public  void setupSearchState(Pair<Gradient, Double> pair) {
         INDArray gradient = pair.getFirst().gradient(conf.variables());
         INDArray params = model.params();
+        INDArray searchDirection = gradient.dup();
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
