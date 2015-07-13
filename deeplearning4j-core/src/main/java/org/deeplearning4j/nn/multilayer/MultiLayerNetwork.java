@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.MultiLayerUtil;
@@ -1104,7 +1103,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             for(int k = 0; k < numLayers; k++) {
                 Layer currLayer = getLayers()[k];
                 for(String paramType : gradientUpdates.get(k).gradientForVariable().keySet()) {
-                    currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k).getGradientFor(paramType),currLayer,input.size(0),paramType);
+                    currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k).getGradientFor(paramType),currLayer,input.size(0),paramType,i);
                     currLayer.update(gradientUpdates.get(k).getGradientFor(paramType), paramType);
                 }
             }

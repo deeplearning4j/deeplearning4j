@@ -14,7 +14,8 @@ public interface Updater extends Serializable {
      * Updater: updates the model
      * @param layer
      * @param gradient
+     * @param  iteration
      */
-    void update(Layer layer,Gradient gradient);
+    void update(Layer layer,Gradient gradient,int iteration);
 
 }

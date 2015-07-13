@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
-import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
@@ -35,7 +34,6 @@ import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +64,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
     protected Map<String,GradientUpdater> adaGradForVariable = new ConcurrentHashMap<>();
-    protected Map<String,INDArray> lastStep = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
@@ -115,7 +112,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Pair<Gradient,Double> pair = model.gradientAndScore();
         for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
             INDArray gradient = pair.getFirst().getGradientFor(paramType);
-            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType);
+            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType,iteration);
         }
         return pair;
     }
@@ -195,6 +192,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //post step updates to other search parameters
             postStep();
+            this.iteration++;
 
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions)
@@ -253,13 +251,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
-    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType) {
+    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType, int iteration) {
         if(updater == null)
             updater = UpdaterCreator.getUpdater(model.conf());
         Layer layer = (Layer) model;
         Gradient g = new DefaultGradient();
         g.setGradientFor(paramType,gradient);
-        updater.update(layer,g);
+        updater.update(layer,g,iteration);
 
     }
 
