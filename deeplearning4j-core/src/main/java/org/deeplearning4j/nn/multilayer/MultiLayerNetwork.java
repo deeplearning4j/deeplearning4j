@@ -584,7 +584,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
             INDArray dup = currInput.dup();
-           //special case: row wise softmax
+            //special case: row wise softmax
             if(layers[i].conf().getActivationFunction().equals("softmax"))
                 derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative(),1));
             else
@@ -1104,9 +1104,13 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 Layer currLayer = getLayers()[k];
                 for(String paramType : gradientUpdates.get(k).gradientForVariable().keySet()) {
                     currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k).getGradientFor(paramType),currLayer,input.size(0),paramType,i);
-                    currLayer.update(gradientUpdates.get(k).getGradientFor(paramType), paramType);
+                    INDArray update = gradientUpdates.get(k).getGradientFor(paramType);
+                    if(update != null)
+                        currLayer.update(update, paramType);
                 }
             }
+
+
             for(IterationListener listener :  listeners)
                 listener.iterationDone(getOutputLayer(),i);
         }

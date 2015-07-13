@@ -159,7 +159,7 @@ public abstract class BaseLayer implements Layer {
             create.exec();
             score = -create.currentResult().doubleValue();
         } else{
-            score = -LossFunctions.score(
+            score = LossFunctions.score(
                     input,
                     conf.getLossFunction(),
                     output,
