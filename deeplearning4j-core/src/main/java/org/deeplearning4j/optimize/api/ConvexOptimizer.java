@@ -84,24 +84,6 @@ public interface ConvexOptimizer extends Serializable {
 
     Map<String, INDArray> getLastStep();
 
-    /**
-     * The adagrad in this model
-     * @return the adagrad in this model
-     */
-    GradientUpdater getUpdater();
-
-    /**
-     * Return the ada grad look up table
-     * @return the ada grad for variables
-     */
-    Map<String, GradientUpdater> updaterForVariables();
-
-    /**
-     * Get adagrad for a variable
-     * @param variable
-     * @return
-     */
-    GradientUpdater getUpdaterForVariable(String variable);
 
 
     /**

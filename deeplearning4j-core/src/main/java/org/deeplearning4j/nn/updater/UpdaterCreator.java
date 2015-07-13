@@ -1,19 +1,30 @@
 package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.nd4j.linalg.learning.GradientUpdater;
+import org.deeplearning4j.nn.conf.Updater;
 
 /**
+ *
+ *
  * @author Adam Gibson
  */
 public class UpdaterCreator {
-    public static GradientUpdater getUpdater(NeuralNetConfiguration conf) {
-        boolean hasMomentum = conf.getMomentum() > 0;
-        boolean hasLearningRate = conf.getLr() > 0;
-        boolean hasRms = conf.getRmsDecay() > 0;
-        boolean isAdaGrad = conf.isUseAdaGrad();
 
-        if(conf.getMomentum() > 0) {
+    /**
+     * Create an updater based on the configuration
+     * @param conf the configuration to get the updater for
+     * @return the updater for the configuration
+     */
+    public static org.deeplearning4j.nn.api.Updater getUpdater(NeuralNetConfiguration conf) {
+        Updater updater = conf.getUpdater();
+
+        switch(updater) {
+            case ADADELTA: return new AdaDeltaUpdater();
+            case ADAGRAD: return new AdaGradUpdater();
+            case ADAM: return new AdamUpdater();
+            case NESTEROVS: return new NesterovsUpdater();
+            case RMSPROP: return new RmsPropUpdater();
+            case CUSTOM: throw new UnsupportedOperationException("Not implemented yet.");
 
         }
 
