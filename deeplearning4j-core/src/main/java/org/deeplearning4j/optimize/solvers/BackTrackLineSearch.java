@@ -139,17 +139,18 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @param initialStep the initial step size
      * @param parameters the parameters to optimize
      * @param gradients the line/rate of change
+     * @param p  the point for the line search to go in
      * @return the next step size
      * @throws InvalidStepException
      */
-    public double optimize (double initialStep, INDArray parameters, INDArray gradients) throws InvalidStepException {
+    public double optimize (double initialStep, INDArray parameters, INDArray gradients,INDArray p) throws InvalidStepException {
         double test, alamin, alam, alam2, oldAlam, tmplam;
         double rhs1, rhs2, a, b, disc, f, fold, f2;
 
         INDArray oldParameters = parameters.dup();
         INDArray gDup = gradients.dup();
         double sum = gradients.norm2(Integer.MAX_VALUE).getDouble(0);
-        double slope = Nd4j.getBlasWrapper().dot(gDup, gradients);
+        double slope = Nd4j.getBlasWrapper().dot(p, gradients);
 
         INDArray maxOldParams = abs(oldParameters);
         Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams, 1));

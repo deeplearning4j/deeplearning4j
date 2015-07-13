@@ -170,7 +170,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //perform one step
             try {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, params, gradient);
+                step = lineMaximizer.optimize(step, params, gradient,getPoint(gradient));
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
             }
@@ -206,6 +206,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return true;
     }
 
+
+    @Override
+    public INDArray getPoint(INDArray gradient) {
+        return gradient.dup();
+    }
 
     protected  void postFirstStep(INDArray gradient) {
         //no-op
