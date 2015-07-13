@@ -131,7 +131,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     // returns 0.0 if could not step in direction
 
     private double getNewScore(INDArray parameters){
-        layer.setParams(parameters); // currently setParams setScore - consider splitting out
+        layer.setParams(parameters);
         return layer.score();
     }
 

@@ -159,7 +159,7 @@ public abstract class BaseLayer implements Layer {
             create.exec();
             score = -create.currentResult().doubleValue();
         } else{
-            score = -LossFunctions.score(
+            score = LossFunctions.score(
                     input,
                     conf.getLossFunction(),
                     output,
@@ -202,9 +202,9 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void update(INDArray gradient, String paramType) {
         if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).addi(gradient.sum(0)));
+            setParam(paramType, getParam(paramType).subi(gradient.sum(0)));
         else
-            setParam(paramType, getParam(paramType).addi(gradient));
+            setParam(paramType, getParam(paramType).subi(gradient));
     }
 
 
@@ -222,11 +222,6 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void setConf(NeuralNetConfiguration conf) {
         this.conf = conf;
-    }
-
-    @Override
-    public void setParam(String key, INDArray val) {
-        params.put(key, val);
     }
 
     /**
@@ -253,6 +248,17 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
+    public INDArray getParam(String param) {
+        return params.get(param);
+    }
+
+    @Override
+    public void setParam(String key, INDArray val) {
+        params.put(key, val);
+        setScore();
+    }
+
+    @Override
     public void setParams(INDArray params) {
         List<String> gradientList = conf.variables();
         int length = 0;
@@ -269,9 +275,13 @@ public abstract class BaseLayer implements Layer {
             param.linearView().assign(get);
             idx += param.length();
         }
-
         setScore();
 
+    }
+
+    @Override
+    public void setParamTable(Map<String, INDArray> paramTable) {
+        this.params = paramTable;
     }
 
     @Override
@@ -284,15 +294,6 @@ public abstract class BaseLayer implements Layer {
         return params;
     }
 
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        this.params = paramTable;
-    }
-
-    @Override
-    public INDArray getParam(String param) {
-        return params.get(param);
-    }
 
     /**
      * Classify input

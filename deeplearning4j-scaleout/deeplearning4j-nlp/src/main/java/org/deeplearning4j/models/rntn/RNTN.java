@@ -78,6 +78,7 @@ import com.google.common.util.concurrent.AtomicDouble;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class RNTN implements Layer {
 
 
@@ -901,6 +902,7 @@ public class RNTN implements Layer {
                 binaryTensors.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
+        setScore();
     }
 
     public int getNumParameters() {
