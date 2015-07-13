@@ -20,10 +20,10 @@ public abstract class BaseUpdater implements Updater {
 
 
     @Override
-    public void update(Layer layer, Gradient gradient) {
+    public void update(Layer layer, Gradient gradient,int iteration) {
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             GradientUpdater updater = init(gradientPair.getKey(),gradientPair.getValue(),layer);
-            postApply(layer,updater.getGradient(gradientPair.getValue()),gradientPair.getKey());
+            postApply(layer,updater.getGradient(gradientPair.getValue(),iteration),gradientPair.getKey());
         }
     }
 
@@ -39,7 +39,7 @@ public abstract class BaseUpdater implements Updater {
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
-        gradient.divi(layer.input().size(0));
+        gradient.divi((double) layer.input().size(0));
     }
 
     public abstract void init();
