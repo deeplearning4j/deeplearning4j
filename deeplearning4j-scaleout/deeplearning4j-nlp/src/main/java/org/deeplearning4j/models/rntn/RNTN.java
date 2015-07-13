@@ -78,6 +78,7 @@ import com.google.common.util.concurrent.AtomicDouble;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class RNTN implements Layer {
 
 

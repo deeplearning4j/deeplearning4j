@@ -63,7 +63,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
-    protected Map<String,GradientUpdater> adaGradForVariable = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
