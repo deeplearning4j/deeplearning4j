@@ -249,15 +249,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //no-op
     }
 
-    @Override
-    public Map<String, INDArray> getLastStep() {
-        return lastStep;
-    }
-
-    public void setLastStep(Map<String, INDArray> lastStep) {
-        this.lastStep = lastStep;
-    }
-
 
 
 
