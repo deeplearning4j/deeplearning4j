@@ -37,7 +37,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  *
  * @author Adam Gibson
  */
-public class AdaGrad implements Serializable {
+public class AdaGrad implements Serializable,GradientUpdater {
 
     /**
      *
@@ -202,6 +202,7 @@ public class AdaGrad implements Serializable {
      * @param gradient the gradient to get learning rates for
      * @return the feature specific learning rates
      */
+    @Override
     public INDArray getGradient(INDArray gradient) {
         boolean historicalInitialized = false;
         if (this.historicalGradient == null) {
