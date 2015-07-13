@@ -1,8 +1,9 @@
 package org.deeplearning4j.translate;
 
-import org.deeplearning4j.caffe.Caffe;
 import org.deeplearning4j.caffe.Caffe.NetParameter;
+import org.deeplearning4j.caffe.Caffe.SolverParameter;
 import org.springframework.core.io.ClassPathResource;
+import org.deeplearning4j.translate.CaffeModelToJavaClass.CaffeSolverNetContainer;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -14,6 +15,17 @@ import static org.junit.Assert.*;
  */
 public class CaffeTest {
 
+    // Define all the paths as String
+    public static String getImageNetBinaryNetPath() throws IOException{
+        return new ClassPathResource("nin_imagenet/nin_imagenet_conv.caffemodel").getURL().getFile();
+    }
+    public static String getImageNetTextFormatNetPath() throws IOException{
+        return new ClassPathResource("nin_imagenet/train_val.prototxt").getURL().getFile();
+    }
+    public static String getImageNetTextFormatSolverPath() throws IOException{
+        return new ClassPathResource("nin_imagenet/solver.prototxt").getURL().getFile();
+    }
+
     /**
      * Test reading the ImageNet in binary format into a Java Class
      * This includes the network configuration and the pre-trained weights
@@ -22,11 +34,9 @@ public class CaffeTest {
      */
     @Test
     public void testBinaryCaffeModelToJavaClass() throws Exception {
-        // caffemodel downloaded from https://gist.github.com/mavenlin/d802a5849de39225bcc6
-        String imagenetCaffeModelPath = new ClassPathResource("nin_imagenet/nin_imagenet_conv.caffemodel").getURL().getFile();
 
         // Read the Binary File to a Java Class
-        NetParameter net = CaffeModelToJavaClass.readBinaryCaffeModel(imagenetCaffeModelPath, 1000);
+        NetParameter net = CaffeModelToJavaClass.readBinaryNet(getImageNetBinaryNetPath(), 1000);
 
         // Test the binary file is read in correctly
         assertEquals(net.getName(), "CaffeNet");
@@ -42,11 +52,9 @@ public class CaffeTest {
      */
     @Test
     public void testTextFormatSolverProtoToJavaClass() throws IOException {
-        // caffemodel downloaded from https://gist.github.com/mavenlin/d802a5849de39225bcc6
-        String imagenetSolverProtoPath = new ClassPathResource("nin_imagenet/solver.prototxt").getURL().getFile();
 
         // Read the Solver proto-text File to a Java Class
-        Caffe.SolverParameter solver = CaffeModelToJavaClass.readTextFormatSolverProto(imagenetSolverProtoPath);
+        SolverParameter solver = CaffeModelToJavaClass.readTextFormatSolver(getImageNetTextFormatSolverPath());
 
         assertEquals(solver.getMaxIter(), 450000);
         assertEquals(solver.getMomentum(), 0.9f, 1e-3);
@@ -62,11 +70,9 @@ public class CaffeTest {
      */
     @Test
     public void testTextFormatNetProtoToJavaClass() throws IOException {
-        // caffemodel downloaded from https://gist.github.com/mavenlin/d802a5849de39225bcc6
-        String imagenetNetProtoPath = new ClassPathResource("nin_imagenet/train_val.prototxt").getURL().getFile();
 
         // Read the Net proto-text File to a Java Class
-        Caffe.NetParameter net = CaffeModelToJavaClass.readTextFormatNetProto(imagenetNetProtoPath);
+        NetParameter net = CaffeModelToJavaClass.readTextFormatNet(getImageNetTextFormatNetPath());
 
         assertEquals(net.getName(), "nin_imagenet");
         // Not 31 because there is an extra test data layer and an accuracy layer,
@@ -74,6 +80,18 @@ public class CaffeTest {
         assertEquals(net.getLayersCount(), 33);
         assertEquals(net.getLayers(0).getName(), "data");
         assertEquals(net.getLayers(32).getName(), "loss");
+    }
+
+    @Test
+    public void testReadCaffeWithWeights() throws IOException{
+
+        String textFormatNetPath = getImageNetBinaryNetPath();
+        String textFormatSolverPath = getImageNetTextFormatSolverPath();
+        CaffeSolverNetContainer solverNet = CaffeModelToJavaClass.readCaffeWithWeights(textFormatNetPath,
+                                            textFormatSolverPath, 1000);
+        SolverParameter solver = solverNet.getSolver();
+        NetParameter net = solverNet.getNet();
+        assertTrue(solver != null && net != null);
     }
 
 }
