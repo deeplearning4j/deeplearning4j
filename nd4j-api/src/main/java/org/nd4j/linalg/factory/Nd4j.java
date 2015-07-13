@@ -1389,6 +1389,37 @@ public class Nd4j {
         return ret;
     }
 
+
+
+
+
+
+    /**
+     * Read line via input streams
+     *
+     * @param filePath the input stream ndarray
+     * @param split    the split separator
+     * @return the read txt method
+     */
+    public static void writeNumpy(INDArray write, String filePath, String split) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+        for (int i = 0; i < write.rows(); i++) {
+            StringBuffer sb = new StringBuffer();
+            INDArray row = write.getRow(i);
+            for (int j = 0; j < row.columns(); j++) {
+                sb.append(row.getDouble(j));
+                sb.append(split);
+            }
+            sb.append("\n");
+            writer.write(sb.toString());
+        }
+
+        writer.flush();
+        writer.close();
+
+
+    }
+
     /**
      * Read line via input streams
      *
@@ -1410,14 +1441,6 @@ public class Nd4j {
         return readNumpy(filePath, "\t");
     }
 
-    private static INDArray loadRow(String[] data) {
-        INDArray ret = Nd4j.create(data.length);
-        for (int i = 0; i < data.length; i++) {
-            ret.putScalar(i, Double.parseDouble(data[i]));
-        }
-
-        return ret;
-    }
 
 
     /**
