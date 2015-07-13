@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.util;
 
-import org.deeplearning4j.plot.FilterRenderer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.awt.*;
@@ -135,16 +135,17 @@ public class ImageLoader {
      * @return
      */
     public static BufferedImage toImage(INDArray matrix) {
-        BufferedImage img = new BufferedImage(matrix.size(-2), matrix.size(-1), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(matrix.size(-1), matrix.size(-2), BufferedImage.TYPE_INT_RGB);
         if(matrix.isMatrix()) {
+            INDArray toRound = matrix;
             WritableRaster r = img.getRaster();
             int[] equiv = new int[matrix.length()];
             for(int i = 0; i < equiv.length; i++) {
-                equiv[i] = (int) matrix.getScalar(i).getDouble(i);
+                equiv[i] = (int) toRound.linearView().getDouble(i) * 256;
             }
 
 
-            r.setDataElements(0,0,matrix.rows(),matrix.columns(),equiv);
+            r.setDataElements(0,0,matrix.columns(),matrix.rows(),equiv);
         }
 
         else {

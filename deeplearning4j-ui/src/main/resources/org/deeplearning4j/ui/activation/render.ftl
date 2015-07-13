@@ -11,9 +11,6 @@
         },3000);
     </script>
     <style type="text/css">
-        #embed {
-            background: #2F4F4F;
-        }
     </style>
 </head>
 
