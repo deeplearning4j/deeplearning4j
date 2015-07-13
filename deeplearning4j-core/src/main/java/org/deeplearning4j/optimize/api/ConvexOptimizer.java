@@ -92,9 +92,10 @@ public interface ConvexOptimizer extends Serializable {
      * @param gradient the gradient to modify
      * @param model the model with the parameters to update
      * @param batchSize batchSize for update
+     * @param iteration
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType);
+    void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType, int iteration);
 
 
 }

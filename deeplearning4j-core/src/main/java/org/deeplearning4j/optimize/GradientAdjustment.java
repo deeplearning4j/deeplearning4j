@@ -52,6 +52,7 @@ public class GradientAdjustment {
      * @param adaGrad the adagrad map (per variable adagrad entries(
      * @return updated gradient
      */
+    @Deprecated
     public static void updateGradientAccordingToParams(int iteration, int batchSize, NeuralNetConfiguration conf, INDArray params,
                                                            INDArray gradient, GradientUpdater adaGrad, INDArray lastStep, String paramType) {
         if(adaGrad == null)
@@ -83,7 +84,7 @@ public class GradientAdjustment {
         }
 
         if (conf.isUseAdaGrad()) {
-            gradient = adaGrad.getGradient(gradient);
+            gradient = adaGrad.getGradient(gradient,0);
         } else {
             gradient.muli(conf.getLr());
         }
