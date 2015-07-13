@@ -1053,7 +1053,7 @@ public class RNTN implements Layer {
         if(paramAdaGrad == null)
             paramAdaGrad = new AdaGrad(1,derivative.columns());
 
-        derivative = paramAdaGrad.getGradient(derivative);
+        derivative = paramAdaGrad.getGradient(derivative,0);
 
         return derivative;
     }
