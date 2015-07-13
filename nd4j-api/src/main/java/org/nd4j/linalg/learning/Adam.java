@@ -22,6 +22,9 @@ public class Adam implements Serializable,GradientUpdater {
     private double beta1T = -1;
     private INDArray m,v;
 
+    public Adam() {
+    }
+
     public Adam(double alpha, double beta1, double beta2, double lam, double lr, double beta1T) {
         this.alpha = alpha;
         this.beta1 = beta1;

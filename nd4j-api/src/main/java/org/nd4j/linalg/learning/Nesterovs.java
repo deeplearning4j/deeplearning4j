@@ -6,11 +6,28 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.Serializable;
 
 /**
+ * Nesterov's momentum.
+ * Keep track of the previous layer's gradient
+ * and use it as a way of updating the gradient.
+ *
  * @author Adam Gibson
  */
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
     private INDArray lastGradient;
+
+    public Nesterovs(double momentum) {
+        this.momentum = momentum;
+    }
+
+    public double getMomentum() {
+        return momentum;
+    }
+
+    public void setMomentum(double momentum) {
+        this.momentum = momentum;
+    }
+
 
 
     /**
