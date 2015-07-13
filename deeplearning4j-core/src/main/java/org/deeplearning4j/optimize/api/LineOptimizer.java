@@ -34,10 +34,11 @@ public interface LineOptimizer extends Serializable {
      * @param initialStep the initial step size
      * @param x the parameters to optimize
      * @param g the gradient
+     * @param p  the point/direction to go in
      * @return the last step size used
      * @throws InvalidStepException
      */
-    double optimize(double initialStep, INDArray x, INDArray g) throws InvalidStepException;
+    double optimize(double initialStep, INDArray x, INDArray g,INDArray p) throws InvalidStepException;
 
 
 

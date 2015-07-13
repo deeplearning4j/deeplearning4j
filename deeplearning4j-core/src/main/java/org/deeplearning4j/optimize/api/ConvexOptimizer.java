@@ -52,6 +52,14 @@ public interface ConvexOptimizer extends Serializable {
      */
     boolean optimize();
 
+
+    /**
+     * Get the point/direction of the gradient
+     * @param gradient the gradient to get the point/direction for
+     * @return the point for the given gradient
+     */
+    INDArray getPoint(INDArray gradient);
+
     /**
      * The batch size for the optimizer
      * @return
