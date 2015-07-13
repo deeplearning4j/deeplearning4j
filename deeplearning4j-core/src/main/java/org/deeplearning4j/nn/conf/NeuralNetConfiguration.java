@@ -63,29 +63,30 @@ import java.util.Map;
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private double sparsity = 0;
+    @Deprecated
     private boolean useAdaGrad = true;
     private double lr = 1e-1;
     protected double corruptionLevel = 0.3;
-    protected int numIterations = 1000;
+    protected int numIterations = 5;
     /* momentum for learning */
     protected double momentum = 0.5;
     /* L2 Regularization constant */
     protected double l2 = 0;
     protected boolean useRegularization = false;
-
+    protected Updater updater = Updater.ADAGRAD;
     private String customLossFunction;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
     //reset adagrad historical gradient after n iterations
     protected int resetAdaGradIterations = -1;
     //number of line search iterations
-    protected int numLineSearchIterations = 100;
+    protected int numLineSearchIterations = 5;
 
     protected double dropOut = 0;
     //use only when binary hidden neuralNets are active
     protected boolean applySparsity = false;
     //weight init scheme, this can either be a distribution or a applyTransformToDestination scheme
-    protected WeightInit weightInit = WeightInit.VI;
+    protected WeightInit weightInit = WeightInit.XAVIER;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
     //whether to constrain the gradient to unit norm or not
@@ -100,6 +101,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected Distribution dist;
     protected StepFunction stepFunction = new GradientStepFunction();
     protected Layer layer;
+
+
 
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
@@ -503,7 +506,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
+        private Updater updater = Updater.ADAGRAD;
 
+
+        /**
+         * The updater to use
+         * @param updater
+         * @return
+         */
+        public Builder updater(Updater updater) {
+            this.updater = updater;
+            return this;
+        }
 
         /**
          * Ada delta coefficient
@@ -712,25 +726,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        /**
-         * Return a configuration based on this builder
-         *
-         * @return
-         */
-        public NeuralNetConfiguration build() {
-            NeuralNetConfiguration ret = new NeuralNetConfiguration( sparsity,  useAdaGrad,  lr,  k,
-                    corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
-                    resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
-                    constrainGradientToUnitNorm,  rng, seed,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
-                    ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1,customLossFunction);
-            ret.useAdaGrad = this.useAdaGrad;
-            ret.rmsDecay = rmsDecay;
-            ret.stepFunction = stepFunction;
-            ret.useDropConnect = true;
-            ret.rho = rho;
-            return ret;
-        }
 
         public Builder l2(double l2) {
             this.l2 = l2;
@@ -786,5 +781,27 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.hiddenUnit = hiddenUnit;
             return this;
         }
+
+        /**
+         * Return a configuration based on this builder
+         *
+         * @return
+         */
+        public NeuralNetConfiguration build() {
+            NeuralNetConfiguration ret = new NeuralNetConfiguration( sparsity,  useAdaGrad,  lr,  k,
+                    corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
+                    resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
+                    constrainGradientToUnitNorm,  rng, seed,
+                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
+                    ,batchSize,numLineSearchIterations,minimize,layer,convolutionType,l1,customLossFunction);
+            ret.useAdaGrad = this.useAdaGrad;
+            ret.rmsDecay = rmsDecay;
+            ret.stepFunction = stepFunction;
+            ret.useDropConnect = true;
+            ret.rho = rho;
+            ret.updater = updater;
+            return ret;
+        }
+
     }
 }
