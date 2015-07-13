@@ -60,7 +60,7 @@ public class WordVectorsImpl implements WordVectors {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    public Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top) {
+    public Collection<String> wordsNearestSum(Collection<String> positive,Collection<String> negative,int top) {
         INDArray words = Nd4j.create(lookupTable().layerSize());
         Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for(String s : positive)
@@ -381,7 +381,7 @@ public class WordVectorsImpl implements WordVectors {
      * @return the words nearest the mean of the words
      */
     @Override
-    public Collection<String> wordsNearest(List<String> positive, List<String> negative, int top) {
+    public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
         for (String p : SetUtils.union(new HashSet<>(positive), new HashSet<>(negative))) {
             if (!vocab().containsWord(p)) {
                 return new ArrayList<>();
