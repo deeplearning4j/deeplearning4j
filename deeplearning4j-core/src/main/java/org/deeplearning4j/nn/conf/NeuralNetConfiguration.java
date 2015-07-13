@@ -93,6 +93,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* RNG for sampling. */
     @Deprecated
     protected transient DefaultRandom rng;
+    //adadelta
+    protected double rho;
     protected long seed;
     //weight initialization
     protected Distribution dist;
@@ -500,6 +502,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
         private double l1 = 0.0;
         private boolean useDropConnect = false;
+        private double rho;
+
+
+        /**
+         * Ada delta coefficient
+         * @param rho
+         * @return
+         */
+        public Builder rho(double rho) {
+            this.rho = rho;
+            return this;
+        }
 
 
         /**
@@ -713,6 +727,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
+            ret.useDropConnect = true;
+            ret.rho = rho;
             return ret;
         }
 
