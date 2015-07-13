@@ -441,6 +441,16 @@ public class WordVectorsImpl implements WordVectors {
 
     }
 
+    private static class ArrayComparator implements Comparator<Double[]> {
+
+        @Override
+        public int compare(Double[] o1, Double[] o2) {
+                return Double.compare(o1[0], o2[0]);
+            }
+
+    }
+
+
     /**
      * Get top N elements
      *
@@ -449,14 +459,8 @@ public class WordVectorsImpl implements WordVectors {
      * @return the indices and the sorted top N elements
      */
     private static INDArray[] getTopN(INDArray vec, int N) {
-        Comparator<Double[]> comparator = new Comparator<Double[]>() {
-            @Override
-            public int compare(Double[] o1, Double[] o2) {
-                return Double.compare(o1[0], o2[0]);
-            }
-        };
-
-        PriorityQueue<Double[]> queue = new PriorityQueue<Double[]>(comparator);
+        ArrayComparator comparator = new ArrayComparator();
+        PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(),comparator);
 
         for (int j = 0; j < vec.length(); j++) {
             final Double[] pair = new Double[]{vec.getDouble(j), (double) j};
