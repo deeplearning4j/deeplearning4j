@@ -50,15 +50,30 @@ public class AdaGrad implements Serializable {
     protected int numIterations = 0;
     protected boolean decayLr;
 
+    /**
+     *
+     * @param rows
+     * @param cols
+     * @param gamma
+     */
     public AdaGrad(int rows, int cols, double gamma) {
         this.shape = new int[]{rows, cols};
+        this.masterStepSize = gamma;
+        this.decayLr = false;
+    }
+
+    /**
+     * Create adagrad with the specified shape
+     *
+     * @param shape
+     */
+    public AdaGrad(int[] shape,double gamma) {
+        this.shape = shape;
         this.masterStepSize = gamma;
         this.decayLr = false;
 
 
     }
-
-
     /**
      * Create adagrad with the specified shape
      *
