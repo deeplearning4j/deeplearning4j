@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.GradientUpdater;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -87,20 +88,20 @@ public interface ConvexOptimizer extends Serializable {
      * The adagrad in this model
      * @return the adagrad in this model
      */
-    AdaGrad getAdaGrad();
+    GradientUpdater getUpdater();
 
     /**
      * Return the ada grad look up table
      * @return the ada grad for variables
      */
-    Map<String,AdaGrad> adaGradForVariables();
+    Map<String, GradientUpdater> updaterForVariables();
 
     /**
      * Get adagrad for a variable
      * @param variable
      * @return
      */
-    AdaGrad getAdaGradForVariable(String variable);
+    GradientUpdater getUpdaterForVariable(String variable);
 
 
     /**
