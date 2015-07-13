@@ -20,7 +20,8 @@ public interface GradientUpdater extends Serializable {
      * Modify the gradient
      * to be an update
      * @param gradient the gradient to modify
+     * @param iteration
      * @return the modified gradient
      */
-    INDArray getGradient(INDArray gradient);
+    INDArray getGradient(INDArray gradient, int iteration);
 }

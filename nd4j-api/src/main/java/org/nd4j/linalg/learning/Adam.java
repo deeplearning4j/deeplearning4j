@@ -21,6 +21,7 @@ public class Adam implements Serializable,GradientUpdater {
     private double lr = -1;
     private double beta1T = -1;
     private INDArray m,v;
+    private double t = 1;
 
     public Adam() {
     }
@@ -38,24 +39,26 @@ public class Adam implements Serializable,GradientUpdater {
      * Calculate the update based
      * on the given gradient
      * @param gradient the gradient to get the update for
+     * @param iteration
      * @return the gradient
      */
     @Override
-    public INDArray getGradient(INDArray gradient) {
+    public INDArray getGradient(INDArray gradient, int iteration) {
         if(m == null) {
             m = Nd4j.zeros(gradient.shape());
         }
 
-        if(beta1T < 0)
-            beta1T = beta1T();
+
+
+        this.t = iteration;
+        beta1T = beta1T();
 
 
         m.addi(1 - beta1T).muli(gradient.sub(m));
         if (v == null)
             v = Nd4j.zeros(gradient.shape());
         v.addi(1 - beta2).muli(gradient.mul(gradient).subi(v));
-        if(lr < 0)
-            lr = lr();
+        lr = lr();
 
         return m.mul(lr).divi(Transforms.sqrt(v).add(Nd4j.EPS_THRESHOLD));
     }
@@ -125,13 +128,11 @@ public class Adam implements Serializable,GradientUpdater {
     }
 
     private double beta1T() {
-        double t = 0.0;
         return beta1 * (Math.pow(lam ,(t - 1)));
     }
 
 
     private double lr() {
-        double t = 0.0;
         double fix1 = 1. - Math.pow(beta1,t);
         double fix2 = 1 - Math.pow(beta2,t);
         return alpha * Math.sqrt(fix2) / fix1;

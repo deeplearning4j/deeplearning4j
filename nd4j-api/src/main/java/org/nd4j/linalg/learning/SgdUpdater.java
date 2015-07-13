@@ -21,7 +21,7 @@ public class SgdUpdater implements GradientUpdater {
     }
 
     @Override
-    public INDArray getGradient(INDArray gradient) {
+    public INDArray getGradient(INDArray gradient, int iteration) {
         return gradient.mul(lr);
     }
 }

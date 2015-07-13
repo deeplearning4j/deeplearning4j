@@ -19,7 +19,7 @@ public class RmsPropUpdater implements GradientUpdater {
 
 
     @Override
-    public INDArray getGradient(INDArray gradient) {
+    public INDArray getGradient(INDArray gradient, int iteration) {
         if(lastGradient == null)
             lastGradient = Nd4j.zeros(gradient.shape());
         lastGradient.assign(lastGradient.mul(rmsDecay).addi(Transforms.pow(gradient, 2).muli((1 - rmsDecay))));

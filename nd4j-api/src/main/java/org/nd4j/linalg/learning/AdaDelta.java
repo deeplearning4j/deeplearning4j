@@ -56,10 +56,11 @@ public class AdaDelta implements Serializable,GradientUpdater {
      * and also update the state of ada delta.
      * @param gradient the gradient to get the
      *                 updated gradient for
+     * @param iteration
      * @return the update gradient
      */
     @Override
-    public INDArray getGradient(INDArray gradient) {
+    public INDArray getGradient(INDArray gradient, int iteration) {
         if(msg == null)
             msg = Nd4j.zeros(gradient.shape());
 

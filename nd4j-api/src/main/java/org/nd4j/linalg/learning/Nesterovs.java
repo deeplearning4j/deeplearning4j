@@ -34,10 +34,11 @@ public class Nesterovs implements Serializable,GradientUpdater {
      * Get the nesterov udpdate
      * @param gradient the gradient to get the update for
      *
+     * @param iteration
      * @return
      */
     @Override
-    public INDArray getGradient(INDArray gradient) {
+    public INDArray getGradient(INDArray gradient, int iteration) {
       if(lastGradient == null)
           lastGradient = Nd4j.zeros(gradient.shape());
         INDArray ret  = lastGradient.mul(momentum).subi(gradient);

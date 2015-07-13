@@ -200,10 +200,11 @@ public class AdaGrad implements Serializable,GradientUpdater {
      * the name adagrad
      *
      * @param gradient the gradient to get learning rates for
+     * @param iteration
      * @return the feature specific learning rates
      */
     @Override
-    public INDArray getGradient(INDArray gradient) {
+    public INDArray getGradient(INDArray gradient, int iteration) {
         boolean historicalInitialized = false;
         if (this.historicalGradient == null) {
             this.historicalGradient = Nd4j.ones(gradient.rows(), gradient.columns());
