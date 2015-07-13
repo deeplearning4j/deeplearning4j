@@ -59,17 +59,10 @@ public class ActivationMeanIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         if(iteration % this.iteration == 0) {
             Layer l = (Layer) model;
-            INDArray weights = Transforms.sigmoid(l.activationMean());
-            if(weights.rank() < 4) {
-                if(weights.rank() == 2) {
-                    weights = weights.reshape(1,1, weights.rows(), weights.columns());
-                }
-                else if(weights.rank() == 3) {
-                    weights = weights.reshape(Ints.concat(new int[]{1}, weights.shape()));
-                }
-            }
+            INDArray activationMean = l.activate();
+            INDArray weights = Transforms.sigmoid(activationMean);
 
-          
+
             BufferedImage image = ImageLoader.toImage(weights);
             try {
                 ImageIO.write(image, "png", outputFile);
