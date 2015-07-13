@@ -18,11 +18,17 @@
 
 package org.deeplearning4j.ui.renders;
 
+import org.apache.commons.compress.utils.IOUtils;
+
 import javax.activation.MimetypesFileTypeMap;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Map;
 
@@ -58,14 +64,24 @@ public class RendersResource {
             throw new WebApplicationException(404);
         }
 
-        File f = new File(imagePath);
+        final File f = new File(imagePath);
 
         if (!f.exists()) {
             throw new WebApplicationException(404);
         }
 
-        String mt = new MimetypesFileTypeMap().getContentType(f);
-        return Response.ok(f, mt).build();
+        return Response.ok().entity(new StreamingOutput() {
+            @Override
+            public void write(OutputStream output) throws IOException, WebApplicationException {
+                FileInputStream fis = new FileInputStream(f);
+                byte[] bytes = IOUtils.toByteArray(fis);
+                fis.close();
+                output.write(bytes);
+                output.flush();
+
+
+            }
+        }).build();
     }
 
 
