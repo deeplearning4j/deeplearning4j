@@ -150,12 +150,12 @@ public class ImageLoader {
         }
 
         else {
-            BufferedImage img = new BufferedImage(matrix.size(-1), matrix.size(-2), BufferedImage.TYPE_INT_ARGB);
-            INDArray toRound = matrix;
+            BufferedImage img = new BufferedImage(matrix.size(-1), matrix.size(-2), BufferedImage.TYPE_INT_RGB);
+            INDArray toRound = Transforms.sigmoid(matrix);
             WritableRaster r = img.getRaster();
             int[] equiv = new int[matrix.length()];
             for(int i = 0; i < equiv.length; i++) {
-                equiv[i] = (int) toRound.linearView().getDouble(i) * 256;
+                equiv[i] = (int) toRound.linearView().getDouble(i);
             }
 
 
