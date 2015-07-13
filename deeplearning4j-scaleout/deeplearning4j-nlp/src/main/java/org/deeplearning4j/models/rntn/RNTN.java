@@ -901,6 +901,7 @@ public class RNTN implements Layer {
                 binaryTensors.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
+        setScore();
     }
 
     public int getNumParameters() {
