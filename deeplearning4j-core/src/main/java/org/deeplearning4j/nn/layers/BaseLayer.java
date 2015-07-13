@@ -224,11 +224,6 @@ public abstract class BaseLayer implements Layer {
         this.conf = conf;
     }
 
-    @Override
-    public void setParam(String key, INDArray val) {
-        params.put(key, val);
-    }
-
     /**
      * Returns the parameters of the neural network
      *
@@ -253,6 +248,17 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
+    public INDArray getParam(String param) {
+        return params.get(param);
+    }
+
+    @Override
+    public void setParam(String key, INDArray val) {
+        params.put(key, val);
+        setScore();
+    }
+
+    @Override
     public void setParams(INDArray params) {
         List<String> gradientList = conf.variables();
         int length = 0;
@@ -269,9 +275,13 @@ public abstract class BaseLayer implements Layer {
             param.linearView().assign(get);
             idx += param.length();
         }
-
         setScore();
 
+    }
+
+    @Override
+    public void setParamTable(Map<String, INDArray> paramTable) {
+        this.params = paramTable;
     }
 
     @Override
@@ -284,15 +294,6 @@ public abstract class BaseLayer implements Layer {
         return params;
     }
 
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        this.params = paramTable;
-    }
-
-    @Override
-    public INDArray getParam(String param) {
-        return params.get(param);
-    }
 
     /**
      * Classify input
