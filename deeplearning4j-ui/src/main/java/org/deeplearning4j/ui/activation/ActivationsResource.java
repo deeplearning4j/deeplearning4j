@@ -18,11 +18,14 @@
 
 package org.deeplearning4j.ui.activation;
 
+import org.apache.commons.compress.utils.IOUtils;
+
 import javax.activation.MimetypesFileTypeMap;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.File;
+import javax.ws.rs.core.StreamingOutput;
+import java.io.*;
 import java.util.Collections;
 
 /**
@@ -33,7 +36,7 @@ import java.util.Collections;
 @Path("/activations")
 @Produces(MediaType.TEXT_HTML)
 public class ActivationsResource {
-    private String imagePath = "render.png";
+    private String imagePath = "activations.png";
 
     @GET
     public RenderView get() {
@@ -57,14 +60,24 @@ public class ActivationsResource {
             throw new WebApplicationException(404);
         }
 
-        File f = new File(imagePath);
+        final File f = new File(imagePath);
 
         if (!f.exists()) {
             throw new WebApplicationException(404);
         }
 
-        String mt = new MimetypesFileTypeMap().getContentType(f);
-        return Response.ok(f, mt).build();
+        return Response.ok().entity(new StreamingOutput(){
+            @Override
+            public void write(OutputStream output) throws IOException, WebApplicationException {
+                FileInputStream fis = new FileInputStream(f);
+                byte[] bytes = IOUtils.toByteArray(fis);
+                fis.close();
+                output.write(bytes);
+                output.flush();
+
+
+            }
+        }).build();
     }
 
 

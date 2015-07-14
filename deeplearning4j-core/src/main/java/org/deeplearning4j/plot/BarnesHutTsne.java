@@ -61,7 +61,6 @@ import static org.nd4j.linalg.factory.Nd4j.zeros;
  */
 public class BarnesHutTsne extends Tsne implements Model {
     private int N;
-    private double perplexity;
     private double theta;
     private INDArray rows;
     private INDArray cols;
@@ -98,6 +97,37 @@ public class BarnesHutTsne extends Tsne implements Model {
         this.switchMomentumIteration = momentumSwitchIteration;
     }
 
+    public BarnesHutTsne(INDArray x,
+                         INDArray y,
+                         int numDimensions,
+                         String simiarlityFunction,
+                         double theta,
+                         boolean invert,
+                         int maxIter,
+                         double realMin,
+                         double initialMomentum,
+                         double finalMomentum,
+                         double momentum,
+                         int switchMomentumIteration,
+                         boolean normalize,
+                         boolean usePca,
+                         int stopLyingIteration,
+                         double tolerance,
+                         double learningRate,
+                         boolean useAdaGrad,
+                         double perplexity,
+                         double minGain) {
+        super(maxIter, realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize,
+                usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
+        this.y = y;
+        this.x = x;
+        this.numDimensions = numDimensions;
+        this.simiarlityFunction = simiarlityFunction;
+        this.theta = theta;
+        this.invert = invert;
+    }
+
+
     public String getSimiarlityFunction() {
         return simiarlityFunction;
     }
@@ -112,6 +142,14 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     public void setInvert(boolean invert) {
         this.invert = invert;
+    }
+
+    public double getTheta(){
+        return theta;
+    }
+
+    public double getPerplexity(){
+        return perplexity;
     }
 
     /**
@@ -445,7 +483,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         if(useAdaGrad) {
             if(adaGrad == null)
                 adaGrad = new AdaGrad(gradChange.shape());
-            gradChange = adaGrad.getGradient(gradChange);
+            gradChange = adaGrad.getGradient(gradChange,0);
 
         }
 
@@ -725,10 +763,9 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         @Override
         public BarnesHutTsne build() {
-            BarnesHutTsne t = new BarnesHutTsne(null,null,2,perplexity,theta,maxIter,this.stopLyingIteration,this.switchMomentumIteration,this.momentum,this.finalMomentum,this.learningRate);
-            t.useAdaGrad = useAdaGrad;
-            t.usePca = usePca;
-            return t;
+            return new BarnesHutTsne(null, null, 2, similarityFunction,theta,invert,
+                    maxIter,realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize,
+                    usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
         }
     }
 }
