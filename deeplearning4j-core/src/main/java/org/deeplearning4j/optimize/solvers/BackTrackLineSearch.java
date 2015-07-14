@@ -137,7 +137,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
     /**
      *
-     * @param initialStep the initial step size
      * @param parameters the parameters to optimize
      * @param gradients the line/rate of change
      * @param searchDirection  the point for the line search to go in
@@ -145,7 +144,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @throws InvalidStepException
      */
     @Override
-    public double optimize(double initialStep, INDArray parameters, INDArray gradients, INDArray searchDirection) throws InvalidStepException {
+    public double optimize(INDArray parameters, INDArray gradients, INDArray searchDirection) throws InvalidStepException {
         double test, alamin, alam, alam2, oldAlam, tmplam;
         double rhs1, rhs2, a, b, disc, f, fold, f2;
 
