@@ -1389,6 +1389,37 @@ public class Nd4j {
         return ret;
     }
 
+
+
+
+
+
+    /**
+     * Read line via input streams
+     *
+     * @param filePath the input stream ndarray
+     * @param split    the split separator
+     * @return the read txt method
+     */
+    public static void writeNumpy(INDArray write, String filePath, String split) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
+        for (int i = 0; i < write.rows(); i++) {
+            StringBuffer sb = new StringBuffer();
+            INDArray row = write.getRow(i);
+            for (int j = 0; j < row.columns(); j++) {
+                sb.append(row.getDouble(j));
+                sb.append(split);
+            }
+            sb.append("\n");
+            writer.write(sb.toString());
+        }
+
+        writer.flush();
+        writer.close();
+
+
+    }
+
     /**
      * Read line via input streams
      *
@@ -1410,14 +1441,6 @@ public class Nd4j {
         return readNumpy(filePath, "\t");
     }
 
-    private static INDArray loadRow(String[] data) {
-        INDArray ret = Nd4j.create(data.length);
-        for (int i = 0; i < data.length; i++) {
-            ret.putScalar(i, Double.parseDouble(data[i]));
-        }
-
-        return ret;
-    }
 
 
     /**
@@ -1443,14 +1466,16 @@ public class Nd4j {
         int offset = dis.readInt();
 
         String line;
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(reader));
         int count = 0;
 
         if(read == 'c') {
             DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape) * 2);
-            while((line = bufferedReader.readLine()) != null) {
-                IComplexNumber num = Nd4j.parseComplexNumber(line);
-                buf.put(count++,num);
+            for(int i = 0; i < ArrayUtil.prod(shape); i+= 2) {
+                String val = dis.readUTF();
+                IComplexNumber num = Nd4j.parseComplexNumber(val);
+                buf.put(i,num);
+                //line
+                dis.readUTF();
             }
 
             IComplexNDArray arr = Nd4j.createComplex(buf,shape,stride,offset,ordering);
@@ -1459,12 +1484,12 @@ public class Nd4j {
         }
         else {
             DataBuffer buf = Nd4j.createBuffer(offset + ArrayUtil.prod(shape));
-
-            while((line = bufferedReader.readLine()) != null) {
-                double val = Double.valueOf(line);
-                buf.put(count++,val);
+            for(int i = 0; i < ArrayUtil.prod(shape); i++) {
+                String val = dis.readUTF();
+                buf.put(i,Double.valueOf(val));
+                //line
+                dis.readUTF();
             }
-
             INDArray arr = Nd4j.create(buf,shape,stride,offset,ordering);
             return arr;
         }
@@ -1554,7 +1579,7 @@ public class Nd4j {
         for (int i = 0; i < arr.shape().length; i++)
             dataOutputStream.writeInt(arr.size(i));
         for (int i = 0; i < arr.stride().length; i++)
-            dataOutputStream.writeInt(arr.stride()[i]);
+            dataOutputStream.writeInt(arr.stride(i));
 
         dataOutputStream.writeUTF(dataType() == DataBuffer.Type.FLOAT ? "float" : "double");
         dataOutputStream.writeUTF("real");

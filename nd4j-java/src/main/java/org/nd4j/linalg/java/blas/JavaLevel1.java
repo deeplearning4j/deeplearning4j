@@ -10,6 +10,7 @@ import org.netlib.util.doubleW;
 import org.netlib.util.floatW;
 
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.*;
+import static org.nd4j.linalg.api.blas.BlasBufferUtil.getDoubleData;
 import static org.nd4j.linalg.api.blas.BlasBufferUtil.getFloatData;
 
 
@@ -31,13 +32,13 @@ public class JavaLevel1 extends BaseLevel1 {
 
     @Override
     protected float sdot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        return BLAS.getInstance().sdot(N, getFloatData(X), getBlasOffset(X), incX, getFloatData(Y), getBlasOffset(Y), incY);
 
     }
 
     @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
-        throw new UnsupportedOperationException();
+        return BLAS.getInstance().ddot(N, getDoubleData(X), getBlasOffset(X), incX, getDoubleData(Y), getBlasOffset(Y), incY);
 
     }
 

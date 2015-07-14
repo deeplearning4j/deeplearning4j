@@ -37,7 +37,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  *
  * @author Adam Gibson
  */
-public class AdaGrad implements Serializable {
+public class AdaGrad implements Serializable,GradientUpdater {
 
     /**
      *
@@ -50,15 +50,30 @@ public class AdaGrad implements Serializable {
     protected int numIterations = 0;
     protected boolean decayLr;
 
+    /**
+     *
+     * @param rows
+     * @param cols
+     * @param gamma
+     */
     public AdaGrad(int rows, int cols, double gamma) {
         this.shape = new int[]{rows, cols};
+        this.masterStepSize = gamma;
+        this.decayLr = false;
+    }
+
+    /**
+     * Create adagrad with the specified shape
+     *
+     * @param shape
+     */
+    public AdaGrad(int[] shape,double gamma) {
+        this.shape = shape;
         this.masterStepSize = gamma;
         this.decayLr = false;
 
 
     }
-
-
     /**
      * Create adagrad with the specified shape
      *
@@ -185,9 +200,11 @@ public class AdaGrad implements Serializable {
      * the name adagrad
      *
      * @param gradient the gradient to get learning rates for
+     * @param iteration
      * @return the feature specific learning rates
      */
-    public INDArray getGradient(INDArray gradient) {
+    @Override
+    public INDArray getGradient(INDArray gradient, int iteration) {
         boolean historicalInitialized = false;
         if (this.historicalGradient == null) {
             this.historicalGradient = Nd4j.ones(gradient.rows(), gradient.columns());
