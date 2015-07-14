@@ -28,9 +28,9 @@ The width and height of an image are easily understood. The depth is due to how 
 
 ### Definition
 
-From the Latin *convolvere*, *to convolve* is to roll together. For mathematical purposes, a convolution is a integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
+From the Latin *convolvere*, "to convolve" means to roll together. For mathematical purposes, a convolution is the integral measuring how much two functions overlap as one passes over the other. Think of a convolution as a way of mixing two functions by multiplying them. 
 
-Imagine a tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Now imagine a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions's overlap at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). So in a sense the two functions are being "rolled together."
+Imagine a tall, narrow bell curve standing in the middle of a graph. The integral is the area under that curve. Imagine near it a second bell curve that is shorter and wider, drifting slowly from the left side of the graph to the right. The product of those two functions' overlap at each point along the x-axis is their [convolution](http://mathworld.wolfram.com/Convolution.html). So in a sense, the two functions are being "rolled together."
 
 The static, underlying function is the input image being analyzed, and the second, mobile function is known as the filter, because it picks up the signal of the image. The two functions relate through multiplication. To visualize convolutions as matrices rather than as bell curves, please see [Andrej Karpathy's excellent animation](https://cs231n.github.io/convolutional-networks/) under the heading "Convolution Demo."
 
