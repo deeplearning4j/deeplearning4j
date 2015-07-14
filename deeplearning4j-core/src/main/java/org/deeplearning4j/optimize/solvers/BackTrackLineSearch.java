@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -196,7 +197,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             assert(alam != oldAlam) : "alam == oldAlam";
 
             if(stepFunction == null)
-                stepFunction =  new DefaultStepFunction();
+                stepFunction =  new NegativeDefaultStepFunction();
             //scale wrt updates
             stepFunction.step(parameters, searchDirection, new Object[]{alam}); //step
             oldAlam = alam;
@@ -222,9 +223,9 @@ public class BackTrackLineSearch implements LineOptimizer  {
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
             if(f <= fold + ALF * alam * slope) {
                 logger.debug("Sufficient decrease, exiting backtrack: score={}, oldScore={}",f,fold);
-                if (f < fold)
+                if (f > fold)
                     throw new IllegalStateException
-                            ("Function did not increase: f = " + f + " < " + fold + " = fold");
+                            ("Function did not decrease: f = " + f + " > " + fold + " = fold");
                 return alam;
             }
 
