@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -144,13 +143,13 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @return the next step size
      * @throws InvalidStepException
      */
-    public double optimize (double initialStep, INDArray parameters, INDArray gradients, INDArray searchDirection) throws InvalidStepException {
+    @Override
+    public double optimize(double initialStep, INDArray parameters, INDArray gradients, INDArray searchDirection) throws InvalidStepException {
         double test, alamin, alam, alam2, oldAlam, tmplam;
         double rhs1, rhs2, a, b, disc, f, fold, f2;
 
         INDArray oldParameters = parameters.dup();
         double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
-        double slope = Nd4j.getBlasWrapper().dot(searchDirection, gradients);
 
         INDArray maxOldParams = abs(oldParameters);
         Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams, 1));
@@ -164,7 +163,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         f2 = fold = layer.score();
 
-        if (logger.isDebugEnabled()) {
+    	if( logger.isTraceEnabled() ){
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLinnSearch, value = " + fold + ",\ndirection.oneNorm:"
                     +	searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
@@ -172,12 +171,12 @@ public class BackTrackLineSearch implements LineOptimizer  {
         }
 
         if(sum > stpmax) {
-            logger.warn("attempted step too big. scaling: sum= " + sum +
-                    ", stpmax= "+ stpmax);
+            logger.warn("attempted step too big. scaling: sum= {}, stpmax= {}", sum, stpmax);
             searchDirection.muli(stpmax / sum);
         }
+        double slope = Nd4j.getBlasWrapper().dot(searchDirection, gradients);
 
-        logger.debug("slope = " + slope);
+        logger.debug("slope = {}", slope);
 
         if (slope < 0)
             throw new InvalidStepException("Slope = " + slope + " is negative");
@@ -190,14 +189,16 @@ public class BackTrackLineSearch implements LineOptimizer  {
         // look for step size in direction given by "line"
 
         for(int iteration = 0; iteration < maxIterations; iteration++) {
-            logger.trace("BackTrack loop iteration " + iteration +" : alam=" + alam +" oldAlam=" + oldAlam);
-            logger.trace("before step, x.1norm: " + parameters.norm1(Integer.MAX_VALUE) + "\nalam: " + alam + "\noldAlam: " + oldAlam);
+        	if( logger.isTraceEnabled() ){
+        		logger.trace("BackTrack loop iteration {} : alam={}, oldAlam={}", iteration, alam, oldAlam);
+        		logger.trace("before step, x.1norm: {} \nalam: {} \noldAlam: {}", parameters.norm1(Integer.MAX_VALUE), alam, oldAlam);
+        	}
             assert(alam != oldAlam) : "alam == oldAlam";
 
             if(stepFunction == null)
-                stepFunction =  new NegativeDefaultStepFunction();
+                stepFunction =  new DefaultStepFunction();
             //scale wrt updates
-            stepFunction.step(parameters, searchDirection, new Object[]{alam,oldAlam}); //step
+            stepFunction.step(parameters, searchDirection, new Object[]{alam}); //step
             oldAlam = alam;
 
             if(logger.isDebugEnabled())  {
@@ -211,18 +212,16 @@ public class BackTrackLineSearch implements LineOptimizer  {
             if ((alam < alamin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, parameters,
                     parameters.dup(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
                 f = getNewScore(oldParameters);
-                logger.trace("EXITING BACKTRACK: Jump too small (alamin = "+ alamin + "). Exiting and using xold. Value = " + f);
+                logger.trace("EXITING BACKTRACK: Jump too small (alamin = {}). Exiting and using xold. Value = {}", alamin, f);
                 return 0.0;
             }
 
             f = getNewScore(parameters);
-            logger.debug("value = " + f);
+            logger.debug("Model score after step = {}", f);
 
-            // sufficient increase (Wolf condition)
-
-            if(f >= fold + ALF * alam * slope) {
-
-                logger.debug("EXITING BACKTRACK: value=" + f);
+            //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
+            if(f <= fold + ALF * alam * slope) {
+                logger.debug("Sufficient decrease, exiting backtrack: score={}, oldScore={}",f,fold);
                 if (f < fold)
                     throw new IllegalStateException
                             ("Function did not increase: f = " + f + " < " + fold + " = fold");
@@ -231,19 +230,17 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
             // if value is infinite, i.e. we've
             // jumped to unstable territory, then scale down jump
-
             else if(Double.isInfinite(f) || Double.isInfinite(f2)) {
-                logger.warn ("Value is infinite after jump " + oldAlam + ". f="+ f +", f2=" + f2 + ". Scaling back step size...");
+                logger.warn("Value is infinite after jump. oldAlam={}. f={}, f2={}. Scaling back step size...",oldAlam,f,f2);
                 tmplam = .2 * alam;
                 if(alam < alamin) { //convergence on delta x
                     f = getNewScore(oldParameters);
-                    logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value="+ f );
+                    logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using xold. Value={}", f);
                     return 0.0;
                 }
             }
 
             // backtrack
-
             else {
                 if(alam == 1.0) // first time through
                     tmplam = -slope / (2.0 * ( f - fold - slope ));
@@ -252,32 +249,34 @@ public class BackTrackLineSearch implements LineOptimizer  {
                     rhs2 = f2 - fold - alam2 * slope;
                     if(alam == alam2)
                         throw new IllegalStateException("FAILURE: dividing by alam-alam2. alam=" + alam);
-                    a = ( rhs1 / (FastMath.pow(alam, 2)) - rhs2 /  ( FastMath.pow(alam2, 2) )) / (alam - alam2);
-                    b = ( -alam2 * rhs1/( alam* alam ) + alam * rhs2 / ( alam2 *  alam2 )) / ( alam - alam2);
+                    double alamSquared = alam*alam;
+                    double alam2Squared = alam2*alam2;
+                    a = ( rhs1/alamSquared - rhs2/alam2Squared ) / (alam - alam2);
+                    b = ( -alam2*rhs1/alamSquared + alam*rhs2/alam2Squared ) / (alam - alam2);
                     if(a == 0.0)
                         tmplam = -slope / (2.0 * b);
                     else {
                         disc = b * b - 3.0 * a * slope;
                         if(disc < 0.0) {
-                            tmplam = .5f * alam;
+                            tmplam = 0.5 * alam;
                         }
                         else if (b <= 0.0)
-                            tmplam = (-b + FastMath.sqrt(disc))/(3.0f * a );
+                            tmplam = (-b + FastMath.sqrt(disc))/(3.0 * a );
                         else
                             tmplam = -slope / (b +FastMath.sqrt(disc));
                     }
-                    if (tmplam > .5f * alam)
-                        tmplam = .5f * alam;    // lambda <= .5 lambda_1
+                    if (tmplam > 0.5 * alam)
+                        tmplam = 0.5 * alam;    // lambda <= 0.5 lambda_1
                 }
             }
 
             alam2 = alam;
             f2 = f;
-            logger.debug("tmplam:" + tmplam);
+            logger.debug("tmplam: {}", tmplam);
             alam = Math.max(tmplam, .1f * alam);  // lambda >= .1*Lambda_1
-
         }
-
+        
+        logger.debug("Exited line search after maxIterations termination condition");
         return 0.0;
     }
 
