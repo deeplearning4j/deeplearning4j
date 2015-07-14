@@ -59,7 +59,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     private Model layer;
-    private StepFunction stepFunction = new DefaultStepFunction();
+    private StepFunction stepFunction = new NegativeDefaultStepFunction();
     private ConvexOptimizer optimizer;
     private int maxIterations = 5;
     double stepMax = 100;
@@ -90,11 +90,11 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @param optimizer
      */
     public BackTrackLineSearch(Model optimizable, ConvexOptimizer optimizer) {
-        this(optimizable, new DefaultStepFunction(),optimizer);
+        this(optimizable, new NegativeDefaultStepFunction(), optimizer);
     }
 
 
-    public void setStepMax(double stpmax) {
+    public void setStepMax(double stepMax) {
         this.stepMax = stepMax;
     }
 
@@ -121,6 +121,12 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
     public void setMaxIterations(int maxIterations) {
         this.maxIterations = maxIterations;
+    }
+
+    public double getScore(INDArray parameters){
+        layer.setParams(parameters);
+        layer.setScore();
+        return layer.score();
     }
 
     // returns fraction of step size if found a good step
@@ -202,14 +208,12 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, parameters,
                     parameters.dup(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
-                layer.setParams(oldParameters);
-                score = layer.score();
+                score = getScore(oldParameters);
                 logger.trace("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using xold. Value = {}", stepMin, score);
                 return 0.0;
             }
 
-            layer.setParams(parameters);
-            score = layer.score();
+            score = getScore(parameters);
             logger.debug("Model score after step = {}", score);
 
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
@@ -227,8 +231,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 logger.warn("Value is infinite after jump. oldStep={}. score={}, score2={}. Scaling back step size...",oldStep,score,score2);
                 tmpStep = .2 * step;
                 if(step < stepMin) { //convergence on delta x
-                    layer.setParams(oldParameters);
-                    score = layer.score();
+                    score = getScore(oldParameters);
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using previous parameters. Value={}", score);
                     return 0.0;
                 }

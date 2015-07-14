@@ -32,17 +32,18 @@ public class BackTrackLineSearchTest {
 
     @Test
     public void testLineSearch() throws Exception {
-        DataSet data = new IrisDataSetIterator(1,1).next();
+        DataSet data = new IrisDataSetIterator(10,10).next();
         data.normalizeZeroMeanZeroUnitVariance();
 
         OutputLayer layer = getIrisLogisticLayerConfig("softmax", 10);
         layer.setInput(data.getFeatureMatrix());
         layer.setLabels(data.getLabels());
+        layer.setScore();
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
 
         double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient().dup());
-        assertEquals(1.0,step,1e-1);
+        assertEquals(0.0,step,1e-1);
     }
 
     // TODO finish adapting to test specific parameter results - currently using to step through backtrack
