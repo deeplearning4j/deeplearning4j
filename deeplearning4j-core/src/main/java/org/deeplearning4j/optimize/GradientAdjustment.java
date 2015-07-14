@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +52,9 @@ public class GradientAdjustment {
      * @param adaGrad the adagrad map (per variable adagrad entries(
      * @return updated gradient
      */
+    @Deprecated
     public static void updateGradientAccordingToParams(int iteration, int batchSize, NeuralNetConfiguration conf, INDArray params,
-                                                           INDArray gradient, AdaGrad adaGrad, INDArray lastStep, String paramType) {
+                                                           INDArray gradient, GradientUpdater adaGrad, INDArray lastStep, String paramType) {
         if(adaGrad == null)
             adaGrad = new AdaGrad(params.shape());
 
@@ -62,7 +64,7 @@ public class GradientAdjustment {
 
         //reset adagrad history
         if(iteration != 0 && conf.getResetAdaGradIterations() > 0 &&  iteration % conf.getResetAdaGradIterations() == 0) {
-            adaGrad.historicalGradient = null;
+            //adaGrad.historicalGradient = null;
             log.info("Resetting adagrad");
         }
 
@@ -82,7 +84,7 @@ public class GradientAdjustment {
         }
 
         if (conf.isUseAdaGrad()) {
-            gradient = adaGrad.getGradient(gradient);
+            gradient = adaGrad.getGradient(gradient,0);
         } else {
             gradient.muli(conf.getLr());
         }

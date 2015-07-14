@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.GradientUpdater;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -81,26 +82,9 @@ public interface ConvexOptimizer extends Serializable {
      */
     void setupSearchState(Pair<Gradient, Double> pair);
 
-    Map<String, INDArray> getLastStep();
 
-    /**
-     * The adagrad in this model
-     * @return the adagrad in this model
-     */
-    AdaGrad getAdaGrad();
 
-    /**
-     * Return the ada grad look up table
-     * @return the ada grad for variables
-     */
-    Map<String,AdaGrad> adaGradForVariables();
 
-    /**
-     * Get adagrad for a variable
-     * @param variable
-     * @return
-     */
-    AdaGrad getAdaGradForVariable(String variable);
 
 
     /**
@@ -108,9 +92,10 @@ public interface ConvexOptimizer extends Serializable {
      * @param gradient the gradient to modify
      * @param model the model with the parameters to update
      * @param batchSize batchSize for update
+     * @param iteration
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType);
+    void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType, int iteration);
 
 
 }

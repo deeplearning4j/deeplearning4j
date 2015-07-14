@@ -123,8 +123,9 @@ public class MultiLayerTest {
     public void testBackProp() {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(10).weightInit(WeightInit.XAVIER).dist(new UniformDistribution(0,1))
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .iterations(5).weightInit(WeightInit.XAVIER)
+                .seed(123)
                 .activationFunction("tanh")
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
@@ -134,7 +135,7 @@ public class MultiLayerTest {
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         builder.activationFunction("softmax");
                         builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        builder.lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
                     }
                 }).build();
 

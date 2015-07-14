@@ -320,7 +320,7 @@ public class Tsne implements Serializable {
         INDArray gradChange = gains.mul(yGrads);
 
         if(useAdaGrad)
-            gradChange = adaGrad.getGradient(gradChange);
+            gradChange = adaGrad.getGradient(gradChange,0);
         else
             gradChange.muli(learningRate);
 

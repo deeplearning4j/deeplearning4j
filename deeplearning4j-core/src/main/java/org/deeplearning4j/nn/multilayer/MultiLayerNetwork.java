@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.MultiLayerUtil;
@@ -166,7 +165,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     getLayers()[i].fit(this.input);
                     log.info("Training on layer " + (i + 1) + " with " + input.slices() + " examples");
 
-                    }
+                }
 
                 iter.reset();
             } else {
@@ -379,7 +378,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      * order in the array without having to create an override
                      * for every layer.
                      */
-                    if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) { 
+                    if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
                         if(i!=(layers.length-1)) {
                             numHiddenLayersSizesUsed++;
                             conf.setNIn(layerInput.size(1));
@@ -574,15 +573,22 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
-            activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
+            //special case: row wise softmax
+            if(layers[i].conf().getActivationFunction().equals("softmax"))
+                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",currInput.dup()),1));
+            else
+                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
         }
 
         currInput = this.input;
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput); // w*x+b for each layer
             INDArray dup = currInput.dup();
-            derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative()));
-            Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput);
+            //special case: row wise softmax
+            if(layers[i].conf().getActivationFunction().equals("softmax"))
+                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative(),1));
+            else
+                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative()));
         }
         // Duplicating last layer derivative to keep pair list equal
         derivatives.add(derivatives.get(layers.length - 1));
@@ -1097,21 +1103,14 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             for(int k = 0; k < numLayers; k++) {
                 Layer currLayer = getLayers()[k];
                 for(String paramType : gradientUpdates.get(k).gradientForVariable().keySet()) {
-                    INDArray gradient = gradientUpdates.get(k).getGradientFor(paramType);
-                    // Direct object reference updates gradients with adjustments
-                    GradientAdjustment.updateGradientAccordingToParams(
-                            i
-                            ,input.slices()
-                            ,currLayer.conf()
-                            ,currLayer.getParam(paramType)
-                            ,gradient
-                            ,currLayer.getOptimizer().adaGradForVariables().get(paramType)
-                            ,currLayer.getOptimizer().getLastStep().get(paramType)
-                            ,paramType
-                    );
-                    currLayer.update(gradient, paramType);
+                    currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k).getGradientFor(paramType),currLayer,input.size(0),paramType,i);
+                    INDArray update = gradientUpdates.get(k).getGradientFor(paramType);
+                    if(update != null)
+                        currLayer.update(update, paramType);
                 }
             }
+
+
             for(IterationListener listener :  listeners)
                 listener.iterationDone(getOutputLayer(),i);
         }
@@ -1438,7 +1437,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     @Override
     public void setScore() {
-
     }
 
     @Override
@@ -1668,9 +1666,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     public Layer[] getLayers() {
         return layers;
     }
-    
+
     public Layer getLayer( int i ){
-    	return layers[i];
+        return layers[i];
     }
 
     public void setLayers(Layer[] layers) {
