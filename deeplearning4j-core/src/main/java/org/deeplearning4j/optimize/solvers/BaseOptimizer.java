@@ -148,7 +148,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //ensure we can take a step
             try {
                 INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, parameters, gradient, searchDirection);
+                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
 
@@ -170,7 +170,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //perform one step
             try {
                 INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, parameters, gradient, searchDirection);
+                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
             }
