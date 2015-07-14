@@ -163,10 +163,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         }
 
 
+        //Preprocess gradient: Calculate search direction, scale gradient etc.
+        preProcessLine(gradient);
+        searchDirection = (INDArray) searchState.get(SEARCH_DIR);	//Search dir may have been modified/calculated
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            //line normalization where relevant
-            preProcessLine(gradient);
-
             //perform one step
             try {
                 INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
