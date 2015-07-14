@@ -35,13 +35,13 @@ public interface StepFunction extends Serializable {
      * @param line the line to step
      * @param params
      */
-    void step(INDArray x,INDArray line,Object[] params);
+    void step(INDArray x, INDArray line, double step);
 
 
     /**
      * Step with no parameters
      */
-    void step(INDArray x,INDArray line);
+    void step(INDArray x, INDArray line);
 
 
     void step();
