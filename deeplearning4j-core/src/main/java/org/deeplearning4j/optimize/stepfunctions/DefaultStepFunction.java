@@ -34,7 +34,7 @@ public class DefaultStepFunction implements StepFunction {
 	 */
     @Override
     public void step(INDArray x, INDArray line, Object[] params) {
-        Nd4j.getBlasWrapper().level1().axpy(line.length(),(double)params[0], line, x);
+        Nd4j.getBlasWrapper().level1().axpy(line.length(), (double) params[0], line, x);
     }
 
     @Override

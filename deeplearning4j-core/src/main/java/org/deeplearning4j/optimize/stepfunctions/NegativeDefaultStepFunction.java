@@ -28,15 +28,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class NegativeDefaultStepFunction implements StepFunction {
+
     @Override
     public void step(INDArray x, INDArray line, Object[] params) {
-        double alam = (double) params[0];
-        double oldAlam = (double) params[1];
+        double scalar = (double) params[0];
         if(x.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(alam - oldAlam,line,x);
+            Nd4j.getBlasWrapper().level1().axpy(line.length(), -scalar, line, x);
         else if(x.data().dataType() == DataBuffer.Type.FLOAT)
-            Nd4j.getBlasWrapper().axpy((float) (alam - oldAlam),line,x);
-        x.subi(line.mul(alam - oldAlam));
+            Nd4j.getBlasWrapper().level1().axpy(line.length(), (float) -scalar, line, x);
     }
 
     @Override
