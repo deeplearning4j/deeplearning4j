@@ -130,7 +130,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Pair<Gradient,Double> pair = gradientAndScore();
         setupSearchState(pair);
         //get initial score
-        score = pair.getSecond();
+        score = model.score();
         //check initial gradient
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray searchDirection = (INDArray) searchState.get(SEARCH_DIR);
@@ -165,7 +165,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            int v = conf.getNumIterations();
             //line normalization where relevant
             preProcessLine(gradient);
 
@@ -181,6 +180,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             oldScore = score;
             pair = gradientAndScore();
             setupSearchState(pair);
+            score = pair.getSecond();
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
@@ -202,14 +202,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     return true;
 
 
-
         }
 
         return true;
-    }
-
-    public INDArray getSearchDirection(INDArray gradient) {
-        return gradient.dup();
     }
 
     protected  void postFirstStep(INDArray gradient) {
@@ -269,12 +264,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public  void setupSearchState(Pair<Gradient, Double> pair) {
         INDArray gradient = pair.getFirst().gradient(conf.variables());
         INDArray params = model.params();
-        INDArray searchDirection = gradient.dup();
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
-        searchState.put("searchDirection",searchDirection);
-        score = pair.getSecond();
 
     }
 
