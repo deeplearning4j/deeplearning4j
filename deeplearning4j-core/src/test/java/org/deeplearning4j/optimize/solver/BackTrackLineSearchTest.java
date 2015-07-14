@@ -21,6 +21,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -37,10 +38,11 @@ public class BackTrackLineSearchTest {
         OutputLayer layer = getIrisLogisticLayerConfig("softmax", 10);
         layer.setInput(data.getFeatureMatrix());
         layer.setLabels(data.getLabels());
+
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
 
-        double step = lineSearch.optimize(1.0, layer.params(), layer.gradient().gradient(), layer.gradient().gradient().dup());
-        assertEquals(0.0,step,1e-1);
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient().dup());
+        assertEquals(1.0,step,1e-1);
     }
 
     // TODO finish adapting to test specific parameter results - currently using to step through backtrack
@@ -54,6 +56,8 @@ public class BackTrackLineSearchTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 1));
         network.init();
+        IterationListener listener = new ScoreIterationListener(1);
+        network.setListeners(Collections.singletonList(listener));
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
     }

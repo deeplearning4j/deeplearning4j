@@ -59,7 +59,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected double step;
     private int batchSize = 10;
     protected double score,oldScore;
-    protected double stpMax = Double.MAX_VALUE;
+    protected double stepMax = Double.MAX_VALUE;
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
@@ -93,7 +93,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         this.terminationConditions = terminationConditions;
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);
-        lineMaximizer.setStpmax(stpMax);
+        lineMaximizer.setStepMax(stepMax);
         lineMaximizer.setMaxIterations(conf.getNumLineSearchIterations());
 
     }
