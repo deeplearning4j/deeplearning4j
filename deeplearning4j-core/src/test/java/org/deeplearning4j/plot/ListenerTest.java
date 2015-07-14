@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.plot.iterationlistener.*;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -43,7 +44,7 @@ public class ListenerTest {
 
     @Test
     public void testNeuralNetGraphsCapturedMLPNetwork() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{5}, "sigmoid"));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{5}, "sigmoid", 1));
         network.init();
         DataSet data = irisIter.next();
         IterationListener listener = new NeuralNetPlotterIterationListener(1,true);
@@ -54,6 +55,25 @@ public class ListenerTest {
         assertEquals(listener.invoked(), true);
     }
 
+    @Test
+    public void testScoreIterationListenerMLP() {
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{5}, "sigmoid", 5));
+        network.init();
+        IterationListener listener = new ScoreIterationListener(1);
+        network.setListeners(Collections.singletonList(listener));
+        while( irisIter.hasNext() ) network.fit(irisIter.next());
+        assertEquals(listener.invoked(), true);
+    }
+
+    @Test
+    public void testScoreIterationListenerBackTrack() {
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10, 5}, "sigmoid", 5));
+        network.init();
+        IterationListener listener = new ScoreIterationListener(1);
+        network.setListeners(Collections.singletonList(listener));
+        while( irisIter.hasNext() ) network.fit(irisIter.next());
+        assertEquals(listener.invoked(), true);
+    }
 
     @Test
     public void testAccuracyGraphCaptured() {
@@ -124,7 +144,7 @@ public class ListenerTest {
         return c;
     }
 
-    private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction ) {
+    private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3)
                 .weightInit(WeightInit.DISTRIBUTION)
@@ -134,7 +154,7 @@ public class ListenerTest {
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
 
-                .iterations(1)
+                .iterations(iterations)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)

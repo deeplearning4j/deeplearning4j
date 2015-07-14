@@ -44,7 +44,7 @@ public class PlotFilters {
         if(data.rank() == 4)
             data = data.reshape(n * data.size(1),n * data.size(3));
 
-        data = Transforms.round(Transforms.abs(data)).muli(255);
+        data.muli(255);
 
         return data;
     }
@@ -75,7 +75,6 @@ public class PlotFilters {
         int[] baseFilterShape = Ints.concat(new int[]{n,n}, Arrays.copyOfRange(data.shape(),1,data.shape().length));
         data = data.reshape(baseFilterShape).permute(0,2,1,3);
         data = data.reshape(n * data.size(1), n * data.size(3));
-        data = Transforms.round(Transforms.abs(data)).muli(255);
 
         return data;
     }
