@@ -84,7 +84,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                     conf.isUseRegularization());
         }
 
-        //minimization target
+        //maximize target
         if(conf.isMinimize())
             score = -score;
     }
