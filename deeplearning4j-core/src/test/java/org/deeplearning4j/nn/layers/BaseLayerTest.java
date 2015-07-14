@@ -59,7 +59,7 @@ public class BaseLayerTest {
         assertEquals(score, score2, 1e-3);
     }
 
-
+    // TODO fix - seed in LSTM so the score is consistent
     @Test
     public void testRecursiveAutoEncoderScores() {
         DataSet data = irisIter.next();
@@ -83,7 +83,7 @@ public class BaseLayerTest {
     }
 
 
-    // TODO input isn't set for LSTM and fails gradient update
+    // TODO fix - input isn't set for LSTM and fails on gradient update
     @Test
     public void testLSTMParamsAndScores() {
         DataSet data = irisIter.next();
@@ -137,6 +137,7 @@ public class BaseLayerTest {
         double score = network.getLayer(1).score();
         INDArray parameters = network.getLayer(1).params();
         network.getLayer(1).setParams(parameters);
+
         double score2 = network.getLayer(1).score();
         assertEquals(parameters, network.getLayer(1).params());
         assertEquals(score, score2, 1e-3);
