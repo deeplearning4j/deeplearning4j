@@ -56,7 +56,7 @@ public class InstrumentationApplication extends Application<Nd4jInstrumentationC
      */
     public void start() {
         try {
-            InputStream is = new ClassPathResource(resourcePath).getInputStream();
+            InputStream is = new ClassPathResource(resourcePath, InstrumentationApplication.class.getClassLoader()).getInputStream();
             File tmpConfig = new File(resourcePath);
             if(!tmpConfig.getParentFile().exists())
                 tmpConfig.getParentFile().mkdirs();

@@ -84,7 +84,7 @@ public class KernelFunctions {
      * @throws IOException
      */
     public static void register() throws Exception {
-        ClassPathResource res = new ClassPathResource("/cudafunctions.properties");
+        ClassPathResource res = new ClassPathResource("/cudafunctions.properties", KernelFunctions.class.getClassLoader());
         if (!res.exists())
             throw new IllegalStateException("Please put a cudafunctions.properties in your class path");
         Properties props = new Properties();

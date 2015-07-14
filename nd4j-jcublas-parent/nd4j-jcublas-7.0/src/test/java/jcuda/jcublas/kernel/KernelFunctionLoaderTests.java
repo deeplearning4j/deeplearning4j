@@ -39,7 +39,7 @@ public class KernelFunctionLoaderTests {
 
         KernelFunctionLoader loader = KernelFunctionLoader.getInstance();
         loader.load();
-        ClassPathResource res = new ClassPathResource("/cudafunctions.properties");
+        ClassPathResource res = new ClassPathResource("/cudafunctions.properties", KernelFunctionLoader.class.getClassLoader());
         if (!res.exists())
             throw new IllegalStateException("Please put a cudafunctions.properties in your class path");
         Properties props = new Properties();

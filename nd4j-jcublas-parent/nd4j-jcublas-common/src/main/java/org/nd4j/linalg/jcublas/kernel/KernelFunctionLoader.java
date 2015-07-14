@@ -148,7 +148,7 @@ public class KernelFunctionLoader {
         StringBuffer sb = new StringBuffer();
         sb.append("nvcc -g -G -ptx");
 
-        ClassPathResource res = new ClassPathResource("/cudafunctions.properties");
+        ClassPathResource res = new ClassPathResource("/cudafunctions.properties", KernelFunctionLoader.class.getClassLoader());
         if (!res.exists())
             throw new IllegalStateException("Please put a cudafunctions.properties in your class path");
         Properties props = new Properties();
@@ -363,7 +363,7 @@ public class KernelFunctionLoader {
 
 
     private String loadFile(String file) throws IOException {
-        ClassPathResource resource = new ClassPathResource(file);
+        ClassPathResource resource = new ClassPathResource(file, KernelFunctionLoader.class.getClassLoader());
         String tmpDir = System.getProperty("java.io.tmpdir");
 
         if (!resource.exists())
