@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.optimize.solvers;
 
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,10 +26,8 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
-import java.util.LinkedList;
 
 /**
  * Vectorized Stochastic Gradient Ascent
@@ -38,9 +35,9 @@ import java.util.LinkedList;
  *
  */
 public class GradientAscent extends BaseOptimizer {
+	private static final long serialVersionUID = 6336124657542062284L;
 
-
-    public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+	public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
@@ -55,7 +52,7 @@ public class GradientAscent extends BaseOptimizer {
         double norm2 = line.norm2(Integer.MAX_VALUE).getDouble(0);
         if(norm2 > stpMax)
             line.muli(stpMax / norm2);
-
+        
     }
 
     @Override
@@ -65,13 +62,8 @@ public class GradientAscent extends BaseOptimizer {
 
     @Override
     public void setupSearchState(Pair<Gradient, Double> pair) {
-
         super.setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray searchDirection = gradient.dup();
-        searchState.put("searchDirection",searchDirection);
-
+        searchState.put("searchDirection",gradient);
     }
-
-
 }
