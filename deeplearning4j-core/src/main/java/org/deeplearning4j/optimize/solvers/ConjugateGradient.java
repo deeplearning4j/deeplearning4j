@@ -44,15 +44,12 @@ import java.util.Collection;
 
 
 /**
- * Modified based on cc.mallet.optimize.ConjugateGradient <p/>
- * no termination when zero tolerance 
+ * Originally based on cc.mallet.optimize.ConjugateGradient
+ * 
+ * Rewritten based on Conjugate Gradient algorithm in Bengio et al.,
+ * Deep Learning (in preparation) Ch8
  *
- * @author Adam Gibson
- * @since 2013-08-25
  */
-
-// Conjugate Gradient, Polak and Ribiere version
-// from "Numeric Recipes in C", Section 10.6.
 
 public class ConjugateGradient extends BaseOptimizer {
     private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
@@ -73,61 +70,41 @@ public class ConjugateGradient extends BaseOptimizer {
 
     @Override
     public void preProcessLine(INDArray line) {
-        //no-op
+    	//line is current gradient
+    	//Last gradient is stored in searchState map
+    	INDArray gLast = (INDArray) searchState.get(GRADIENT_KEY);		//Previous iteration gradient
+        INDArray searchDirLast = (INDArray) searchState.get(SEARCH_DIR);//Previous iteration search dir
+        
+        //Calculate gamma (or beta, by Bengio et al. notation). Polak and Ribiere method.
+        // = ((grad(current)-grad(last)) \dot (grad(current))) / (grad(last) \dot grad(last))
+        double dgg = Nd4j.getBlasWrapper().dot(line.sub(gLast),line);
+        double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
+        double gamma = dgg / gg;
+
+        //Compute search direction:
+        //searchDir = -gradient + gamma * searchDirLast
+        INDArray searchDir = line.neg().addi(searchDirLast.muli(gamma));
+
+        //Store current gradient and search direction for
+        //(a) use in BaseOptimizer.optimize(), and (b) next iteration
+        searchState.put(GRADIENT_KEY, line);
+        searchState.put(SEARCH_DIR, searchDir);
     }
 
     @Override
     public void postStep() {
-        INDArray g = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray xi = (INDArray) searchState.get("xi");
-        INDArray h = (INDArray) searchState.get("h");
-        searchState.put("gg",pow(g, 2).sum(Integer.MAX_VALUE).getDouble(0));
-        searchState.put("dgg",xi.mul(xi.sub(g)).sum(Integer.MAX_VALUE).getDouble(0));
-
-
-        double dgg = (double) searchState.get("dgg");
-        double gg = (double) searchState.get("gg");
-        double gam = dgg / gg;
-        searchState.put("gam",gam);
-        if(h == null)
-            h = g;
-
-        g.assign(xi);
-        h.muli(gam).addi(xi);
-        // gdruck
-        // Mallet line search algorithms stop search whenever
-        // a step is found that increases the value significantly.
-        // ConjugateGradient assumes that line maximization finds something
-        // close
-        // to the maximum in that direction. In tests, sometimes the
-        // direction suggested by CG was downhill. Consequently, here I am
-        // setting the search direction to the gradient if the slope is
-        // negative or 0.
-        if (Nd4j.getBlasWrapper().dot(xi, h) > 0)
-            xi.assign(h);
-        else {
-            logger.warn("Reverting back to GA");
-            h.assign(xi);
-        }
-
-        searchState.put(GRADIENT_KEY,g);
-        searchState.put("xi",xi);
-        searchState.put("h",xi.add(h.mul(gam)));
-
+    	//no-op
     }
 
     @Override
     public void setupSearchState(Pair<Gradient, Double> pair) {
         super.setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray searchDirection = gradient.dup();
-        searchState.put("h",gradient.dup());
-        searchState.put("xi",gradient.dup());
-        searchState.put("gg",0.0);
-        searchState.put("gam",0.0);
-        searchState.put("dgg",0.0);
-        searchState.put("searchDirection",searchDirection);
-
+        INDArray params = model.params();
+        
+        searchState.put(SEARCH_DIR,Nd4j.zeros(params.shape()));	//Initialize to 0, as per Bengio et al.
+        searchState.put(PARAMS_KEY, params);
+        searchState.put(GRADIENT_KEY, gradient);	//Consequence: on first iteration, gamma = 0
     }
 
 
