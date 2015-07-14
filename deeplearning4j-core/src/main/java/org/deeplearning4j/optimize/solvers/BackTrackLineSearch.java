@@ -167,8 +167,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
         if (logger.isDebugEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLinnSearch, value = " + fold + ",\ndirection.oneNorm:"
-                    +	searchDirection.norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
-                    FastMath.max(Float.NEGATIVE_INFINITY,abs(searchDirection).max(Integer.MAX_VALUE).getDouble(0)));
+                    +	searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
+                    FastMath.max(Float.NEGATIVE_INFINITY, abs(searchDirection.dup()).max(Integer.MAX_VALUE).getDouble(0)));
         }
 
         if(sum > stpmax) {

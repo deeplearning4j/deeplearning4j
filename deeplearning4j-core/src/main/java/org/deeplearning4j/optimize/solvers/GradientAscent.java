@@ -68,10 +68,7 @@ public class GradientAscent extends BaseOptimizer {
 
         super.setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray params = (INDArray) searchState.get(PARAMS_KEY);
         INDArray searchDirection = gradient.dup();
-        searchState.put("oldparams",params.dup());
-        searchState.put("oldgradient",gradient.dup());
         searchState.put("searchDirection",searchDirection);
 
     }
