@@ -34,9 +34,9 @@ Imagine a tall, narrow bell curve standing in the middle of a graph. The integra
 
 The static, underlying function is the input image being analyzed, and the second, mobile function is known as the filter, because it picks up the signal of the image. The two functions relate through multiplication. To visualize convolutions as matrices rather than as bell curves, please see [Andrej Karpathy's excellent animation](https://cs231n.github.io/convolutional-networks/) under the heading "Convolution Demo."
 
-The next thing to understand about convolutional nets is that they are passing many filters for the image, each one picking up different signals. One way to imagine it would be to think of them passing a horizontal line filter, a vertical line filter, and a diagonal line filter to create a map of the edges in the image. 
+The next thing to understand about convolutional nets is that they are passing many filters over a single image, each one picking up a different signal. At a fairly early layer, you could imagine them as passing a horizontal line filter, a vertical line filter, and a diagonal line filter to create a map of the edges in the image. 
 
-Convolutional nets take those slices of the feature space of an image and learn them one by one. By learning different portions of a feature space, convolutional nets allow for easily scalable and robust feature engineering.
+Convolutional networks take those filters, slices of the image's feature space, and map them one by one; that is, they create a map of each place that feature occurs. By learning different portions of a feature space, convolutional nets allow for easily scalable and robust feature engineering.
 
 (Note that convolutional nets analyze images differently than RBMs. While RBMs learn to reconstruct and identify the features of each image as a whole, convolutional nets learn images in pieces that we call feature maps.) 
 
