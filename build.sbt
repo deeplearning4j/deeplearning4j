@@ -2,7 +2,7 @@ lazy val root = (project in file(".")).settings(
        scalaVersion := "2.10.5",
        name := "nd4s",
        version := "0.0.3.5.5.6-SNAPSHOT",
-       organization := "org.deeplearning4j",
+       organization := "org.nd4j",
        resolvers += "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository", 
        libraryDependencies ++= Seq( 
               "org.scala-lang" % "scala-compiler" % "2.10.5",
