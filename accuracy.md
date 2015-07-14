@@ -12,7 +12,7 @@ Deep learning has knocked down one record after another on benchmark dataset aft
 * Andrew Ng, in his deep-learning talks circa 2011, [compiled a great list of quantum leaps in accuracy](https://www.youtube.com/watch?v=ZmNOAtZIgIk) deep learning has made in many domains.
 * More recently, he has led his team at Baidu to several breakthroughs in speech and image recognition:
 * [Deep Speech outperformed](https://gigaom.com/2014/12/18/baidu-claims-deep-learning-breakthrough-with-deep-speech/), by about 9 percent, top academic speech-recognition models on a popular dataset called Hub5’00, and proved accurate 81 percent of the time in noisy environments, beating the leading commercial algorithms. 
-* [Baidu claims a 5.98 percent error rate on the ImageNet object classification benchmark](https://gigaom.com/2015/01/14/baidu-has-built-a-supercomputer-for-deep-learning/); a team from Google won the 2014 ImageNet competition with a 6.66 percent error rate.
+* Google won the 2014 ImageNet competition with a 6.66 percent error rate using deep networks.
 * [Table of results for CIFAR-10 dataset](http://zybler.blogspot.de/2011/02/table-of-results-for-cifar-10-dataset.html)
 * [Rodrigo Benenson's blog](https://rodrigob.github.io/are_we_there_yet/build/#datasets), which includes CIFAR-10, CIFAR-100, STL-10, SVHN, ILSVRC2012 task 1, Pascal VOC 2011 comp3, Caltech Pedestrians USA, INRIA Persons, MSRC-21, Leeds Sport Poses and the Salient Object Detection benchmark, among others.
 * When Google adopted [deep-learning-based speech recognition](http://www.nature.com/news/computer-science-the-learning-machines-1.14481) in its Android smartphone operating system, it achieved a 25% reduction in word errors.
