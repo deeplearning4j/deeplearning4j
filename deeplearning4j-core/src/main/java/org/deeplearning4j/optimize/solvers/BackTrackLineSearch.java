@@ -25,7 +25,7 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -58,7 +58,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     private Model layer;
-    private StepFunction stepFunction = new NegativeDefaultStepFunction();
+    private StepFunction stepFunction = new DefaultStepFunction();
     private ConvexOptimizer optimizer;
     private int maxIterations = 5;
     double stepMax = 100;
@@ -89,7 +89,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @param optimizer
      */
     public BackTrackLineSearch(Model optimizable, ConvexOptimizer optimizer) {
-        this(optimizable, new NegativeDefaultStepFunction(), optimizer);
+        this(optimizable, new DefaultStepFunction(), optimizer);
     }
 
 
@@ -146,6 +146,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         INDArray oldParameters = parameters.dup();
         double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
+        double slope = Nd4j.getBlasWrapper().dot(searchDirection, gradients);
+        logger.debug("slope = {}", slope);
 
         INDArray maxOldParams = abs(oldParameters);
         Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams, 1));
@@ -167,12 +169,9 @@ public class BackTrackLineSearch implements LineOptimizer  {
         }
 
         if(sum > stepMax) {
-            logger.warn("attempted step too big. scaling: sum= {}, stepMax= {}", sum, stepMax);
+            logger.warn("Attempted step too big. scaling: sum= {}, stepMax= {}", sum, stepMax);
             searchDirection.muli(stepMax / sum);
         }
-        double slope = Nd4j.getBlasWrapper().dot(searchDirection, gradients);
-
-        logger.debug("slope = {}", slope);
 
         //Issue: Works for DefaultStepFunction + descent search direction
         //but: want slope > 0 for Negative
@@ -191,7 +190,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             assert(step != oldStep) : "step == oldStep";
 
             if(stepFunction == null)
-                stepFunction =  new NegativeDefaultStepFunction();
+                stepFunction =  new DefaultStepFunction();
             //scale wrt updates
             stepFunction.step(parameters, searchDirection, step); //step
             oldStep = step;

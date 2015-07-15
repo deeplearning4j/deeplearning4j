@@ -30,7 +30,6 @@ import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.serializers.*;
-import org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
@@ -40,7 +39,6 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.rng.DefaultRandom;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -497,7 +495,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] featureMapSize = {2,2};
         //subsampling layers
         private int[] stride = {2,2};
-        private StepFunction stepFunction = new NegativeDefaultStepFunction();
+        private StepFunction stepFunction = new DefaultStepFunction();
         private Layer layer;
         private int batchSize = 100;
         private int numLineSearchIterations = 100;
