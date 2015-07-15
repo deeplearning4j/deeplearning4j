@@ -1,6 +1,7 @@
 package org.nd4j.linalg.cpu.ops;
 
 
+import com.google.common.base.Preconditions;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -83,6 +84,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else {
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
+                    Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length());
+                    Preconditions.checkArgument(op.y().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.y()) < op.y().data().length());
+                    Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length());
+
                     loop.execDoubleTransform(
                             op.x().data().asDouble()
                             ,op.y().data().asDouble()
@@ -97,20 +102,28 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             ,ArgsConverter.convertExtraArgsDouble(op)
                             ,op.z().data().asDouble());
                 }
-                else
+                else {
+                    Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length());
+                    Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length());
+
                     loop.execDoubleTransform(
                             op.x().data().asDouble()
-                            ,op.n()
-                            ,op.x().offset()
-                            ,op.z().offset(),
+                            , op.n()
+                            , op.x().offset()
+                            , op.z().offset(),
                             BlasBufferUtil.getBlasStride(op.x())
-                            ,BlasBufferUtil.getBlasStride(op.z())
-                            ,op.name()
-                            ,ArgsConverter.convertExtraArgsDouble(op)
-                            ,op.z().data().asDouble());
+                            , BlasBufferUtil.getBlasStride(op.z())
+                            , op.name()
+                            , ArgsConverter.convertExtraArgsDouble(op)
+                            , op.z().data().asDouble());
+                }
             }
             else {
                 if(op.y() != null) {
+                    Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length());
+                    Preconditions.checkArgument(op.y().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.y()) < op.y().data().length());
+                    Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length());
+
                     loop.execFloatTransform(
                             op.x().data().asFloat()
                             , op.y().data().asFloat()
@@ -122,21 +135,25 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             , BlasBufferUtil.getBlasStride(op.y())
                             , BlasBufferUtil.getBlasStride(op.z())
                             , op.name()
-                            ,ArgsConverter.convertExtraArgsFloat(op)
+                            , ArgsConverter.convertExtraArgsFloat(op)
                             , op.z().data().asFloat());
 
                 }
-                else
+                else {
+                    Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length());
+                    Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length());
+
                     loop.execFloatTransform(
                             op.x().data().asFloat()
-                            ,op.n()
-                            ,op.x().offset(),
+                            , op.n()
+                            , op.x().offset(),
                             op.z().offset()
-                            ,BlasBufferUtil.getBlasStride(op.x())
-                            ,BlasBufferUtil.getBlasStride(op.z())
-                            ,op.name()
-                            ,ArgsConverter.convertExtraArgsFloat(op)
-                            ,op.z().data().asFloat());
+                            , BlasBufferUtil.getBlasStride(op.x())
+                            , BlasBufferUtil.getBlasStride(op.z())
+                            , op.name()
+                            , ArgsConverter.convertExtraArgsFloat(op)
+                            , op.z().data().asFloat());
+                }
             }
         }
     }
