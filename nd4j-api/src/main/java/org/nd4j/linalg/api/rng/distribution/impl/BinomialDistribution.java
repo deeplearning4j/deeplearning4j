@@ -257,12 +257,12 @@ public class BinomialDistribution extends BaseDistribution {
         if (p != null)
             for (int i = 0; i < linear.length(); i++) {
                 org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, p.linearView().getDouble(i));
-                ret.putScalar(i, binomialDistribution.sample());
+                linear.putScalar(i, binomialDistribution.sample());
             }
         else
             for (int i = 0; i < linear.length(); i++) {
                 org.apache.commons.math3.distribution.BinomialDistribution binomialDistribution = new org.apache.commons.math3.distribution.BinomialDistribution((RandomGenerator) Nd4j.getRandom(), numberOfTrials, probabilityOfSuccess);
-                ret.putScalar(i, binomialDistribution.sample());
+                linear.putScalar(i, binomialDistribution.sample());
             }
         return ret;
     }

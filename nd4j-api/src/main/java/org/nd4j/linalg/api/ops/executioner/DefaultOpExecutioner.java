@@ -267,6 +267,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected void checkOp(Op op) {
+        if(op.x() instanceof LinearViewNDArray)
+            return;
+
         if(op.y() != null) {
             Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length(),new BlasOpErrorMessage(op).toString());
             Preconditions.checkArgument(op.y().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.y()) < op.y().data().length(),new BlasOpErrorMessage(op).toString());
