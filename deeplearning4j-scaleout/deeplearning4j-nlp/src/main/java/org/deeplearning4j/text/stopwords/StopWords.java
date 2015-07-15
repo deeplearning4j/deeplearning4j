@@ -37,7 +37,7 @@ public class StopWords {
 
 		try {
 			if(stopWords == null)
-				stopWords =  IOUtils.readLines(new ClassPathResource("/stopwords").getInputStream());
+				stopWords =  IOUtils.readLines(new ClassPathResource("/stopwords.txt").getInputStream());
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
