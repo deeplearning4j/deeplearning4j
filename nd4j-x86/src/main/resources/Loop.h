@@ -1,6 +1,7 @@
 #include <cmath>
 #include <string>
 #include <jni.h>
+#include <algorithm>
 using namespace std;
 /**
  * CPU math operations for:
