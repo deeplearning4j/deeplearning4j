@@ -17,14 +17,14 @@ Deeplearning4j를 위한 prerequisites 설치는 DL4J의 신경망에 동력을 
 위의 설치를 마치신 후, 다음을 읽어주시기 바랍니다.
 
 1. OS-specific instructions:
-* [Linux](../kr-gettingstarted.html#linux)
-* [OSX](../kr-gettingstarted.html#osx)
-* [Windows](../kr-gettingstarted.html#windows)
-2. [소스를 사용한 작업(Working with Source)](../kr-gettingstarted.html#source)
-3. [Eclipse](../kr-gettingstarted.html#eclipse)
-4. [문제 해결](../kr-gettingstarted.html#trouble)
-5. [재생 가능한 결과(Reproducible Results)](../kr-gettingstarted.html#results)
-6. [다음 단계](../kr-gettingstarted.html#next)
+    * <a href="#linux">Linux</a>
+    * <a href="#osx">OSX</a>
+    * <a href="#windows">Windows</a>
+2. <a href="#source">소스를 사용한 작업(Working with Source)</a>
+3. <a href="#eclipse">Eclipse]</a>
+4. <a href="#trouble">문제 해결</a>
+5. <a href="#results">재생 가능한 결과(Reproducible Results)</a>
+6. <a href="#next">다음 단계</a>
 
 ### <a name="linux">Linux</a>
 
