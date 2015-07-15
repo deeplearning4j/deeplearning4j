@@ -167,7 +167,7 @@ public abstract class BaseLayer implements Layer {
                     conf.isUseRegularization());
         }
 
-        //minimization target
+        //maximize target
         if(conf.isMinimize())
             score = -score;
     }
