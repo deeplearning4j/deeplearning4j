@@ -21,6 +21,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import akka.actor.ActorSystem;
 import com.google.common.base.Function;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -34,6 +35,9 @@ import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -55,7 +59,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ParagraphVectors extends Word2Vec {
     //labels are also vocab words
     protected Queue<LinkedList<Pair<List<VocabWord>, Collection<VocabWord>>>> jobQueue = new LinkedBlockingDeque<>(10000);
-
+    protected List<String> labels = new CopyOnWriteArrayList<>();
     /**
      * Train the model
      */
@@ -158,6 +162,60 @@ public class ParagraphVectors extends Word2Vec {
     }
 
 
+    /**
+     * Predict several based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document the document
+     * @return the word distances for each label
+     */
+    public String predict(List<VocabWord> document) {
+        INDArray arr = Nd4j.create(document.size(),this.layerSize);
+        for(int i = 0; i < document.size(); i++) {
+            arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
+        }
+
+        INDArray docMean = arr.mean(0);
+        Counter<String> distances = new Counter<>();
+
+        for(String s : labels) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(docMean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        return distances.argMax();
+
+    }
+
+
+    /**
+     * Predict several based on the document.
+     * Computes a similarity wrt the mean of the
+     * representation of words in the document
+     * @param document the document
+     * @return the word distances for each label
+     */
+    public Counter<String> predictSeveral(List<VocabWord> document) {
+        INDArray arr = Nd4j.create(document.size(),this.layerSize);
+        for(int i = 0; i < document.size(); i++) {
+            arr.putRow(i,getWordVectorMatrix(document.get(i).getWord()));
+        }
+
+        INDArray docMean = arr.mean(0);
+        Counter<String> distances = new Counter<>();
+
+        for(String s : labels) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(docMean, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+        return distances;
+
+    }
+
+
 
 
     /**
@@ -207,10 +265,6 @@ public class ParagraphVectors extends Word2Vec {
                 }
             }
         }
-
-
-
-
     }
 
 
@@ -265,7 +319,7 @@ public class ParagraphVectors extends Word2Vec {
 
 
     public static class Builder extends Word2Vec.Builder {
-
+        private List<String> labels;
         @Override
         public Builder index(InvertedIndex index) {
             super.index(index);
@@ -398,6 +452,16 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * Specify labels
+         * @param labels the labels to specify
+         * @return builder pattern
+         */
+        public Builder labels(List<String> labels) {
+            this.labels = labels;
+            return this;
+        }
+
         @Override
         public ParagraphVectors build() {
 
@@ -442,7 +506,7 @@ public class ParagraphVectors extends Word2Vec {
                 ret.docIter = docIter;
                 ret.lookupTable = lookupTable;
                 ret.tokenizerFactory = tokenizerFactory;
-
+                ret.labels = labels;
                 return ret;
             }
 
@@ -489,6 +553,7 @@ public class ParagraphVectors extends Word2Vec {
                 }
                 ret.lookupTable = lookupTable;
                 ret.tokenizerFactory = tokenizerFactory;
+                ret.labels = labels;
                 return ret;
             }
         }
