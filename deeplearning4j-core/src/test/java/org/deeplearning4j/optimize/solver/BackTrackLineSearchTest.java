@@ -57,7 +57,7 @@ public class BackTrackLineSearchTest {
 
     @Test
     public void testBackTrackLineGradientDescent() {
-        OptimizationAlgorithm optimizer = OptimizationAlgorithm.GRADIENT_DESCENT;
+        OptimizationAlgorithm optimizer = OptimizationAlgorithm.LINE_GRADIENT_DESCENT;
 
         DataSetIterator irisIter = new IrisDataSetIterator(1,1);
         DataSet data = irisIter.next();

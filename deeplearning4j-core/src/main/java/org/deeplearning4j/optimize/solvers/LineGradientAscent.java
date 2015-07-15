@@ -30,18 +30,18 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * Vectorized Stochastic Gradient Descent
+ * Stochastic Gradient Descent with Line Search
  * @author Adam Gibson
  *
  */
-public class GradientAscent extends BaseOptimizer {
+public class LineGradientAscent extends BaseOptimizer {
 	private static final long serialVersionUID = 6336124657542062284L;
 
-	public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+	public LineGradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
-    public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public LineGradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
