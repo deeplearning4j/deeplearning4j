@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
-import org.deeplearning4j.optimize.solvers.LineGradientAscent;
+import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
@@ -143,7 +143,7 @@ public class TestOptimizers {
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 		.numLineSearchIterations(numLineSearchIter)
-		.iterations(1)
+		.iterations(1000)
 		.learningRate(0.01)
 		.layer(new RBM()).batchSize(1).build();
 		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
@@ -167,7 +167,7 @@ public class TestOptimizers {
 			opt = new StochasticGradientDescent(conf,new DefaultStepFunction(),null,m);
 			break;
 		case LINE_GRADIENT_DESCENT:
-			opt = new LineGradientAscent(conf,new DefaultStepFunction(),null,m);
+			opt = new LineGradientDescent(conf,new DefaultStepFunction(),null,m);
 			break;
 		case CONJUGATE_GRADIENT:
 			opt = new ConjugateGradient(conf,new DefaultStepFunction(),null,m);
