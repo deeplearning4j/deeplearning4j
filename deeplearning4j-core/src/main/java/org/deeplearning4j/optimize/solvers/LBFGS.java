@@ -25,11 +25,9 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import sun.plugin.javascript.navig.Link;
+
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -62,7 +60,7 @@ public class LBFGS extends BaseOptimizer {
         searchState.put("oldparams", params.dup());
         searchState.put("oldgradient", gradient.dup());
 
-        // leveraging Mallet approach but need to determine how to kick this off
+        // TODO commented out leverages Mallet approach - need to verify how to kick this one off
 //        searchState.put(SEARCH_DIR, gradient.dup().divi(gradient.dup().norm2(Integer.MAX_VALUE).getDouble(0)));
         searchState.put(SEARCH_DIR, Nd4j.zeros(params.shape()));
     }
@@ -79,13 +77,17 @@ public class LBFGS extends BaseOptimizer {
     protected void postFirstStep(INDArray gradient) {
         super.postFirstStep(gradient);
         if(step == 0.0) {
-            log.info("Unable to step in that direction...resetting");
+            log.debug("Unable to step in that direction...resetting");
             setupSearchState(model.gradientAndScore());
             step = 1.0;
         }
 
     }
 
+    // s = parameters differences (old & current)
+    // y = gradient differences (old & current)
+    // r = searchDirection in development
+    // gamma = Hessian approximation
     @Override
     public void preProcessLine(INDArray gradient) {
         double syOld, yy;
@@ -133,7 +135,6 @@ public class LBFGS extends BaseOptimizer {
 
         }
 
-//
         INDArray r = gradient.dup();
         r.muli(gamma);
 
