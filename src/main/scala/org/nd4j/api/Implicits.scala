@@ -33,16 +33,24 @@ object Implicits {
     /*
       Extract subMatrix at given position.
     */
-    def subMatrix(target: Seq[Int]*): INDArray = {
+    def subMatrix(target:IndexRange*): INDArray = {
       require(target.size <= underlying.shape().length, "Matrix dimension must be equal or larger than shape's dimension to extract.")
-
-      val targetShape = target.map(_.size)
+      val originalShape = underlying.shape()
+      val modifiedTarget = target.zipWithIndex.map {tup =>
+        (tup._1.asTuple,tup._2) match {
+          case (`->`, i) => 0 -> originalShape(i)
+          case (t, _) => t
+        }
+      }
+      val targetShape = modifiedTarget.collect {
+        case (start, end) => end - start + 1
+      }
 
       @tailrec
-      def calcIndices(tgt: List[Seq[Int]], orgShape: List[Int], layerSize: Int, acc: List[Int]): List[Int] = {
+      def calcIndices(tgt: List[(Int, Int)], orgShape: List[Int], layerSize: Int, acc: List[Int]): List[Int] = {
         (tgt, orgShape) match {
           case (h :: t, shape) if acc.isEmpty =>
-            calcIndices(t, shape, layerSize, h.toList)
+            calcIndices(t, shape, layerSize, (h._1 to h._2).toList)
           case (h :: t, hs :: ts) =>
             val thisLayer = layerSize * hs
             calcIndices(t, ts, thisLayer, acc ++ acc.map(_ + thisLayer))
@@ -50,17 +58,15 @@ object Implicits {
         }
       }
 
-      val indices = calcIndices(target.toList, underlying.shape().toList, 1, Nil)
+      val indices = calcIndices(modifiedTarget.toList, underlying.shape().toList, 1, Nil)
       val filtered = indices.map { i => underlying.getDouble(i)}
       Nd4j.create(filtered.toArray, targetShape.toArray.filterNot(_ <= 1))
     }
 
-    def apply(target: Seq[Int]*): INDArray = subMatrix(target: _*)
+    def apply(target:IndexRange*): INDArray = subMatrix(target: _*)
   }
 
-  implicit class RangedInt(val underlying: Int) extends AnyVal {
-    def ~(end: Int): Seq[Int] = underlying to end
-  }
+  lazy val -> = (Int.MinValue, Int.MaxValue)
 
   implicit class floatColl2INDArray(val underlying: Seq[Float]) {
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
@@ -69,4 +75,17 @@ object Implicits {
   implicit class doubleColl2INDArray(val underlying: Seq[Double]) {
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
   }
+
+  implicit class IntRange(val underlying:Int) extends IndexRange{
+    override def asTuple: (Int, Int) = (underlying,underlying)
+  }
+
+  implicit class TupleRange(val underlying:_root_.scala.Tuple2[Int,Int]) extends IndexRange{
+    override def asTuple: (Int, Int) = underlying
+  }  
 }
+
+sealed trait IndexRange{
+  def asTuple:(Int,Int)
+}
+
