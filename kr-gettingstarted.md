@@ -48,9 +48,9 @@ CPU를 위한 Jblas에 대한 저희의 의존도로 인해, Blas를 위한 기�
 
 만약 여전히 Jcublas를 로드할 수 없다면, 여러분의 코드에 변수 -D를 추가하셔야 합니다. (이는 JVM 인수 입니다.):
 
-     java.library.path (settable via -Djava.librarypath=...) 
-     // ^ for a writable directory, then 
-     -D appended directly to "<OTHER ARGS>" 
+     	java.library.path (settable via -Djava.librarypath=...) 
+     	// ^ for a writable directory, then 
+     	-D appended directly to "<OTHER ARGS>" 
 
 여러분의 IDE로서 IntelliJ를 사용하고 계시다면, 이미 작동되고 있을 것 입니다.
 
@@ -84,18 +84,18 @@ Cygwin은 지원되지 않습니다. DOS Windows에서 DL4J를 설치하셔야 
 
 ### Eclipse
 
-git clone을 실행하신 후, 다음의 커맨드를 입력하십시오. 이는 그 소스를 import 해 모든 설정을 완료 할 것 입니다.
+*git clone*을 실행하신 후, 다음의 커맨드를 입력하십시오. 이는 그 소스를 import 해 모든 설정을 완료 할 것 입니다.
 
-  mvn eclipse:eclipse 
+		mvn eclipse:eclipse 
 
 ### 문제 해결
 
 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)을 통해 오류 메시지에 대해 문의해주십시오. 질문을 게시하실 때에는 다음의 정보를 준비해주시기 바랍니다 (처리가 엄청 빨라집니다!):
 
-	•	* Operating System (Windows, OSX, Linux) and version 
-	•	* Java version (7, 8) : type java -version in your terminal/CMD
-	•	* Maven version : type mvn --version in your terminal/CMD
-	•	* Stacktrace: Please past the error code on Gist and share the link with us: https://gist.github.com/
+* Operating System (Windows, OSX, Linux) and version 
+* Java version (7, 8) : type java -version in your terminal/CMD
+* Maven version : type *mvn --version* in your terminal/CMD
+* Stacktrace: Please past the error code on Gist and share the link with us: https://gist.github.com/
 
 DL4J를 이미 설치하셨고 이제 오류를 일으키는 예제들이을 보고 계신다면, DL4J와 동일한 루트 디렉터리에 있는 [ND4J](http://nd4j.org/getstarted.html) 상의 git clone을 실행하십시오; ND4J 내에서 새로운 Maven 설치를 실행하십시오; DL4J를 재설치 하십시오; DL4J 내에서 새로운 Maven 설치를 실행하시고, 오류들이 해결되었는지 확인하십시오.
 
@@ -121,7 +121,7 @@ DL4J를 사용하여 발생하는 일부 문제들은 기계 학습의 아이디
 
 신경망 가중치는 임의로 초기화 됩니다. 이는 모델이 매 번 중량 공간의 다른 위치에서 학습을 시작해 다른 로컬 최적 조건을 이끌어낼 수 있슴을 의미합니다. 재생 가능한 결과를 원하시는 이용자는 동일한 임의의 가중치를 사용하셔야 하며 이 가중치는 모델이 생성되기 이전에 초기화 되어야 합니다. 동일한 임의 가중치는 다음의 라인으로 재초기화 될 수 있습니다:
 
-  Nd4j.getRandom().setSeed(123);
+		Nd4j.getRandom().setSeed(123);
 
 ### 다음 단계: IRIS 예제와 NNs 구축하기
 
