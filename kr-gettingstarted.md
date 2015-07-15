@@ -130,3 +130,34 @@ DL4J를 이미 설치하셨고 이제 오류를 일으키는 예제들이을 보
 Deeplearning4J는 autocomplete function을 포함합니다. 어떤 커맨드들이 사용 가능한지 모르는 경우, 어떤 문자든 누르면 다음과 같이 드롭다운 리스트가 보여질 것 입니다.
 
 ————
+
+![Alt text](../img/dl4j_autocomplete.png)
+
+여기에 모든 [Deeplearning4j’s classes and methods](http://deeplearning4j.org/doc/)를 위한 Javadoc이 있습니다.
+
+코드 베이스가 증가함에 따라 소스에서 설치하면 더 많은 메모리가 필요합니다. DL4J 구축 시 Permgen 오류를 경험하신다면, 더 많은 heap space를 추가해야 할 수 있습니다. 이를 위해 여러분의 숨겨진 .bash_profile file을 찾아 변경 하십시오. 이는 bash에 환경 변수들을 추가해 줄 것 입니다. 이 변수들을 보시려면, 커맨드 라인에 env를 입력하십시오. 더 많은 heap space를 추가하시려면 여러분의 콘솔(console)에 다음의 커맨드를 입력하시기 바랍니다: echo “export MAVEN_OPTS=”-Xmx512m -XX:MaxPermSize=512m”” > ~/.bash_profile
+
+3.0.4와 같은 Maven의 이전 버전들은 NoSuchMethodError와 같은 예외 사항들을 줄 수 이미 습니다. 이는 Maven의 최신 버전으로 업그레이드 함으로써 해결될 수 있습니다.This can be fixed by upgrading to the latest version of Maven.
+
+일부 ND4J 종속성들을 컴파일 하시려면, C 또는 C++를 위한 몇 가지 개발 도구들을 설치하셔야 합니다. [저희의 ND4J guide를 보십시오](http://nd4j.org/getstarted.html#devtools).
+
+DL4J를 사용하여 발생하는 일부 문제들은 기계 학습의 아이디어와 기술에 익숙하지 않아서 일 수 있습니다. 저희는 모든 Deeplearning4j 이용자들이 기본을 이해하기 위해 이 웹사이트를 넘어선 리소스들을 이용하기를 강력히 권장합니다.users to rely on resources beyond this website to understand the fundamentals. Andrew Ng의 훌륭한 강의인 [machine-learning lectures on Coursera](https://www.coursera.org/learn/machine-learning/home/info)가 좋은 시작이 될 수 있습니다. [Youtube에 있는 Geoff Hinton의 neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE) 역시 매우 교육적입니다. 저희가 부분적으로 DL4J를 문서화 해 왔지만, 코드의 많은 부분들이 본질적으로 deep learning을 위한 완성되지 않은, 도메인 특정 언어 입니다.
+
+[Java CPP](https://github.com/bytedeco/javacpp)를 위한 include path가 항상 windows에서 작동하지만 않습니다. 한 가지 해결 방법은 Visual Studio의 include directory로부터 header 파일들을 가져와 Java가 설치되어 있는 Java Run-Time Environment (JRE)의 include directory에 붙여 넣는 것 입니다. (이는 standardio.h와 같은 파일들이 영향을 미칠 것 입니다.)
+
+
+재생 가능한 결과
+
+신경망 가중치는 임의로 초기화 됩니다. 이는 모델이 매 번 중량 공간의 다른 위치에서 학습을 시작해 다른 로컬 최적 조건을 이끌어낼 수 있슴을 의미합니다. 재생 가능한 결과를 원하시는 이용자는 동일한 임의의 가중치를 사용하셔야 하며 이 가중치는 모델이 생성되기 이전에 초기화 되어야 합니다. 동일한 임의 가중치는 다음의 라인으로 재초기화 될 수 있습니다:
+
+—————
+  Nd4j.getRandom().setSeed(123);
+————-
+
+다음 단계: IRIS 예제와 NNs 구축하기
+
+신경망 구축 시작을 위해서는 [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html)에 더 많은 정보가 있습니다.
+
+빨리 배우시려면 [IRIS tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)을, 다른 데이터 세트를 탐구하시려면 [custom datasets](http://deeplearning4j.org/customdatasets.html)을 이용하시기 바랍니다.
+
+새로운 프로젝트를 시작하고, 필요한 [POM 디펜던시들](http://nd4j.org/dependencies.html)을 포함하시려면 [ND4J Getting Started](http://nd4j.org/getstarted.html) 설명을 따르십시오.
