@@ -27,6 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
@@ -278,7 +281,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testConcatScalars() {
         INDArray first = Nd4j.arange(0,1).reshape(1,1);
-        INDArray second = Nd4j.arange(0,1).reshape(1,1);
+        INDArray second = Nd4j.arange(0,1).reshape(1, 1);
         INDArray firstRet = Nd4j.concat(0, first, second);
         assertTrue(firstRet.isColumnVector());
         INDArray secondRet = Nd4j.concat(1, first, second);
@@ -298,6 +301,26 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         DataInputStream dis = new DataInputStream(bis);
         INDArray read = Nd4j.read(dis);
         assertEquals(write, read);
+
+    }
+
+
+
+    @Test
+    public void testMultiThreading() throws Exception {
+        ExecutorService ex = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        for(int i = 0; i < 100; i++) {
+            ex.execute(new Runnable() {
+                @Override
+                public void run() {
+                    INDArray dot = Nd4j.linspace(1, 8, 8);
+                    System.out.println(Transforms.sigmoid(dot));
+                }
+            });
+        }
+
+        ex.shutdown();
+        ex.awaitTermination(1, TimeUnit.MINUTES);
 
     }
 

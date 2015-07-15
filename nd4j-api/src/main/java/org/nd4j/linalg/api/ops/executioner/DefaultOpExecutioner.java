@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import com.google.common.base.Preconditions;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,6 +29,7 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.exception.BlasOpErrorMessage;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -39,6 +42,8 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public Op exec(Op op) {
+        checkOp(op);
+
         if(op.isPassThrough()) {
             op.exec();
             return op;
@@ -259,6 +264,25 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         return op;
     }
+
+
+    protected void checkOp(Op op) {
+        if(op.x() instanceof LinearViewNDArray)
+            return;
+
+        if(op.y() != null) {
+            Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length(),new BlasOpErrorMessage(op).toString());
+            Preconditions.checkArgument(op.y().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.y()) < op.y().data().length(),new BlasOpErrorMessage(op).toString());
+            Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length(),new BlasOpErrorMessage(op).toString());
+
+        }
+        else {
+            Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length(),new BlasOpErrorMessage(op).toString());
+            Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length(),new BlasOpErrorMessage(op).toString());
+
+        }
+    }
+
 
     @Override
     public INDArray exec(Accumulation op, int...dimension) {

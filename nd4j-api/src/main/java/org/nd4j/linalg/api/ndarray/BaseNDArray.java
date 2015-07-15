@@ -2179,6 +2179,8 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int stride(int dimension) {
+        if(stride == null)
+            throw new IllegalStateException("Array created with no stride");
         if(dimension < 0)
             return stride[stride.length + dimension];
         return stride[dimension];

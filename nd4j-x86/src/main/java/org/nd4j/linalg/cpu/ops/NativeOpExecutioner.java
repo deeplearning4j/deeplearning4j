@@ -15,6 +15,9 @@ import org.nd4j.linalg.cpu.util.ArgsConverter;
 
 
 /**
+ *
+ * Native operation executioner in c++
+ *
  * @author Adam Gibson
  */
 
@@ -47,6 +50,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
+            checkOp(op);
+
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execScalarDouble(
                         op.x().data().asDouble()
@@ -81,6 +86,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
+            checkOp(op);
+
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     loop.execDoubleTransform(
@@ -97,17 +104,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             ,ArgsConverter.convertExtraArgsDouble(op)
                             ,op.z().data().asDouble());
                 }
-                else
-                    loop.execDoubleTransform(
+                else {
+                      loop.execDoubleTransform(
                             op.x().data().asDouble()
-                            ,op.n()
-                            ,op.x().offset()
-                            ,op.z().offset(),
+                            , op.n()
+                            , op.x().offset()
+                            , op.z().offset(),
                             BlasBufferUtil.getBlasStride(op.x())
-                            ,BlasBufferUtil.getBlasStride(op.z())
-                            ,op.name()
-                            ,ArgsConverter.convertExtraArgsDouble(op)
-                            ,op.z().data().asDouble());
+                            , BlasBufferUtil.getBlasStride(op.z())
+                            , op.name()
+                            , ArgsConverter.convertExtraArgsDouble(op)
+                            , op.z().data().asDouble());
+                }
             }
             else {
                 if(op.y() != null) {
@@ -122,21 +130,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             , BlasBufferUtil.getBlasStride(op.y())
                             , BlasBufferUtil.getBlasStride(op.z())
                             , op.name()
-                            ,ArgsConverter.convertExtraArgsFloat(op)
+                            , ArgsConverter.convertExtraArgsFloat(op)
                             , op.z().data().asFloat());
 
                 }
-                else
+                else {
                     loop.execFloatTransform(
                             op.x().data().asFloat()
-                            ,op.n()
-                            ,op.x().offset(),
+                            , op.n()
+                            , op.x().offset(),
                             op.z().offset()
-                            ,BlasBufferUtil.getBlasStride(op.x())
-                            ,BlasBufferUtil.getBlasStride(op.z())
-                            ,op.name()
-                            ,ArgsConverter.convertExtraArgsFloat(op)
-                            ,op.z().data().asFloat());
+                            , BlasBufferUtil.getBlasStride(op.x())
+                            , BlasBufferUtil.getBlasStride(op.z())
+                            , op.name()
+                            , ArgsConverter.convertExtraArgsFloat(op)
+                            , op.z().data().asFloat());
+                }
             }
         }
     }
@@ -148,6 +157,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
+            checkOp(op);
+
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     op.setCurrentResult(loop.reduce3(
