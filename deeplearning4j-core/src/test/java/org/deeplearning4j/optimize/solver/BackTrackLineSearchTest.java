@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 public class BackTrackLineSearchTest {
 
     @Before
-    public void doBefore(){
+    public void before(){
         Nd4j.MAX_SLICES_TO_PRINT = -1;
         Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
     }
@@ -94,14 +94,15 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.LBFGS;
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 1, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 2, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
         double score = network.getLayer(1).score();
-        assertEquals(1.289434814453125, score, 1e-4);
+//        assertEquals(0.7642837524414062, score, 1e-4);
+        assertEquals(1.3385236740112305, score, 1e-4);
 
     }
 
