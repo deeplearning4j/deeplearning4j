@@ -30,17 +30,19 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * No line search gradient descent
+ * Stochastic Gradient Descent
+ * Standard fix step size
+ * No line search
  * @author Adam Gibson
  */
-public class IterationGradientDescent extends BaseOptimizer {
+public class StochasticGradientDescent extends BaseOptimizer {
 
 
-    public IterationGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
-    public IterationGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
