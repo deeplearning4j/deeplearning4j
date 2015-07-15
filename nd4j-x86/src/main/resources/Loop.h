@@ -219,7 +219,7 @@ public:
         }
         else if(operation.compare("sigmoid") == 0) {
             for(int i = 0; i < length; i++) {
-                result[resultOffset + (i * resultStride)] =  1.0 / (1.0 + expf(-data[offset + (i  * stride)]));
+                result[resultOffset + (i * resultStride)] =  1.0f / (1.0f + expf(-data[offset + (i  * stride)]));
             }
         }
         else if(operation.compare("sign") == 0) {
