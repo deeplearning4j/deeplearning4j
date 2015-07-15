@@ -54,7 +54,10 @@ public class BaseLayerTest {
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
+<<<<<<< HEAD
         layer.setScore();
+=======
+>>>>>>> master
         double score2 = layer.score();
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-3);
