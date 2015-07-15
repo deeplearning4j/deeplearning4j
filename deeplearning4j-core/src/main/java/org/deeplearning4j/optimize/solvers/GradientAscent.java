@@ -30,7 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * Vectorized Stochastic Gradient Ascent
+ * Vectorized Stochastic Gradient Descent
  * @author Adam Gibson
  *
  */
@@ -45,13 +45,18 @@ public class GradientAscent extends BaseOptimizer {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
-
+    @Override
+    public void setupSearchState(Pair<Gradient, Double> pair) {
+        super.setupSearchState(pair);
+        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        searchState.put(SEARCH_DIR, gradient);
+    }
 
     @Override
-    public void preProcessLine(INDArray line) {
-        double norm2 = line.norm2(Integer.MAX_VALUE).getDouble(0);
+    public void preProcessLine(INDArray gradient) {
+        double norm2 = gradient.norm2(Integer.MAX_VALUE).getDouble(0);
         if(norm2 > stepMax)
-            line.muli(stepMax / norm2);
+            gradient.muli(stepMax / norm2);
         
     }
 
@@ -60,10 +65,4 @@ public class GradientAscent extends BaseOptimizer {
         //no-op
     }
 
-    @Override
-    public void setupSearchState(Pair<Gradient, Double> pair) {
-        super.setupSearchState(pair);
-        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        searchState.put("searchDirection",gradient);
-    }
 }

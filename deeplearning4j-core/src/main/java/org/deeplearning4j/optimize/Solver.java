@@ -30,7 +30,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
 import org.deeplearning4j.optimize.solvers.GradientAscent;
-import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
+import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
 import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
@@ -63,8 +63,8 @@ public class Solver {
                 return new StochasticHessianFree(conf,stepFunction,listeners,model);
             case CONJUGATE_GRADIENT:
                 return new ConjugateGradient(conf,stepFunction,listeners,model);
-            case ITERATION_GRADIENT_DESCENT:
-                return new IterationGradientDescent(conf,stepFunction,listeners,model);
+            case STOCHASTIC_GRADIENT_DESCENT:
+                return new StochasticGradientDescent(conf,stepFunction,listeners,model);
             default:
                 throw new IllegalStateException("No optimizer found");
         }

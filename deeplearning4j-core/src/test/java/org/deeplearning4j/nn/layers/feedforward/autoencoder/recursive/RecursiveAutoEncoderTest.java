@@ -43,7 +43,7 @@ public class RecursiveAutoEncoderTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .corruptionLevel(0.3).weightInit(WeightInit.VI)
                 .iterations(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
