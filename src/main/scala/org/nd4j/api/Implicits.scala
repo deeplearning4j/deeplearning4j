@@ -33,14 +33,12 @@ object Implicits {
     /*
       Extract subMatrix at given position.
     */
-    def subMatrix(target:IndexRange*): INDArray = {
+    def subMatrix(target: IndexRange*): INDArray = {
       require(target.size <= underlying.shape().length, "Matrix dimension must be equal or larger than shape's dimension to extract.")
       val originalShape = underlying.shape()
-      val modifiedTarget = target.zipWithIndex.map {tup =>
-        (tup._1.asTuple,tup._2) match {
-          case (`->`, i) => 0 -> originalShape(i)
-          case (t, _) => t
-        }
+      val modifiedTarget = target.zipWithIndex.collect {
+        case (->, i) => 0 -> (originalShape(i) - 1)
+        case (inr: IndexNumberRange, _) => inr.asTuple
       }
       val targetShape = modifiedTarget.collect {
         case (start, end) => end - start + 1
@@ -63,10 +61,11 @@ object Implicits {
       Nd4j.create(filtered.toArray, targetShape.toArray.filterNot(_ <= 1))
     }
 
-    def apply(target:IndexRange*): INDArray = subMatrix(target: _*)
+    def apply(target: IndexRange*): INDArray = subMatrix(target: _*)
   }
 
-  lazy val -> = (Int.MinValue, Int.MaxValue)
+
+  case object -> extends IndexRange
 
   implicit class floatColl2INDArray(val underlying: Seq[Float]) {
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
@@ -76,16 +75,17 @@ object Implicits {
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
   }
 
-  implicit class IntRange(val underlying:Int) extends IndexRange{
-    override def asTuple: (Int, Int) = (underlying,underlying)
+  implicit class IntRange(val underlying: Int) extends IndexNumberRange {
+    override def asTuple: (Int, Int) = (underlying, underlying)
   }
 
-  implicit class TupleRange(val underlying:_root_.scala.Tuple2[Int,Int]) extends IndexRange{
+  implicit class TupleRange(val underlying: _root_.scala.Tuple2[Int, Int]) extends IndexNumberRange {
     override def asTuple: (Int, Int) = underlying
-  }  
+  }
 }
 
-sealed trait IndexRange{
-  def asTuple:(Int,Int)
+sealed trait IndexNumberRange extends IndexRange {
+  def asTuple: (Int, Int)
 }
 
+sealed trait IndexRange
