@@ -21,7 +21,7 @@ Deeplearning4j를 위한 prerequisites 설치는 DL4J의 신경망에 동력을 
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
 2. <a href="#source">소스를 사용한 작업(Working with Source)</a>
-3. <a href="#eclipse">Eclipse]</a>
+3. <a href="#eclipse">Eclipse</a>
 4. <a href="#trouble">문제 해결</a>
 5. <a href="#results">재생 가능한 결과(Reproducible Results)</a>
 6. <a href="#next">다음 단계</a>
