@@ -25,7 +25,6 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
@@ -175,10 +174,9 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         logger.debug("slope = {}", slope);
 
-        if (slope < 0)
-            throw new InvalidStepException("Slope = " + slope + " is negative");
-        else if (slope == 0)
-            throw new InvalidStepException ("Slope = " + slope + " is zero");
+        //Issue: Works for DefaultStepFunction + descent search direction
+        //but: want slope > 0 for Negative
+        if( slope >= 0.0 ) throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
