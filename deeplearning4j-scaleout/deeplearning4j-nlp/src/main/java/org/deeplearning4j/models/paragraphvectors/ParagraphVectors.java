@@ -73,6 +73,12 @@ public class ParagraphVectors extends Word2Vec {
             readStopWords();
 
 
+        for(String label : labels) {
+            vocab().addToken(new VocabWord(1,label));
+            vocab().putVocabWord(label);
+        }
+
+
         log.info("Training word2vec multithreaded");
 
         if (sentenceIter != null)
@@ -229,10 +235,6 @@ public class ParagraphVectors extends Word2Vec {
             nextRandom.set(nextRandom.get() * 25214903917L + 11);
             dbow(i, sentenceWithLabel, (int) nextRandom.get() % window, nextRandom, alpha);
         }
-
-
-
-
 
     }
 
