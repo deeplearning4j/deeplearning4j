@@ -127,12 +127,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //validate the input before training
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
-        setupSearchState(pair);
-        //get initial score
         score = model.score();
-        //check initial gradient
+        setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray searchDirection = (INDArray) searchState.get(SEARCH_DIR);
+        INDArray searchDirection, parameters;
 
         //pre existing termination conditions
         /*
@@ -145,35 +143,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             }
         }*/
 
-        //some algorithms do pre processing of gradient and
-        //need to test possible directions. (LBFGS)
-        boolean testLineSearch = preFirstStepProcess(gradient);
-        if(testLineSearch) {
-            //ensure we can take a step
-            try {
-                INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
-            } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration");
-
-            }
-            gradient = (INDArray) searchState.get(GRADIENT_KEY);
-            postFirstStep(gradient);
-
-            if(step == 0.0) {
-                log.warn("Unable to step in direction");
-                return false;
-            }
-        }
-
-
         //Preprocess gradient: Calculate search direction, scale gradient etc.
         preProcessLine(gradient);
-        searchDirection = (INDArray) searchState.get(SEARCH_DIR);	//Search dir may have been modified/calculated
+
         for(int i = 0; i < conf.getNumIterations(); i++) {
             //perform one step
             try {
-                INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
+                gradient = (INDArray) searchState.get(GRADIENT_KEY);
+                searchDirection = (INDArray) searchState.get(SEARCH_DIR);
+                parameters = (INDArray) searchState.get(PARAMS_KEY);
                 step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration: {}",e.getMessage());
@@ -215,11 +193,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     protected  void postFirstStep(INDArray gradient) {
         //no-op
-    }
-
-    protected  boolean preFirstStepProcess(INDArray gradient) {
-        //no-op
-        return false;
     }
 
     @Override

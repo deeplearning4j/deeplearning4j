@@ -97,13 +97,13 @@ public class TestOptimizers {
 	
 	@Test
 	public void testSphereFnOptLineGradDescent(){
-		int[] numLineSearchIter = {1000,2,5,10};
+		int[] numLineSearchIter = {1,2,5,10};
 		for( int n : numLineSearchIter )
 			testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,2);
 		
 		for( int n : numLineSearchIter )
 			testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,10);
-		
+
 		for( int n : numLineSearchIter )
 			testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,100);
 	}
@@ -143,6 +143,7 @@ public class TestOptimizers {
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 		.numLineSearchIterations(numLineSearchIter)
+		.iterations(1)
 		.learningRate(0.01)
 		.layer(new RBM()).batchSize(1).build();
 		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
