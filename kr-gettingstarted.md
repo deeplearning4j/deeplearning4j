@@ -8,25 +8,24 @@ layout: default
 
 Deeplearning4j를 위한 prerequisites 설치는 DL4J의 신경망에 동력을 지원하는 선형 대수학 엔진, ND4J의 [“Getting Started” 페이지](http://nd4j.org/getstarted.html)에 문서화 되어 있습니다:
 
-1. [Java 7](http://nd4j.org/getstarted.html#java)
-2. [통합 개발 환경(Integrated Development Environment): IntelliJ](http://nd4j.org/getstarted.html#ide)
-3. [Maven](http://nd4j.org/getstarted.html#maven)
-4. [Canova: An ML Vectorization Lib](http://nd4j.org/getstarted.html#canova)
-5. [GitHub](http://nd4j.org/getstarted.html#github)
+1. [Java 7](http://nd4j.org/kr-getstarted.html#java)
+2. [통합 개발 환경(Integrated Development Environment): IntelliJ](http://nd4j.org/kr-getstarted.html#ide)
+3. [Maven](http://nd4j.org/kr-getstarted.html#maven)
+4. [Canova: An ML Vectorization Lib](http://nd4j.org/kr-getstarted.html#canova)
+5. [GitHub](http://nd4j.org/kr-getstarted.html#github)
 
 위의 설치를 마치신 후, 다음을 읽어주시기 바랍니다.
 
 1. OS-specific instructions: 
-* [Linux](http://deeplearning4j.org/gettingstarted.html#linux)
-* [OSX](http://deeplearning4j.org/gettingstarted.html#osx)
-* [Windows](http://deeplearning4j.org/gettingstarted.html#windows)
+* [Linux](../kr-gettingstarted.html#linux)
+* [OSX](../kr-gettingstarted.html#osx)
+* [Windows](../kr-gettingstarted.html#windows)
 
-2. [소스를 사용한 작업(Working with Source)](http://deeplearning4j.org/gettingstarted.html#source)
-3. [Eclipse](http://deeplearning4j.org/gettingstarted.html#eclipse)
-4. [문제 해결](http://deeplearning4j.org/gettingstarted.html#trouble)
-5. [재생 가능한 결과(Reproducible Results)](http://deeplearning4j.org/gettingstarted.html#results)
-6. [다음 단계](http://deeplearning4j.org/gettingstarted.html#next)
-
+2. [소스를 사용한 작업(Working with Source)](../kr-gettingstarted.html#source)
+3. [Eclipse](../kr-gettingstarted.html#eclipse)
+4. [문제 해결](../kr-gettingstarted.html#trouble)
+5. [재생 가능한 결과(Reproducible Results)](../kr-gettingstarted.html#results)
+6. [다음 단계](../kr-gettingstarted.html#next)
 
 ### Linux
 
@@ -95,7 +94,7 @@ Cygwin은 지원되지 않습니다. DOS Windows에서 DL4J를 설치하셔야 
 * Operating System (Windows, OSX, Linux) and version 
 * Java version (7, 8) : type java -version in your terminal/CMD
 * Maven version : type *mvn --version* in your terminal/CMD
-* Stacktrace: Please past the error code on Gist and share the link with us: https://gist.github.com/
+* Stacktrace: Please past the error code on Gist -- [https://gist.github.com/](https://gist.github.com/) -- and share the link with us
 
 DL4J를 이미 설치하셨고 이제 오류를 일으키는 예제들이을 보고 계신다면, DL4J와 동일한 루트 디렉터리에 있는 [ND4J](http://nd4j.org/getstarted.html) 상의 git clone을 실행하십시오; ND4J 내에서 새로운 Maven 설치를 실행하십시오; DL4J를 재설치 하십시오; DL4J 내에서 새로운 Maven 설치를 실행하시고, 오류들이 해결되었는지 확인하십시오.
 
@@ -107,7 +106,9 @@ Deeplearning4J는 autocomplete function을 포함합니다. 어떤 커맨드들�
 
 여기에 모든 [Deeplearning4j’s classes and methods](http://deeplearning4j.org/doc/)를 위한 Javadoc이 있습니다.
 
-코드 베이스가 증가함에 따라 소스에서 설치하면 더 많은 메모리가 필요합니다. DL4J 구축 시 Permgen 오류를 경험하신다면, 더 많은 heap space를 추가해야 할 수 있습니다. 이를 위해 여러분의 숨겨진 .bash_profile file을 찾아 변경 하십시오. 이는 bash에 환경 변수들을 추가해 줄 것 입니다. 이 변수들을 보시려면, 커맨드 라인에 env를 입력하십시오. 더 많은 heap space를 추가하시려면 여러분의 콘솔(console)에 다음의 커맨드를 입력하시기 바랍니다: echo “export MAVEN_OPTS=”-Xmx512m -XX:MaxPermSize=512m”” > ~/.bash_profile
+코드 베이스가 증가함에 따라 소스에서 설치하면 더 많은 메모리가 필요합니다. DL4J 구축 시 Permgen 오류를 경험하신다면, 더 많은 heap space를 추가해야 할 수 있습니다. 이를 위해 여러분의 숨겨진 .bash_profile file을 찾아 변경 하십시오. 이는 bash에 환경 변수들을 추가해 줄 것 입니다. 이 변수들을 보시려면, 커맨드 라인에 env를 입력하십시오. 더 많은 heap space를 추가하시려면 여러분의 콘솔(console)에 다음의 커맨드를 입력하시기 바랍니다: 
+
+		echo “export MAVEN_OPTS=”-Xmx512m -XX:MaxPermSize=512m”” > ~/.bash_profile
 
 3.0.4와 같은 Maven의 이전 버전들은 NoSuchMethodError와 같은 예외 사항들을 줄 수 이미 습니다. 이는 Maven의 최신 버전으로 업그레이드 함으로써 해결될 수 있습니다.This can be fixed by upgrading to the latest version of Maven.
 
