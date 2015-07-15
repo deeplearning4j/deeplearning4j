@@ -42,28 +42,25 @@ layout: default
 
 *nd4j-java* 백엔드는 아래과 같이 표시될 것입니다:
 
-————
-<dependency>
-   <groupId>org.nd4j</groupId>
-   <artifactId>nd4j-java</artifactId>
-   <version>${nd4j.version}</version>
- </dependency>
-————
+		 <dependency>
+		   <groupId>org.nd4j</groupId>
+		   <artifactId>nd4j-java</artifactId>
+		   <version>${nd4j.version}</version>
+		 </dependency>
+
 
 *nd4j-java*는 Blas를 필요로 하지 않기 때문에 Windows에서 가장 쉬운 설정 입니다. 이는 DBNs 또는 심층 신뢰망(deep-belief nets)의 모든 예제들에 작동하나 그 외의 예제들에는 불가합니다.
 
 *nd4j-jblas* 백엔드는 아래와 같이 표시될 것입니다.
 
-————
-<dependency>
-   <groupId>org.nd4j</groupId>
-   <artifactId>nd4j-jblas</artifactId>
-   <version>${nd4j.version}</version>
- </dependency>
-————
+		 <dependency>
+		   <groupId>org.nd4j</groupId>
+		   <artifactId>nd4j-jblas</artifactId>
+		   <version>${nd4j.version}</version>
+		 </dependency>
+
 
 *nd4j-jblas*는 모든 예제들에 작동합니다. Jblas를 설치하려면 Windows 사용자께서는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/gettingstarted.html)를 참조하시기 바랍니다.
-
 
 ## 고급: AWS의 커맨드 라인(Command Line) 사용 하기
 
@@ -71,24 +68,17 @@ layout: default
 
 템플릿은 다음과 같습니다:
 
-————-
-java -cp target/nameofjar.jar fully.qualified.class.name
-———-
+      java -cp target/nameofjar.jar fully.qualified.class.name
 
 여러분의 커맨드가 어떠한 모습인지 대략적으로 보여드리기 위한 구체적인 예가 여기에 있습니다:
 
-—————
-java -cp target/deeplearning4j-examples-0.0.3.3.3-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
-————
+      java -cp target/deeplearning4j-examples-0.0.3.3.3-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
 
 보시는 바와 같이 저희가 업데이트 하는대로 변경되고 여러분이 예제를 통해 확인하실 두개의 와일드 카드가 있습니다:
 
-————
-java -cp target/*.jar org.deeplearning4j.*
-————
+      java -cp target/*.jar org.deeplearning4j.*
 
 커맨드 라인을 통해 예제들에 변경을 주고 그 변경된 파일을 실행하려면, 예를 들어, src/main/java/org/deeplearning4j/multiplayer에서 MLPBackpropIrisExample을 트윅 한 후, 그 예제들을 다시 maven-build 하실 수 있습니다.
-
 
 ## 다음 단계
 
