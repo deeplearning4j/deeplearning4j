@@ -437,10 +437,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(allocationMode == AllocationMode.HEAP) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(getElementSize() * length());
             DataOutputStream dos = new DataOutputStream(bos);
-            if(doubleData == null)
-                throw new IllegalStateException("Double array is null!");
 
             if(dataType() == Type.DOUBLE) {
+                if(doubleData == null)
+                    throw new IllegalStateException("Double array is null!");
+
                 try {
                     for(int i = 0; i < doubleData.length; i++)
                         dos.writeDouble(doubleData[i]);
@@ -450,6 +451,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             }
             else {
+                if(floatData == null)
+                    throw new IllegalStateException("Double array is null!");
+
                 try {
                     for(int i = 0; i < floatData.length; i++)
                         dos.writeFloat(floatData[i]);
