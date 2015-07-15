@@ -65,7 +65,16 @@ public class ConjugateGradient extends BaseOptimizer {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
+    @Override
+    public void setupSearchState(Pair<Gradient, Double> pair) {
+        super.setupSearchState(pair);
+        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        INDArray params = model.params();
 
+        searchState.put(SEARCH_DIR,Nd4j.zeros(params.shape()));	//Initialize to 0, as per Bengio et al.
+        searchState.put(PARAMS_KEY, params);
+        searchState.put(GRADIENT_KEY, gradient);	//Consequence: on first iteration, gamma = 0
+    }
 
 
     @Override
@@ -94,17 +103,6 @@ public class ConjugateGradient extends BaseOptimizer {
     @Override
     public void postStep() {
     	//no-op
-    }
-
-    @Override
-    public void setupSearchState(Pair<Gradient, Double> pair) {
-        super.setupSearchState(pair);
-        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray params = model.params();
-        
-        searchState.put(SEARCH_DIR,Nd4j.zeros(params.shape()));	//Initialize to 0, as per Bengio et al.
-        searchState.put(PARAMS_KEY, params);
-        searchState.put(GRADIENT_KEY, gradient);	//Consequence: on first iteration, gamma = 0
     }
 
 
