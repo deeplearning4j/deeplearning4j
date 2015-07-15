@@ -34,7 +34,7 @@ layout: default
 
 6. 실행을 누르십시오. (녹색 버튼!)
 
-여러분은 약 0.55의 F1 점수를 얻어야 하고, 이는 Iris와 같은 작은 데이터 세트(dataset)에 좋습니다. 이 예제의 상세한 설명을 원하시면, 저희의 [Iris DBN 튜토리얼](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)을 참조하시기 바랍니다.
+여러분은 약 0.66의 F1 점수를 얻어야 하고, 이는 Iris와 같은 작은 데이터 세트(dataset)에 좋습니다. 이 예제의 상세한 설명을 원하시면, 저희의 [Iris DBN 튜토리얼](http://deeplearning4j.org/iris-flower-dataset-tutorial.html)을 참조하시기 바랍니다.
 
 ## 디펜던시와 백엔드(Dependencies and Backends)
 
@@ -47,7 +47,6 @@ layout: default
 		   <artifactId>nd4j-java</artifactId>
 		   <version>${nd4j.version}</version>
 		 </dependency>
-
 
 *nd4j-java*는 Blas를 필요로 하지 않기 때문에 Windows에서 가장 쉬운 설정 입니다. 이는 DBNs 또는 심층 신뢰망(deep-belief nets)의 모든 예제들에 작동하나 그 외의 예제들에는 불가합니다.
 
