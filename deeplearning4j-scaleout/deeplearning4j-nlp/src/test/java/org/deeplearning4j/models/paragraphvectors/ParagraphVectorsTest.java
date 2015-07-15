@@ -31,6 +31,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -50,14 +51,13 @@ public class ParagraphVectorsTest {
         ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
         File file = resource.getFile().getParentFile();
         LabelAwareSentenceIterator iter = LabelAwareUimaSentenceIterator.createWithPath(file.getAbsolutePath());
-        new File("cache.ser").delete();
 
 
         TokenizerFactory t = new UimaTokenizerFactory();
 
 
         ParagraphVectors vec = new ParagraphVectors.Builder()
-                .minWordFrequency(1).iterations(5)
+                .minWordFrequency(1).iterations(5).labels(Arrays.asList("label1", "deeple"))
                 .layerSize(100)
                 .stopWords(new ArrayList<String>())
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();
