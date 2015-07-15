@@ -24,6 +24,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
@@ -43,6 +44,7 @@ import scala.Tuple2;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -96,7 +98,7 @@ public class Word2Vec implements Serializable {
 
         log.info("Built huffman tree");
 
-        JavaRDD<Pair<List<VocabWord>, AtomicLong>> r = rdd
+        final JavaRDD<Pair<List<VocabWord>, AtomicLong>> r = rdd
                 .map(new TokenizerFunction(tokenizerFactoryClazz))
                 .map(new TokentoVocabWord(vocabCacheBroadcast));
 
@@ -120,7 +122,11 @@ public class Word2Vec implements Serializable {
             }
         }).cache();
 
+
+
+
         final Accumulator<Double> acc = sc.accumulator(0L);
+
         frequencies.foreach(new VoidFunction<AtomicLong>() {
             @Override
             public void call(AtomicLong atomicLong) throws Exception {
