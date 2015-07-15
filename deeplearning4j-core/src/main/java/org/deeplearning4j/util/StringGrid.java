@@ -131,8 +131,7 @@ public class StringGrid extends ArrayList<List<String>> {
                         numColumns = row.size();
                     else if(row.size() != numColumns)
                         log.warn("Row " + i + " had invalid number of columns  line was " + line);
-                    else
-                        add(row);
+                    add(row);
                 }
 
             }
@@ -143,8 +142,7 @@ public class StringGrid extends ArrayList<List<String>> {
                 else if(row.size() != numColumns) {
                     log.warn("Could not add " + line);
                 }
-                else
-                    add(row);
+                add(row);
             }
 
         }
