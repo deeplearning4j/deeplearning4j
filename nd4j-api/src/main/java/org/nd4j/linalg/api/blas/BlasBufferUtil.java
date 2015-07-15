@@ -29,6 +29,10 @@ public class BlasBufferUtil {
      * @return the blas stride
      */
     public static int getBlasStride(INDArray arr) {
+        if(arr.ordering() == NDArrayFactory.C) {
+            if(arr.stride(0) == arr.length() && arr.stride(1) == 1)
+                return 1;
+        }
         if(arr instanceof IComplexNDArray)
             return arr.majorStride() / 2;
         return arr.majorStride();
