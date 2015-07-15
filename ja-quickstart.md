@@ -1,5 +1,5 @@
 ---
-title: 
+title:
 layout: ja-default
 ---
 
@@ -7,55 +7,79 @@ layout: ja-default
 
 <iframe width="750" height="560" src="//www.youtube.com/embed/2lwsHKUrXMk" frameborder="0" allowfullscreen></iframe>
 
-#クイックスタート
+# <a name="quickstart"> クイックスタート
 
-* まずはじめに、 どのバージョンのJavaを持っているかチェックをします。以下のコードをコマンドラインに入力することで確認することができます。:
+## 必要なもの
+このガイドは以下のものが予め利用できることを想定しています。
 
-		java -version
+- Java
+- IDE(例: IntelliJ IDEA)
+- Maven(Javaのビルドツール)
+- [Canova](https://github.com/deeplearning4j/Canova)(機械学習用のベクトル化ツール)
+- GitHub(optional)
 
-* もしJava　7を持ていなかった場合は、[コチラ](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)のサイトからダウンロードを行ってください。ダウンロード方法は、それぞれのオペレーティングシステムによって異なります。最新のMacの方はMac OS Xと記載のあるところから、ダウンロードをしてください。 (この*jdk-7u* という数字に続く部分が、アップグレードの状態を示しております)。以下がその表示内容となります。:
+上記のものを新たにインストールする必要があれば、[Getting Started Guide](http://nd4j.org/ja-getstarted.html)をご参照ください。[ND4J](https://github.com/deeplearning4j/nd4j)はDL4J用の線形代数ライブラリです。
+上記にあげたものだけで基本的には十分で他のものをインストールする必要はありません。
 
-		Mac OS X x64 185.94 MB -  jdk-7u67-macosx-x64.dmg
+## 利用までのステップ
+1. [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [Canova](https://github.com/deeplearning4j/Canova), [example](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples)プロジェクトをダウンロードしてくる。(git cloneを用いる)
+2. それぞれのプロジェクトに対して`mvn clean install -DskipTests -Dmaven.javadoc.skip=true`でビルドします。
+3. IntelliJ IDEAのようなIDEでMavenプロジェクトとして上記のexampleをインポートする。
+4. デフォルトのバックエンドは`nd4j-jblas`に設定されています。(Windowsの場合は`nd4j-java`に変更することを推奨しています)
+4. ソースツリーからDBNSmallMnistExample.javaを選択。
+5. 上記のクラスを実行する。
 
-*　Jblasの信頼性を確保するためのに、Blasの初期設定が必要となります。
-		OSX
-		Already Installed
-		
-		Fedora/RHEL
-		yum -y install blas
+Irisのような小さなデータセットではF1スコアを約0.55にすることを推奨しています。
 
-		Ubuntu
-		apt-get install libblas* (credit to @sujitpal)
+## 依存関係
 
-		Windows
-		See http://icl.cs.utk.edu/lapack-for-windows/lapack/
+バックエンドとはDL4Jのニューラルネットワークが利用する線形代数ライブラリの処理機版です。バックエンドはマシンのチップに依存します。CPUはJblas、Netlib Blasで高速に、
+GPUではJcublasで高速に動作します。依存しているライブラリが何か分かっている場合はMaven Centralで探して”Latest Version”をク リックしてください。記載されているxmlの断片をあなたのプロジェクトのルート直下にある pom.xmlにコピーアンドペーストしてください。BLASのバックエンドに関しては以下のようになるはずです。
+```
+<dependency>
+  <groupId>org.nd4j</groupId>
+	<artifactId>nd4j-java</artifactId>
+	<version>${nd4j.version}</version>
+</dependency>
+```
 
-* DL4Jはデータの可視化とデバッグにクロスプラットフォームツールを活用しているため、 [Anaconda](http://continuum.io/downloads)が必要となります。一度Anacondaをインストールすると、[Python](https://ja.wikipedia.org/wiki/Python)に以下のコードを入力することで必要なライブラリがコンピュータに入っているか、確認することができます。:
+`nd4j-java`はWindowsでのセットアップを楽にするためBlasを要求しません。exampleのDBNs, deep-belief netsのプロジェクトで動作しますがその他では動作しません。
 
-		import numpy
-		import pylab as pl
+```
+<dependency>
+  <groupId>org.nd4j</groupId>
+	<artifactId>nd4j-jblas</artifactId>
+	<version>${nd4j.version}</version>
+</dependency>
+```
 
-![Alt text](../img/python_shot.png)
+`nd4j-jblas`はすべてのexampleで動作します。Windowsでこれをインストールするには[Getting Started](http://deeplearning4j.org/gettingstarted.html)を参照ください。
 
-これらのツールは、ニューラルネットをデバックする際の可視化を高めることができます。通常の統計分布は正常に機能しているサインとなります。可視化を進めることで、Macをお使いの方のコンピュータには、エラーのリストが表示されることがありますが、これはトレーニングの中断を意味するものではありません。
+## AWS上でコマンドラインを利用する場合
+AWS上にDL4Jをインストールした場合、IDEではなくコマンドラインで実行をする必要があります。この場合はインストールに関しては上記に記載された通りに行ってください。
+exampleを走らせるためのコマンドはversionなどによっても異なりますが下記がテンプレートとなります
 
-*次に、DL4Jのサンプルgit cloneしてください。:
+```
+$ java -cp target/nameofjar.jar fully.qualified.class.name
+```
 
-		git clone https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/
+例えば具体的には下記のようになります。
+```
+$ java -cp target/deeplearning4j-examples-0.0.3.3.3-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
+```
 
-ここでMavenプロジェクトをこれらのIDEへ一つ一つインポートすることができます。
-[Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html),  [Intellij](https://www.jetbrains.com/idea/help/importing-project-from-maven-model.html) もしくは [Netbeans](http://wiki.netbeans.org/MavenBestPractices).
+つまりversionを更新したり、走らせるクラスが異なる場合は下記のワイルドカードを変更していくことになります。
 
-* IntelliJにあるdl4jのサンプルを開き、 MNISTサンプルを実行してください。もしMNISTのデモがたくさんのレンダリングを表示し、その速度が落ちてしまっている場合、スピードを適切な形でコントロールし、ファイルを保存したうえでリスタートすることができます。
+```
+$ java -cp target/*.jar org.deeplearning4j.*
+```
 
-* ここでニューラルネットがコマンドラインのターミナル上で、作業を始めたのが確認できるかと思います。ニューラルネットは計算の過程で、自動的にターミナルウィンドウをスクロールしていきます。(情報のソースによっては、スタートするまでに時間がかかることがございます。) そして、右端から二番目に表示されている数字が、計算を重ねるごとに減っていくことが確認いただけるかと思います。この数字はニューラルネットのエラーの確率を示しており、この数字が減っているということは「学習している」ことを意味します。
+exampleに変更を加える場合(例えばsrc/main/java/org/deeplearning4j/multilayerの中のMLPBackpropIrisExample)は再ビルドが必要です。
 
-![Alt text](../img/learning.png)
 
-MNISTのデータセットをニューラルネットが学習しているかどうかは、これらのイメージをもとに判断することができます。これらのイメージは回数を重ねるごとに、手書きの文字に近づいていきます。もし、イメージで実際に進捗が確認することができれば、それ以降もニューラルネットは自動的に学習を続け、精度が高まっていきます。
 
-もし正常に作業が進んでいない場合には、[コチラ](https://groups.google.com/forum/#!forum/deeplearning4j))までお問い合わせください。
-
-**次のステップ**:  [コチラ](../runexample.html)がどのようにサンプルを実行するかの、チュートリアルのページになります。  [コチラ](https://github.com/SkymindIO/dl4j-examples/tree/master/src/main/java/org/deeplearning4j) のページをクリックすることで、次に実行するサンプルも探すことができます。 (これらのサンプルはMNIST, Iris,そしてLabeled Faces in the Wildに対応しております。)
-
-もしすべてのサンプルを実行し終わった際には、[コチラ](../ja-gettingstarted.html)のページで、すべてのコードベースを取得することも可能です。
+## ソースからのインストール
+注意:Mavenにあるパッケージを使うだけであればソースからインストールする必要はありませ ん。
+1. MavenをダウンロードしPATHに通します。
+2. Deeplearning4jのプロジェクトにあるsetup.shあるいはWindowsの場合はsetup.batを実行しま
+す。(この実行ファイルをダウンロードするにはGitHubアカウントとgitが必要ですのであらか じめ設定をしておいてください。すでにダウンロードしてある場合にはgit pullのみで構いませ ん。)
