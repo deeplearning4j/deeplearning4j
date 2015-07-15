@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 
 
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -139,8 +140,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.y().offset(),
                     op.x(),
                     op.y(),
-                    op.x().majorStride(),
-                    op.y().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
+                    BlasBufferUtil.getBlasStride(op.y()),
                     toArgs(op.extraArgs(), getType(op)),
                     result
             };
@@ -161,7 +162,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.n(),
                     op.x().offset(),
                     op.x(),
-                    op.x().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
                     result
             };
@@ -215,8 +216,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.y().offset(),
                     op.x(),
                     op.y(),
-                    op.x().majorStride(),
-                    op.y().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
+                    BlasBufferUtil.getBlasStride(op.y()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };
@@ -235,7 +236,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.x().offset(),
                     PointerUtil.getPointer(op),
                     op.x(),
-                    op.x().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };
@@ -285,11 +286,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.y().offset(),
                     op.x(),
                     op.y(),
-                    op.x().majorStride(),
-                    op.y().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
+                    BlasBufferUtil.getBlasStride(op.y()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z(),
-                    op.z().majorStride()
+                    BlasBufferUtil.getBlasStride(op.z())
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
@@ -305,7 +306,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.n(),
                     op.x().offset(),
                     op.x(),
-                    op.x().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };
