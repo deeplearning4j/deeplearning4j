@@ -41,7 +41,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         result = Pointer.to(ret);
         JCublas2.cublasSdot(
                 ContextHolder.getInstance().getHandle(),
-                X.length(),
+                N,
                 xCPointer.getDevicePointer(),
                 incX
                 , yCPointer.getDevicePointer(),
@@ -62,7 +62,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         JCublas2.cublasDdot(
                 ContextHolder.getInstance().getHandle(),
-                X.length(),
+                N,
                 xCPointer.getDevicePointer(),
                 incX
                 , yCPointer.getDevicePointer(),
@@ -106,7 +106,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         Pointer result = Pointer.to(ret);
         JCublas2.cublasSnrm2(
                 ContextHolder.getInstance().getHandle()
-                ,X.length()
+                ,N
                 ,cAPointer.getDevicePointer(),
                 incX
                 , result);
@@ -249,7 +249,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         JCublas2.cublasScopy(
                 ContextHolder.getInstance().getHandle()
-                , X.length(), xCPointer.getDevicePointer()
+                ,N, xCPointer.getDevicePointer()
                 , incX
                 , yCPointer.getDevicePointer()
                 , incY);
@@ -307,7 +307,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         JCublas2.cublasDcopy(
                 ContextHolder.getInstance().getHandle()
-                ,X.length(),xCPointer.getDevicePointer()
+                ,N,xCPointer.getDevicePointer()
                 ,incX
                 ,yCPointer.getDevicePointer()
                 ,incY);
@@ -384,7 +384,7 @@ public class JcublasLevel1 extends BaseLevel1 {
 
     @Override
     protected void zcopy(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
-
+           throw new UnsupportedOperationException();
     }
 
     @Override
