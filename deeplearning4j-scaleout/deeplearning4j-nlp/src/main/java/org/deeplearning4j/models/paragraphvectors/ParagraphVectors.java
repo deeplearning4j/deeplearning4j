@@ -21,6 +21,7 @@ package org.deeplearning4j.models.paragraphvectors;
 import akka.actor.ActorSystem;
 import com.google.common.base.Function;
 import org.deeplearning4j.bagofwords.vectorizer.TextVectorizer;
+import org.deeplearning4j.bagofwords.vectorizer.TfidfVectorizer;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -32,6 +33,7 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache
 import org.deeplearning4j.parallel.Parallelization;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.text.invertedindex.LuceneInvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
@@ -73,10 +75,6 @@ public class ParagraphVectors extends Word2Vec {
             readStopWords();
 
 
-        for(String label : labels) {
-            vocab().addToken(new VocabWord(1,label));
-            vocab().putVocabWord(label);
-        }
 
 
         log.info("Training word2vec multithreaded");
@@ -167,6 +165,51 @@ public class ParagraphVectors extends Word2Vec {
 
     }
 
+
+    /**
+     * Builds the vocabulary for training
+     */
+    @Override
+    public boolean buildVocab() {
+        readStopWords();
+
+        if(vocab().vocabExists()) {
+            log.info("Loading vocab...");
+            vocab().loadVocab();
+            lookupTable.resetWeights();
+            return true;
+        }
+
+
+        if(invertedIndex == null)
+            invertedIndex = new LuceneInvertedIndex.Builder()
+                    .cache(vocab()).stopWords(stopWords)
+                    .build();
+        //vectorizer will handle setting up vocab meta data
+        if(vectorizer == null) {
+            vectorizer = new TfidfVectorizer.Builder().index(invertedIndex)
+                    .cache(vocab()).iterate(docIter).iterate(sentenceIter).batchSize(batchSize)
+                    .minWords(minWordFrequency).stopWords(stopWords)
+                    .tokenize(tokenizerFactory).build();
+
+            vectorizer.fit();
+
+        }
+
+        //includes unk
+        else if(vocab().numWords() < 2)
+            vectorizer.fit();
+
+        for(String label : labels) {
+            vocab().addToken(new VocabWord(1,label));
+            vocab().putVocabWord(label);
+        }
+
+
+        setup();
+
+        return false;
+    }
 
     /**
      * Predict several based on the document.
@@ -269,6 +312,13 @@ public class ParagraphVectors extends Word2Vec {
         }
     }
 
+    public List<String> getLabels() {
+        return labels;
+    }
+
+    public void setLabels(List<String> labels) {
+        this.labels = labels;
+    }
 
     protected void addWords(List<VocabWord> sentence,AtomicLong nextRandom,List<VocabWord> currMiniBatch) {
         for (VocabWord word : sentence) {
