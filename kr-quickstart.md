@@ -9,10 +9,10 @@ layout: default
 
 이 퀵 스타트 가이드는 이미 여러분이 아래를 설치하신 것으로 간주합니다:
 
-1. Java 7
-2. IntelliJ (또는 다른 IDE)
-3. Maven (자동화된 빌드 도구)
-4. Github
+1. [Java 7](http://nd4j.org/kr-getstarted.html#java)
+2. [IntelliJ (또는 다른 IDE)](http://nd4j.org/kr-getstarted.html#ide)
+3. [Maven (자동화된 빌드 도구)](http://nd4j.org/kr-getstarted.html#maven)
+4. [Github](http://nd4j.org/kr-getstarted.html#github)
 
 위 중 어느 하나를 설치해야 하는 경우 [ND4J Getting Started guide](http://nd4j.org/kr-getstarted.html)를 참조하십시오. (ND4J는 Deeplearning4j에 동력을 지원하는 선형 대수학 엔진이며, 그 설명들이 두 프로젝트에 적용됩니다.) 그 페이지에 열거된 모든 것을 설치하지 마시고 위에서 언급된 소프트웨어만을 설치하십시오.
 
@@ -58,7 +58,6 @@ layout: default
 		   <artifactId>nd4j-jblas</artifactId>
 		   <version>${nd4j.version}</version>
 		 </dependency>
-
 
 *nd4j-jblas*는 모든 예제들에 작동합니다. Jblas를 설치하려면 Windows 사용자께서는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/kr-gettingstarted.html)를 참조하시기 바랍니다.
 
