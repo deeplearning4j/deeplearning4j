@@ -146,7 +146,7 @@ public class CublasPointer  implements AutoCloseable {
         this.devicePointer = buffer
                 .getDevicePointer(
                         array,
-                        BlasBufferUtil.getBlasStride(array)
+                        array.majorStride()
                         ,array.offset()
                         ,array.length());
 
