@@ -18,9 +18,7 @@
 
 package org.deeplearning4j.nn.gradient;
 
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.AdaGrad;
 
 import java.io.Serializable;
 import java.util.List;
