@@ -106,6 +106,23 @@ public class CublasPointerTests {
 
     }
 
+    @Test
+    public void testAllocateAndCopyBackToHostC() throws Exception {
+        Nd4j.factory().setOrder('c');
+        INDArray test = Nd4j.rand(5, 5);
+
+        CublasPointer p = new CublasPointer(test);
+        CublasPointer p1 = new CublasPointer((JCudaBuffer)test.data());
+
+        p.copyToHost();
+        p1.copyToHost();
+
+        assertEquals(p.getBuffer(), p1.getBuffer());
+        assertArrayEquals(p.getBuffer().asBytes(), p1.getBuffer().asBytes());
+
+        p.close();
+        p1.close();
+    }
 
     @Test
     public void testAllocateAndCopyBackToHost() throws Exception {

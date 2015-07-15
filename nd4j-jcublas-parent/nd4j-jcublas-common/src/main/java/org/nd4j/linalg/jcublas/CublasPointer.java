@@ -26,6 +26,7 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
 
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -145,7 +146,7 @@ public class CublasPointer  implements AutoCloseable {
         this.devicePointer = buffer
                 .getDevicePointer(
                         array,
-                        array.majorStride()
+                        BlasBufferUtil.getBlasStride(array)
                         ,array.offset()
                         ,array.length());
 
@@ -245,7 +246,7 @@ public class CublasPointer  implements AutoCloseable {
                     length
                     , buffer.getElementSize()
                     ,devicePointer
-                    ,arr.majorStride()
+                    ,BlasBufferUtil.getBlasStride(arr)
                     ,Pointer.to(set)
                     ,1
                     , ContextHolder.getInstance().getCudaStream());
@@ -258,7 +259,7 @@ public class CublasPointer  implements AutoCloseable {
                     length
                     , buffer.getElementSize()
                     , devicePointer
-                    , arr.majorStride()
+                    , BlasBufferUtil.getBlasStride(arr)
                     , Pointer.to(set)
                     , 1, ContextHolder.getInstance().getCudaStream());
             ContextHolder.syncStream();
