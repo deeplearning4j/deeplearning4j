@@ -16,15 +16,15 @@ The prerequisites installs for Deeplearning4j are documented on the ["Getting St
 
 After those installs, please read the following:
 
-5. OS-specific instructions
+6. OS-specific instructions
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-6. <a href="#source">Working With Source</a>
-7. <a href="#eclipse">Eclipse</a>
-8. <a href="#trouble">Troubleshooting</a>
-9. <a href="#results">Reproducible Results</a>
-10. <a href="#next">Next Steps</a>
+7. <a href="#source">Working With Source</a>
+8. <a href="#eclipse">Eclipse</a>
+9. <a href="#trouble">Troubleshooting</a>
+10. <a href="#results">Reproducible Results</a>
+11. <a href="#next">Next Steps</a>
 
 ### <a name="linux">Linux</a>
 
