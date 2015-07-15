@@ -173,8 +173,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
             searchDirection.muli(stepMax / sum);
         }
 
-        //Issue: Works for DefaultStepFunction + descent search direction
-        //but: want slope > 0 for Negative
         if( slope >= 0.0 ) throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
 
         // find maximum lambda
@@ -191,8 +189,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
             if(stepFunction == null)
                 stepFunction =  new DefaultStepFunction();
-            //scale wrt updates
-            stepFunction.step(parameters, searchDirection, step); //step
+            // step
+            stepFunction.step(parameters, searchDirection, step);
             oldStep = step;
 
             if(logger.isDebugEnabled())  {
@@ -201,8 +199,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
             }
 
             // check for convergence on delta x
-            // if all of the parameters are < 1e-12
-
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, parameters,
                     parameters.dup(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
                 score = getScore(oldParameters);
@@ -222,8 +218,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 return step;
             }
 
-            // if value is infinite, i.e. we've
-            // jumped to unstable territory, then scale down jump
+            // if value is infinite, i.e. we've jumped to unstable territory, then scale down jump
             else if(Double.isInfinite(score) || Double.isInfinite(score2)) {
                 logger.warn("Value is infinite after jump. oldStep={}. score={}, score2={}. Scaling back step size...",oldStep,score,score2);
                 tmpStep = .2 * step;
