@@ -16,6 +16,7 @@
     <properties>
         <spring.version>3.2.5.RELEASE</spring.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
+        <lombok.version>1.16.4</lombok.version>
     </properties>
 
     <dependencies>
@@ -25,6 +26,12 @@
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
         </dependency>
 
         <dependency>
