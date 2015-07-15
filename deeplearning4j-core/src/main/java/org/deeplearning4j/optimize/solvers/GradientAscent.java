@@ -50,8 +50,8 @@ public class GradientAscent extends BaseOptimizer {
     @Override
     public void preProcessLine(INDArray line) {
         double norm2 = line.norm2(Integer.MAX_VALUE).getDouble(0);
-        if(norm2 > stpMax)
-            line.muli(stpMax / norm2);
+        if(norm2 > stepMax)
+            line.muli(stepMax / norm2);
         
     }
 

@@ -87,6 +87,7 @@ public class MultiLayerTest {
 
         INDArray params = network3.params();
         network3.setParameters(params);
+        network3.setScore();
         INDArray params4 = network3.params();
         assertEquals(params,params4);
     }
