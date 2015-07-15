@@ -16,18 +16,17 @@ Deeplearning4j를 위한 prerequisites 설치는 DL4J의 신경망에 동력을 
 
 위의 설치를 마치신 후, 다음을 읽어주시기 바랍니다.
 
-1. OS-specific instructions: 
+1. OS-specific instructions:
 * [Linux](../kr-gettingstarted.html#linux)
 * [OSX](../kr-gettingstarted.html#osx)
 * [Windows](../kr-gettingstarted.html#windows)
-
 2. [소스를 사용한 작업(Working with Source)](../kr-gettingstarted.html#source)
 3. [Eclipse](../kr-gettingstarted.html#eclipse)
 4. [문제 해결](../kr-gettingstarted.html#trouble)
 5. [재생 가능한 결과(Reproducible Results)](../kr-gettingstarted.html#results)
 6. [다음 단계](../kr-gettingstarted.html#next)
 
-### Linux
+### <a name="linux">Linux</a>
 
 CPU를 위한 Jblas에 대한 저희의 의존도로 인해, Blas를 위한 기본 바인딩(native bindings)이 필요합니다.
 
@@ -53,11 +52,11 @@ CPU를 위한 Jblas에 대한 저희의 의존도로 인해, Blas를 위한 기�
 
 여러분의 IDE로서 IntelliJ를 사용하고 계시다면, 이미 작동되고 있을 것 입니다.
 
-### OSX
+### <a name="osx">OSX</a>
 
 Jblas가 이미 OSX에 설치되어 있습니다.
 
-### Windows
+### <a name="windows">Windows</a>
 
 64-bit 컴퓨터를 가지고 계시더라도 [MinGW 32 bits](http://www.mingw.org) 설치하십시오. 그 다음 [Mingw를 사용한 Prebuilt dynamic 라이브러리](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw)를 다운로드 하십시오.
 
@@ -69,7 +68,7 @@ Lapack은 [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#
 
 Cygwin은 지원되지 않습니다. DOS Windows에서 DL4J를 설치하셔야 합니다.
 
-### 소스를 사용한 작업
+### <a name="source">소스를 사용한 작업</a>
 
 여러분께서 프로젝트에 엄청난 투자를 계획하시고 있지 않는 한, 저희는 여러분이 소스를 사용해 작업하시기 보다는 [Maven Central에서 Deeplearning4j JAR 파일들](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)을 다운로드 하시기를 강력 추천드립니다 (물론, 언제나 환영 입니다만). Maven에서 다운로드 하시려면, [instructions on the ND4J site](http://nd4j.org/getstarted.html#maven)를 확인하십시오.
 
@@ -81,13 +80,13 @@ Cygwin은 지원되지 않습니다. DOS Windows에서 DL4J를 설치하셔야 
 
 다음의 단계들을 따르시면, 여러분은 0.0.3.3 예제들을 실행하실 수 있습니다.
 
-### Eclipse
+### <a name="eclipse">Eclipse</a>
 
 *git clone*을 실행하신 후, 다음의 커맨드를 입력하십시오. 이는 그 소스를 import 해 모든 설정을 완료 할 것 입니다.
 
 		mvn eclipse:eclipse 
 
-### 문제 해결
+### <a name="trouble">문제 해결</a>
 
 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)을 통해 오류 메시지에 대해 문의해주십시오. 질문을 게시하실 때에는 다음의 정보를 준비해주시기 바랍니다 (처리가 엄청 빨라집니다!):
 
@@ -118,13 +117,13 @@ DL4J를 사용하여 발생하는 일부 문제들은 기계 학습의 아이디
 
 [Java CPP](https://github.com/bytedeco/javacpp)를 위한 include path가 항상 windows에서 작동하지만 않습니다. 한 가지 해결 방법은 Visual Studio의 include directory로부터 header 파일들을 가져와 Java가 설치되어 있는 Java Run-Time Environment (JRE)의 include directory에 붙여 넣는 것 입니다. (이는 standardio.h와 같은 파일들이 영향을 미칠 것 입니다.)
 
-### 재생 가능한 결과
+### <a name="results">재생 가능한 결과</a>
 
 신경망 가중치는 임의로 초기화 됩니다. 이는 모델이 매 번 중량 공간의 다른 위치에서 학습을 시작해 다른 로컬 최적 조건을 이끌어낼 수 있슴을 의미합니다. 재생 가능한 결과를 원하시는 이용자는 동일한 임의의 가중치를 사용하셔야 하며 이 가중치는 모델이 생성되기 이전에 초기화 되어야 합니다. 동일한 임의 가중치는 다음의 라인으로 재초기화 될 수 있습니다:
 
 		Nd4j.getRandom().setSeed(123);
 
-### 다음 단계: IRIS 예제와 NNs 구축하기
+### <a name="next">다음 단계: IRIS 예제와 NNs 구축하기</a>
 
 신경망 구축 시작을 위해서는 [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html)에 더 많은 정보가 있습니다.
 
