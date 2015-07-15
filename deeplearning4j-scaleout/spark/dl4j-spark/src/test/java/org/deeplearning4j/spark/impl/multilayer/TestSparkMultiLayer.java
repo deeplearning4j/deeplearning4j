@@ -75,7 +75,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                .momentum(0.9).seed(123)
                 .activationFunction("relu")
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                 .weightInit(WeightInit.XAVIER).numLineSearchIterations(10).constrainGradientToUnitNorm(true)
                 .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
