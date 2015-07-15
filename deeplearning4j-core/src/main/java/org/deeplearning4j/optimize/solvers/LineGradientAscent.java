@@ -49,7 +49,7 @@ public class LineGradientAscent extends BaseOptimizer {
     public void setupSearchState(Pair<Gradient, Double> pair) {
         super.setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        searchState.put(SEARCH_DIR, gradient);
+        searchState.put(SEARCH_DIR, gradient.dup().negi());
     }
 
     @Override
