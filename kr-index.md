@@ -9,7 +9,7 @@ layout: default
 
 Deeplearning4j는 설정(configuration)이기보다는 규칙(convention)을 겨냥한 최첨단 플러그 앤 플레이(plug and play)로 비연구자들에게 빠른 프로토 타이핑을 가능하게 합니다. DL4J는 규모면에서 사용자 지정이 가능합니다. 아파치(Apache) 2.0 라이센스를 사용해 출시된 DL4J의 모든 파생 상품들은 그 저자에 속합니다.
 
-저희의 퀵 스타트([Quick Start](../quickstart.html)) 페이지의 설명에 따라 여러분은 훈련된 신경망의 첫번째 예제들을 실행할 수 있습니다.
+저희의 퀵 스타트([Quick Start](../kr-quickstart.html)) 페이지의 설명에 따라 여러분은 훈련된 신경망의 첫번째 예제들을 실행할 수 있습니다.
 
 ### 딥 러닝 활용 사례
 
