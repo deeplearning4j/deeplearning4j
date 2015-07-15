@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 public class TestMatrixOperations {
 
@@ -44,8 +45,14 @@ public class TestMatrixOperations {
 
     @Test
     public void testMean() {
-        INDArray mean2 = Nd4j.linspace(1,5,5);
+        INDArray mean2 = Nd4j.linspace(1, 5, 5);
         assertEquals(3,mean2.mean(Integer.MAX_VALUE).getDouble(0),1e-1);
+    }
+
+
+    @Test
+    public void testElementWiseOp() {
+        Transforms.sigmoid(Nd4j.ones(5,5));
     }
 
     @Test

@@ -230,11 +230,11 @@ public class ContextHolder {
      * every operation.
      */
     public static void syncStream() {
+        JCudaDriver.cuCtxSetCurrent(getInstance().getContext());
+        //old api
         JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
-        JcudaFft fft = (JcudaFft) Nd4j.getFFt();
-        JCufft.cufftSetStream(fft.getHandle(), ContextHolder.getInstance().getCudaStream());
-        JCublas2.cublasGetStream(ContextHolder.getInstance().getHandle(), ContextHolder.getInstance().getCudaStream());
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+        //new api
         JCudaDriver.cuStreamSynchronize(getInstance().getStream());
     }
 

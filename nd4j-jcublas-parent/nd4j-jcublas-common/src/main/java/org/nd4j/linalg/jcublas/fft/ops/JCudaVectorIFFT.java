@@ -55,7 +55,9 @@ public class JCudaVectorIFFT extends VectorIFFT {
         if(!x.isVector() || executed)
             return;
 
-        SimpleJCublas.sync();
+        JcudaFft fft = (JcudaFft) Nd4j.getFFt();
+        JCufft.cufftSetStream(fft.getHandle(), ContextHolder.getInstance().getCudaStream());
+
 
         INDArray workerArea = Nd4j.create(x.length() * 2);
         try(CublasPointer inputPointer = new CublasPointer(x);
@@ -100,6 +102,7 @@ public class JCudaVectorIFFT extends VectorIFFT {
 
         executed = true;
         this.z = x;
-        SimpleJCublas.sync();
+        JCufft.cufftSetStream(fft.getHandle(), ContextHolder.getInstance().getCudaStream());
+
     }
 }

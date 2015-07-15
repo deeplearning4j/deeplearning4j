@@ -21,6 +21,7 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 
 
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -64,6 +65,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
+        checkOp(op);
         //linear views and oblong offsets can't be handled by the gpu (due to the way the buffers are interpeted as vectors)
         if(op.x() instanceof LinearViewNDArray || op.x() instanceof IComplexNDArray || op.x().offset() > 0 && op.x().shape().length >= 2)
             return super.exec(op);
@@ -97,35 +99,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-
-
-
-
-
-    @Override
-    public INDArray execAndReturn(TransformOp op, int...dimension) {
-        return execAndReturn(op,dimension[0]);
-    }
-
-
-
-    //persist() on a jcuda buffer forces the buffer uploaded to the gpu to be cached
-    //this is useful for when you have arrays with offsets all viewing the same buffer
-    //and intend on doing operations on slices of the same buffer
-    private void persist(INDArray arr) {
-        if(arr == null)
-            return;
-        arr.data().persist();
-    }
-
-
-
-
-    @Override
-    public INDArray execAndReturn(ScalarOp op, int...dimension) {
-        return exec(op, dimension).z();
-    }
-
     /**
      * Converts the given parameters
      * in to extra arguments to
@@ -150,6 +123,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private void invoke(Accumulation op)  {
+        checkOp(op);
         if(!KernelFunctionLoader.getInstance().exists(op.name()))
             super.exec(op);
 
@@ -166,8 +140,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.y().offset(),
                     op.x(),
                     op.y(),
-                    op.x().majorStride(),
-                    op.y().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
+                    BlasBufferUtil.getBlasStride(op.y()),
                     toArgs(op.extraArgs(), getType(op)),
                     result
             };
@@ -188,7 +162,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.n(),
                     op.x().offset(),
                     op.x(),
-                    op.x().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
                     result
             };
@@ -230,6 +204,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private void invoke(ScalarOp op) {
+        checkOp(op);
         if(!KernelFunctionLoader.getInstance().exists(op.name()))
             super.exec(op);
 
@@ -241,8 +216,8 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.y().offset(),
                     op.x(),
                     op.y(),
-                    op.x().majorStride(),
-                    op.y().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
+                    BlasBufferUtil.getBlasStride(op.y()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };
@@ -261,7 +236,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.x().offset(),
                     PointerUtil.getPointer(op),
                     op.x(),
-                    op.x().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };
@@ -311,11 +286,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.y().offset(),
                     op.x(),
                     op.y(),
-                    op.x().majorStride(),
-                    op.y().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
+                    BlasBufferUtil.getBlasStride(op.y()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z(),
-                    op.z().majorStride()
+                    BlasBufferUtil.getBlasStride(op.z())
             };
 
             try(KernelParamsWrapper kParams = new KernelParamsWrapper(kernelParams).setResultArray(op.z())) {
@@ -331,7 +306,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
                     op.n(),
                     op.x().offset(),
                     op.x(),
-                    op.x().majorStride(),
+                    BlasBufferUtil.getBlasStride(op.x()),
                     toArgs(op.extraArgs(), getType(op)),
                     op.z()
             };
