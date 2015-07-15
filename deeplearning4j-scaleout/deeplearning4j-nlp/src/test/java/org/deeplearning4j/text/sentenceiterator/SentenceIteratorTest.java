@@ -21,6 +21,8 @@ package org.deeplearning4j.text.sentenceiterator;
 import static org.junit.Assert.*;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +30,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.Arrays;
 
@@ -72,6 +75,18 @@ public class SentenceIteratorTest {
         testMulti(multiIter,3);
 
     }
+
+    @Test
+    public void testLabelAware() throws Exception {
+        String s = "1; hello";
+        ByteArrayInputStream bis = new ByteArrayInputStream(s.getBytes());
+        LabelAwareSentenceIterator labelAwareSentenceIterator = new LabelAwareListSentenceIterator(bis,";",0,1);
+        assertTrue(labelAwareSentenceIterator.hasNext());
+        labelAwareSentenceIterator.nextSentence();
+        assertEquals("1",labelAwareSentenceIterator.currentLabel());
+
+    }
+
 
 
     public void testSingle(SentenceIterator iter) {

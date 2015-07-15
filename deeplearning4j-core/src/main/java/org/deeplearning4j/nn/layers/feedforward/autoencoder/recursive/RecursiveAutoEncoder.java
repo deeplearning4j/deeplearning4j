@@ -58,6 +58,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
         return currScore;
     }
 
+    @Deprecated
     private double scoreSnapShot() {
         return 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
     }
@@ -65,7 +66,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
     @Override
     public void setScore() {
         gradient();
-        score = scoreSnapShot();
+        score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);;
     }
 
     @Override
