@@ -135,11 +135,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         INDArray searchDirection = (INDArray) searchState.get(SEARCH_DIR);
 
         //pre existing termination conditions
-        for(TerminationCondition condition : terminationConditions)
+        /*
+         * Commented out for now; this has been problematic for testing/debugging
+         * Revisit & re-enable later.
+        for(TerminationCondition condition : terminationConditions){
             if(condition.terminate(0.0,0.0,new Object[]{gradient})) {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
             }
+        }*/
 
         //some algorithms do pre processing of gradient and
         //need to test possible directions. (LBFGS)
@@ -172,7 +176,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
                 step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration");
+                log.warn("Invalid step...continuing another iteration: {}",e.getMessage());
             }
 
             //record old score for deltas and other termination conditions
@@ -187,9 +191,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
             //check for termination conditions based on absolute change in score
-            for(TerminationCondition condition : terminationConditions)
-                if(condition.terminate(score,oldScore,new Object[]{gradient}))
+            for(TerminationCondition condition : terminationConditions){
+                if(condition.terminate(score,oldScore,new Object[]{gradient})){
+                	log.debug("Hit termination condition: score={}, oldScore={}, condition={}",score,oldScore,condition);
                     return true;
+                }
+            }
 
             //post step updates to other search parameters
             postStep();
@@ -263,7 +270,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public  void setupSearchState(Pair<Gradient, Double> pair) {
         INDArray gradient = pair.getFirst().gradient(conf.variables());
         INDArray params = model.params();
-        INDArray searchDirection = gradient.dup();
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
