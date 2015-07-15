@@ -52,6 +52,7 @@ public interface ConvexOptimizer extends Serializable {
      */
     boolean optimize();
 
+
     /**
      * The batch size for the optimizer
      * @return

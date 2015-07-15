@@ -87,6 +87,7 @@ public class MultiLayerTest {
 
         INDArray params = network3.params();
         network3.setParameters(params);
+        network3.setScore();
         INDArray params4 = network3.params();
         assertEquals(params,params4);
     }
@@ -102,16 +103,18 @@ public class MultiLayerTest {
                 .nIn(next.numInputs()).nOut(next.numOutcomes())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
+                .numLineSearchIterations(5)
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0,1e-5))
-                .iterations(10).learningRate(1e-3).lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .iterations(5).learningRate(1e-3)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .layer(new RBM())
                 .list(4).hiddenLayerSizes(600,250,100).override(3,new ClassifierOverride()).build();
         
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10),new NeuralNetPlotterIterationListener(1)));
+        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(4),new NeuralNetPlotterIterationListener(4)));
         network.fit(next);
 
     }

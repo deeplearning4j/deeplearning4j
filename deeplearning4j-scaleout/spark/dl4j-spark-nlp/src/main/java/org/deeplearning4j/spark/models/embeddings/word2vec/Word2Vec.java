@@ -155,7 +155,6 @@ public class Word2Vec implements Serializable {
             final Broadcast<Word2VecParam> finalParamBroadcast = sc.broadcast(param);
             if(finalParamBroadcast.value() == null)
                 throw new IllegalStateException("Value not found for param broadcast");
-
             JavaRDD<Word2VecFuncCall> call = wordsAndWordsSeen.map(new Word2VecSetup(finalParamBroadcast));
             call.map(new SentenceBatch()).foreach(new VoidFunction<Word2VecChange>() {
                 @Override

@@ -450,6 +450,7 @@ public class LSTM extends BaseLayer {
     @Override
     public void update(INDArray gradient, String paramType) {
         setParams(params().subi(gradient));
+        setScore();
 
     }
 
@@ -515,7 +516,6 @@ public class LSTM extends BaseLayer {
                 decoderBiasLinear.putScalar(count++,params.getDouble(i));
 
         }
-        setScore();
     }
 
     @Override

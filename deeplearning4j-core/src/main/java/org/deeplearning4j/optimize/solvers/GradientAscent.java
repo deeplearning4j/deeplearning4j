@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.optimize.solvers;
 
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,9 +35,9 @@ import java.util.Collection;
  *
  */
 public class GradientAscent extends BaseOptimizer {
+	private static final long serialVersionUID = 6336124657542062284L;
 
-
-    public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+	public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
@@ -51,11 +50,9 @@ public class GradientAscent extends BaseOptimizer {
     @Override
     public void preProcessLine(INDArray line) {
         double norm2 = line.norm2(Integer.MAX_VALUE).getDouble(0);
-        if(norm2 > stpMax)
-            line.muli(stpMax / norm2);
-
-
-
+        if(norm2 > stepMax)
+            line.muli(stepMax / norm2);
+        
     }
 
     @Override
@@ -66,7 +63,7 @@ public class GradientAscent extends BaseOptimizer {
     @Override
     public void setupSearchState(Pair<Gradient, Double> pair) {
         super.setupSearchState(pair);
+        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        searchState.put("searchDirection",gradient);
     }
-
-
 }

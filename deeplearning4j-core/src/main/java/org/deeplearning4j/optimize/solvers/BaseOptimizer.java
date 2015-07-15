@@ -59,10 +59,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected double step;
     private int batchSize = 10;
     protected double score,oldScore;
-    protected double stpMax = Double.MAX_VALUE;
+    protected double stepMax = Double.MAX_VALUE;
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
+    public final static String SEARCH_DIR = "searchDirection";
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
@@ -92,7 +93,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         this.terminationConditions = terminationConditions;
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);
-        lineMaximizer.setStpmax(stpMax);
+        lineMaximizer.setStepMax(stepMax);
         lineMaximizer.setMaxIterations(conf.getNumLineSearchIterations());
 
     }
@@ -128,16 +129,21 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Pair<Gradient,Double> pair = gradientAndScore();
         setupSearchState(pair);
         //get initial score
-        score = pair.getSecond();
+        score = model.score();
         //check initial gradient
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        INDArray searchDirection = (INDArray) searchState.get(SEARCH_DIR);
 
         //pre existing termination conditions
-        for(TerminationCondition condition : terminationConditions)
+        /*
+         * Commented out for now; this has been problematic for testing/debugging
+         * Revisit & re-enable later.
+        for(TerminationCondition condition : terminationConditions){
             if(condition.terminate(0.0,0.0,new Object[]{gradient})) {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
             }
+        }*/
 
         //some algorithms do pre processing of gradient and
         //need to test possible directions. (LBFGS)
@@ -145,8 +151,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         if(testLineSearch) {
             //ensure we can take a step
             try {
-                INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, params, gradient);
+                INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
+                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
 
@@ -161,23 +167,23 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         }
 
 
+        //Preprocess gradient: Calculate search direction, scale gradient etc.
+        preProcessLine(gradient);
+        searchDirection = (INDArray) searchState.get(SEARCH_DIR);	//Search dir may have been modified/calculated
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            int v = conf.getNumIterations();
-            //line normalization where relevant
-            preProcessLine(gradient);
-
             //perform one step
             try {
-                INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, params, gradient);
+                INDArray parameters = (INDArray) searchState.get(PARAMS_KEY);
+                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration");
+                log.warn("Invalid step...continuing another iteration: {}",e.getMessage());
             }
 
             //record old score for deltas and other termination conditions
             oldScore = score;
             pair = gradientAndScore();
             setupSearchState(pair);
+            score = pair.getSecond();
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
@@ -185,9 +191,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
             //check for termination conditions based on absolute change in score
-            for(TerminationCondition condition : terminationConditions)
-                if(condition.terminate(score,oldScore,new Object[]{gradient}))
+            for(TerminationCondition condition : terminationConditions){
+                if(condition.terminate(score,oldScore,new Object[]{gradient})){
+                	log.debug("Hit termination condition: score={}, oldScore={}, condition={}",score,oldScore,condition);
                     return true;
+                }
+            }
 
             //post step updates to other search parameters
             postStep();
@@ -199,12 +208,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     return true;
 
 
-
         }
 
         return true;
     }
-
 
     protected  void postFirstStep(INDArray gradient) {
         //no-op
@@ -215,7 +222,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         return false;
     }
 
-
     @Override
     public int batchSize() {
         return batchSize;
@@ -225,8 +231,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }
-
-
 
 
     /**
@@ -245,8 +249,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public  void postStep() {
         //no-op
     }
-
-
 
 
     @Override
@@ -271,7 +273,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
-        score = pair.getSecond();
 
     }
 
