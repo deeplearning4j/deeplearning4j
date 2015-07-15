@@ -166,6 +166,15 @@ public  class FloatDataBufferTest  extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testAsBytes() {
+        INDArray arr = Nd4j.create(5);
+        byte[] d = arr.data().asBytes();
+        assertEquals(getFailureMessage(),4 * 5,d.length);
+        INDArray rand = Nd4j.rand(3, 3);
+        rand.data().asBytes();
+
+    }
 
     @Test
     public void testAssign() {

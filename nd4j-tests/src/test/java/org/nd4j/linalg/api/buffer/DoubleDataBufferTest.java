@@ -79,6 +79,9 @@ public  class DoubleDataBufferTest extends BaseNd4jTest {
         INDArray arr = Nd4j.create(5);
         byte[] d = arr.data().asBytes();
         assertEquals(getFailureMessage(),8 * 5,d.length);
+        INDArray rand = Nd4j.rand(3,3);
+        rand.data().asBytes();
+
     }
 
 
