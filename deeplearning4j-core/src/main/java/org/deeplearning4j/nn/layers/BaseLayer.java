@@ -255,7 +255,6 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void setParam(String key, INDArray val) {
         params.put(key, val);
-        setScore();
     }
 
     @Override
@@ -275,7 +274,6 @@ public abstract class BaseLayer implements Layer {
             param.linearView().assign(get);
             idx += param.length();
         }
-        setScore();
 
     }
 
@@ -391,6 +389,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void merge(Layer l,int batchSize) {
         setParams(params().addi(l.params().divi(batchSize)));
+        setScore();
     }
 
 
