@@ -68,7 +68,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Cygwin is not supported. You must install DL4J from **DOS Windows**.  
 
-###<a name="source">Working With Source</a>
+### <a name="source">Working With Source</a>
 
 We highly recommend downloading the [Deeplearning4j JAR files from Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), rather than working with source, unless you plan on making significant commits to the project (which are always welcome, of course). To download from Maven, please follow the [instructions on the ND4J site](http://nd4j.org/getstarted.html#maven).
 
