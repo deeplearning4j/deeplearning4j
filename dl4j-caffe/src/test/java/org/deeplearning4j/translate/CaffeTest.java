@@ -82,6 +82,11 @@ public class CaffeTest {
         assertEquals(net.getLayers(32).getName(), "loss");
     }
 
+    /**
+     * Test reading the ImageNet in binary form into the NetParameter class and
+     * reading the ImageNet Solver parameters in a proto-text (non binary format) file
+     * @throws IOException
+     */
     @Test
     public void testReadCaffeWithWeights() throws IOException{
 
@@ -91,7 +96,48 @@ public class CaffeTest {
                                             textFormatSolverPath, 1000);
         SolverParameter solver = solverNet.getSolver();
         NetParameter net = solverNet.getNet();
+
         assertTrue(solver != null && net != null);
+
+        // Solver test
+        assertEquals(net.getName(), "CaffeNet");
+        assertEquals(net.getLayersCount(), 31);
+        assertEquals(net.getLayers(0).getName(), "data");
+        assertEquals(net.getLayers(30).getName(), "loss");
+        assertEquals(net.getLayers(15).getBlobs(0).getData(0), -0.008252043f, 1e-3);
+
+        // Net test
+        assertEquals(solver.getMaxIter(), 450000);
+        assertEquals(solver.getMomentum(), 0.9f, 1e-3);
+        assertEquals(solver.getBaseLr(), 0.01, 1e-3);
+        assertEquals(solver.getRegularizationType(), "L2");
+    }
+
+    @Test
+    public void testReadCaffeWithoutWeights() throws IOException{
+
+        String textFormatNetPath = getImageNetTextFormatNetPath();
+        String textFormatSolverPath = getImageNetTextFormatSolverPath();
+        CaffeSolverNetContainer solverNet = CaffeModelToJavaClass.readCaffeWithoutWeights(textFormatNetPath,
+                                            textFormatSolverPath);
+        SolverParameter solver = solverNet.getSolver();
+        NetParameter net = solverNet.getNet();
+
+        assertTrue(solver != null && net != null);
+
+        // Solver test
+        assertEquals(solver.getMaxIter(), 450000);
+        assertEquals(solver.getMomentum(), 0.9f, 1e-3);
+        assertEquals(solver.getBaseLr(), 0.01, 1e-3);
+        assertEquals(solver.getRegularizationType(), "L2");
+
+        // Net test
+        assertEquals(net.getName(), "nin_imagenet");
+        // Not 31 because there is an extra test data layer and an accuracy layer,
+        // otherwise same as the net loaded from the  binary .caffemodel file
+        assertEquals(net.getLayersCount(), 33);
+        assertEquals(net.getLayers(0).getName(), "data");
+        assertEquals(net.getLayers(32).getName(), "loss");
     }
 
 }
