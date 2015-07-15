@@ -97,35 +97,6 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
 
-
-
-
-
-
-    @Override
-    public INDArray execAndReturn(TransformOp op, int...dimension) {
-        return execAndReturn(op,dimension[0]);
-    }
-
-
-
-    //persist() on a jcuda buffer forces the buffer uploaded to the gpu to be cached
-    //this is useful for when you have arrays with offsets all viewing the same buffer
-    //and intend on doing operations on slices of the same buffer
-    private void persist(INDArray arr) {
-        if(arr == null)
-            return;
-        arr.data().persist();
-    }
-
-
-
-
-    @Override
-    public INDArray execAndReturn(ScalarOp op, int...dimension) {
-        return exec(op, dimension).z();
-    }
-
     /**
      * Converts the given parameters
      * in to extra arguments to
