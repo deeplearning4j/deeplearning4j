@@ -187,7 +187,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X);
         SimpleJCublas.sync();
         int ret2 = JCublas.cublasIsamax(
-                X.length(),
+               N,
                 xCPointer.getDevicePointer(),
                 incX);
         SimpleJCublas.sync();
@@ -199,7 +199,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X);
         SimpleJCublas.sync();
         int ret2 = JCublas.cublasIdamax(
-                X.length(),
+                N,
                 xCPointer.getDevicePointer(),
                 incX);
         SimpleJCublas.sync();
