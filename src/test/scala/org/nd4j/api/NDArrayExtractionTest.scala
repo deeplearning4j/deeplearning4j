@@ -36,4 +36,10 @@ class RichNDArrayTest extends FlatSpec {
     assert(extracted.getFloat(2) == 5)
     assert(extracted.getFloat(3) == 7)
   }
+
+  it should "return original NDArray if indexRange is all" in{
+    val multi = Nd4j.create((1f to 8f by 1).toArray, Array(2,2,2))
+    val extracted = multi(->, ->, ->)
+    assert(multi == extracted)
+  }
 }
