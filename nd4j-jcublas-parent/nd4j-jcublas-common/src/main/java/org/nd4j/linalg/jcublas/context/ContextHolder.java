@@ -230,8 +230,8 @@ public class ContextHolder {
      * every operation.
      */
     public static void syncStream() {
-        JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
+        JCublas2.cublasSetStream(getInstance().getHandle(), getInstance().getCudaStream());
         JCudaDriver.cuStreamSynchronize(getInstance().getStream());
         JCudaDriver.cuCtxSetCurrent(getInstance().getContext());
     }
