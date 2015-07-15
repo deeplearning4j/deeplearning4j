@@ -221,7 +221,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.weightShape = new int[]{nIn,nOut};
         this.filterSize = filterSize;
         this.stride = stride;
-
     }
 
     /**
