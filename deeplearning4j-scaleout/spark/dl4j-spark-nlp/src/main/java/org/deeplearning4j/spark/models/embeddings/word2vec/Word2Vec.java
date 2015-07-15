@@ -129,7 +129,7 @@ public class Word2Vec implements Serializable {
 
             }
         });
-        
+
 
 
 
@@ -156,17 +156,13 @@ public class Word2Vec implements Serializable {
             if(finalParamBroadcast.value() == null)
                 throw new IllegalStateException("Value not found for param broadcast");
             JavaRDD<Word2VecFuncCall> call = wordsAndWordsSeen.map(new Word2VecSetup(finalParamBroadcast));
-            JavaRDD<Word2VecChange> change2 = call.map(new SentenceBatch());
-            change2.foreach(new VoidFunction<Word2VecChange>() {
+            call.map(new SentenceBatch()).foreach(new VoidFunction<Word2VecChange>() {
                 @Override
                 public void call(Word2VecChange change) throws Exception {
                     change.apply(lookupTable);
                 }
             });
 
-
-            change2.unpersist();
-            change2 = null;
             log.info("Iteration " + i);
 
 
