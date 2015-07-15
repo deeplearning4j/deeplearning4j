@@ -6,7 +6,7 @@ layout: default
 
 이것은 다단계 설치 입니다. 질문이나 피드백이 있으시다면 저희가 상세한 설명을 드릴 수 있드록 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)에 가입하시기를 강력 추천드립니다. 비사교적 또는 완전 독립적인 성격이시라면 자율 학습 하실 수 있습니다.
 
-Deeplearning4j를 위한 prerequisites 설치는 DL4J의 신경망에 동력을 지원하는 선형 대수학 엔진, ND4J의 [“Getting Started” 페이지](http://nd4j.org/getstarted.html)에 문서화 되어 있습니다:
+Deeplearning4j를 위한 prerequisites 설치는 DL4J의 신경망에 동력을 지원하는 선형 대수학 엔진, ND4J의 [“Getting Started” 페이지](http://nd4j.org/kr-getstarted.html)에 문서화 되어 있습니다:
 
 1. [Java 7](http://nd4j.org/kr-getstarted.html#java)
 2. [통합 개발 환경(Integrated Development Environment): IntelliJ](http://nd4j.org/kr-getstarted.html#ide)
