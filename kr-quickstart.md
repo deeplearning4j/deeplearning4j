@@ -14,7 +14,7 @@ layout: default
 3. Maven (자동화된 빌드 도구)
 4. Github
 
-위 중 어느 하나를 설치해야 하는 경우 [ND4J Getting Started guide](http://nd4j.org/getstarted.html)를 참조하십시오. (ND4J는 Deeplearning4j에 동력을 지원하는 선형 대수학 엔진이며, 그 설명들이 두 프로젝트에 적용됩니다.) 그 페이지에 열거된 모든 것을 설치하지 마시고 위에서 언급된 소프트웨어만을 설치하십시오.
+위 중 어느 하나를 설치해야 하는 경우 [ND4J Getting Started guide](http://nd4j.org/kr-getstarted.html)를 참조하십시오. (ND4J는 Deeplearning4j에 동력을 지원하는 선형 대수학 엔진이며, 그 설명들이 두 프로젝트에 적용됩니다.) 그 페이지에 열거된 모든 것을 설치하지 마시고 위에서 언급된 소프트웨어만을 설치하십시오.
 
 질문이나 피드백이 있으시다면 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)에 가입하시기를 강력 추천드립니다. 심지어 일부 Java 프로그래머들도 Maven에 익숙하지 않을 수 있습니다... 비사교적 또는 완전 독립적인 성격이시라면 자율 학습 하실 수 있습니다.
 
@@ -28,7 +28,7 @@ layout: default
 
 3. 그 예제들을 하나의 프로젝트로서 Maven과 IntelliJ에 import 하십시오.
 
-4. 예제들의 기본 백엔드(default [backend](http://nd4j.org/dependencies.html))인 POM.xml은 nd4j-jblas로 설정되어 있습니다. (보다  쉬운 설치를 위해, Windows 사용자는 디펜던시들에서 이를 nd4j-java로 변경하십시오.)
+4. 예제들의 기본 백엔드(default [backend](http://nd4j.org/kr-dependencies.html))인 POM.xml은 nd4j-jblas로 설정되어 있습니다. (보다  쉬운 설치를 위해, Windows 사용자는 디펜던시들에서 이를 nd4j-java로 변경하십시오.)
 
 5. Lefthand file tree에서 DBNIrisExample.java를 선택하십시오.
 
@@ -60,7 +60,7 @@ layout: default
 		 </dependency>
 
 
-*nd4j-jblas*는 모든 예제들에 작동합니다. Jblas를 설치하려면 Windows 사용자께서는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/gettingstarted.html)를 참조하시기 바랍니다.
+*nd4j-jblas*는 모든 예제들에 작동합니다. Jblas를 설치하려면 Windows 사용자께서는 [Deeplearning4j Getting Started page](http://deeplearning4j.org/kr-gettingstarted.html)를 참조하시기 바랍니다.
 
 ## 고급: AWS의 커맨드 라인(Command Line) 사용 하기
 
@@ -82,4 +82,4 @@ layout: default
 
 ## 다음 단계
 
-예제들을 실행하신 후 더 탐구하고 싶으시다면 저희의 [Getting Started page](http://deeplearning4j.org/gettingstarted.html)를 참조하십시오. 그리고 DL4J는 다단계 설치 임을 기억하시기 바랍니다. 질문이나 피드백이 있으시다면 저희가 상세한 설명을 드릴 수 있드록 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)에 가입하시기를 강력 추천드립니다. 비사교적 또는 완전 독립적인 성격이시라면 자율 학습 하실 수 있습니다.
+예제들을 실행하신 후 더 탐구하고 싶으시다면 저희의 [Getting Started page](http://deeplearning4j.org/kr-gettingstarted.html)를 참조하십시오. 그리고 DL4J는 다단계 설치 임을 기억하시기 바랍니다. 질문이나 피드백이 있으시다면 저희가 상세한 설명을 드릴 수 있드록 저희의 [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j)에 가입하시기를 강력 추천드립니다. 비사교적 또는 완전 독립적인 성격이시라면 자율 학습 하실 수 있습니다.
