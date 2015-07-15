@@ -236,6 +236,7 @@ public class ContextHolder {
         JCuda.cudaStreamSynchronize(getInstance().getCudaStream());
         //new api
         JCudaDriver.cuStreamSynchronize(getInstance().getStream());
+        JCuda.cudaDeviceSynchronize();
     }
 
     /**
