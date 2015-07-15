@@ -46,6 +46,15 @@ An explanation of the hyperparameters is given in our [Iris tutorial](http://dee
 * [LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/LSTM.java)
 * [Graves LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesLSTM.java) (Useful for sensor data and time series)
 
+## Loading Data for LSTMs
+
+In Deeplearning4j, LSTMs expect a matrix in which the first row, *x_i*, is given, and all subsequent rows, *x_s*, are what the neural network attempts to predict. This is a generative model, and there are no labels. There is no limit to the number of rows the matrix can contain, but all rows must have the same length. 
+
+For example, input data could be: 
+
+* A series of handwritten numerals from MNIST, in which case, each row would be 784 elements long. 
+* A series of alphabetic characters, in which case, each row would be one element long.  
+
 ### Resources
 
 * [Recurrent Neural Networks](http://people.idsia.ch/~juergen/rnn.html); Juergen Schmidhuber
@@ -54,7 +63,7 @@ An explanation of the hyperparameters is given in our [Iris tutorial](http://dee
 
 ### Definition
 
-		Recurrent neural networks "allow for both parallel and sequential computation, and in principle can compute anything a traditional computer can compute. Unlike traditional computers, however, RNN are similar to the human brain, which is a large feedback network of connected neurons that somehow can learn to translate a lifelong sensory input stream into a sequence of useful motor outputs. The brain is a remarkable role model as it can solve many problems current machines cannot yet solve." - Juergen Schmidhuber
+Recurrent neural networks "allow for both parallel and sequential computation, and in principle can compute anything a traditional computer can compute. Unlike traditional computers, however, RNN are similar to the human brain, which is a large feedback network of connected neurons that somehow can learn to translate a lifelong sensory input stream into a sequence of useful motor outputs. The brain is a remarkable role model as it can solve many problems current machines cannot yet solve." - Juergen Schmidhuber
 
 ### Credit Assignment
 
