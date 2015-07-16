@@ -5,7 +5,7 @@ import org.deeplearning4j.spark.sql.sources.mnist.DefaultSource
 
 package object mnist {
   /**
-   * Adds a method, `iris`, to SQLContext that allows reading the Iris dataset.
+   * Adds a method, `mnist`, to SQLContext that allows reading the Mnist dataset.
    */
   implicit class IrisContext(sqlContext: SQLContext) {
     def mnist(imagesFile: String, labelsFile: String, numExamples: Int) = {
