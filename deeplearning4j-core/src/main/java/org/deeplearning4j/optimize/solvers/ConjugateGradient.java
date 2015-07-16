@@ -78,7 +78,7 @@ public class ConjugateGradient extends BaseOptimizer {
 
 
     @Override
-    public void preProcessLine(INDArray line) {
+    public void preProcessLine(INDArray gradient) {
     	//line is current gradient
     	//Last gradient is stored in searchState map
     	INDArray gLast = (INDArray) searchState.get(GRADIENT_KEY);		//Previous iteration gradient
@@ -86,17 +86,17 @@ public class ConjugateGradient extends BaseOptimizer {
         
         //Calculate gamma (or beta, by Bengio et al. notation). Polak and Ribiere method.
         // = ((grad(current)-grad(last)) \dot (grad(current))) / (grad(last) \dot grad(last))
-        double dgg = Nd4j.getBlasWrapper().dot(line.sub(gLast),line);
+        double dgg = Nd4j.getBlasWrapper().dot(gradient.sub(gLast),gradient);
         double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
         double gamma = dgg / gg;
 
         //Compute search direction:
         //searchDir = -gradient + gamma * searchDirLast
-        INDArray searchDir = line.neg().addi(searchDirLast.muli(gamma));
+        INDArray searchDir = gradient.neg().addi(searchDirLast.muli(gamma));
 
         //Store current gradient and search direction for
         //(a) use in BaseOptimizer.optimize(), and (b) next iteration
-        searchState.put(GRADIENT_KEY, line);
+        searchState.put(GRADIENT_KEY, gradient);
         searchState.put(SEARCH_DIR, searchDir);
     }
 
