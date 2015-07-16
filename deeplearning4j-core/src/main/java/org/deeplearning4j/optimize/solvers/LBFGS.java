@@ -129,7 +129,7 @@ public class LBFGS extends BaseOptimizer {
         
         //searchDir: first used as equivalent to q as per N&W, then later used as r as per N&W.
         //Re-using existing array for performance reasons
-        INDArray searchDir = (INDArray)searchState.get(SEARCH_DIR);
+        INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
         searchDir.assign(gradient);
         
         for( int i=0; i<numVectors; i++ ){
@@ -137,7 +137,6 @@ public class LBFGS extends BaseOptimizer {
         	INDArray yi = yIter.next();
         	double rhoi = rhoIter.next();
         	
-        	//assert (si.length() == searchDir.length()) : "Gradients and parameters length not equal";
             if(si.length() != searchDir.length())
                 throw new IllegalStateException("Gradients and parameters length not equal");
             
