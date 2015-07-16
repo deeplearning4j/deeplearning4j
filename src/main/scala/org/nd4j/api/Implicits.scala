@@ -37,37 +37,35 @@ object Implicits {
       require(target.size <= underlying.shape().length, "Matrix dimension must be equal or larger than shape's dimension to extract.")
       val originalShape = underlying.shape()
       @tailrec
-      def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[(Int, Int)]): List[(Int, Int)] = input match {
-        case -> :: t => modifyTargetIndices(t, i + 1, 0 -> (originalShape(i) - 1) :: acc)
+      def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[Range]): List[Range] = input match {
+        case -> :: t => modifyTargetIndices(t, i + 1, (0 to (originalShape(i) - 1)) :: acc)
         case ---> :: t =>
           val ellipsised = List.fill(originalShape.length - i - t.size)(->)
           modifyTargetIndices(ellipsised ::: t, i, acc)
         case IntRangeFrom(from: Int) :: t =>
-          modifyTargetIndices(t, i + 1, from -> (originalShape(i) - 1) :: acc)
+          modifyTargetIndices(t, i + 1, (from to (originalShape(i) - 1)) :: acc)
         case (inr: IndexNumberRange) :: t =>
-          modifyTargetIndices(t, i + 1, inr.asTuple :: acc)
+          modifyTargetIndices(t, i + 1, inr.asRange :: acc)
+
         case Nil => acc.reverse
       }
 
       val modifiedTarget = modifyTargetIndices(target.toList, 0, Nil)
-      val targetShape = modifiedTarget.collect {
-        case (start, end) => end - start + 1
-      }
+      val targetShape = modifiedTarget.map(r => (r.end - r.start)/r.step +1)
 
       @tailrec
-      def calcIndices(tgt: List[(Int, Int)], orgShape: List[Int], layerSize: Int, acc: List[Int]): List[Int] = {
+      def calcIndices(tgt: List[Range], orgShape: List[Int], layerSize: Int, acc: List[Int]): List[Int] = {
         (tgt, orgShape) match {
           case (h :: t, hs :: ts) if acc.isEmpty =>
-            calcIndices(t, ts, layerSize, (h._1 to h._2).toList)
+            calcIndices(t, ts, layerSize, h.toList)
           case (h :: t, hs :: ts) =>
             val thisLayer = layerSize * hs
-            calcIndices(t, ts, thisLayer, (h._1 to h._2).flatMap{i => acc.map(_ + thisLayer*i)}.toList)
+            calcIndices(t, ts, thisLayer, h.flatMap{i => acc.map(_ + thisLayer*i)}.toList)
           case _ => acc
         }
       }
       val indices = calcIndices(modifiedTarget.toList, underlying.shape().toList, 1, Nil)
 
-      println(s"${target} at ${originalShape.mkString(",")} to ${indices}")
       val filtered = indices.map { i => underlying.getDouble(i)}
       Nd4j.create(filtered.toArray, targetShape.toArray.filterNot(_ <= 1))
     }
@@ -89,7 +87,7 @@ object Implicits {
   case object ---> extends IndexRange
 
   implicit class IntRange(val underlying: Int) extends IndexNumberRange {
-    override def asTuple: (Int, Int) = (underlying, underlying)
+    override def asRange: Range = underlying to underlying
 
     override def toString: String = s"$underlying"
   }
@@ -101,19 +99,24 @@ object Implicits {
   }
 
   implicit class TupleRange(val underlying: _root_.scala.Tuple2[Int, Int]) extends IndexNumberRange {
-    override def asTuple: (Int, Int) = underlying
+    override def asRange: Range = underlying._1 to underlying._2
 
     override def toString: String = s"${underlying._1}->${underlying._2}"
+
+    def by(i:Int) = new IndexRangeWrapper(underlying._1 to underlying._2 by i)
   }
 
   implicit class IntRangeFromGen(val underlying: Int) extends AnyVal {
     def -> = IntRangeFrom(underlying)
   }
 
+  implicit class IndexRangeWrapper(val underlying:Range) extends IndexNumberRange{
+    override def asRange: Range = underlying
+  }
 }
 
 sealed trait IndexNumberRange extends IndexRange {
-  def asTuple: (Int, Int)
+  def asRange: Range
 }
 
 sealed trait IndexRange
