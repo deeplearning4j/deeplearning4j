@@ -88,11 +88,16 @@ public class ConjugateGradient extends BaseOptimizer {
         // = ((grad(current)-grad(last)) \dot (grad(current))) / (grad(last) \dot grad(last))
         double dgg = Nd4j.getBlasWrapper().dot(gradient.sub(gLast),gradient);
         double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
-        double gamma = dgg / gg;
+        double gamma = Double.max(dgg / gg, 0.0);
+        
+        //Standard Polak-Ribiere does not guarantee that the search direction is a descent direction
+        //But using max(gamma_Polak-Ribiere,0) does guarantee a descent direction. Hence the max above.
+        //See Nocedal & Wright, Numerical Optimization, Ch5
+        //If gamma==0.0, this is equivalent to SGD line search (i.e., search direction == negative gradient)
 
         //Compute search direction:
         //searchDir = -gradient + gamma * searchDirLast
-        INDArray searchDir = gradient.neg().addi(searchDirLast.muli(gamma));
+        INDArray searchDir = searchDirLast.muli(gamma).subi(gradient);
 
         //Store current gradient and search direction for
         //(a) use in BaseOptimizer.optimize(), and (b) next iteration
