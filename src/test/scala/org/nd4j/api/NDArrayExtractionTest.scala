@@ -38,8 +38,22 @@ class RichNDArrayTest extends FlatSpec {
   }
 
   it should "return original NDArray if indexRange is all" in{
-    val multi = Nd4j.create((1f to 8f by 1).toArray, Array(2,2,2))
-    val extracted = multi(->, ->, ->)
+    val multi = (1f to 8f by 1).asNDArray(2,2,2)
+    val extracted = multi(->,->,->)
     assert(multi == extracted)
+
+    val ellipsised = multi(--->)
+    assert(ellipsised == multi)
+  }
+  it should "accept partially ellipsis indices" in{
+    val multi = (1f to 8f by 1).asNDArray(2,2,2)
+
+    val ellipsised = multi(--->,0)
+    val notEllipsised = multi(->,->,0)
+    assert(ellipsised == notEllipsised)
+
+    val ellipsisedAtEnd = multi(0,--->)
+    val notEllipsisedAtEnd = multi(0,->,->)
+    assert(ellipsisedAtEnd == notEllipsisedAtEnd)
   }
 }

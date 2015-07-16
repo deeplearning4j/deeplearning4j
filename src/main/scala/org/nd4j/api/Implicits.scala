@@ -36,10 +36,18 @@ object Implicits {
     def subMatrix(target: IndexRange*): INDArray = {
       require(target.size <= underlying.shape().length, "Matrix dimension must be equal or larger than shape's dimension to extract.")
       val originalShape = underlying.shape()
-      val modifiedTarget = target.zipWithIndex.collect {
-        case (->, i) => 0 -> (originalShape(i) - 1)
-        case (inr: IndexNumberRange, _) => inr.asTuple
+      @tailrec
+      def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[(Int, Int)]): List[(Int, Int)] = input match {
+        case -> :: t => modifyTargetIndices(t, i + 1, 0 -> (originalShape(i) - 1) :: acc)
+        case ---> :: t =>
+          val ellipsised = List.fill(originalShape.length - i - t.size)(->)
+          modifyTargetIndices(ellipsised ::: t, i, acc)
+        case (inr: IndexNumberRange) :: t =>
+          modifyTargetIndices(t, i + 1, inr.asTuple :: acc)
+        case Nil => acc.reverse
       }
+
+      val modifiedTarget = modifyTargetIndices(target.toList, 0, Nil)
       val targetShape = modifiedTarget.collect {
         case (start, end) => end - start + 1
       }
@@ -65,8 +73,6 @@ object Implicits {
   }
 
 
-  case object -> extends IndexRange
-
   implicit class floatColl2INDArray(val underlying: Seq[Float]) {
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
   }
@@ -75,6 +81,10 @@ object Implicits {
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
   }
 
+  case object -> extends IndexRange
+
+  case object ---> extends IndexRange
+
   implicit class IntRange(val underlying: Int) extends IndexNumberRange {
     override def asTuple: (Int, Int) = (underlying, underlying)
   }
@@ -82,6 +92,7 @@ object Implicits {
   implicit class TupleRange(val underlying: _root_.scala.Tuple2[Int, Int]) extends IndexNumberRange {
     override def asTuple: (Int, Int) = underlying
   }
+
 }
 
 sealed trait IndexNumberRange extends IndexRange {
