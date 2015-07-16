@@ -127,7 +127,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //validate the input before training
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
-        score = model.score();
+        score = pair.getSecond();
         setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray searchDirection, parameters;
