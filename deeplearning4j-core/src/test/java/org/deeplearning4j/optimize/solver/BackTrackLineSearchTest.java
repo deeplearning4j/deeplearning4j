@@ -57,7 +57,7 @@ public class BackTrackLineSearchTest {
 
     @Test
     public void testBackTrackLineGradientDescent() {
-        OptimizationAlgorithm optimizer = OptimizationAlgorithm.GRADIENT_DESCENT;
+        OptimizationAlgorithm optimizer = OptimizationAlgorithm.LINE_GRADIENT_DESCENT;
 
         DataSetIterator irisIter = new IrisDataSetIterator(1,1);
         DataSet data = irisIter.next();
@@ -101,8 +101,7 @@ public class BackTrackLineSearchTest {
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
         double score = network.getLayer(1).score();
-//        assertEquals(0.7642837524414062, score, 1e-4);
-        assertEquals(1.3385236740112305, score, 1e-4);
+        assertEquals(0.7130653858184814, score, 1e-4);
 
     }
 

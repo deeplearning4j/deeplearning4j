@@ -126,7 +126,7 @@ public class MultiLayerTest {
     public void testBackProp() {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(5).weightInit(WeightInit.XAVIER)
                 .seed(123)
                 .activationFunction("tanh")

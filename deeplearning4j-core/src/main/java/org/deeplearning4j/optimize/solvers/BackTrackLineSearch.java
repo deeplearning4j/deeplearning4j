@@ -25,7 +25,7 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -58,7 +58,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     private Model layer;
-    private StepFunction stepFunction = new NegativeDefaultStepFunction();
+    private StepFunction stepFunction = new DefaultStepFunction();
     private ConvexOptimizer optimizer;
     private int maxIterations = 5;
     double stepMax = 100;
@@ -89,7 +89,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @param optimizer
      */
     public BackTrackLineSearch(Model optimizable, ConvexOptimizer optimizer) {
-        this(optimizable, new NegativeDefaultStepFunction(), optimizer);
+        this(optimizable, new DefaultStepFunction(), optimizer);
     }
 
 
@@ -146,6 +146,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         INDArray oldParameters = parameters.dup();
         double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
+        double slope = Nd4j.getBlasWrapper().dot(searchDirection, gradients);
+        logger.debug("slope = {}", slope);
 
         INDArray maxOldParams = abs(oldParameters);
         Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams, 1));
@@ -167,15 +169,10 @@ public class BackTrackLineSearch implements LineOptimizer  {
         }
 
         if(sum > stepMax) {
-            logger.warn("attempted step too big. scaling: sum= {}, stepMax= {}", sum, stepMax);
+            logger.warn("Attempted step too big. scaling: sum= {}, stepMax= {}", sum, stepMax);
             searchDirection.muli(stepMax / sum);
         }
-        double slope = Nd4j.getBlasWrapper().dot(searchDirection, gradients);
 
-        logger.debug("slope = {}", slope);
-
-        //Issue: Works for DefaultStepFunction + descent search direction
-        //but: want slope > 0 for Negative
         if( slope >= 0.0 ) throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
 
         // find maximum lambda
@@ -191,9 +188,9 @@ public class BackTrackLineSearch implements LineOptimizer  {
             assert(step != oldStep) : "step == oldStep";
 
             if(stepFunction == null)
-                stepFunction =  new NegativeDefaultStepFunction();
-            //scale wrt updates
-            stepFunction.step(parameters, searchDirection, step); //step
+                stepFunction =  new DefaultStepFunction();
+            // step
+            stepFunction.step(parameters, searchDirection, step);
             oldStep = step;
 
             if(logger.isDebugEnabled())  {
@@ -202,8 +199,6 @@ public class BackTrackLineSearch implements LineOptimizer  {
             }
 
             // check for convergence on delta x
-            // if all of the parameters are < 1e-12
-
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, parameters,
                     parameters.dup(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
                 score = getScore(oldParameters);
@@ -223,8 +218,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 return step;
             }
 
-            // if value is infinite, i.e. we've
-            // jumped to unstable territory, then scale down jump
+            // if value is infinite, i.e. we've jumped to unstable territory, then scale down jump
             else if(Double.isInfinite(score) || Double.isInfinite(score2)) {
                 logger.warn("Value is infinite after jump. oldStep={}. score={}, score2={}. Scaling back step size...",oldStep,score,score2);
                 tmpStep = .2 * step;
