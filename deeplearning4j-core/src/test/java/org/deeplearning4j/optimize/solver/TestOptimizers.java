@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.solver;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -97,6 +98,7 @@ public class TestOptimizers {
 	
 	@Test
 	public void testSphereFnOptLineGradDescent(){
+		//Test a single line search with calculated search direction (with multiple line search iterations)
 		int[] numLineSearchIter = {1,2,5,10};
 		for( int n : numLineSearchIter )
 			testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,2);
@@ -110,6 +112,7 @@ public class TestOptimizers {
 	
 	@Test
 	public void testSphereFnOptCG(){
+		//Test a single line search with calculated search direction (with multiple line search iterations)
 		int[] numLineSearchIter = {1,2,5,10};
 		for( int n : numLineSearchIter )
 			testSphereFnOptHelper(OptimizationAlgorithm.CONJUGATE_GRADIENT,n,2);
@@ -123,6 +126,7 @@ public class TestOptimizers {
 	
 	@Test
 	public void testSphereFnOptLBFGS(){
+		//Test a single line search with calculated search direction (with multiple line search iterations)
 		int[] numLineSearchIter = {1,2,5,10};
 		for( int n : numLineSearchIter )
 			testSphereFnOptHelper(OptimizationAlgorithm.LBFGS,n,2);
@@ -161,25 +165,7 @@ public class TestOptimizers {
 			System.out.println(m.params());
 		}
 		
-		ConvexOptimizer opt;
-		switch(oa){
-		case STOCHASTIC_GRADIENT_DESCENT:
-			opt = new StochasticGradientDescent(conf,new DefaultStepFunction(),null,m);
-			break;
-		case LINE_GRADIENT_DESCENT:
-			opt = new LineGradientDescent(conf,new DefaultStepFunction(),null,m);
-			break;
-		case CONJUGATE_GRADIENT:
-			opt = new ConjugateGradient(conf,new DefaultStepFunction(),null,m);
-			break;
-		case LBFGS:
-			opt = new LBFGS(conf,new DefaultStepFunction(),null,m);
-			break;
-		default:
-			fail("Not supported: " + oa);	//Hessian free is NN-specific.
-			opt = null;
-			break;
-		}
+		ConvexOptimizer opt = getOptimizer(oa,conf,m);
 		
 		opt.setupSearchState(m.gradientAndScore());
 		opt.optimize();
@@ -196,7 +182,83 @@ public class TestOptimizers {
 		//(a) score is better (lower) after optimization.
 		//(b) Parameters are closer to minimum after optimization (TODO)
 		assertTrue("Score did not improve after optimization (b="+scoreBefore+",a="+scoreAfter+")",scoreAfter < scoreBefore);
+	}
+	
+	private static ConvexOptimizer getOptimizer( OptimizationAlgorithm oa, NeuralNetConfiguration conf, Model m ){
+		switch(oa){
+		case STOCHASTIC_GRADIENT_DESCENT:
+			return new StochasticGradientDescent(conf,new DefaultStepFunction(),null,m);
+		case LINE_GRADIENT_DESCENT:
+			return new LineGradientDescent(conf,new DefaultStepFunction(),null,m);
+		case CONJUGATE_GRADIENT:
+			return new ConjugateGradient(conf,new DefaultStepFunction(),null,m);
+		case LBFGS:
+			return new LBFGS(conf,new DefaultStepFunction(),null,m);
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
+	
+	
+	
+	
+	@Test
+	public void testSphereFnOptStochGradDescentMultipleSteps(){
+		//Earlier tests: only do a single line search, though each line search will do multiple iterations
+		// of line search algorithm.
+		//Here, do multiple optimization runs + multiple line search iterations within each run
+		//i.e., gradient is re-calculated at each step/run
+		//Single step tests earlier won't test storing of state between iterations
 		
+		testSphereFnMultipleStepsHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,5,5);
+	}
+	
+	@Test
+	public void testSphereFnOptLineGradDescentMultipleSteps(){
+		testSphereFnMultipleStepsHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,5,5);
+	}
+	
+	@Test
+	public void testSphereFnOptCGMultipleSteps(){
+		testSphereFnMultipleStepsHelper(OptimizationAlgorithm.CONJUGATE_GRADIENT,5,5);
+	}
+	
+	@Test
+	public void testSphereFnOptLBFGSMultipleSteps(){
+		testSphereFnMultipleStepsHelper(OptimizationAlgorithm.LBFGS,5,5);
+	}
+	
+	//Do
+	private static void testSphereFnMultipleStepsHelper( OptimizationAlgorithm oa, int nSteps, int numLineSearchIter ){
+		Random rng = new DefaultRandom(12345L);
+		org.nd4j.linalg.api.rng.distribution.Distribution dist
+		= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
+		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+		.numLineSearchIterations(numLineSearchIter)
+		.iterations(1000)
+		.learningRate(0.01)
+		.layer(new RBM()).batchSize(1).build();
+		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
+		
+		Model m = new SphereFunctionModel(100,dist,conf);
+		double[] scores = new double[nSteps+1];
+		scores[0] = m.score();
+		
+		
+		ConvexOptimizer opt = getOptimizer(oa,conf,m);
+		for( int i=0; i<nSteps; i++ ){
+			opt.optimize();
+			scores[i+1] = m.score();
+		}
+		
+		if( PRINT_OPT_RESULTS ){
+			System.out.println("Multiple step ("+nSteps+" steps) score vs iteration, nLineSearchIter=" + numLineSearchIter +": " + oa );
+			System.out.println(Arrays.toString(scores));
+		}
+		for( int i=1; i<scores.length; i++ ){
+			assertTrue( scores[i] < scores[i-1] || (scores[i] == 0.0 && scores[i-1] == 0.0) );
+		}
+		assertTrue(scores[scores.length-1]<1.0);	//Very easy function, expect score ~= 0 with any reasonable number of steps/numLineSearchIter
 	}
 	
 	
