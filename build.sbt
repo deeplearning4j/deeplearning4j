@@ -10,5 +10,5 @@ lazy val root = (project in file(".")).settings(
               "org.nd4j" % "nd4j-jblas" % "0.0.3.5.5.6-SNAPSHOT" % Test,
               "org.scalatest" %% "scalatest" % "2.2.4" % Test
        ),
-       scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:implicitConversions", "-language:higherKinds")
+       scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:implicitConversions", "-language:higherKinds","-language:postfixOps")
 )

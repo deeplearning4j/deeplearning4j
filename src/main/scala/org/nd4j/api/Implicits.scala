@@ -42,6 +42,8 @@ object Implicits {
         case ---> :: t =>
           val ellipsised = List.fill(originalShape.length - i - t.size)(->)
           modifyTargetIndices(ellipsised ::: t, i, acc)
+        case IntRangeFrom(from:Int) :: t =>
+          modifyTargetIndices(t, i + 1, from -> (originalShape(i)-1) :: acc)
         case (inr: IndexNumberRange) :: t =>
           modifyTargetIndices(t, i + 1, inr.asTuple :: acc)
         case Nil => acc.reverse
@@ -89,10 +91,17 @@ object Implicits {
     override def asTuple: (Int, Int) = (underlying, underlying)
   }
 
+  case class IntRangeFrom(underlying:Int) extends IndexRange{
+    def apply(i:Int):(Int,Int) = (underlying,i)
+  }
+
   implicit class TupleRange(val underlying: _root_.scala.Tuple2[Int, Int]) extends IndexNumberRange {
     override def asTuple: (Int, Int) = underlying
   }
 
+  implicit class IntRangeFromGen(val underlying:Int) extends AnyVal{
+    def -> = IntRangeFrom(underlying)
+  }
 }
 
 sealed trait IndexNumberRange extends IndexRange {
