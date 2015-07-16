@@ -69,7 +69,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     //   c) sufficient function increase (uses ALF)
     private double relTolx = 1e-7f;
     private double absTolx = 1e-4f; // tolerance on absolute value difference
-    final double ALF = 1e-4f;
+    protected final double ALF = 1e-4f;
 
     /**
      *
