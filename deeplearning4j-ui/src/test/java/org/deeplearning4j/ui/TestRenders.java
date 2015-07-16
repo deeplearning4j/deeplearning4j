@@ -57,7 +57,7 @@ public class TestRenders extends BaseUiServerTest {
     public void renderActivation() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .corruptionLevel(0.6)
                 .iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
@@ -79,7 +79,7 @@ public class TestRenders extends BaseUiServerTest {
     public void renderHistogram() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .corruptionLevel(0.6)
                 .iterations(100).weightInit(WeightInit.XAVIER)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)

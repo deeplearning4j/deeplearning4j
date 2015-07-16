@@ -24,11 +24,10 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
-import org.deeplearning4j.optimize.solvers.GradientAscent;
-import org.deeplearning4j.optimize.solvers.IterationGradientDescent;
+import org.deeplearning4j.optimize.solvers.LineGradientDescent;
+import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.DefaultRandom;
@@ -90,23 +89,23 @@ public class TestOptimizers {
 	}
 	
 	@Test
-	public void testSphereFnOptIterGradDescent(){
-		testSphereFnOptHelper(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT,-1,2);
-		testSphereFnOptHelper(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT,-1,10);
-		testSphereFnOptHelper(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT,-1,100);
+	public void testSphereFnOptStochGradDescent(){
+		testSphereFnOptHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,-1,2);
+		testSphereFnOptHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,-1,10);
+		testSphereFnOptHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,-1,100);
 	}
 	
 	@Test
-	public void testSphereFnOptGradDescent(){
+	public void testSphereFnOptLineGradDescent(){
 		int[] numLineSearchIter = {1,2,5,10};
 		for( int n : numLineSearchIter )
-			testSphereFnOptHelper(OptimizationAlgorithm.GRADIENT_DESCENT,n,2);
+			testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,2);
 		
 		for( int n : numLineSearchIter )
-			testSphereFnOptHelper(OptimizationAlgorithm.GRADIENT_DESCENT,n,10);
-		
+			testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,10);
+
 		for( int n : numLineSearchIter )
-			testSphereFnOptHelper(OptimizationAlgorithm.GRADIENT_DESCENT,n,100);
+			testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,100);
 	}
 	
 	@Test
@@ -144,6 +143,7 @@ public class TestOptimizers {
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 		.numLineSearchIterations(numLineSearchIter)
+		.iterations(1000)
 		.learningRate(0.01)
 		.layer(new RBM()).batchSize(1).build();
 		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
@@ -163,14 +163,14 @@ public class TestOptimizers {
 		
 		ConvexOptimizer opt;
 		switch(oa){
+		case STOCHASTIC_GRADIENT_DESCENT:
+			opt = new StochasticGradientDescent(conf,new DefaultStepFunction(),null,m);
+			break;
+		case LINE_GRADIENT_DESCENT:
+			opt = new LineGradientDescent(conf,new DefaultStepFunction(),null,m);
+			break;
 		case CONJUGATE_GRADIENT:
 			opt = new ConjugateGradient(conf,new DefaultStepFunction(),null,m);
-			break;
-		case GRADIENT_DESCENT:
-			opt = new GradientAscent(conf,new NegativeDefaultStepFunction(),null,m);
-			break;
-		case ITERATION_GRADIENT_DESCENT:
-			opt = new IterationGradientDescent(conf,new DefaultStepFunction(),null,m);
 			break;
 		case LBFGS:
 			opt = new LBFGS(conf,new DefaultStepFunction(),null,m);
