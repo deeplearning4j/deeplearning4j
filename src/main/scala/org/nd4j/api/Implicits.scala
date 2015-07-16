@@ -42,8 +42,8 @@ object Implicits {
         case ---> :: t =>
           val ellipsised = List.fill(originalShape.length - i - t.size)(->)
           modifyTargetIndices(ellipsised ::: t, i, acc)
-        case IntRangeFrom(from:Int) :: t =>
-          modifyTargetIndices(t, i + 1, from -> (originalShape(i)-1) :: acc)
+        case IntRangeFrom(from: Int) :: t =>
+          modifyTargetIndices(t, i + 1, from -> (originalShape(i) - 1) :: acc)
         case (inr: IndexNumberRange) :: t =>
           modifyTargetIndices(t, i + 1, inr.asTuple :: acc)
         case Nil => acc.reverse
@@ -57,16 +57,17 @@ object Implicits {
       @tailrec
       def calcIndices(tgt: List[(Int, Int)], orgShape: List[Int], layerSize: Int, acc: List[Int]): List[Int] = {
         (tgt, orgShape) match {
-          case (h :: t, shape) if acc.isEmpty =>
-            calcIndices(t, shape, layerSize, (h._1 to h._2).toList)
+          case (h :: t, hs :: ts) if acc.isEmpty =>
+            calcIndices(t, ts, layerSize, (h._1 to h._2).toList)
           case (h :: t, hs :: ts) =>
             val thisLayer = layerSize * hs
-            calcIndices(t, ts, thisLayer, acc ++ acc.map(_ + thisLayer))
+            calcIndices(t, ts, thisLayer, (h._1 to h._2).flatMap{i => acc.map(_ + thisLayer*i)}.toList)
           case _ => acc
         }
       }
-
       val indices = calcIndices(modifiedTarget.toList, underlying.shape().toList, 1, Nil)
+
+      println(s"${target} at ${originalShape.mkString(",")} to ${indices}")
       val filtered = indices.map { i => underlying.getDouble(i)}
       Nd4j.create(filtered.toArray, targetShape.toArray.filterNot(_ <= 1))
     }
@@ -89,19 +90,26 @@ object Implicits {
 
   implicit class IntRange(val underlying: Int) extends IndexNumberRange {
     override def asTuple: (Int, Int) = (underlying, underlying)
+
+    override def toString: String = s"$underlying"
   }
 
-  case class IntRangeFrom(underlying:Int) extends IndexRange{
-    def apply(i:Int):(Int,Int) = (underlying,i)
+  case class IntRangeFrom(underlying: Int) extends IndexRange {
+    def apply(i: Int): (Int, Int) = (underlying, i)
+
+    override def toString: String = s"$underlying->"
   }
 
   implicit class TupleRange(val underlying: _root_.scala.Tuple2[Int, Int]) extends IndexNumberRange {
     override def asTuple: (Int, Int) = underlying
+
+    override def toString: String = s"${underlying._1}->${underlying._2}"
   }
 
-  implicit class IntRangeFromGen(val underlying:Int) extends AnyVal{
+  implicit class IntRangeFromGen(val underlying: Int) extends AnyVal {
     def -> = IntRangeFrom(underlying)
   }
+
 }
 
 sealed trait IndexNumberRange extends IndexRange {

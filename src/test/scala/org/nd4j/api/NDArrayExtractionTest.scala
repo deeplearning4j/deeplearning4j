@@ -37,7 +37,16 @@ class RichNDArrayTest extends FlatSpec {
     assert(extracted.getFloat(3) == 7)
   }
 
-  it should "return original NDArray if indexRange is all" in {
+  it should "return original NDArray if indexRange is all in 2d matrix" in {
+    val multi = (1f to 9f by 1).asNDArray(3, 3)
+    val extracted = multi(->, ->)
+    assert(multi == extracted)
+
+    val ellipsised = multi(--->)
+    assert(ellipsised == multi)
+  }
+
+  it should "return original NDArray if indexRange is all in 3d matrix" in {
     val multi = (1f to 8f by 1).asNDArray(2, 2, 2)
     val extracted = multi(->, ->, ->)
     assert(multi == extracted)
@@ -45,6 +54,7 @@ class RichNDArrayTest extends FlatSpec {
     val ellipsised = multi(--->)
     assert(ellipsised == multi)
   }
+
   it should "accept partially ellipsis indices" in {
     val multi = (1f to 8f by 1).asNDArray(2, 2, 2)
 
