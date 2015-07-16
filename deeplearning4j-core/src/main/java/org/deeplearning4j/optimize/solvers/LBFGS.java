@@ -60,18 +60,9 @@ public class LBFGS extends BaseOptimizer {
         searchState.put("oldparams", params.dup());
         searchState.put("oldgradient", gradient.dup());
 
-        // TODO commented out leverages Mallet approach - need to verify how to kick this one off
-//        searchState.put(SEARCH_DIR, gradient.dup().divi(gradient.dup().norm2(Integer.MAX_VALUE).getDouble(0)));
-        searchState.put(SEARCH_DIR, Nd4j.zeros(params.shape()));
-    }
-
-    @Override
-    protected boolean preFirstStepProcess(INDArray gradient) {
         //initial direction should be normal
-        searchState.put(GRADIENT_KEY,gradient.mul(Nd4j.norm2(gradient).rdivi(1.0).getDouble(0)));
-        return true;
+        searchState.put(SEARCH_DIR, gradient.dup().mul(Nd4j.norm2(gradient).rdivi(1.0).getDouble(0)).negi());
     }
-
 
     @Override
     protected void postFirstStep(INDArray gradient) {
@@ -84,13 +75,12 @@ public class LBFGS extends BaseOptimizer {
 
     }
 
+    // Numerical Optimization section 7.2
     // s = parameters differences (old & current)
     // y = gradient differences (old & current)
-    // r = searchDirection in development
     // gamma = Hessian approximation
     @Override
     public void preProcessLine(INDArray gradient) {
-        double syOld, yy;
         INDArray oldParameters = (INDArray) searchState.get("oldparams");
         INDArray params = model.params();
         oldParameters.assign(params.sub(oldParameters));
@@ -98,23 +88,14 @@ public class LBFGS extends BaseOptimizer {
         INDArray oldGradient = (INDArray) searchState.get("oldgradient");
         oldGradient.subi(gradient);
 
-        double sy = Nd4j.getBlasWrapper().dot(oldParameters,oldGradient.transpose()) + Nd4j.EPS_THRESHOLD;
         LinkedList<Double> rho = (LinkedList<Double>) searchState.get("rho");
-        rho.add(1.0 / sy);
-
         LinkedList<INDArray> s = (LinkedList<INDArray>) searchState.get("s");
         LinkedList<INDArray> y = (LinkedList<INDArray>) searchState.get("y");
 
-        if(s.size()==0){
-            syOld = Nd4j.getBlasWrapper().dot(oldParameters.transpose(), oldGradient) + Nd4j.EPS_THRESHOLD;
-            yy = Nd4j.getBlasWrapper().dot(oldGradient.transpose(), oldGradient) + Nd4j.EPS_THRESHOLD;
-        } else {
-            syOld = Nd4j.getBlasWrapper().dot(s.get(s.size() - 1).transpose(), y.get(y.size() - 1)) + Nd4j.EPS_THRESHOLD;
-            yy = Nd4j.getBlasWrapper().dot(y.get(y.size() - 1).transpose(), y.get(y.size() - 1)) + Nd4j.EPS_THRESHOLD;
-        }
+        double sy = Nd4j.getBlasWrapper().dot(oldParameters,oldGradient.transpose()) + Nd4j.EPS_THRESHOLD;
+        double yy = Nd4j.getBlasWrapper().dot(oldGradient.transpose(), oldGradient) + Nd4j.EPS_THRESHOLD;
 
-        double gamma = syOld / yy;
-
+        rho.add(1.0 / sy);
         s.add(oldParameters);
         y.add(oldGradient);
 
@@ -135,23 +116,21 @@ public class LBFGS extends BaseOptimizer {
 
         }
 
-        INDArray r = gradient.dup();
-        r.muli(gamma);
+        double gamma = sy / yy;
+        INDArray searchDir = gradient.dup().muli(gamma);
 
         // Now work forwards, from the oldest to the newest difference vectors
         for (int i = 0; i < y.size(); i++) {
             if(i >= alpha.length())
                 break;
-            double beta = rho.get(i) * Nd4j.getBlasWrapper().dot(y.get(i).transpose(), r);
-            Nd4j.getBlasWrapper().level1().axpy(gradient.length(), alpha.getFloat(i) - (float) beta, s.get(i), r);
-
+            double beta = rho.get(i) * Nd4j.getBlasWrapper().dot(y.get(i).transpose(), searchDir);
         }
 
         oldParameters.assign(params);
         oldGradient.assign(gradient);
 
         INDArray searchDirection = (INDArray) searchState.get(SEARCH_DIR);
-        searchDirection.assign(r);
+        searchDirection.assign(searchDir.negi());
 
     }
 
