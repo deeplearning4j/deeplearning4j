@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.*;
 
 /**
  * Created by agibsonccc on 12/3/14.
@@ -44,6 +46,30 @@ public class ParagraphVectorsTest {
     @Before
     public void before() {
         new File("word2vec-index").delete();
+    }
+
+    @Test
+    public void testDifferentLabels() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/labeled");
+        File file = resource.getFile();
+        LabelAwareSentenceIterator iter = LabelAwareUimaSentenceIterator.createWithPath(file.getAbsolutePath());
+
+
+        TokenizerFactory t = new UimaTokenizerFactory();
+
+
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .minWordFrequency(1).iterations(5).labels(Arrays.asList("negative", "neutral","positive"))
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+
+        vec.fit();
+
+        assertNotEquals(vec.lookupTable().vector("UNK"), vec.lookupTable().vector("negative"));
+        assertNotEquals(vec.lookupTable().vector("UNK"),vec.lookupTable().vector("positive"));
+        assertNotEquals(vec.lookupTable().vector("UNK"),vec.lookupTable().vector("neutral"));
+
     }
 
     @Test
