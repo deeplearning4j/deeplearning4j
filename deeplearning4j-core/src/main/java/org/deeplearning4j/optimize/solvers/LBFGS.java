@@ -118,7 +118,7 @@ public class LBFGS extends BaseOptimizer {
 
     	//In general: have m elements in s,y,rho.
         //But for first few iterations, have less.
-        int numVectors = Integer.min(m,s.size());
+        int numVectors = Math.min(m,s.size());
         
         double[] alpha = new double[numVectors];
         
