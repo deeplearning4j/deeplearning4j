@@ -121,8 +121,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 for(int i = 0; i < original.rows(); i++) {
                     IComplexNDArray row = original.slice(i);
                     IComplexNDArray zRow = originalZ.slice(i);
-                    op.setX(row);
-                    op.setZ(zRow);
+                    op.setX(row.dup());
+                    op.setZ(zRow.dup());
                     if(y != null)
                         op.setY(y.slice(i));
                     exec(op);
@@ -138,10 +138,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 for(int i = 0; i < original.rows(); i++) {
                     INDArray row = original.getRow(i);
                     INDArray zRow = originalZ.getRow(i);
-                    op.setX(row);
-                    op.setZ(zRow);
+                    op.setX(row.dup());
+                    op.setZ(zRow.dup());
                     if(y != null)
-                        op.setY(y.getRow(i));
+                        op.setY(y.getRow(i).dup());
                     exec(op);
                     zRow.assign(op.z());
                 }
@@ -270,16 +270,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     protected void checkOp(Op op) {
         if(op.x() instanceof LinearViewNDArray || op.y() instanceof LinearViewNDArray || op.z() instanceof LinearViewNDArray || op.x() instanceof LinearViewComplexNDArray || op.y() instanceof LinearViewComplexNDArray || op.z() instanceof LinearViewComplexNDArray)
             return;
-        int xStride = op.x().offset() + (op.n() - op.x().elementStride()) * BlasBufferUtil.getBlasStride(op.x());
-        int zStride = op.z().offset() + (op.n() - op.z().elementStride()) * BlasBufferUtil.getBlasStride(op.z());
-        if(op.x() instanceof IComplexNDArray)
-            xStride /= 2;
-        if(op.z() instanceof IComplexNDArray)
-            zStride /= 2;
+        int xStride = op.x().offset() + (op.n() - op.x().elementStride()) * (op.x() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.x()) / 2 : BlasBufferUtil.getBlasStride(op.x()));
+        int zStride = op.z().offset() + (op.n() - op.z().elementStride()) * (op.z() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.z()) / 2 : BlasBufferUtil.getBlasStride(op.z()));
+
         if(op.y() != null) {
-            int yStride = op.y().offset() + (op.n() - op.y().elementStride()) * BlasBufferUtil.getBlasStride(op.y());
-            if(op.y() instanceof IComplexNDArray)
-                yStride /= 2;
+            int yStride = op.y().offset() + (op.n() - op.y().elementStride()) * (op.y() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.y()) / 2 : BlasBufferUtil.getBlasStride(op.y()));
             Preconditions.checkArgument(xStride < op.x().data().length(),new BlasOpErrorMessage(op).toString());
             Preconditions.checkArgument(yStride < op.y().data().length(),new BlasOpErrorMessage(op).toString());
             Preconditions.checkArgument(zStride < op.z().data().length(),new BlasOpErrorMessage(op).toString());

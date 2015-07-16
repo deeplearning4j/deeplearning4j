@@ -174,4 +174,24 @@ public class CublasPointerTests {
 
     }
 
+    @Test
+    public void testSlicePointers() throws Exception {
+        INDArray arr = Nd4j.create(5,5);
+        JCudaBuffer buffer = (JCudaBuffer) arr.data();
+        for(int i = 0; i < arr.slices(); i++) {
+            CublasPointer pointer = new CublasPointer(arr.slice(i));
+            pointer.copyToHost();
+            pointer.close();
+        }
+
+        IComplexNDArray arr2 = Nd4j.createComplex(5,5);
+        for(int i = 0; i < arr2.slices(); i++) {
+            CublasPointer pointer = new CublasPointer(arr2.slice(i));
+            pointer.copyToHost();
+            pointer.close();
+        }
+
+    }
+
+
 }

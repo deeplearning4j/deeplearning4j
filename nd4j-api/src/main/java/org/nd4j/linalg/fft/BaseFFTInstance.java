@@ -312,7 +312,7 @@ public abstract class BaseFFTInstance implements FFTInstance {
         return doInnerFft(result,shape,axes,inverse);
     }
 
-    //the inner loopfor an fft or ifft
+    //the inner loop for an fft or ifft
     protected IComplexNDArray doInnerFft(IComplexNDArray result,int[] shape,int[] axes,boolean inverse) {
         for(int i = 0; i < axes.length; i++) {
             result = inverse ? ifft(result,shape[axes[i]],axes[i]) : fft(result,shape[axes[i]],axes[i]);

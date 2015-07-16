@@ -71,6 +71,7 @@ public interface Op {
     INDArray z();
 
 
+
     /**
      * The number of elements to do a op over
      *

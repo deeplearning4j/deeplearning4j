@@ -26,6 +26,7 @@ import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas2;
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -238,7 +239,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  * We are going to allocate the whole buffer on the gpu only once.
                  *
                  */
+
                 if(!pointersToContexts.contains(name,new Pair<>(0,this.length))) {
+
                     devicePointerInfo = (DevicePointerInfo)
                             ContextHolder.getInstance()
                                     .getConf()
@@ -309,80 +312,81 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             if(arr.data() != this) {
                 throw new IllegalArgumentException("Unable to get pointer for array that doesn't have this as the buffer");
             }
-            if(devicePointerInfo == null) {
-                int compareLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
+            int compareLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
+            /**
+             * Add zero first no matter what.
+             * Allocate the whole buffer on the gpu
+             * and use offsets for any other pointers that come in.
+             * This will allow us to set device pointers with offsets
+             *
+             * with no extra allocation.
+             *
+             * Notice here we ignore the length of the actual array.
+             *
+             * We are going to allocate the whole buffer on the gpu only once.
+             *
+             */
+            if(!pointersToContexts.contains(name,new Pair<>(0,this.length))) {
+                devicePointerInfo = (DevicePointerInfo)
+                        ContextHolder.getInstance()
+                                .getConf()
+                                .getMemoryStrategy()
+                                .alloc(this, 1, 0, this.length);
+
+                pointersToContexts.put(name, new Pair<>(0,this.length), devicePointerInfo);
+            }
+
+
+            if(offset > 0) {
                 /**
-                 * Add zero first no matter what.
-                 * Allocate the whole buffer on the gpu
-                 * and use offsets for any other pointers that come in.
-                 * This will allow us to set device pointers with offsets
+                 * Store the length for the offset of the pointer.
+                 * Return the original pointer with an offset
+                 * (these pointers can't be reused?)
                  *
-                 * with no extra allocation.
+                 * With the device pointer info,
+                 * we want to store the original pointer.
+                 * When retrieving the vector from the gpu later,
+                 * we will use the recorded offset.
                  *
-                 * Notice here we ignore the length of the actual array.
+                 * Due to gpu instability (please correct me if I'm wrong here)
+                 * we can't seem to reuse the pointers with the offset specified,
+                 * therefore it is desirable to recreate this pointer later.
                  *
-                 * We are going to allocate the whole buffer on the gpu only once.
+                 * This will prevent extra allocation as well
+                 * as inform the length for retrieving data from the gpu
+                 * for this particular offset and buffer.
                  *
                  */
-                if(!pointersToContexts.contains(name,new Pair<>(0,this.length))) {
-                    devicePointerInfo = (DevicePointerInfo)
-                            ContextHolder.getInstance()
-                                    .getConf()
-                                    .getMemoryStrategy()
-                                    .alloc(this, 1, 0, this.length);
-
-                    pointersToContexts.put(name, new Pair<>(0,this.length), devicePointerInfo);
-                }
-
-
-                if(offset > 0) {
-                    /**
-                     * Store the length for the offset of the pointer.
-                     * Return the original pointer with an offset
-                     * (these pointers can't be reused?)
-                     *
-                     * With the device pointer info,
-                     * we want to store the original pointer.
-                     * When retrieving the vector from the gpu later,
-                     * we will use the recorded offset.
-                     *
-                     * Due to gpu instability (please correct me if I'm wrong here)
-                     * we can't seem to reuse the pointers with the offset specified,
-                     * therefore it is desirable to recreate this pointer later.
-                     *
-                     * This will prevent extra allocation as well
-                     * as inform the length for retrieving data from the gpu
-                     * for this particular offset and buffer.
-                     *
-                     */
-                    DevicePointerInfo info2 = pointersToContexts.get(name, new Pair<>(0, this.length));
-                    if(info2 == null)
-                        throw new IllegalStateException("No pointer found for name " + name + " and offset/length " + offset + " / " + length);
-                    Pointer zero = info2.getPointer();
-                    Pointer ret =  info2.getPointer().withByteOffset(offset * getElementSize());
-                    devicePointerInfo = new DevicePointerInfo(zero,length,stride,offset);
-                    pointersToContexts.put(name, new Pair<>(offset,arr.length()), devicePointerInfo);
-                    return ret;
-
-                }
-
-                else if(offset == 0 && compareLength < arr.data().length()) {
-                    DevicePointerInfo info2 = pointersToContexts.get(name, new Pair<>(0, this.length));
-                    DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointer(),this.length,arr.majorStride(),arr.offset());
-                    /**
-                     * Need a pointer that
-                     * points at the buffer but doesnt extend all the way to the end.
-                     * This is for data like the first row of a matrix
-                     * that has zero offset but does not extend all the way to the end of the buffer.
-                     */
-
-                    pointersToContexts.put(name, new Pair<>(offset,arr.length()), info3);
-                    return info3.getPointer();
-                }
-
-
+                DevicePointerInfo info2 = pointersToContexts.get(name, new Pair<>(0, this.length));
+                if(info2 == null)
+                    throw new IllegalStateException("No pointer found for name " + name + " and offset/length " + offset + " / " + length);
+                Pointer zero = info2.getPointer();
+                Pointer ret =  info2.getPointer().withByteOffset(offset * getElementSize());
+                devicePointerInfo = new DevicePointerInfo(zero,length,stride,offset);
+                pointersToContexts.put(name, new Pair<>(offset,compareLength), devicePointerInfo);
+                return ret;
 
             }
+
+            else if(offset == 0 && compareLength < arr.data().length()) {
+                DevicePointerInfo info2 = pointersToContexts.get(name, new Pair<>(0, this.length));
+                DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointer(),this.length, BlasBufferUtil.getBlasStride(arr),arr.offset());
+                int compareLength2 = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
+
+                /**
+                 * Need a pointer that
+                 * points at the buffer but doesnt extend all the way to the end.
+                 * This is for data like the first row of a matrix
+                 * that has zero offset but does not extend all the way to the end of the buffer.
+                 */
+
+                pointersToContexts.put(name, new Pair<>(offset,compareLength2), info3);
+                return info3.getPointer();
+            }
+
+
+
+
 
 
             freed.set(false);

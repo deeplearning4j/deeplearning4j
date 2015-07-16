@@ -48,12 +48,14 @@ public class VectorFFT extends BaseTransformOp {
     public VectorFFT(INDArray x, INDArray z,int fftLength) {
         super(x, z);
         this.fftLength = fftLength;
+        this.n = fftLength;
         exec();
     }
 
     public VectorFFT(INDArray x, INDArray z, int n,int fftLength) {
         super(x, z, n);
         this.fftLength = fftLength;
+        this.n = fftLength;
         exec();
     }
 
@@ -195,6 +197,7 @@ public class VectorFFT extends BaseTransformOp {
     public void setX(INDArray x) {
         this.x = x;
         this.fftLength = x.length();
+        this.n = x.length();
         executed = false;
 
     }
@@ -203,6 +206,7 @@ public class VectorFFT extends BaseTransformOp {
     public void setZ(INDArray z) {
         this.z = z;
         this.fftLength = z.length();
+        this.n = fftLength;
         executed = false;
 
     }

@@ -141,14 +141,16 @@ public class CublasPointer  implements AutoCloseable {
         //the name of this thread for knowing whether to copy data or not
         String name = Thread.currentThread().getName();
         this.arr = array;
+        int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
+        int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
 
         this.devicePointer = buffer
                 .getDevicePointer(
                         array,
-                        array.majorStride()
+                        stride
                         ,array.offset()
-                        ,array.length());
+                        ,compLength);
 
         /**
          * Neat edge case here.
