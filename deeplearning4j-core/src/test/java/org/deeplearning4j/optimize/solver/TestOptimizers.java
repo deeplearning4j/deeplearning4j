@@ -147,7 +147,7 @@ public class TestOptimizers {
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
 		.numLineSearchIterations(numLineSearchIter)
-		.iterations(1000)
+		.iterations(1)
 		.learningRate(0.01)
 		.layer(new RBM()).batchSize(1).build();
 		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
@@ -229,13 +229,13 @@ public class TestOptimizers {
 	}
 	
 	//Do
-	private static void testSphereFnMultipleStepsHelper( OptimizationAlgorithm oa, int nSteps, int numLineSearchIter ){
+	private static void testSphereFnMultipleStepsHelper( OptimizationAlgorithm oa, int nSteps, int maxNumLineSearchIter ){
 		Random rng = new DefaultRandom(12345L);
 		org.nd4j.linalg.api.rng.distribution.Distribution dist
 		= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-		.numLineSearchIterations(numLineSearchIter)
-		.iterations(1000)
+		.numLineSearchIterations(maxNumLineSearchIter)
+		.iterations(1)
 		.learningRate(0.01)
 		.layer(new RBM()).batchSize(1).build();
 		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
@@ -252,7 +252,7 @@ public class TestOptimizers {
 		}
 		
 		if( PRINT_OPT_RESULTS ){
-			System.out.println("Multiple step ("+nSteps+" steps) score vs iteration, nLineSearchIter=" + numLineSearchIter +": " + oa );
+			System.out.println("Multiple step ("+nSteps+" steps) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
 			System.out.println(Arrays.toString(scores));
 		}
 		for( int i=1; i<scores.length; i++ ){
