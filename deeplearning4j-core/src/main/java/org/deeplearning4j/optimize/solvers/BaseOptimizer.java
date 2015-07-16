@@ -94,7 +94,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         this.model = model;
         lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);
         lineMaximizer.setStepMax(stepMax);
-        lineMaximizer.setMaxIterations(conf.getNumLineSearchIterations());
+        lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
 
     }
 
