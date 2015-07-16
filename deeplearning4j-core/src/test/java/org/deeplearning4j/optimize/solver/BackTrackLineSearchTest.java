@@ -156,7 +156,7 @@ public class BackTrackLineSearchTest {
                 .layer(new RBM())
                 .learningRate(0.1)
                 .useAdaGrad(false)
-                .numLineSearchIterations(1)
+                .maxNumLineSearchIterations(1)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
