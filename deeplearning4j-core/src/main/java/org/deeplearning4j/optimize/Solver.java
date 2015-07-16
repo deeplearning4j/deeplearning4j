@@ -29,7 +29,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.ConjugateGradient;
-import org.deeplearning4j.optimize.solvers.LineGradientAscent;
+import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.solvers.StochasticHessianFree;
@@ -58,7 +58,7 @@ public class Solver {
             case LBFGS:
                 return new LBFGS(conf,stepFunction,listeners,model);
             case LINE_GRADIENT_DESCENT:
-                return new LineGradientAscent(conf,stepFunction,listeners,model);
+                return new LineGradientDescent(conf,stepFunction,listeners,model);
             case HESSIAN_FREE:
                 return new StochasticHessianFree(conf,stepFunction,listeners,model);
             case CONJUGATE_GRADIENT:
