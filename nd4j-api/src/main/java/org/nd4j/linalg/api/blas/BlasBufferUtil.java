@@ -30,8 +30,8 @@ public class BlasBufferUtil {
      */
     public static int getBlasStride(INDArray arr) {
         if(arr.ordering() == NDArrayFactory.C) {
-            if(arr.rank() == 2 && arr.stride(1) == 1)
-                return 1;
+            if(arr.rank() == 2 && arr.stride(1) <= arr.elementStride())
+                return arr.elementStride();
         }
         if(arr instanceof IComplexNDArray)
             return arr.majorStride() / 2;

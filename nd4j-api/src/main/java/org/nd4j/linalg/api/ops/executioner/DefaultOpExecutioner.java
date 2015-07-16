@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -118,8 +119,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 IComplexNDArray y = (IComplexNDArray) op.y();
 
                 for(int i = 0; i < original.rows(); i++) {
-                    IComplexNDArray row = original.slice(i).ravel();
-                    IComplexNDArray zRow = originalZ.slice(i).ravel();
+                    IComplexNDArray row = original.slice(i);
+                    IComplexNDArray zRow = originalZ.slice(i);
                     op.setX(row);
                     op.setZ(zRow);
                     if(y != null)
@@ -177,8 +178,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 IComplexNDArray originalZ = (IComplexNDArray) op.z();
                 IComplexNDArray y = (IComplexNDArray) op.y();
                 for(int i = 0; i < op.x().slices(); i++) {
-                    op.setX(originalX.getColumn(i).ravel());
-                    op.setZ(originalZ.getColumn(i).ravel());
+                    op.setX(originalX.getColumn(i));
+                    op.setZ(originalZ.getColumn(i));
                     if(y != null)
                         op.setY(y.getColumn(i));
                     iterateOverAllColumns(op);
@@ -267,18 +268,26 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected void checkOp(Op op) {
-        if(op.x() instanceof LinearViewNDArray)
+        if(op.x() instanceof LinearViewNDArray || op.y() instanceof LinearViewNDArray || op.z() instanceof LinearViewNDArray || op.x() instanceof LinearViewComplexNDArray || op.y() instanceof LinearViewComplexNDArray || op.z() instanceof LinearViewComplexNDArray)
             return;
-
+        int xStride = op.x().offset() + (op.n() - op.x().elementStride()) * BlasBufferUtil.getBlasStride(op.x());
+        int zStride = op.z().offset() + (op.n() - op.z().elementStride()) * BlasBufferUtil.getBlasStride(op.z());
+        if(op.x() instanceof IComplexNDArray)
+            xStride /= 2;
+        if(op.z() instanceof IComplexNDArray)
+            zStride /= 2;
         if(op.y() != null) {
-            Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length(),new BlasOpErrorMessage(op).toString());
-            Preconditions.checkArgument(op.y().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.y()) < op.y().data().length(),new BlasOpErrorMessage(op).toString());
-            Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length(),new BlasOpErrorMessage(op).toString());
+            int yStride = op.y().offset() + (op.n() - op.y().elementStride()) * BlasBufferUtil.getBlasStride(op.y());
+            if(op.y() instanceof IComplexNDArray)
+                yStride /= 2;
+            Preconditions.checkArgument(xStride < op.x().data().length(),new BlasOpErrorMessage(op).toString());
+            Preconditions.checkArgument(yStride < op.y().data().length(),new BlasOpErrorMessage(op).toString());
+            Preconditions.checkArgument(zStride < op.z().data().length(),new BlasOpErrorMessage(op).toString());
 
         }
         else {
-            Preconditions.checkArgument(op.x().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.x()) < op.x().data().length(),new BlasOpErrorMessage(op).toString());
-            Preconditions.checkArgument(op.z().offset() + (op.n() - 1) * BlasBufferUtil.getBlasStride(op.z()) < op.z().data().length(),new BlasOpErrorMessage(op).toString());
+            Preconditions.checkArgument(xStride < op.x().data().length(),new BlasOpErrorMessage(op).toString());
+            Preconditions.checkArgument(zStride < op.z().data().length(),new BlasOpErrorMessage(op).toString());
 
         }
     }
