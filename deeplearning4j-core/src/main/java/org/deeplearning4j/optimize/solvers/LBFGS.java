@@ -53,17 +53,15 @@ public class LBFGS extends BaseOptimizer {
     @Override
     public void setupSearchState(Pair<Gradient, Double> pair) {
         super.setupSearchState(pair);
-        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray params = (INDArray) searchState.get(PARAMS_KEY);
         searchState.put("s", new LinkedList<INDArray>()); // holds parameters differences
         searchState.put("y", new LinkedList<INDArray>()); // holds gradients differences
         searchState.put("rho", new LinkedList<Double>());
         searchState.put("oldparams", params.dup());
 
-        //initial direction should be normal
-        searchState.put(SEARCH_DIR, gradient.dup().mul(Nd4j.norm2(gradient).rdivi(1.0).getDouble(0)).negi());
     }
 
+    // TODO do we still want to use this?
     @Override
     protected void postFirstStep(INDArray gradient) {
         super.postFirstStep(gradient);
@@ -75,13 +73,20 @@ public class LBFGS extends BaseOptimizer {
 
     }
 
+    @Override
+    public void preProcessLine() {
+        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        //initial direction should be normal
+        searchState.put(SEARCH_DIR, gradient.dup().mul(Nd4j.norm2(gradient).rdivi(1.0).getDouble(0)).negi());
+    }
+
     // Numerical Optimization (Nocedal & Wright) section 7.2
     // s = parameters differences (old & current)
     // y = gradient differences (old & current)
     // gamma = initial Hessian approximation (i.e., equiv. to gamma*IdentityMatrix for Hessian)
     // rho = scalar. rho_i = 1/(y_i \dot s_i)
     @Override
-    public void preProcessLine(INDArray gradient) {
+    public void postStep(INDArray gradient) {
         INDArray oldParameters = (INDArray) searchState.get("oldparams");
         INDArray params = model.params();
         INDArray oldGradient = (INDArray) searchState.get(GRADIENT_KEY);
@@ -92,55 +97,54 @@ public class LBFGS extends BaseOptimizer {
 
         double sy = Nd4j.getBlasWrapper().dot(oldParameters,oldGradient) + Nd4j.EPS_THRESHOLD;
         double yy = Nd4j.getBlasWrapper().dot(oldGradient, oldGradient) + Nd4j.EPS_THRESHOLD;
-        
+
         INDArray sCurrent;
         INDArray yCurrent;
         if( s.size() >= m ){
-        	//Optimization: Remove old (no longer needed) INDArrays, and use assign for re-use.
-        	//Better to do this: fewer objects created -> less memory overall + less garbage collection
-        	sCurrent = s.removeLast();
-        	yCurrent = y.removeLast();
-        	rho.removeLast();
-        	sCurrent.assign(params).subi(oldParameters);
-        	yCurrent.assign(gradient).subi(oldGradient);
+            //Optimization: Remove old (no longer needed) INDArrays, and use assign for re-use.
+            //Better to do this: fewer objects created -> less memory overall + less garbage collection
+            sCurrent = s.removeLast();
+            yCurrent = y.removeLast();
+            rho.removeLast();
+            sCurrent.assign(params).subi(oldParameters);
+            yCurrent.assign(gradient).subi(oldGradient);
         } else {
-        	//First few iterations. Need to allocate new INDArrays for storage (via copy operation sub)
-        	sCurrent = params.sub(oldParameters);
-        	yCurrent = gradient.sub(oldGradient);
+            //First few iterations. Need to allocate new INDArrays for storage (via copy operation sub)
+            sCurrent = params.sub(oldParameters);
+            yCurrent = gradient.sub(oldGradient);
         }
         rho.addFirst(1.0 / sy);	//Most recent first
         s.addFirst(sCurrent);	//Most recent first. si = currParams - oldParams
         y.addFirst(yCurrent);	//Most recent first. yi = currGradient - oldGradient
-        
+
         //assert (s.size()==y.size()) : "Gradient and parameter sizes are not equal";
         if(s.size() != y.size())
             throw new IllegalStateException("Gradient and parameter sizes are not equal");
 
-    	//In general: have m elements in s,y,rho.
+        //In general: have m elements in s,y,rho.
         //But for first few iterations, have less.
-        int numVectors = Integer.min(m,s.size());
-        
+        int numVectors = Math.min(m,s.size());
+
         double[] alpha = new double[numVectors];
-        
+
         // First work backwards, from the most recent difference vectors
         Iterator<INDArray> sIter = s.iterator();
         Iterator<INDArray> yIter = y.iterator();
         Iterator<Double> rhoIter = rho.iterator();
-        
+
         //searchDir: first used as equivalent to q as per N&W, then later used as r as per N&W.
         //Re-using existing array for performance reasons
-        INDArray searchDir = (INDArray)searchState.get(SEARCH_DIR);
+        INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
         searchDir.assign(gradient);
-        
+
         for( int i=0; i<numVectors; i++ ){
-        	INDArray si = sIter.next();
-        	INDArray yi = yIter.next();
-        	double rhoi = rhoIter.next();
-        	
-        	//assert (si.length() == searchDir.length()) : "Gradients and parameters length not equal";
+            INDArray si = sIter.next();
+            INDArray yi = yIter.next();
+            double rhoi = rhoIter.next();
+
             if(si.length() != searchDir.length())
                 throw new IllegalStateException("Gradients and parameters length not equal");
-            
+
             alpha[i] = rhoi * Nd4j.getBlasWrapper().dot(si,searchDir);
             Nd4j.getBlasWrapper().level1().axpy(searchDir.length(),-alpha[i],yi,searchDir);	//q = q-alpha[i]*yi
         }
@@ -156,10 +160,10 @@ public class LBFGS extends BaseOptimizer {
         yIter = y.descendingIterator();
         rhoIter = rho.descendingIterator();
         for( int i=0; i<numVectors; i++ ){
-        	INDArray si = sIter.next();
-        	INDArray yi = yIter.next();
-        	double rhoi = rhoIter.next();
-        	
+            INDArray si = sIter.next();
+            INDArray yi = yIter.next();
+            double rhoi = rhoIter.next();
+
             double beta = rhoi * Nd4j.getBlasWrapper().dot(yi, searchDir);		//beta = rho_i * y_i^T * r
             //r = r + s_i * (alpha_i - beta)
             Nd4j.getBlasWrapper().level1().axpy(gradient.length(), alpha[i] - beta, si, searchDir);
@@ -168,10 +172,5 @@ public class LBFGS extends BaseOptimizer {
         searchDir.negi();	//searchDir = -H \grad F. Calculated H \grad F above.
         oldParameters.assign(params);
         oldGradient.assign(gradient);	//Update gradient. Still in searchState map keyed by GRADIENT_KEY
-    }
-
-    @Override
-    public void postStep() {
-
     }
 }

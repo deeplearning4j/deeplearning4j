@@ -103,7 +103,6 @@ public class MultiLayerTest {
                 .nIn(next.numInputs()).nOut(next.numOutcomes())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
-                .numLineSearchIterations(5)
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0,1e-5))
                 .iterations(5).learningRate(1e-3)
