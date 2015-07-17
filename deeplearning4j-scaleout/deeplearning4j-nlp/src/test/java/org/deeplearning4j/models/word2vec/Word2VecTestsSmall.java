@@ -34,8 +34,7 @@ public class Word2VecTestsSmall
     }
 
     @Test
-    public void testWordsNearest2NNeighbours()
-    {
+    public void testWordsNearest2NNeighbours() {
         String word = "Adam";
         int neighbours = 2;
 
@@ -44,6 +43,9 @@ public class Word2VecTestsSmall
         assertEquals(nearestWords.size(), neighbours);
 
     }
+
+
+
 
     @Test
     public void testPlot()
