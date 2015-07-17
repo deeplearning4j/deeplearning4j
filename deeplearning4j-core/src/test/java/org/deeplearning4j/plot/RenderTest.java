@@ -48,7 +48,7 @@ public class RenderTest {
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .corruptionLevel(0.3).weightInit(WeightInit.DISTRIBUTION).dropOut(0.5)
                 .iterations(10).constrainGradientToUnitNorm(true).dist(new NormalDistribution(1e-3,1e-1))
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
