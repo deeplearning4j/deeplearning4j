@@ -66,16 +66,6 @@ public class ConjugateGradient extends BaseOptimizer {
     }
 
     @Override
-    public void setupSearchState(Pair<Gradient, Double> pair) {
-        super.setupSearchState(pair);
-        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray params = model.params();
-        searchState.put(PARAMS_KEY, params);
-        searchState.put(GRADIENT_KEY, gradient);	//Consequence: on first iteration, gamma = 0
-    }
-
-
-    @Override
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         searchState.put(SEARCH_DIR, gradient.dup().negi()); // p0 is steepest descent page 108 N&W thus assuming negative gradient
