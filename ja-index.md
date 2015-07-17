@@ -1,22 +1,59 @@
 ---
-title: 
+title:
 layout: ja-default
 ---
 
 # Deeplearning4jとは何か?
 
-Deeplearning4jはJavaを使った世界初のオープンソースdeep-learning libraryになります。この技術は広範囲な情報調査というよりも、ビジネスフィールドでご活用いただけます。具体例としては、 [顔認識](../facial-reconstruction-tutorial.html), 音声認識, スパムメールの識別といった、複雑な情報に対して効果的に活用できます。
+Deeplearning4j(以下DL4J)はJava, Scalaで書かれた世界初のオープンソース分散deep-learningライブラリになります。HadoopやSparkと
+連携することにより研究、調査目的に加えて実際のビジネスに活かせるように作られています。
 
-Deeplearning4jはGPUを利用し、実行されます。 **[詳しくはコチラ](http://nd4j.org/gpu_native_backends.html)** そして、多様性のある**[n-dimensional array](http://nd4j.org/)**を含んでおります。DL4Jは、最先端のプラグアンドプレイサービスとなることを目指しております。当社が説明している手順で設定していくことで、Hadoopとその他のbig-dataに適した[無限の可能性をもつ](../scaleout.html) deep-learning に関するアーキテクチャを手に入れることができます。このJavaを使ったdeep-learning libraryはニューラルネットを操作するため必要な、特定の言語を含んでおります。
+DL4Jは最先端の技術を非研究者でも手軽にプロトタイピングできるように作られています。DL4JはスケーラブルなシステムでApache 2.0で配布されていますので自由にお使いいただけます。
+[Quick Start](/ja-quickstart.html)ガイドをご参照いただければ数分でNeural Networkの学習を始めることができます。
 
-Deeplearning4jは**distributed deep-learning framework** と通常のdeep-learning frameworkを活用しています。 (一つのスレッドで実行されることもあります。). DL4Jのトレーニングは広大な情報を含むクラスターの中でiterative　reduceというアルゴリズムを通じて行われます。JVMに対応する形で、Java,Scala,Clojureはすべて同様に利用することができます。
+### [Deep learningのユースケース](http://deeplearning4j.org/use_cases.html)
 
-このオープンソースのdistributed deep-learning　frameworkdeはデータの入力とニューラルネットのトレーニング、そして精度の高いアウトプットを生み出すことができます。
+* [顔/画像認識](http://deeplearning4j.org/facial-reconstruction-tutorial.html)
+* 音声検索
+* 音声の文字化
+* スパムフィルタ
+* ECサイトにおける不正検出
 
-それぞれのリンク先のページで、セットアップ方法、サンプルデータといくつかのディープラーニングネットワークを確認することができます。これらはシングルスレッド並びにマルチスレッドを含みます。 [Restricted　Boltzmann　machines](../restrictedboltzmannmachine.html), [deep-belief networks](../deepbeliefnetwork.html), [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html), [Recursive Neural Tensor Networks](http://deeplearning4j.org/recursiveneuraltensornetwork.html), [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) と[Stacked　Denoising　Autoencoders](../stackeddenoisingautoencoder.html). 
+### DL4Jの主な機能
 
-ニューラルネットに関する簡単な説明は[コチラ](../overview.html)をご覧ください。簡潔にまとめると、Deeplearning4jは浅いニュートラルネットを組み合わせることで深いニューラルネットの層を作り出しております。このフレキシブルな仕組みが制限されたBoltzmann machinesやautoencoders、convolutional netsとrecurrent netsを自由に組み合わせることを可能にします。これらの操作は、端末ごとに独立して操作することができます。
+* 汎用的な[ベクトルクラス](http://nd4j.org/)の実装
+* [GPU](http://nd4j.org/gpu_native_backends.html)との連携
+* [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), [Spark](http://deeplearning4j.org/gpu_aws.html)やAkkaとの親和性とスケーラビリティ
 
-deep-learningのネットワークをトレーニングすることに関しては、様々な選択肢があります。 JavaとScala、そしてClojureのプログラマーの方が、自由にそれぞれに合う形に作り上げることができるプログラムがDeeplearning4jです。 ご質問は[当社グーグルグループ](https://groups.google.com/forum/#!forum/deeplearning4j); プレミアムサポートが必要な場合は, [当社ホームページ](http://www.skymind.io/contact.html). [ND4Jについて](http://nd4j.org/) 
+DL4Jは本番環境としては分散モード、マルチスレッドのモードをサポートしつつ、開発用、お試し用としては簡単に利用できるシンプルなシングルスレッドのモードもご利用できます。
+クラスタで学習を行えば大量なデータに対して高速に処理を進めることができます。この場合Neural Networkは[逐次的なMapReduce](http://deeplearning4j.org/iterativereduce.html)で学習が進みます。
+これはJVM上で動く言語(Java, Scala, Clojureなど)で利用できます。
 
-![Alt text](../img/logos_8.png)
+DL4Jのコンポーネントとして目指しているものは[micro-service architecture](http://microservices.io/patterns/microservices.html)に対応した
+初めてのdeep-learningフレームワークになることです。
+
+### DL4Jで実装されているNeural Network
+
+* [Restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html)
+* [Convolutional Neural Network](http://deeplearning4j.org/convolutionalnets.html)
+* Stacked Denoising Autoencoders
+* [Recurrent Neural Network/LSTM](http://deeplearning4j.org/recurrentnetwork.html)
+* [Deep Belief Network](http://deeplearning4j.org/deepbeliefnetwork.html)
+* [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html)
+* Recursive Neural Tensor Networks
+
+これらをどのように使うかは[How to Choose a Neural Net](http://deeplearning4j.org/neuralnetworktable.html)もご参照ください。
+
+Deep Neural Networkは[様々なコンテストで驚異的な精度](http://deeplearning4j.org/accuracy.html)を叩きだしています。Neural Networkの導入としては[Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html)をご参照ください。
+
+DL4Jは浅いNeural Networkから様々なタイプのNetworkを作成して学習させるためのツールなのです。
+DL4Jを使えばRestricted Boltzmann machineもConvolutional Neural NetworkもSparlやHadoop, CPU, GPUなど環境を問わず利用することができます。
+
+下記にこのエコシステムを作り上げているライブラリ群を図示します。
+
+![ecosystem](http://deeplearning4j.org/img/schematic_overview.png)
+
+deep-learningで学習させるときには非常に多くのパラメタを調整することになります。このドキュメントに記載されていることがきっとその助けとなり
+DL4Jが開発者のdeep-learning用のDIYツールとなると思います。
+
+もし何かご質問、ご要望などありましたら遠慮無く[Gitter](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)に参加してください。プレミアムサポートをご要望の方は[Skymind](http://www.skymind.io/contact/)までご連絡ください。
