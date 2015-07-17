@@ -91,6 +91,9 @@ public class TestOptimizers {
 		return c;
 	}
 	
+	//==================================================
+	// Sphere Function Optimizer Tests
+	
 	@Test
 	public void testSphereFnOptStochGradDescent(){
 		testSphereFnOptHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,-1,2);
@@ -202,8 +205,6 @@ public class TestOptimizers {
 	}
 	
 	
-	
-	
 	@Test
 	public void testSphereFnOptStochGradDescentMultipleSteps(){
 		//Earlier tests: only do a single line search, though each line search will do multiple iterations
@@ -252,6 +253,7 @@ public class TestOptimizers {
 				ConvexOptimizer opt = getOptimizer(oa,conf,m);
 				opt.optimize();
 				scores[i] = m.score();
+				assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i])); 
 			}
 		}
 		
@@ -294,7 +296,8 @@ public class TestOptimizers {
 	}
 	
 	
-	
+	//==================================================
+	// Rastrigin Function Optimizer Tests
 	
 	
 	@Test
@@ -303,7 +306,7 @@ public class TestOptimizers {
 	}
 	
 	@Test
-	public void testRastRiginFnOptLineGradDescentMultipleSteps(){
+	public void testRastriginFnOptLineGradDescentMultipleSteps(){
 		testRastriginFnMultipleStepsHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,10,20);
 	}
 	
@@ -336,6 +339,7 @@ public class TestOptimizers {
 				ConvexOptimizer opt = getOptimizer(oa,conf,m);
 				opt.optimize();
 				scores[i] = m.score();
+				assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i])); 
 			}
 		}
 		
@@ -346,18 +350,19 @@ public class TestOptimizers {
 		for( int i=1; i<scores.length; i++ ){
 			assertTrue( scores[i] < scores[i-1] || (scores[i] == 0.0 && scores[i-1] == 0.0) );
 		}
-		assertTrue(scores[scores.length-1]<1.0);	//Very easy function, expect score ~= 0 with any reasonable number of steps/numLineSearchIter
 	}
 	
 	/** Rastrigin function: A much more complex non-NN multi-dimensional optimization problem.
 	 * Global minimum of 0 at x_i = 0 for all x_i.
-	 * Very large number of local minima.
+	 * Very large number of local minima. Can't expect to achieve global minimum with gradient-based (line search)
+	 * optimizers, but can expect significant improvement in score/cost relative to initial parameters.
 	 * This implementation has cost function = infinity if any parameters x_i are
 	 * outside of range [-5.12,5.12]
 	 * https://en.wikipedia.org/wiki/Rastrigin_function
 	 */
 	private static class RastriginFunctionModel extends SimpleOptimizableModel {
-		
+		private static final long serialVersionUID = -1772954508787487941L;
+
 		private RastriginFunctionModel(int nDimensions,NeuralNetConfiguration conf){
 			super(initParams(nDimensions),conf);
 		}
@@ -412,8 +417,139 @@ public class TestOptimizers {
 			g.gradientForVariable().put("x", gradient);
 			return g;
 		}
-		
 	}
+	
+	
+	//==================================================
+	// Rosenbrock Function Optimizer Tests
+	
+	@Test
+	public void testRosenbrockFnOptStochGradDescentMultipleSteps(){
+		testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,20,20);
+	}
+	
+	@Test
+	public void testRosenbrockFnOptLineGradDescentMultipleSteps(){
+		testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,20,20);
+	}
+	
+	@Test
+	public void testRosenbrockFnOptCGMultipleSteps(){
+		testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.CONJUGATE_GRADIENT,20,20);
+	}
+	
+	@Test
+	public void testRosenbrockFnOptLBFGSMultipleSteps(){
+		testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.LBFGS,20,20);
+	}
+	
+	
+	private static void testRosenbrockFnMultipleStepsHelper( OptimizationAlgorithm oa, int nOptIter, int maxNumLineSearchIter ){
+		double[] scores = new double[nOptIter+1];
+		
+		for( int i=0; i<=nOptIter; i++ ){
+			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+			.maxNumLineSearchIterations(maxNumLineSearchIter)
+			.iterations(i)
+			.learningRate(0.01)
+			.layer(new RBM()).batchSize(1).build();
+			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
+			
+			Model m = new RosenbrockFunctionModel(100,conf);
+			if( i == 0 ){
+				scores[0] = m.score();	//Before optimization
+			} else {
+				ConvexOptimizer opt = getOptimizer(oa,conf,m);
+				opt.optimize();
+				scores[i] = m.score();
+				assertTrue("NaN or infinite score: " + scores[i], !Double.isNaN(scores[i]) && !Double.isInfinite(scores[i])); 
+			}
+		}
+		
+		if( PRINT_OPT_RESULTS ){
+			System.out.println("Rosenbrock: Multiple optimization iterations ("+nOptIter+" opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
+			System.out.println(Arrays.toString(scores));
+		}
+		for( int i=1; i<scores.length; i++ ){
+			assertTrue( scores[i] < scores[i-1] || (scores[i] == 0.0 && scores[i-1] == 0.0) );
+		}
+	}
+	
+	
+	
+	/**Rosenbrock function: a multi-dimensional 'valley' type function.
+	 * Has a single local/global minimum of f(x)=0 at x_i=1 for all x_i.
+	 * Expect gradient-based optimization functions to find global minimum eventually,
+	 * but optimization may be slow due to nearly flat gradient along valley.
+	 * Restricted here to the range [-5,5]. This implementation gives infinite cost/score
+	 * if any parameter is outside of this range.
+	 * Parameters initialized in range [-4,4]
+	 * See: http://www.sfu.ca/~ssurjano/rosen.html
+	 */
+	private static class RosenbrockFunctionModel extends SimpleOptimizableModel {
+		private static final long serialVersionUID = -5129494342531033706L;
+
+		private RosenbrockFunctionModel(int nDimensions, NeuralNetConfiguration conf){
+			super(initParams(nDimensions),conf);
+		}
+		
+		private static INDArray initParams( int nDimensions ){
+			Random rng = new DefaultRandom(12345L);
+			org.nd4j.linalg.api.rng.distribution.Distribution dist
+			= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-4.0, 4.0);
+			return dist.sample(new int[]{1,nDimensions});
+		}
+
+		@Override
+		public double score() {
+			INDArray paramExceeds5 = parameters.cond(new Condition(){
+				@Override
+				public Boolean apply(Number input) {
+					return Math.abs(input.doubleValue()) > 5.0;
+				}
+
+				@Override
+				public Boolean apply(IComplexNumber input){ throw new UnsupportedOperationException(); };
+			});
+			
+			int nExceeds5 = paramExceeds5.sum(Integer.MAX_VALUE).getInt(0);
+			if( nExceeds5 > 0 ) return Double.POSITIVE_INFINITY;
+			
+			int nDims = parameters.length();
+			double score = 0.0;
+			for( int i=0; i<nDims-1; i++ ){
+				double xi = parameters.getDouble(i);
+				double xi1 = parameters.getDouble(i+1);
+				score += 100.0*Math.pow((xi1-xi*xi), 2.0) + (xi-1)*(xi-1);
+			}
+			return score;
+		}
+
+		@Override
+		public Gradient gradient() {
+			int nDims = parameters.length();
+			INDArray gradient = Nd4j.zeros(nDims);
+			double x0 = parameters.getDouble(0);
+			double x1 = parameters.getDouble(1);
+			double g0 = -400*x0*(x1-x0*x0) + 2*(x0-1);
+			gradient.put(0, 0, g0);
+			for( int i=1; i<nDims-1; i++ ){
+				double xim1 = parameters.getDouble(i-1);
+				double xi = parameters.getDouble(i);
+				double xip1 = parameters.getDouble(i+1);
+				double g = 200*(xi-xim1*xim1) - 400*xi*(xip1-xi*xi) + 2*(xi-1);
+				gradient.put(0, i,g);
+			}
+			double xl = parameters.getDouble(nDims-1);
+			double xlm1 = parameters.getDouble(nDims-2);
+			double gl = 200*(xl-xlm1*xlm1);
+			gradient.put(0, nDims-1,gl);
+			Gradient g = new DefaultGradient();
+			g.gradientForVariable().put("x", gradient);
+			return g;
+		}
+	}
+	
 	
 	/** Simple abstract class to deal with the fact that we don't care about the majority of the Model/Layer
 	 * methods here. Classes extending this model for optimizer tests need only implement the score() and 
