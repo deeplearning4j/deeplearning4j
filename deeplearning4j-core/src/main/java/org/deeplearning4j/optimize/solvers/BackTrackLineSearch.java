@@ -144,12 +144,11 @@ public class BackTrackLineSearch implements LineOptimizer  {
         double test, stepMin, step, step2, oldStep, tmpStep;
         double rhs1, rhs2, a, b, disc, score, oldScore, score2;
 
-        INDArray oldParameters = parameters.dup();
         double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
         double slope = Nd4j.getBlasWrapper().dot(searchDirection, gradients);
         logger.debug("slope = {}", slope);
 
-        INDArray maxOldParams = abs(oldParameters);
+        INDArray maxOldParams = abs(parameters);
         Nd4j.getExecutioner().exec(new ScalarSetValue(maxOldParams, 1));
         INDArray testMatrix = abs(gradients).divi(maxOldParams);
         test = testMatrix.max(Integer.MAX_VALUE).getDouble(0);
@@ -179,7 +178,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
         // converge when (delta x) / x < REL_TOLX for all coordinates.
         // the largest step size that triggers this threshold is precomputed and saved in stepMin
         // look for step size in direction given by "line"
-
+        INDArray candidateParameters = null;
         for(int iteration = 0; iteration < maxIterations; iteration++) {
         	if( logger.isTraceEnabled() ){
         		logger.trace("BackTrack loop iteration {} : step={}, oldStep={}", iteration, step, oldStep);
@@ -188,31 +187,31 @@ public class BackTrackLineSearch implements LineOptimizer  {
             if(step==oldStep)
                 throw new IllegalArgumentException("Current step == oldStep");
 
-            if(stepFunction == null)
-                stepFunction =  new DefaultStepFunction();
             // step
-            stepFunction.step(parameters, searchDirection, step);
+            if( candidateParameters == null ) candidateParameters = parameters.dup();
+            else candidateParameters.assign(parameters);
+            stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
 
             if(logger.isDebugEnabled())  {
-                double norm1 = parameters.norm1(Integer.MAX_VALUE).getDouble(0);
+                double norm1 = candidateParameters.norm1(Integer.MAX_VALUE).getDouble(0);
                 logger.debug("after step, x.1norm: " + norm1);
             }
 
             // check for convergence on delta x
-            if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, parameters,
-                    parameters.dup(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
-                score = setScoreFor(oldParameters);
+            if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(parameters, candidateParameters,
+                    candidateParameters.dup(), candidateParameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
+                score = setScoreFor(parameters);
                 logger.trace("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using xold. Value = {}", stepMin, score);
                 return 0.0;
             }
 
-            score = setScoreFor(parameters);
+            score = setScoreFor(candidateParameters);
             logger.debug("Model score after step = {}", score);
 
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
             if(score <= oldScore + ALF * step * slope) {
-                logger.debug("Sufficient decrease, exiting backtrack: score={}, oldScore={}",score,oldScore);
+                logger.debug("Sufficient decrease (Wolfe cond.), exiting backtrack on iter {}: score={}, oldScore={}",iteration,score,oldScore);
                 if (score > oldScore)
                     throw new IllegalStateException
                             ("Function did not decrease: score = " + score + " > " + oldScore + " = oldScore");
@@ -224,7 +223,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 logger.warn("Value is infinite after jump. oldStep={}. score={}, score2={}. Scaling back step size...",oldStep,score,score2);
                 tmpStep = .2 * step;
                 if(step < stepMin) { //convergence on delta x
-                    score = setScoreFor(oldParameters);
+                    score = setScoreFor(parameters);
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using previous parameters. Value={}", score);
                     return 0.0;
                 }

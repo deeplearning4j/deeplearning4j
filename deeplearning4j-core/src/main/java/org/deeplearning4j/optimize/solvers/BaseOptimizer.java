@@ -125,11 +125,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public  boolean optimize() {
         //validate the input before training
-        INDArray gradient, searchDirection, parameters;
+        INDArray gradient;
+        INDArray searchDirection;
+        INDArray parameters = null;
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
         score = pair.getSecond();
-        setupSearchState(pair);
+        setupSearchState(pair);		//Currently: Resets search state every mini-batch
 
         //pre existing termination conditions
         /*
@@ -142,24 +144,34 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             }
         }*/
 
-        //calculate search direction
+        //calculate initial search direction
         preProcessLine();
 
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            //perform one step
+        	gradient = (INDArray) searchState.get(GRADIENT_KEY);
+            searchDirection = (INDArray) searchState.get(SEARCH_DIR);
+            parameters = (INDArray) searchState.get(PARAMS_KEY);
+            
+            //perform one line search optimization
             try {
-                gradient = (INDArray) searchState.get(GRADIENT_KEY);
-                searchDirection = (INDArray) searchState.get(SEARCH_DIR);
-                parameters = (INDArray) searchState.get(PARAMS_KEY);
                 step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration: {}",e.getMessage());
+                step = 0.0;
+            }
+            
+            //Update parameters based on final/best step size returned by line search:
+            if( step != 0.0 ){
+            	stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
+            	model.setParams(parameters);
+            } else {
+            	log.warn("Step size returned by line search is 0.0.");
             }
 
             //record old score for deltas and other termination conditions
             oldScore = score;
             pair = gradientAndScore();
-            setupSearchState(pair);
+            
             //updates searchDirection
             postStep(pair.getFirst().gradient());
             score = pair.getSecond();
@@ -168,7 +180,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
-
+            
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions){
                 if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
@@ -183,7 +195,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     return true;
 
             this.iteration++;
-
         }
 
         return true;
