@@ -185,7 +185,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
         		logger.trace("BackTrack loop iteration {} : step={}, oldStep={}", iteration, step, oldStep);
         		logger.trace("before step, x.1norm: {} \nstep: {} \noldStep: {}", parameters.norm1(Integer.MAX_VALUE), step, oldStep);
         	}
-            assert(step != oldStep) : "step == oldStep";
+            if(step==oldStep)
+                throw new IllegalArgumentException("Current step == oldStep");
 
             if(stepFunction == null)
                 stepFunction =  new DefaultStepFunction();

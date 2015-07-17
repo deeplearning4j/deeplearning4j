@@ -33,10 +33,7 @@ public class NegativeDefaultStepFunction implements StepFunction {
 
     @Override
     public void step(INDArray parameters, INDArray searchDirection, double step) {
-        if(parameters.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), -step, searchDirection, parameters);
-        else if(parameters.data().dataType() == DataBuffer.Type.FLOAT)
-            Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), (float) -step, searchDirection, parameters);
+        Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), -step, searchDirection, parameters);
     }
 
     @Override
