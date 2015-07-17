@@ -62,13 +62,10 @@ public class StochasticGradientDescent extends BaseOptimizer {
     }
 
     @Override
-    public void preProcessLine(INDArray line) {
-          if(conf.isConstrainGradientToUnitNorm())
-              line.divi(line.norm2(Integer.MAX_VALUE));
+    public void preProcessLine() {
     }
 
     @Override
-    public void postStep() {
-
+    public void postStep(INDArray gradient) {
     }
 }
