@@ -16,10 +16,6 @@
  *
  */
 
-/**
- @author Andrew McCallum <a href="mailto:mccallum@cs.umass.edu">mccallum@cs.umass.edu</a>
- */
-
 package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.nn.api.Model;
@@ -27,26 +23,21 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.optimize.api.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
 
-/**
- * Originally based on cc.mallet.optimize.ConjugateGradient
+/**Originally based on cc.mallet.optimize.ConjugateGradient
  * 
  * Rewritten based on Conjugate Gradient algorithm in Bengio et al.,
- * Deep Learning (in preparation) Ch8
- *
+ * Deep Learning (in preparation) Ch8.
+ * See also Nocedal & Wright, Numerical optimization, Ch5
  */
-
 public class ConjugateGradient extends BaseOptimizer {
 	private static final long serialVersionUID = -1269296013474864091L;
 	private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
-
-
 
     public ConjugateGradient(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
@@ -61,7 +52,8 @@ public class ConjugateGradient extends BaseOptimizer {
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
-        searchDir.assign(gradient).negi();	// p0 is steepest descent page 108 N&W thus assuming negative gradient
+        if( searchDir == null ) searchState.put(SEARCH_DIR, gradient.neg()); 
+        else searchDir.assign(gradient).negi();	//p0 is steepest descent page 108 N&W thus assuming negative gradient
     }
 
     @Override
