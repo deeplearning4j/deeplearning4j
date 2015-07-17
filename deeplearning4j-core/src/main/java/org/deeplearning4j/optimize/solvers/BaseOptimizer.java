@@ -242,7 +242,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
-
     }
 
 
