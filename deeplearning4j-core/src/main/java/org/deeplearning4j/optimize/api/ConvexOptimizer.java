@@ -67,14 +67,14 @@ public interface ConvexOptimizer extends Serializable {
 
     /**
      * Pre process a line before an iteration
-     * @param line
      */
-    void preProcessLine(INDArray line);
+    void preProcessLine();
 
     /**
      * After the step has been made, do an action
-     */
-    void postStep();
+     * @param line
+     * */
+    void postStep(INDArray line);
 
     /**
      * Based on the gradient and score

@@ -78,7 +78,7 @@ public class BackTrackLineSearchTest {
 
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 1, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 10, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -101,7 +101,7 @@ public class BackTrackLineSearchTest {
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
         double score = network.getLayer(1).score();
-        assertEquals(1.337026596069336, score, 1e-4);
+        assertEquals(0.7544230461120606, score, 1e-4);
 
     }
 
@@ -156,7 +156,7 @@ public class BackTrackLineSearchTest {
                 .layer(new RBM())
                 .learningRate(0.1)
                 .useAdaGrad(false)
-                .maxNumLineSearchIterations(1)
+                .maxNumLineSearchIterations(5)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
