@@ -55,7 +55,9 @@ public class LineGradientDescent extends BaseOptimizer {
     public void postStep(INDArray gradient) {
         double norm2 = gradient.norm2(Integer.MAX_VALUE).getDouble(0);
         if(norm2 > stepMax)
-            gradient.muli(stepMax / norm2);
+            searchState.put(SEARCH_DIR,gradient.dup().muli(stepMax / norm2).negi());
+        else
+            searchState.put(SEARCH_DIR, gradient.dup().negi());
     }
 
 }
