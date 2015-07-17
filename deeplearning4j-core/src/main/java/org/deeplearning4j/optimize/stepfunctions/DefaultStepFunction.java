@@ -35,10 +35,7 @@ public class DefaultStepFunction implements StepFunction {
 	 */
     @Override
     public void step(INDArray paramters, INDArray searchDirection, double step) {
-        if(paramters.data().dataType() == DataBuffer.Type.DOUBLE)
             Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), step, searchDirection, paramters);
-        else if(paramters.data().dataType() == DataBuffer.Type.FLOAT)
-            Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), (float) step, searchDirection, paramters);
     }
 
     @Override
