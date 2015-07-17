@@ -33,25 +33,24 @@ Irisのような小さなデータセットではF1スコアを約0.55にする�
 
 ## 依存関係
 
-バックエンドとはDL4Jのニューラルネットワークが利用する線形代数ライブラリの処理機版です。バックエンドはマシンのチップに依存します。CPUはJblas、Netlib Blasで高速に、
+バックエンドとはDL4Jのニューラルネットワークが利用する線形代数ライブラリの処理基盤です。バックエンドはマシンのチップに依存します。CPUはJblas、Netlib Blasで高速に、
 GPUではJcublasで高速に動作します。依存しているライブラリが何か分かっている場合はMaven Centralで探して”Latest Version”をク リックしてください。記載されているxmlの断片をあなたのプロジェクトのルート直下にある pom.xmlにコピーアンドペーストしてください。BLASのバックエンドに関しては以下のようになるはずです。
-```
-<dependency>
-  <groupId>org.nd4j</groupId>
-	<artifactId>nd4j-java</artifactId>
-	<version>${nd4j.version}</version>
-</dependency>
-```
+
+    <dependency>
+      <groupId>org.nd4j</groupId>
+	  <artifactId>nd4j-java</artifactId>
+	  <version>${nd4j.version}</version>
+    </dependency>
 
 `nd4j-java`はWindowsでのセットアップを楽にするためBlasを要求しません。exampleのDBNs, deep-belief netsのプロジェクトで動作しますがその他では動作しません。
 
-```
-<dependency>
-  <groupId>org.nd4j</groupId>
-	<artifactId>nd4j-jblas</artifactId>
-	<version>${nd4j.version}</version>
-</dependency>
-```
+
+    <dependency>
+      <groupId>org.nd4j</groupId>
+	  <artifactId>nd4j-jblas</artifactId>
+	  <version>${nd4j.version}</version>
+    </dependency>
+
 
 `nd4j-jblas`はすべてのexampleで動作します。Windowsでこれをインストールするには[Getting Started](http://deeplearning4j.org/gettingstarted.html)を参照ください。
 
