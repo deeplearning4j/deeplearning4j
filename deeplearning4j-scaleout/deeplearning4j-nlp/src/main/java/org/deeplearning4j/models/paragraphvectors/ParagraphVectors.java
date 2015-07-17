@@ -201,7 +201,9 @@ public class ParagraphVectors extends Word2Vec {
             vectorizer.fit();
 
         for(String label : labels) {
-            vocab().addToken(new VocabWord(1,label));
+            VocabWord word = new VocabWord(vocab.numWords(),label);
+            word.setIndex(vocab.numWords());
+            vocab().addToken(word);
             vocab().putVocabWord(label);
         }
 
