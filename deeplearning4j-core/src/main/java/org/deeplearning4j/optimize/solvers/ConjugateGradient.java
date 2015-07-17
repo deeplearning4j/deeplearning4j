@@ -68,6 +68,7 @@ public class ConjugateGradient extends BaseOptimizer {
         double dgg = Nd4j.getBlasWrapper().dot(gradient.sub(gLast), gradient);
         double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
         double gamma = Math.max(dgg / gg, 0.0);
+        if( dgg <= 0.0 ) logger.debug("Polak-Ribiere gamma <= 0.0; using gamma=0.0 -> SGD line search. dgg={}, gg={}",dgg,gg);
 
         //Standard Polak-Ribiere does not guarantee that the search direction is a descent direction
         //But using max(gamma_Polak-Ribiere,0) does guarantee a descent direction. Hence the max above.
