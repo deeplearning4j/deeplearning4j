@@ -22,20 +22,11 @@
 
 package org.deeplearning4j.optimize.solvers;
 
-
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.conditions.Or;
-import org.nd4j.linalg.indexing.functions.Value;
-import static org.nd4j.linalg.ops.transforms.Transforms.*;
-import org.nd4j.linalg.util.LinAlgExceptions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +43,8 @@ import java.util.Collection;
  */
 
 public class ConjugateGradient extends BaseOptimizer {
-    private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
+	private static final long serialVersionUID = -1269296013474864091L;
+	private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);
 
 
 
@@ -68,7 +60,8 @@ public class ConjugateGradient extends BaseOptimizer {
     @Override
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        searchState.put(SEARCH_DIR, gradient.dup().negi()); // p0 is steepest descent page 108 N&W thus assuming negative gradient
+        INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
+        searchDir.assign(gradient).negi();	// p0 is steepest descent page 108 N&W thus assuming negative gradient
     }
 
     @Override
@@ -80,7 +73,7 @@ public class ConjugateGradient extends BaseOptimizer {
 
         //Calculate gamma (or beta, by Bengio et al. notation). Polak and Ribiere method.
         // = ((grad(current)-grad(last)) \dot (grad(current))) / (grad(last) \dot grad(last))
-        double dgg = Nd4j.getBlasWrapper().dot(gradient, gradient);
+        double dgg = Nd4j.getBlasWrapper().dot(gradient.sub(gLast), gradient);
         double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
         double gamma = Math.max(dgg / gg, 0.0);
 
