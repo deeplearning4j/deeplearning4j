@@ -173,7 +173,8 @@ public class SoftMax extends BaseTransformOp {
             this.sumComplex = Nd4j.getExecutioner().execAndReturn(new Sum(y)).currentResultComplex();
             this.y.divi(sumComplex);
             this.extraArgs = new Object[]{maxComplex, sumComplex};
-        } else {
+        }
+        else {
             this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult();
             INDArray xMinusMax = x.sub(max);
             this.y = Transforms.exp(xMinusMax);
@@ -181,6 +182,23 @@ public class SoftMax extends BaseTransformOp {
             this.y.divi(sum);
             this.extraArgs = new Object[]{max, sum};
         }
+
+
+    }
+
+
+    @Override
+    public void exec(int... dimensions) {
+        INDArray maxAlongDimension = x.max(dimensions);
+        if(!maxAlongDimension.isColumnVector())
+            maxAlongDimension = maxAlongDimension.transpose();
+
+        this.y = Transforms.exp(x.subColumnVector(maxAlongDimension));
+        INDArray sum = y.sum(dimensions);
+        if(!sum.isColumnVector())
+            sum = sum.transpose();
+
+        this.z = y.diviColumnVector(sum);
 
 
     }

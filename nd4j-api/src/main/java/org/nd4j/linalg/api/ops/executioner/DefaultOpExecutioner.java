@@ -223,6 +223,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public Op exec(Op op, int...dimension) {
+        if(op.isPassThrough()) {
+            op.exec(dimension);
+            return op;
+        }
+
         if(dimension.length == 1)
             return exec(op,dimension[0]);
         else {
