@@ -41,7 +41,7 @@ public class TsneTest {
                 .build();
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
-        INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ");
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(),"   ");
         ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream());
 

@@ -58,13 +58,24 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf) {
+        //the bias is a 1D tensor -- one bias per output feature map
         return Nd4j.zeros(conf.getFilterSize()[0]);
     }
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
-       Distribution dist = Distributions.createDistribution(conf.getDist());
-       return WeightInitUtil.initWeights(conf.getFilterSize(),conf.getWeightInit(), dist);
+        /**
+         * Create a 4d weight matrix of:
+         *   (number of filters, num input feature maps,
+         filter height, filter width)
+         Inputs to the convolution layer are:
+         (batch size, num input feature maps,
+         image height, image width)
+
+         */
+
+        Distribution dist = Distributions.createDistribution(conf.getDist());
+        return WeightInitUtil.initWeights(conf.getFilterSize(),conf.getWeightInit(), dist);
     }
 
 }

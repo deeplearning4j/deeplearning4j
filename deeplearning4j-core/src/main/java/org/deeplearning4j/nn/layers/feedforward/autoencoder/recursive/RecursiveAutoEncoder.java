@@ -58,14 +58,23 @@ public class RecursiveAutoEncoder extends BaseLayer {
         return currScore;
     }
 
+    @Deprecated
     private double scoreSnapShot() {
         return 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
     }
 
+    @Override
+    public void setScore() {
+        gradient();
+        score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);;
+    }
 
     @Override
     public INDArray transform(INDArray data) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), data.mmul(params.get(RecursiveParamInitializer.W)).addiRowVector(params.get(RecursiveParamInitializer.C))));
+        INDArray w = getParam(RecursiveParamInitializer.W);
+        INDArray c = getParam(RecursiveParamInitializer.C);
+        INDArray inputTimesW = data.mmul(w);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
     }
 
 
@@ -82,9 +91,11 @@ public class RecursiveAutoEncoder extends BaseLayer {
     @Override
     public Gradient gradient() {
        /**
-         * Going up the tree involves repeated calculations using the output of the previous autoencoder
+         * Going up the tree involves repeated calculations
+        * using the output of the previous autoencoder
          * for the next.
-         * This starts with a base case at x[0] and x[1] and expands to subsequent layers.
+         * This starts with a base case at x[0] and x[1]
+        * and expands to subsequent layers.
          *
          * The error is the sum going up the tree.
          */

@@ -20,6 +20,7 @@ package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+import static org.junit.Assert.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,7 +47,7 @@ public class BarnesHutTsneTest {
 
         ClassPathResource resource = new ClassPathResource("/mnist2500_X.txt");
         File f = resource.getFile();
-        INDArray data = Nd4j.readTxt(f.getAbsolutePath(),"   ").get(NDArrayIndex.interval(0,100),NDArrayIndex.interval(0,784));
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(),"   ").get(NDArrayIndex.interval(0,100),NDArrayIndex.interval(0,784));
 
 
 
@@ -55,5 +56,50 @@ public class BarnesHutTsneTest {
         b.fit(data);
     }
 
+    @Test
+    public void testBuilderFields() throws Exception {
+        final double theta = 0;
+        final boolean invert = false;
+        final String similarityFunctions = "eucidean";
+        final int maxIter = 1;
+        final double realMin = 1.0;
+        final double initialMomentum = 2.0;
+        final double finalMomentum = 3.0;
+        final double momentum = 4.0;
+        final int switchMomentumIteration = 1;
+        final boolean normalize = false;
+        final boolean usePca = true;
+        final int stopLyingIteration = 100;
+        final double tolerance = 1e-1;
+        final double learningRate = 100;
+        final boolean useAdaGrad = false;
+        final double perplexity = 1.0;
+        final double minGain = 1.0;
 
+        BarnesHutTsne b = new BarnesHutTsne.Builder().theta(theta).invertDistanceMetric(invert).similarityFunction(similarityFunctions)
+                .setMaxIter(maxIter).setRealMin(realMin).setInitialMomentum(initialMomentum).setFinalMomentum(finalMomentum)
+                .setMomentum(momentum).setSwitchMomentumIteration(switchMomentumIteration).normalize(normalize)
+                .usePca(usePca).stopLyingIteration(stopLyingIteration).tolerance(tolerance).learningRate(learningRate)
+                .perplexity(perplexity).minGain(minGain).build();
+
+        final double DELTA = 1e-15;
+
+        assertEquals(theta,b.getTheta(),DELTA);
+        assertEquals("invert", invert, b.isInvert());
+        assertEquals("similarityFunctions",similarityFunctions,b.getSimiarlityFunction());
+        assertEquals("maxIter", maxIter, b.maxIter);
+        assertEquals(realMin,b.realMin,DELTA);
+        assertEquals(initialMomentum,b.initialMomentum,DELTA);
+        assertEquals(finalMomentum, b.finalMomentum,DELTA);
+        assertEquals(momentum,b.momentum,DELTA);
+        assertEquals("switchMomentumnIteration", switchMomentumIteration, b.switchMomentumIteration);
+        assertEquals("normalize", normalize,b.normalize);
+        assertEquals("usePca", usePca,b.usePca);
+        assertEquals("stopLyingIteration", stopLyingIteration,b.stopLyingIteration);
+        assertEquals(tolerance,b.tolerance,DELTA);
+        assertEquals(learningRate,b.learningRate,DELTA);
+        assertEquals("useAdaGrad", useAdaGrad, b.useAdaGrad);
+        assertEquals(perplexity,b.getPerplexity(),DELTA);
+        assertEquals(minGain,b.minGain,DELTA);
+    }
 }

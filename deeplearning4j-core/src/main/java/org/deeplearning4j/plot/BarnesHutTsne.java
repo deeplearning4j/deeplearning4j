@@ -61,11 +61,12 @@ import static org.nd4j.linalg.factory.Nd4j.zeros;
  */
 public class BarnesHutTsne extends Tsne implements Model {
     private int N;
-    private double perplexity;
     private double theta;
     private INDArray rows;
     private INDArray cols;
     private INDArray vals;
+    private String simiarlityFunction = "cosinesimilarity";
+    private boolean invert = true;
     private INDArray x;
     private int numDimensions = 0;
     public final static String Y_GRAD = "yIncs";
@@ -96,7 +97,60 @@ public class BarnesHutTsne extends Tsne implements Model {
         this.switchMomentumIteration = momentumSwitchIteration;
     }
 
+    public BarnesHutTsne(INDArray x,
+                         INDArray y,
+                         int numDimensions,
+                         String simiarlityFunction,
+                         double theta,
+                         boolean invert,
+                         int maxIter,
+                         double realMin,
+                         double initialMomentum,
+                         double finalMomentum,
+                         double momentum,
+                         int switchMomentumIteration,
+                         boolean normalize,
+                         boolean usePca,
+                         int stopLyingIteration,
+                         double tolerance,
+                         double learningRate,
+                         boolean useAdaGrad,
+                         double perplexity,
+                         double minGain) {
+        super(maxIter, realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize,
+                usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
+        this.y = y;
+        this.x = x;
+        this.numDimensions = numDimensions;
+        this.simiarlityFunction = simiarlityFunction;
+        this.theta = theta;
+        this.invert = invert;
+    }
 
+
+    public String getSimiarlityFunction() {
+        return simiarlityFunction;
+    }
+
+    public void setSimiarlityFunction(String simiarlityFunction) {
+        this.simiarlityFunction = simiarlityFunction;
+    }
+
+    public boolean isInvert() {
+        return invert;
+    }
+
+    public void setInvert(boolean invert) {
+        this.invert = invert;
+    }
+
+    public double getTheta(){
+        return theta;
+    }
+
+    public double getPerplexity(){
+        return perplexity;
+    }
 
     /**
      * Convert data to probability
@@ -125,7 +179,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         final INDArray beta =  ones(N, 1);
 
         final double logU =  FastMath.log(u);
-        VPTree tree = new VPTree(d);
+        VPTree tree = new VPTree(d,simiarlityFunction,invert);
 
         log.info("Calculating probabilities of data similarities...");
         for(int i = 0; i < N; i++) {
@@ -429,7 +483,7 @@ public class BarnesHutTsne extends Tsne implements Model {
         if(useAdaGrad) {
             if(adaGrad == null)
                 adaGrad = new AdaGrad(gradChange.shape());
-            gradChange = adaGrad.getGradient(gradChange);
+            gradChange = adaGrad.getGradient(gradChange,0);
 
         }
 
@@ -603,6 +657,20 @@ public class BarnesHutTsne extends Tsne implements Model {
 
     public static class Builder extends  Tsne.Builder {
         private double theta = 0.0;
+        private boolean invert = true;
+        private String similarityFunction = "cosinesimilarity";
+
+
+
+        public Builder similarityFunction(String similarityFunction) {
+            this.similarityFunction = similarityFunction;
+            return this;
+        }
+
+        public Builder invertDistanceMetric(boolean invert){
+            this.invert = invert;
+            return this;
+        }
 
         public Builder theta(double theta) {
             this.theta = theta;
@@ -695,10 +763,9 @@ public class BarnesHutTsne extends Tsne implements Model {
 
         @Override
         public BarnesHutTsne build() {
-            BarnesHutTsne t = new BarnesHutTsne(null,null,2,perplexity,theta,maxIter,this.stopLyingIteration,this.switchMomentumIteration,this.momentum,this.finalMomentum,this.learningRate);
-            t.useAdaGrad = useAdaGrad;
-            t.usePca = usePca;
-            return t;
+            return new BarnesHutTsne(null, null, 2, similarityFunction,theta,invert,
+                    maxIter,realMin,initialMomentum,finalMomentum,momentum,switchMomentumIteration,normalize,
+                    usePca,stopLyingIteration,tolerance,learningRate,useAdaGrad,perplexity,minGain);
         }
     }
 }

@@ -43,6 +43,10 @@ public interface WordVectors extends Serializable {
      */
     boolean hasWord(String word);
 
+    Collection<String> wordsNearest(INDArray words, int top);
+
+    Collection<String> wordsNearestSum(INDArray words, int top);
+
     /**
      * Get the top n words most similar to the given word
      * @param word the word to compare
@@ -59,7 +63,7 @@ public interface WordVectors extends Serializable {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top);
+    Collection<String> wordsNearestSum(Collection<String> positive,Collection<String> negative,int top);
 
     /**
      * Accuracy based on questions which are a space separated list of strings
@@ -108,7 +112,7 @@ public interface WordVectors extends Serializable {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    Collection<String> wordsNearest(List<String> positive,List<String> negative,int top);
+    Collection<String> wordsNearest(Collection<String> positive,Collection<String> negative,int top);
 
 
     /**

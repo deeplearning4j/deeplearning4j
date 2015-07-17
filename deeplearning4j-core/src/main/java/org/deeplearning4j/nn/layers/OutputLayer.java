@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,7 +45,8 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
 /**
- * Output layer with different objective cooccurrences for different objectives.
+ * Output layer with different objective
+ * incooccurrences for different objectives.
  * This includes classification as well as prediction
  * @author Adam Gibson
  *
@@ -63,31 +65,29 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         super(conf, input);
     }
 
-    /**
-     * Objective function:  the specified objective
-     * @return the score for the objective
-     */
-
-    @Override
-    public  double score() {
-        LinAlgExceptions.assertRows(input, labels);
-        INDArray output  = output(input);
-        if(conf.getLossFunction() != LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-            return  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
-
-        return  -LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
-
-
-    }
-
     @Override
     public void setScore() {
-        LinAlgExceptions.assertRows(input,labels);
-        INDArray output  = output(input);
-        score =  LossFunctions.score(labels,conf.getLossFunction(),output,conf.getL2(),conf.isUseRegularization());
+        LinAlgExceptions.assertRows(input, labels);
+        if(input == null)
+            return;
+        INDArray output = output(input);
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
+            create.exec();
+            score = create.currentResult().doubleValue();
+        } else {
+            score = LossFunctions.score(
+                    labels,
+                    conf.getLossFunction(),
+                    output,
+                    conf.getL2(),
+                    conf.isUseRegularization());
+        }
 
+        //maximize target
+        if(conf.isMinimize())
+            score = -score;
     }
-
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
@@ -111,7 +111,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
         INDArray wGradient = getWeightGradient();
-        INDArray bGradient = dy.mean(0);
+        INDArray bGradient = dy.sum(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
@@ -178,9 +178,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    @Override
     public double score(DataSet data) {
-        return score(data.getFeatureMatrix(),data.getLabels());
+        return score(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -193,7 +192,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param labels   the true labels
      * @return the scores for each ndarray
      */
-    @Override
     public double score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
@@ -251,7 +249,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        this.input = examples;
+        this.input = examples.dup();
+        applyDropOutIfNecessary(this.input);
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
@@ -267,7 +266,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(DataSet data) {
-        fit(data.getFeatureMatrix(),data.getLabels());
+        fit(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -337,10 +336,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void iterate(INDArray input) {
-
+       throw new UnsupportedOperationException();
     }
-
-
 
 
     /**
@@ -352,15 +349,32 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @return a probability distribution for each row
      */
     public  INDArray output(INDArray x) {
+        return output(x,false);
+
+    }
+
+    /**
+     * Classify input
+     * @param x the input (can either be a matrix or vector)
+     * If it's a matrix, each row is considered an example
+     * and associated rows are classified accordingly.
+     * Each row will be the likelihood of a label given that example
+     * @return a probability distribution for each row
+     */
+    public  INDArray output(INDArray x,boolean test) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
+
         INDArray preOutput = preOutput(x);
         if(conf.getActivationFunction().equals("softmax")) {
             INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
             return ret;
         }
 
-        this.input = x;
+        this.input = x.dup();
+        if(!test)
+            applyDropOutIfNecessary(input());
+
         return super.activate();
 
     }

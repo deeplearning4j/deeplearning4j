@@ -34,13 +34,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 10/8/14.
+ * Tsne renders
+ *
+ * @author Adam Gibson
  */
 @Path("/tsne")
 @Produces(MediaType.TEXT_HTML)
 public class TsneResource extends FileResource {
     private List<VocabWord> words;
-    private VocabCache vocab;
     /**
      * The file path for uploads
      *

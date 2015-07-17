@@ -98,6 +98,7 @@ public class LSTM extends BaseLayer {
 
 
 
+
         INDArray dIFog = Nd4j.zeros(iFog.shape());
         INDArray dIFogF = Nd4j.zeros(iFogF.shape());
         INDArray dRecurrentWeights = Nd4j.zeros(recurrentWeights.shape());
@@ -454,8 +455,26 @@ public class LSTM extends BaseLayer {
 
     @Override
     public double score() {
+        return score;
+    }
+
+    @Override
+    public void setScore() {
+        if (this.input == null)
+            return;
+
         INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
-        return LossFunctions.score(xs,conf.getLossFunction(),forward,conf.getL2(),conf.isUseRegularization());
+        score = LossFunctions.score(
+                xs,
+                conf.getLossFunction(),
+                forward,
+                conf.getL2(),
+                conf.isUseRegularization());
+
+        //maximize target
+        if(conf.isMinimize())
+            score = -score;
+
     }
 
     @Override
@@ -496,6 +515,7 @@ public class LSTM extends BaseLayer {
                 decoderBiasLinear.putScalar(count++,params.getDouble(i));
 
         }
+        setScore();
     }
 
     @Override

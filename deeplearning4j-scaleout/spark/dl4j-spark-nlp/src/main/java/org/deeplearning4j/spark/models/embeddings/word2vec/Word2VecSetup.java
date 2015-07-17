@@ -26,7 +26,9 @@ import scala.Tuple2;
 import java.util.List;
 
 /**
- * Created by agibsoncccc on 4/20/15.
+ * Set up word2vec to run an iteration
+ *
+ * @author Adam Gibson
  */
 public class Word2VecSetup implements Function<Tuple2<List<VocabWord>, Long>, Word2VecFuncCall> {
     private Broadcast<Word2VecParam> param;

@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class FilterRenderer {
 
     public  JFrame frame;
@@ -366,7 +367,7 @@ public class FilterRenderer {
             for (int i = 0; i < column.length(); i++) {
 
                 //double patch_normal = ( column.getFromOrigin(i) - min ) / ( max - min + 0.000001 );
-                double patch_normal = (  column.getScalar(i).getDouble(0) - col_min ) / ( col_max - col_min + 0.000001f );
+                double patch_normal = (  column.getDouble(0) - col_min ) / ( col_max - col_min + 0.000001f );
                 equiv[i] = (int) (255 * patch_normal);
 
             }
@@ -467,6 +468,9 @@ public class FilterRenderer {
     public static void saveImageToDisk(BufferedImage img, String imageName) throws IOException {
 
         File outputfile = new File( imageName );
+        File parentDir = outputfile.getParentFile();
+        if(!parentDir.exists())
+            parentDir.mkdirs();
         if(!outputfile.exists())
             outputfile.createNewFile();
 

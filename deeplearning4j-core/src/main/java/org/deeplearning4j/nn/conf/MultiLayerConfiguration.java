@@ -43,6 +43,7 @@ public class MultiLayerConfiguration implements Serializable {
 
     protected int[] hiddenLayerSizes;
     protected List<NeuralNetConfiguration> confs;
+    @Deprecated
     protected boolean useDropConnect = false;
     protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
@@ -70,6 +71,32 @@ public class MultiLayerConfiguration implements Serializable {
     }
 
 
+    /**
+     *
+     * @return  JSON representation of NN configuration
+     */
+    public String toYaml() {
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+        try {
+            return mapper.writeValueAsString(this);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create a neural net configuration from json
+     * @param json the neural net configuration from json
+     * @return {@link org.deeplearning4j.nn.conf.MultiLayerConfiguration}
+     */
+    public static MultiLayerConfiguration fromYaml(String json) {
+        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
+        try {
+            return mapper.readValue(json, MultiLayerConfiguration.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
 

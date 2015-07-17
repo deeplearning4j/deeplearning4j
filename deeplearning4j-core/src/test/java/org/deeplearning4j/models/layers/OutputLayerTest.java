@@ -51,16 +51,17 @@ public class OutputLayerTest {
     @Test
     public void testIris2() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-                .activationFunction("identity")
-                .iterations(100).weightInit(WeightInit.UNIFORM)
+                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .activationFunction("softmax")
+                .iterations(10).weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 
         DataSet next = iter.next();
+        next.shuffle();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
         l.fit(trainTest.getTrain());
@@ -80,16 +81,18 @@ public class OutputLayerTest {
     @Test
     public void testIris() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .lossFunction(LossFunctions.LossFunction.MCXENT)
+                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .activationFunction("softmax")
-                .iterations(100).weightInit(WeightInit.ZERO)
+                .iterations(5).weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
 
         DataSet next = iter.next();
+        next.shuffle();
         SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
         trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
         l.fit(trainTest.getTrain());
@@ -113,7 +116,7 @@ public class OutputLayerTest {
                 .iterations(100).weightInit(WeightInit.ZERO)
                 .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
         INDArray params = l.params();
         l.setParams(params);
         assertEquals(params,l.params());

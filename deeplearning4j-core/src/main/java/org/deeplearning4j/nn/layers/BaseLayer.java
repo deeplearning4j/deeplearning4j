@@ -51,6 +51,7 @@ public abstract class BaseLayer implements Layer {
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected int index=0;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -60,6 +61,25 @@ public abstract class BaseLayer implements Layer {
         this.input = input;
         this.conf = conf;
     }
+
+    public INDArray getInput() {
+        return input;
+    }
+
+    public void setInput(INDArray input) {
+        this.input = input;
+    }
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
 
     @Override
     public Collection<IterationListener> getIterationListeners() {
@@ -128,22 +148,18 @@ public abstract class BaseLayer implements Layer {
         fit(this.input);
     }
 
-
-
-
     @Override
     public void setScore() {
-        if(this.input == null)
+        if (this.input == null)
             return;
 
         INDArray output = transform(input);
-        if(conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(),input,output);
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
             create.exec();
             score = -create.currentResult().doubleValue();
-        }
-        else {
-            score = -LossFunctions.score(
+        } else{
+            score = LossFunctions.score(
                     input,
                     conf.getLossFunction(),
                     output,
@@ -151,11 +167,21 @@ public abstract class BaseLayer implements Layer {
                     conf.isUseRegularization());
         }
 
-        //minimization target
+        //maximize target
         if(conf.isMinimize())
             score = -score;
     }
 
+
+    /**
+     * Objective function:  the specified objective
+     * @return the score for the objective
+     */
+
+    @Override
+    public double score() {
+        return score;
+    }
 
     /**
      * iterate one iteration of the network
@@ -164,7 +190,8 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public void iterate(INDArray input) {
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         Gradient gradient = gradient();
         for(String paramType : gradient.gradientForVariable().keySet()) {
             update(gradient.getGradientFor(paramType), paramType);
@@ -197,11 +224,6 @@ public abstract class BaseLayer implements Layer {
         this.conf = conf;
     }
 
-    @Override
-    public void setParam(String key, INDArray val) {
-        params.put(key,val);
-    }
-
     /**
      * Returns the parameters of the neural network
      *
@@ -214,7 +236,7 @@ public abstract class BaseLayer implements Layer {
             length += params.get(s).length();
         }
 
-        INDArray ret = Nd4j.create(1,length);
+        INDArray ret = Nd4j.create(1, length);
         int count = 0;
         for(String s : params.keySet()) {
             INDArray get = params.get(s).linearView();
@@ -223,6 +245,17 @@ public abstract class BaseLayer implements Layer {
             }
         }
         return ret;
+    }
+
+    @Override
+    public INDArray getParam(String param) {
+        return params.get(param);
+    }
+
+    @Override
+    public void setParam(String key, INDArray val) {
+        params.put(key, val);
+        setScore();
     }
 
     @Override
@@ -242,9 +275,13 @@ public abstract class BaseLayer implements Layer {
             param.linearView().assign(get);
             idx += param.length();
         }
-
         setScore();
 
+    }
+
+    @Override
+    public void setParamTable(Map<String, INDArray> paramTable) {
+        this.params = paramTable;
     }
 
     @Override
@@ -257,15 +294,6 @@ public abstract class BaseLayer implements Layer {
         return params;
     }
 
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        this.params = paramTable;
-    }
-
-    @Override
-    public INDArray getParam(String param) {
-        return params.get(param);
-    }
 
     /**
      * Classify input
@@ -280,10 +308,15 @@ public abstract class BaseLayer implements Layer {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        this.input = x;
+        this.input = x.dup();
+        applyDropOutIfNecessary(x);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
+            }
+        }
         INDArray ret = input().mmul(W).addiRowVector(b);
         return ret;
     }
@@ -298,13 +331,19 @@ public abstract class BaseLayer implements Layer {
     public  INDArray activate() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
-
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
+            }
+        }
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        return ret;
     }
 
     @Override
     public  INDArray activate(INDArray input) {
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         return activate();
     }
 
@@ -313,6 +352,11 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
+            }
+        }
         return input().mmul(W).addiRowVector(b);
     }
 
@@ -332,17 +376,10 @@ public abstract class BaseLayer implements Layer {
     }
 
     protected void applyDropOutIfNecessary(INDArray input) {
-        if(conf.getDropOut() > 0) {
-            this.dropoutMask = Nd4j.rand(input.rows(), input.columns()).gt(conf.getDropOut());
+        if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
+            this.dropoutMask = Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()).divi(conf.getDropOut());
+            input.muli(dropoutMask);
         }
-
-        else if(this.dropoutMask != null)
-            this.dropoutMask = Nd4j.ones(input.rows(), conf.getNOut());
-
-        //actually apply drop out
-        if(conf.getDropOut() > 0)
-            input.linearView().muli(dropoutMask);
-
     }
 
     /**
@@ -397,8 +434,10 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void fit(INDArray input) {
-        if(input != null)
-            this.input = input;
+        if(input != null) {
+            this.input = input.dup();
+            applyDropOutIfNecessary(this.input);
+        }
         Solver solver = new Solver.Builder()
                 .model(this).configure(conf()).listeners(getIterationListeners())
                 .build();
@@ -410,11 +449,6 @@ public abstract class BaseLayer implements Layer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(),score());
-    }
-
-    @Override
-    public double score() {
-        return score;
     }
 
     @Override

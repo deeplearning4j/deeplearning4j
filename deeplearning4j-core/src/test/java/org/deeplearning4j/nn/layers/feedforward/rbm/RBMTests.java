@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.plot.iterationlistener.LossPlotterIterationListener;
 import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -72,7 +73,7 @@ public class RBMTests {
                 .nIn(d.numInputs()).nOut(nOut).build();
 
         RBM rbm = LayerFactories.getFactory(conf)
-                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)));
+                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
 
         rbm.fit(d.getFeatureMatrix());
 
@@ -114,6 +115,7 @@ public class RBMTests {
         r.fit(d.getFeatureMatrix());
 
     }
+
 
     @Test
     public void testBasic() {
@@ -162,8 +164,8 @@ public class RBMTests {
         INDArray input = d2.getFeatureMatrix();
 
         RBM rbm = LayerFactories.getFactory(conf).create(conf,
-                Arrays.<IterationListener>asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5))));
-
+                Arrays.<IterationListener>asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10), new ScoreIterationListener(5)),
+                new LossPlotterIterationListener(10)),0);
         rbm.fit(input);
 
     }
@@ -203,7 +205,8 @@ public class RBMTests {
                 .learningRate(1e-1f).nIn(6).nOut(4)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .build();
-        RBM rbm = LayerFactories.getFactory(conf).create(conf);
+        RBM rbm = LayerFactories.getFactory(conf).create(conf, Arrays.asList(new ComposableIterationListener(new NeuralNetPlotterIterationListener(10),
+                        new ScoreIterationListener(5)), new LossPlotterIterationListener(10)),0);
         double value = rbm.score();
         rbm.fit(input);
         value = rbm.score();

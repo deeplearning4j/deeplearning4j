@@ -23,26 +23,32 @@
                 <h1 style="text-align: center; font-size: 400%">Deeplearning4j</h1>
                 <hr>
                 <h2>k Nearest Neighbors</h2>
-                <h4>
-                    <ol>
-                        <li>Upload a <b><i>vectorized</i></b> text file.</li>
-                        <ul>
-                            <li>The text file should be space-delimited.</li>
-                            <li>Each row should be a feature vector separated by spaces.</li>
-                            <li>If an individual feature has multiple words, use underscore to separate the words.</li>
-                        </ul>
-                        <li>Enter an integer value for k (number of nearest neighbors).</li>
-                        <li>Then select a word on the left panel.</li>
-                        <li>A list of k nearest neighbors will appear on this page.</li>
-                        <li>Optional: Select a new word to update nearest neighbors.</li></h4>
+                <ul>
+                    <li>Upload a <b><i>vectorized</i></b> text file. OR enter a url to get data from.</li>
+                    <ul>
+                        <li>The text file should be space-delimited.</li>
+                        <li>Each row should be a feature vector separated by spaces.</li>
+                        <li>If an individual feature has multiple words, use underscore to separate the words.</li>
+                    </ul>
+                    <li>Enter an integer value for k (number of nearest neighbors).</li>
+                    <li>Then select a word on the left panel.</li>
+                    <li>A list of k nearest neighbors will appear on this page.</li>
+                    <li>Optional: Select a new word to update nearest neighbors.</li></ul>
                 <br>
+
                 <div class="row" id="upload">
-                        <form encType="multipart/form-data" action="/nearestneighbors/upload" method="POST" id="form">
-                            <input name="file" type="file">
-                            <br>
-                            <input type="submit">
-                        </form>
+                    <form encType="multipart/form-data" action="/nearestneighbors/upload" method="POST" id="form">
+                        <input name="file" type="file">
+                        <br>
+                        <input type="submit">
+                    </form>
                 </div>
+                <div class="row" id="url">
+                    <label for="url">Enter a url</label>
+                    <input type="text" id="urlval">
+                    <button value="Submit" id="urlsubmit">Submit</button>
+                </div>
+
                 <div class="row" id="kform">
                     Enter an integer value for k: <input type="text" name="k" id="k" value="5">
                 </div>

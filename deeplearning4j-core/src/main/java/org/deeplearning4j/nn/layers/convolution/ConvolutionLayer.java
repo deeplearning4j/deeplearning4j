@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -49,9 +50,21 @@ public class ConvolutionLayer implements Layer {
     private Map<String,INDArray> params;
     protected ParamInitializer paramInitializer;
     private List<IterationListener> listeners = new ArrayList<>();
+    protected int index = 0;
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
+    }
+
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     @Override
@@ -63,8 +76,6 @@ public class ConvolutionLayer implements Layer {
     public Gradient error(INDArray input) {
         throw new UnsupportedOperationException();
     }
-
-
 
     @Override
     public INDArray derivativeActivation(INDArray input) {
@@ -84,7 +95,16 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
-        throw new UnsupportedOperationException();
+        INDArray gy = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        INDArray biasGradient = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
+        getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
+        INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
+        gcol = Nd4j.rollAxis(gcol,3);
+        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);
+        Gradient retGradient = new DefaultGradient();
+        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
+        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
+        return retGradient;
     }
 
     @Override
@@ -115,6 +135,9 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
+        if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect()) {
+            input = input.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()));
+        }
         //number of feature maps for the weights
         int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
         //number of channels of the input
@@ -122,6 +145,9 @@ public class ConvolutionLayer implements Layer {
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
+            filters = filters.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(filters.shape()));
+        }
 
         for(int i = 0; i < currentFeatureMaps; i++) {
             INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), 1}, conf.getFeatureMapSize()));
@@ -211,23 +237,6 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void setParams(INDArray params) {
-        List<String> gradientList = conf.variables();
-        int length = 0;
-        for(String s : gradientList)
-            length += getParam(s).length();
-        if(params.length() != length)
-            throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
-        int idx = 0;
-        for(int i = 0; i < gradientList.size(); i++) {
-            INDArray param = getParam(gradientList.get(i));
-            INDArray get = params.get(NDArrayIndex.interval(idx, idx + param.length()));
-            if(param.length() != get.length())
-                throw new IllegalStateException("Parameter " + gradientList.get(i) + " should have been of length " + param.length() + " but was " + get.length());
-            param.assign(get.reshape(param.shape()));
-            idx += param.length();
-        }
-
-        setScore();
 
     }
 

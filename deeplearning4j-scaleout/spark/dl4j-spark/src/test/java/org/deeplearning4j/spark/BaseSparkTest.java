@@ -20,6 +20,7 @@ package org.deeplearning4j.spark;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.junit.After;
 import org.junit.Before;
 
@@ -51,8 +52,8 @@ public abstract class BaseSparkTest  implements Serializable
         if(sc != null)
             return sc;
         // set to test mode
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[8]")
+        SparkConf sparkConf = new SparkConf().set(SparkDl4jMultiLayer.AVERAGE_EACH_ITERATION,"false")
+                .setMaster("local[*]")
                 .setAppName("sparktest");
 
 

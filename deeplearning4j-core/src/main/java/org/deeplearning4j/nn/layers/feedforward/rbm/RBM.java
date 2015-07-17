@@ -172,13 +172,13 @@ public  class RBM extends BasePretrainNetwork {
 
         if(conf.getSparsity() != 0)
             //all hidden units must stay around this number
-            hBiasGradient = probHidden.getSecond().rsub(conf.getSparsity()).mean(0);
+            hBiasGradient = probHidden.getSecond().rsub(conf.getSparsity()).sum(0);
         else
             //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
-            hBiasGradient = probHidden.getSecond().sub(nhMeans).mean(0);
+            hBiasGradient = probHidden.getSecond().sub(nhMeans).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  vBiasGradient = input.sub(nvSamples).mean(0);
+        INDArray  vBiasGradient = input.sub(nvSamples).sum(0);
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
@@ -232,7 +232,6 @@ public  class RBM extends BasePretrainNetwork {
             }
             case GAUSSIAN: {
                 h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
-
                 //apply dropout
                 applyDropOutIfNecessary(h1Sample);
                 break;
@@ -314,6 +313,11 @@ public  class RBM extends BasePretrainNetwork {
      */
     public INDArray propUp(INDArray v) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect()) {
+            if (conf.getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
+            }
+        }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
         if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
@@ -383,7 +387,7 @@ public  class RBM extends BasePretrainNetwork {
     }
 
     /**
-     * Note: k is the first input iken params.
+     * Note: k is the first input hidden params.
      */
     @Override
     public void fit(INDArray input) {
@@ -402,7 +406,8 @@ public  class RBM extends BasePretrainNetwork {
         if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
             this.sigma = input.var(0).divi(input.rows());
 
-        this.input = input;
+        this.input = input.dup();
+        applyDropOutIfNecessary(this.input);
         contrastiveDivergence();
     }
 

@@ -58,6 +58,10 @@ public interface Classifier extends Model {
      */
     int numLabels();
 
+    /**
+     * Train the model based on the datasetiterator
+     * @param iter the iterator to train on
+     */
     void fit(DataSetIterator iter);
 
     /**

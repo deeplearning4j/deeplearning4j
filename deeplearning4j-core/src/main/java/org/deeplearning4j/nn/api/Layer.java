@@ -192,5 +192,14 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     void setIterationListeners(Collection<IterationListener> listeners);
 
+    /**
+     * Set the layer index.
+     */
+    void setIndex(int index);
+
+    /**
+     * Get the layer index.
+     */
+    int getIndex();
 
 }

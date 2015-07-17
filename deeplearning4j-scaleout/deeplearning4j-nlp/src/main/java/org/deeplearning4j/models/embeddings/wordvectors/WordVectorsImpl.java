@@ -60,7 +60,7 @@ public class WordVectorsImpl implements WordVectors {
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    public Collection<String> wordsNearestSum(List<String> positive,List<String> negative,int top) {
+    public Collection<String> wordsNearestSum(Collection<String> positive,Collection<String> negative,int top) {
         INDArray words = Nd4j.create(lookupTable().layerSize());
         Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
         for(String s : positive)
@@ -82,7 +82,7 @@ public class WordVectorsImpl implements WordVectors {
             if(top > sort.length())
                 top = sort.length();
             //there will be a redundant word
-            int end = top + 1;
+            int end = top;
             for(int i = 0; i < end; i++) {
                 String word = vocab.wordAtIndex(sort.getInt(i));
                 if(union.contains(word)) {
@@ -122,7 +122,108 @@ public class WordVectorsImpl implements WordVectors {
 
 
     }
+    /**
+     * Words nearest based on positive and negative words
+     * * @param top the top n words
+     * @return the words nearest the mean of the words
+     */
+    @Override
+    public Collection<String> wordsNearestSum(INDArray words,int top) {
 
+        if(lookupTable() instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
+            INDArray syn0 = l.getSyn0();
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
+            INDArray distances = syn0.mulRowVector(weights).sum(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
+            List<String> ret = new ArrayList<>();
+            if(top > sort.length())
+                top = sort.length();
+            //there will be a redundant word
+            int end = top;
+            for(int i = 0; i < end; i++) {
+                String add = vocab().wordAtIndex(sort.getInt(i));
+                if(add == null || add.equals("UNK") || add.equals("STOP")) {
+                    end++;
+                    if(end >= sort.length())
+                        break;
+                    continue;
+                }
+
+
+                ret.add(vocab().wordAtIndex(sort.getInt(i)));
+            }
+
+
+            return ret;
+        }
+
+        Counter<String> distances = new Counter<>();
+
+        for(String s : vocab().words()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(words, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+
+        distances.keepTopNKeys(top);
+        return distances.keySet();
+
+
+    }
+    /**
+     * Words nearest based on positive and negative words
+     * * @param top the top n words
+     * @return the words nearest the mean of the words
+     */
+    @Override
+    public Collection<String> wordsNearest(INDArray words, int top) {
+
+        if(lookupTable() instanceof InMemoryLookupTable) {
+            InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
+            INDArray syn0 = l.getSyn0();
+            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
+            INDArray distances = syn0.mulRowVector(weights).mean(1);
+            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray sort = sorted[0];
+            List<String> ret = new ArrayList<>();
+            if(top > sort.length())
+                top = sort.length();
+            //there will be a redundant word
+            int end = top;
+            for(int i = 0; i < end; i++) {
+                String add = vocab().wordAtIndex(sort.getInt(i));
+                if(add == null || add.equals("UNK") || add.equals("STOP")) {
+                    end++;
+                    if(end >= sort.length())
+                        break;
+                    continue;
+                }
+
+
+                ret.add(vocab().wordAtIndex(sort.getInt(i)));
+            }
+
+
+            return ret;
+        }
+
+        Counter<String> distances = new Counter<>();
+
+        for(String s : vocab().words()) {
+            INDArray otherVec = getWordVectorMatrix(s);
+            double sim = Transforms.cosineSim(words, otherVec);
+            distances.incrementCount(s, sim);
+        }
+
+
+        distances.keepTopNKeys(top);
+        return distances.keySet();
+
+
+    }
 
     /**
      * Get the top n words most similar to the given word
@@ -273,32 +374,33 @@ public class WordVectorsImpl implements WordVectors {
 
     /**
      * Words nearest based on positive and negative words
+     *
      * @param positive the positive words
      * @param negative the negative words
      * @param top the top n words
      * @return the words nearest the mean of the words
      */
-    public Collection<String> wordsNearest(List<String> positive,List<String> negative,int top) {
-        for(String p : SetUtils.union(new HashSet<>(positive),new HashSet<>(negative))) {
-            if(!vocab().containsWord(p)) {
+    @Override
+    public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
+        for (String p : SetUtils.union(new HashSet<>(positive), new HashSet<>(negative))) {
+            if (!vocab().containsWord(p)) {
                 return new ArrayList<>();
             }
         }
 
-
         INDArray words = Nd4j.create(positive.size() + negative.size(), lookupTable().layerSize());
         int row = 0;
-        Set<String> union = SetUtils.union(new HashSet<>(positive),new HashSet<>(negative));
-        for(String s : positive) {
-            words.putRow(row++,lookupTable().vector(s));
+        Set<String> union = SetUtils.union(new HashSet<>(positive), new HashSet<>(negative));
+        for (String s : positive) {
+            words.putRow(row++, lookupTable().vector(s));
         }
 
-        for(String s : negative) {
+        for (String s : negative) {
             words.putRow(row++, lookupTable().vector(s).mul(-1));
         }
 
         INDArray mean = words.isMatrix() ? words.mean(0) : words;
-        if(lookupTable() instanceof  InMemoryLookupTable) {
+        if (lookupTable() instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
 
             INDArray syn0 = l.getSyn0();
@@ -308,51 +410,83 @@ public class WordVectorsImpl implements WordVectors {
             // We assume that syn0 is normalized.
             // Hence, the following division is not needed anymore.
             // distances.diviRowVector(distances.norm2(1));
-            INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
+            INDArray[] sorted = getTopN(distances.vectorAlongDimension(0, 0), top + union.size());
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
-            if(top > sort.length())
-                top = sort.length();
-            //there will be a redundant word
-            int end = top + 1;
-            for(int i = 0; i < end; i++) {
+
+            for (int i = 0; i < sort.length(); i++) {
                 String word = vocab().wordAtIndex(sort.getInt(i));
-                if(union.contains(word)) {
-                    end++;
-                    if(end >= sort.length())
+                if (word != null && !word.equals("UNK") && !word.equals("STOP") && !union.contains(word)) {
+                    ret.add(word);
+                    if (ret.size() >= top) {
                         break;
-                    continue;
+                    }
                 }
-
-                String add = vocab().wordAtIndex(sort.getInt(i));
-                if(add == null || add.equals("UNK") || add.equals("STOP")) {
-                    end++;
-                    if(end >= sort.length())
-                        break;
-                    continue;
-                }
-
-
-                ret.add(vocab().wordAtIndex(sort.getInt(i)));
             }
-
 
             return ret;
         }
 
         Counter<String> distances = new Counter<>();
 
-        for(String s : vocab().words()) {
+        for (String s : vocab().words()) {
             INDArray otherVec = getWordVectorMatrix(s);
-            double sim = Transforms.cosineSim(mean,otherVec);
+            double sim = Transforms.cosineSim(mean, otherVec);
             distances.incrementCount(s, sim);
         }
-
 
         distances.keepTopNKeys(top);
         return distances.keySet();
 
+    }
 
+    private static class ArrayComparator implements Comparator<Double[]> {
+
+        @Override
+        public int compare(Double[] o1, Double[] o2) {
+                return Double.compare(o1[0], o2[0]);
+            }
+
+    }
+
+
+    /**
+     * Get top N elements
+     *
+     * @param vec the vec to extract the top elements from
+     * @param N the number of elements to extract
+     * @return the indices and the sorted top N elements
+     */
+    private static INDArray[] getTopN(INDArray vec, int N) {
+        ArrayComparator comparator = new ArrayComparator();
+        PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(),comparator);
+
+        for (int j = 0; j < vec.length(); j++) {
+            final Double[] pair = new Double[]{vec.getDouble(j), (double) j};
+            if (queue.size() < N) {
+                queue.add(pair);
+            } else {
+                Double[] head = queue.peek();
+                if (comparator.compare(pair, head) > 0) {
+                    queue.poll();
+                    queue.add(pair);
+                }
+            }
+        }
+
+        vec = Nd4j.create(queue.size());
+        INDArray indexVector = Nd4j.create(queue.size());
+
+        int index = queue.size();
+
+        while (!queue.isEmpty()) {
+            Double[] pair = queue.poll();
+            vec.putScalar(--index, pair[0]);
+            indexVector.putScalar(index, pair[1]);
+        }
+
+        return new INDArray[]{indexVector, vec};
     }
 
 

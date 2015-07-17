@@ -18,21 +18,76 @@
 
 package org.deeplearning4j.ui.renders;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import org.apache.commons.compress.utils.IOUtils;
+
+import javax.activation.MimetypesFileTypeMap;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Map;
 
 /**
- * Created by agibsonccc on 10/8/14.
+ * Renders filters
+ *
+ * @author Adam Gibson
  */
-@Path("/render")
+@Path("/filters")
 @Produces(MediaType.TEXT_HTML)
 public class RendersResource {
+    private String imagePath = "render.png";
 
     @GET
     public RenderView get() {
         return new RenderView();
     }
+
+    @POST
+    @Path(("/update"))
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response update(PathUpdate path) {
+        this.imagePath = path.getPath();
+        return Response.ok(Collections.singletonMap("status","updated path")).build();
+    }
+
+
+    @GET
+    @Path("/img")
+    @Produces({"image/png"})
+    public Response image() {
+        if(imagePath == null) {
+            throw new WebApplicationException(404);
+        }
+
+        final File f = new File(imagePath);
+
+        if (!f.exists()) {
+            throw new WebApplicationException(404);
+        }
+
+        return Response.ok().entity(new StreamingOutput() {
+            @Override
+            public void write(OutputStream output) throws IOException, WebApplicationException {
+                FileInputStream fis = new FileInputStream(f);
+                byte[] bytes = IOUtils.toByteArray(fis);
+                fis.close();
+                output.write(bytes);
+                output.flush();
+
+
+            }
+        }).build();
+    }
+
+
+
+
+
+
 
 }

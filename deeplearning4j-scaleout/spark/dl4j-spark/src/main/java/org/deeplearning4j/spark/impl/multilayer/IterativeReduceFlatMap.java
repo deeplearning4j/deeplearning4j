@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +34,8 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Iterative reduce with flat map using map partitions
+ * Iterative reduce with
+ * flat map using map partitions
  *
  * @author Adam Gibson
  */
@@ -40,6 +43,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
 
     private String json;
     private Broadcast<INDArray> params;
+    private static Logger log = LoggerFactory.getLogger(IterativeReduceFlatMap.class);
 
     /**
      * Pass in json configuration and baseline parameters
@@ -64,7 +68,8 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
             collect.add(dataSetIterator.next());
         }
 
-        DataSet data = DataSet.merge(collect);
+        DataSet data = DataSet.merge(collect,false);
+        log.debug("Training on " + data.labelCounts());
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
         INDArray val = params.value();

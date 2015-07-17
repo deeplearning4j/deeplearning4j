@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class CSVDataFetcher extends BaseDataFetcher {
 
     private  CSV csv;    // new instance is immutable

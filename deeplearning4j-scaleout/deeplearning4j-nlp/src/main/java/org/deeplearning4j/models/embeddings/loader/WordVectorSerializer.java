@@ -18,7 +18,18 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
@@ -49,7 +60,7 @@ import org.slf4j.LoggerFactory;
  */
 public class WordVectorSerializer
 {
-
+    private static final boolean DEFAULT_LINEBREAKS = false;
     private static final int MAX_SIZE = 50;
     private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
@@ -66,7 +77,28 @@ public class WordVectorSerializer
     public static Word2Vec loadGoogleModel(File modelFile, boolean binary)
         throws IOException
     {
-        return binary ? readBinaryModel(modelFile) : readTextModel(modelFile);
+        return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
+    }
+
+    /**
+     * Loads the Google model.
+     * 
+     * @param modelFile
+     *            the input file
+     * @param binary
+     *            read from binary or text file format
+     * @param lineBreaks
+     *            if true, the input file is expected to terminate each line with a line break. This
+     *            is typically the case for files created with recent versions of Word2Vec, but not
+     *            for the downloadable model files.
+     * @return a {@link Word2Vec} object
+     * @throws IOException
+     * @author Carsten Schnober
+     */
+    public static Word2Vec loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks)
+        throws IOException
+    {
+        return binary ? readBinaryModel(modelFile, lineBreaks) : readTextModel(modelFile);
     }
 
     /**
@@ -77,70 +109,77 @@ public class WordVectorSerializer
      * @throws NumberFormatException
      */
     private static Word2Vec readTextModel(File modelFile)
-        throws FileNotFoundException, IOException, NumberFormatException
-    {
+            throws IOException, NumberFormatException {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
         INDArray syn0;
-        BufferedReader reader = new BufferedReader(new FileReader(modelFile));
-        String line = reader.readLine();
-        String[] initial = line.split(" ");
-        int words = Integer.parseInt(initial[0]);
-        int layerSize = Integer.parseInt(initial[1]);
-        syn0 = Nd4j.create(words, layerSize);
-
-        cache = new InMemoryLookupCache();
-
-        int currLine = 0;
-        while ((line = reader.readLine()) != null) {
-            String[] split = line.split(" ");
-            String word = split[0];
-
-            if (word.isEmpty()) {
-                continue;
-            }
-
-            float[] vector = new float[split.length - 1];
-            for (int i = 1; i < split.length; i++) {
-                vector[i] = Float.parseFloat(split[i]);
-            }
-
-            syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
-
-            cache.addWordToIndex(cache.numWords(), word);
-            cache.addToken(new VocabWord(1, word));
-            cache.putVocabWord(word);
-
-        }
-
-        lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().cache(cache)
-                .vectorLength(layerSize).build();
-        lookupTable.setSyn0(syn0);
-
         Word2Vec ret = new Word2Vec();
-        ret.setVocab(cache);
-        ret.setLookupTable(lookupTable);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                GzipUtils.isCompressedFilename(modelFile.getName())
+                        ? new GZIPInputStream(new FileInputStream(modelFile))
+                        : new FileInputStream(modelFile)))) {
+            String line = reader.readLine();
+            String[] initial = line.split(" ");
+            int words = Integer.parseInt(initial[0]);
+            int layerSize = Integer.parseInt(initial[1]);
+            syn0 = Nd4j.create(words, layerSize);
 
-        reader.close();
+            cache = new InMemoryLookupCache(false);
+
+            int currLine = 0;
+            while ((line = reader.readLine()) != null) {
+                String[] split = line.split(" ");
+                assert split.length == layerSize + 1;
+                String word = split[0];
+
+                float[] vector = new float[split.length - 1];
+                for (int i = 1; i < split.length; i++) {
+                    vector[i - 1] = Float.parseFloat(split[i]);
+                }
+
+                syn0.putRow(currLine, Transforms.unitVec(Nd4j.create(vector)));
+
+                cache.addWordToIndex(cache.numWords(), word);
+                cache.addToken(new VocabWord(1, word));
+                cache.putVocabWord(word);
+
+                currLine++;
+            }
+
+            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder().
+                    cache(cache).vectorLength(layerSize).build();
+            lookupTable.setSyn0(syn0);
+
+            ret.setVocab(cache);
+            ret.setLookupTable(lookupTable);
+        }
         return ret;
     }
 
     /**
-     * @return
+     * Read a binary word2vec file.
+     * 
+     * @param modelFile
+     *            the File to read
+     * @param linebreaks
+     *            if true, the reader expects each word/vector to be in a separate line, terminated
+     *            by a line break
+     * @return a {@link Word2Vec model}
      * @throws NumberFormatException
      * @throws IOException
      * @throws FileNotFoundException
      */
-    private static Word2Vec readBinaryModel(File modelFile)
-        throws NumberFormatException, IOException {
+    private static Word2Vec readBinaryModel(File modelFile, boolean linebreaks)
+        throws NumberFormatException, IOException
+    {
         InMemoryLookupTable lookupTable;
         VocabCache cache;
         INDArray syn0;
         int words, size;
-        try (BufferedInputStream bis =
-                new BufferedInputStream(GzipUtils.isCompressedFilename(modelFile.getName()) ?
-                        new GZIPInputStream(new FileInputStream(modelFile)) :
-                        new FileInputStream(modelFile));
+        try (BufferedInputStream bis = new BufferedInputStream(
+                GzipUtils.isCompressedFilename(modelFile.getName())
+                        ? new GZIPInputStream(new FileInputStream(modelFile))
+                        : new FileInputStream(modelFile));
                 DataInputStream dis = new DataInputStream(bis)) {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
@@ -153,10 +192,7 @@ public class WordVectorSerializer
             for (int i = 0; i < words; i++) {
 
                 word = readString(dis);
-                log.info("Loading " + word + " with word " + i);
-                if (word.isEmpty()) {
-                    continue;
-                }
+                log.trace("Loading " + word + " with word " + i);
 
                 float[] vector = new float[size];
 
@@ -169,6 +205,10 @@ public class WordVectorSerializer
                 cache.addWordToIndex(cache.numWords(), word);
                 cache.addToken(new VocabWord(1, word));
                 cache.putVocabWord(word);
+
+                if (linebreaks) {
+                    dis.readByte(); // line break
+                }
             }
         }
 
@@ -178,8 +218,8 @@ public class WordVectorSerializer
         ret.setVocab(cache);
         ret.setLookupTable(lookupTable);
         return ret;
-    }
 
+    }
 
     /**
      * Read a float from a data input stream Credit to:
@@ -189,7 +229,9 @@ public class WordVectorSerializer
      * @return
      * @throws IOException
      */
-    public static float readFloat(InputStream is) throws IOException {
+    public static float readFloat(InputStream is)
+        throws IOException
+    {
         byte[] bytes = new byte[4];
         is.read(bytes);
         return getFloat(bytes);
@@ -203,7 +245,8 @@ public class WordVectorSerializer
      * @return
      * @throws IOException
      */
-    public static float getFloat(byte[] b) {
+    public static float getFloat(byte[] b)
+    {
         int accum = 0;
         accum = accum | (b[0] & 0xff) << 0;
         accum = accum | (b[1] & 0xff) << 8;
@@ -211,7 +254,6 @@ public class WordVectorSerializer
         accum = accum | (b[3] & 0xff) << 24;
         return Float.intBitsToFloat(accum);
     }
-
 
     /**
      * Read a string from a data input stream Credit to:
@@ -244,6 +286,7 @@ public class WordVectorSerializer
 
     /**
      * Writes the word vectors to the given path. Note that this assumes an in memory cache
+     * 
      * @param lookupTable
      * @param cache
      *
@@ -253,7 +296,8 @@ public class WordVectorSerializer
      */
     public static void writeWordVectors(InMemoryLookupTable lookupTable, InMemoryLookupCache cache,
             String path)
-        throws IOException {
+                throws IOException
+    {
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path), false));
         for (int i = 0; i < lookupTable.getSyn0().rows(); i++) {
             String word = cache.wordAtIndex(i);
@@ -344,7 +388,8 @@ public class WordVectorSerializer
      *            the given pair
      * @return a read only word vectors impl based on the given lookup table and vocab
      */
-    public static WordVectors fromPair(Pair<InMemoryLookupTable, VocabCache> pair) {
+    public static WordVectors fromPair(Pair<InMemoryLookupTable, VocabCache> pair)
+    {
         WordVectorsImpl vectors = new WordVectorsImpl();
         vectors.setLookupTable(pair.getFirst());
         vectors.setVocab(pair.getSecond());
@@ -357,10 +402,12 @@ public class WordVectorSerializer
      * @param vectorsFile
      *            the path of the file to load\
      * @return
-     * @throws FileNotFoundException if the file does not exist
+     * @throws FileNotFoundException
+     *             if the file does not exist
      */
     public static WordVectors loadTxtVectors(File vectorsFile)
-        throws FileNotFoundException {
+        throws FileNotFoundException
+    {
         Pair<InMemoryLookupTable, VocabCache> pair = loadTxt(vectorsFile);
         return fromPair(pair);
     }
@@ -374,7 +421,8 @@ public class WordVectorSerializer
      * @throws FileNotFoundException
      */
     public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File vectorsFile)
-        throws FileNotFoundException {
+        throws FileNotFoundException
+    {
         BufferedReader write = new BufferedReader(new FileReader(vectorsFile));
         VocabCache cache = new InMemoryLookupCache();
 

@@ -7,7 +7,6 @@ fi
 if [ ! -f Canova ]; then
     git clone https://github.com/deeplearning4j/Canova.git
 fi
-git clone https://github.com/deeplearning4j/Canova.git
 cd nd4j
 git pull
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true

@@ -21,11 +21,13 @@ package org.deeplearning4j.ui.renders;
 import io.dropwizard.views.View;
 
 /**
- * Created by agibsonccc on 10/8/14.
+ * used for rendering reconstructions
+ *
+ * @author Adam Gibson
  */
 public class RenderView extends View {
     public RenderView() {
-        super("index.ftl");
+        super("render.ftl");
 
     }
 }

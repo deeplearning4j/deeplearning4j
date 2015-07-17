@@ -54,9 +54,20 @@ public class SubsamplingLayer implements Layer {
     private Layer convLayer;
     protected ParamInitializer paramInitializer;
     private Map<String,INDArray> params;
+    protected int index=0;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
+    }
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     @Override
@@ -66,7 +77,8 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient error(INDArray input) {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -77,37 +89,39 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Gradient errorSignal(Gradient error, INDArray input) {
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     @Override
     public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+
         return null;
     }
 
     @Override
     public void merge(Layer layer, int batchSize) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public INDArray activationMean() {
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray preOutput(INDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray activate() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -119,7 +133,7 @@ public class SubsamplingLayer implements Layer {
             if(ret == null) {
                 ret = Nd4j.create(Ints.concat(new int[]{input.slices(),numFeatureMaps},downSampled.shape()));
             }
-           ret.putSlice(i, downSampled);
+            ret.putSlice(i, downSampled);
         }
         return ret;
     }
@@ -131,7 +145,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Layer clone() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -228,24 +242,6 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public void setParams(INDArray params) {
-        List<String> gradientList = conf.variables();
-        int length = 0;
-        for(String s : gradientList)
-            length += getParam(s).length();
-        if(params.length() != length)
-            throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
-        int idx = 0;
-        for(int i = 0; i < gradientList.size(); i++) {
-            INDArray param = getParam(gradientList.get(i));
-            INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
-            if(param.length() != get.length())
-                throw new IllegalStateException("Parameter " + gradientList.get(i) + " should have been of length " + param.length() + " but was " + get.length());
-            param.assign(get.reshape(param.shape()));
-            idx += param.length();
-        }
-
-        setScore();
-
     }
 
     @Override

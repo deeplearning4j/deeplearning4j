@@ -25,6 +25,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.impl.SVMLightRecordReader;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -68,22 +70,29 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     public void testIris2() throws Exception {
 
 
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-               .momentum(0.9).constrainGradientToUnitNorm(true)
-                .activationFunction("tanh").stepFunction(new GradientStepFunction())
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).dropOut(0.3)
-                .iterations(100).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).batchSize(10)
-                .l2(2e-4).regularization(true).weightInit(WeightInit.VI)
+               .momentum(0.9).seed(123)
+                .activationFunction("relu")
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .iterations(100).visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .weightInit(WeightInit.XAVIER).numLineSearchIterations(10).constrainGradientToUnitNorm(true)
                 .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(3).hiddenLayerSizes(3,2)
-                .override(2, new ClassifierOverride()).build();
+                .list(2).hiddenLayerSizes(3).backward(false)
+                .override(1, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.weightInit(WeightInit.XAVIER);
+                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        builder.activationFunction("softmax");
+                        builder.layer(new OutputLayer());
+                    }
+                }).build();
 
 
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -103,8 +112,8 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         INDArray params = network2.params();
         File writeTo = new File(UUID.randomUUID().toString());
-        Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
-        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath(),",");
+        Nd4j.writeTxt(params, writeTo.getAbsolutePath(), ",");
+        INDArray load = Nd4j.read(new FileInputStream(writeTo.getAbsolutePath()));
         assertEquals(params,load);
         writeTo.delete();
         Evaluation evaluation = new Evaluation();
@@ -139,7 +148,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         INDArray params = network.params();
         File writeTo = new File(UUID.randomUUID().toString());
         Nd4j.writeTxt(params,writeTo.getAbsolutePath(),",");
-        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath(),",");
+        INDArray load = Nd4j.readTxt(writeTo.getAbsolutePath());
         assertEquals(params,load);
         writeTo.delete();
 

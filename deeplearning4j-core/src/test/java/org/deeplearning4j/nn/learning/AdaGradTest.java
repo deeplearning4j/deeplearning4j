@@ -42,7 +42,7 @@ public class AdaGradTest {
 		
 		AdaGrad grad = new AdaGrad(rows,cols,1e-3);
 		INDArray W = Nd4j.ones(rows,cols);
-	    assertEquals(1e-1,grad.getGradient(W).getDouble(0),1e-1);
+	    assertEquals(1e-1,grad.getGradient(W,0).getDouble(0),1e-1);
 
 		
 
@@ -65,7 +65,7 @@ public class AdaGradTest {
 			W.putRow(i,Nd4j.create(dist.sample(W.columns())));
 		
 		for(int i = 0; i < 5; i++) {
-			String learningRates = String.valueOf("\nAdagrad\n " + grad.getGradient(W)).replaceAll(";","\n");
+			String learningRates = String.valueOf("\nAdagrad\n " + grad.getGradient(W,i)).replaceAll(";","\n");
 			log.info(learningRates);
 			W.addi(Nd4j.randn(rows, cols));
 		}

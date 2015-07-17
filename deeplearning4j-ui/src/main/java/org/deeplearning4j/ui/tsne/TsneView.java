@@ -20,10 +20,13 @@ package org.deeplearning4j.ui.tsne;
 
 import io.dropwizard.views.View;
 
+
+
 /**
  * Created by agibsonccc on 10/8/14.
  */
 public class TsneView extends View {
+
     public TsneView() {
         super("render.ftl");
 

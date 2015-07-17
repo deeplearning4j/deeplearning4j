@@ -78,6 +78,7 @@ import com.google.common.util.concurrent.AtomicDouble;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class RNTN implements Layer {
 
 
@@ -171,6 +172,7 @@ public class RNTN implements Layer {
 
 
     private transient ActorSystem rnTnActorSystem = ActorSystem.create("RNTN");
+    protected int index=0;
 
 
 
@@ -308,6 +310,16 @@ public class RNTN implements Layer {
         unaryClassificationSize = numOuts * (numHidden + 1);
         classWeights = new HashMap<>();
 
+    }
+
+    @Override
+    public int getIndex() {
+        return index;
+    }
+
+    @Override
+    public void setIndex(int index) {
+        this.index = index;
     }
 
     public Collection<IterationListener> getIterationListeners() {
@@ -890,6 +902,7 @@ public class RNTN implements Layer {
                 binaryTensors.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
+        setScore();
     }
 
     public int getNumParameters() {
@@ -1042,7 +1055,7 @@ public class RNTN implements Layer {
         if(paramAdaGrad == null)
             paramAdaGrad = new AdaGrad(1,derivative.columns());
 
-        derivative = paramAdaGrad.getGradient(derivative);
+        derivative = paramAdaGrad.getGradient(derivative,0);
 
         return derivative;
     }

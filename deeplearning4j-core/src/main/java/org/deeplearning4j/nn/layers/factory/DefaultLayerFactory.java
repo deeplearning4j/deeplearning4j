@@ -22,12 +22,9 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.Distributions;
-import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.util.*;
 
@@ -49,18 +46,19 @@ public class DefaultLayerFactory implements LayerFactory {
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf, int index, int numLayers, Collection<IterationListener> iterationListeners) {
-        return create(conf, iterationListeners);
+        return create(conf, iterationListeners, index);
     }
 
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf) {
-        return create(conf,new ArrayList<IterationListener>());
+        return create(conf,new ArrayList<IterationListener>(),0);
     }
 
     @Override
-    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners) {
+    public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index) {
         Layer ret = getInstance(conf);
         ret.setIterationListeners(iterationListeners);
+        ret.setIndex(index);
         Map<String,INDArray> params = getParams(conf);
         ret.setParamTable(params);
         ret.setConf(conf);
@@ -76,6 +74,8 @@ public class DefaultLayerFactory implements LayerFactory {
             return new org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LSTM)
             return new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
+        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM)
+        	return new org.deeplearning4j.nn.layers.recurrent.GravesLSTM(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.OutputLayer)
             return new org.deeplearning4j.nn.layers.OutputLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder)

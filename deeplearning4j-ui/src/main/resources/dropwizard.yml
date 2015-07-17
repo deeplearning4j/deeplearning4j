@@ -6,13 +6,18 @@ server:
       port: 8080
       acceptorThreads: 5
       selectorThreads: 3
-  maxThreads : 30
+      bindHost: 0.0.0.0 # only bind to loopback
+
+  maxThreads : 100
   minThreads : 2
   adminMinThreads: 3
-  adminMaxThreads: 10
+  adminMaxThreads: 100
   adminConnectors:
     - type: http
       port: 8081
+      bindHost: 0.0.0.0 # only bind to loopback
+
+
 
 # Logging settings.
 logging:
@@ -25,8 +30,7 @@ logging:
 
     # Sets the level for 'com.example.app' to DEBUG.
     org.deeplearning4j: INFO
-    org.eclipse.jetty: DEBUG
+    org.eclipse.jetty: INFO
 
   appenders:
     - type: console
-

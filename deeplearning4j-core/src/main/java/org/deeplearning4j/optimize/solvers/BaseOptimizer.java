@@ -20,10 +20,13 @@ package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.InvalidStepException;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.optimize.GradientAdjustment;
+import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
@@ -31,7 +34,7 @@ import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.GradientUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class BaseOptimizer implements ConvexOptimizer {
 
-
-
     protected NeuralNetConfiguration conf;
-    protected AdaGrad adaGrad;
     protected int iteration = 0;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
     protected StepFunction stepFunction;
@@ -55,6 +55,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
     protected BackTrackLineSearch lineMaximizer;
+    protected Updater updater;
     protected double step;
     private int batchSize = 10;
     protected double score,oldScore;
@@ -62,8 +63,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
-    protected Map<String,AdaGrad> adaGradForVariable = new ConcurrentHashMap<>();
-    protected Map<String,INDArray> lastStep = new ConcurrentHashMap<>();
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
@@ -112,7 +111,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Pair<Gradient,Double> pair = model.gradientAndScore();
         for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
             INDArray gradient = pair.getFirst().getGradientFor(paramType);
-            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType);
+            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType,iteration);
         }
         return pair;
     }
@@ -139,6 +138,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
             }
+
         //some algorithms do pre processing of gradient and
         //need to test possible directions. (LBFGS)
         boolean testLineSearch = preFirstStepProcess(gradient);
@@ -146,7 +146,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             //ensure we can take a step
             try {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step,params,gradient);
+                step = lineMaximizer.optimize(step, params, gradient);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
 
@@ -162,26 +162,28 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
         for(int i = 0; i < conf.getNumIterations(); i++) {
+            int v = conf.getNumIterations();
             //line normalization where relevant
             preProcessLine(gradient);
+
             //perform one step
             try {
                 INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step,params,gradient);
+                step = lineMaximizer.optimize(step, params, gradient);
             } catch (InvalidStepException e) {
                 log.warn("Invalid step...continuing another iteration");
             }
 
+            //record old score for deltas and other termination conditions
+            oldScore = score;
+            pair = gradientAndScore();
+            setupSearchState(pair);
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
 
-            //record old score for deltas and other termination conditions
-            oldScore = score;
-            pair = gradientAndScore();
-            setupSearchState(pair);
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions)
                 if(condition.terminate(score,oldScore,new Object[]{gradient}))
@@ -189,11 +191,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //post step updates to other search parameters
             postStep();
+            this.iteration++;
 
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions)
                 if(condition.terminate(score,oldScore,new Object[]{gradient}))
                     return true;
+
 
 
         }
@@ -242,42 +246,18 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         //no-op
     }
 
-    @Override
-    public Map<String, INDArray> getLastStep() {
-        return lastStep;
-    }
 
-    public void setLastStep(Map<String, INDArray> lastStep) {
-        this.lastStep = lastStep;
-    }
+
 
     @Override
-    public AdaGrad getAdaGrad() {
-        return adaGrad;
-    }
+    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType, int iteration) {
+        if(updater == null)
+            updater = UpdaterCreator.getUpdater(model.conf());
+        Layer layer = (Layer) model;
+        Gradient g = new DefaultGradient();
+        g.setGradientFor(paramType,gradient);
+        updater.update(layer,g,iteration);
 
-    @Override
-    public Map<String, AdaGrad> adaGradForVariables() {
-        return adaGradForVariable;
-    }
-
-    @Override
-    public AdaGrad getAdaGradForVariable(String variable) {
-        return adaGradForVariable.get(variable);
-    }
-
-    @Override
-    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType) {
-        GradientAdjustment.updateGradientAccordingToParams(
-                iteration
-                ,batchSize
-                ,conf
-                ,model.getParam(paramType)
-                ,gradient
-                ,adaGradForVariable.get(paramType)
-                ,lastStep.get(paramType)
-                ,paramType
-                );
     }
 
     /**

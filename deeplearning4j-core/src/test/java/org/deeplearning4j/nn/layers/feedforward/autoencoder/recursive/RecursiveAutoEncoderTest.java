@@ -57,8 +57,7 @@ public class RecursiveAutoEncoderTest {
         INDArray input = d2.getFeatureMatrix();
 
         RecursiveAutoEncoder da = LayerFactories.getFactory(conf).create(conf,
-                Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
-        da.setParams(da.params());
+                Arrays.<IterationListener>asList(new ScoreIterationListener(10)),0);
         da.fit(input);
     }
 

@@ -18,15 +18,19 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import com.google.common.collect.Lists;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -43,6 +47,8 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.plot.iterationlistener.LossPlotterIterationListener;
+import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -105,7 +111,7 @@ public class MultiLayerTest {
         
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10)));
+        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(10),new NeuralNetPlotterIterationListener(1)));
         network.fit(next);
 
     }
@@ -117,8 +123,9 @@ public class MultiLayerTest {
     public void testBackProp() {
         Nd4j.getRandom().setSeed(123);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .iterations(10).weightInit(WeightInit.XAVIER).dist(new UniformDistribution(0,1))
+                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .iterations(5).weightInit(WeightInit.XAVIER)
+                .seed(123)
                 .activationFunction("tanh")
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
@@ -128,7 +135,7 @@ public class MultiLayerTest {
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         builder.activationFunction("softmax");
                         builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+                        builder.lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
                     }
                 }).build();
 
@@ -178,7 +185,7 @@ public class MultiLayerTest {
                     .build();
 
         Layer l = LayerFactories.getFactory(conf2).create(conf2,
-                Arrays.<IterationListener>asList(new ScoreIterationListener(2)));
+                Arrays.<IterationListener>asList(new ScoreIterationListener(2)),0);
 
         MultiLayerNetwork d = new MultiLayerNetwork(conf);
 
@@ -332,5 +339,6 @@ public class MultiLayerTest {
         for( int i=0; i<len; i++ ) f[i] = arr.getFloat(i);
         return f;
     }
+
 
 }
