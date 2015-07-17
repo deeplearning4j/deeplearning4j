@@ -146,7 +146,7 @@ public class TestOptimizers {
 				+ ", nIter=" + numLineSearchIter + ", nDimensions=" + nDimensions );
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-		.numLineSearchIterations(numLineSearchIter)
+		.maxNumLineSearchIterations(numLineSearchIter)
 		.iterations(1)
 		.learningRate(0.01)
 		.layer(new RBM()).batchSize(1).build();
@@ -234,7 +234,7 @@ public class TestOptimizers {
 		org.nd4j.linalg.api.rng.distribution.Distribution dist
 		= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-		.numLineSearchIterations(maxNumLineSearchIter)
+		.maxNumLineSearchIterations(maxNumLineSearchIter)
 		.iterations(1)
 		.learningRate(0.01)
 		.layer(new RBM()).batchSize(1).build();
