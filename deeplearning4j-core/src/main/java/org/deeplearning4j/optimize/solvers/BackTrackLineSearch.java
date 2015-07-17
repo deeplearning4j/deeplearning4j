@@ -122,7 +122,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
         this.maxIterations = maxIterations;
     }
 
-    public double getScore(INDArray parameters){
+    public double setScoreFor(INDArray parameters){
         layer.setParams(parameters);
         layer.setScore();
         return layer.score();
@@ -201,12 +201,12 @@ public class BackTrackLineSearch implements LineOptimizer  {
             // check for convergence on delta x
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(oldParameters, parameters,
                     parameters.dup(), parameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == parameters.length()) {
-                score = getScore(oldParameters);
+                score = setScoreFor(oldParameters);
                 logger.trace("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using xold. Value = {}", stepMin, score);
                 return 0.0;
             }
 
-            score = getScore(parameters);
+            score = setScoreFor(parameters);
             logger.debug("Model score after step = {}", score);
 
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
@@ -219,11 +219,11 @@ public class BackTrackLineSearch implements LineOptimizer  {
             }
 
             // if value is infinite, i.e. we've jumped to unstable territory, then scale down jump
-            else if(Double.isInfinite(score) || Double.isInfinite(score2)) {
+            else if(Double.isInfinite(score) || Double.isInfinite(score2) || Double.isNaN(score) || Double.isNaN(score2)) {
                 logger.warn("Value is infinite after jump. oldStep={}. score={}, score2={}. Scaling back step size...",oldStep,score,score2);
                 tmpStep = .2 * step;
                 if(step < stepMin) { //convergence on delta x
-                    score = getScore(oldParameters);
+                    score = setScoreFor(oldParameters);
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using previous parameters. Value={}", score);
                     return 0.0;
                 }

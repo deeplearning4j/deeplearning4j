@@ -70,26 +70,30 @@ public class ConjugateGradient extends BaseOptimizer {
         super.setupSearchState(pair);
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray params = model.params();
-
-        searchState.put(SEARCH_DIR,Nd4j.zeros(params.shape()));	//Initialize to 0, as per Bengio et al.
         searchState.put(PARAMS_KEY, params);
         searchState.put(GRADIENT_KEY, gradient);	//Consequence: on first iteration, gamma = 0
     }
 
 
     @Override
-    public void preProcessLine(INDArray gradient) {
-    	//line is current gradient
-    	//Last gradient is stored in searchState map
-    	INDArray gLast = (INDArray) searchState.get(GRADIENT_KEY);		//Previous iteration gradient
+    public void preProcessLine() {
+        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        searchState.put(SEARCH_DIR, gradient.dup().negi()); // p0 is steepest descent page 108 N&W thus assuming negative gradient
+    }
+
+    @Override
+    public void postStep(INDArray gradient) {
+        //line is current gradient
+        //Last gradient is stored in searchState map
+        INDArray gLast = (INDArray) searchState.get(GRADIENT_KEY);		//Previous iteration gradient
         INDArray searchDirLast = (INDArray) searchState.get(SEARCH_DIR);//Previous iteration search dir
-        
+
         //Calculate gamma (or beta, by Bengio et al. notation). Polak and Ribiere method.
         // = ((grad(current)-grad(last)) \dot (grad(current))) / (grad(last) \dot grad(last))
-        double dgg = Nd4j.getBlasWrapper().dot(gradient.sub(gLast),gradient);
+        double dgg = Nd4j.getBlasWrapper().dot(gradient, gradient);
         double gg = Nd4j.getBlasWrapper().dot(gLast, gLast);
-        double gamma = Double.max(dgg / gg, 0.0);
-        
+        double gamma = Math.max(dgg / gg, 0.0);
+
         //Standard Polak-Ribiere does not guarantee that the search direction is a descent direction
         //But using max(gamma_Polak-Ribiere,0) does guarantee a descent direction. Hence the max above.
         //See Nocedal & Wright, Numerical Optimization, Ch5
@@ -103,11 +107,6 @@ public class ConjugateGradient extends BaseOptimizer {
         //(a) use in BaseOptimizer.optimize(), and (b) next iteration
         searchState.put(GRADIENT_KEY, gradient);
         searchState.put(SEARCH_DIR, searchDir);
-    }
-
-    @Override
-    public void postStep() {
-    	//no-op
     }
 
 
