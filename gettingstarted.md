@@ -8,10 +8,9 @@ This is a multistep install. We highly recommend you join our [Gitter Live Chat]
 
 The prerequisites installs for Deeplearning4j are documented on the ["Getting Started" page](http://nd4j.org/getstarted.html) of ND4J, the linear algebra engine powering DL4J's neural nets:
 
-1. [Java 7](http://nd4j.org/getstarted.html#java) 
+1. [Java 7 or above](http://nd4j.org/getstarted.html#java) 
 2. [Integrated Development Environment: IntelliJ](http://nd4j.org/getstarted.html#ide-for-java) 
 3. [Maven](http://nd4j.org/getstarted.html#maven)
-4. [Canova: An ML Vectorization Lib](http://nd4j.org/getstarted.html#canova)
 5. [GitHub](http://nd4j.org/getstarted.html#github)
 
 After those installs, please read the following:
