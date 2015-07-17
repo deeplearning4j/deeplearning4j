@@ -30,10 +30,12 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.junit.Test;
+import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 public class TestOptimizers {
@@ -228,31 +230,33 @@ public class TestOptimizers {
 		testSphereFnMultipleStepsHelper(OptimizationAlgorithm.LBFGS,5,5);
 	}
 	
-	//Do
-	private static void testSphereFnMultipleStepsHelper( OptimizationAlgorithm oa, int nSteps, int maxNumLineSearchIter ){
-		Random rng = new DefaultRandom(12345L);
-		org.nd4j.linalg.api.rng.distribution.Distribution dist
-		= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
-		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-		.maxNumLineSearchIterations(maxNumLineSearchIter)
-		.iterations(1)
-		.learningRate(0.01)
-		.layer(new RBM()).batchSize(1).build();
-		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
+	
+	private static void testSphereFnMultipleStepsHelper( OptimizationAlgorithm oa, int nOptIter, int maxNumLineSearchIter ){
+		double[] scores = new double[nOptIter+1];
 		
-		Model m = new SphereFunctionModel(100,dist,conf);
-		double[] scores = new double[nSteps+1];
-		scores[0] = m.score();
-		
-		
-		ConvexOptimizer opt = getOptimizer(oa,conf,m);
-		for( int i=0; i<nSteps; i++ ){
-			opt.optimize();
-			scores[i+1] = m.score();
+		for( int i=0; i<=nOptIter; i++ ){
+			Random rng = new DefaultRandom(12345L);
+			org.nd4j.linalg.api.rng.distribution.Distribution dist
+			= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
+			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+			.maxNumLineSearchIterations(maxNumLineSearchIter)
+			.iterations(i)
+			.learningRate(0.01)
+			.layer(new RBM()).batchSize(1).build();
+			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
+			
+			Model m = new SphereFunctionModel(100,dist,conf);
+			if( i == 0 ){
+				scores[0] = m.score();	//Before optimization
+			} else {
+				ConvexOptimizer opt = getOptimizer(oa,conf,m);
+				opt.optimize();
+				scores[i] = m.score();
+			}
 		}
 		
 		if( PRINT_OPT_RESULTS ){
-			System.out.println("Multiple step ("+nSteps+" steps) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
+			System.out.println("Multiple optimization iterations ("+nOptIter+" opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
 			System.out.println(Arrays.toString(scores));
 		}
 		for( int i=1; i<scores.length; i++ ){
@@ -262,27 +266,168 @@ public class TestOptimizers {
 	}
 	
 	
-	
-	
 	/** A non-NN optimization problem. Optimization function (cost function) is 
 	 * \sum_i x_i^2. Has minimum of 0.0 at x_i=0 for all x_i
 	 * See: https://en.wikipedia.org/wiki/Test_functions_for_optimization
 	 */
-	private static class SphereFunctionModel implements Model, Layer {
-		private static final long serialVersionUID = 239156313657395826L;
-		private INDArray parameters;
-		private final NeuralNetConfiguration conf;
+	private static class SphereFunctionModel extends SimpleOptimizableModel {
+		private static final long serialVersionUID = -6963606137417355405L;
+
+		private SphereFunctionModel( int nParams, org.nd4j.linalg.api.rng.distribution.Distribution distribution,
+				NeuralNetConfiguration conf ){
+			super(distribution.sample(new int[]{1,nParams}), conf);
+		}
+		
+		@Override
+		public double score() {
+			return Nd4j.getBlasWrapper().dot(parameters, parameters);	//sum_i x_i^2
+		}
+		
+		@Override
+		public Gradient gradient() {
+			// Gradients: d(x^2)/dx = 2x
+			INDArray gradient = parameters.mul(2);
+			Gradient g = new DefaultGradient();
+			g.gradientForVariable().put("x", gradient);
+			return g;
+		}
+	}
+	
+	
+	
+	
+	
+	@Test
+	public void testRastriginFnOptStochGradDescentMultipleSteps(){
+		testRastriginFnMultipleStepsHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,10,20);
+	}
+	
+	@Test
+	public void testRastRiginFnOptLineGradDescentMultipleSteps(){
+		testRastriginFnMultipleStepsHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,10,20);
+	}
+	
+	@Test
+	public void testRastriginFnOptCGMultipleSteps(){
+		testRastriginFnMultipleStepsHelper(OptimizationAlgorithm.CONJUGATE_GRADIENT,10,20);
+	}
+	
+	@Test
+	public void testRastriginFnOptLBFGSMultipleSteps(){
+		testRastriginFnMultipleStepsHelper(OptimizationAlgorithm.LBFGS,10,20);
+	}
+	
+	
+	private static void testRastriginFnMultipleStepsHelper( OptimizationAlgorithm oa, int nOptIter, int maxNumLineSearchIter ){
+		double[] scores = new double[nOptIter+1];
+		
+		for( int i=0; i<=nOptIter; i++ ){
+			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+			.maxNumLineSearchIterations(maxNumLineSearchIter)
+			.iterations(i)
+			.learningRate(0.01)
+			.layer(new RBM()).batchSize(1).build();
+			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
+			
+			Model m = new RastriginFunctionModel(100,conf);
+			if( i == 0 ){
+				scores[0] = m.score();	//Before optimization
+			} else {
+				ConvexOptimizer opt = getOptimizer(oa,conf,m);
+				opt.optimize();
+				scores[i] = m.score();
+			}
+		}
+		
+		if( PRINT_OPT_RESULTS ){
+			System.out.println("Rastrigin: Multiple optimization iterations ("+nOptIter+" opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
+			System.out.println(Arrays.toString(scores));
+		}
+		for( int i=1; i<scores.length; i++ ){
+			assertTrue( scores[i] < scores[i-1] || (scores[i] == 0.0 && scores[i-1] == 0.0) );
+		}
+		assertTrue(scores[scores.length-1]<1.0);	//Very easy function, expect score ~= 0 with any reasonable number of steps/numLineSearchIter
+	}
+	
+	/** Rastrigin function: A much more complex non-NN multi-dimensional optimization problem.
+	 * Global minimum of 0 at x_i = 0 for all x_i.
+	 * Very large number of local minima.
+	 * This implementation has cost function = infinity if any parameters x_i are
+	 * outside of range [-5.12,5.12]
+	 * https://en.wikipedia.org/wiki/Rastrigin_function
+	 */
+	private static class RastriginFunctionModel extends SimpleOptimizableModel {
+		
+		private RastriginFunctionModel(int nDimensions,NeuralNetConfiguration conf){
+			super(initParams(nDimensions),conf);
+		}
+		
+		private static INDArray initParams( int nDimensions ){
+			Random rng = new DefaultRandom(12345L);
+			org.nd4j.linalg.api.rng.distribution.Distribution dist
+			= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-5.12, 5.12);
+			return dist.sample(new int[]{1,nDimensions});
+		}
+
+		@Override
+		public double score() {
+			//If any parameters are outside range [-5.12,5.12]: score = infinity
+			INDArray paramExceeds512 = parameters.cond(new Condition(){
+				@Override
+				public Boolean apply(Number input) {
+					return Math.abs(input.doubleValue()) > 5.12;
+				}
+
+				@Override
+				public Boolean apply(IComplexNumber input){ throw new UnsupportedOperationException(); };
+			});
+			
+			int nExceeds512 = paramExceeds512.sum(Integer.MAX_VALUE).getInt(0);
+			if( nExceeds512 > 0 ) return Double.POSITIVE_INFINITY;
+			
+			//Otherwise:
+			int nDim = parameters.length();
+			double costFn = 10*parameters.length();
+			
+			for( int i=0; i<nDim; i++ ){
+				double xi = parameters.getDouble(i);
+				costFn += xi*xi - 10.0*Math.cos(2.0*Math.PI*xi);
+			}
+			return costFn;
+		}
+
+		@Override
+		public Gradient gradient() {
+			//Gradient decomposes due to sum, so:
+			//d(x^2 - 10*cos(2*Pi*x))/dx
+			// = 2x + 20*pi*sin(2*Pi*x)
+			int nDim = parameters.length();
+			INDArray gradient = Nd4j.zeros(nDim);
+			for( int i=0; i<nDim; i++ ){
+				double xi = parameters.getDouble(i);
+				double g = 2*xi + 20*Math.PI*Math.sin(2*Math.PI*xi);
+				gradient.put(0, i, g);
+			}
+			Gradient g = new DefaultGradient();
+			g.gradientForVariable().put("x", gradient);
+			return g;
+		}
+		
+	}
+	
+	/** Simple abstract class to deal with the fact that we don't care about the majority of the Model/Layer
+	 * methods here. Classes extending this model for optimizer tests need only implement the score() and 
+	 * gradient() methods.
+	 */
+	private static abstract class SimpleOptimizableModel implements Model, Layer {
+		private static final long serialVersionUID = 4409380971404019303L;
+		protected INDArray parameters;
+		protected final NeuralNetConfiguration conf;
 		
 		/**@param parameterInit Initial parameters. Also determines dimensionality of problem. Should be row vector.
 		 */
-		private SphereFunctionModel( INDArray parameterInit, NeuralNetConfiguration conf ){
+		private SimpleOptimizableModel( INDArray parameterInit, NeuralNetConfiguration conf ){
 			this.parameters = parameterInit.dup();
-			this.conf = conf;
-		}
-		
-		private SphereFunctionModel( int nParams, org.nd4j.linalg.api.rng.distribution.Distribution distribution,
-				NeuralNetConfiguration conf ){
-			this.parameters = distribution.sample(new int[]{1,nParams});
 			this.conf = conf;
 		}
 
@@ -293,11 +438,6 @@ public class TestOptimizers {
 		public void update(INDArray gradient, String paramType) {
 			if(!"x".equals(paramType)) throw new UnsupportedOperationException();
 			parameters.subi(gradient);
-		}
-
-		@Override
-		public double score() {
-			return Nd4j.getBlasWrapper().dot(parameters, parameters);	//sum_i x_i^2
 		}
 
 		@Override
@@ -323,15 +463,6 @@ public class TestOptimizers {
 
 		@Override
 		public void iterate(INDArray input) { throw new UnsupportedOperationException(); }
-
-		@Override
-		public Gradient gradient() {
-			// Gradients: d(x^2)/dx = 2x
-			INDArray gradient = parameters.mul(2);
-			Gradient g = new DefaultGradient();
-			g.gradientForVariable().put("x", gradient);
-			return g;
-		}
 
 		@Override
 		public Pair<Gradient, Double> gradientAndScore() {
