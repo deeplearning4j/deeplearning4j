@@ -189,11 +189,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 }
             }
 
-            //check for termination conditions based on absolute change in score
-            for(TerminationCondition condition : terminationConditions)
-                if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()}))
-                    return true;
-
             this.iteration++;
         }
 
