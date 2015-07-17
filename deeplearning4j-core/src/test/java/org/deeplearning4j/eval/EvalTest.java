@@ -80,7 +80,7 @@ public class EvalTest {
     public void testIrisWithClassNum() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .activationFunction("softmax")
                 .iterations(500).weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1)
@@ -113,7 +113,7 @@ public class EvalTest {
     public void testIrisWithoutClassNum() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .activationFunction("softmax")
                 .iterations(500).weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1)
