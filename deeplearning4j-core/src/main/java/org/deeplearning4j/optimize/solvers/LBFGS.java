@@ -39,8 +39,8 @@ import java.util.LinkedList;
  * @author Adam Gibson
  */
 public class LBFGS extends BaseOptimizer {
-
-    private int m = 4;
+	private static final long serialVersionUID = 9148732140255034888L;
+	private int m = 4;
 
     public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
@@ -61,23 +61,16 @@ public class LBFGS extends BaseOptimizer {
 
     }
 
-    // TODO do we still want to use this?
-    @Override
-    protected void postFirstStep(INDArray gradient) {
-        super.postFirstStep(gradient);
-        if(step == 0.0) {
-            log.debug("Unable to step in that direction...resetting");
-            setupSearchState(model.gradientAndScore());
-            step = 1.0;
-        }
-
-    }
-
     @Override
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         //initial direction should be normal
-        searchState.put(SEARCH_DIR, gradient.dup().mul(Nd4j.norm2(gradient).rdivi(1.0).getDouble(0)).negi());
+        INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
+        if(searchDir == null ){
+        	searchState.put(SEARCH_DIR, gradient.div(-1.0*Nd4j.norm2(gradient).getDouble(0)));	//Normalized negative gradient
+        } else {
+        	searchDir.assign(gradient).divi(-1.0*Nd4j.norm2(gradient).getDouble(0));
+        }
     }
 
     // Numerical Optimization (Nocedal & Wright) section 7.2
