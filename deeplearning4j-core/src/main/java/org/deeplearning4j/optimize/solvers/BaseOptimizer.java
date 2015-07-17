@@ -122,6 +122,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * Optimize call. This runs the optimizer.
      * @return whether it converged or not
      */
+    // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
     public  boolean optimize() {
         //validate the input before training
