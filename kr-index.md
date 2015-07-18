@@ -49,4 +49,6 @@ Deeplearning4j는 배포된 멀티 스레드 딥 러닝 프레임 워크와 일�
 
 질문이 있다면 Gitter를 통해; 고급지원을 원하시면 Skymind를 통해 연락주시기 바랍니다. ND4J는 저희의 상위체계 연산에 동력을 지원하는 자바 기반 과학 컴퓨팅 엔진입니다.
 
+[한국에서의 DL4J 워크샵의 최근소식을 위해서  ujava.org 포럼에 방문을 하세요.](https://www.facebook.com/groups/ujava.org/)
+
 ![Alt text](../img/logos_8.png)
