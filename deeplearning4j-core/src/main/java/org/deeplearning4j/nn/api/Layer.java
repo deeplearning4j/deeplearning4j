@@ -185,7 +185,7 @@ public interface Layer extends Serializable,Cloneable,Model {
     /**
      * Get the iteration listeners for this layer.
      */
-    Collection<IterationListener> getIterationListeners();
+    Collection<IterationListener> getListeners();
 
     /**
      * Set the iteration listeners for this layer.
