@@ -661,8 +661,8 @@ public class TestOptimizers {
 		public Gradient errorSignal(Gradient error, INDArray input){ throw new UnsupportedOperationException(); }
 
 		@Override
-		public Gradient backwardGradient(INDArray z, Layer nextLayer,
-				Gradient nextGradient, INDArray activation) { throw new UnsupportedOperationException(); }
+		public Pair<Gradient,INDArray> backwardGradient(INDArray z, INDArray nextEpsilon, INDArray activation){
+			throw new UnsupportedOperationException(); }
 
 		@Override
 		public void merge(Layer layer, int batchSize) { throw new UnsupportedOperationException(); }

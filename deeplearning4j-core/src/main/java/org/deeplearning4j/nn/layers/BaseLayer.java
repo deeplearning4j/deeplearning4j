@@ -127,22 +127,20 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+    public Pair<Gradient,INDArray> backwardGradient(INDArray derivative, INDArray epsilon, INDArray activation) {
         //needs to be number of features by examples
         Gradient ret = new DefaultGradient();
-        INDArray nextWeights = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray nextDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-        INDArray delta = nextWeights.mmul(nextDelta.transpose()).transpose();
-        delta.muli(derivative);
+        //If this layer is layer L, then
+        //Epsilon is (w^(L+1)*(d^(L+1))^T).
+        INDArray delta = epsilon.muli(derivative);
 
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(activation).transpose());
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta);
-        return ret;
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
+        
+        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+        
+        return new Pair<>(ret,epsilonNext);
     }
-
-    @Override
-
-
 
     public void fit() {
         fit(this.input);
@@ -201,10 +199,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).subi(gradient.sum(0)));
-        else
-            setParam(paramType, getParam(paramType).subi(gradient));
+        setParam(paramType, getParam(paramType).subi(gradient));
     }
 
 

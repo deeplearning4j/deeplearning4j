@@ -98,7 +98,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+    public Pair<Gradient,INDArray> backwardGradient(INDArray z, INDArray epsilon, INDArray activation) {
 
         return null;
     }
