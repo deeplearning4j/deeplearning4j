@@ -184,7 +184,7 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public void setIterationListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<IterationListener> listeners) {
         this.listeners = new ArrayList<>(listeners);
     }
 
