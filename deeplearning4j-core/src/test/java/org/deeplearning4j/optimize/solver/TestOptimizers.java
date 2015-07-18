@@ -32,6 +32,8 @@ import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Cos;
+import org.nd4j.linalg.api.ops.impl.transforms.Sin;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -391,13 +393,13 @@ public class TestOptimizers {
 			if( nExceeds512 > 0 ) return Double.POSITIVE_INFINITY;
 			
 			//Otherwise:
-			int nDim = parameters.length();
 			double costFn = 10*parameters.length();
+			costFn += Nd4j.getBlasWrapper().dot(parameters,parameters);	//xi*xi
+			INDArray temp = parameters.mul(2.0*Math.PI);
+			Nd4j.getExecutioner().exec(new Cos(temp));
+			temp.muli(-10.0);	//After this: each element is -10*cos(2*Pi*xi)
+			costFn += temp.sum(Integer.MAX_VALUE).getDouble(0);
 			
-			for( int i=0; i<nDim; i++ ){
-				double xi = parameters.getDouble(i);
-				costFn += xi*xi - 10.0*Math.cos(2.0*Math.PI*xi);
-			}
 			return costFn;
 		}
 
@@ -406,13 +408,11 @@ public class TestOptimizers {
 			//Gradient decomposes due to sum, so:
 			//d(x^2 - 10*cos(2*Pi*x))/dx
 			// = 2x + 20*pi*sin(2*Pi*x)
-			int nDim = parameters.length();
-			INDArray gradient = Nd4j.zeros(nDim);
-			for( int i=0; i<nDim; i++ ){
-				double xi = parameters.getDouble(i);
-				double g = 2*xi + 20*Math.PI*Math.sin(2*Math.PI*xi);
-				gradient.put(0, i, g);
-			}
+			INDArray gradient = parameters.mul(2*Math.PI);
+			Nd4j.getExecutioner().exec(new Sin(gradient));
+			gradient.muli(20*Math.PI);
+			gradient.addi(parameters.mul(2));
+			
 			Gradient g = new DefaultGradient();
 			g.gradientForVariable().put("x", gradient);
 			return g;
