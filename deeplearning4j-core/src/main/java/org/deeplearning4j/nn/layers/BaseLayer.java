@@ -50,7 +50,7 @@ public abstract class BaseLayer implements Layer {
     protected ParamInitializer paramInitializer;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
+    protected Collection<IterationListener> listeners = new ArrayList<>();
     protected int index=0;
 
     public BaseLayer(NeuralNetConfiguration conf) {
@@ -82,13 +82,13 @@ public abstract class BaseLayer implements Layer {
 
 
     @Override
-    public Collection<IterationListener> getIterationListeners() {
-        return iterationListeners;
+    public Collection<IterationListener> getListeners() {
+        return listeners;
     }
 
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+        this.listeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
 
     @Override
@@ -439,7 +439,7 @@ public abstract class BaseLayer implements Layer {
             applyDropOutIfNecessary(this.input);
         }
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(getIterationListeners())
+                .model(this).configure(conf()).listeners(getListeners())
                 .build();
         this.optimizer = solver.getOptimizer();
         solver.optimize();
@@ -491,7 +491,7 @@ public abstract class BaseLayer implements Layer {
                 ", paramInitializer=" + paramInitializer +
                 ", score=" + score +
                 ", optimizer=" + optimizer +
-                ", iterationListeners=" + iterationListeners +
+                ", listeners=" + listeners +
                 '}';
     }
 

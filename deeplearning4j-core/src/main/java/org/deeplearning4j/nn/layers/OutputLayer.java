@@ -253,7 +253,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
-                .listeners(getIterationListeners())
+                .listeners(getListeners())
                 .model(this).build();
         solver.optimize();
     }
