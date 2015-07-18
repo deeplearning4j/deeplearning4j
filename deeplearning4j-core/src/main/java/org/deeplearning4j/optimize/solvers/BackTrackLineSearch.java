@@ -31,6 +31,9 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.optimize.api.LineOptimizer;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.functions.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +125,10 @@ public class BackTrackLineSearch implements LineOptimizer  {
         this.maxIterations = maxIterations;
     }
 
-    public double setScoreFor(INDArray parameters){
+    public double setScoreFor(INDArray parameters) {
+        if(Nd4j.ENFORCE_NUMERICAL_STABILITY) {
+            BooleanIndexing.applyWhere(parameters, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
+        }
         layer.setParams(parameters);
         layer.setScore();
         return layer.score();
@@ -160,7 +166,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         score2 = oldScore = layer.score();
 
-    	if( logger.isTraceEnabled() ){
+        if( logger.isTraceEnabled() ){
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLinnSearch, value = " + oldScore + ",\ndirection.oneNorm:"
                     +	searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
@@ -172,7 +178,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
             searchDirection.muli(stepMax / sum);
         }
 
-        if( slope >= 0.0 ) throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
+        if( slope >= 0.0 )
+            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
@@ -180,15 +187,17 @@ public class BackTrackLineSearch implements LineOptimizer  {
         // look for step size in direction given by "line"
         INDArray candidateParameters = null;
         for(int iteration = 0; iteration < maxIterations; iteration++) {
-        	if( logger.isTraceEnabled() ){
-        		logger.trace("BackTrack loop iteration {} : step={}, oldStep={}", iteration, step, oldStep);
-        		logger.trace("before step, x.1norm: {} \nstep: {} \noldStep: {}", parameters.norm1(Integer.MAX_VALUE), step, oldStep);
-        	}
-            if(step==oldStep)
+            if( logger.isTraceEnabled() ){
+                logger.trace("BackTrack loop iteration {} : step={}, oldStep={}", iteration, step, oldStep);
+                logger.trace("before step, x.1norm: {} \nstep: {} \noldStep: {}", parameters.norm1(Integer.MAX_VALUE), step, oldStep);
+            }
+
+            if(step == oldStep)
                 throw new IllegalArgumentException("Current step == oldStep");
 
             // step
-            if( candidateParameters == null ) candidateParameters = parameters.dup();
+            if( candidateParameters == null )
+                candidateParameters = parameters.dup();
             else candidateParameters.assign(parameters);
             stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
@@ -264,7 +273,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             logger.debug("tmpStep: {}", tmpStep);
             step = Math.max(tmpStep, .1f * step);  // lambda >= .1*Lambda_1
         }
-        
+
         logger.debug("Exited line search after maxIterations termination condition");
         return 0.0;
     }
