@@ -96,7 +96,6 @@ public class BackPropMLPTest {
 			float[] l1WeightsFloat = asFloat(l1Weights);
 			float[] l2WeightsFloat = asFloat(l2Weights);
 			float l1BiasFloat = l1Bias.getFloat(0);
-			float l2BiasFloat = l2Bias.getFloat(0);
 			float[] l2BiasFloatArray = asFloat(l2Bias);
 
 			float hiddenUnitPreSigmoid = dotProduct(l1WeightsFloat,xFloat)+l1BiasFloat;	//z=w*x+b
@@ -169,7 +168,7 @@ public class BackPropMLPTest {
 			float[] l2BiasFloatAfter = asFloat(l2BiasAfter);
 
 
-			float eps = 0.0001f;
+			float eps = 0.01f;
 			assertArrayEquals(l1WeightsFloatAfter,expectedL1WeightsAfter,eps);
 			assertArrayEquals(l2WeightsFloatAfter,expectedL2WeightsAfter,eps);
 			assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);
