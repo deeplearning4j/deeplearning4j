@@ -326,7 +326,7 @@ public class RNTN implements Layer {
         return iterationListeners;
     }
 
-    public void setIterationListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
 

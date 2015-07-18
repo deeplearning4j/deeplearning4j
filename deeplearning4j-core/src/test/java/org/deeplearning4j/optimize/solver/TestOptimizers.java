@@ -693,7 +693,7 @@ public class TestOptimizers {
 		public Collection<IterationListener> getIterationListeners() { return null; }
 
 		@Override
-		public void setIterationListeners(Collection<IterationListener> listeners) { throw new UnsupportedOperationException(); }
+		public void setListeners(Collection<IterationListener> listeners) { throw new UnsupportedOperationException(); }
 
 		@Override
 		public void setIndex(int index) { throw new UnsupportedOperationException(); }
