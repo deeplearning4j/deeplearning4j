@@ -222,7 +222,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             else if(Double.isInfinite(score) || Double.isInfinite(score2) || Double.isNaN(score) || Double.isNaN(score2)) {
                 logger.warn("Value is infinite after jump. oldStep={}. score={}, score2={}. Scaling back step size...",oldStep,score,score2);
                 tmpStep = .2 * step;
-                if(step < stepMin) { //convergence on delta x
+                if(step < stepMin || Double.isNaN(score2)) { //convergence on delta x
                     score = setScoreFor(parameters);
                     logger.warn("EXITING BACKTRACK: Jump too small. Exiting and using previous parameters. Value={}", score);
                     return 0.0;
