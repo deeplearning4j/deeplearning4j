@@ -23,7 +23,8 @@ public abstract class BaseUpdater implements Updater {
     public void update(Layer layer, Gradient gradient,int iteration) {
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             GradientUpdater updater = init(gradientPair.getKey(),gradientPair.getValue(),layer);
-            postApply(layer,updater.getGradient(gradientPair.getValue(),iteration),gradientPair.getKey());
+            INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
+            postApply(layer,gradient2,gradientPair.getKey());
         }
     }
 
