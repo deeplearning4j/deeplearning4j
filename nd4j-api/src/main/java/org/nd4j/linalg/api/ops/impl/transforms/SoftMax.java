@@ -159,28 +159,37 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public void exec() {
-        this.z = y;
+        exec(1);
     }
 
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
         passThrough = true;
-        if (x instanceof IComplexNDArray) {
-            this.maxComplex = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResultComplex();
-            IComplexNDArray complexX = (IComplexNDArray) x;
-            this.y = Transforms.exp(complexX.sub(maxComplex));
-            this.sumComplex = Nd4j.getExecutioner().execAndReturn(new Sum(y)).currentResultComplex();
-            this.y.divi(sumComplex);
-            this.extraArgs = new Object[]{maxComplex, sumComplex};
-        } else {
-            this.max = Nd4j.getExecutioner().execAndReturn(new Max(x)).currentResult();
-            INDArray xMinusMax = x.sub(max);
-            this.y = Transforms.exp(xMinusMax);
-            this.sum = Nd4j.getExecutioner().execAndReturn(new Sum(this.y)).currentResult();
-            this.y.divi(sum);
-            this.extraArgs = new Object[]{max, sum};
+        if(x.isVector()) {
+            this.z = Transforms.exp(x.sub(x.max(Integer.MAX_VALUE)));
+            this.z.divi(z.sum(Integer.MAX_VALUE));
         }
+        else if(x.isMatrix()) {
+            exec(1);
+        }
+
+
+    }
+
+
+    @Override
+    public void exec(int... dimensions) {
+        INDArray maxAlongDimension = x.max(dimensions);
+        if(!maxAlongDimension.isColumnVector())
+            maxAlongDimension = maxAlongDimension.transpose();
+
+        this.y = Transforms.exp(x.subColumnVector(maxAlongDimension));
+        INDArray sum = y.sum(dimensions);
+        if(!sum.isColumnVector())
+            sum = sum.transpose();
+
+        this.z = y.diviColumnVector(sum);
 
 
     }

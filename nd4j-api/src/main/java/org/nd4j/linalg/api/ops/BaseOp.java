@@ -174,4 +174,9 @@ public abstract class BaseOp implements Op {
     public void exec() {
         //no-op
     }
+
+    @Override
+    public void exec(int... dimensions) {
+        //no-op
+    }
 }

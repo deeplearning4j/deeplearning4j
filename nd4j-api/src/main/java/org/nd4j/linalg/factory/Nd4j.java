@@ -83,6 +83,10 @@ public class Nd4j {
     public final static String RESOURCE_MANAGER = "resourcemanager";
     public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
     public final static String ALLOC = "alloc";
+    public final static String EXECUTION_MODE = "opexec.mode";
+    //execution mode for element wise operations
+    public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
+
     //the datatype used for allocating buffers
     public static DataBuffer.Type dtype = DataBuffer.Type.FLOAT;
     //the allocation mode for the heap
@@ -4228,7 +4232,7 @@ public class Nd4j {
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
             resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON,"false"));
-
+            executionMode = props.getProperty(EXECUTION_MODE,"java").equals("java" ) ? OpExecutioner.ExecutionMode.JAVA : OpExecutioner.ExecutionMode.NATIVE;
             ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
             opExecutionerClazz = (Class<? extends OpExecutioner>) Class.forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
             fftInstanceClazz = (Class<? extends FFTInstance>) Class.forName(System.getProperty(FFT_OPS, DefaultFFTInstance.class.getName()));
@@ -4261,13 +4265,14 @@ public class Nd4j {
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
             OP_FACTORY_INSTANCE = opFactoryClazz.newInstance();
+
             random = randomClazz.newInstance();
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
             ENFORCE_NUMERICAL_STABILITY = Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
-
+            getExecutioner().setExecutionMode(executionMode);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

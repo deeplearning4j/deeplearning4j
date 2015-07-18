@@ -41,6 +41,9 @@ import org.nd4j.linalg.util.ArrayUtil;
  * @author Adam Gibson
  */
 public class DefaultOpExecutioner implements OpExecutioner {
+
+    protected ExecutionMode executionMode = ExecutionMode.JAVA;
+
     @Override
     public Op exec(Op op) {
         checkOp(op);
@@ -223,6 +226,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public Op exec(Op op, int...dimension) {
+        if(op.isPassThrough()) {
+            op.exec(dimension);
+            return op;
+        }
+
         if(dimension.length == 1)
             return exec(op,dimension[0]);
         else {
@@ -268,8 +276,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected void checkOp(Op op) {
-        if(op.x() instanceof LinearViewNDArray || op.y() instanceof LinearViewNDArray || op.z() instanceof LinearViewNDArray || op.x() instanceof LinearViewComplexNDArray || op.y() instanceof LinearViewComplexNDArray || op.z() instanceof LinearViewComplexNDArray)
+        if(        op.x() instanceof LinearViewNDArray
+                || op.y() != null && op.y() instanceof LinearViewNDArray
+                || op.z() != null && op.z() instanceof LinearViewNDArray
+                || op.x() != null && op.x() instanceof LinearViewComplexNDArray
+                || op.y() != null && op.y() instanceof LinearViewComplexNDArray
+                || op.z() != null && op.z() instanceof LinearViewComplexNDArray ||
+                op.x() != null && op.x().isScalar() || op.y() != null && op.y().isScalar() || op.z() != null && op.z().isScalar())
             return;
+
+
         int xStride = op.x().offset() + (op.n() - op.x().elementStride()) * (op.x() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.x()) / 2 : BlasBufferUtil.getBlasStride(op.x()));
         int zStride = op.z().offset() + (op.n() - op.z().elementStride()) * (op.z() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.z()) / 2 : BlasBufferUtil.getBlasStride(op.z()));
 
@@ -466,7 +482,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
         return exec(op, dimension).z();
     }
 
+    @Override
+    public ExecutionMode executionMode() {
+        return executionMode;
+    }
 
+    @Override
+    public void setExecutionMode(ExecutionMode executionMode) {
+        this.executionMode = executionMode;
+    }
 
 
     //apply a pairwise op to x and store the result

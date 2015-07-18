@@ -221,4 +221,12 @@ public interface Op {
      * Execute the op if its pass through (not needed most of the time)
      */
     void exec();
+
+    /**
+     * Exec along each dimension
+     * @param dimensions the dimensions to execute on
+     */
+    void exec(int...dimensions);
+
+
 }

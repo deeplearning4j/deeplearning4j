@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
+import org.nd4j.linalg.api.ops.executioner.Loop;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -617,7 +618,7 @@ public abstract class BaseNDArray implements INDArray {
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
         int[] stride = ArrayUtil.keep(stride(), dimension);
         int idx = offset + index * ArrayUtil.prod(ArrayUtil.removeIndex(stride(),dimension));
-        return create(data(),tensorShape,stride,idx,ordering());
+        return create(data(), tensorShape, stride, idx, ordering());
     }
 
     /**
@@ -2057,31 +2058,37 @@ public abstract class BaseNDArray implements INDArray {
 
             return this;
         }
-        assertColumnVector(columnVector);
-        for (int i = 0; i < columns(); i++) {
-            INDArray slice = getColumn(i);
-            switch (operation) {
 
+        assertColumnVector(columnVector);
+        INDArray linear = linearView();
+        int count = 0;
+        for(int i = 0; i < linear.length(); i++,count++) {
+            switch (operation) {
                 case 'a':
-                    slice.addi(columnVector);
+                    linear.putScalar(i, columnVector.getDouble(count) + linear.getDouble(i));
                     break;
                 case 's':
-                    slice.subi(columnVector);
+                    linear.putScalar(i, linear.getDouble(i) - columnVector.getDouble(count));
                     break;
                 case 'm':
-                    slice.muli(columnVector);
+                    linear.putScalar(i, linear.getDouble(i) * columnVector.getDouble(count));
                     break;
                 case 'd':
-                    slice.divi(columnVector);
+                    linear.putScalar(i, linear.getDouble(i) / columnVector.getDouble(count));
                     break;
                 case 'h':
-                    slice.rsubi(columnVector);
+                    linear.putScalar(i, columnVector.getDouble(count) - linear.getDouble(i));
                     break;
                 case 't':
-                    slice.rdivi(columnVector);
+                    linear.putScalar(i, columnVector.getDouble(count) / linear.getDouble(i));
                     break;
             }
+            
+            if(count >= columnVector.length() - 1)
+                count = 0;
         }
+
+
 
         return this;
 
@@ -2120,7 +2127,7 @@ public abstract class BaseNDArray implements INDArray {
      * @param operation the operation
      * @return
      */
-    protected INDArray doRowWise(INDArray rowVector, char operation) {
+    protected INDArray doRowWise(final INDArray rowVector, final char operation) {
         ensureNotCleanedUp();
         if (columns() == 1 && rowVector.isScalar()) {
             switch (operation) {
@@ -2148,30 +2155,34 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         assertRowVector(rowVector);
-        for (int i = 0; i < rows(); i++) {
+        INDArray linear = linearView();
+        int count = 0;
+        for(int i = 0; i < linear.length(); i++,count++) {
             switch (operation) {
-
                 case 'a':
-                    getRow(i).addi(rowVector);
+                    linear.putScalar(i, rowVector.getDouble(count) + linear.getDouble(i));
                     break;
                 case 's':
-                    getRow(i).subi(rowVector);
+                    linear.putScalar(i, linear.getDouble(i) - rowVector.getDouble(count));
                     break;
                 case 'm':
-                    getRow(i).muli(rowVector);
+                    linear.putScalar(i, linear.getDouble(i) * rowVector.getDouble(count));
                     break;
                 case 'd':
-                    getRow(i).divi(rowVector);
+                    linear.putScalar(i, linear.getDouble(i) / rowVector.getDouble(count));
                     break;
                 case 'h':
-                    getRow(i).rsubi(rowVector);
+                    linear.putScalar(i, rowVector.getDouble(count) - linear.getDouble(i));
                     break;
                 case 't':
-                    getRow(i).rdivi(rowVector);
+                    linear.putScalar(i, rowVector.getDouble(count) / linear.getDouble(i));
                     break;
             }
-        }
 
+            if(count >= rowVector.length() - 1)
+                count = 0;
+
+        }
 
         return this;
 

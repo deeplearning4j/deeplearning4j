@@ -26,7 +26,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public Op exec(Op op) {
-        if(op.isPassThrough())
+        if(op.isPassThrough()  || executionMode() == ExecutionMode.JAVA)
             return super.exec(op);
 
         if(op instanceof ScalarOp) {
@@ -46,7 +46,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(ScalarOp op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray) {
+        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
         }
         else {
@@ -81,7 +81,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     private void exec(TransformOp op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray) {
+        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray ||   executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
         }
@@ -152,7 +152,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     private void exec(Accumulation op) {
-        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray) {
+        if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
 
         }
