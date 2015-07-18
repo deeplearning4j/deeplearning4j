@@ -1039,7 +1039,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     protected void doBackWard(INDArray input,INDArray labels) {
         setInput(input);
         this.labels = labels;
-        Gradient nextGradients = new DefaultGradient();
 
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You can ignore this message if you just intend on using a a deep neural network with no output layer.");
@@ -1051,7 +1050,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             throw new IllegalStateException("No labels found");
         if(output.conf().getWeightInit() == WeightInit.ZERO){
             throw new IllegalStateException("Output layer weights cannot be intialized to zero when using backprop.");
-        };
+        }
         output.setLabels(labels);
 
         //calculate and apply the backward gradient for every layer
@@ -1083,19 +1082,26 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 delta.muli(activationDeriv);
             }
 
-            nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
-            nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
-
-            gradientUpdates.add(nextGradients);
+            Gradient outputLayerGradients = new DefaultGradient();
+            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
+            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose().sum(0));
+            gradientUpdates.add(outputLayerGradients);
+            
+            //Initialize with w^out * delta^out, appropriately transposed
+            INDArray nextEpsilon = output.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose();
+            //Expected shape: [m,n^out]
+            //dL/dz for output layer is delta, i.e., out-labels. 
 
             // Calculate gradients for previous layers & drops output layer in count
             for(int j = numLayers - 2; j >= 0; j--) {
                 // Extra values in activations and derivatives to be ignored
                 INDArray currActivation = activations.get(j);
                 INDArray currDerivative = derivatives.get(j);
-                Layer nextLayer = getLayers()[j + 1];
-                nextGradients = getLayers()[j].backwardGradient(currDerivative, nextLayer, nextGradients, currActivation);
-                gradientUpdates.add(nextGradients);
+//                Layer nextLayer = getLayers()[j + 1];
+//                nextGradients = getLayers()[j].backwardGradient(currDerivative, nextLayer, nextGradients, currActivation);
+                Pair<Gradient,INDArray> pair = getLayers()[j].backwardGradient(currDerivative, nextEpsilon, currActivation); 
+                gradientUpdates.add(pair.getFirst());
+                nextEpsilon = pair.getSecond();
             }
 
             Collections.reverse(gradientUpdates);

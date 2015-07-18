@@ -94,7 +94,7 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+    public Pair<Gradient,INDArray> backwardGradient(INDArray z, INDArray epsilon, INDArray activation) {
         INDArray gy = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
         INDArray biasGradient = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
