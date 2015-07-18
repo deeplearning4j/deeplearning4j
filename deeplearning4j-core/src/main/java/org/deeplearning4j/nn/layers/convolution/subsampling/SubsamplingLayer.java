@@ -185,7 +185,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public void setIterationListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<IterationListener> listeners) {
 
     }
 
