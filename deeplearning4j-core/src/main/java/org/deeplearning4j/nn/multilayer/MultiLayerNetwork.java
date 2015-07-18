@@ -1107,8 +1107,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     INDArray update = gradientUpdates.get(k).getGradientFor(paramType);
                     if(update != null)
                         currLayer.update(update, paramType);
+
                 }
             }
+
+            //ensure score is updated correctly during backprop
+            getOutputLayer().setScore();
 
 
             for(IterationListener listener :  listeners)
