@@ -322,7 +322,7 @@ public class RNTN implements Layer {
         this.index = index;
     }
 
-    public Collection<IterationListener> getIterationListeners() {
+    public Collection<IterationListener> getListeners() {
         return iterationListeners;
     }
 
