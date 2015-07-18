@@ -575,11 +575,6 @@ public abstract class BaseNDArray implements INDArray {
         }
 
 
-        if(Shape.isColumnVectorShape(shape())) {
-            int majorStride = ordering() == 'c' ? stride(1) : stride(0);
-            this.majorStride = majorStride;
-            return majorStride;
-        }
 
 
         int majorStride = stride(0);
@@ -732,7 +727,7 @@ public abstract class BaseNDArray implements INDArray {
             if(dimension == 0) {
                 int[] shape2 =  new int[]{shape[dimension],1};
                 int realOffset = offset + (index * (ordering() == 'f' ? stride(0) : stride(1)));
-                int[] retStride = ordering() == NDArrayFactory.FORTRAN ? new int[]{majorStride(),elementStride()} : new int[] {elementStride(),majorStride()};
+                int[] retStride = new int[] {majorStride(),elementStride()};
                 return create(data,
                         shape2
                         ,retStride,
@@ -1538,7 +1533,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if (Shape.isVector(newShape) && isVector()) {
             if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
-                int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.copy(stride()) : getStrides(new int[]{columns(),1},ordering());
+                int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.reverseCopy(stride()) : getStrides(new int[]{columns(),1},ordering());
                 return create(data, newShape,stride,offset);
             }
             //handle case where row vector is reshaped to row vector
@@ -1550,7 +1545,7 @@ public abstract class BaseNDArray implements INDArray {
                 if(ordering() == 'f')
                     return create(data, newShape, new int[]{stride[0],elementStride()}, offset);
                 else
-                    return create(data, newShape, new int[]{elementStride(),stride(-1)}, offset);
+                    return create(data, newShape, stride(), offset);
 
             }
         }
@@ -2035,63 +2030,17 @@ public abstract class BaseNDArray implements INDArray {
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
         ensureNotCleanedUp();
         if (rows() == 1 && columnVector.isScalar()) {
-            switch (operation) {
-                case 'a':
-                    addi(columnVector.getDouble(0));
-                    break;
-                case 's':
-                    subi(columnVector.getDouble(0));
-                    break;
-                case 'm':
-                    muli(columnVector.getDouble(0));
-                    break;
-                case 'd':
-                    divi(columnVector.getDouble(0));
-                    break;
-                case 'h':
-                    rsubi(columnVector.getDouble(0));
-                    break;
-                case 't':
-                    rdivi(columnVector.getDouble(0));
-                    break;
+            if (this instanceof IComplexNDArray) {
+                applyScalarOp(columnVector, operation);
             }
-
-            return this;
         }
+        else {
+            assertColumnVector(columnVector);
+            applyVectorOp(columnVector, operation);
 
-        assertColumnVector(columnVector);
-        INDArray linear = linearView();
-        int count = 0;
-        for(int i = 0; i < linear.length(); i++,count++) {
-            switch (operation) {
-                case 'a':
-                    linear.putScalar(i, columnVector.getDouble(count) + linear.getDouble(i));
-                    break;
-                case 's':
-                    linear.putScalar(i, linear.getDouble(i) - columnVector.getDouble(count));
-                    break;
-                case 'm':
-                    linear.putScalar(i, linear.getDouble(i) * columnVector.getDouble(count));
-                    break;
-                case 'd':
-                    linear.putScalar(i, linear.getDouble(i) / columnVector.getDouble(count));
-                    break;
-                case 'h':
-                    linear.putScalar(i, columnVector.getDouble(count) - linear.getDouble(i));
-                    break;
-                case 't':
-                    linear.putScalar(i, columnVector.getDouble(count) / linear.getDouble(i));
-                    break;
-            }
-            
-            if(count >= columnVector.length() - 1)
-                count = 0;
         }
-
-
 
         return this;
-
 
     }
 
@@ -2130,63 +2079,137 @@ public abstract class BaseNDArray implements INDArray {
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
         ensureNotCleanedUp();
         if (columns() == 1 && rowVector.isScalar()) {
-            switch (operation) {
-                case 'a':
-                    addi(rowVector.getDouble(0));
-                    break;
-                case 's':
-                    subi(rowVector.getDouble(0));
-                    break;
-                case 'm':
-                    muli(rowVector.getDouble(0));
-                    break;
-                case 'd':
-                    divi(rowVector.getDouble(0));
-                    break;
-                case 'h':
-                    rsubi(rowVector.getDouble(0));
-                    break;
-                case 't':
-                    rdivi(rowVector.getDouble(0));
-                    break;
+            if (this instanceof IComplexNDArray) {
+                applyScalarOp(rowVector, operation);
             }
-
-            return this;
         }
+        else {
 
-        assertRowVector(rowVector);
-        INDArray linear = linearView();
-        int count = 0;
-        for(int i = 0; i < linear.length(); i++,count++) {
-            switch (operation) {
-                case 'a':
-                    linear.putScalar(i, rowVector.getDouble(count) + linear.getDouble(i));
-                    break;
-                case 's':
-                    linear.putScalar(i, linear.getDouble(i) - rowVector.getDouble(count));
-                    break;
-                case 'm':
-                    linear.putScalar(i, linear.getDouble(i) * rowVector.getDouble(count));
-                    break;
-                case 'd':
-                    linear.putScalar(i, linear.getDouble(i) / rowVector.getDouble(count));
-                    break;
-                case 'h':
-                    linear.putScalar(i, rowVector.getDouble(count) - linear.getDouble(i));
-                    break;
-                case 't':
-                    linear.putScalar(i, rowVector.getDouble(count) / linear.getDouble(i));
-                    break;
-            }
-
-            if(count >= rowVector.length() - 1)
-                count = 0;
+            assertRowVector(rowVector);
+            applyVectorOp(rowVector, operation);
 
         }
 
         return this;
+    }
+
+
+    private void applyVectorOp(INDArray vector,char operation) {
+        int count = 0;
+        if(this instanceof IComplexNDArray) {
+            IComplexNDArray complexLinear = (IComplexNDArray) linearView();
+            IComplexNDArray row = (IComplexNDArray) vector;
+            for(int i = 0; i < complexLinear.length(); i++,count++) {
+                switch (operation) {
+                    case 'a':
+                        complexLinear.putScalar(i, row.getComplex(count).add(complexLinear.getComplex(i)));
+                        break;
+                    case 's':
+                        complexLinear.putScalar(i, complexLinear.getComplex(i).sub(row.getComplex(count)));
+                        break;
+                    case 'm':
+                        complexLinear.putScalar(i, complexLinear.getComplex(i).mul(row.getComplex(count)));
+                        break;
+                    case 'd':
+                        complexLinear.putScalar(i, complexLinear.getComplex(i).div(row.getComplex(count)));
+                        break;
+                    case 'h':
+                        complexLinear.putScalar(i, row.getComplex(count).sub(complexLinear.getComplex(i)));
+                        break;
+                    case 't':
+                        complexLinear.putScalar(i, row.getComplex(count).div(complexLinear.getComplex(i)));
+                        break;
+                }
+
+                if(count >= vector.length() - 1)
+                    count = 0;
+
+            }
+        }
+        else {
+            INDArray linear = linearView();
+            for(int i = 0; i < linear.length(); i++,count = count >= vector.length() - 1 ? 0 : count + 1) {
+                double val = vector.getDouble(count);
+                double linearI = linearView.getDouble(i);
+                switch (operation) {
+                    case 'a':
+                        linear.putScalar(i, val + linearI);
+                        break;
+                    case 's':
+                        linear.putScalar(i, linearI - val);
+                        break;
+                    case 'm':
+                        linear.putScalar(i, linearI * val);
+                        break;
+                    case 'd':
+                        linear.putScalar(i, linearI /val);
+                        break;
+                    case 'h':
+                        linear.putScalar(i, val - linearI);
+                        break;
+                    case 't':
+                        linear.putScalar(i, val / linearI);
+                        break;
+                }
+
+
+
+            }
+
+        }
+    }
+
+    private void applyScalarOp(INDArray vector,char operation) {
+        if(this instanceof IComplexNDArray) {
+            IComplexNDArray row = (IComplexNDArray) vector;
+            switch (operation) {
+                case 'a':
+                    addi(row.getComplex(0));
+                    break;
+                case 's':
+                    subi(row.getComplex(0));
+                    break;
+                case 'm':
+                    muli(row.getComplex(0));
+                    break;
+                case 'd':
+                    divi(row.getComplex(0));
+                    break;
+                case 'h':
+                    rsubi(row.getComplex(0));
+                    break;
+                case 't':
+                    rdivi(row.getComplex(0));
+                    break;
+            }
+
+        }
+        else {
+            switch (operation) {
+                case 'a':
+                    addi(vector.getDouble(0));
+                    break;
+                case 's':
+                    subi(vector.getDouble(0));
+                    break;
+                case 'm':
+                    muli(vector.getDouble(0));
+                    break;
+                case 'd':
+                    divi(vector.getDouble(0));
+                    break;
+                case 'h':
+                    rsubi(vector.getDouble(0));
+                    break;
+                case 't':
+                    rdivi(vector.getDouble(0));
+                    break;
+            }
+
+        }
 
     }
+
 
     @Override
     public int stride(int dimension) {
@@ -2936,7 +2959,7 @@ public abstract class BaseNDArray implements INDArray {
             return offset;
 
         int realStride = majorStride();
-        int idx = offset + i * realStride;
+        int idx = offset + (i * realStride);
 
         if (data != null && idx >= data.length())
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
@@ -3552,7 +3575,7 @@ public abstract class BaseNDArray implements INDArray {
 
 
         INDArray raveled = ravel();
-        return create(raveled.data(),shape,Nd4j.getStrides(shape,order));
+        return create(raveled.data(), shape, Nd4j.getStrides(shape, order));
 
 
 
@@ -3560,7 +3583,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray reshape(char order, int rows, int columns) {
-        return reshape(order,new int[]{rows,columns});
+        return reshape(order, new int[]{rows, columns});
     }
 
     /**
@@ -3879,8 +3902,17 @@ public abstract class BaseNDArray implements INDArray {
         indexes = Indices.adjustIndices(shape(), indexes);
 
 
+
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
+        if(ArrayUtil.prod(shape) == 1 && rank() > 2) {
+            if(this instanceof IComplexNDArray) {
+                IComplexNDArray arr = (IComplexNDArray) this;
+                return Nd4j.scalar(arr.getComplex(indexes[indexes.length - 1].indices()[0]));
+            }
+
+            return Nd4j.scalar(getDouble(indexes[indexes.length - 1].indices()[0]));
+        }
         //no stride will help here, need to do manually
         if (!Indices.isContiguous(indexes)) {
             INDArray ret = create(shape);
@@ -3987,7 +4019,7 @@ public abstract class BaseNDArray implements INDArray {
      * @param cindices
      */
     @Override
-    public INDArray getColumns(int[] cindices) {
+    public INDArray getColumns(int...cindices) {
         ensureNotCleanedUp();
         INDArray rows = create(rows(), cindices.length);
         for (int i = 0; i < cindices.length; i++) {

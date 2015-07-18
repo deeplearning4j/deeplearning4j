@@ -58,15 +58,33 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public BaseComplexNDArray() {
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     */
     public BaseComplexNDArray(DataBuffer data, int[] shape, int[] stride) {
         this(data, shape, stride, 0, Nd4j.order());
     }
 
+    /**
+     *
+     * @param data
+     */
     public BaseComplexNDArray(float[] data) {
         super(data);
     }
 
 
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     */
     public BaseComplexNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
         super(buffer, shape, stride, offset, ordering);
     }
@@ -83,17 +101,34 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         this(data, shape, Nd4j.getComplexStrides(shape, ordering), 0, ordering);
     }
 
+    /**
+     *
+     * @param shape
+     * @param offset
+     * @param ordering
+     */
     public BaseComplexNDArray(int[] shape, int offset, char ordering) {
         this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),
                 shape, Nd4j.getComplexStrides(shape, ordering),
                 offset, ordering);
     }
 
+    /**
+     *
+     * @param shape
+     */
     public BaseComplexNDArray(int[] shape) {
         this(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2), shape, Nd4j.getComplexStrides(shape));
     }
 
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param ordering
+     */
     public BaseComplexNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         this(data, shape, stride, 0, ordering);
     }
@@ -197,9 +232,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @param ordering the ordering of the ndarray
      */
     public BaseComplexNDArray(List<IComplexNDArray> slices, int[] shape, char ordering) {
-        this(slices, shape, ordering == NDArrayFactory.C ? ArrayUtil.calcStrides(shape, 2) : ArrayUtil.calcStridesFortran(shape, 2), ordering);
-
-
+        this(slices, shape, Nd4j.getComplexStrides(shape, ordering), ordering);
     }
 
     public BaseComplexNDArray(float[] data, int[] shape, int[] stride, int offset, Character order) {
@@ -210,10 +243,21 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         init(shape);
     }
 
+    /**
+     *
+     * @param data
+     */
     public BaseComplexNDArray(DataBuffer data) {
         super(data);
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     */
     public BaseComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         this.data = data;
         this.stride = ArrayUtil.copy(stride);
@@ -223,6 +267,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     */
     public BaseComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
         this(shape, stride, offset, ordering);
         assert data.length <= length;
@@ -231,29 +283,67 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         }
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     */
     public BaseComplexNDArray(DataBuffer data, int[] shape) {
         this(shape);
         this.data = data;
     }
 
+
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     */
     public BaseComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset) {
         this(data, shape, stride, offset, Nd4j.order());
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param offset
+     * @param ordering
+     */
     public BaseComplexNDArray(IComplexNumber[] data, int[] shape, int offset, char ordering) {
         this(data, shape, Nd4j.getComplexStrides(shape), offset, ordering);
     }
 
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param offset
+     * @param ordering
+     */
     public BaseComplexNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
         this(buffer, shape, Nd4j.getComplexStrides(shape), offset, ordering);
     }
 
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param offset
+     */
     public BaseComplexNDArray(DataBuffer buffer, int[] shape, int offset) {
         this(buffer, shape, Nd4j.getComplexStrides(shape), offset, Nd4j.order());
     }
 
+    /**
+     *
+     * @param data
+     * @param order
+     */
     public BaseComplexNDArray(float[] data, Character order) {
-        this(data, new int[]{data.length / 2}, order);
+        this(data, new int[]{1,data.length / 2}, order);
     }
 
 
@@ -329,6 +419,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         this(data, shape, stride, 0, Nd4j.order());
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     */
     public BaseComplexNDArray(float[] data, int[] shape) {
         this(data, shape, 0);
     }
@@ -427,6 +522,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         this(data, shape, stride, offset, Nd4j.order());
     }
 
+    /**
+     *
+     * @param real
+     */
     protected void copyFromReal(INDArray real) {
         if(!Shape.shapeEquals(shape(),real.shape()))
             throw new IllegalStateException("Unable to copy array. Not the same shape");
@@ -443,6 +542,10 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return Nd4j.createComplex(data,shape,strides,offset(),ordering());
     }
 
+    /**
+     * Copy real numbers to arr
+     * @param arr the arr to copy to
+     */
     protected void copyRealTo(INDArray arr) {
         INDArray linear = arr.linearView();
         IComplexNDArray thisLinear = linearView();
@@ -455,7 +558,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     }
 
-
+    /**
+     * Copy imaginary numbers to the given
+     * ndarray
+     * @param arr the array to copy imaginary numbers to
+     */
     protected void copyImagTo(INDArray arr) {
         INDArray linear = arr.linearView();
         IComplexNDArray thisLinear = linearView();
@@ -876,13 +983,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray dup() {
-        IComplexNDArray ret = Nd4j.createComplex(shape());
-        IComplexNDArray linear = linearView();
-        IComplexNDArray retLinear = ret.linearView();
-        for (int i = 0; i < ret.length(); i++) {
-            retLinear.putScalar(i, linear.getComplex(i));
-        }
-        return ret;
+        return (IComplexNDArray) Shape.toOffsetZeroCopy(this);
     }
 
     @Override
@@ -927,167 +1028,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     protected IComplexNDArray doRowWise(INDArray rowVector, char operation) {
-
-        if (columns() == 1 && rowVector.isScalar()) {
-            if (rowVector instanceof IComplexNDArray) {
-                IComplexNDArray rowVectorComplex = (IComplexNDArray) rowVector;
-                switch (operation) {
-                    case 'a':
-                        addi(rowVectorComplex.getComplex(0));
-                        break;
-                    case 's':
-                        subi(rowVectorComplex.getComplex(0));
-                        break;
-                    case 'm':
-                        muli(rowVectorComplex.getComplex(0));
-                        break;
-                    case 'd':
-                        divi(rowVectorComplex.getComplex(0));
-                        break;
-                    case 'h':
-                        rsubi(rowVectorComplex.getComplex(0));
-                        break;
-                    case 't':
-                        rdivi(rowVectorComplex.getComplex(0));
-                        break;
-                }
-
-            } else {
-                switch (operation) {
-                    case 'a':
-                        addi(rowVector.getDouble(0));
-                        break;
-                    case 's':
-                        subi(rowVector.getDouble(0));
-                        break;
-                    case 'm':
-                        muli(rowVector.getDouble(0));
-                        break;
-                    case 'd':
-                        divi(rowVector.getDouble(0));
-                        break;
-                    case 'h':
-                        rsubi(rowVector.getDouble(0));
-                        break;
-                    case 't':
-                        rdivi(rowVector.getDouble(0));
-                        break;
-                }
-
-            }
-
-            return this;
-        }
-
-        assertRowVector(rowVector);
-        for (int i = 0; i < rows(); i++) {
-            switch (operation) {
-
-                case 'a':
-                    getRow(i).addi(rowVector);
-                    break;
-                case 's':
-                    getRow(i).subi(rowVector);
-                    break;
-                case 'm':
-                    getRow(i).muli(rowVector);
-                    break;
-                case 'd':
-                    getRow(i).divi(rowVector);
-                    break;
-                case 'h':
-                    getRow(i).rsubi(rowVector);
-                    break;
-                case 't':
-                    getRow(i).rdivi(rowVector);
-                    break;
-            }
-        }
-
-
-        return this;
+        return (IComplexNDArray) super.doRowWise(rowVector,operation);
     }
 
     @Override
     protected IComplexNDArray doColumnWise(INDArray columnVector, char operation) {
-        if (rows() == 1 && columnVector.isScalar()) {
-            if (columnVector instanceof IComplexNDArray) {
-                IComplexNDArray columnVectorComplex = (IComplexNDArray) columnVector;
-                switch (operation) {
-                    case 'a':
-                        addi(columnVectorComplex.getComplex(0));
-                        break;
-                    case 's':
-                        subi(columnVectorComplex.getComplex(0));
-                        break;
-                    case 'm':
-                        muli(columnVectorComplex.getComplex(0));
-                        break;
-                    case 'd':
-                        divi(columnVectorComplex.getComplex(0));
-                        break;
-                    case 'h':
-                        rsubi(columnVectorComplex.getComplex(0));
-                        break;
-                    case 't':
-                        rdivi(columnVectorComplex.getComplex(0));
-                        break;
-                }
-
-            } else {
-                switch (operation) {
-                    case 'a':
-                        addi(columnVector.getDouble(0));
-                        break;
-                    case 's':
-                        subi(columnVector.getDouble(0));
-                        break;
-                    case 'm':
-                        muli(columnVector.getDouble(0));
-                        break;
-                    case 'd':
-                        divi(columnVector.getDouble(0));
-                        break;
-                    case 'h':
-                        rsubi(columnVector.getDouble(0));
-                        break;
-                    case 't':
-                        rdivi(columnVector.getDouble(0));
-                        break;
-                }
-
-            }
-
-            return this;
-        }
-
-        assertColumnVector(columnVector);
-        for (int i = 0; i < columns(); i++) {
-            IComplexNDArray slice = slice(i, 0);
-            switch (operation) {
-
-                case 'a':
-                    slice.addi(columnVector);
-                    break;
-                case 's':
-                    slice.subi(columnVector);
-                    break;
-                case 'm':
-                    slice.muli(columnVector);
-                    break;
-                case 'd':
-                    slice.divi(columnVector);
-                    break;
-                case 'h':
-                    slice.rsubi(columnVector);
-                    break;
-                case 't':
-                    slice.rdivi(columnVector);
-                    break;
-            }
-        }
-
-        return this;
+        return (IComplexNDArray) super.doColumnWise(columnVector,operation);
     }
 
     /**

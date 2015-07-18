@@ -285,22 +285,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 op.x() != null && op.x().isScalar() || op.y() != null && op.y().isScalar() || op.z() != null && op.z().isScalar())
             return;
 
-
-        int xStride = op.x().offset() + (op.n() - op.x().elementStride()) * (op.x() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.x()) / 2 : BlasBufferUtil.getBlasStride(op.x()));
-        int zStride = op.z().offset() + (op.n() - op.z().elementStride()) * (op.z() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.z()) / 2 : BlasBufferUtil.getBlasStride(op.z()));
-
-        if(op.y() != null) {
-            int yStride = op.y().offset() + (op.n() - op.y().elementStride()) * (op.y() instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(op.y()) / 2 : BlasBufferUtil.getBlasStride(op.y()));
-            Preconditions.checkArgument(xStride < op.x().data().length(),new BlasOpErrorMessage(op).toString());
-            Preconditions.checkArgument(yStride < op.y().data().length(),new BlasOpErrorMessage(op).toString());
-            Preconditions.checkArgument(zStride < op.z().data().length(),new BlasOpErrorMessage(op).toString());
-
-        }
-        else {
-            Preconditions.checkArgument(xStride < op.x().data().length(),new BlasOpErrorMessage(op).toString());
-            Preconditions.checkArgument(zStride < op.z().data().length(),new BlasOpErrorMessage(op).toString());
-
-        }
     }
 
 
