@@ -665,9 +665,7 @@ public class ArrayUtil {
             st *= shape[j];
         }
 
-        if(dimensions > 2 && shape[0] == 1) {
-            stride = ArrayUtil.reverseCopy(stride);
-        }
+
 
         return stride;
     }
@@ -729,7 +727,7 @@ public class ArrayUtil {
      * For use with row vectors to ensure consistent strides
      * with varying offsets
      *
-     * @param arr the array to getScalar the stride for
+     * @param arr the array to get the stride for
      * @return the stride
      */
     public static int nonOneStride(int[] arr) {

@@ -3947,7 +3947,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return an ndarray with ones filled in
      */
-    public static IComplexNDArray complexOnes(int[] shape) {
+    public static IComplexNDArray complexOnes(int...shape) {
         IComplexNDArray ret = INSTANCE.complexOnes(shape);
         logCreationIfNecessary(ret);
         return ret;

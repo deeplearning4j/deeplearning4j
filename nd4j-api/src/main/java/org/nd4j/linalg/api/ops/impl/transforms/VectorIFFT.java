@@ -146,12 +146,16 @@ public class VectorIFFT extends BaseTransformOp {
     public void setX(INDArray x) {
         this.x = x;
         executed = false;
+        this.fftLength = z.length();
+        this.n = fftLength;
     }
 
     @Override
     public void setZ(INDArray z) {
         this.z = z;
         executed = false;
+        this.fftLength = z.length();
+        this.n = fftLength;
 
     }
 
