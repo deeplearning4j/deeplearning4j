@@ -21,12 +21,10 @@ public class Loop {
     });
 
     public static void withIndex(int start, int stop, final Each body) {
-        int chunksize = (stop - start + CPUs - 1) / CPUs;
-        int loops = (stop - start + chunksize - 1) / chunksize;
-        final CountDownLatch latch = new CountDownLatch(loops);
+        final CountDownLatch latch = new CountDownLatch(CPUs);
         for (int i = start; i < stop; ) {
             final int lo = i;
-            i += chunksize;
+            i ++;
             final int hi = (i < stop) ? i : stop;
             executor.submit(new Runnable() {
                 public void run() {
