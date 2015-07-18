@@ -21,11 +21,19 @@ public abstract class BaseUpdater implements Updater {
 
     @Override
     public void update(Layer layer, Gradient gradient,int iteration) {
+        Map<String,INDArray> newGradients = new HashMap<>();
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             GradientUpdater updater = init(gradientPair.getKey(),gradientPair.getValue(),layer);
             INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
             postApply(layer,gradient2,gradientPair.getKey());
+            newGradients.put(gradientPair.getKey(),gradient2);
         }
+
+        //apply the updates
+        for(Map.Entry<String,INDArray> gradientPair : newGradients.entrySet()) {
+            gradient.setGradientFor(gradientPair.getKey(),gradientPair.getValue());
+        }
+
     }
 
     /**

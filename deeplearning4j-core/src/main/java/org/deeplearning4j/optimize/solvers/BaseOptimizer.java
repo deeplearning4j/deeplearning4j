@@ -113,6 +113,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
             INDArray gradient = pair.getFirst().getGradientFor(paramType);
             updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType,iteration);
+            pair.getFirst().setGradientFor(paramType,gradient);
         }
         return pair;
     }
@@ -234,7 +235,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Gradient g = new DefaultGradient();
         g.setGradientFor(paramType,gradient);
         updater.update(layer,g,iteration);
-
+        gradient.assign(g.getGradientFor(paramType));
     }
 
     /**
