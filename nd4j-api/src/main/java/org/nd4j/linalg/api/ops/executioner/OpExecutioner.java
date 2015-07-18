@@ -33,6 +33,10 @@ import org.nd4j.linalg.api.ops.TransformOp;
  */
 public interface OpExecutioner {
 
+    enum ExecutionMode {
+        JAVA,NATIVE
+    }
+
     /**
      * Execute the operation
      *
@@ -121,4 +125,19 @@ public interface OpExecutioner {
      * @return the accumulated result
      */
     INDArray execAndReturn(ScalarOp op, int... dimension);
+
+
+    /**
+     * Get the execution mode for this
+     * execuioner
+     * @return the execution mode for this executioner
+     */
+    ExecutionMode executionMode();
+
+    /**
+     * Set the execution mode
+     * @param executionMode the execution mode
+     */
+    void setExecutionMode(ExecutionMode executionMode);
+
 }
