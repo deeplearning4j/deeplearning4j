@@ -28,14 +28,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class DefaultStepFunction implements StepFunction {
-	private static final long serialVersionUID = -4707790524365648985L;
+    private static final long serialVersionUID = -4707790524365648985L;
 
-	/**Does x = x + stepSize * line
-	 * @param step step size.
-	 */
+    /**Does x = x + stepSize * line
+     * @param step step size.
+     */
     @Override
-    public void step(INDArray paramters, INDArray searchDirection, double step) {
-            Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), step, searchDirection, paramters);
+    public void step(INDArray parameters, INDArray searchDirection, double step) {
+        Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), step, searchDirection, parameters);
     }
 
     @Override
