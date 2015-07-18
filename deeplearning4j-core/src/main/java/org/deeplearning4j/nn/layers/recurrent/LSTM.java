@@ -161,6 +161,10 @@ public class LSTM extends BaseLayer {
 
     }
 
+    @Override
+    public INDArray input() {
+        return xi;
+    }
 
     @Override
     public INDArray activate(INDArray input) {
@@ -454,16 +458,9 @@ public class LSTM extends BaseLayer {
 
     }
 
-    @Override
-    public double score() {
-        return score;
-    }
 
     @Override
     public void setScore() {
-        if (this.input == null)
-            return;
-
         INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
         score = LossFunctions.score(
                 xs,
@@ -472,9 +469,6 @@ public class LSTM extends BaseLayer {
                 conf.getL2(),
                 conf.isUseRegularization());
 
-        //maximize target
-        if(conf.isMinimize())
-            score = -score;
 
     }
 
