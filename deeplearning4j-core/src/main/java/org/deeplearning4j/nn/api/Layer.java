@@ -190,7 +190,7 @@ public interface Layer extends Serializable,Cloneable,Model {
     /**
      * Set the iteration listeners for this layer.
      */
-    void setIterationListeners(Collection<IterationListener> listeners);
+    void setListeners(Collection<IterationListener> listeners);
 
     /**
      * Set the layer index.
