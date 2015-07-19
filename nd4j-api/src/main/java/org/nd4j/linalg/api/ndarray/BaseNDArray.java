@@ -2130,7 +2130,7 @@ public abstract class BaseNDArray implements INDArray {
             INDArray linear = linearView();
             for(int i = 0; i < linear.length(); i++,count = count >= vector.length() - 1 ? 0 : count + 1) {
                 double val = vector.getDouble(count);
-                double linearI = linearView.getDouble(i);
+                double linearI = linearView().getDouble(i);
                 switch (operation) {
                     case 'a':
                         linear.putScalar(i, val + linearI);
