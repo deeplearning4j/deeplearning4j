@@ -33,17 +33,21 @@ import static org.junit.Assert.assertEquals;
 public class RenderTest {
     @Test
     public void testRender() {
-        INDArray test = Nd4j.rand(new int[]{328,400,4});
-        PlotFilters render = new PlotFilters();
-        INDArray rendered = render.render(test,1,1);
-        assertArrayEquals(new int[]{7619, 95}, rendered.shape());
+        INDArray test = Nd4j.rand(new int[]{784,600}).transpose();
+        PlotFilters render = new PlotFilters(test,new int[]{10,10},new int[]{0,0},new int[]{28,28});
+        render.plot();
+        INDArray rendered = render.getPlot();
+
+
     }
 
 
     @Test
     public void testPlotter() throws Exception {
-        PlotFiltersIterationListener listener = new PlotFiltersIterationListener(Arrays.asList(DefaultParamInitializer.WEIGHT_KEY));
-        listener.setOutputFile(new File("/home/agibsonccc/Desktop/render.png"));
+        INDArray test = Nd4j.rand(new int[]{784,600}).transpose();
+        PlotFilters render = new PlotFilters(test,new int[]{10,10},new int[]{0,0},new int[]{28,28});
+        PlotFiltersIterationListener listener = new PlotFiltersIterationListener(render,Arrays.asList(DefaultParamInitializer.WEIGHT_KEY),0);
+        listener.setOutputFile(new File("render.png"));
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
@@ -61,7 +65,7 @@ public class RenderTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        Collection<IterationListener> listeners = Arrays.asList(new ScoreIterationListener(1), new NeuralNetPlotterIterationListener(1));
+        Collection<IterationListener> listeners = Arrays.asList(new ScoreIterationListener(1),listener);
         Layer da = LayerFactories.getFactory(conf.getLayer()).create(conf, listeners,0);
         da.fit(input);
 
