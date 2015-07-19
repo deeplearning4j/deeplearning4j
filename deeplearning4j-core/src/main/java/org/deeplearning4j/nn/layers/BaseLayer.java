@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -157,19 +158,19 @@ public abstract class BaseLayer implements Layer {
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
             create.exec();
-            score = -create.currentResult().doubleValue();
+            score = create.currentResult().doubleValue();
         } else{
             score = LossFunctions.score(
                     input,
                     conf.getLossFunction(),
                     output,
                     conf.getL2(),
+                    conf.getL1()
+                    ,l1Magnitude()
+                    ,l2Magnitude(),
                     conf.isUseRegularization());
         }
 
-        //maximize target
-        if(conf.isMinimize())
-            score = -score;
     }
 
 
@@ -320,6 +321,15 @@ public abstract class BaseLayer implements Layer {
         return ret;
     }
 
+    @Override
+    public double l2Magnitude() {
+        return Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    }
 
     @Override
     public int batchSize() {
