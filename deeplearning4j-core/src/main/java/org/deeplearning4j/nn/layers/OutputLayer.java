@@ -64,30 +64,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
-
-    @Override
-    public void setScore() {
-        if(input == null || labels == null)
-            return;
-        INDArray output = output(input);
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
-            create.exec();
-            score = create.currentResult().doubleValue();
-        } else {
-            score = LossFunctions.score(
-                    labels,
-                    conf.getLossFunction(),
-                    output,
-                    conf.getL2(),
-                    conf.isUseRegularization());
-        }
-
-        //maximize target
-        if(conf.isMinimize())
-            score = -score;
-    }
-
+    
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(),score());

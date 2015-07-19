@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -33,6 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -65,6 +67,16 @@ public class ConvolutionLayer implements Layer {
     @Override
     public void setIndex(int index) {
         this.index = index;
+    }
+
+    @Override
+    public double l2Magnitude() {
+        return Transforms.pow(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return Transforms.abs(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
