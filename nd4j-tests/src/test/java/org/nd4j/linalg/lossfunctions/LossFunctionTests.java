@@ -82,7 +82,7 @@ public  class LossFunctionTests extends BaseNd4jTest {
         INDArray softmax = Nd4j.create(new double[][]{{0.6, 0.4}, {0.7, 0.3}});
         INDArray trueLabels = Nd4j.create(new double[][]{{1, 0}, {0, 1}});
         double score = LossFunctions.score(trueLabels, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, softmax, 0, false);
-        assertEquals(getFailureMessage(),0.7469410300254822, score, 1e-1);
+        assertEquals(getFailureMessage(),0.5108172905023116, score, 1e-1);
 
 
         INDArray softmax2 = Nd4j.create(new double[][]{{0.33, 0.33, 0.33}, {0.33, 0.33, 0.33}});
