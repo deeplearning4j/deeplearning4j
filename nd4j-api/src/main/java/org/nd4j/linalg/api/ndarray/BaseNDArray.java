@@ -935,7 +935,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray putScalar(int i, float value) {
-        return putScalar(i,(double) value);
+        return putScalar(i, (double) value);
 
     }
 
@@ -1761,7 +1761,6 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
         if (isVector()) {
             assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-            assert element.isScalar() || indices[0].length() <= element.length() : "Number of specified elements in index does not match length of element.";
             int[] assign = indices[0].indices();
             if(indices[0] instanceof NDArrayIndex.NDArrayIndexAll)
                 assign = NDArrayIndex.interval(0,length()).indices();
@@ -1771,8 +1770,19 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
             else {
-                for (int i = 0; i < assign.length; i++) {
-                    putScalar(assign[i], element.getDouble(i));
+                if(assign.length < element.length())
+                    for (int i = 0; i < assign.length; i++) {
+                        putScalar(assign[i], element.getDouble(i));
+                    }
+                else if(element.length() < assign.length){
+                    for (int i = 0; i < element.length(); i++) {
+                        putScalar(assign[i], element.getDouble(i));
+                    }
+                }
+                else {
+                    for (int i = 0; i < element.length(); i++) {
+                        putScalar(assign[i], element.getDouble(i));
+                    }
                 }
             }
 
@@ -1805,7 +1815,6 @@ public abstract class BaseNDArray implements INDArray {
                 slice(i).put(indicesSub,element.slice(i));
             }
         }
-
 
 
         return this;
