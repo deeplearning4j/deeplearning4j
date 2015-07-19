@@ -150,7 +150,7 @@ public class ConvolutionLayer implements Layer {
         }
 
         for(int i = 0; i < currentFeatureMaps; i++) {
-            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), 1}, conf.getFeatureMapSize()));
+            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), conf.getChannels()}, conf.getFeatureMapSize()));
             for(int j = 0; j <  inputChannels; j++) {
                 INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
                 featureMap.addi(convolved.broadcast(featureMap.shape()));
