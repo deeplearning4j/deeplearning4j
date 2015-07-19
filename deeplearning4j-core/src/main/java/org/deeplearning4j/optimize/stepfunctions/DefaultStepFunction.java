@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.optimize.stepfunctions;
 
-import org.deeplearning4j.optimize.GradientAdjustment;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,14 +28,14 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class DefaultStepFunction implements StepFunction {
+    private static final long serialVersionUID = -4707790524365648985L;
+
+    /**Does x = x + stepSize * line
+     * @param step step size.
+     */
     @Override
-    public void step(INDArray x, INDArray line, Object[] params) {
-        double alam = (double) params[0];
-        double oldAlam = (double) params[1];
-        double scalar = alam - oldAlam;
-        Nd4j.getBlasWrapper().level1().axpy(line.length(),scalar, line, x);
-
-
+    public void step(INDArray parameters, INDArray searchDirection, double step) {
+        Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), step, searchDirection, parameters);
     }
 
     @Override
@@ -47,6 +46,5 @@ public class DefaultStepFunction implements StepFunction {
     @Override
     public void step() {
         throw new UnsupportedOperationException();
-
     }
 }

@@ -31,8 +31,11 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.*;
 
 /**
  * Created by agibsonccc on 12/3/14.
@@ -46,18 +49,41 @@ public class ParagraphVectorsTest {
     }
 
     @Test
-    public void testWord2VecRunThroughVectors() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
-        File file = resource.getFile().getParentFile();
+    public void testDifferentLabels() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/labeled");
+        File file = resource.getFile();
         LabelAwareSentenceIterator iter = LabelAwareUimaSentenceIterator.createWithPath(file.getAbsolutePath());
-        new File("cache.ser").delete();
 
 
         TokenizerFactory t = new UimaTokenizerFactory();
 
 
         ParagraphVectors vec = new ParagraphVectors.Builder()
-                .minWordFrequency(1).iterations(5)
+                .minWordFrequency(1).iterations(5).labels(Arrays.asList("negative", "neutral","positive"))
+                .layerSize(100)
+                .stopWords(new ArrayList<String>())
+                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+
+        vec.fit();
+
+        assertNotEquals(vec.lookupTable().vector("UNK"), vec.lookupTable().vector("negative"));
+        assertNotEquals(vec.lookupTable().vector("UNK"),vec.lookupTable().vector("positive"));
+        assertNotEquals(vec.lookupTable().vector("UNK"),vec.lookupTable().vector("neutral"));
+
+    }
+
+    @Test
+    public void testWord2VecRunThroughVectors() throws Exception {
+        ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
+        File file = resource.getFile().getParentFile();
+        LabelAwareSentenceIterator iter = LabelAwareUimaSentenceIterator.createWithPath(file.getAbsolutePath());
+
+
+        TokenizerFactory t = new UimaTokenizerFactory();
+
+
+        ParagraphVectors vec = new ParagraphVectors.Builder()
+                .minWordFrequency(1).iterations(5).labels(Arrays.asList("label1", "deeple"))
                 .layerSize(100)
                 .stopWords(new ArrayList<String>())
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();

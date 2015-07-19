@@ -109,7 +109,7 @@ public class ListenerTest {
 
                 .activationFunction(activationFunction)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
 
                 .iterations(iterations)
                 .batchSize(1)
@@ -152,7 +152,7 @@ public class ListenerTest {
 
                 .activationFunction(activationFunction)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
 
                 .iterations(iterations)
                 .batchSize(1)

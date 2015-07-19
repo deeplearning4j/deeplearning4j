@@ -30,7 +30,7 @@ public class TestSerialization {
     public void testModelSerde() throws Exception {
         ObjectMapper mapper = getMapper();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .corruptionLevel(0.6)
                 .iterations(1000).constrainGradientToUnitNorm(true).applySparsity(true).sparsity(0.5)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)

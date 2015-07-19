@@ -29,10 +29,14 @@ import org.junit.Test;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by agibsonccc on 9/9/14.
@@ -84,6 +88,25 @@ public class SentenceIteratorTest {
         assertTrue(labelAwareSentenceIterator.hasNext());
         labelAwareSentenceIterator.nextSentence();
         assertEquals("1",labelAwareSentenceIterator.currentLabel());
+
+        InputStream is2 = new ClassPathResource("labelawaresentenceiterator.txt").getInputStream();
+        LabelAwareSentenceIterator labelAwareSentenceIterator2 = new LabelAwareListSentenceIterator(is2,";",0,1);
+        int count = 0;
+        Map<Integer,String> labels = new HashMap<>();
+        while(labelAwareSentenceIterator2.hasNext()) {
+            String sentence = labelAwareSentenceIterator2.nextSentence();
+            labels.put(count,labelAwareSentenceIterator2.currentLabel());
+            count++;
+        }
+
+        assertEquals("SENT37",labels.get(0));
+        assertEquals("SENT38",labels.get(1));
+        assertEquals("SENT39",labels.get(2));
+        assertEquals("SENT42",labels.get(3));
+
+        assertEquals(4,count);
+
+
 
     }
 
