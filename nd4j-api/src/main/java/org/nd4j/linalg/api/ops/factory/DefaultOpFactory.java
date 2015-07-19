@@ -219,6 +219,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Tanh(x, y);
             case "softmax":
                 return new SoftMax(x, y);
+            case "softplus":
+                return new SoftPlus(x);
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
         }
@@ -274,6 +276,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Tanh(x);
             case "softmax":
                 return new SoftMax(x);
+            case "softplus":
+                return new SoftPlus(x);
 
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
@@ -330,6 +334,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Tanh(x, z);
             case "softmax":
                 return new SoftMax(x, z);
+            case "softplus":
+                return new SoftPlus(x,z);
 
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
