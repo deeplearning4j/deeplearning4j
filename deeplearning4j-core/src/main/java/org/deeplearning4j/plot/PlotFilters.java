@@ -7,7 +7,18 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 /**
  * Based on the work by krizshevy et. al
  *
- * http://nbviewer.ipython.org/github/udibr/caffe/blob/dev/examples/filter_visualization.ipynb
+ * Plot filters takes in either 2d or 4d input
+ *
+ * 2d input represents one matrix.
+ *
+ * Typically for RBMs and AutoEncoders
+ * this will be a transposed nout x nin
+ * matrix.
+ *
+ * For 4d input (multiple channels and images)
+ *
+ * the input should of shape:
+ * channels x number images x rows x columns
  *
  * @author Adam Gibson
  */
@@ -20,6 +31,13 @@ public class PlotFilters {
     private boolean scaleRowsToInterval = true;
     private boolean outputPixels = true;
 
+    /**
+     *
+     * @param input a 2d or 4d matrix (see the input above)
+     * @param tileShape the tile shape (typically 10,10)
+     * @param tileSpacing the tile spacing(typically 0,0 or 1,1)
+     * @param imageShape the intended image shape
+     */
     public PlotFilters(INDArray input, int[] tileShape, int[] tileSpacing, int[] imageShape) {
         this.input = input;
         this.tileShape = tileShape;
@@ -56,18 +74,11 @@ public class PlotFilters {
             return;
         }
         else {
-            int[] channelDefaults = null;
-            if(outputPixels)
-                channelDefaults  = new int[] {0,0,0,255};
-
-            else
-                channelDefaults = new int[]{0,0,0,1};
-
             plot = Nd4j.zeros(retShape[0],retShape[1],4);
 
             for(int i = 0; i < 4; i++) {
-                INDArray retSection = plotSection(input.get(new NDArrayIndex(i), NDArrayIndex.all(), NDArrayIndex.all()), retShape);
-                plot.put(new NDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), new NDArrayIndex(i)},retSection);
+                INDArray retSection = plotSection(input.slice(i), retShape);
+                plot.putSlice(i,retSection);
             }
         }
 
