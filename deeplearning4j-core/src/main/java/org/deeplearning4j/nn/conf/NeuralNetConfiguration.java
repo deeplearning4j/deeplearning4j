@@ -138,6 +138,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected int[] featureMapSize = {9,9};
 
     protected double rmsDecay = 0.0;
+    //number of channels for a conv net
+    protected int channels = 1;
 
 
     protected ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
@@ -511,6 +513,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useDropConnect = false;
         private double rho;
         private Updater updater = Updater.ADAGRAD;
+        private int channels = 1;
+
+
+        /**
+         * Number of channels for a conv net
+         *
+         * @param channels
+         * @return
+         */
+        public Builder channels(int channels) {
+            this.channels = channels;
+            return this;
+        }
 
 
         /**
@@ -807,9 +822,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
-            ret.useDropConnect = true;
+            ret.useDropConnect = useDropConnect;
             ret.rho = rho;
             ret.updater = updater;
+            ret.channels = channels;
             return ret;
         }
 
