@@ -64,7 +64,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
-    
+
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(),score());
