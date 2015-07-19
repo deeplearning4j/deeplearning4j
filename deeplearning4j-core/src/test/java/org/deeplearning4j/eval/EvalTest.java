@@ -38,6 +38,7 @@ import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by agibsonccc on 12/22/14.
@@ -77,69 +78,56 @@ public class EvalTest {
     }
 
     @Test
-    public void testIrisWithClassNum() {
+    public void testIris() {
+
+        // Network config
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
                 .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
                 .activationFunction("softmax")
                 .iterations(500).weightInit(WeightInit.XAVIER)
+                .seed(42)
                 .learningRate(1e-1)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
 
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        // Instantiate model
+        OutputLayer l = LayerFactories.getFactory(conf.getLayer())
+                .create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(500)), 0);
 
+        // Train-test split
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
         DataSet next = iter.next();
         next.shuffle();
-        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        l.fit(trainTest.getTrain());
-
+        SplitTestAndTrain trainTest = next.splitTestAndTrain(110, new Random(42));
+        // Train
+        DataSet train = trainTest.getTrain();
+        train.normalizeZeroMeanZeroUnitVariance();
+        // Test
         DataSet test = trainTest.getTest();
         test.normalizeZeroMeanZeroUnitVariance();
+        INDArray testFeature = test.getFeatureMatrix();
+        INDArray testLabel = test.getLabels();
+
+        // Fitting model
+        l.fit(train);
+        // Get predictions from test feature
+        INDArray testPredictedLabel = l.output(testFeature);
+
+
+        // Eval with class number
         Evaluation eval = new Evaluation(3); //// Specify class num here
-        INDArray output = l.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(), output);
+        eval.eval(testLabel, testPredictedLabel);
+        double eval1F1 = eval.f1();
+        double eval1Acc = eval.accuracy();
 
-        System.out.println(eval.f1());
-        System.out.println(eval.accuracy());
+        // Eval without class number
+        Evaluation eval2 = new Evaluation(); //// No class num
+        eval2.eval(testLabel, testPredictedLabel);
+        double eval2F1 = eval2.f1();
+        double eval2Acc = eval2.accuracy();
 
-        assertTrue(eval.f1() > 0.8);
-        assertTrue(eval.accuracy() > 0.8);
+        //Assert the two implementations give same f1 and accuracy (since one batch)
+        assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
     }
-
-    @Test
-    public void testIrisWithoutClassNum() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .activationFunction("softmax")
-                .iterations(500).weightInit(WeightInit.XAVIER)
-                .learningRate(1e-1)
-                .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
-
-        OutputLayer l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1)),0);
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-        DataSet next = iter.next();
-        next.shuffle();
-        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
-        trainTest.getTrain().normalizeZeroMeanZeroUnitVariance();
-        l.fit(trainTest.getTrain());
-
-        DataSet test = trainTest.getTest();
-        test.normalizeZeroMeanZeroUnitVariance();
-        Evaluation eval = new Evaluation(); //// Specify class num here
-        INDArray output = l.output(test.getFeatureMatrix());
-        eval.eval(test.getLabels(), output);
-
-        System.out.println(eval.f1());
-        System.out.println(eval.accuracy());
-
-        assertTrue(eval.f1() > 0.8);
-        assertTrue(eval.accuracy() > 0.8);
-    }
-
 }
