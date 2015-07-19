@@ -577,6 +577,16 @@ public class TestOptimizers {
 		}
 
 		@Override
+		public double l2Magnitude() {
+			return 0;
+		}
+
+		@Override
+		public double l1Magnitude() {
+			return 0;
+		}
+
+		@Override
 		public void setScore() { }
 
 		@Override
