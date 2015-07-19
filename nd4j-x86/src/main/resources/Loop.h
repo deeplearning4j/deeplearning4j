@@ -155,6 +155,11 @@ public:
                 result[resultOffset + (i * resultStride)] = atan(data[offset + (i  * stride)]);
             }
         }
+          else if(operation.compare("softplus") == 0) {
+                    for(int i = 0; i < length; i++) {
+                        result[resultOffset + (i * resultStride)] = log( 1 + exp(data[offset + (i  * stride)]));
+                    }
+         }
         else if(operation.compare("setrange") == 0) {
             float min = otherParams[0];
             float max = otherParams[1];
@@ -550,6 +555,12 @@ public:
                 result[resultOffset + (i * resultStride)] = sqrt(d1);
             }
         }
+
+           else if(operation.compare("softplus") == 0) {
+                for(int i = 0; i < length; i++) {
+                     result[resultOffset + (i * resultStride)] = logf( 1 + expf(data[offset + (i  * stride)]));
+                }
+          }
     }
 
     double reduce3(double *data, double *data2,int length, int xOffset, int yOffset,int xStride,int yStride, const std::string operation,
