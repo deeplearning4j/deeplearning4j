@@ -91,7 +91,7 @@ public class RNTNEval {
     public String stats() {
         StringBuilder builder = new StringBuilder()
                 .append("\n");
-        Set<Integer> classes = confusionMatrix.getClasses();
+        List<Integer> classes = confusionMatrix.getClasses();
         for(Integer clazz : classes) {
             for(Integer clazz2 : classes) {
                 int count = confusionMatrix.getCount(clazz, clazz2);
