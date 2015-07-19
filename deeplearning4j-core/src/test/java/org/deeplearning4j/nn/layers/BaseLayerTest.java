@@ -54,6 +54,7 @@ public class BaseLayerTest {
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
+        layer.setScore();
         double score2 = layer.score();
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-3);
@@ -104,6 +105,7 @@ public class BaseLayerTest {
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
+        layer.setScore();
         double score2 = layer.score();
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-3);
@@ -137,6 +139,7 @@ public class BaseLayerTest {
         double score = network.getLayer(1).score();
         INDArray parameters = network.getLayer(1).params();
         network.getLayer(1).setParams(parameters);
+        network.getLayer(1).setScore();
 
         double score2 = network.getLayer(1).score();
         assertEquals(parameters, network.getLayer(1).params());

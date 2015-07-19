@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.optimize.solvers;
 
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,42 +30,34 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * Vectorized Stochastic Gradient Ascent
+ * Stochastic Gradient Descent with Line Search
  * @author Adam Gibson
  *
  */
-public class GradientAscent extends BaseOptimizer {
+public class LineGradientDescent extends BaseOptimizer {
+	private static final long serialVersionUID = 6336124657542062284L;
 
-
-    public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+	public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
-    public GradientAscent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public LineGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
-
-
     @Override
-    public void preProcessLine(INDArray line) {
-        double norm2 = line.norm2(Integer.MAX_VALUE).getDouble(0);
-        if(norm2 > stpMax)
-            line.muli(stpMax / norm2);
-
-
-
+    public void preProcessLine() {
+        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        searchState.put(SEARCH_DIR, gradient.dup().negi());
     }
 
     @Override
-    public void postStep() {
-        //no-op
+    public void postStep(INDArray gradient) {
+        double norm2 = gradient.norm2(Integer.MAX_VALUE).getDouble(0);
+        if(norm2 > stepMax)
+            searchState.put(SEARCH_DIR,gradient.dup().muli(stepMax / norm2).negi());
+        else
+            searchState.put(SEARCH_DIR, gradient.dup().negi());
     }
-
-    @Override
-    public void setupSearchState(Pair<Gradient, Double> pair) {
-        super.setupSearchState(pair);
-    }
-
 
 }

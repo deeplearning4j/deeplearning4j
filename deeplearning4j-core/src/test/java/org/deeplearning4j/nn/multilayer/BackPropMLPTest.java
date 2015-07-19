@@ -301,7 +301,7 @@ public class BackPropMLPTest {
 
 				.activationFunction(activationFunction)
 				.lossFunction(LossFunction.XENT)
-				.optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
+				.optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
 
 				.iterations(1)
 				.batchSize(1)

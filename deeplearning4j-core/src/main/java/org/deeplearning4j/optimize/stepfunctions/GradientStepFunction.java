@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class GradientStepFunction implements StepFunction {
     @Override
-    public void step(INDArray x, INDArray line, Object[] params) {
+    public void step(INDArray x, INDArray line, double step) {
         x.addi(line);
     }
 
