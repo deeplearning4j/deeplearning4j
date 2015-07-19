@@ -30,17 +30,19 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 
 /**
- * No line search gradient descent
+ * Stochastic Gradient Descent
+ * Standard fix step size
+ * No line search
  * @author Adam Gibson
  */
-public class IterationGradientDescent extends BaseOptimizer {
+public class StochasticGradientDescent extends BaseOptimizer {
 
 
-    public IterationGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
+    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
     }
 
-    public IterationGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
+    public StochasticGradientDescent(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Collection<TerminationCondition> terminationConditions, Model model) {
         super(conf, stepFunction, iterationListeners, terminationConditions, model);
     }
 
@@ -48,25 +50,22 @@ public class IterationGradientDescent extends BaseOptimizer {
     @Override
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            Pair<Gradient,Double> score = gradientAndScore();
-            for(String paramType : score.getFirst().gradientForVariable().keySet()) {
-                model.update(score.getFirst().getGradientFor(paramType), paramType);
+            Pair<Gradient,Double> pair = gradientAndScore();
+            for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
+                model.update(pair.getFirst().getGradientFor(paramType), paramType);
             }
 
             for(IterationListener listener : iterationListeners)
-                listener.iterationDone(model,i);
+                listener.iterationDone(model, i);
         }
         return true;
     }
 
     @Override
-    public void preProcessLine(INDArray line) {
-          if(conf.isConstrainGradientToUnitNorm())
-              line.divi(line.norm2(Integer.MAX_VALUE));
+    public void preProcessLine() {
     }
 
     @Override
-    public void postStep() {
-
+    public void postStep(INDArray gradient) {
     }
 }

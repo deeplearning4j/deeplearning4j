@@ -1107,8 +1107,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     INDArray update = gradientUpdates.get(k).getGradientFor(paramType);
                     if(update != null)
                         currLayer.update(update, paramType);
+
                 }
             }
+
+            //ensure score is updated correctly during backprop
+            getOutputLayer().setScore();
 
 
             for(IterationListener listener :  listeners)
@@ -1129,7 +1133,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             init();
         }
         for(Layer layer : layers) {
-            layer.setIterationListeners(listeners);
+            layer.setListeners(listeners);
         }
     }
 
@@ -1153,7 +1157,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                 feedForward();
                 if (getOutputLayer() instanceof OutputLayer) {
                     OutputLayer o = (OutputLayer) getOutputLayer();
-                    o.setIterationListeners(getListeners());
+                    o.setListeners(getListeners());
                     o.fit(o.input(),getLabels());
                 }
             } else {
@@ -1183,7 +1187,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         OutputLayer o = (OutputLayer) getOutputLayer();
         if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
             List<INDArray> activations = feedForward();
-            o.setIterationListeners(getListeners());
+            o.setListeners(getListeners());
             o.fit(activations.get(activations.size() - 2), labels);
         }
 
@@ -1553,6 +1557,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             if(get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
+            layer.setScore();
             idx += range - 1;
         }
 

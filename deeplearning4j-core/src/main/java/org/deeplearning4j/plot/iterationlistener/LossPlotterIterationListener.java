@@ -82,7 +82,7 @@ public class LossPlotterIterationListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
-        scores.add(-model.score());
+        scores.add(model.score());
 
         if (iteration == 0 && renderFirst || iteration > 0 && iteration % this.iterations == 0) {
             this.invoke();

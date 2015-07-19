@@ -48,6 +48,8 @@ public class ScoreIterationListener implements IterationListener {
 
     @Override
     public void iterationDone(Model model, int iteration) {
+        if(printIterations <= 0)
+            printIterations = 1;
         if(iteration % printIterations == 0) {
             invoke();
             log.info("Score at iteration " + iteration + " is " + model.score());

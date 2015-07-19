@@ -87,7 +87,7 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public void setIterationListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
 
@@ -255,7 +255,6 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void setParam(String key, INDArray val) {
         params.put(key, val);
-        setScore();
     }
 
     @Override
@@ -267,15 +266,15 @@ public abstract class BaseLayer implements Layer {
         if(params.length() != length)
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
         int idx = 0;
-        for(int i = 0; i < gradientList.size(); i++) {
-            INDArray param = getParam(gradientList.get(i));
+        Set<String> paramKeySet = this.params.keySet();
+        for(String s : paramKeySet ){
+        	INDArray param = getParam(s);
             INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
             if(param.length() != get.length())
-                throw new IllegalStateException("Parameter " + gradientList.get(i) + " should have been of length " + param.length() + " but was " + get.length());
+                throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
             param.linearView().assign(get);
             idx += param.length();
         }
-        setScore();
 
     }
 
@@ -391,6 +390,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void merge(Layer l,int batchSize) {
         setParams(params().addi(l.params().divi(batchSize)));
+        setScore();
     }
 
 
