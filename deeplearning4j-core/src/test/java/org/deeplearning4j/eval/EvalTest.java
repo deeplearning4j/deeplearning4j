@@ -45,6 +45,7 @@ import java.util.Random;
  */
 public class EvalTest {
 
+
     @Test
     public void testEval() {
         int classNum = 5;
@@ -83,7 +84,7 @@ public class EvalTest {
         // Network config
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .activationFunction("softmax")
                 .iterations(500).weightInit(WeightInit.XAVIER)
                 .seed(42)
