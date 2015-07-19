@@ -35,6 +35,8 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
         this.classes = classes;
     }
 
+    public ConfusionMatrix() {}
+
     /**
      * Creates a new ConfusionMatrix initialized with the contents of another ConfusionMatrix.
      */
