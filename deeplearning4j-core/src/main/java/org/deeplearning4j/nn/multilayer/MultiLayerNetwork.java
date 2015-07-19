@@ -1454,7 +1454,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void accumulateScore(double accum) {
 
     }
-
+    
     /**
      * Clear the inputs
      */
