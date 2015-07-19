@@ -47,10 +47,14 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     private List<String> columnNames = new ArrayList<>();
     private List<String> labelNames = new ArrayList<>();
     private INDArray features, labels;
+    private String id = UUID.randomUUID().toString();
 
     public DataSet() {
-        this(Nd4j.zeros(new int[]{1}), Nd4j.zeros(new int[]{1}));
+        this(Nd4j.zeros(new int[]{1,1}), Nd4j.zeros(new int[]{1,1}));
     }
+
+
+
 
     /**
      * Creates a dataset with the specified input matrix and labels
@@ -141,6 +145,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         for (DataSet d : coll)
             count += d.numExamples();
         return count;
+    }
+
+    @Override
+    public String id() {
+        return id;
     }
 
     @Override

@@ -34,6 +34,9 @@ import java.util.Map;
  * Created by agibsonccc on 8/26/14.
  */
 public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Serializable {
+
+    String id();
+
     INDArray getFeatures();
 
     void setFeatures(INDArray features);
