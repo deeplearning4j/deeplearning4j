@@ -1,14 +1,8 @@
 package org.deeplearning4j.plot;
 
-import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.Shape;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
  * Based on the work by krizshevy et. al
@@ -18,65 +12,113 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class PlotFilters {
+    private INDArray plot;
+    private INDArray input;
+    private int[] tileShape;
+    private int[] tileSpacing = {0,0};
+    private int[] imageShape;
+    private boolean scaleRowsToInterval = true;
+    private boolean outputPixels = true;
+
+    public PlotFilters(INDArray input, int[] tileShape, int[] tileSpacing, int[] imageShape) {
+        this.input = input;
+        this.tileShape = tileShape;
+        this.tileSpacing = tileSpacing;
+        this.imageShape = imageShape;
+    }
+
+
+    public INDArray getInput() {
+        return input;
+    }
+
+    public void setInput(INDArray input) {
+        this.input = input;
+    }
+
     /**
-     * Render the given data
-     * as filters
-     * @param data the data to render
-     * @param padSize the padding size for the images
-     * @return the image to render
+     * scale the data to between 0 and 1
+     * @param toScale the data to scale
+     * @return the scaled version of the data passed in
      */
-    public INDArray render(INDArray data,int padSize) {
-        data.subi(data.mean(Integer.MAX_VALUE));
-        data.divi(data.max(Integer.MAX_VALUE));
-        int n = (int) Math.ceil(Math.sqrt(Shape.squeeze(data.shape())[0]));
-
-        int[][] padding = new int[4][];
-        double end = Math.pow( n,2) - Shape.squeeze(data.shape())[0];
-        padding[0] = new int[]{0,(int) end};
-        padding[1] = new int[]{0,padSize};
-        padding[2] = new int[]{0,padSize};
-        List<double[]> list = new ArrayList<>();
-
-        data = Nd4j.pad(data,padding, Nd4j.PadMode.CONSTANT);
-        //# tile the filters into an image
-        int[] baseFilterShape = Ints.concat(new int[]{n,n}, Arrays.copyOfRange(data.shape(),1,data.shape().length));
-        data = data.reshape(baseFilterShape).permute(0, 2, 1, 3);
-        if(data.rank() == 4)
-            data = data.reshape(n * data.size(1),n * data.size(3));
-
-        data.muli(255);
-
-        return data;
+    public INDArray scale(INDArray toScale) {
+        return toScale.sub(toScale.min(Integer.MAX_VALUE)).muli(1.0 / (Nd4j.EPS_THRESHOLD + toScale.max(Integer.MAX_VALUE).getDouble(0)));
     }
 
 
     /**
-     * Render the given data
-     * as filters
-     * @param data the data to render
-     * @param padSize the padding size for the images
-     * @param padVal the value to pad with
-     * @return the image to render
+     * Plot the image
      */
-    public INDArray render(INDArray data,int padSize,double padVal) {
-        data.subi(data.mean(Integer.MAX_VALUE));
-        data.divi(data.max(Integer.MAX_VALUE));
-        // n = int(np.ceil(np.sqrt(data.shape[0])))
-        int n = (int) Math.ceil(Math.sqrt(data.size(0)));
-        int[][] padding = new int[4][];
-        double end = Math.pow( n,2) - data.size(0);
-        padding[0] = new int[]{0,(int) end};
-        padding[1] = new int[]{0,padSize};
-        padding[2] = new int[]{0,padSize};
-        List<double[]> list = new ArrayList<>();
+    public void plot() {
+        int[] retShape = {(imageShape[0] + tileSpacing[0]) * tileShape[0] - tileSpacing[0],(imageShape[1] + tileSpacing[1]) * tileShape[1] - tileSpacing[1]};
+        if(input.rank() == 2) {
+            plot = plotSection(input,retShape);
+            return;
+        }
+        else {
+            int[] channelDefaults = null;
+            if(outputPixels)
+                channelDefaults  = new int[] {0,0,0,255};
 
-        data = Nd4j.pad(data,padding, Nd4j.PadMode.CONSTANT);
-        //# tile the filters into an image
-        int[] baseFilterShape = Ints.concat(new int[]{n,n}, Arrays.copyOfRange(data.shape(),1,data.shape().length));
-        data = data.reshape(baseFilterShape).permute(0,2,1,3);
-        data = data.reshape(n * data.size(1), n * data.size(3));
+            else
+                channelDefaults = new int[]{0,0,0,1};
 
-        return data;
+            plot = Nd4j.zeros(retShape[0],retShape[1],4);
+
+            for(int i = 0; i < 4; i++) {
+                INDArray retSection = plotSection(input.get(new NDArrayIndex(i), NDArrayIndex.all(), NDArrayIndex.all()), retShape);
+                plot.put(new NDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), new NDArrayIndex(i)},retSection);
+            }
+        }
+
+
     }
+
+    public INDArray getPlot() {
+        return plot;
+    }
+
+    public void setPlot(INDArray plot) {
+        this.plot = plot;
+    }
+
+    private INDArray plotSection(INDArray input,int[] retShape) {
+        INDArray ret = Nd4j.zeros(retShape);
+        if(input.getLeadingOnes() == 2)
+            input = input.reshape(input.size(-2),input.size(-1));
+        int h = imageShape[0];
+        int w = imageShape[1];
+        int hs = tileSpacing[0];
+        int ws = tileSpacing[1];
+        for(int tileRow = 0; tileRow < tileShape[0]; tileRow++) {
+            for(int tileCol = 0; tileCol < tileShape[1]; tileCol++) {
+                if(tileRow * tileShape[1] + tileCol < input.size(0)) {
+                    INDArray image = input.get(new NDArrayIndex(tileRow * tileShape[1] + tileCol));
+                    image = image.reshape(imageShape);
+
+                    if(scaleRowsToInterval) {
+                        image = scale(image);
+                    }
+
+                    if(outputPixels)
+                        image.muli(255);
+                    int rowBegin = tileRow * (h + hs);
+                    int rowEnd = tileRow * (h + hs) + h;
+                    int colBegin = tileCol * (w + ws);
+                    int colEnd = tileCol * (w + ws) + w;
+                    NDArrayIndex rowIndex = NDArrayIndex.interval(rowBegin,rowEnd);
+                    NDArrayIndex colIndex = NDArrayIndex.interval(colBegin,colEnd);
+                    ret.put(new NDArrayIndex[]{rowIndex,colIndex},image);
+
+
+                }
+            }
+        }
+
+        return ret;
+    }
+
+
+
 
 }
