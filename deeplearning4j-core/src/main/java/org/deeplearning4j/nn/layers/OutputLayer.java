@@ -76,7 +76,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             score = create.currentResult().doubleValue();
         } else {
             score = LossFunctions.score(
-                    input,
+                    labels,
                     conf.getLossFunction(),
                     output,
                     conf.getL2(),
