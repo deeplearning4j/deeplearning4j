@@ -316,7 +316,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         NDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(getFailureMessage(),Nd4j.create(new double[]{1,2,3,4}),linearViewNDArray);
+        assertEquals(getFailureMessage(),Nd4j.create(new double[]{1, 2, 3, 4}),linearViewNDArray);
 
     }
 
@@ -402,6 +402,31 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray shouldIndex = Nd4j.create(new float[]{1, 0, 1, 0}, new int[]{2, 2});
         assertEquals(shouldIndex, sorted[0]);
 
+
+    }
+
+
+
+    @Test
+    public void testSubRowVector() {
+        INDArray matrix = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray row = Nd4j.linspace(1, 3, 3);
+        INDArray test = matrix.subRowVector(row);
+        INDArray assertion = Nd4j.create(new double[][] {
+                {0,0,0}
+                ,{3,3,3}
+        });
+        assertEquals(assertion,test);
+
+        INDArray threeByThree = Nd4j.linspace(1,9,9).reshape(3,3);
+        INDArray offsetTest = threeByThree.get(new NDArrayIndex(1,2),NDArrayIndex.all());
+        assertEquals(2,offsetTest.rows());
+        INDArray offsetAssertion = Nd4j.create(new double[][]{
+                {3,3,3}
+                ,{6,6,6}
+        });
+        INDArray offsetSub = offsetTest.subRowVector(row);
+        assertEquals(offsetAssertion,offsetSub);
 
     }
 

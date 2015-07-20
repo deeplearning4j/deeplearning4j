@@ -2039,9 +2039,7 @@ public abstract class BaseNDArray implements INDArray {
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
         ensureNotCleanedUp();
         if (rows() == 1 && columnVector.isScalar()) {
-            if (this instanceof IComplexNDArray) {
-                applyScalarOp(columnVector, operation);
-            }
+            applyScalarOp(columnVector, operation);
         }
         else {
             assertColumnVector(columnVector);

@@ -220,8 +220,20 @@ public interface INDArray extends Serializable  {
      */
     INDArray lti(Number other);
 
+    /**
+     *
+     * @param indexes
+     * @param value
+     * @return
+     */
     INDArray putScalar(int[] indexes, float value);
 
+    /**
+     *
+     * @param indexes
+     * @param value
+     * @return
+     */
     INDArray putScalar(int[] indexes, int value);
 
     /**
@@ -412,6 +424,12 @@ public interface INDArray extends Serializable  {
      */
     INDArray rsub(Number n);
 
+
+    /**
+     *
+     * @param n
+     * @return
+     */
     INDArray rsubi(Number n);
 
 
@@ -1423,7 +1441,10 @@ public interface INDArray extends Serializable  {
      */
     INDArray ravel();
 
-
+    /**
+     *
+     * @param data
+     */
     void setData(DataBuffer data);
 
     /**
@@ -1433,9 +1454,16 @@ public interface INDArray extends Serializable  {
      */
     int slices();
 
-
+    /**
+     *
+     * @return
+     */
     int getTrailingOnes();
 
+    /**
+     *
+     * @return
+     */
     int getLeadingOnes();
 
     /**
