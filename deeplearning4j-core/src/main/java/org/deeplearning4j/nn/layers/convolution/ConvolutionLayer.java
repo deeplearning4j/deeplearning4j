@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -53,6 +54,7 @@ public class ConvolutionLayer implements Layer {
     protected ParamInitializer paramInitializer;
     private List<IterationListener> listeners = new ArrayList<>();
     protected int index = 0;
+    private INDArray dropoutMask;
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -141,14 +143,19 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException();
+    public INDArray preOutput(INDArray x, boolean training) {
+        return null;
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect()) {
-            input = input.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()));
+    public INDArray activate(boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect() && training) {
+            input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
         //number of feature maps for the weights
         int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
@@ -174,6 +181,17 @@ public class ConvolutionLayer implements Layer {
         }
         return ret;
     }
+
+    @Override
+    public INDArray activate() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return activate(input,true);
+    }
+
 
     @Override
     public Layer transpose() {
@@ -267,12 +285,12 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient gradient() {
-        return null;
+       throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -302,7 +320,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
