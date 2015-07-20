@@ -253,7 +253,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public void fit(INDArray examples, INDArray labels) {
         this.input = examples.dup();
-        applyDropOutIfNecessary(this.input);
+        applyDropOutIfNecessary(this.input,true);
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
@@ -376,7 +376,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         this.input = x.dup();
         if(!test)
-            applyDropOutIfNecessary(input());
+            applyDropOutIfNecessary(input(),!test);
 
         return super.activate();
 
