@@ -11,7 +11,9 @@ Neural networks cluster and classify. You can think of them as a clustering and 
 
 As you think about one problem deep learning can solve, ask yourself: What outcomes do I care about? (Those are labels.) Do I have data to accompany those labels? 
 
-For example, if you want to identify a group of people at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique ID, which could include everything from explicit features like age to raw data such as time series that track their motion, or logs of their behavior online, which likely indicates a great deal about lifestyle, habits and interests. Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital stats, social graphs, raw text communications, etc. 
+For example, if you want to identify a group of people at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique ID, which could include everything from explicit features like age to raw data such as time series that track their motion, or logs of their behavior online, which likely indicates a great deal about lifestyle, habits and interests. 
+
+Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital stats, social graphs, raw text communications, etc. 
 
 ## Neural Network Elements
 
