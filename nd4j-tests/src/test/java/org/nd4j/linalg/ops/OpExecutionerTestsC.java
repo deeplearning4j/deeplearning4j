@@ -128,6 +128,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
 
+
+
     @Test
     public void testNorm2() {
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4});
@@ -205,6 +207,10 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Sum sum = new Sum(linspace);
         double sum2 = Nd4j.getExecutioner().execAndReturn(sum).currentResult().doubleValue();
         assertEquals(21, sum2, 1e-1);
+
+        INDArray matrixSums = linspace.reshape(2,3);
+        INDArray rowSums = matrixSums.sum(1);
+        assertEquals(Nd4j.create(new double[]{6,15}),rowSums);
 
 
     }
@@ -298,16 +304,20 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testNegativeNumbersSoftmax() throws Exception {
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         DataInputStream dis = new DataInputStream(new ClassPathResource("softmaxtest.nd").getInputStream());
         INDArray read = Nd4j.read(dis);
         dis.close();
+        INDArray max1 = read.max(1);
         SoftMax softMax = new SoftMax(read);
-        softMax.exec(0);
+        softMax.exec(1);
         INDArray z = softMax.z();
-        INDArray zSums = z.sum(0);
+        INDArray zSums = z.sum(1);
         assertEquals(zSums.length(),zSums.sum(Integer.MAX_VALUE).getDouble(0),1e-1);
 
     }
+
 
 
 
@@ -323,6 +333,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Min min = new Min(row);
         double min2 = Nd4j.getExecutioner().execAndReturn(min).currentResult().doubleValue();
         assertEquals(1.0, min2, 1e-1);
+        Max matrixMax = new Max(linspace);
+        INDArray exec2 = Nd4j.getExecutioner().exec(matrixMax,1);
+        assertEquals(Nd4j.create(new double[]{3,6}),exec2);
     }
 
 

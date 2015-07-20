@@ -171,17 +171,33 @@ public class SoftMax extends BaseTransformOp {
 
     @Override
     public void exec(int... dimensions) {
-        INDArray maxAlongDimension = x.max(dimensions);
-        if(!maxAlongDimension.isColumnVector())
-            maxAlongDimension = maxAlongDimension.transpose();
+        if(dimensions[0] != 1)
+            throw new IllegalArgumentException("Only supports row wise calculations");
+        if(x.isMatrix()) {
+            INDArray maxAlongDimension = x.max(dimensions);
+            if(!maxAlongDimension.isRowVector() && !maxAlongDimension.isScalar())
+                throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
+            INDArray xMinusMax = Nd4j.create(x.shape());
+            for(int i = 0; i < x.slices(); i++) {
+                x.slice(i).subi(maxAlongDimension.getDouble(i));
+            }
 
-        this.y = Transforms.exp(x.subColumnVector(maxAlongDimension));
-        INDArray sum = y.sum(dimensions);
-        if(!sum.isColumnVector())
-            sum = sum.transpose();
+            this.y = Transforms.exp(xMinusMax);
+            INDArray sum = y.sum(dimensions);
+            for(int i = 0; i < y.rows(); i++) {
+                y.slice(i).divi(sum.getDouble(i));
+            }
 
-        this.z = y.diviColumnVector(sum);
+            this.z = y;
 
 
+        }
+        else if(x.isVector()) {
+           double max = x.max(Integer.MAX_VALUE).getDouble(0);
+            this.y = Transforms.exp(x.sub(max));
+            this.y.divi(y.sum(Integer.MAX_VALUE));
+            this.z = y;
+
+        }
     }
 }
