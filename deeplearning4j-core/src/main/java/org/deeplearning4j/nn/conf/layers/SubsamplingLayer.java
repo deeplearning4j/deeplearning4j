@@ -1,30 +1,40 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * @author Adam Gibson
  */
+@Data
+@NoArgsConstructor
 public class SubsamplingLayer extends Layer {
     
     private static final long serialVersionUID = -7095644470333017030L;
+    //convolutional nets: this is the feature map shape
+    private int[] filterSize;
+    //aka pool size for subsampling
+    private int[] stride;
 
-    @Override
-    public int hashCode() {
-        return 0;
+    public SubsamplingLayer(int nIn, int nOut) {
+        this.nIn = nIn;
+        this.nOut = nOut;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
+    public SubsamplingLayer(int nIn, int nOut, int[] filterSize) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.filterSize = filterSize;
     }
 
-    public String toString() {
-        return "SubsamplingLayer{" +
-                '}';
+
+    public SubsamplingLayer(int nIn, int nOut, int[] filterSize, int[] stride) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.filterSize = filterSize;
+        this.stride = stride;
     }
+
+
+
 }

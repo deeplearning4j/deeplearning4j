@@ -20,10 +20,6 @@ public class ConvolutionLayer extends Layer {
     }
 
     private ConvolutionType convolutionType;
-    //convolutional nets: this is the feature map shape
-    private int[] filterSize;
-    //aka pool size for subsampling
-    private int[] stride;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected int batchSize;
     //feature map
@@ -33,35 +29,22 @@ public class ConvolutionLayer extends Layer {
     //CONVOLUTION_WEIGHTS ??
     //CONVOLUTION_BIAS ??
 
-    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride) {
+    public ConvolutionLayer(int nIn, int nOut, int[] featureMapSize) {
         this.nIn = nIn;
         this.nOut = nOut;
-        this.filterSize = filterSize;
-        this.stride = stride;
-    }
-
-    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride, int[] featureMapSize) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.filterSize = filterSize;
-        this.stride = stride;
         this.featureMapSize = featureMapSize;
     }
 
-    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride, int[] featureMapSize, int channels) {
+    public ConvolutionLayer(int nIn, int nOut, int[] featureMapSize, int channels) {
         this.nIn = nIn;
         this.nOut = nOut;
-        this.filterSize = filterSize;
-        this.stride = stride;
         this.featureMapSize = featureMapSize;
         this.channels = channels;
     }
 
-    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride,  int[] featureMapSize, int channels, int batchSize) {
+    public ConvolutionLayer(int nIn, int nOut, int[] featureMapSize, int channels, int batchSize) {
         this.nIn = nIn;
         this.nOut = nOut;
-        this.filterSize = filterSize;
-        this.stride = stride;
         this.featureMapSize = featureMapSize;
         this.channels = channels;
         this.batchSize = batchSize;
