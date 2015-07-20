@@ -326,7 +326,7 @@ public class RNTN implements Layer {
         return iterationListeners;
     }
 
-    public void setIterationListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
 
@@ -1119,6 +1119,16 @@ public class RNTN implements Layer {
 
     @Override
     public int batchSize() {
+        return 0;
+    }
+
+    @Override
+    public double l2Magnitude() {
+        return 0;
+    }
+
+    @Override
+    public double l1Magnitude() {
         return 0;
     }
 

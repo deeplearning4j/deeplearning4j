@@ -29,12 +29,14 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.ops.transforms.Transforms.exp;
@@ -88,7 +90,7 @@ public class LSTM extends BaseLayer {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
 
-        INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()),y);
+        INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()), y);
         INDArray dWd = hOut.transpose().mmul(dY);
         INDArray dBd = Nd4j.sum(dWd,0);
         INDArray dHout = dY.mmul(decoderWeights.transpose());
@@ -161,6 +163,10 @@ public class LSTM extends BaseLayer {
 
     }
 
+    @Override
+    public INDArray input() {
+        return xi;
+    }
 
     @Override
     public INDArray activate(INDArray input) {
@@ -242,7 +248,7 @@ public class LSTM extends BaseLayer {
     public Collection<Pair<List<Integer>,Double>> predict(INDArray xi,INDArray ws) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         int d = decoderWeights.rows();
-        Triple<INDArray,INDArray,INDArray> yhc = lstmTick(xi,Nd4j.zeros(d),Nd4j.zeros(d));
+        Triple<INDArray,INDArray,INDArray> yhc = lstmTick(xi, Nd4j.zeros(d), Nd4j.zeros(d));
         BeamSearch search = new BeamSearch(20,ws,yhc.getSecond(),yhc.getThird());
         return search.search();
     }
@@ -454,27 +460,31 @@ public class LSTM extends BaseLayer {
 
     }
 
+
     @Override
-    public double score() {
-        return score;
+    public double l2Magnitude() {
+        return Transforms.pow(getParam(LSTMParamInitializer.RECURRENT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
-    public void setScore() {
-        if (this.input == null)
-            return;
+    public double l1Magnitude() {
+        return Transforms.abs(getParam(LSTMParamInitializer.RECURRENT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
+    }
 
+
+    @Override
+    public void setScore() {
         INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
         score = LossFunctions.score(
                 xs,
                 conf.getLossFunction(),
                 forward,
                 conf.getL2(),
+                conf.getL1(),
+                l1Magnitude(),
+                l2Magnitude(),
                 conf.isUseRegularization());
 
-        //maximize target
-        if(conf.isMinimize())
-            score = -score;
 
     }
 

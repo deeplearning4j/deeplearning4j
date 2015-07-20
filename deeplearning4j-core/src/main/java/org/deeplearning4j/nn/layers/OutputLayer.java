@@ -67,8 +67,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void setScore() {
-        LinAlgExceptions.assertRows(input, labels);
-        if(input == null)
+        if(input == null || labels == null)
             return;
         INDArray output = output(input);
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
@@ -81,7 +80,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                     conf.getLossFunction(),
                     output,
                     conf.getL2(),
+                    conf.getL1()
+                    ,l1Magnitude()
+                    ,l2Magnitude(),
                     conf.isUseRegularization());
+
         }
 
         //maximize target
