@@ -80,7 +80,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                     conf.getLossFunction(),
                     output,
                     conf.getL2(),
+                    conf.getL1()
+                    ,l1Magnitude()
+                    ,l2Magnitude(),
                     conf.isUseRegularization());
+
         }
 
         //maximize target
