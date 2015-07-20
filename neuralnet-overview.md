@@ -33,6 +33,46 @@ A deep-learning network trained on supervised data can then be applied to unstru
 
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data in the form of an image, a deep-learning network may decide, for example, that the input data is 90 percent likely to represent a person. 
 
+## Feedforward Networks
+
+Our goal in using a neural net is to arrive at the point of least error as fast as possible. We are running a race. The starting line for the race is the state in which our weights and biases are initialized, and the finish line is the state of those parameters when they are capable of producing accurate classifications and predictions. 
+
+The race itself involves many steps, and each of those steps resembles the others. Just like a runner, we will engage in a repetetive act over and over to arrive at the end. 
+
+The collections of weights and biases, whether they are in their start or end state, are also called a model, because they are an attempt to model the data's relationship to ground-truth labels. Models normally start out bad and end up less bad, changing over time as the neural network updates those weights and biases. 
+
+This is because a neural network is born in ignorance. It does not know which weights and biases will translate the input best to make the correct guesses. It has to start out with a guess, and then try to make better guesses sequentially as it learns from its mistakes. 
+
+Here is a simple explanation of what happens when a neural network learns (more precisely, we'll discuss a feedforward neural net, the simplest architecture to explain.)
+
+Input enters the network. The coefficients, or weights, map that input to a set of guesses the network makes at the end. 
+
+    input * weight = guess
+
+Weighted input results in a guess about what that input is. The neural then takes its guess and compares it to a ground-truth about the data, effectively asking an expert "Did I get this right?" 
+
+    ground truth - guess = error
+
+The difference between the network's guess and the ground truth is its *error*. The network measures that error, and walks the error back over its model, adjusting weights to the extent that they contributed to the error. 
+
+    adjustment = error * weight's contribution to error
+
+The three pseudo-mathematical formulas above account for the three key functions of neural networks: scoring input, calculating loss and applying an update to the model -- to begin the three-step process over again. A neural network is a corrective feedback loop, rewarding weights that support its correct guesses, and punishing weights that lead it to err. 
+
+The name for one commonly used optimization function that adjusts weights according to the error they caused is called "gradient descent." 
+
+Gradient is another word for slope, and slope, in its typical form on an x-y graph, represents how two variables relate to each other: rise over run, the change in money over the change in time, etc. In this particular case, the slope we care about describes the relationship between the network's error and a single weight; i.e. that is, how does the error vary as the weight is adjusted. 
+
+To put a finer point on it, which weight will produce the least error? Which one correctly represents the signals contained in the input data, and translates them to a correct classification? Which one can hear "nose" in an input image, and know that should be labeled as a face and not a frying pan?
+
+As a neural network learns, it slowly adjusts many weights so that they can map signal to meaning correctly. The relationship between network *Error* and each of those *weights* is a derivative, *dE/dw*, and we use the chain rule to compute it. Since each weight is just one factor in a deep network that involves many transforms, we use the chain rule to march back through the networks activations and outputs to arrive finally at the weight in question. 
+
+The chain rule in calculus states that D{f(g(x))} = f'(g(x)) * g'(x). That is, the derivative of the composition of two functions -- f(x) and g(x) -- is equal to the derivate of f of g of x multipled by the derivative of g of x. 
+
+## Neural Networks & Artificial Intelligence 
+
+In some circles, neural networks are thought of as "brute force" AI, because they start with a blank slate and hammer their way through to an accurate model. They are effective, but to some eyes inefficient in their approach to modeling, which can't make assumptions about functional dependencies between output and input. That said, gradient descent is not recombining every weight with every other to find the best match -- it's method of pathfinding shrinks the relevant weight space therefore the number of updates by many orders of magnitude. 
+
 ## Introductory Resources
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
