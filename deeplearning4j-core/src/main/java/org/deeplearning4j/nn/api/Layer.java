@@ -42,6 +42,18 @@ public interface Layer extends Serializable,Cloneable,Model {
 
 
     /**
+     * The l2 magnitude for the weights
+     * @return the l2 magnitude for the weights
+     */
+    double l2Magnitude();
+
+    /**
+     * The l1 magnitude for the weights
+     * @return the l1 magnitude for the weights
+     */
+    double l1Magnitude();
+
+    /**
      * Returns the layer type
      * @return
      */

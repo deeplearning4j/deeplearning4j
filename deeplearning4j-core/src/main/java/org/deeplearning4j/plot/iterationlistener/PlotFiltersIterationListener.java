@@ -1,6 +1,5 @@
 package org.deeplearning4j.plot.iterationlistener;
 
-import com.google.common.primitives.Ints;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.PlotFilters;
@@ -19,14 +18,12 @@ import java.util.List;
 public class PlotFiltersIterationListener implements IterationListener {
     private List<String> variables;
     private int iteration = 1;
-    private  PlotFilters filters = new PlotFilters();
+    private  PlotFilters filters;
     private File outputFile = new File("render.png");
 
-    public PlotFiltersIterationListener(List<String> variables) {
-        this.variables = variables;
-    }
 
-    public PlotFiltersIterationListener(List<String> variables, int iteration) {
+    public PlotFiltersIterationListener(PlotFilters plotFilters,List<String> variables, int iteration) {
+        this.filters = plotFilters;
         this.variables = variables;
         this.iteration = iteration;
     }
@@ -77,16 +74,9 @@ public class PlotFiltersIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration) {
         if(iteration % this.iteration == 0) {
             INDArray weights = model.getParam(variables.get(0));
-            if(weights.rank() < 4) {
-                if(weights.rank() == 2) {
-                    weights = weights.reshape(1,1, weights.rows(), weights.columns());
-                }
-                else if(weights.rank() == 3) {
-                    weights = weights.reshape(Ints.concat(new int[]{1},weights.shape()));
-                }
-            }
-
-            INDArray plot = filters.render(weights, 1);
+            filters.setInput(weights.transpose());
+            filters.plot();
+            INDArray plot = filters.getPlot();
             BufferedImage image = ImageLoader.toImage(plot);
             try {
                 outputFile.createNewFile();
