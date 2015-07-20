@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
 
@@ -74,10 +73,7 @@ public abstract class BasePretrainNetwork extends BaseLayer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).addi(gradient.sum(0)));
-        else
-            setParam(paramType, getParam(paramType).addi(gradient));
+    	setParam(paramType, getParam(paramType).addi(gradient));
     }
 
 

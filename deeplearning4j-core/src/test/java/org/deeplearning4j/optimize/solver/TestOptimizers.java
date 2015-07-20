@@ -671,7 +671,7 @@ public class TestOptimizers {
 		public Gradient errorSignal(Gradient error, INDArray input){ throw new UnsupportedOperationException(); }
 
 		@Override
-		public Pair<Gradient,INDArray> backwardGradient(INDArray z, INDArray nextEpsilon, INDArray activation){
+		public Pair<Gradient,INDArray> backwardGradient(INDArray nextEpsilon){
 			throw new UnsupportedOperationException(); }
 
 		@Override

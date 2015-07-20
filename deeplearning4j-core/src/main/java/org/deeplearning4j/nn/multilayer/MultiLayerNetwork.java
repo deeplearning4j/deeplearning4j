@@ -1067,39 +1067,31 @@ public class MultiLayerNetwork implements Serializable, Classifier {
              */
             int numLayers = getnLayers();
             List<Gradient> gradientUpdates = new ArrayList<>();
-            Pair<List<INDArray>,List<INDArray>> activationsAndDeriv = feedForwardActivationsAndDerivatives();
-            List<INDArray> activations = activationsAndDeriv.getFirst();
+            
+            List<INDArray> activations = feedForward();
             INDArray outputActivation = activations.get(activations.size() - 1);
-
-            List<INDArray> derivatives = activationsAndDeriv.getSecond();
-            INDArray activationDeriv = derivatives.get(derivatives.size() - 1);
-            INDArray layerInput = activations.get(activations.size() - 2);
+            INDArray outputLayerInput = activations.get(activations.size() - 2);
 
             INDArray delta = outputActivation.sub(labels).transpose();
 
             // add other cost functions?
-            if(output.conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
-                delta.muli(activationDeriv);
-            }
+          //TODO: Need to rework this whole section
+//            if(output.conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
+//            	INDArray activationDeriv = null;
+//                delta.muli(activationDeriv);
+//            }
 
             Gradient outputLayerGradients = new DefaultGradient();
-            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
+            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(outputLayerInput).transpose());
             outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose().sum(0));
             gradientUpdates.add(outputLayerGradients);
             
             //Initialize with w^out * delta^out, appropriately transposed
-            INDArray nextEpsilon = output.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose();
-            //Expected shape: [m,n^out]
-            //dL/dz for output layer is delta, i.e., out-labels. 
+            INDArray nextEpsilon = output.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose(); //Expected shape: [m,n^out]
 
             // Calculate gradients for previous layers & drops output layer in count
             for(int j = numLayers - 2; j >= 0; j--) {
-                // Extra values in activations and derivatives to be ignored
-                INDArray currActivation = activations.get(j);
-                INDArray currDerivative = derivatives.get(j);
-//                Layer nextLayer = getLayers()[j + 1];
-//                nextGradients = getLayers()[j].backwardGradient(currDerivative, nextLayer, nextGradients, currActivation);
-                Pair<Gradient,INDArray> pair = getLayers()[j].backwardGradient(currDerivative, nextEpsilon, currActivation); 
+                Pair<Gradient,INDArray> pair = getLayers()[j].backwardGradient(nextEpsilon); 
                 gradientUpdates.add(pair.getFirst());
                 nextEpsilon = pair.getSecond();
             }
@@ -1113,7 +1105,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                     INDArray update = gradientUpdates.get(k).getGradientFor(paramType);
                     if(update != null)
                         currLayer.update(update, paramType);
-
                 }
             }
 
