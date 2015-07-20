@@ -132,7 +132,7 @@ public class MultiLayerTest {
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
                 .list(3).backward(true).pretrain(false)
-                .hiddenLayerSizes(new int[]{3,2}).override(2, new ConfOverride() {
+                .hiddenLayerSizes(3,2).override(2, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
                         builder.activationFunction("softmax");
