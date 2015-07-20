@@ -473,6 +473,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int kernel = 5;
         private double corruptionLevel = 3e-1f;
         private double sparsity = 0f;
+        @Deprecated
         private boolean useAdaGrad = true;
         private double lr = 1e-1f;
         private double momentum = 0.5f;
@@ -682,6 +683,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        @Deprecated
         public Builder useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
             return this;

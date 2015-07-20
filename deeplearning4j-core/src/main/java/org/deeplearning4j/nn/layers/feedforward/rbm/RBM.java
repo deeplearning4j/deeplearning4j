@@ -400,7 +400,7 @@ public  class RBM extends BasePretrainNetwork {
             this.sigma = input.var(0).divi(input.rows());
 
         this.input = input.dup();
-        applyDropOutIfNecessary(this.input);
+        applyDropOutIfNecessary(this.input,true);
         contrastiveDivergence();
     }
 
