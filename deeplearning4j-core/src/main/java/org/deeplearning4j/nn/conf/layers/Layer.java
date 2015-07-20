@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import lombok.Data;
 
 /**
  * A neural network layer.
@@ -37,8 +38,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         })
+@Data
 public abstract class Layer implements Serializable {
 
     private static final long serialVersionUID = 492217000569721428L;
-
+    protected int nIn;
+    protected int nOut;
 }

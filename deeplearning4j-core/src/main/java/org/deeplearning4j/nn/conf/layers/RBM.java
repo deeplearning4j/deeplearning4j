@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -48,7 +47,9 @@ import org.deeplearning4j.nn.weights.WeightInit;
  * http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239
  *
  */
-public @NoArgsConstructor class RBM extends BasePretrainNetwork {
+@Data
+@NoArgsConstructor
+public class RBM extends BasePretrainNetwork {
 
     private static final long serialVersionUID = 485040309806445606L;
 
