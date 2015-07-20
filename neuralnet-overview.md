@@ -43,11 +43,11 @@ Deep-learning networks end in an output layer: a logistic, or softmax, classifie
 
 Our goal in using a neural net is to arrive at the point of least error as fast as possible. We are running a race. The starting line for the race is the state in which our weights and biases are initialized, and the finish line is the state of those parameters when they are capable of producing accurate classifications and predictions. 
 
-The race itself involves many steps, and each of those steps resembles the others. Just like a runner, we will engage in a repetetive act over and over to arrive at the end. 
+The race itself involves many steps, and each of those steps resembles the others. Just like a runner, we will engage in a repetetive act over and over to arrive at the end, and those acts are known as "steps", which involve a slight update in the weight and biases, an incremental adjustment to their quantities. 
 
-The collections of weights and biases, whether they are in their start or end state, are also called a model, because they are an attempt to model the data's relationship to ground-truth labels. Models normally start out bad and end up less bad, changing over time as the neural network updates those weights and biases. 
+A collection of weights and biases, whether they are in their start or end state, is also called a model, because it is an attempt to model data's relationship to ground-truth labels, to grasp its structure. Models normally start out bad and end up less bad, changing over time as the neural network updates its parameters. 
 
-This is because a neural network is born in ignorance. It does not know which weights and biases will translate the input best to make the correct guesses. It has to start out with a guess, and then try to make better guesses sequentially as it learns from its mistakes. 
+This is because a neural network is born in ignorance. It does not know which weights and biases will translate the input best to make the correct guesses. It has to start out with a guess, and then try to make better guesses sequentially as it learns from its mistakes. (You can think of a neural network as a miniature enactment of the scientific method, testing hypotheses and trying again -- only it is the scientific method with a blindfold on.)
 
 Here is a simple explanation of what happens when a neural network learns (more precisely, we'll discuss a feedforward neural net, the simplest architecture to explain.)
 
