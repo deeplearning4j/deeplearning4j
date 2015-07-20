@@ -81,6 +81,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
       Binary drop connect mask
      */
     protected INDArray mask;
+    
+    private int layerIndex;	//For Layer.get/setIndex()
 
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
@@ -1702,6 +1704,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void setMask(INDArray mask) {
         this.mask = mask;
     }
+    
+    //==========
+    //Layer methods
 
     @Override
     public Gradient error(INDArray errorSignal) {
@@ -1714,7 +1719,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         @Override
     public Type type() {
-        return Type.valueOf("MULTI_LAYER_NETWORK");
+        return Type.MULTILAYER;
     }
 
     @Override
@@ -1729,7 +1734,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public INDArray preOutput(INDArray x) {
-        throw new UnsupportedOperationException();
+        INDArray lastLayerActivation = x;
+        for( int i=0; i<layers.length-2; i++ ){
+        	lastLayerActivation = layers[i].activate(lastLayerActivation);
+        }
+        return layers[layers.length-1].preOutput(x);
     }
 
     @Override
@@ -1740,23 +1749,49 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
-        throw new UnsupportedOperationException();
+    	//Pair<Gradient,INDArray> backwardGradient(INDArray epsilon)
+    	INDArray currEpsilon = null;//= epsilon;
+    	
+    	Gradient outputGradient = new DefaultGradient();
+    	Map<String,INDArray> gradientMap = outputGradient.gradientForVariable();
+    	for( int i=layers.length-1; i>=0; i-- ){
+    		Pair<Gradient,INDArray> out = null;	//layers[i].backwardGradient(currEpsilon);
+    		currEpsilon = out.getSecond();
+    		
+    		Map<String,INDArray> layerGradMap = out.getFirst().gradientForVariable();
+    		for( Map.Entry<String, INDArray> entry : layerGradMap.entrySet() ){
+    			String newKey = String.valueOf(i) + "_" + entry.getKey();
+    			gradientMap.put(newKey, entry.getValue());
+    		}
+    	}
+    	
+//    	return new Pair<>(outputGradient,currEpsilon);
+    	return null;
     }
 
     @Override
     public void setIndex(int index){
-        throw new UnsupportedOperationException();
+        layerIndex = index;
     }
 
     @Override
     public int getIndex(){
-        throw new UnsupportedOperationException();
+        return layerIndex;
     }
+
+	@Override
+	public double l2Magnitude() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public double l1Magnitude() {
+		throw new UnsupportedOperationException();
+	}
 
 
 }

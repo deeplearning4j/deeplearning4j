@@ -37,7 +37,7 @@ import java.util.Collection;
 public interface Layer extends Serializable,Cloneable,Model {
 
     enum Type {
-       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE
+       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE,MULTILAYER
     }
 
 
