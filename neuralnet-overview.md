@@ -17,7 +17,7 @@ For example, if you want to identify a group of people at risk for cancer, your 
 
 Deep learning is a name for a certain type of stacked neural network composed of several node layers. A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the right stimulus. It combines input from the data with a set of coefficients that amplify or mute that input. These products are summed and the sum is passed through a so-called activation function. Here's a diagram of what one node looks like.
 
-![Alt text](../img/perceptron node.png)
+![Alt text](../img/perceptron_node.png)
 
 A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
