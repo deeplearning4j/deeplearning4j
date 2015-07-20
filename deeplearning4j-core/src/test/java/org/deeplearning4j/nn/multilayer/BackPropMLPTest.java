@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
@@ -299,8 +300,8 @@ public class BackPropMLPTest {
 				.dist(new NormalDistribution(0, 0.1))
 
 				.activationFunction(activationFunction)
-				.lossFunction(LossFunction.XENT)
-				.optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+				.lossFunction(LossFunction.MCXENT)
+				.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
 
 				.iterations(1)
 				.batchSize(1)
@@ -309,6 +310,7 @@ public class BackPropMLPTest {
 
 				.layer(new RBM())
 				.learningRate(0.1).useAdaGrad(false)
+				.updater(Updater.SGD)
 
 				.regularization(false)
 				.l1(0.0)

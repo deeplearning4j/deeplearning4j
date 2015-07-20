@@ -128,14 +128,14 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backwardGradient(INDArray derivative, INDArray epsilon, INDArray activation) {
-        //needs to be number of features by examples
-        Gradient ret = new DefaultGradient();
-        //If this layer is layer L, then
-        //Epsilon is (w^(L+1)*(d^(L+1))^T).
-        INDArray delta = epsilon.muli(derivative);
+    public Pair<Gradient,INDArray> backwardGradient(INDArray epsilon) {
+        //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
+        INDArray z = preOutput(input);
+        INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
+        INDArray delta = epsilon.muli(sigmaPrimeZ);
 
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(activation).transpose());
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(input).transpose());
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
         
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();

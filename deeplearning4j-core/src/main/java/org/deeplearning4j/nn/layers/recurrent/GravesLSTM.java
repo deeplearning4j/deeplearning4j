@@ -40,11 +40,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * @author Alex Black
  */
 public class GravesLSTM extends BaseLayer {
-	private static final long serialVersionUID = 2932878786544423542L;
-	private INDArray ifogZs;
-	private INDArray ifogAs;
-	private INDArray memCellActivations;
-	private INDArray outputActivations;
+	private static final long serialVersionUID = 4115420413387754109L;
 
 	public GravesLSTM(NeuralNetConfiguration conf) {
 		super(conf);
@@ -66,7 +62,15 @@ public class GravesLSTM extends BaseLayer {
 	}
 	
 	@Override
-    public Pair<Gradient,INDArray> backwardGradient(INDArray derivative, INDArray epsilon, INDArray activation) {
+//    public Pair<Gradient,INDArray> backwardGradient(INDArray derivative, INDArray epsilon, INDArray activation) {
+	public Pair<Gradient,INDArray> backwardGradient(INDArray epsilon) {
+		//First: Do forward pass to get gate activations etc.
+		INDArray[] activations = activateHelper();	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
+		INDArray outputActivations = activations[0];
+		INDArray memCellActivations = activations[1];
+		INDArray ifogZs = activations[2];
+		INDArray ifogAs = activations[3];
+		
 		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS);
 		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
 		
@@ -182,7 +186,7 @@ public class GravesLSTM extends BaseLayer {
 					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", zi).derivative()));
 				//Shape: [m,n^L]
 			
-			INDArray prevLayerActivationSlice = activation.slice(t, 2);
+			INDArray prevLayerActivationSlice = input.slice(t, 2);
 			//Indexing here: all columns (==interval(0,n^(L-1)), 3rd dimension based on IFOG order. Sum over mini-batches occurs in delta*prevLayerActivations
 			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai.transpose().mmul(prevLayerActivationSlice).transpose());
 			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)}, deltaf.transpose().mmul(prevLayerActivationSlice).transpose());
@@ -242,6 +246,13 @@ public class GravesLSTM extends BaseLayer {
 	
 	@Override
 	public INDArray activate(){
+		return activateHelper()[0];
+	}
+	
+	/**Returns 4 INDArrays: [outputActivations, memCellActivations, ifogZs, ifogAs] in that order.
+	 * Need all 4 to do backward pass, but only care about the first one for forward pass.
+	 */
+	private INDArray[] activateHelper(){
 		//Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
 		//Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
 		
@@ -349,13 +360,7 @@ public class GravesLSTM extends BaseLayer {
 			memCellActivations.slice(t,2).assign(currentMemoryCellActivations);
 		}
 		
-		//Save output activations, memory cell state, ifog gate Zs and As for use in backward pass:
-		this.ifogZs = ifogZ;
-		this.ifogAs = ifogA;
-		this.memCellActivations = memCellActivations;
-		this.outputActivations = outputActivations;
-		
-		return outputActivations;
+		return new INDArray[]{outputActivations,memCellActivations,ifogZ,ifogA};
 	}
 	
 	@Override
@@ -372,15 +377,4 @@ public class GravesLSTM extends BaseLayer {
 	public Layer transpose(){
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
-	
-	@Override
-	public void clear(){
-		super.clear();
-		ifogZs = null;
-		ifogAs = null;
-		memCellActivations = null;
-		outputActivations = null;
-	}
-	
-
 }
