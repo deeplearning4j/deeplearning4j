@@ -5,7 +5,11 @@ layout: default
 
 # Neural Nets Overview
 
-Neural networks are a set of algorithms, modeled after the human brain, that are designed to recognize patterns. They interpret sensation through a kind of machine perception. The patterns they recognize are numerical, contained in vectors, to which all real-world data, be it images, sound, text or time series, must be translated. 
+Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensation through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, to which all real-world data, be it images, sound, text or time series, must be translated. 
+
+Neural networks cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They group unlabeled data according by similarities among the example inputs, and they classify data when they have a labeled training set to work with. 
+
+As you think about one problem deep learning can solve, ask yourself: What outcomes do I care about? (Those are labels.) Do I have data to accompany those labels? If you want to know who is at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique ID, which could include everything from explicit features like age to raw data such as time series that track their motion, or logs of their behavior online, which likely indicates a great deal about lifestyle, habits and interests. Searching for potential dating partners, future major-league superstars, your most promising employees, or potential bad actors, involves much the same process. 
 
 Deep learning is a name for a certain type of stacked neural network composed of several node layers. (A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the right stimulus. A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net.) Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
