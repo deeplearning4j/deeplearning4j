@@ -113,6 +113,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
             INDArray gradient = pair.getFirst().getGradientFor(paramType);
             updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType,iteration);
+            pair.getFirst().setGradientFor(paramType,gradient);
         }
         return pair;
     }
@@ -162,11 +163,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             }
             
             //Update parameters based on final/best step size returned by line search:
-            if( step != 0.0 ){
+            if( step != 0.0 ) {
             	stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
             	model.setParams(parameters);
             } else {
-            	log.warn("Step size returned by line search is 0.0.");
+            	log.debug("Step size returned by line search is 0.0.");
             }
 
             //record old score for deltas and other termination conditions
@@ -235,7 +236,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Gradient g = new DefaultGradient();
         g.setGradientFor(paramType,gradient);
         updater.update(layer,g,iteration);
-
+        gradient.assign(g.getGradientFor(paramType));
     }
 
     /**

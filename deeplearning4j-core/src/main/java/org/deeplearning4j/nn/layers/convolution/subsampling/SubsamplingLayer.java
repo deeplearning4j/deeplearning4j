@@ -71,6 +71,16 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
+    public double l2Magnitude() {
+        return 0;
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return 0;
+    }
+
+    @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
     }
@@ -185,7 +195,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public void setIterationListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<IterationListener> listeners) {
 
     }
 

@@ -226,24 +226,18 @@ public  class RBM extends BasePretrainNetwork {
                 sample.muli(sqrtSigH1Mean);
                 h1Sample = h1Mean.add(sample);
                 h1Sample = max(h1Sample, 0.0);
-                //apply dropout
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case GAUSSIAN: {
                 h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
-                //apply dropout
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case SOFTMAX: {
                 h1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", h1Mean), 0);
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case BINARY: {
                 h1Sample = Nd4j.getDistributions().createBinomial(1, h1Mean).sample(h1Mean.shape());
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             default:
@@ -330,8 +324,7 @@ public  class RBM extends BasePretrainNetwork {
                 preSig = max(preSig, 0.0);
                 return preSig;
             case GAUSSIAN:
-                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
-                preSig.addi(add);
+                preSig.addi(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
                 return preSig;
             case BINARY:
                 return sigmoid(preSig);

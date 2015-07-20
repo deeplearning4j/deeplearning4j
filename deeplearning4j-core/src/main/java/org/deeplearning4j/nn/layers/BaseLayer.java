@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -87,7 +88,7 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public void setIterationListeners(Collection<IterationListener> listeners) {
+    public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
 
@@ -155,19 +156,19 @@ public abstract class BaseLayer implements Layer {
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
             create.exec();
-            score = -create.currentResult().doubleValue();
+            score = create.currentResult().doubleValue();
         } else{
             score = LossFunctions.score(
                     input,
                     conf.getLossFunction(),
                     output,
                     conf.getL2(),
+                    conf.getL1()
+                    ,l1Magnitude()
+                    ,l2Magnitude(),
                     conf.isUseRegularization());
         }
 
-        //maximize target
-        if(conf.isMinimize())
-            score = -score;
     }
 
 
@@ -199,7 +200,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        setParam(paramType, getParam(paramType).subi(gradient));
+		setParam(paramType, getParam(paramType).addi(gradient));
     }
 
 
@@ -303,7 +304,6 @@ public abstract class BaseLayer implements Layer {
             throw new IllegalArgumentException("No null input allowed");
 
         this.input = x.dup();
-        applyDropOutIfNecessary(x);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
@@ -315,6 +315,15 @@ public abstract class BaseLayer implements Layer {
         return ret;
     }
 
+    @Override
+    public double l2Magnitude() {
+        return Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    }
 
     @Override
     public int batchSize() {
@@ -337,7 +346,6 @@ public abstract class BaseLayer implements Layer {
     @Override
     public  INDArray activate(INDArray input) {
         this.input = input.dup();
-        applyDropOutIfNecessary(this.input);
         return activate();
     }
 
@@ -371,7 +379,6 @@ public abstract class BaseLayer implements Layer {
 
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
-            this.dropoutMask = Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()).divi(conf.getDropOut());
             input.muli(dropoutMask);
         }
     }

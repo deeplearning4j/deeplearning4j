@@ -21,10 +21,19 @@ public abstract class BaseUpdater implements Updater {
 
     @Override
     public void update(Layer layer, Gradient gradient,int iteration) {
+        Map<String,INDArray> newGradients = new HashMap<>();
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             GradientUpdater updater = init(gradientPair.getKey(),gradientPair.getValue(),layer);
-            postApply(layer,updater.getGradient(gradientPair.getValue(),iteration),gradientPair.getKey());
+            INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
+            postApply(layer,gradient2,gradientPair.getKey());
+            newGradients.put(gradientPair.getKey(),gradient2);
         }
+
+        //apply the updates
+        for(Map.Entry<String,INDArray> gradientPair : newGradients.entrySet()) {
+            gradient.setGradientFor(gradientPair.getKey(),gradientPair.getValue());
+        }
+
     }
 
     /**
@@ -38,7 +47,7 @@ public abstract class BaseUpdater implements Updater {
         INDArray params = layer.getParam(param);
         if(conf.isUseRegularization() && conf.getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(params.mul(conf.getL2()));
-        else if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
 
