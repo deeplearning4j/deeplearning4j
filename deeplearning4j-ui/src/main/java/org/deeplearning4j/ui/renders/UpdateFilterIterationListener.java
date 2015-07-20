@@ -26,7 +26,7 @@ public class UpdateFilterIterationListener implements IterationListener {
      * @param iterations the number of iterations to update on
      */
     public UpdateFilterIterationListener(List<String> variables,int iterations) {
-        listener = new PlotFiltersIterationListener(variables);
+        listener = new PlotFiltersIterationListener(null,variables,0);
         this.iterations = iterations;
     }
 
