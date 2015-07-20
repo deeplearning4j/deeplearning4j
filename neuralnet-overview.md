@@ -37,7 +37,7 @@ Deep-learning networks end in an output layer: a logistic, or softmax, classifie
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
-* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs)(A seven-video series)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
 * [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
