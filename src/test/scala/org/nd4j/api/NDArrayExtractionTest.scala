@@ -84,5 +84,18 @@ class RichNDArrayTest extends FlatSpec {
     assert(extracted.getFloat(3) == 6)
     assert(extracted.getFloat(4) == 7)
     assert(extracted.getFloat(5) == 9)
+
+    val list = (0f to 9f by 1).asNDArray(10)
+    val filtered = list(-2 -> 9)
+    assert(filtered.length() == 2)
+    assert(filtered.getFloat(0) == 8)
+    assert(filtered.getFloat(1) == 9)
+
+    val nStep = list(-3 -> 4 by -1)
+    assert(nStep.length() == 4)
+    assert(nStep.getFloat(0) == 7)
+    assert(nStep.getFloat(1) == 6)
+    assert(nStep.getFloat(2) == 5)
+    assert(nStep.getFloat(3) == 4)
   }
 }
