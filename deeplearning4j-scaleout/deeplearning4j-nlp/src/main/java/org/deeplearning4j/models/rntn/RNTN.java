@@ -1214,6 +1214,21 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public INDArray preOutput(INDArray x, boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        return null;
+    }
+
+    @Override
     public INDArray activate() {
         return null;
     }
