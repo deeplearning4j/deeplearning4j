@@ -18,6 +18,11 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
  * Restricted Boltzmann Machine.
  *
@@ -43,9 +48,14 @@ package org.deeplearning4j.nn.conf.layers;
  * http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239
  *
  */
-public class RBM extends BasePretrainNetwork {
-    
+public @NoArgsConstructor class RBM extends BasePretrainNetwork {
+
     private static final long serialVersionUID = 485040309806445606L;
+
+    private HiddenUnit hidden;
+    private VisibleUnit visible;
+    private int k;
+    private WeightInit weightInit;
 
     public enum VisibleUnit {
         BINARY,GAUSSIAN,SOFTMAX,LINEAR
@@ -55,25 +65,41 @@ public class RBM extends BasePretrainNetwork {
         RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
     }
 
-
-    @Override
-    public int hashCode() {
-        return 0;
+    public RBM(HiddenUnit hiddenFunction, VisibleUnit visibleFunction) {
+        this.hidden = hiddenFunction;
+        this.visible = visibleFunction;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
+    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction) {
+        this.nIn = nIn; // number of visible units
+        this.nOut = nOut; // number of hidden units
+        this.hidden = hiddenFunction;
+        this.visible = visibleFunction;
     }
 
-    public String toString() {
-        return "RBM{" +
-                '}';
+    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction, WeightInit weightInit) {
+        this.nIn = nIn; // number of visible units
+        this.nOut = nOut; // number of hidden units
+        this.hidden = hiddenFunction;
+        this.visible = visibleFunction;
+        this.weightInit = weightInit;
+    }
+
+    // contrastiveConvergenceIterations by default is 1
+    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction, int contrastiveConvergenceIterations) {
+        this.nIn = nIn; // number of visible units
+        this.nOut = nOut; // number of hidden units
+        this.hidden = hiddenFunction;
+        this.visible = visibleFunction;
+        this.k = contrastiveConvergenceIterations;
+    }
+
+    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction, WeightInit weightInit, int contrastiveConvergenceIterations) {
+        this.nIn = nIn; // number of visible units
+        this.nOut = nOut; // number of hidden units
+        this.hidden = hiddenFunction;
+        this.visible = visibleFunction;
+        this.weightInit = weightInit;
+        this.k = contrastiveConvergenceIterations;
     }
 }
