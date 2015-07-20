@@ -577,6 +577,16 @@ public class TestOptimizers {
 		}
 
 		@Override
+		public double l2Magnitude() {
+			return 0;
+		}
+
+		@Override
+		public double l1Magnitude() {
+			return 0;
+		}
+
+		@Override
 		public void setScore() { }
 
 		@Override
@@ -693,7 +703,7 @@ public class TestOptimizers {
 		public Collection<IterationListener> getIterationListeners() { return null; }
 
 		@Override
-		public void setIterationListeners(Collection<IterationListener> listeners) { throw new UnsupportedOperationException(); }
+		public void setListeners(Collection<IterationListener> listeners) { throw new UnsupportedOperationException(); }
 
 		@Override
 		public void setIndex(int index) { throw new UnsupportedOperationException(); }

@@ -189,7 +189,7 @@ public class BackPropMLPTest {
 	
 	private static void testIrisMiniBatchWeightUpdates( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction ){
 		
-		int totalExamples = 10*miniBatchSize;
+		int totalExamples = 10 * miniBatchSize;
 		if( totalExamples > 150 ){
 			totalExamples = miniBatchSize * (150/miniBatchSize);
 		}

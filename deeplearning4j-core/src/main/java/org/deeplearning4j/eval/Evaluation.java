@@ -40,6 +40,7 @@ public class Evaluation implements Serializable {
     private Counter<Integer> trueNegatives = new Counter<>();
     private Counter<Integer> falseNegatives = new Counter<>();
     private ConfusionMatrix<Integer> confusion;
+    private int numRowCounter;
     private List<Integer> classLabels = new ArrayList<>();
     private static Logger log = LoggerFactory.getLogger(Evaluation.class);
 
@@ -51,6 +52,7 @@ public class Evaluation implements Serializable {
         for(int i = 0; i < numClasses; i++)
             classLabels.add(i);
         confusion = new ConfusionMatrix<>(classLabels);
+        numRowCounter = 0;
     }
 
     /**
@@ -63,6 +65,10 @@ public class Evaluation implements Serializable {
      * @param guesses the guesses (usually a probability vector)
      * */
     public void eval(INDArray realOutcomes,INDArray guesses) {
+        // Add the number of rows to numRowCounter
+        numRowCounter += realOutcomes.shape()[0];
+
+        // If confusion is null, then Evaluation is instantiated without providing the classes
         if(confusion == null) {
             log.warn("Creating confusion matrix based on classes passed in . Will assume the label distribution passed in is indicative of the overall dataset");
             Set<Integer> classes = new HashSet<>();
@@ -129,6 +135,12 @@ public class Evaluation implements Serializable {
                 incrementFalseNegatives(currMax);
                 // Otherwise the prediction is predicted as falsely positive (False Positive)
                 incrementFalsePositives(guessMax);
+                // Otherwise true negatives
+                for (Integer clazz : confusion.getClasses()) {
+                    if (clazz != guessMax && clazz != currMax)
+                        trueNegatives.incrementCount(clazz, 1.0);
+
+                }
             }
         }
     }
@@ -253,7 +265,7 @@ public class Evaluation implements Serializable {
      * @return the accuracy of the guesses so far
      */
     public double accuracy() {
-        return (truePositives() + trueNegatives()) / (positive() + negative());
+        return truePositives() / getNumRowCounter();
     }
 
 
@@ -339,6 +351,8 @@ public class Evaluation implements Serializable {
     public int classCount(Integer clazz) {
         return confusion.getActualTotal(clazz);
     }
+
+    public double getNumRowCounter() {return (double) numRowCounter;}
 
 
 }

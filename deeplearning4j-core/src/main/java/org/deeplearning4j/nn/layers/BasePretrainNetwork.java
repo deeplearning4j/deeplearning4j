@@ -72,6 +72,15 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     }
 
 
+    @Override
+    public void update(INDArray gradient, String paramType) {
+        if (paramType.contains("b"))
+            setParam(paramType, getParam(paramType).addi(gradient.sum(0)));
+        else
+            setParam(paramType, getParam(paramType).addi(gradient));
+    }
+
+
 
     protected Gradient createGradient(INDArray wGradient,INDArray vBiasGradient,INDArray hBiasGradient) {
         Gradient ret = new DefaultGradient();
