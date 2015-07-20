@@ -9,7 +9,9 @@ Neural networks are a set of algorithms, modeled loosely after the human brain, 
 
 Neural networks cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They group unlabeled data according by similarities among the example inputs, and they classify data when they have a labeled training set to work with. 
 
-As you think about one problem deep learning can solve, ask yourself: What outcomes do I care about? (Those are labels.) Do I have data to accompany those labels? If you want to know who is at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique ID, which could include everything from explicit features like age to raw data such as time series that track their motion, or logs of their behavior online, which likely indicates a great deal about lifestyle, habits and interests. Searching for potential dating partners, future major-league superstars, your most promising employees, or potential bad actors, involves much the same process. 
+As you think about one problem deep learning can solve, ask yourself: What outcomes do I care about? (Those are labels.) Do I have data to accompany those labels? 
+
+For example, if you want to identify a group of people at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique ID, which could include everything from explicit features like age to raw data such as time series that track their motion, or logs of their behavior online, which likely indicates a great deal about lifestyle, habits and interests. Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital stats, social graphs, raw text communications, etc. 
 
 Deep learning is a name for a certain type of stacked neural network composed of several node layers. (A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the right stimulus. A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net.) Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
 
@@ -69,9 +71,11 @@ Gradient is another word for slope, and slope, in its typical form on an x-y gra
 
 To put a finer point on it, which weight will produce the least error? Which one correctly represents the signals contained in the input data, and translates them to a correct classification? Which one can hear "nose" in an input image, and know that should be labeled as a face and not a frying pan?
 
-As a neural network learns, it slowly adjusts many weights so that they can map signal to meaning correctly. The relationship between network *Error* and each of those *weights* is a derivative, *dE/dw*, and we use the chain rule to compute it. Since each weight is just one factor in a deep network that involves many transforms, we use the chain rule to march back through the networks activations and outputs to arrive finally at the weight in question. 
+As a neural network learns, it slowly adjusts many weights so that they can map signal to meaning correctly. The relationship between network *Error* and each of those *weights* is a derivative, *dE/dw*, that measures how a slight change in a weight causes a slight change in the error. Each weight is just one factor in a deep network that involves many transforms; the signal of the weight passes through activations and sums over several layers, so we use the [chain rule of calculus](https://en.wikipedia.org/wiki/Chain_rule) to march back through the networks activations and outputs and finally arrive at the weight in question, and its relationship to overall error. 
 
 The chain rule in calculus states that D{f(g(x))} = f'(g(x)) * g'(x). That is, the derivative of the composition of two functions -- f(x) and g(x) -- is equal to the derivate of f of g of x multipled by the derivative of g of x. 
+
+![Alt text](../img/schematic_overview.png)
 
 ## Neural Networks & Artificial Intelligence 
 
