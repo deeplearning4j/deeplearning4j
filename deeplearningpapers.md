@@ -116,6 +116,8 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[A Neural Conversational Model](http://arxiv.org/pdf/1506.05869v1.pdf)**; Oriol Vinyals and Quoc Le, Google
 
+** [On Chomsky and the Two Cultures of Statistical Learning](http://norvig.com/chomsky.html); Peter Norvig
+
 Personal pages of prominent deep-learning researchers:
 
 -  [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/)
