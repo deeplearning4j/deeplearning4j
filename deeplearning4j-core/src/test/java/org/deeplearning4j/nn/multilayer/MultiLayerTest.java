@@ -315,7 +315,7 @@ public class MultiLayerTest {
         network.init();
         DataSet data = new IrisDataSetIterator(1,150).next();
         network.fit(data);
-        Pair result = network.feedForwardActivationsAndDerivatives();
+        Pair result = network.feedForwardActivationsAndDerivatives(false);
         List<INDArray> first = (List) result.getFirst();
         List<INDArray> second = (List) result.getSecond();
         assertEquals(first.size(), second.size());
