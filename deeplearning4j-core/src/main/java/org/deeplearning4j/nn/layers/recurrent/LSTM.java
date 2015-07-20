@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
+import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -227,9 +228,7 @@ public class LSTM extends BaseLayer {
         }
 
         if(conf.getDropOut() > 0) {
-            double scale = 1 / (1 - conf.getDropOut());
-            u2 = Nd4j.rand(hOut.shape()).lti(1 - conf.getDropOut()).muli(scale);
-            hOut.muli(u2);
+            u2 = Dropout.applyDropout(hOut,conf.getDropOut(),u2);
         }
 
 
