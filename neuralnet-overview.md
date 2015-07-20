@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Neural Nets Overview
+# Neural Network Overview
 
 Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensation through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, to which all real-world data, be it images, sound, text or time series, must be translated. 
 
@@ -13,7 +13,15 @@ As you think about one problem deep learning can solve, ask yourself: What outco
 
 For example, if you want to identify a group of people at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique ID, which could include everything from explicit features like age to raw data such as time series that track their motion, or logs of their behavior online, which likely indicates a great deal about lifestyle, habits and interests. Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital stats, social graphs, raw text communications, etc. 
 
-Deep learning is a name for a certain type of stacked neural network composed of several node layers. (A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the right stimulus. A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net.) Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
+## Neural Network Elements
+
+Deep learning is a name for a certain type of stacked neural network composed of several node layers. A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the right stimulus. It combines input from the data with a set of coefficients that amplify or mute that input. These products are summed and the sum is passed through a so-called activation function. Here's a diagram of what one node looks like.
+
+![Alt text](../img/perceptron node.png)
+
+A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
+
+![Alt text](../img/mlp.png)
 
 Deep-learning networks are distinguished from the more commonplace single-hidden-layer neural networks by their **depth**; that is, the number of node layers through which data passes in a multistep process of pattern recognition. Traditional machine learning relies on shallow nets, composed of one input and one output layer, and a hidden layer in between. More than three layers (including input and output) qualifies as "deep" learning. 
 
