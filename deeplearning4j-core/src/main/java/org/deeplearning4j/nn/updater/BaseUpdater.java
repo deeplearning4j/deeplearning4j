@@ -47,7 +47,7 @@ public abstract class BaseUpdater implements Updater {
         INDArray params = layer.getParam(param);
         if(conf.isUseRegularization() && conf.getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(params.mul(conf.getL2()));
-        else if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
 
