@@ -21,5 +21,6 @@ package org.deeplearning4j.nn.conf.layers;
 public abstract class BasePretrainNetwork extends Layer {
 
     private static final long serialVersionUID = -6945800646970810896L;
-
+    protected int nIn;
+    protected int nOut;
 }
