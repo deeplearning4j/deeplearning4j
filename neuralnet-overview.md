@@ -55,7 +55,7 @@ Weighted input results in a guess about what that input is. The neural then take
 
 The difference between the network's guess and the ground truth is its *error*. The network measures that error, and walks the error back over its model, adjusting weights to the extent that they contributed to the error. 
 
-    adjustment = error * weight's contribution to error
+    error * weight's contribution to error = adjustment
 
 The three pseudo-mathematical formulas above account for the three key functions of neural networks: scoring input, calculating loss and applying an update to the model -- to begin the three-step process over again. A neural network is a corrective feedback loop, rewarding weights that support its correct guesses, and punishing weights that lead it to err. 
 
