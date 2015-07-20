@@ -7,11 +7,15 @@ layout: default
 
 Deeplearning4j's NLP relies on [ClearTK](https://cleartk.github.io/cleartk/), an open-source machine learning and natural language processing framework for the Apache [Unstructured Information Management Architecture](https://uima.apache.org/), or UIMA. UIMA enables us to perform language identification, language-specific segmentation, sentence boundary detection and entity detection (proper nouns: persons, corporations, places and things). 
 
+### SentenceIterator
+
 There are several steps involved in processing natural language. The first is to iterate over your corpus to create a list of documents, which can be as short as a tweet, or as long as a newspaper article. This is performed by a SentenceIterator, which will appear like this: 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=33:41"></script>
 
 The SentenceIterator encapsulates a corpus or text, organizing it, say, as one Tweet per line. It is responsible for feeding text piece by piece into your natural language processor. The SentenceIterator is not analogous to a similarly named class, the DatasetIterator, which creates a dataset for training a neural net. Instead it creates a collection of strings by segmenting a corpus. 
+
+### Tokenizer
 
 A Tokenizer further segments the text at the level of single words, also alternatively as n-grams. ClearTK contains the underlying tokenizers, such as parts of speech (PoS) and parse trees, which allow for both dependency and constituency parsing, like that employed by a recursive neural tensor network (RNTN). 
 
@@ -20,6 +24,9 @@ A Tokenizer is created and wrapped by a [TokenizerFactory](https://github.com/de
 Both Tokenizers and SentenceIterators work with Preprocessors to deal with anomalies in messy text like Unicode, and to render such text, say, as lowercase characters uniformly. 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=43:57"></script>
+
+
+### Vocab
 
 Each document has to be tokenized to create a vocab, the set of words that matter for that document or corpus. Those words are stored in the vocab cache, which contains statistics about a subset of words counted in the document, the words that "matter". The line separating significant and insignifant words is mobile, but the basic idea of distinguishing between the two groups is that words occurring only once (or less than, say, five times) are hard to learn and their presence represents unhelpful noise.
 
