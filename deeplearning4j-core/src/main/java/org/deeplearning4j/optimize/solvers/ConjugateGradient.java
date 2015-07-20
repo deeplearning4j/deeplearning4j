@@ -52,7 +52,8 @@ public class ConjugateGradient extends BaseOptimizer {
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
-        if( searchDir == null ) searchState.put(SEARCH_DIR, gradient.neg()); 
+        if( searchDir == null )
+            searchState.put(SEARCH_DIR, gradient.neg());
         else searchDir.assign(gradient).negi();	//p0 is steepest descent page 108 N&W thus assuming negative gradient
     }
 

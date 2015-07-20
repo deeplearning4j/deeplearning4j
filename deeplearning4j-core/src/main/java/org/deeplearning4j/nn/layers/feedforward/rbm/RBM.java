@@ -330,8 +330,7 @@ public  class RBM extends BasePretrainNetwork {
                 preSig = max(preSig, 0.0);
                 return preSig;
             case GAUSSIAN:
-                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
-                preSig.addi(add);
+                preSig.addi(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
                 return preSig;
             case BINARY:
                 return sigmoid(preSig);
