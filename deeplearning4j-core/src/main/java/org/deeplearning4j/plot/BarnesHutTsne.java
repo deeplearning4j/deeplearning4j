@@ -506,7 +506,7 @@ public class BarnesHutTsne extends Tsne implements Model {
      */
     public void plot(INDArray matrix,int nDims,List<String> labels,String path) throws IOException {
 
-        fit(matrix);
+        fit(matrix, nDims);
 
         BufferedWriter write = new BufferedWriter(new FileWriter(new File(path)));
 
@@ -600,6 +600,12 @@ public class BarnesHutTsne extends Tsne implements Model {
     @Override
     public void fit(INDArray data) {
         this.x  = data;
+        fit();
+    }
+    
+    public void fit(INDArray data, int nDims) {
+        this.x = data;
+        this.numDimensions = nDims;
         fit();
     }
 
