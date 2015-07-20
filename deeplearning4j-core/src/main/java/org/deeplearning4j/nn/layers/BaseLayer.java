@@ -203,9 +203,9 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void update(INDArray gradient, String paramType) {
         if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).subi(gradient.sum(0)));
+            setParam(paramType, getParam(paramType).addi(gradient.sum(0)));
         else
-            setParam(paramType, getParam(paramType).subi(gradient));
+            setParam(paramType, getParam(paramType).addi(gradient));
     }
 
 
@@ -309,7 +309,6 @@ public abstract class BaseLayer implements Layer {
             throw new IllegalArgumentException("No null input allowed");
 
         this.input = x.dup();
-        applyDropOutIfNecessary(x);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
@@ -352,7 +351,6 @@ public abstract class BaseLayer implements Layer {
     @Override
     public  INDArray activate(INDArray input) {
         this.input = input.dup();
-        applyDropOutIfNecessary(this.input);
         return activate();
     }
 
@@ -386,7 +384,6 @@ public abstract class BaseLayer implements Layer {
 
     protected void applyDropOutIfNecessary(INDArray input) {
         if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
-            this.dropoutMask = Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()).divi(conf.getDropOut());
             input.muli(dropoutMask);
         }
     }
