@@ -73,9 +73,11 @@ To put a finer point on it, which weight will produce the least error? Which one
 
 As a neural network learns, it slowly adjusts many weights so that they can map signal to meaning correctly. The relationship between network *Error* and each of those *weights* is a derivative, *dE/dw*, that measures how a slight change in a weight causes a slight change in the error. Each weight is just one factor in a deep network that involves many transforms; the signal of the weight passes through activations and sums over several layers, so we use the [chain rule of calculus](https://en.wikipedia.org/wiki/Chain_rule) to march back through the networks activations and outputs and finally arrive at the weight in question, and its relationship to overall error. 
 
-The chain rule in calculus states that D{f(g(x))} = f'(g(x)) * g'(x). That is, the derivative of the composition of two functions -- f(x) and g(x) -- is equal to the derivate of f of g of x multipled by the derivative of g of x. 
+The chain rule in calculus states that 
 
-![Alt text](../img/schematic_overview.png)
+![Alt text](../img/chain_rule.png)
+
+
 
 ## Neural Networks & Artificial Intelligence 
 
