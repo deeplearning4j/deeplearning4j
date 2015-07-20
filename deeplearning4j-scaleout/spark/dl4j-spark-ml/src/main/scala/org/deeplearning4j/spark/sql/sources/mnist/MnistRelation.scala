@@ -22,6 +22,7 @@ case class MnistRelation(imagesFile: String, labelsFile: String, numExamples: In
 
   require(numExamples > 0, "Reading images should not be empty")
 
+
   val manager = new MnistManager(imagesFile, labelsFile)
 
   override def schema: StructType = StructType(
@@ -31,17 +32,20 @@ case class MnistRelation(imagesFile: String, labelsFile: String, numExamples: In
   override def buildScan(requiredColumns: Array[String]): RDD[Row] = {
     val sc = sqlContext.sparkContext
 
-    val baseData = for (i <- 0 until numExamples) yield {
-      (manager.readLabel(), ArrayUtil.flatten(manager.readImage()))
+    val cols = {
+      val req = requiredColumns.toSet
+      schema.fieldNames flatMap {
+        case "label" if req("label") => Seq((pt:Int) =>
+          manager.readLabel().toDouble)
+        case "features" if req("features") => Seq((pt:Int) =>
+          Vectors.dense(ArrayUtil.flatten(manager.readImage()).map(_.toDouble)))
+        case _ => Seq.empty
+      } //: Seq[Int => Seq[Any]]
     }
 
-    val rowBuilders = requiredColumns.map {
-      case "label" => (pt: (Int, Array[Int])) => Seq(pt._1.toDouble)
-      case "features" => (pt: (Int, Array[Int])) => Seq(Vectors.dense(pt._2.map(_.toDouble)))
-    }
-
-    sc.makeRDD(baseData.map(pt => {
-      Row.fromSeq(rowBuilders.map(_(pt)).reduceOption(_ ++ _).getOrElse(Seq.empty))
+    sc.makeRDD((0 until numExamples).map(pt => {
+      Row.fromSeq(cols.map(_(pt)))
+      //Row.fromSeq(cols.map(_(pt)).reduceOption(_ ++ _).getOrElse(Seq.empty))
     }))
   }
 }
