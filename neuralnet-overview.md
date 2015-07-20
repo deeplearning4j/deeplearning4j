@@ -77,7 +77,9 @@ The chain rule in calculus states that
 
 ![Alt text](../img/chain_rule.png)
 
+In a feedforward network, the relationship betweent the net's error and a single weight will look something like this
 
+![Alt text](../img/backprop_chain_rule.png)
 
 ## Neural Networks & Artificial Intelligence 
 
