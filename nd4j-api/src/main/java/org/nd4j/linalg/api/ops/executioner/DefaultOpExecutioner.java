@@ -255,6 +255,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     protected Op exec(Op op,int dimension) {
+        if(op.isPassThrough()) {
+            op.exec();
+            return op;
+        }
+
         //only accumulate along a particular dimension
         if (op instanceof Accumulation) {
             Accumulation a = (Accumulation) op;
@@ -290,6 +295,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int...dimension) {
+        if(op.isPassThrough()) {
+            op.exec();
+            return op.z();
+        }
         if(dimension.length == 1)
             return execVector(op,dimension[0]);
         else {
@@ -327,6 +336,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     protected INDArray execVector(Accumulation op,int dimension) {
+        if(op.isPassThrough()) {
+            op.exec();
+            return op.z();
+        }
+
+
         if(dimension == Integer.MAX_VALUE) {
             op.setX(op.x().linearView());
             if(op.y() != null)
@@ -452,6 +467,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     protected INDArray execAndReturnVector(TransformOp op,int dimension) {
+        if(op.isPassThrough()) {
+            op.exec(dimension);
+            return op.z();
+        }
+
         for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);

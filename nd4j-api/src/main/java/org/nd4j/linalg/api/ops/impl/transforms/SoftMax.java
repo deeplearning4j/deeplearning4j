@@ -166,15 +166,6 @@ public class SoftMax extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
         passThrough = true;
-        if(x.isVector()) {
-            this.z = Transforms.exp(x.sub(x.max(Integer.MAX_VALUE)));
-            this.z.divi(z.sum(Integer.MAX_VALUE));
-        }
-        else if(x.isMatrix()) {
-            exec(1);
-        }
-
-
     }
 
 
