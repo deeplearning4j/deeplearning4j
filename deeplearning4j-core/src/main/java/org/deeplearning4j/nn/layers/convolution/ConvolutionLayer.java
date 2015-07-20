@@ -292,7 +292,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public INDArray input() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
