@@ -17,7 +17,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  *
  * For 4d input (multiple channels and images)
  *
- * the input should of shape:
+ * the input should of shape:Au
  * channels x number images x rows x columns
  *
  * @author Adam Gibson

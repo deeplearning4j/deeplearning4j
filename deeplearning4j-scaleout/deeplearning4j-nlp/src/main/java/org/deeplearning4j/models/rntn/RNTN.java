@@ -1123,6 +1123,16 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public double l2Magnitude() {
+        return 0;
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return 0;
+    }
+
+    @Override
     public Layer.Type type() {
         return Layer.Type.RECURSIVE;
     }
