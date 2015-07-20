@@ -38,6 +38,10 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.DataInput;
+import java.io.DataInputStream;
 
 /**
  * Created by agibsonccc on 2/22/15.
@@ -71,9 +75,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testLog() {
-        INDArray log = Nd4j.linspace(1,6,6);
+        INDArray log = Nd4j.linspace(1, 6, 6);
         INDArray transformed = Transforms.log(log);
-        INDArray assertion = Nd4j.create(new double[]{0.        ,  0.69314718,  1.09861229,  1.38629436,  1.60943791,
+        INDArray assertion = Nd4j.create(new double[]{0., 0.69314718, 1.09861229, 1.38629436, 1.60943791,
                 1.79175947});
         assertEquals(assertion,transformed);
     }
@@ -81,8 +85,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testEuclideanDistance() {
-        INDArray arr = Nd4j.create(new double[]{55,55});
-        INDArray arr2 = Nd4j.create(new double[]{60,60});
+        INDArray arr = Nd4j.create(new double[]{55, 55});
+        INDArray arr2 = Nd4j.create(new double[]{60, 60});
         double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr,arr2)).currentResult().doubleValue();
         assertEquals(getFailureMessage(),7.0710678118654755,result,1e-1);
 
@@ -223,7 +227,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testBias() {
-        INDArray bias = Nd4j.linspace(1,4,4);
+        INDArray bias = Nd4j.linspace(1, 4, 4);
         Bias biaOp = new Bias(bias);
         Nd4j.getExecutioner().exec(biaOp);
         assertEquals(0.0,biaOp.currentResult().doubleValue());
@@ -292,6 +296,20 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(plusOne, linspace);
     }
 
+    @Test
+    public void testNegativeNumbersSoftmax() throws Exception {
+        DataInputStream dis = new DataInputStream(new ClassPathResource("softmaxtest.nd").getInputStream());
+        INDArray read = Nd4j.read(dis);
+        dis.close();
+        SoftMax softMax = new SoftMax(read);
+        softMax.exec(0);
+        INDArray z = softMax.z();
+        INDArray zSums = z.sum(0);
+        assertEquals(zSums.length(),zSums.sum(Integer.MAX_VALUE).getDouble(0),1e-1);
+
+    }
+
+
 
     @Test
     public void testDimensionMax() {
@@ -351,7 +369,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         SoftMax max = new SoftMax(linspace);
         Nd4j.getExecutioner().exec(max, 1);
         linspace.assign(max.z());
-        assertEquals(getFailureMessage(),linspace.getRow(0).sum(Integer.MAX_VALUE).getDouble(0), 1.0, 1e-1);
+        assertEquals(getFailureMessage(), linspace.getRow(0).sum(Integer.MAX_VALUE).getDouble(0), 1.0, 1e-1);
 
     }
 
