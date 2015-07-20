@@ -1,9 +1,16 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * @author Adam Gibson
  */
+@Data
+@NoArgsConstructor
 public class ConvolutionLayer extends Layer {
+    private static final long serialVersionUID = 3073633667258683720L;
+
 
     /**
      * Convolution type: max avg or sum
@@ -12,26 +19,52 @@ public class ConvolutionLayer extends Layer {
         MAX,AVG,SUM,NONE
     }
 
-    private static final long serialVersionUID = 3073633667258683720L;
+    private ConvolutionType convolutionType;
+    //convolutional nets: this is the feature map shape
+    private int[] filterSize;
+    //aka pool size for subsampling
+    private int[] stride;
+    //batch size: primarily used for conv nets. Will be reinforced if set.
+    protected int batchSize;
+    //feature map
+    protected int[] featureMapSize;
+    //number of channels for a conv net
+    protected int channels = 1;
+    //CONVOLUTION_WEIGHTS ??
+    //CONVOLUTION_BIAS ??
 
-    @Override
-    public int hashCode() {
-        return 0;
+    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.filterSize = filterSize;
+        this.stride = stride;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
+    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride, int[] featureMapSize) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.filterSize = filterSize;
+        this.stride = stride;
+        this.featureMapSize = featureMapSize;
     }
 
-    public String toString() {
-        return "ConvolutionLayer{" +
-                '}';
+    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride, int[] featureMapSize, int channels) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.filterSize = filterSize;
+        this.stride = stride;
+        this.featureMapSize = featureMapSize;
+        this.channels = channels;
     }
+
+    public ConvolutionLayer(int nIn, int nOut, int[] filterSize, int[] stride,  int[] featureMapSize, int channels, int batchSize) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.filterSize = filterSize;
+        this.stride = stride;
+        this.featureMapSize = featureMapSize;
+        this.channels = channels;
+        this.batchSize = batchSize;
+    }
+
 }
