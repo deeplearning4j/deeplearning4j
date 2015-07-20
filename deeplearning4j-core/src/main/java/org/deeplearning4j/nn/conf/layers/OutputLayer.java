@@ -18,33 +18,46 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+
 /**
  * Output layer with different objective co-occurrences for different objectives.
  * This includes classification as well as prediction
  *
  */
+@Data
+@NoArgsConstructor
 public class OutputLayer extends Layer {
 
     private static final long serialVersionUID = 8554480736972510788L;
+    private String activationFunction;
+    private LossFunctions.LossFunction lossFunction;
 
-    @Override
-    public int hashCode() {
-        return 0;
+    public OutputLayer(int nIn, int nOut) {
+        this.nIn = nIn;
+        this.nOut = nOut;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
+    public OutputLayer(int nIn, int nOut, String activationFunction) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.activationFunction = activationFunction;
     }
 
-    public String toString() {
-        return "OutputLayer{" +
-                '}';
+    public OutputLayer(int nIn, int nOut, LossFunctions.LossFunction lossFunction) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.lossFunction = lossFunction;
     }
+
+    public OutputLayer(int nIn, int nOut, String activationFunction, LossFunctions.LossFunction lossFunction) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.activationFunction = activationFunction;
+        this.lossFunction = lossFunction;
+    }
+
+
 }
