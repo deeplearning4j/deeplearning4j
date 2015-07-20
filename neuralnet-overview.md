@@ -33,4 +33,11 @@ A deep-learning network trained on supervised data can then be applied to unstru
 
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data in the form of an image, a deep-learning network may decide, for example, that the input data is 90 percent likely to represent a person. 
 
-As you learn more about deep learning, your next step should be to understand [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html).
+## Introductory Resources
+
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
+
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs)(A seven-video series)
+* [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
+* [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
+* [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
