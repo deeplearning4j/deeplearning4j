@@ -39,6 +39,7 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.rng.DefaultRandom;
+import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -142,7 +143,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected int channels = 1;
 
 
-    protected ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
+    protected Convolution.Type convolutionType = Convolution.Type.VALID;
 
 
     public NeuralNetConfiguration(double sparsity,
@@ -179,7 +180,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int numLineSearchIterations,
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
-                                  Layer layer, ConvolutionLayer.ConvolutionType convolutionType,double l1,String customLossFunction) {
+                                  Layer layer, Convolution.Type convolutionType, double l1,String customLossFunction) {
         this.minimize = minimize;
         this.customLossFunction = customLossFunction;
         this.convolutionType = convolutionType;
@@ -509,7 +510,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int numLineSearchIterations = 5;
         private int maxNumLineSearchIterations = 5;
         private boolean minimize = false;
-        private ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
+        private Convolution.Type convolutionType = Convolution.Type.VALID;
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
@@ -577,7 +578,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder convolutionType(ConvolutionLayer.ConvolutionType convolutionType) {
+        public Builder convolutionType(Convolution.Type convolutionType) {
             this.convolutionType = convolutionType;
             return this;
         }

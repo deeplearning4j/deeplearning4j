@@ -11,30 +11,26 @@ import lombok.NoArgsConstructor;
 public class SubsamplingLayer extends Layer {
     
     private static final long serialVersionUID = -7095644470333017030L;
-    //convolutional nets: this is the feature map shape
-    private int[] filterSize;
-    //aka pool size for subsampling
-    private int[] stride;
+    private subsamplingType poolingType;
+    private int[] filterSize; // Get from convolutional layer
+    private int[] stride; // Default is 2. Down-sample by a factor of 2
 
-    public SubsamplingLayer(int nIn, int nOut) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-    }
-
-    public SubsamplingLayer(int nIn, int nOut, int[] filterSize) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.filterSize = filterSize;
+    public enum subsamplingType {
+        MAX, AVG, SUM, NONE
     }
 
 
-    public SubsamplingLayer(int nIn, int nOut, int[] filterSize, int[] stride) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.filterSize = filterSize;
+    public SubsamplingLayer(int[] stride) {
         this.stride = stride;
     }
 
+    public SubsamplingLayer(subsamplingType poolingType) {
+        this.poolingType = poolingType;
+    }
 
+    public SubsamplingLayer(int[] stride, subsamplingType poolingType) {
+        this.stride = stride;
+        this.poolingType = poolingType;
+    }
 
 }

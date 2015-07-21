@@ -2,6 +2,8 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.convolution.Convolution;
 
 /**
  * @author Adam Gibson
@@ -11,43 +13,27 @@ import lombok.NoArgsConstructor;
 public class ConvolutionLayer extends Layer {
     private static final long serialVersionUID = 3073633667258683720L;
 
+    private Convolution.Type convolutionType; // FULL / VALID / SAME
+    private int[] filterSize; // Square filter
+    private WeightInit weightInit; // For initializing weights in kernel
 
-    /**
-     * Convolution type: max avg or sum
-     */
-    public enum ConvolutionType {
-        MAX,AVG,SUM,NONE
+//    A stride of greater than (1, 1) will be implemented in the future.
+//    Stride decides the number of learnable filters
+//    private int numFilter;
+//    private int[] stride;
+
+    public ConvolutionLayer(int[] filterSize) {
+        this.filterSize = filterSize;
     }
 
-    private ConvolutionType convolutionType;
-    //batch size: primarily used for conv nets. Will be reinforced if set.
-    protected int batchSize;
-    //feature map
-    protected int[] featureMapSize;
-    //number of channels for a conv net
-    protected int channels = 1;
-    //CONVOLUTION_WEIGHTS ??
-    //CONVOLUTION_BIAS ??
-
-    public ConvolutionLayer(int nIn, int nOut, int[] featureMapSize) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.featureMapSize = featureMapSize;
+    public ConvolutionLayer(int[] filterSize, Convolution.Type convolutionType) {
+        this.filterSize = filterSize;
+        this.convolutionType = convolutionType;
     }
 
-    public ConvolutionLayer(int nIn, int nOut, int[] featureMapSize, int channels) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.featureMapSize = featureMapSize;
-        this.channels = channels;
+    public ConvolutionLayer(int[] filterSize, Convolution.Type convolutionType, WeightInit weightInit) {
+        this.filterSize = filterSize;
+        this.convolutionType = convolutionType;
+        this.weightInit = weightInit;
     }
-
-    public ConvolutionLayer(int nIn, int nOut, int[] featureMapSize, int channels, int batchSize) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.featureMapSize = featureMapSize;
-        this.channels = channels;
-        this.batchSize = batchSize;
-    }
-
 }
