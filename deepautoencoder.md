@@ -47,7 +47,7 @@ As we mentioned above, deep autoencoders are capable of compressing images into 
 
 Vectors containing similar numbers will be returned for the search query, and translated into their appropriate image. 
 
-### topic modeling & information retrieval (ir)
+### Topic modeling & information retrieval (ir)
 
 Deep autoencoders are highly useful in topic modeling, or statistically modeling abstract topics that are distributed across a collection of documents. 
 
@@ -62,5 +62,7 @@ The scaled word counts are then fed into a deep-belief network, a stack of restr
 Each document’s number set, or vector, is then introduced to the same vector space, and its distance from every other document-vector measured. Roughly speaking, nearby document-vectors fall under the same topic. 
 
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
+
+A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwork class](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java).
 
 For questions about Deep Autoencoders, contact us on the Gitter live chat. 
