@@ -33,14 +33,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.Shape;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
- * A layer with a bias and activation function
+ * A layer with a bias
+ * and activation function
  * @author Adam Gibson
  */
 public abstract class BaseLayer implements Layer {
@@ -52,8 +55,9 @@ public abstract class BaseLayer implements Layer {
     protected ParamInitializer paramInitializer;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
+    protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
-    protected int index=0;
+    protected int index = 0;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -97,6 +101,13 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+
+    @Override
+    public void setListeners(IterationListener... listeners) {
+        this.iterationListeners = new ArrayList<>();
+        for(IterationListener l : listeners)
+            iterationListeners.add(l);
     }
 
     @Override
@@ -154,7 +165,7 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
         if (this.input == null)
             return;
 
@@ -164,15 +175,12 @@ public abstract class BaseLayer implements Layer {
             create.exec();
             score = create.currentResult().doubleValue();
         } else {
-            score = LossFunctions.score(
-                    input,
-                    conf.getLossFunction(),
-                    output,
-                    conf.getL2(),
-                    conf.getL1()
-                    , l1Magnitude()
-                    , l2Magnitude(),
-                    conf.isUseRegularization());
+            score = LossCalculation.builder()
+                    .l1(conf.getL1()).l2(conf.getL2())
+                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .labels(input).z(output).lossFunction(conf.getLossFunction())
+                    .useRegularization(conf.isUseRegularization()).build().score();
+
         }
 
     }
@@ -206,10 +214,10 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).addi(gradient.sum(0)));
+        if (!Shape.shapeEquals(gradient.shape(),getParam(paramType).shape()))
+            getParam(paramType).subi(gradient.sum(0));
         else
-            setParam(paramType, getParam(paramType).addi(gradient));
+            getParam(paramType).subi(gradient);
     }
 
 
@@ -410,7 +418,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void merge(Layer l,int batchSize) {
         setParams(params().addi(l.params().divi(batchSize)));
-        setScore();
+        computeGradientAndScore();
     }
 
 
