@@ -5,25 +5,25 @@ layout: default
 
 # Introduction to Deep Neural Networks
 
-Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensation through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, to which all real-world data, be it images, sound, text or time series, must be translated. 
+Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensory data through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, to which all real-world data, be it images, sound, text or time series, must be translated. 
 
 Neural networks cluster and classify. You can think of them as a clustering and classification layer on top of data you store and manage. They group unlabeled data according by similarities among the example inputs, and they classify data when they have a labeled training set to work with. 
 
-As you think about one problem deep learning can solve, ask yourself: What outcomes do I care about? (Those are labels.) Do I have data to accompany those labels? 
+As you think about one problem deep learning can solve, ask yourself: What categories do I care about? What can I act on? Those are labels: spam or not spam, good guy or bad guy, angry customer or happy customer. Then ask: Do I have data to accompany those labels? 
 
-For example, if you want to identify a group of people at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique ID, which could include everything from explicit features like age to raw data such as time series that track their motion, or logs of their behavior online, which likely indicates a great deal about lifestyle, habits and interests. 
+For example, if you want to identify a group of people at risk for cancer, your training set would be a list of cancer patients along with all the data associated to their unique IDs, which could include everything from explicit features like age and smoking habits to raw data such as time series that track their motion, or logs of their behavior online, which likely indicate a great deal about lifestyle, habits and interests. 
 
-Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital stats, social graphs, raw text communications, etc. 
+Searching for potential dating partners, future major-league superstars, a company's most promising employees, or potential bad actors, involves much the same process of contructing a training set by amassing vital stats, social graphs, raw text communications, click streams, etc. 
 
 ## Neural Network Elements
 
-Deep learning is a name for a certain type of stacked neural network composed of several node layers. A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the right stimulus. It combines input from the data with a set of coefficients that amplify or mute that input. These products are summed and the sum is passed through a so-called activation function. 
+Deep learning is a name for a certain type of stacked neural network composed of several node layers. A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the sufficient stimulus. It combines input from the data with a set of coefficients, or weights, that either amplify or mute that input. These input-weight products are summed and the sum is passed through a node's so-called activation function. 
 
 Here's a diagram of what one node might look like.
 
 ![Alt text](../img/perceptron_node.png)
 
-A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer.  
+A node layer is a row of those neuronlike switches that turn on or off as the input is fed through the net. Each layer's output is simultaneously the subsequent layer's input, starting from an initial input layer receiving your data.  
 
 ![Alt text](../img/mlp.png)
 
