@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.spark.sql.sources
 
-import org.apache.spark.sql.{SQLContext, DataFrame}
+import org.apache.spark.sql.{DataFrameReader, SQLContext, DataFrame}
 
 package object iris {
 
@@ -24,7 +24,17 @@ package object iris {
    * Adds a method, `iris`, to SQLContext that allows reading the Iris dataset.
    */
   implicit class IrisContext(sqlContext: SQLContext) {
+    @Deprecated
     def iris(filePath: String) =
-      sqlContext.read.format(classOf[DefaultSource].getName).load(filePath)
+      sqlContext.read.iris(filePath)
   }
+
+  /**
+   * Adds a method, `iris`, to DataFrameReader that allows reading the Iris dataset.
+   */
+  implicit class IrisDataReader(read: DataFrameReader) {
+    def iris(filePath: String) =
+      read.format(classOf[DefaultSource].getName).load(filePath)
+  }
+
 }
