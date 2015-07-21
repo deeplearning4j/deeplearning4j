@@ -97,6 +97,17 @@ In a feedforward network, the relationship betweent the net's error and a single
 
 The essence of learning in deep learning is nothing more than that: adjusting a model in response to the error it produces, until you can't reduce the error any more. 
 
+## Logistic Regression
+
+On a deep neural network of many layers, the final layer has a particular role. When dealing with labeled input, the output layer classifies each example, applying the most likely label. Each node on the output layer represents one label, and that node turns one or off according to the strength of the signal it receives from the previous layers input and parameters. 
+
+Each output node produces two possible outcomes, the binary output values 0 or 1, because [an input variable either deserves a label or it does not](https://en.wikipedia.org/wiki/Law_of_excluded_middle). After all, there is no such thing as a little pregnant.  
+
+So neural networks working with labeled data produce binary output, but the input they receive is often continuous. That is, the signals the network receives as input will span a range of values and include any number of metrics, depending on the problem it seeks to solve. For example, a recommendation engine has to make a binary decision about whether to serve an ad or not. But the input it bases its decision on could include how much a customer has spent on Amazon in the last week, or how often that customer visits the site. 
+
+So the output layer has to condense signals such as $67.59 spent on diapers, and 15 visits to a website, into a range between 0 and 1; i.e. a probability that a given input should be labeled or not. 
+
+
 ## Neural Networks & Artificial Intelligence 
 
 In some circles, neural networks are thought of as "brute force" AI, because they start with a blank slate and hammer their way through to an accurate model. They are effective, but to some eyes inefficient in their approach to modeling, which can't make assumptions about functional dependencies between output and input. That said, gradient descent is not recombining every weight with every other to find the best match -- it's method of pathfinding shrinks the relevant weight space therefore the number of updates by many orders of magnitude. 
