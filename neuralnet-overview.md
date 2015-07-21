@@ -57,7 +57,7 @@ Deep-learning networks end in an output layer: a logistic, or softmax, classifie
 
 Our goal in using a neural net is to arrive at the point of least error as fast as possible. We are running a race. The starting line for the race is the state in which our weights are initialized, and the finish line is the state of those parameters when they are capable of producing accurate classifications and predictions. 
 
-The race itself involves many steps, and each of those steps resembles the others. Just like a runner, we will engage in a repetitive act over and over to arrive at the finish; those acts are known as "steps", and each one involves a slight update in the network's weights, an incremental adjustment to their quantities. 
+The race itself involves many steps, and each of those steps resembles the others. Just like a runner, we will engage in a repetitive act over and over to arrive at the finish. Each step for a neural network involves a slight update in its weights, an incremental adjustment to their quantities. 
 
 A collection of weights, whether they are in their start or end state, is also called a model, because it is an attempt to model data's relationship to ground-truth labels, to grasp its structure. Models normally start out bad and end up less bad, changing over time as the neural network updates its parameters. 
 
