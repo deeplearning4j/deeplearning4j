@@ -61,7 +61,7 @@ class LossCalculation {
                 break;
             case NEGATIVELOGLIKELIHOOD:
                 ret = -Nd4j.sum(
-                        labels.mul(log(z.addi(Nd4j.EPS_THRESHOLD)))
+                        labels.mul(log(z))
                                 .addi(labels.rsub(1).muli(log(z.rsub(1))))
                         , 1).getDouble(0);
 
