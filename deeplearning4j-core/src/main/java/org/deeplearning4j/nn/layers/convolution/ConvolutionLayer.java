@@ -214,6 +214,12 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
+    public void setListeners(IterationListener... listeners) {
+        for(IterationListener l : listeners)
+            this.listeners.add(l);
+    }
+
+    @Override
     public void setListeners(Collection<IterationListener> listeners) {
         this.listeners = new ArrayList<>(listeners);
     }
@@ -230,7 +236,7 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
 
     }
 
@@ -285,7 +291,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient gradient() {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

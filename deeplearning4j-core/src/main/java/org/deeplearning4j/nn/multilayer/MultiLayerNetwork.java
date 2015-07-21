@@ -1115,7 +1115,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             }
 
             //ensure score is updated correctly during backprop
-            getOutputLayer().setScore();
+            getOutputLayer().computeGradientAndScore();
 
 
             for(IterationListener listener :  listeners)
@@ -1454,7 +1454,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
     }
 
     @Override
@@ -1571,7 +1571,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             if(get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
-            layer.setScore();
+            layer.computeGradientAndScore();
             idx += range - 1;
         }
 
