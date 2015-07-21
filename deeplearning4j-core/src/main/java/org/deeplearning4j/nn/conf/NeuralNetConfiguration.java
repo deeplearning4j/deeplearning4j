@@ -29,6 +29,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -144,6 +145,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
     protected Convolution.Type convolutionType = Convolution.Type.VALID;
+    protected SubsamplingLayer.poolingType poolingType = SubsamplingLayer.poolingType.MAX;
 
 
     public NeuralNetConfiguration(double sparsity,
@@ -180,10 +182,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int numLineSearchIterations,
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
-                                  Layer layer, Convolution.Type convolutionType, double l1,String customLossFunction) {
+                                  Layer layer, Convolution.Type convolutionType,
+                                  SubsamplingLayer.poolingType poolingType,
+                                  double l1,String customLossFunction) {
         this.minimize = minimize;
         this.customLossFunction = customLossFunction;
         this.convolutionType = convolutionType;
+        this.poolingType = poolingType;
         this.numLineSearchIterations = numLineSearchIterations;
         this.maxNumLineSearchIterations = maxNumLineSearchIterations;
         this.featureMapSize = featureMapSize;
@@ -511,6 +516,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int maxNumLineSearchIterations = 5;
         private boolean minimize = false;
         private Convolution.Type convolutionType = Convolution.Type.VALID;
+        private SubsamplingLayer.poolingType poolingType = SubsamplingLayer.poolingType.MAX;
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
@@ -580,6 +586,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder convolutionType(Convolution.Type convolutionType) {
             this.convolutionType = convolutionType;
+            return this;
+        }
+
+        public Builder poolingType(SubsamplingLayer.poolingType poolingType) {
+            this.poolingType = poolingType;
             return this;
         }
 
@@ -821,7 +832,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  rng, seed,
                     dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
-                    ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,l1,customLossFunction);
+                    ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
+                    l1,customLossFunction);
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;

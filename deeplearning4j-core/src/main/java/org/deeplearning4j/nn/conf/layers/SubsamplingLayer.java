@@ -11,11 +11,11 @@ import lombok.NoArgsConstructor;
 public class SubsamplingLayer extends Layer {
     
     private static final long serialVersionUID = -7095644470333017030L;
-    private subsamplingType poolingType;
+    private poolingType poolingType;
     private int[] filterSize; // Get from convolutional layer
     private int[] stride; // Default is 2. Down-sample by a factor of 2
 
-    public enum subsamplingType {
+    public enum poolingType {
         MAX, AVG, SUM, NONE
     }
 
@@ -24,11 +24,11 @@ public class SubsamplingLayer extends Layer {
         this.stride = stride;
     }
 
-    public SubsamplingLayer(subsamplingType poolingType) {
+    public SubsamplingLayer(poolingType poolingType) {
         this.poolingType = poolingType;
     }
 
-    public SubsamplingLayer(int[] stride, subsamplingType poolingType) {
+    public SubsamplingLayer(int[] stride, poolingType poolingType) {
         this.stride = stride;
         this.poolingType = poolingType;
     }
