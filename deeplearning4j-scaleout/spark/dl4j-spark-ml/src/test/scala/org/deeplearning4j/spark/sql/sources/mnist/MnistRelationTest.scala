@@ -18,7 +18,7 @@ class MnistRelationTest
   val images = new ClassPathResource("/data/t10k-images-idx3-ubyte", classOf[MnistRelationTest]).getURI.toString
 
   test("select") {
-    val df = sqlContext.mnist(images, labels)
+    val df = sqlContext.read.mnist(images, labels)
 
     df.count() shouldEqual 10000
     df.select("label").count() shouldEqual 10000
