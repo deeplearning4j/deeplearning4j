@@ -10,8 +10,7 @@ package object mnist {
   implicit class MnistContext(sqlContext: SQLContext) {
     @Deprecated
     def mnist(imagesPath: String, labelsPath: String) = {
-      val parameters = Map(ImagesPath -> imagesPath, LabelsPath -> labelsPath)
-      sqlContext.read.format(classOf[DefaultSource].getName).options(parameters).load()
+      sqlContext.read.mnist(imagesPath, labelsPath)
     }
   }
 
