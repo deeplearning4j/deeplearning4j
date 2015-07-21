@@ -65,13 +65,15 @@ case class MnistRelation(imagesPath: Path, labelsPath: Path)
  * Mnist dataset provider.
  */
 class DefaultSource extends RelationProvider {
+  import DefaultSource._
+
   private def checkImagesFilePath(parameters: Map[String, String]): String = {
-    parameters.getOrElse("imagesPath",
+    parameters.getOrElse(ImagesPath,
       sys.error("'imagesPath' must be specified for mnist data"))
   }
 
   private def checkLabelsFilePath(parameters: Map[String, String]): String = {
-    parameters.getOrElse("labelsPath",
+    parameters.getOrElse(LabelsPath,
       sys.error("'labelsPath' must be specified for mnist labels"))
   }
 
@@ -81,4 +83,9 @@ class DefaultSource extends RelationProvider {
     val labelsPath = new Path(checkLabelsFilePath(parameters))
     new MnistRelation(imagesPath, labelsPath)(sqlContext)
   }
+}
+
+object DefaultSource {
+  val ImagesPath = "imagesPath"
+  val LabelsPath = "labelsPath"
 }
