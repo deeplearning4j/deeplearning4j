@@ -64,7 +64,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
         gradient();
         score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);;
     }
