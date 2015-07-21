@@ -379,7 +379,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      * for every layer.
                      */
                     if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        if(i!=(layers.length-1)) {
+                        if(i != (layers.length-1)) {
                             numHiddenLayersSizesUsed++;
                             conf.setNIn(layerInput.size(1));
                             conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
@@ -457,7 +457,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
 
-        INDArray ret = layers[curr].preOutput(input,training);
+        INDArray ret = layers[curr].preOutput(input, training);
         if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
             ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
             return ret;
@@ -1058,7 +1058,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         output.setLabels(labels);
 
         //calculate and apply the backward gradient for every layer
-        for(int i = 0; i < getLayerWiseConfigurations().getConf(0).getNumIterations(); i++) {
+        for(int i = 0; i < getLayerWiseConfigurations().getConf(getLayerWiseConfigurations().getConfs().size() - 1).getNumIterations(); i++) {
             /**
              * Skip the output layer for the indexing and just loop backwards updating the coefficients for each layer.
              *
@@ -1147,6 +1147,11 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      */
     public void finetune(DataSetIterator iter) {
         log.info("Finetune phase ");
+        if(layerWiseConfigurations.isBackward()) {
+            log.info("Will use backpropagation for finetune");
+            return;
+        }
+
         iter.reset();
 
         while (iter.hasNext()) {
@@ -1185,6 +1190,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             log.warn("Output layer not instance of output layer returning.");
             return;
         }
+
+        if(layerWiseConfigurations.isBackward()) {
+            log.info("Will use backpropagation for finetune");
+            return;
+        }
+
 
         log.info("Finetune phase");
         OutputLayer o = (OutputLayer) getOutputLayer();
@@ -1325,7 +1336,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray x) {
-        return output(x,false);
+        return output(x, false);
     }
 
 
