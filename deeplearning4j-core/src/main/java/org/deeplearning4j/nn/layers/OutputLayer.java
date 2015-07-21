@@ -85,6 +85,24 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
     @Override
+    protected void setScoreWithZ(INDArray z) {
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
+            create.exec();
+            score = create.currentResult().doubleValue();
+        }
+
+        else {
+            score = LossCalculation.builder()
+                    .l1(conf.getL1()).l2(conf.getL2())
+                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .labels(labels).z(z).lossFunction(conf.getLossFunction())
+                    .useRegularization(conf.isUseRegularization()).build().score();
+
+        }
+    }
+
+    @Override
     public Pair<Gradient, Double> gradientAndScore() {
         return new Pair<>(gradient(),score());
     }
