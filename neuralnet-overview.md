@@ -91,9 +91,11 @@ The chain rule in calculus states that
 
 ![Alt text](../img/chain_rule.png)
 
-In a feedforward network, the relationship betweent the net's error and a single weight will look something like this
+In a feedforward network, the relationship betweent the net's error and a single weight will look something like this:
 
 ![Alt text](../img/backprop_chain_rule.png)
+
+The essence of learning in deep learning is nothing more than that: adjusting a model in response to the error it produces, until you can't reduce the error any more. 
 
 ## Neural Networks & Artificial Intelligence 
 
