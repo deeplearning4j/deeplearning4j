@@ -50,67 +50,12 @@ public class LossFunctions {
      * @return the score for the given parameters
      */
     public static double score(INDArray labels, LossFunction lossFunction, INDArray z, double l2, double l1,double l1Magnitude,double l2Magnitude,boolean useRegularization) {
-        double ret = 0.0;
-        if (!Arrays.equals(labels.shape(), z.shape()))
-            throw new IllegalArgumentException("Output and labels must be same length");
-        boolean oldEnforce = Nd4j.ENFORCE_NUMERICAL_STABILITY;
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        switch (lossFunction) {
-            case CUSTOM: throw new IllegalStateException("Unable to score custom operation. Please define an alternative mechanism");
-            case RECONSTRUCTION_CROSSENTROPY:
-                INDArray xEntLogZ2 = log(z.addi(Nd4j.EPS_THRESHOLD));
-                INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ2 = log(z.add(Nd4j.EPS_THRESHOLD)).rsubi(1);
-                ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
-                break;
-            case MCXENT:
-                INDArray sums = log(z.addi(Nd4j.EPS_THRESHOLD));
-                INDArray columnSums = labels.mul(log(sums.addi(Nd4j.EPS_THRESHOLD)));
-                ret = -columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
-                break;
-            case XENT:
-                INDArray xEntLogZ = log(z.add(Nd4j.EPS_THRESHOLD));
-                INDArray xEntOneMinusLabelsOut = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ = log(z.addi(Nd4j.EPS_THRESHOLD)).rsubi(1);
-                ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
-                break;
-            case RMSE_XENT:
-                INDArray rmseXentDiff = labels.sub(z);
-                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
-                INDArray sqrt = sqrt(squaredrmseXentDiff);
-                ret = sqrt.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
-                break;
-            case MSE:
-                INDArray mseDelta = labels.sub(z);
-                ret = 0.5 * pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
-                break;
-            case EXPLL:
-                INDArray expLLLogZ = log(z);
-                ret = z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
-                break;
-            case SQUARED_LOSS:
-                ret = pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
-                break;
-            case NEGATIVELOGLIKELIHOOD:
-                ret = -Nd4j.sum(
-                        labels.mul(log(z.addi(Nd4j.EPS_THRESHOLD)))
-                                .addi(labels.rsub(1).muli(log(z.rsub(1).addi(Nd4j.EPS_THRESHOLD))))
-                        , 1).getDouble(0);
-
-
-
-        }
-
-        if (useRegularization) {
-            ret += l2 * l2Magnitude;
-            ret += l1 * l1Magnitude;
-        }
-
-
-        ret /= (double) labels.rows();
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = oldEnforce;
-        return ret;
-
+        return LossCalculation.builder()
+                .l1(l1).l1Magnitude(l1Magnitude).lossFunction(lossFunction)
+                .l2(l2).l2Magnitude(l2Magnitude).labels(labels)
+                .z(z)
+                .useRegularization(useRegularization)
+                .build().score();
     }
 
     /**
@@ -136,20 +81,20 @@ public class LossFunctions {
         switch (lossFunction) {
             case CUSTOM: throw new IllegalStateException("Unable to score custom operation. Please define an alternative mechanism");
             case RECONSTRUCTION_CROSSENTROPY:
-                INDArray xEntLogZ2 = log(z.addi(Nd4j.EPS_THRESHOLD));
+                INDArray xEntLogZ2 = log(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ2 = log(z.add(Nd4j.EPS_THRESHOLD)).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
                 ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
-                INDArray sums = log(z.addi(Nd4j.EPS_THRESHOLD));
-                INDArray columnSums = labels.mul(log(sums.addi(Nd4j.EPS_THRESHOLD)));
-                ret = -columnSums.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                INDArray sums = log(z);
+                INDArray columnSums = labels.mul(log(sums));
+                ret = -columnSums.sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case XENT:
-                INDArray xEntLogZ = log(z.add(Nd4j.EPS_THRESHOLD));
+                INDArray xEntLogZ = log(z);
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ = log(z.addi(Nd4j.EPS_THRESHOLD)).rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ = log(z).rsubi(1);
                 ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case RMSE_XENT:
