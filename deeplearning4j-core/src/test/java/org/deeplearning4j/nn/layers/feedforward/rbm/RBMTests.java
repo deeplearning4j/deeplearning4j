@@ -144,7 +144,6 @@ public class RBMTests {
     @Test
     public void testMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        RandomGenerator gen = new MersenneTwister(123);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -213,6 +212,9 @@ public class RBMTests {
         value = rbm.score();
 
     }
+
+
+
 
     @Test
     public void testGradient() {

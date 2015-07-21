@@ -31,8 +31,7 @@ public class Dropout {
      */
     public static INDArray applyDropout(INDArray input,double dropout,INDArray dropoutMask) {
         if(dropoutMask == null || !Shape.shapeEquals(input.shape(),dropoutMask.shape())) {
-            double scale = 1 / (1 - dropout);
-            dropoutMask = Nd4j.rand(input.shape()).lti(1 - dropout).muli(scale);
+            dropoutMask = Nd4j.rand(input.shape()).lti(dropout).divi(dropout);
         }
 
         input.muli(dropoutMask);
