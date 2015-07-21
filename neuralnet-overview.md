@@ -27,6 +27,8 @@ A node layer is a row of those neuronlike switches that turn on or off as the in
 
 ![Alt text](../img/mlp.png)
 
+## Key Concepts of Deep Neural Networks
+
 Deep-learning networks are distinguished from the more commonplace single-hidden-layer neural networks by their **depth**; that is, the number of node layers through which data passes in a multistep process of pattern recognition. Traditional machine learning relies on shallow nets, composed of one input and one output layer, and a hidden layer in between. More than three layers (including input and output) qualifies as "deep" learning. 
 
 In deep-learning networks, each layer of nodes is trains on a distinct set of features based on the previous layer's outputs. The further you advance into the neural net, the more complex the features your nodes can recognize, since they aggregate and recombine features from the previous layer. 
@@ -51,7 +53,7 @@ A deep-learning network trained on labeled data can then be applied to unstructu
 
 Deep-learning networks end in an output layer: a logistic, or softmax, classifier that assigns a likelihood to a particular outcome or label. We call that predictive, but it is predictive in a broad sense. Given raw data in the form of an image, a deep-learning network may decide, for example, that the input data is 90 percent likely to represent a person. 
 
-## Feedforward Networks
+## Example: Feedforward Networks
 
 Our goal in using a neural net is to arrive at the point of least error as fast as possible. We are running a race. The starting line for the race is the state in which our weights and biases are initialized, and the finish line is the state of those parameters when they are capable of producing accurate classifications and predictions. 
 
