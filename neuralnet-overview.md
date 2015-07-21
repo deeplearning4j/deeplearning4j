@@ -115,7 +115,7 @@ Let's examine this little formula.
 
 For continuous inputs to be expressed as probabilities, they must output positive results, since there is no such thing as a negative probability. That's why you see input as the exponent of *e* in the denominator -- because exponents force our results to be greater than zero. Now consider the relationship of *e*'s exponent to the fraction 1/1. One, as we know, is the ceiling of a probability, beyond which our results can't go without being absurd. (We're 120% sure of that.) 
 
-As the input *x* that triggers a label grows, the expression *e to the x* shrinks, leaving the fraction 1/1, or 100%, which means we approach (without ever quite reaching) absolute certainty that the label applies. 
+As the input *x* that triggers a label grows, the expression *e to the x* shrinks, leaving the fraction 1/1, or 100%, which means we approach (without ever quite reaching) absolute certainty that the label applies. Input that correlates negatively with your output will have its value flipped by the negative sign on *e*'s exponent, and as that negative signal grows, the quantity *e to the x* becomes larger, pushing the entire fraction closer to zero. 
 
 ## Neural Networks & Artificial Intelligence 
 
