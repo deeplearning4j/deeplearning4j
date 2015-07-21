@@ -52,7 +52,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
         for(int i = 0; i < conf.getNumIterations(); i++) {
             Pair<Gradient,Double> pair = gradientAndScore();
             for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
-                model.update(pair.getFirst().getGradientFor(paramType), paramType);
+                model.update(pair.getFirst().getGradientFor(paramType).negi(), paramType);
             }
 
             model.computeGradientAndScore();
