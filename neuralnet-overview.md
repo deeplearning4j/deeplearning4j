@@ -121,6 +121,8 @@ For continuous inputs to be expressed as probabilities, they must output positiv
 
 As the input *x* that triggers a label grows, the expression *e to the x* shrinks, leaving the fraction 1/1, or 100%, which means we approach (without ever quite reaching) absolute certainty that the label applies. Input that correlates negatively with your output will have its value flipped by the negative sign on *e*'s exponent, and as that negative signal grows, the quantity *e to the x* becomes larger, pushing the entire fraction closer to zero. 
 
+With this layer, we can set a threshold above which an example is labeled 1, and below which it is not. You can set different thresholds as you prefer -- a low threshold will increase the number of false positives, and a high one will increase the number of false negatives -- depending on which side you would like to err. 
+
 ## Neural Networks & Artificial Intelligence 
 
 In some circles, neural networks are thought of as "brute force" AI, because they start with a blank slate and hammer their way through to an accurate model. They are effective, but to some eyes inefficient in their approach to modeling, which can't make assumptions about functional dependencies between output and input. That said, gradient descent is not recombining every weight with every other to find the best match -- it's method of pathfinding shrinks the relevant weight space therefore the number of updates by many orders of magnitude. 
