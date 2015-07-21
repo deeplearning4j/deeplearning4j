@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,6 +67,8 @@ public class DefaultLayerFactory implements LayerFactory {
     }
     
     protected Layer getInstance(NeuralNetConfiguration conf) {
+        if(layerConfig instanceof DenseLayer)
+            return new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.AutoEncoder)
             return new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
@@ -83,8 +86,8 @@ public class DefaultLayerFactory implements LayerFactory {
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer)
             return new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);   
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.SubsamplingLayer)
-            return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);   
-        
+            return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
+
         throw new RuntimeException("unknown layer type: " + layerConfig);
     }
 

@@ -295,6 +295,11 @@ public class TestOptimizers {
 			g.gradientForVariable().put("x", gradient);
 			return g;
 		}
+
+		@Override
+		public void setListeners(IterationListener... listeners) {
+
+		}
 	}
 	
 	
@@ -416,6 +421,11 @@ public class TestOptimizers {
 			Gradient g = new DefaultGradient();
 			g.gradientForVariable().put("x", gradient);
 			return g;
+		}
+
+		@Override
+		public void setListeners(IterationListener... listeners) {
+
 		}
 	}
 	
@@ -548,6 +558,11 @@ public class TestOptimizers {
 			g.gradientForVariable().put("x", gradient);
 			return g;
 		}
+
+		@Override
+		public void setListeners(IterationListener... listeners) {
+
+		}
 	}
 	
 	
@@ -577,6 +592,31 @@ public class TestOptimizers {
 		}
 
 		@Override
+		public INDArray preOutput(INDArray x, boolean training) {
+			return null;
+		}
+
+		@Override
+		public INDArray activate(boolean training) {
+			return null;
+		}
+
+		@Override
+		public INDArray activate(INDArray input, boolean training) {
+			return null;
+		}
+
+		@Override
+		public double score() {
+			return 0;
+		}
+
+		@Override
+		public Gradient gradient() {
+			return null;
+		}
+
+		@Override
 		public double l2Magnitude() {
 			return 0;
 		}
@@ -587,7 +627,7 @@ public class TestOptimizers {
 		}
 
 		@Override
-		public void setScore() { }
+		public void computeGradientAndScore() { }
 
 		@Override
 		public void accumulateScore(double accum) { throw new UnsupportedOperationException(); }

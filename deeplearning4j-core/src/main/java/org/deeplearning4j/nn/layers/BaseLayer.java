@@ -28,18 +28,22 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.Shape;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
- * A layer with a bias and activation function
+ * A layer with a bias
+ * and activation function
  * @author Adam Gibson
  */
 public abstract class BaseLayer implements Layer {
@@ -51,8 +55,9 @@ public abstract class BaseLayer implements Layer {
     protected ParamInitializer paramInitializer;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
+    protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
-    protected int index=0;
+    protected int index = 0;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -67,8 +72,14 @@ public abstract class BaseLayer implements Layer {
         return input;
     }
 
-    public void setInput(INDArray input) {
+    public void setInput(INDArray input,boolean training) {
+        if(conf.getDropOut() > 0 && training)
+            this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         this.input = input;
+    }
+
+    public void setInput(INDArray input) {
+        setInput(input,true);
     }
 
     @Override
@@ -90,6 +101,13 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+
+    @Override
+    public void setListeners(IterationListener... listeners) {
+        this.iterationListeners = new ArrayList<>();
+        for(IterationListener l : listeners)
+            iterationListeners.add(l);
     }
 
     @Override
@@ -148,28 +166,33 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
         if (this.input == null)
             return;
 
         INDArray output = transform(input);
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
-            create.exec();
-            score = create.currentResult().doubleValue();
-        } else{
-            score = LossFunctions.score(
-                    input,
-                    conf.getLossFunction(),
-                    output,
-                    conf.getL2(),
-                    conf.getL1()
-                    ,l1Magnitude()
-                    ,l2Magnitude(),
-                    conf.isUseRegularization());
-        }
+        setScoreWithZ(output);
 
     }
+
+
+    protected void setScoreWithZ(INDArray z) {
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
+            create.exec();
+            score = create.currentResult().doubleValue();
+        }
+
+        else {
+            score = LossCalculation.builder()
+                    .l1(conf.getL1()).l2(conf.getL2())
+                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .labels(input).z(z).lossFunction(conf.getLossFunction())
+                    .useRegularization(conf.isUseRegularization()).build().score();
+
+        }
+    }
+
 
 
     /**
@@ -182,6 +205,11 @@ public abstract class BaseLayer implements Layer {
         return score;
     }
 
+    @Override
+    public Gradient gradient() {
+        return gradient;
+    }
+
     /**
      * iterate one iteration of the network
      *
@@ -189,8 +217,8 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public void iterate(INDArray input) {
-        this.input = input.dup();
-        applyDropOutIfNecessary(this.input);
+        setInput(input.dup());
+        applyDropOutIfNecessary(this.input,true);
         Gradient gradient = gradient();
         for(String paramType : gradient.gradientForVariable().keySet()) {
             update(gradient.getGradientFor(paramType), paramType);
@@ -264,7 +292,7 @@ public abstract class BaseLayer implements Layer {
         int idx = 0;
         Set<String> paramKeySet = this.params.keySet();
         for(String s : paramKeySet ){
-        	INDArray param = getParam(s);
+            INDArray param = getParam(s);
             INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
@@ -289,6 +317,41 @@ public abstract class BaseLayer implements Layer {
         return params;
     }
 
+    @Override
+    public INDArray preOutput(INDArray x, boolean training) {
+        if(x == null)
+            throw new IllegalArgumentException("No null input allowed");
+
+        setInput(x.dup(),training);
+        applyDropOutIfNecessary(this.input,training);
+        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
+        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect() && training) {
+            if (conf.getDropOut() > 0) {
+                W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
+            }
+        }
+        INDArray ret = input().mmul(W).addiRowVector(b);
+        return ret;
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
+        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect() && training) {
+            W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
+        }
+
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        return ret;
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        setInput(input,training);
+        return activate(training);
+    }
 
     /**
      * Classify input
@@ -300,19 +363,7 @@ public abstract class BaseLayer implements Layer {
      */
     @Override
     public  INDArray preOutput(INDArray x) {
-        if(x == null)
-            throw new IllegalArgumentException("No null input allowed");
-
-        this.input = x.dup();
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect()) {
-            if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
-            }
-        }
-        INDArray ret = input().mmul(W).addiRowVector(b);
-        return ret;
+        return preOutput(x,true);
     }
 
     @Override
@@ -327,26 +378,17 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public int batchSize() {
-        return input.rows();
+        return input.size(0);
     }
 
     @Override
     public  INDArray activate() {
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect()) {
-            if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
-            }
-        }
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
-        return ret;
+        return activate(true);
     }
 
     @Override
     public  INDArray activate(INDArray input) {
-        this.input = input.dup();
-        return activate();
+        return activate(input,true);
     }
 
 
@@ -354,11 +396,6 @@ public abstract class BaseLayer implements Layer {
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect()) {
-            if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
-            }
-        }
         return input().mmul(W).addiRowVector(b);
     }
 
@@ -377,9 +414,9 @@ public abstract class BaseLayer implements Layer {
         }
     }
 
-    protected void applyDropOutIfNecessary(INDArray input) {
-        if(conf.getDropOut() > 0 && !conf.isUseDropConnect()) {
-            input.muli(dropoutMask);
+    protected void applyDropOutIfNecessary(INDArray input,boolean training) {
+        if(conf.getDropOut() > 0 && !conf.isUseDropConnect() && training) {
+            dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
     }
 
@@ -392,7 +429,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void merge(Layer l,int batchSize) {
         setParams(params().addi(l.params().divi(batchSize)));
-        setScore();
+        computeGradientAndScore();
     }
 
 
@@ -438,7 +475,7 @@ public abstract class BaseLayer implements Layer {
     public void fit(INDArray input) {
         if(input != null) {
             this.input = input.dup();
-            applyDropOutIfNecessary(this.input);
+            applyDropOutIfNecessary(this.input,true);
         }
         Solver solver = new Solver.Builder()
                 .model(this).configure(conf()).listeners(getIterationListeners())

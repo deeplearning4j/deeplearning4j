@@ -130,7 +130,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             BooleanIndexing.applyWhere(parameters, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
         }
         layer.setParams(parameters);
-        layer.setScore();
+        layer.computeGradientAndScore();
         return layer.score();
     }
 

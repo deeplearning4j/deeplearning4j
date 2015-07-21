@@ -34,7 +34,6 @@ import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.GradientUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,19 +100,18 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public double score() {
-        model.setScore();
+        model.computeGradientAndScore();
         return model.score();
     }
 
 
     @Override
     public Pair<Gradient,Double> gradientAndScore() {
-        model.setScore();
+        model.computeGradientAndScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
         for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
             INDArray gradient = pair.getFirst().getGradientFor(paramType);
             updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType,iteration);
-            pair.getFirst().setGradientFor(paramType,gradient);
         }
         return pair;
     }

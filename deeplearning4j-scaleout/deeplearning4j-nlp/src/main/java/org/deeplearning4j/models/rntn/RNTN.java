@@ -326,6 +326,11 @@ public class RNTN implements Layer {
         return iterationListeners;
     }
 
+    @Override
+    public void setListeners(IterationListener... listeners) {
+
+    }
+
     public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
@@ -902,7 +907,7 @@ public class RNTN implements Layer {
                 binaryTensors.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
-        setScore();
+        computeGradientAndScore();
     }
 
     public int getNumParameters() {
@@ -1214,6 +1219,21 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public INDArray preOutput(INDArray x, boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        return null;
+    }
+
+    @Override
     public INDArray activate() {
         return null;
     }
@@ -1239,7 +1259,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
 
     }
 

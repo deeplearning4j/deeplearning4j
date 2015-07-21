@@ -145,4 +145,22 @@ public class MnistManager {
     public MnistLabelFile getLabels() {
         return labels;
     }
+
+    /**
+     * Close any resources opened by the manager.
+     */
+    public void close() {
+        if(images != null) {
+            try {
+                images.close();
+            } catch (IOException e) {}
+            images = null;
+        }
+        if(labels != null) {
+            try {
+                labels.close();
+            } catch (IOException e) {}
+            labels = null;
+        }
+    }
 }
