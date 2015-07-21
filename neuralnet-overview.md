@@ -107,6 +107,15 @@ So neural networks working with labeled data produce binary output, but the inpu
 
 So the output layer has to condense signals such as $67.59 spent on diapers, and 15 visits to a website, into a range between 0 and 1; i.e. a probability that a given input should be labeled or not. 
 
+The mechanism we use to convert continuous signals into binary output is called logistic regression. The name is unfortunate, since logistic regression is used for classification rather than regression in the linear sense that most people are familiar with. It calculates the probability that a set of inputs match the label.  
+
+![Alt text](../img/logistic_regression.png)
+
+Let's examine this little formula. 
+
+For continuous inputs to be expressed as probabilities, they must output positive results, since there is no such thing as a negative probability. That's why you see input as the exponent of *e* in the denominator -- because exponents force our results to be greater than zero. Now consider the relationship of *e*'s exponent to the fraction 1/1. One, as we know, is the ceiling of a probability, beyond which our results can't go without being absurd. (We're 120% sure of that.) 
+
+As the input *x* that triggers a label grows, the expression *e to the x* shrinks, leaving the fraction 1/1, or 100%, which means we approach (without ever quite reaching) absolute certainty that the label applies. 
 
 ## Neural Networks & Artificial Intelligence 
 
