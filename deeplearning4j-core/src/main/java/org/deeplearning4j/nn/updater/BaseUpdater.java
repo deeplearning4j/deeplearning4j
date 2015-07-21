@@ -50,11 +50,11 @@ public abstract class BaseUpdater implements Updater {
         if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
+        gradient.divi((double) layer.input().size(0));
 
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
-        gradient.divi((double) layer.input().size(0));
     }
 
     public abstract void init();

@@ -20,8 +20,6 @@ package org.deeplearning4j.nn.layers.feedforward.rbm;
 
 import java.util.Arrays;
 
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -144,7 +142,6 @@ public class RBMTests {
     @Test
     public void testMnist() throws Exception {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
-        RandomGenerator gen = new MersenneTwister(123);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -181,7 +178,7 @@ public class RBMTests {
         RBM rbm = LayerFactories.getFactory(conf).create(conf);
         INDArray rand2 = Nd4j.rand(new int[]{1, rbm.numParams()});
         rbm.setParams(rand2);
-        rbm.setScore();
+        rbm.computeGradientAndScore();
         INDArray getParams = rbm.params();
         assertEquals(rand2,getParams);
     }
@@ -213,6 +210,9 @@ public class RBMTests {
         value = rbm.score();
 
     }
+
+
+
 
     @Test
     public void testGradient() {
