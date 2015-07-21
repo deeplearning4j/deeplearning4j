@@ -64,7 +64,7 @@ Jblas가 이미 OSX에 설치되어 있습니다.
 
 Lapack은 [VS Studio Solution](http://icl.cs.utk.edu/lapack-for-windows/lapack/#lapacke)의 대안을 제공합니다. [Basic Linear Algebra Subprograms (BLAS)](http://www.netlib.org/blas/)를 위한 문서들도 확인하십시오.
 
-다른 방법으로 MinGW를 무시하고 여러분의 PATH의 한 폴더에 그 Blas dll 파일을 복사하실 수 있습니다. 예를 들어 MinGW bin 폴라로이드 경로는 다음과 같습니다: /usr/x86_64-w64-mingw32/sys-root/mingw/bin. Windows에서 PATH 변수에 대한 보다 많은 설명을 원하시면 [top answer on this StackOverflow 페이지](https://stackoverflow.com/questions/3402214/windows-7-maven-2-install)를 읽어보십시오.
+다른 방법으로, MinGW를 무시하고 여러분의 PATH의 한 폴더에 그 Blas dll 파일을 복사하실 수 있습니다. 예를 들어 MinGW bin 폴더로의 경로는 이와 같습니다: /usr/x86_64-w64-mingw32/sys-root/mingw/bin. Windows에서 PATH 변수에 대한 보다 많은 설명을 원하시면 [top answer on this StackOverflow 페이지](https://stackoverflow.com/questions/3402214/windows-7-maven-2-install)를 읽어보십시오.
 
 Cygwin은 지원되지 않습니다. DOS Windows에서 DL4J를 설치하셔야 합니다.
 
@@ -95,9 +95,9 @@ Cygwin은 지원되지 않습니다. DOS Windows에서 DL4J를 설치하셔야 
 * Maven version : type *mvn --version* in your terminal/CMD
 * Stacktrace: Please past the error code on Gist -- [https://gist.github.com/](https://gist.github.com/) -- and share the link with us
 
-DL4J를 이미 설치하셨고 이제 오류를 일으키는 예제들이을 보고 계신다면, DL4J와 동일한 루트 디렉터리에 있는 [ND4J](http://nd4j.org/getstarted.html) 상의 git clone을 실행하십시오; ND4J 내에서 새로운 Maven 설치를 실행하십시오; DL4J를 재설치 하십시오; DL4J 내에서 새로운 Maven 설치를 실행하시고, 오류들이 해결되었는지 확인하십시오.
+이미 DL4J를 설치하셨고 이제 오류를 일으키는 예제들을 보고 계신다면, DL4J와 동일한 루트 디렉터리에 있는 [ND4J](http://nd4j.org/getstarted.html) 상의 git clone을 실행하십시오; ND4J 내에서 새로운 Maven 설치를 실행하십시오; DL4J를 재설치 하십시오; DL4J 내에서 새로운 Maven 설치를 실행하시고, 오류들이 해결되었는지 확인하십시오.
 
-어떤 예제를 실행할 때, 망(net)의 분류(classification)가 정확성 확률인 [f1 점수](http://deeplearning4j.org/glossary.html#f1)를 낮게 받으실 수 있습니다. 이 경우, 낮은 f1 점수가 성능 저하를 의미하지 않습니다. 왜냐하면 예제들은 작은 데이터 세트에서 훈련되었기 때문입니다. 저희는 빠른 실행을 위해 예제들에 작은 데이터 세트를 주었습니다. 작은 데이터 세트들은 큰 데이터 세트들보다 덜 대표적이기 때문에, 그 보여지는 결과들은 크게 다를 수 있습니다. 예를 들어, 소문자 예제 데이터에서 저희의 심층 신뢰 망(deep-belief net)의 f1 점수는 현재 0.32 에서 1.0 사이에서 차이를 보입니다.
+어떤 예제를 실행할 때, 망(net)의 분류(classification)가 정확한지의 확률인 [f1 점수](http://deeplearning4j.org/glossary.html#f1)를 낮게 받으실 수 있습니다. 이 경우, 낮은 f1 점수가 성능 저하를 의미하지 않습니다. 왜냐하면 예제들은 작은 데이터 세트에서 훈련되었기 때문입니다. 저희는 빠른 실행을 위해 예제들에 작은 데이터 세트를 주었습니다. 작은 데이터 세트들은 큰 데이터 세트들보다 덜 대표적이기 때문에, 그 보여지는 결과들은 크게 다를 수 있습니다. 예를 들어, 소문자 예제 데이터에서 저희의 심층 신뢰 망(deep-belief net)의 f1 점수는 현재 0.32 에서 1.0 사이에서 차이를 보입니다.
 
 Deeplearning4J는 autocomplete function을 포함합니다. 어떤 커맨드들이 사용 가능한지 모르는 경우, 어떤 문자든 누르면 다음과 같이 드롭다운 리스트가 보여질 것 입니다.
 
@@ -109,13 +109,13 @@ Deeplearning4J는 autocomplete function을 포함합니다. 어떤 커맨드들�
 
 		echo “export MAVEN_OPTS=”-Xmx512m -XX:MaxPermSize=512m”” > ~/.bash_profile
 
-3.0.4와 같은 Maven의 이전 버전들은 NoSuchMethodError와 같은 예외 사항들을 줄 수 이미 습니다. 이는 Maven의 최신 버전으로 업그레이드 함으로써 해결될 수 있습니다.This can be fixed by upgrading to the latest version of Maven.
+3.0.4와 같은 Maven의 이전 버전들은 NoSuchMethodError와 같은 예외 사항들을 줄 가능성이 있습니다. 이는 Maven의 최신 버전으로 업그레이드 함으로써 해결될 수 있습니다.
 
-일부 ND4J 종속성들을 컴파일 하시려면, C 또는 C++를 위한 몇 가지 개발 도구들을 설치하셔야 합니다. [저희의 ND4J guide를 보십시오](http://nd4j.org/getstarted.html#devtools).
+일부 ND4J 디펜던시들을 컴파일 하시려면, C 또는 C++를 위한 몇 가지 개발 도구들을 설치하셔야 합니다. [저희의 ND4J guide를 보십시오](http://nd4j.org/getstarted.html#devtools).
 
-DL4J를 사용하여 발생하는 일부 문제들은 기계 학습의 아이디어와 기술에 익숙하지 않아서 일 수 있습니다. 저희는 모든 Deeplearning4j 이용자들이 기본을 이해하기 위해 이 웹사이트를 넘어선 리소스들을 이용하기를 강력히 권장합니다.users to rely on resources beyond this website to understand the fundamentals. Andrew Ng의 훌륭한 강의인 [machine-learning lectures on Coursera](https://www.coursera.org/learn/machine-learning/home/info)가 좋은 시작이 될 수 있습니다. [Youtube에 있는 Geoff Hinton의 neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE) 역시 매우 교육적입니다. 저희가 부분적으로 DL4J를 문서화 해 왔지만, 코드의 많은 부분들이 본질적으로 deep learning을 위한 완성되지 않은, 도메인 특정 언어 입니다.
+DL4J를 사용하여 발생하는 일부 문제들은 기계 학습의 아이디어와 기술에 익숙하지 않아서 일 수 있습니다. 저희는 모든 Deeplearning4j 이용자들이 기본을 이해하기 위해 이 웹사이트를 넘어선 리소스들을 이용하기를 강력히 권장합니다. Andrew Ng의 훌륭한 강의인 [machine-learning lectures on Coursera](https://www.coursera.org/learn/machine-learning/home/info)가 좋은 시작이 될 수 있습니다. [Youtube에 있는 Geoff Hinton의 neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE) 역시 매우 교육적입니다. 저희가 부분적으로 DL4J를 문서화 해 왔지만 deep learning을 위해서는 여전히 코드의 많은 부분들이 본질적으로 완성되지 않은 도메인 특정 언어 입니다.
 
-[Java CPP](https://github.com/bytedeco/javacpp)를 위한 include path가 항상 windows에서 작동하지만 않습니다. 한 가지 해결 방법은 Visual Studio의 include directory로부터 header 파일들을 가져와 Java가 설치되어 있는 Java Run-Time Environment (JRE)의 include directory에 붙여 넣는 것 입니다. (이는 standardio.h와 같은 파일들이 영향을 미칠 것 입니다.)
+[Java CPP](https://github.com/bytedeco/javacpp)를 위한 include path가 항상 windows에서 작동하지만 않습니다. 한 가지 해결 방법은 Visual Studio의 include directory로부터 header 파일들을 가져와 Java가 설치되어 있는 Java Run-Time Environment (JRE)의 include directory에 붙여 넣는 것 입니다. (이는 standardio.h와 같은 파일들에 영향을 미칠 것 입니다.)
 
 ### <a name="results">재생 가능한 결과</a>
 
