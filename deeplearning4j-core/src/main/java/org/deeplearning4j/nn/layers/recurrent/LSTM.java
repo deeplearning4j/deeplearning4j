@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.util.Dropout;
@@ -455,7 +454,7 @@ public class LSTM extends BaseLayer {
     @Override
     public void update(INDArray gradient, String paramType) {
         setParams(params().subi(gradient));
-        setScore();
+        computeGradientAndScore();
 
     }
 
@@ -472,7 +471,7 @@ public class LSTM extends BaseLayer {
 
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
         INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
         score = LossFunctions.score(
                 xs,
