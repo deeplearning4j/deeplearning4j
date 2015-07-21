@@ -70,7 +70,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public void setScore() {
         if(input == null || labels == null)
             return;
-        INDArray output = output(input);
+        INDArray output = output(input.dup());
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
             create.exec();
