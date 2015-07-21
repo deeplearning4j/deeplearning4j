@@ -17,7 +17,7 @@ Searching for potential dating partners, future major-league superstars, a compa
 
 ## Neural Network Elements
 
-Deep learning is a name for a certain type of stacked neural network composed of several node layers. A node is a place where computation happens, loosely patterned on the human neuron and firing when it encounters the sufficient stimulus. It combines input from the data with a set of coefficients, or weights, that either amplify or mute that input. These input-weight products are summed and the sum is passed through a node's so-called activation function. 
+Deep learning is a name for a certain set of stacked neural networks composed of several node layers. A node is a place where computation happens, loosely patterned on the human neuron and firing when sufficient stimuli pass through. It combines input from the data with a set of coefficients, or weights, that either amplify or mute that input. These input-weight products are summed and the sum is passed through a node's so-called activation function. 
 
 Here's a diagram of what one node might look like.
 
@@ -27,21 +27,25 @@ A node layer is a row of those neuronlike switches that turn on or off as the in
 
 ![Alt text](../img/mlp.png)
 
+Pairing adjustable weights with input features is how we assign significance to those features with regard to how the network classifies and clusters input. 
+
 ## Key Concepts of Deep Neural Networks
 
-Deep-learning networks are distinguished from the more commonplace single-hidden-layer neural networks by their **depth**; that is, the number of node layers through which data passes in a multistep process of pattern recognition. Traditional machine learning relies on shallow nets, composed of one input and one output layer, and a hidden layer in between. More than three layers (including input and output) qualifies as "deep" learning. 
+Deep-learning networks are distinguished from the more commonplace single-hidden-layer neural networks by their **depth**; that is, the number of node layers through which data passes in a multistep process of pattern recognition. 
 
-In deep-learning networks, each layer of nodes is trains on a distinct set of features based on the previous layer's outputs. The further you advance into the neural net, the more complex the features your nodes can recognize, since they aggregate and recombine features from the previous layer. 
+Traditional machine learning relies on shallow nets, composed of one input and one output layer, and at most one hidden layer in between. More than three layers (including input and output) qualifies as "deep" learning. 
 
-This is known as **feature hierarchy**, and it is a hierarchy of increasing complexity and abstraction. It makes deep-learning networks capable of handling very large, high-dimensional data sets with billions of parameters being passed through [nonlinear functions](../glossary.html#nonlineartransformfunction). 
+In deep-learning networks, each layer of nodes is trains on a distinct set of features based on the previous layer's output. The further you advance into the neural net, the more complex the features your nodes can recognize, since they aggregate and recombine features from the previous layer. 
 
-Above all, these nets are capable of discovering latent structures within **unlabeled, unstructured data**, which is the vast majority of data in the world. Another word for unstructured data is simply raw media; i.e. pictures, texts, video and audio recordings. Therefore, one of the uproblems deep learning solves best is in processing and clustering the world's raw, unlabeled media, discerning similarities and anomalies in data that no human has organized in a relational database. 
+This is known as **feature hierarchy**, and it is a hierarchy of increasing complexity and abstraction. It makes deep-learning networks capable of handling very large, high-dimensional data sets with billions of parameters passing through [nonlinear functions](../glossary.html#nonlineartransformfunction). 
+
+Above all, these nets are capable of discovering latent structures within **unlabeled, unstructured data**, which is the vast majority of data in the world. Another word for unstructured data is simply raw media; i.e. pictures, texts, video and audio recordings. Therefore, one of the problems deep learning solves best is in processing and clustering the world's raw, unlabeled media, discerning similarities and anomalies in data that no human has organized in a relational database or put a name to. 
 
 For example, deep learning can take a million images, and cluster them according to their similarities: cats in one corner, ice breakers in another, and in a third all the photos of your grandmother. This is the basis of so-called smart photo albums. 
 
-Now apply that same idea to other data types: Deep learning might cluster raw text such as emails or news articles. Emails full of angry complaints might cluster in one corner of the vector space, while satisfied customers, or spambot messages, might cluster in others. This is the basis of various messaging filters, and can be used in customer-relationship management (CRM). The same applkies to voice messages. 
+Now apply that same idea to other data types: Deep learning might cluster raw text such as emails or news articles. Emails full of angry complaints might cluster in one corner of the vector space, while satisfied customers, or spambot messages, might cluster in others. This is the basis of various messaging filters, and can be used in customer-relationship management (CRM). The same applies to voice messages. 
 
-With time series, data might cluster around normal/healthy behavior and anomalous/dangerous behavior. If the time series data is being generated by a smart phone, it will provide insight into users; if it is being generated by an autopart, it might be used to prevent catastrophic breakdowns.  
+With time series, data might cluster around normal/healthy behavior and anomalous/dangerous behavior. If the time series data is being generated by a smart phone, it will provide insight into users' health and habits; if it is being generated by an autopart, it might be used to prevent catastrophic breakdowns.  
 
 Deep-learning networks perform **automatic feature extraction** without human intervention, unlike most traditional machine-learning algorithms. Given that feature extraction is a task that can take teams of data scientists years to accomplish, deep learning is a way to circumvent the chokepoint of limited experts. It augments the powers of small data science teams, which by their nature do not scale. 
 
