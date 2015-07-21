@@ -18,33 +18,24 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * Output layer with different objective co-occurrences for different objectives.
  * This includes classification as well as prediction
  *
  */
+@Data
+@NoArgsConstructor
 public class DenseLayer extends Layer {
 
     private static final long serialVersionUID = 8554480736972510788L;
+    private String activationFunction;
 
-    @Override
-    public int hashCode() {
-        return 0;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
-
-    public String toString() {
-        return "Denselayer{" +
-                '}';
+    public DenseLayer(int nIn, int nOut, String activationFunction) {
+        this.nIn = nIn;
+        this.nOut = nOut;
+        this.activationFunction = activationFunction;
     }
 }
