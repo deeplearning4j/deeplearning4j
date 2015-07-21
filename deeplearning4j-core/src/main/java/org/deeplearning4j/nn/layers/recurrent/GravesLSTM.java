@@ -349,7 +349,10 @@ public class GravesLSTM extends BaseLayer {
 		this.ifogAs = ifogA;
 		this.memCellActivations = memCellActivations;
 		this.outputActivations = outputActivations;
-
+		if (is2dInput) {
+			int[] shape = outputActivations.shape();
+			outputActivations = outputActivations.reshape(shape[0], shape[1]);
+		}
 		return outputActivations;
 	}
 
