@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.layers;
 
-import java.io.Serializable;
+import java.io.*;
 
 
 import org.deeplearning4j.berkeley.Pair;
@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -339,7 +340,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void iterate(INDArray input) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
 
@@ -370,8 +371,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         INDArray preOutput = preOutput(x);
         if(conf.getActivationFunction().equals("softmax")) {
-            INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
-            return ret;
+            SoftMax softMax = new SoftMax(preOutput);
+            softMax.exec(1);
+            return softMax.z();
         }
 
         this.input = x.dup();
