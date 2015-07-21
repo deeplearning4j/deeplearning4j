@@ -228,9 +228,9 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void update(INDArray gradient, String paramType) {
         if (!Shape.shapeEquals(gradient.shape(),getParam(paramType).shape()))
-            getParam(paramType).subi(gradient.sum(0));
+            getParam(paramType).addi(gradient.sum(0));
         else
-            getParam(paramType).subi(gradient);
+            getParam(paramType).addi(gradient);
     }
 
 

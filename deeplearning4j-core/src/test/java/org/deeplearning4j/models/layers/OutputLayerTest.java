@@ -89,10 +89,10 @@ public class OutputLayerTest {
 
         NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).
-                        optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .activationFunction("softmax").updater(Updater.SGD)
+                        optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .activationFunction("softmax").updater(Updater.ADAGRAD)
                 .regularization(true)
-                .l1(1).l2(1e-3).seed(123)
+                .l1(1e-1).l2(1e-3).seed(123)
                 .iterations(1000)
                 .weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1)

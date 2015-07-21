@@ -358,7 +358,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        INDArray preOutput = preOutput(x);
+        INDArray preOutput = preOutput(x,!test);
         if(conf.getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);
