@@ -67,9 +67,9 @@ public class LBFGS extends BaseOptimizer {
         //initial direction should be normal
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
         if(searchDir == null ){
-		searchState.put(SEARCH_DIR, gradient.div(Nd4j.norm2(gradient).getDouble(0)));	//Normalized gradient
+        	searchState.put(SEARCH_DIR, gradient.div(Nd4j.norm2(gradient).getDouble(0)));	//Normalized gradient
         } else {
-		searchDir.assign(gradient).divi(Nd4j.norm2(gradient).getDouble(0));
+        	searchDir.assign(gradient).divi(Nd4j.norm2(gradient).getDouble(0));
         }
     }
 
