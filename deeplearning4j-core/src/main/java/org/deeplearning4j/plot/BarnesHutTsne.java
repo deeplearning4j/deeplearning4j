@@ -568,7 +568,7 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
 
     }
 

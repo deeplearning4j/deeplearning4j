@@ -55,6 +55,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
                 model.update(pair.getFirst().getGradientFor(paramType), paramType);
             }
 
+            model.computeGradientAndScore();
+
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model, i);
         }

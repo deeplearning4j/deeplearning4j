@@ -108,8 +108,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
     @Override
-    public Gradient gradient() {
-
+    public void computeGradientAndScore() {
         int k = conf.getK();
 
         //POSITIVE PHASE
@@ -121,7 +120,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray chainStart = probHidden.getSecond();
 
 		/*
-		 * Note that at a later date, we can explore alternative methods of 
+		 * Note that at a later date, we can explore alternative methods of
 		 * storing the chain transitions for different kinds of sampling
 		 * and exploring the search space.
 		 */
@@ -137,11 +136,11 @@ public  class RBM extends BasePretrainNetwork {
 
 		/*
 		 * K steps of gibbs sampling. This is the positive phase of contrastive divergence.
-		 * 
+		 *
 		 * There are 4 matrices being computed for each gibbs sampling.
-		 * The samples from both the positive and negative phases and their expected values 
+		 * The samples from both the positive and negative phases and their expected values
 		 * or averages.
-		 * 
+		 *
 		 */
 
         for(int i = 0; i < k; i++) {
@@ -178,14 +177,18 @@ public  class RBM extends BasePretrainNetwork {
             hBiasGradient = probHidden.getSecond().sub(nhMeans).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  vBiasGradient = input.sub(nvSamples).sum(0);
+        INDArray  delta = input.sub(nvSamples);
+        INDArray  vBiasGradient =delta.sum(0);
+
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
-
-        return ret;
+        gradient = ret;
+        setScoreWithZ(delta);
     }
+
+
 
 
 
