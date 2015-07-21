@@ -80,20 +80,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
         g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bGradient);
         this.gradient = g;
-
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
-            create.exec();
-            score = create.currentResult().doubleValue();
-        } else {
-            score = LossCalculation.builder()
-                    .l1(conf.getL1()).l2(conf.getL2())
-                    .l1Magnitude(l1Magnitude()).lossFunction(conf.getLossFunction())
-                    .useRegularization(conf.isUseRegularization())
-                    .l2Magnitude(l2Magnitude()).delta(wGradient)
-                    .labels(labels).z(output).build().score();
-
-        }
+        setScoreWithZ(output);
 
     }
 
