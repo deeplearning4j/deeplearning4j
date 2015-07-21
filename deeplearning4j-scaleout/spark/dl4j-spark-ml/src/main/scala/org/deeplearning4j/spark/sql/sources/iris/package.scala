@@ -26,7 +26,7 @@ package object iris {
   implicit class IrisContext(sqlContext: SQLContext) {
     @Deprecated
     def iris(filePath: String) =
-      sqlContext.read.format(classOf[DefaultSource].getName).load(filePath)
+      sqlContext.read.iris(filePath)
   }
 
   /**

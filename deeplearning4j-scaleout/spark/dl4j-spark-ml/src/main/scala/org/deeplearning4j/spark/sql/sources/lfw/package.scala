@@ -26,7 +26,7 @@ package object lfw {
   implicit class LfwContext(sqlContext: SQLContext) {
     @Deprecated
     def lfw(rootImageDirectory: String) =
-      sqlContext.read.format(classOf[DefaultSource].getName).load(rootImageDirectory)
+      sqlContext.read.lfw(rootImageDirectory)
   }
 
   /**
