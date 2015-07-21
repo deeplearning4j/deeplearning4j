@@ -25,7 +25,10 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossCalculation;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  *  Autoencoder.
@@ -101,13 +104,13 @@ public class AutoEncoder extends BasePretrainNetwork  {
     }
 
     @Override
-    public  Gradient gradient() {
+    public void computeGradientAndScore() {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
 
         double corruptionLevel = conf.getCorruptionLevel();
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
-        INDArray y = encode(corruptedX,true);
+        INDArray y = encode(corruptedX, true);
 
         INDArray z = decode(y);
         INDArray visibleLoss =  input.sub(z);
@@ -120,6 +123,9 @@ public class AutoEncoder extends BasePretrainNetwork  {
         INDArray hBiasGradient = hiddenLoss.sum(0);
         INDArray vBiasGradient = visibleLoss.sum(0);
 
-        return createGradient(wGradient, vBiasGradient, hBiasGradient);
+        gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
+        setScoreWithZ(z);
+
+
     }
 }
