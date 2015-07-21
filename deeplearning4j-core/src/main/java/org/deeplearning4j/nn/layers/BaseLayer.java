@@ -170,20 +170,28 @@ public abstract class BaseLayer implements Layer {
             return;
 
         INDArray output = transform(input);
+        setScoreWithZ(output);
+
+    }
+
+
+    protected void setScoreWithZ(INDArray z) {
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
             create.exec();
             score = create.currentResult().doubleValue();
-        } else {
+        }
+
+        else {
             score = LossCalculation.builder()
                     .l1(conf.getL1()).l2(conf.getL2())
                     .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
-                    .labels(input).z(output).lossFunction(conf.getLossFunction())
+                    .labels(input).z(z).lossFunction(conf.getLossFunction())
                     .useRegularization(conf.isUseRegularization()).build().score();
 
         }
-
     }
+
 
 
     /**
@@ -194,6 +202,11 @@ public abstract class BaseLayer implements Layer {
     @Override
     public double score() {
         return score;
+    }
+
+    @Override
+    public Gradient gradient() {
+        return gradient;
     }
 
     /**
