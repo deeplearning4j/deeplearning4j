@@ -53,8 +53,8 @@ public class ConjugateGradient extends BaseOptimizer {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
         if( searchDir == null )
-            searchState.put(SEARCH_DIR, gradient.neg());
-        else searchDir.assign(gradient).negi();	//p0 is steepest descent page 108 N&W thus assuming negative gradient
+            searchState.put(SEARCH_DIR, gradient);
+        else searchDir.assign(gradient);
     }
 
     @Override
@@ -77,8 +77,8 @@ public class ConjugateGradient extends BaseOptimizer {
         //If gamma==0.0, this is equivalent to SGD line search (i.e., search direction == negative gradient)
 
         //Compute search direction:
-        //searchDir = -gradient + gamma * searchDirLast
-        INDArray searchDir = searchDirLast.muli(gamma).subi(gradient);
+        //searchDir = gradient + gamma * searchDirLast
+        INDArray searchDir = searchDirLast.muli(gamma).addi(gradient);
 
         //Store current gradient and search direction for
         //(a) use in BaseOptimizer.optimize(), and (b) next iteration
