@@ -129,6 +129,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
         if(Nd4j.ENFORCE_NUMERICAL_STABILITY) {
             BooleanIndexing.applyWhere(parameters, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
         }
+
         layer.setParams(parameters);
         layer.computeGradientAndScore();
         return layer.score();
@@ -166,7 +167,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         score2 = oldScore = layer.score();
 
-        if( logger.isTraceEnabled() ){
+        if(logger.isTraceEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLinnSearch, value = " + oldScore + ",\ndirection.oneNorm:"
                     +	searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
@@ -196,9 +197,11 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 throw new IllegalArgumentException("Current step == oldStep");
 
             // step
-            if( candidateParameters == null )
+            if(candidateParameters == null)
                 candidateParameters = parameters.dup();
-            else candidateParameters.assign(parameters);
+            else
+                candidateParameters.assign(parameters);
+
             stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
 
