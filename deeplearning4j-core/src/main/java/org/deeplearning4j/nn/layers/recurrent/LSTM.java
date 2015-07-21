@@ -472,18 +472,10 @@ public class LSTM extends BaseLayer {
 
     @Override
     public void computeGradientAndScore() {
-        INDArray forward =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
-        score = LossFunctions.score(
-                xs,
-                conf.getLossFunction(),
-                forward,
-                conf.getL2(),
-                conf.getL1(),
-                l1Magnitude(),
-                l2Magnitude(),
-                conf.isUseRegularization());
-
-
+        INDArray forward = forward(xi, xs);
+        INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
+        gradient = backward(probas);
+        setScoreWithZ(probas);
     }
 
     @Override
@@ -544,17 +536,7 @@ public class LSTM extends BaseLayer {
 
     }
 
-    @Override
-    public Gradient gradient() {
-        INDArray forward = forward(xi,xs);
-        INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
-        return backward(probas);
-    }
 
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(),score());
-    }
 
     @Override
     public int batchSize() {
