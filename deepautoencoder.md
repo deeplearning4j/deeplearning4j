@@ -31,15 +31,9 @@ The decoding half of a deep autoencoder is a feed-forward net with layers 100, 2
 
 The decoding half of a deep autoencoder is the part that learns to reconstruct the image. It does so with a second feed-forward net which also conducts back propagation. The back propagation happens through reconstruction entropy.
 
-In other words, to train a deep autoencoder, pretrain a net a your choice. The pretraining can leverage DL4J’s distributed architecture. 
-
-You then feed this pretrained net into a DeepAutoEncoder object that will produce the associated decoder, and from there you call “finetune.” This type of fine-tuning doesn’t use labels for classification. It’s using the pretrained net’s output as its input, in order to reconstruct. 
-
-If you don’t have a prebuilt net, just call “train” on a net that’s been passed in, which will then have the decoder copied from the encoder’s architecture.
-
 ### Training nuances
 
-At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower. It should be somewhere between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
+At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower. It should be some where between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
 
 ### image search
 
