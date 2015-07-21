@@ -1,6 +1,9 @@
 package org.deeplearning4j.spark.sql.sources.mnist
 
 
+import java.nio.file.Paths
+
+import org.apache.hadoop.fs.Path
 import org.apache.spark.Logging
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
@@ -16,14 +19,9 @@ import org.nd4j.linalg.util.ArrayUtil
  *
  * @author Kai Sasaki
  */
-case class MnistRelation(imagesFile: String, labelsFile: String, numExamples: Int)
+case class MnistRelation(imagesPath: Path, labelsPath: Path)
     (@transient val sqlContext: SQLContext) extends BaseRelation
     with PrunedScan with Logging  {
-
-  require(numExamples > 0, "Reading images should not be empty")
-
-
-  val manager = new MnistManager(imagesFile, labelsFile)
 
   override def schema: StructType = StructType(
     StructField("label", DoubleType, nullable = false) ::
@@ -32,21 +30,33 @@ case class MnistRelation(imagesFile: String, labelsFile: String, numExamples: In
   override def buildScan(requiredColumns: Array[String]): RDD[Row] = {
     val sc = sqlContext.sparkContext
 
-    val cols = {
-      val req = requiredColumns.toSet
-      schema.fieldNames flatMap {
-        case "label" if req("label") => Seq((pt:Int) =>
-          manager.readLabel().toDouble)
-        case "features" if req("features") => Seq((pt:Int) =>
-          Vectors.dense(ArrayUtil.flatten(manager.readImage()).map(_.toDouble)))
-        case _ => Seq.empty
-      } //: Seq[Int => Seq[Any]]
+    val manager = {
+      // CAVEAT: MnistManager supports only local files at this time.
+      val imagesFile = Paths.get(imagesPath.toUri).toFile.getAbsolutePath
+      val labelsFile = Paths.get(labelsPath.toUri).toFile.getAbsolutePath
+      new MnistManager(imagesFile, labelsFile)
     }
+    try {
+      val cols = {
+        val req = requiredColumns.toSet
+        schema.fieldNames flatMap {
+          case "label" if req("label") => Seq(
+            (pt:Int) => manager.readLabel().toDouble)
+          case "features" if req("features") => Seq(
+            (pt:Int) => Vectors.dense(ArrayUtil.flatten(manager.readImage()).map(_.toDouble)))
+          case _ => Seq.empty
+        }
+      }
 
-    sc.makeRDD((0 until numExamples).map(pt => {
-      Row.fromSeq(cols.map(_(pt)))
-      //Row.fromSeq(cols.map(_(pt)).reduceOption(_ ++ _).getOrElse(Seq.empty))
-    }))
+      val numExamples = manager.getLabels.getCount
+
+      sc.makeRDD((0 until numExamples).map(pt => {
+        Row.fromSeq(cols.map(_(pt)))
+      }))
+    }
+    finally {
+      manager.close()
+    }
   }
 }
 
@@ -56,24 +66,19 @@ case class MnistRelation(imagesFile: String, labelsFile: String, numExamples: In
  */
 class DefaultSource extends RelationProvider {
   private def checkImagesFilePath(parameters: Map[String, String]): String = {
-    parameters.getOrElse("images_file",
-      sys.error("'image_file' must be specified for mnist data"))
+    parameters.getOrElse("imagesPath",
+      sys.error("'imagesPath' must be specified for mnist data"))
   }
 
   private def checkLabelsFilePath(parameters: Map[String, String]): String = {
-    parameters.getOrElse("labels_file",
-      sys.error("'labels_file' must be specified for mnist labels"))
-  }
-
-  private def checkNumExamples(parameters: Map[String, String]): Int = {
-    parameters.getOrElse("num_examples", "1000").toInt
+    parameters.getOrElse("labelsPath",
+      sys.error("'labelsPath' must be specified for mnist labels"))
   }
 
   override def createRelation(sqlContext: SQLContext,
       parameters: Map[String, String]) = {
-    val imagesFile = checkImagesFilePath(parameters)
-    val labelsFile = checkLabelsFilePath(parameters)
-    val numExamples = checkNumExamples(parameters)
-    new MnistRelation(imagesFile, labelsFile, numExamples)(sqlContext)
+    val imagesPath = new Path(checkImagesFilePath(parameters))
+    val labelsPath = new Path(checkLabelsFilePath(parameters))
+    new MnistRelation(imagesPath, labelsPath)(sqlContext)
   }
 }

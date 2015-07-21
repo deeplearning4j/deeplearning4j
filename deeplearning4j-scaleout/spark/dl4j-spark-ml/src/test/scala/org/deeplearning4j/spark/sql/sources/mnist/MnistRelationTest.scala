@@ -8,22 +8,26 @@ import org.scalatest.junit.JUnitRunner
 import org.springframework.core.io.ClassPathResource
 
 /**
- * @author Eron Wright
+ * Test Mnist relation
  */
 @RunWith(classOf[JUnitRunner])
 class MnistRelationTest
   extends FunSuite with TestSparkContext with Logging with Matchers {
 
-  val labels = new ClassPathResource("/mnist2500_labels.txt").getFile.getAbsolutePath
-  val images = new ClassPathResource("/mnist2500_X.txt").getFile.getAbsolutePath
+  val labels = new ClassPathResource("/data/t10k-labels-idx1-ubyte", classOf[MnistRelationTest]).getURI.toString
+  val images = new ClassPathResource("/data/t10k-images-idx3-ubyte", classOf[MnistRelationTest]).getURI.toString
 
-  test("pruning") {
-    val dataFrame = sqlContext.read.format(classOf[DefaultSource].getName)
-      .option("labels_file", labels)
-      .option("images_file", images)
+  test("select") {
+    val df = sqlContext.read.format(classOf[DefaultSource].getName)
+      .option("labelsPath", labels)
+      .option("imagesPath", images)
       .load()
 
-    dataFrame.show
+    df.count() shouldEqual 10000
+    df.select("label").count() shouldEqual 10000
+    df.select("features").count() shouldEqual 10000
+    df.show
   }
+
 }
 
