@@ -56,7 +56,6 @@ public class RBM extends BasePretrainNetwork {
     private HiddenUnit hidden;
     private VisibleUnit visible;
     private int k;
-    private WeightInit weightInit;
 
     public enum VisibleUnit {
         BINARY,GAUSSIAN,SOFTMAX,LINEAR
@@ -78,29 +77,12 @@ public class RBM extends BasePretrainNetwork {
         this.visible = visibleFunction;
     }
 
-    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction, WeightInit weightInit) {
-        this.nIn = nIn; // number of visible units
-        this.nOut = nOut; // number of hidden units
-        this.hidden = hiddenFunction;
-        this.visible = visibleFunction;
-        this.weightInit = weightInit;
-    }
-
     // contrastiveConvergenceIterations by default is 1
     public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction, int contrastiveConvergenceIterations) {
         this.nIn = nIn; // number of visible units
         this.nOut = nOut; // number of hidden units
         this.hidden = hiddenFunction;
         this.visible = visibleFunction;
-        this.k = contrastiveConvergenceIterations;
-    }
-
-    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction, WeightInit weightInit, int contrastiveConvergenceIterations) {
-        this.nIn = nIn; // number of visible units
-        this.nOut = nOut; // number of hidden units
-        this.hidden = hiddenFunction;
-        this.visible = visibleFunction;
-        this.weightInit = weightInit;
         this.k = contrastiveConvergenceIterations;
     }
 }
