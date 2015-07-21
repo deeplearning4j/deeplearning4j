@@ -5,7 +5,7 @@ import org.scalatest.FlatSpec
 import org.nd4j.api.Implicits._
 import org.nd4j.linalg.factory.Nd4j
 
-class RichNDArrayTest extends FlatSpec {
+class NDArrayExtractionTest extends FlatSpec {
   "org.nd4j.api.Implicits.RichNDArray" should "provides forall checker" in {
     val ndArray = Nd4j.create(Array(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f), Array(3, 3))
 

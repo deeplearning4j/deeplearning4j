@@ -20,15 +20,14 @@
 package org.nd4j.api.linalg
 
 import org.junit.runner.RunWith
-import org.nd4j.api.linalg.DSL._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
+import org.nd4j.api.Implicits._
 
 @RunWith(classOf[JUnitRunner])
 class DSLSpec extends FlatSpec with Matchers {
-
 
   "DSL" should "wrap and extend an INDArray" in {
 
@@ -37,12 +36,12 @@ class DSLSpec extends FlatSpec with Matchers {
     val nd = Nd4j.create(Array[Float](1, 2), Array(2, 1))
     val nd1 = nd + 10L // + creates new array, += modifies in place
 
-    nd(0) should equal(1)
-    nd1(0) should equal(11)
+    nd.get(0) should equal(1)
+    nd1.get(0) should equal(11)
 
     val nd2 = nd += 100
     nd2 should equal(nd)
-    nd2(0) should equal(101)
+    nd2.get(0) should equal(101)
 
     // Verify that we are working with regular old INDArray objects
     nd2 match {
