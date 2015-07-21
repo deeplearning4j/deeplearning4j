@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Introduction to Neural Networks
+# Introduction to Deep Neural Networks
 
 Neural networks are a set of algorithms, modeled loosely after the human brain, that are designed to recognize patterns. They interpret sensation through a kind of machine perception, labeling or clustering raw input. The patterns they recognize are numerical, contained in vectors, to which all real-world data, be it images, sound, text or time series, must be translated. 
 
