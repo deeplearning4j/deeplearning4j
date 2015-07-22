@@ -24,6 +24,7 @@ import java.io.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -76,7 +77,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         INDArray wGradient = getWeightGradient(output);
 
         INDArray dy = labels.sub(output);
-        INDArray bGradient = dy.mean(0);
+        INDArray bGradient = dy.sum(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
@@ -84,6 +85,24 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.gradient = g;
         setScoreWithZ(output);
 
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+        Gradient nextGradients = new DefaultGradient();
+        INDArray activationDeriv = derivative;
+        INDArray layerInput = input;
+
+        INDArray delta = activation.sub(labels).transpose();
+
+        // add other cost functions?
+        if(conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
+            delta.muli(activationDeriv);
+        }
+
+        nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
+        nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
+        return nextGradients;
     }
 
     @Override
