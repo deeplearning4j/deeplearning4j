@@ -3,7 +3,17 @@ title:
 layout: default
 ---
 
-# Deep learning: Further Reading
+# Deep Learning Resources
+
+## Online Courses
+
+* [Geoff Hinton's Neural Networks Class on Coursera](class.coursera.org/neuralnets-2012-001/lecture) (2012)
+* [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info)
+* [Nando de Freitas's Deep Learning Class at Oxford](https://www.youtube.com/playlist?list=PLE6Wd9FR--EfW8dtjAuPoTuPcqmOV53Fu)  (2015)
+* [Andrej Karphathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
+* [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
+
+## Academic Papers
 
 **[Semantic Compositionality through Recursive Matrix-Vector Spaces](http://ttic.uchicago.edu/~haotang/speech/SocherHuvalManningNg_EMNLP2012.pdf)**; Richard Socher, Brody Huval, Christopher D. Manning and Andrew Y. Ng; Computer Science Department, Stanford University
 
@@ -125,6 +135,5 @@ Personal pages of prominent deep-learning researchers:
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
 -  [Quoc V. Le](http://cs.stanford.edu/~quocle/)
--  [Richard Socher](http://www.socher.org/)
 
 *These lists are by no means exhaustive.*
