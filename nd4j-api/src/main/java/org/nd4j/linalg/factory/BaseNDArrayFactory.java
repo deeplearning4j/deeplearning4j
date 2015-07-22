@@ -945,7 +945,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape), 0, ordering);
+        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape,ordering), 0, ordering);
     }
 
     /**
@@ -1896,7 +1896,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray create(float[] data, char order) {
         int[] shape = new int[]{1,data.length};
-        return create(Nd4j.createBuffer(data),shape,Nd4j.getStrides(shape), order, 0);
+        return create(Nd4j.createBuffer(data),shape,Nd4j.getStrides(shape,order), order, 0);
     }
 
     @Override
@@ -1907,7 +1907,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray create(double[] data, char order) {
-        return create(data, new int[]{1,data.length}, Nd4j.getStrides(new int[]{1,data.length}), order, 0);
+        return create(data, new int[]{1,data.length}, Nd4j.getStrides(new int[]{1,data.length},order), order, 0);
     }
 
     @Override

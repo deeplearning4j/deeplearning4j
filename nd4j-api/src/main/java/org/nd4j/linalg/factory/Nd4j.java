@@ -2601,7 +2601,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
-        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape), offset,ordering);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape,ordering), offset,ordering);
         logCreationIfNecessary(ret);
         return ret;
     }

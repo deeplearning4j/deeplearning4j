@@ -67,6 +67,14 @@ public class Nd4jTest extends BaseNd4jTest {
         assertEquals(r, t);
     }
 
+    @Test
+    public void testOrdering(){
+        INDArray fNDArray = Nd4j.create(new float[]{1f},NDArrayFactory.FORTRAN);
+        assertEquals(NDArrayFactory.FORTRAN,fNDArray.ordering());
+        INDArray cNDArray = Nd4j.create(new float[]{1f},NDArrayFactory.C);
+        assertEquals(NDArrayFactory.C,cNDArray.ordering());
+    }
+
     @Override
     public char ordering() {
         return 'c';
