@@ -13,6 +13,18 @@ layout: default
 * [Andrej Karphathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
 
+## Deep- and Machine-Learning Fora
+
+**[Google + Deep Learning Group](https://plus.google.com/u/0/communities/112866381580457264725?cfem=1)**
+
+**[KDNuggets: Data Science Hub](http://www.kdnuggets.com/)**
+
+**[Datatau: Hacker News for Data Science](http://www.datatau.com/)**
+
+**[r/MachineLearning](https://www.reddit.com/r/MachineLearning/)**
+
+**[Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)**
+
 ## Academic Papers
 
 **[Semantic Compositionality through Recursive Matrix-Vector Spaces](http://ttic.uchicago.edu/~haotang/speech/SocherHuvalManningNg_EMNLP2012.pdf)**; Richard Socher, Brody Huval, Christopher D. Manning and Andrew Y. Ng; Computer Science Department, Stanford University
@@ -127,18 +139,6 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 **[A Neural Conversational Model](http://arxiv.org/pdf/1506.05869v1.pdf)**; Oriol Vinyals and Quoc Le, Google
 
 **[On Chomsky and the Two Cultures of Statistical Learning](http://norvig.com/chomsky.html)**; Peter Norvig
-
-## Deep- and Machine-Learning Fora
-
-**[Google + Deep Learning Group](https://plus.google.com/u/0/communities/112866381580457264725?cfem=1)**
-
-**[KDNuggets: Data Science Hub](http://www.kdnuggets.com/)**
-
-**[Datatau: Hacker News for Data Science](http://www.datatau.com/)**
-
-**[r/MachineLearning](https://www.reddit.com/r/MachineLearning/)**
-
-**[Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)**
 
 ## Researchers' Personal Websites
 
