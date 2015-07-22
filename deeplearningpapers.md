@@ -130,10 +130,9 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 Personal pages of prominent deep-learning researchers:
 
+-  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
 -  [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/)
+-  [Quoc V. Le](http://cs.stanford.edu/~quocle/)
 -  [Yann LeCun](http://yann.lecun.com/)
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
--  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
--  [Quoc V. Le](http://cs.stanford.edu/~quocle/)
-
-*These lists are by no means exhaustive.*
+-  [Juergen Schmidhuber](http://people.idsia.ch/~juergen/)
