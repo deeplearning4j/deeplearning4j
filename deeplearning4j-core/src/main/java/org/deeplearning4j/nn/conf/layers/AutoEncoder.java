@@ -34,8 +34,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 public class AutoEncoder extends BasePretrainNetwork {
 
     private static final long serialVersionUID = -7624965662728637504L;
-    private double corruptionLevel;
-    private double sparsity;
+    protected double corruptionLevel;
+    protected double sparsity;
 
     // Builder
     private AutoEncoder(Builder builder) {
@@ -45,6 +45,7 @@ public class AutoEncoder extends BasePretrainNetwork {
         this.nOut = builder.nOut;
         this.weightInit = builder.weightInit;
         this.dropOut = builder.dropOut;
+        this.activationFunction = builder.activationFunction;
     }
 
     @AllArgsConstructor
