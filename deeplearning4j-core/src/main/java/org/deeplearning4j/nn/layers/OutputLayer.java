@@ -120,7 +120,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
 
-
+    // TODO verfiy if any of the functions require application of activation derivative
     private INDArray getWeightGradient(INDArray z) {
         switch (conf.getLossFunction()) {
             case MCXENT:

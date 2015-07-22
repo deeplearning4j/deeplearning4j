@@ -146,19 +146,22 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backwardGradient(INDArray epsilon) {
+    public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
-        INDArray sigmaPrimeZ = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
-        INDArray delta = epsilon.muli(sigmaPrimeZ);
+        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
+        INDArray epsilon = weights.mmul(gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY).transpose()).transpose();
+
+//        epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)/(dz/da) = dC/da, where C
+//                * 	is cost function a=sigma(z) is activation. Division is element-wise.
+        INDArray delta = epsilon.muli(activationDerivative);
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(input).transpose());
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
         
-        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
-        
-        return new Pair<>(ret,epsilonNext);
+
+        return new Pair<>(ret, getParam(DefaultParamInitializer.WEIGHT_KEY));
     }
 
     public void fit() {

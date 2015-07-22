@@ -49,6 +49,7 @@ import java.util.Map;
  */
 public class ConvolutionLayer implements Layer {
 
+    protected INDArray input;
     private NeuralNetConfiguration conf;
     private Map<String,INDArray> params;
     protected ParamInitializer paramInitializer;
@@ -108,17 +109,22 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backwardGradient(INDArray epsilon) {
-        INDArray gy = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
-        INDArray biasGradient = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
-        getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
-        INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
-        gcol = Nd4j.rollAxis(gcol,3);
-        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);
-        Gradient retGradient = new DefaultGradient();
-        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
-        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
-        return retGradient;
+    public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights) {
+        // TODO confirm input is activation
+        INDArray z = preOutput(input);
+        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
+
+        // TODO - do we transpose?
+        INDArray epsilon = Nd4j.tensorMmul(weights, gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS), new int[][]{{0, 1}});
+        INDArray delta = epsilon.muli(activationDerivative);
+        delta = Nd4j.rollAxis(delta,3);
+
+        Gradient ret = new DefaultGradient();
+        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, Convolution.conv2d(epsilon, input, Convolution.Type.VALID));
+        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS, delta.sum(0, 2, 3));
+
+        return new Pair<>(ret, getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS));
+
     }
 
     @Override
