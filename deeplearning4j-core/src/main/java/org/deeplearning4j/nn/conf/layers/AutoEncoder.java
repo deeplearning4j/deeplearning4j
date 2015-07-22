@@ -18,8 +18,10 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
  *  Autoencoder.
@@ -33,43 +35,61 @@ public class AutoEncoder extends BasePretrainNetwork {
 
     private static final long serialVersionUID = -7624965662728637504L;
     private double corruptionLevel;
-    private double dropOut;
-    private String activationFunction;
     private double sparsity;
 
-    public AutoEncoder(int nIn, int nOut) {
-        this.nIn = nIn;
-        this.nOut = nOut;
+    // Builder
+    private AutoEncoder(Builder builder) {
+        this.corruptionLevel = builder.corruptionLevel;
+        this.sparsity = builder.sparsity;
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
 
-    public AutoEncoder(int nIn, int nOut, double corruptionLevel) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.corruptionLevel = corruptionLevel;
-    }
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder {
+        private double corruptionLevel;
+        private double sparsity;
 
-    public AutoEncoder(int nIn, int nOut, double corruptionLevel, double dropOut) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.corruptionLevel = corruptionLevel;
-        this.dropOut = dropOut;
-    }
+        public Builder(double corruptionLevel) {
+            this.corruptionLevel = corruptionLevel;
+        }
 
-    public AutoEncoder(int nIn, int nOut, double corruptionLevel, double dropOut, String activationFunction) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.corruptionLevel = corruptionLevel;
-        this.dropOut = dropOut;
-        this.activationFunction = activationFunction;
-    }
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
 
-    public AutoEncoder(int nIn, int nOut, double corruptionLevel, double dropOut, String activationFunction, double sparsity) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.corruptionLevel = corruptionLevel;
-        this.dropOut = dropOut;
-        this.sparsity = sparsity;
-        this.activationFunction = activationFunction;
-    }
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
 
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public AutoEncoder build() {
+            return new AutoEncoder(this);
+        }
+    }
 }
