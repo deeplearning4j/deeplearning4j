@@ -37,7 +37,7 @@ import java.util.Collection;
 public interface Layer extends Serializable,Cloneable,Model {
 
     enum Type {
-       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE
+       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE,MULTILAYER
     }
 
 
@@ -224,7 +224,7 @@ public interface Layer extends Serializable,Cloneable,Model {
     /**
      * Get the iteration listeners for this layer.
      */
-    Collection<IterationListener> getIterationListeners();
+    Collection<IterationListener> getListeners();
 
     /**
      * Set the iteration listeners for this layer.

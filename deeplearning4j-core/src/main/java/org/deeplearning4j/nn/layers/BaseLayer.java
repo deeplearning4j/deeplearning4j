@@ -94,7 +94,7 @@ public abstract class BaseLayer implements Layer {
 
 
     @Override
-    public Collection<IterationListener> getIterationListeners() {
+    public Collection<IterationListener> getListeners() {
         return iterationListeners;
     }
 
@@ -488,7 +488,7 @@ public abstract class BaseLayer implements Layer {
             applyDropOutIfNecessary(this.input,true);
         }
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(getIterationListeners())
+                .model(this).configure(conf()).listeners(getListeners())
                 .build();
         this.optimizer = solver.getOptimizer();
         solver.optimize();
@@ -540,7 +540,7 @@ public abstract class BaseLayer implements Layer {
                 ", paramInitializer=" + paramInitializer +
                 ", score=" + score +
                 ", optimizer=" + optimizer +
-                ", iterationListeners=" + iterationListeners +
+                ", listeners=" + iterationListeners +
                 '}';
     }
 
