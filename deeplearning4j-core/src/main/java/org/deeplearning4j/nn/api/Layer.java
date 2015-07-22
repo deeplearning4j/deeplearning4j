@@ -138,6 +138,11 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Update layer weights and biases with gradient change
      */
 
+    void update(Gradient gradient);
+    /**
+     * Update layer weights and biases with gradient change
+     */
+
     void update(INDArray gradient, String paramType);
 
     /**
