@@ -244,7 +244,7 @@ public abstract class BaseNDArray implements INDArray {
      * @param shape  the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, char ordering) {
-        this(slices, shape, Nd4j.getStrides(shape), ordering);
+        this(slices, shape, Nd4j.getStrides(shape,ordering), ordering);
     }
 
 
@@ -335,7 +335,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     public BaseNDArray(DataBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{(int) floatBuffer.length()}, Nd4j.getStrides(new int[]{(int) floatBuffer.length()}), 0, order);
+        this(floatBuffer, new int[]{(int) floatBuffer.length()}, Nd4j.getStrides(new int[]{(int) floatBuffer.length()},order), 0, order);
     }
 
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] strides) {
