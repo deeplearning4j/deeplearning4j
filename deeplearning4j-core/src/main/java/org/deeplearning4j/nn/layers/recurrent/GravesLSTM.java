@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -68,7 +69,7 @@ public class GravesLSTM extends BaseLayer {
 
 	@Override
 //    public Pair<Gradient,INDArray> backwardGradient(INDArray derivative, INDArray epsilon, INDArray activation) {
-	public Pair<Gradient,INDArray> backwardGradient(INDArray epsilon) {
+	public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights) {
 		//First: Do forward pass to get gate activations etc.
 		INDArray[] activations = activateHelper(input(), true);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
 		INDArray outputActivations = activations[0];
@@ -82,6 +83,7 @@ public class GravesLSTM extends BaseLayer {
 		//Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
 		int hiddenLayerSize = recurrentWeights.rows();	//i.e., n^L
 		int prevLayerSize = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS).shape()[0];
+		INDArray epsilon = weights.mmul(gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY).transpose()).transpose();
 		int miniBatchSize = epsilon.size(0);
 		int timeSeriesLength = (epsilon.rank()<3 ? 1 : epsilon.size(2));	//Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
 		
@@ -224,7 +226,7 @@ public class GravesLSTM extends BaseLayer {
 				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3 * hiddenLayerSize)}, deltao);
 				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)}, deltag);
 			}
-			
+			// TODO potential issue...
 			//Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
 			//But here, need to add 4 weights * deltas for the IFOG gates
 			INDArray epsilonNextSlice = wi.mmul(deltai.transpose()).transpose()
@@ -235,12 +237,12 @@ public class GravesLSTM extends BaseLayer {
 		}
 
 		//Weight/bias gradients: sum across time dimension. For bias gradients, sum across mini-batch also.
-		Gradient gradient = new DefaultGradient();
-		gradient.gradientForVariable().put(GravesLSTMParamInitializer.INPUT_WEIGHTS,inputWeightGradients.sum(2));
-		gradient.gradientForVariable().put(GravesLSTMParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients.sum(2));
-		gradient.gradientForVariable().put(GravesLSTMParamInitializer.BIAS, biasGradients.sum(2).sum(0));
+		Gradient ret = new DefaultGradient();
+		ret.gradientForVariable().put(GravesLSTMParamInitializer.INPUT_WEIGHTS,inputWeightGradients.sum(2));
+		ret.gradientForVariable().put(GravesLSTMParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients.sum(2));
+		ret.gradientForVariable().put(GravesLSTMParamInitializer.BIAS, biasGradients.sum(2).sum(0));
 		
-		return new Pair<>(gradient,epsilonNext);
+		return new Pair<>(ret, getParam(DefaultParamInitializer.WEIGHT_KEY));
 	}
 
 	@Override
