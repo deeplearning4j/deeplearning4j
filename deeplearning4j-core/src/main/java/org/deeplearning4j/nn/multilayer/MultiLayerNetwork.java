@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 
+import com.sun.org.apache.xpath.internal.operations.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
@@ -47,8 +48,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
+import java.lang.String;
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -75,8 +78,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
 
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
-
-
+    protected Map<Integer,Object> multiGradientAndScore = new HashMap<>();
+protected Gradient gradient;
+    protected double score;
     /*
       Binary drop connect mask
      */
@@ -1031,21 +1035,24 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             iter.reset();
             while(iter.hasNext()) {
                 DataSet next = iter.next();
-                doBackWard(next.getFeatureMatrix(),next.getLabels());
+                setInput(next.getFeatureMatrix());
+                setLabels(next.getLabels());
+                doBackWard();
 
             }
         }
     }
 
-    //do gradient descent for n iterations
-    protected void doBackWard(INDArray input,INDArray labels) {
+        //do gradient descent for n iterations
+    protected void doBackWard() {
         setInput(input);
-        this.labels = labels;
 
         if(!(getOutputLayer() instanceof  OutputLayer)) {
-            log.warn("Warning: final layer isn't output layer. You can ignore this message if you just intend on using a a deep neural network with no output layer.");
+            log.warn("Warning: final layer isn't output layer. You cannot use backprop without an output layer.");
             return;
         }
+
+        List<INDArray> activations = feedForward();
 
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
         if(labels == null)
@@ -1055,58 +1062,34 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         }
 
         outputLayer.setLabels(labels);
+        outputLayer.computeGradientAndScore();
 
         //calculate and apply the backward gradient for every layer
-        for(int i = 0; i < getLayerWiseConfigurations().getConf(getLayerWiseConfigurations().getConfs().size() - 1).getNumIterations(); i++) {
             /**
              * Skip the output layer for the indexing and just loop backwards updating the coefficients for each layer.
              *
-             * Activation function used in the derivative calculation is actually the current layer's activation function.
-             * Design goal for this is to reduce inter dependencies between layers.
+             * Activate applies the activation function for each layer and sets that as the input for the following layer.
              *
-             * Also, keep in mind that in the literature you typically see the most trivial case for the error calculation: wT * weights
-             * In our interpretation here, we have to transpose a few things to get mini batch (calculate the gradient for more than one example)
-             * to happen
+             * Typical literature contains most trivial case for the error calculation: wT * weights
+             * This interpretation transpose a few things to get mini batch because ND4J is rows vs columns organization for params
              */
             int numLayers = getnLayers();
 
-            INDArray delta = outputLayer.gradient().getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
+            Pair<Gradient, INDArray> pair = outputLayer.backwardGradient(null, null);
 
-            List<Gradient> gradientUpdates = new ArrayList<>();
-            Gradient outputLayerGradients = new DefaultGradient();
 
-            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(outputLayer.getInput()).transpose());
-            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose().sum(0));
-            gradientUpdates.add(outputLayerGradients);
-            
+            multiGradientAndScore.put(numLayers, outputLayer.gradientAndScore());
             //Initialize with w^out * delta^out, appropriately transposed
 //            INDArray nextEpsilon = outputLayer.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose(); //Expected shape: [m,n^out]
-            Pair<Gradient, INDArray> pair = new Pair<>(outputLayerGradients, outputLayer.getParam(DefaultParamInitializer.WEIGHT_KEY));
 
             // Calculate gradients for previous layers & drops output layer in count
             for(int j = numLayers - 2; j >= 0; j--) {
-                pair = getLayers()[j].backwardGradient(pair.getFirst(), pair.getSecond());
-                gradientUpdates.add(pair.getFirst());
+                Layer currLayer = getLayers()[j];
+                pair = currLayer.backwardGradient(pair.getFirst(), pair.getSecond());
+                multiGradientAndScore.put(j, currLayer.gradientAndScore());
             }
 
-            Collections.reverse(gradientUpdates);
-            // Update layer weights and biases with gradients
-            for(int k = 0; k < numLayers; k++) {
-                Layer currLayer = getLayers()[k];
-                currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k),currLayer,input.size(0), i);
-                currLayer.update( gradientUpdates.get(k));
-
-            }
-
-            //ensure score is updated correctly during backprop
-            getOutputLayer().computeGradientAndScore();
-
-
-            for(IterationListener listener :  listeners)
-                listener.iterationDone(getOutputLayer(),i);
         }
-
-    }
 
 
     public List<IterationListener> getListeners() {
@@ -1245,8 +1228,8 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         }
 
         if(layerWiseConfigurations.isBackward())
-            doBackWard(getInput(),labels);
-
+            setLabels(labels);
+            doBackWard();
     }
 
     /**
