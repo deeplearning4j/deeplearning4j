@@ -2,11 +2,11 @@ package org.deeplearning4j.models.classifiers.lstm;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -15,7 +15,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
 public class GravesLSTMTest {
@@ -78,15 +77,6 @@ public class GravesLSTMTest {
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
 		
-		
-		NeuralNetConfiguration confOut = new NeuralNetConfiguration.Builder().activationFunction("tanh")
-                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
-                .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .nIn(17).nOut(3).build();
-		
-		OutputLayer outLayer = LayerFactories.getFactory(confOut.getLayer()).create(confOut);
-		
 		//Create pseudo-gradient for input to LSTM layer (i.e., as if created by OutputLayer)
 		//This should have two elements: bias and weight gradients.
 		Gradient gradient = new DefaultGradient();
@@ -95,8 +85,10 @@ public class GravesLSTMTest {
 		INDArray pseudoWeightGradients = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,nOut,timeSeriesLength);
 		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoWeightGradients);
 		
-		INDArray sigmaPrimeZLSTM = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,timeSeriesLength);
-		Gradient outGradient = lstm.backwardGradient(sigmaPrimeZLSTM, outLayer, gradient, inputData);
+		INDArray epsilon = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,timeSeriesLength);
+		Pair<Gradient,INDArray> pair = lstm.backwardGradient(epsilon);
+		Gradient outGradient = pair.getFirst();
+		INDArray nextEpsilon = pair.getSecond();
 		
 		INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS);
 		INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHTS);
@@ -105,9 +97,12 @@ public class GravesLSTMTest {
 		assertNotNull(inWeightGradient);
 		assertNotNull(recurrentWeightGradient);
 		
-		assertArrayEquals(biasGradient.shape(),new int[]{miniBatchSize,4*lstmNHiddenUnits});
+		assertArrayEquals(biasGradient.shape(),new int[]{1,4*lstmNHiddenUnits});
 		assertArrayEquals(inWeightGradient.shape(),new int[]{nIn,4*lstmNHiddenUnits});
 		assertArrayEquals(recurrentWeightGradient.shape(),new int[]{lstmNHiddenUnits,4*lstmNHiddenUnits+3});
+		
+		assertNotNull(nextEpsilon);
+		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
 		
 		//Check update:
 		for( String s : outGradient.gradientForVariable().keySet() ){
