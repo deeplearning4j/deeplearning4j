@@ -29,6 +29,7 @@ import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -192,13 +193,13 @@ public class TestOptimizers {
 	private static ConvexOptimizer getOptimizer( OptimizationAlgorithm oa, NeuralNetConfiguration conf, Model m ){
 		switch(oa){
 		case STOCHASTIC_GRADIENT_DESCENT:
-			return new StochasticGradientDescent(conf,new DefaultStepFunction(),null,m);
+			return new StochasticGradientDescent(conf,new NegativeDefaultStepFunction(),null,m);
 		case LINE_GRADIENT_DESCENT:
-			return new LineGradientDescent(conf,new DefaultStepFunction(),null,m);
+			return new LineGradientDescent(conf,new NegativeDefaultStepFunction(),null,m);
 		case CONJUGATE_GRADIENT:
-			return new ConjugateGradient(conf,new DefaultStepFunction(),null,m);
+			return new ConjugateGradient(conf,new NegativeDefaultStepFunction(),null,m);
 		case LBFGS:
-			return new LBFGS(conf,new DefaultStepFunction(),null,m);
+			return new LBFGS(conf,new NegativeDefaultStepFunction(),null,m);
 		default:
 			throw new UnsupportedOperationException();
 		}
@@ -589,6 +590,16 @@ public class TestOptimizers {
 		public void update(INDArray gradient, String paramType) {
 			if(!"x".equals(paramType)) throw new UnsupportedOperationException();
 			parameters.subi(gradient);
+		}
+
+		@Override
+		public void setListeners(IterationListener... listeners) {
+
+		}
+
+		@Override
+		public void update(Gradient gradient) {
+
 		}
 
 		@Override
