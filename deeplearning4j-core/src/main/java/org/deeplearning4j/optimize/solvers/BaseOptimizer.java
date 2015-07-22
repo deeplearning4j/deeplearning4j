@@ -24,7 +24,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -106,16 +105,17 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
+    public Updater getUpdater() {
+        return updater;
+    }
+
+    @Override
     public Pair<Gradient,Double> gradientAndScore() {
         model.computeGradientAndScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
-        for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
-            INDArray gradient = pair.getFirst().getGradientFor(paramType);
-            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType,iteration);
-        }
+        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize(), iteration);
         return pair;
     }
-
 
     /**
      * Optimize call. This runs the optimizer.
@@ -148,10 +148,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         preProcessLine();
 
         for(int i = 0; i < conf.getNumIterations(); i++) {
-        	gradient = (INDArray) searchState.get(GRADIENT_KEY);
+            gradient = (INDArray) searchState.get(GRADIENT_KEY);
             searchDirection = (INDArray) searchState.get(SEARCH_DIR);
             parameters = (INDArray) searchState.get(PARAMS_KEY);
-            
+
             //perform one line search optimization
             try {
                 step = lineMaximizer.optimize(parameters, gradient, searchDirection);
@@ -159,19 +159,21 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                 log.warn("Invalid step...continuing another iteration: {}",e.getMessage());
                 step = 0.0;
             }
-            
+
             //Update parameters based on final/best step size returned by line search:
-            if( step != 0.0 ) {
-            	stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
-            	model.setParams(parameters);
-            } else {
-            	log.debug("Step size returned by line search is 0.0.");
+            if(step != 0.0) {
+                stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
+                model.setParams(parameters);
+            }
+
+            else {
+                log.debug("Step size returned by line search is 0.0.");
             }
 
             //record old score for deltas and other termination conditions
             oldScore = score;
             pair = gradientAndScore();
-            
+
             //updates searchDirection
             postStep(pair.getFirst().gradient());
             score = pair.getSecond();
@@ -180,11 +182,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
-            
+
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions){
                 if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
-                	log.debug("Hit termination condition: score={}, oldScore={}, condition={}",score,oldScore,condition);
+                    log.debug("Hit termination condition: score={}, oldScore={}, condition={}",score,oldScore,condition);
                     return true;
                 }
             }
@@ -227,14 +229,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
-    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType, int iteration) {
+    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, int iteration) {
         if(updater == null)
             updater = UpdaterCreator.getUpdater(model.conf());
         Layer layer = (Layer) model;
-        Gradient g = new DefaultGradient();
-        g.setGradientFor(paramType,gradient);
-        updater.update(layer,g,iteration);
-        gradient.assign(g.getGradientFor(paramType));
+        updater.update(layer, gradient, iteration);
     }
 
     /**

@@ -139,6 +139,11 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
+    public void update(Gradient gradient) {
+
+    }
+
+    @Override
     public void update(INDArray gradient, String paramType) {
         throw new UnsupportedOperationException();
     }

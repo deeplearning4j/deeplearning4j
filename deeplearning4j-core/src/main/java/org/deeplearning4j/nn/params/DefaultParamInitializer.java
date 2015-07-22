@@ -56,7 +56,7 @@ public class DefaultParamInitializer implements ParamInitializer {
 
 
     protected INDArray createBias(NeuralNetConfiguration conf) {
-        INDArray ret =  Nd4j.valueArrayOf(conf.getNOut(),0.2);
+        INDArray ret =  Nd4j.valueArrayOf(conf.getNOut(),0.0);
         ret.data().persist();
         return ret;
     }

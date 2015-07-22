@@ -125,6 +125,11 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
+    public void update(Gradient gradient) {
+
+    }
+
+    @Override
     public INDArray preOutput(INDArray x) {
         throw new UnsupportedOperationException();
     }
