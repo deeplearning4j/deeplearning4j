@@ -31,7 +31,14 @@ Alternatively, you can use Maven from your project's root directory in the comma
 
 Several useful books have been written about Apache Maven. They are available on the website of Sonatype, the company that supports the open-source project. 
 
-Further reading:
+### Troubleshooting Maven
+
+* Older versions of Maven, such as 3.0.4, are likely to throw exceptions like a NoSuchMethodError. This can be fixed by upgrading to the latest version of Maven. 
+* After you install Maven, you may receive a message like this: *'mvn is not recognised as an internal or external command, operable program or batch file.'* That means you need Maven in your [PATH variable](https://www.java.com/en/download/help/path.xml), which you can change like any other environmental variable. 
+* As the DL4J code base grows, installing from source requires more memory. If you encounter a Permgen error during the DL4J build, you may need to add more heap space. To do that, you'll need to find and alter your hidden .bash_profile file, which adds environmental variables to bash. To see those variables, enter *env* in the command line. To add more heap space, enter this command in your console:
+      echo "export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=512m"" > ~/.bash_profile
+
+### Further reading:
 
 * [Maven by Example](https://books.sonatype.com/mvnex-book/reference/public-book.html)
 * [Maven: The Complete Reference](https://books.sonatype.com/mvnref-book/reference/public-book.html)
