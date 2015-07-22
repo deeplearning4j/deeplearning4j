@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -89,7 +90,7 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
     private INDArray getPool(INDArray convolution) {
         INDArray pooled = null;
-        switch (conf.getConvolutionType()) {
+        switch (conf.getPoolingType()) {
             case MAX:
                 pooled = Transforms.maxPool(convolution, conf.getStride(),false);
                 break;

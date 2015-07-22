@@ -41,8 +41,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     public final static String CONVOLUTION_WEIGHTS = "convweights";
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        if(conf.getFilterSize().length < 4)
-            throw new IllegalArgumentException("Filter size must be == 4");
+        if(conf.getFilterSize().length < 2)
+            throw new IllegalArgumentException("Filter size must be == 2");
 
         params.put(CONVOLUTION_BIAS,createBias(conf));
         params.put(CONVOLUTION_WEIGHTS,createWeightMatrix(conf));

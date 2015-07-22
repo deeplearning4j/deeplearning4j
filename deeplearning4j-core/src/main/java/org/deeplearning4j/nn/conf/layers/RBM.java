@@ -18,6 +18,11 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
  * Restricted Boltzmann Machine.
  *
@@ -43,37 +48,72 @@ package org.deeplearning4j.nn.conf.layers;
  * http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239
  *
  */
+@Data
+@NoArgsConstructor
 public class RBM extends BasePretrainNetwork {
-    
+
     private static final long serialVersionUID = 485040309806445606L;
+    protected HiddenUnit hiddenUnit;
+    protected VisibleUnit visibleUnit;
+    protected int k;
 
     public enum VisibleUnit {
-        BINARY,GAUSSIAN,SOFTMAX,LINEAR
+        BINARY, GAUSSIAN, SOFTMAX, LINEAR
     }
-
     public enum HiddenUnit {
-        RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
+        RECTIFIED, BINARY, GAUSSIAN, SOFTMAX
     }
 
-
-    @Override
-    public int hashCode() {
-        return 0;
+    // Builder
+    private RBM(Builder builder) {
+        this.hiddenUnit = builder.hiddenUnit;
+        this.visibleUnit = builder.visibleUnit;
+        this.k = builder.k;
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder {
+        private HiddenUnit hiddenUnit;
+        private VisibleUnit visibleUnit;
+        private int k;
 
-    public String toString() {
-        return "RBM{" +
-                '}';
+        public Builder(HiddenUnit hiddenUnit, VisibleUnit visibleUnit) {
+            this.hiddenUnit = hiddenUnit;
+            this.visibleUnit = visibleUnit;
+        }
+
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+        @Override
+        public Builder activation(String activationFunction) {
+            throw new UnsupportedOperationException("RBM does not accept activation");
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+        @Override
+        @SuppressWarnings("unchecked")
+        public RBM build() {
+            return new RBM(this);
+        }
     }
 }
