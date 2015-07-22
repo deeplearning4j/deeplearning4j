@@ -15,15 +15,11 @@ layout: default
 
 ## Deep- and Machine-Learning Fora
 
-**[Google + Deep Learning Group](https://plus.google.com/u/0/communities/112866381580457264725?cfem=1)**
-
-**[KDNuggets: Data Science Hub](http://www.kdnuggets.com/)**
-
-**[Datatau: Hacker News for Data Science](http://www.datatau.com/)**
-
-**[r/MachineLearning](https://www.reddit.com/r/MachineLearning/)**
-
-**[Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)**
+* [Google + Deep Learning Group](https://plus.google.com/u/0/communities/112866381580457264725?cfem=1)
+* [KDNuggets: Data Science Hub](http://www.kdnuggets.com/)
+* [Datatau: Hacker News for Data Science](http://www.datatau.com/)
+* [r/MachineLearning](https://www.reddit.com/r/MachineLearning/)
+* [Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)
 
 ## Academic Papers
 
