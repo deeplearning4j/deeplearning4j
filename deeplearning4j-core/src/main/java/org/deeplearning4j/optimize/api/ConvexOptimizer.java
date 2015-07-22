@@ -20,6 +20,7 @@ package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaGrad;
@@ -38,6 +39,8 @@ public interface ConvexOptimizer extends Serializable {
      * @return the score for this optimizer so far
      */
     double score();
+
+    Updater getUpdater();
 
     /**
      * The gradient and score for this optimizer
@@ -96,7 +99,7 @@ public interface ConvexOptimizer extends Serializable {
      * @param iteration
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType, int iteration);
+    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, int iteration);
 
 
 }

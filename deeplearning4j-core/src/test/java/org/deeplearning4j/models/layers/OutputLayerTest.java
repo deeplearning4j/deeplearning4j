@@ -36,6 +36,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 
 import org.deeplearning4j.optimizer.listener.AssertWeightsDifferentIerationListener;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
@@ -88,11 +89,11 @@ public class OutputLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
 
         NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT).
+                .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).
                         optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .activationFunction("softmax").updater(Updater.SGD)
-                .regularization(true)
-                .l1(1).l2(1e-3).seed(123)
+                .constrainGradientToUnitNorm(true)
+                .activationFunction("softmax").updater(Updater.ADAGRAD)
+                .seed(123)
                 .iterations(1000)
                 .weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1)
@@ -115,6 +116,48 @@ public class OutputLayerTest {
         Evaluation eval = new Evaluation(3);
         eval.eval(t.getTest().getLabels(),o.output(t.getTest().getFeatureMatrix(), true));
         log.info(eval.stats());
+
+    }
+
+
+    @Test
+    public void testBinary() {
+
+        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
+        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        INDArray data = Nd4j.create(new double[][]
+                {{1,1,1,0,0,0},
+                        {1,0,1,0,0,0},
+                        {1,1,1,0,0,0},
+                        {0,0,1,1,1,0},
+                        {0,0,1,1,0,0},
+                        {0,0,1,1,1,0}});
+
+        INDArray data2 = Nd4j.create(new double[][]
+                {{1, 0},
+                        {1, 0},
+                        {1, 0},
+                        {0, 1},
+                        {0, 1},
+                        {0, 1}});
+
+        DataSet dataset = new DataSet(data,data2);
+        NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
+                .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).
+                        optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.ZERO)
+                .activationFunction("softmax").updater(Updater.SGD)
+                .seed(123)
+                .iterations(200)
+                .learningRate(1e-2)
+                .nIn(6).nOut(2)
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
+
+        OutputLayer o = LayerFactories.getFactory(neuralNetConfiguration).create(neuralNetConfiguration);
+        o.setListeners(new ScoreIterationListener(1));
+        o.fit(dataset);
+
 
     }
 

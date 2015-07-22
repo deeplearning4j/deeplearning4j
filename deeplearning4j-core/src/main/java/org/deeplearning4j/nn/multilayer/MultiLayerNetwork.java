@@ -1105,13 +1105,9 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             // Update layer weights and biases with gradients
             for(int k = 0; k < numLayers; k++) {
                 Layer currLayer = getLayers()[k];
-                for(String paramType : gradientUpdates.get(k).gradientForVariable().keySet()) {
-                    currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k).getGradientFor(paramType),currLayer,input.size(0),paramType,i);
-                    INDArray update = gradientUpdates.get(k).getGradientFor(paramType);
-                    if(update != null)
-                        currLayer.update(update, paramType);
+                currLayer.getOptimizer().updateGradientAccordingToParams(gradientUpdates.get(k),currLayer,input.size(0), i);
+                currLayer.update( gradientUpdates.get(k));
 
-                }
             }
 
             //ensure score is updated correctly during backprop
