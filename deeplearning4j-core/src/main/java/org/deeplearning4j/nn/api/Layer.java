@@ -41,6 +41,7 @@ public interface Layer extends Serializable,Cloneable,Model {
     }
 
 
+
     /**
      * The l2 magnitude for the weights
      * @return the l2 magnitude for the weights
@@ -110,16 +111,11 @@ public interface Layer extends Serializable,Cloneable,Model {
     @Deprecated
     Gradient errorSignal(Gradient error, INDArray input);
 
-    /**
-     * Calculate the gradient relative to the
-     * error in the next layer
-     * @param z the activation from the network
-     * @param nextLayer the next layer in the network.
-     * @param nextGradient
-     * @param activation the activation from the network
-     * @return
+    /**Calculate the gradient relative to the error in the next lay
+     * @return Pair<Gradient,INDArray> where Gradient is gradient for this layer, INDArray is weights needed by next
+     *  layer
      */
-    Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation);
+    Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights);
 
 
     /**
@@ -142,6 +138,11 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Update layer weights and biases with gradient change
      */
 
+    void update(Gradient gradient);
+    /**
+     * Update layer weights and biases with gradient change
+     */
+
     void update(INDArray gradient, String paramType);
 
     /**
@@ -151,6 +152,32 @@ public interface Layer extends Serializable,Cloneable,Model {
      * for this layer
      */
     INDArray preOutput(INDArray x);
+
+    /**
+     * Raw activations
+     * @param x the input to transform
+     * @return the raw activation
+     * for this layer
+     */
+    INDArray preOutput(INDArray x,boolean training);
+
+
+    /**
+     * Trigger an activation with the last specified input
+     * @param training  training or test mode
+     * @return the activation of the last specified input
+     */
+    INDArray activate(boolean training);
+
+    /**
+     * Initialize the layer with the given input
+     * and return the activation for this layer
+     * given this input
+     * @param input the input to use
+     * @param training  train or test mode
+     * @return
+     */
+    INDArray activate(INDArray input,boolean training);
 
     /**
      * Trigger an activation with the last specified input
@@ -199,6 +226,10 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     Collection<IterationListener> getListeners();
 
+    /**
+     * Set the iteration listeners for this layer.
+     */
+    void setListeners(IterationListener...listeners);
     /**
      * Set the iteration listeners for this layer.
      */

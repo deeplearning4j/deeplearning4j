@@ -30,10 +30,10 @@ import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.serializers.*;
+import org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
-import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -140,6 +140,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double rmsDecay = 0.0;
     //number of channels for a conv net
     protected int channels = 1;
+
+    protected boolean miniBatch = false;
 
 
     protected ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
@@ -473,6 +475,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int kernel = 5;
         private double corruptionLevel = 3e-1f;
         private double sparsity = 0f;
+        @Deprecated
         private boolean useAdaGrad = true;
         private double lr = 1e-1f;
         private double momentum = 0.5f;
@@ -501,7 +504,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] featureMapSize = {2,2};
         //subsampling layers
         private int[] stride = {2,2};
-        private StepFunction stepFunction = new DefaultStepFunction();
+        private StepFunction stepFunction = new NegativeDefaultStepFunction();
         private Layer layer;
         private int batchSize = 100;
         @Deprecated
@@ -514,7 +517,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double rho;
         private Updater updater = Updater.ADAGRAD;
         private int channels = 1;
-
+        private boolean miniBatch = false;
 
         /**
          * Number of channels for a conv net
@@ -545,6 +548,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public Builder rho(double rho) {
             this.rho = rho;
+            return this;
+        }
+
+
+        public Builder miniBatch(boolean miniBatch) {
+            this.miniBatch = miniBatch;
             return this;
         }
 
@@ -682,6 +691,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        @Deprecated
         public Builder useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
             return this;
@@ -823,6 +833,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
             ret.useDropConnect = useDropConnect;
+            ret.miniBatch = miniBatch;
             ret.rho = rho;
             ret.updater = updater;
             ret.channels = channels;

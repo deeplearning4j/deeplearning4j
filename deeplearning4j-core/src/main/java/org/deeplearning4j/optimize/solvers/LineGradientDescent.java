@@ -48,16 +48,16 @@ public class LineGradientDescent extends BaseOptimizer {
     @Override
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        searchState.put(SEARCH_DIR, gradient.dup().negi());
+        searchState.put(SEARCH_DIR, gradient.dup());
     }
 
     @Override
     public void postStep(INDArray gradient) {
         double norm2 = gradient.norm2(Integer.MAX_VALUE).getDouble(0);
         if(norm2 > stepMax)
-            searchState.put(SEARCH_DIR,gradient.dup().muli(stepMax / norm2).negi());
+            searchState.put(SEARCH_DIR,gradient.dup().muli(stepMax / norm2));
         else
-            searchState.put(SEARCH_DIR, gradient.dup().negi());
+            searchState.put(SEARCH_DIR, gradient.dup());
     }
 
 }
