@@ -128,6 +128,16 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[On Chomsky and the Two Cultures of Statistical Learning](http://norvig.com/chomsky.html)**; Peter Norvig
 
+## Online Deep- and Machine-Learning Fora
+
+**[Google + Deep Learning Group](https://plus.google.com/u/0/communities/112866381580457264725?cfem=1)**
+
+**[Datatau: Hacker News for Data Science](http://www.datatau.com/)**
+
+**[r/MachineLearning](https://www.reddit.com/r/MachineLearning/)**
+
+**[Deeplearning.net: A Portal for Theano/PyLearn](http://deeplearning.net/)**
+
 ## Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
