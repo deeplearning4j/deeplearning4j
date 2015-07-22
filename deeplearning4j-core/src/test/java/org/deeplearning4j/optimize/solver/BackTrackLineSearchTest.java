@@ -21,7 +21,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.*;
@@ -47,7 +46,7 @@ public class BackTrackLineSearchTest {
         OutputLayer layer = getIrisLogisticLayerConfig("softmax", 10);
         layer.setInput(data.getFeatureMatrix());
         layer.setLabels(data.getLabels());
-        layer.setScore();
+        layer.computeGradientAndScore();
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
 

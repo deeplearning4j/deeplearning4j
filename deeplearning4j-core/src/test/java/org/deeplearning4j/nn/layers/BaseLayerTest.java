@@ -6,24 +6,15 @@ import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -54,7 +45,7 @@ public class BaseLayerTest {
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
-        layer.setScore();
+        layer.computeGradientAndScore();
         double score2 = layer.score();
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-3);
@@ -105,7 +96,7 @@ public class BaseLayerTest {
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
-        layer.setScore();
+        layer.computeGradientAndScore();
         double score2 = layer.score();
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-3);
@@ -139,7 +130,7 @@ public class BaseLayerTest {
         double score = network.getLayer(1).score();
         INDArray parameters = network.getLayer(1).params();
         network.getLayer(1).setParams(parameters);
-        network.getLayer(1).setScore();
+        network.getLayer(1).computeGradientAndScore();
 
         double score2 = network.getLayer(1).score();
         assertEquals(parameters, network.getLayer(1).params());
