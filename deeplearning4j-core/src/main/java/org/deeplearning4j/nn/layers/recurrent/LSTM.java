@@ -33,8 +33,10 @@ import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -475,8 +477,22 @@ public class LSTM extends BaseLayer {
         INDArray forward = forward(xi, xs);
         INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
         gradient = backward(probas);
-        setScoreWithZ(probas);
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, forward);
+            create.exec();
+            score = create.currentResult().doubleValue();
+        }
+
+        else {
+            score = LossCalculation.builder()
+                    .l1(conf.getL1()).l2(conf.getL2())
+                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .labels(xs).z(probas).lossFunction(conf.getLossFunction())
+                    .useRegularization(conf.isUseRegularization()).build().score();
+
+        }
     }
+
 
     @Override
     public INDArray transform(INDArray data) {
