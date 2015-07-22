@@ -34,9 +34,10 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 public class OutputLayer extends FeedForwardLayer {
 
     private static final long serialVersionUID = 8554480736972510788L;
-    private LossFunction lossFunction;
+    protected LossFunction lossFunction;
 
     private OutputLayer(Builder builder) {
+        this.lossFunction = builder.lossFunction;
         this.nIn = builder.nIn;
         this.nOut = builder.nOut;
         this.activationFunction = builder.activationFunction;
