@@ -100,7 +100,6 @@ class RichNDArraySpec extends FlatSpec with Matchers {
   }
 
   it should "use === for equality comparisons" in {
-
     val a = Nd4j.create(Array[Double](1, 2))
 
     val b = Nd4j.create(Array[Double](1, 2))
