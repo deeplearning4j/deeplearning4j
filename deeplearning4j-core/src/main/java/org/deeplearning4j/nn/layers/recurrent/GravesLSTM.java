@@ -233,7 +233,7 @@ public class GravesLSTM extends BaseLayer {
 
 	@Override
 	public INDArray preOutput(INDArray x) {
-		return activate(x);
+		return activate(x,true);
 	}
 
 	@Override
@@ -286,7 +286,7 @@ public class GravesLSTM extends BaseLayer {
 		INDArray memCellActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
 
 
-		for( int t=0; t<timeSeriesLength; t++ ){
+		for( int t = 0; t < timeSeriesLength; t++ ){
 			INDArray miniBatchData = (is2dInput ? input : input.slice(t, 2));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
 			INDArray prevOutputActivations = (t==0 ? Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize}) : outputActivations.slice(t-1,2));	//Shape: [m,nL]
 			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize}) : memCellActivations.slice(t-1,2));	//Shape: [m,nL]
