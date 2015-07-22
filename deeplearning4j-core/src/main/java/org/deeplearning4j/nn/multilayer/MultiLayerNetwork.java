@@ -1063,6 +1063,7 @@ protected Gradient gradient;
 
         outputLayer.setLabels(labels);
         outputLayer.computeGradientAndScore();
+        Gradient nextGradients;
 
         //calculate and apply the backward gradient for every layer
             /**
