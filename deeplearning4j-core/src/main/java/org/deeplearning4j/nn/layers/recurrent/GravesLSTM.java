@@ -364,6 +364,12 @@ public class GravesLSTM extends BaseLayer {
 			outputActivations.slice(t,2).assign(currHiddenUnitActivations);
 			memCellActivations.slice(t,2).assign(currentMemoryCellActivations);
 		}
+		// TODO Verify - this is from commit on 2d case handling for activation in GravesLSTM. Probably needs to be address with new take on epsilon
+		if (is2dInput) {
+			int[] shape = outputActivations.shape();
+			outputActivations = outputActivations.reshape(shape[0], shape[1]);
+		}
+
 		return new INDArray[]{outputActivations,memCellActivations,ifogZ,ifogA};
 	}
 

@@ -76,7 +76,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         INDArray wGradient = getWeightGradient(output);
 
         INDArray dy = labels.sub(output);
-        INDArray bGradient = dy.mean(0);
+        INDArray bGradient = dy.sum(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
@@ -100,7 +100,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                     .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
                     .labels(labels).z(z).lossFunction(conf.getLossFunction())
                     .useRegularization(conf.isUseRegularization()).build().score();
-
         }
     }
 
@@ -109,6 +108,17 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return new Pair<>(gradient(),score());
     }
 
+    public Pair<Gradient, INDArray> backwardGradient(Gradient nextGradient, INDArray weights) {
+        INDArray output = output(input);
+
+        INDArray delta = gradient().getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
+
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(input).transpose());
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose().sum(0));
+
+        return new Pair<>(ret, getParam(DefaultParamInitializer.WEIGHT_KEY));
+    }
 
     /**
      * Gets the gradient from one training iteration
