@@ -223,7 +223,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public Collection<IterationListener> getIterationListeners() {
+    public Collection<IterationListener> getListeners() {
         return null;
     }
 
