@@ -224,6 +224,12 @@ public abstract class BaseLayer implements Layer {
         }
     }
 
+    @Override
+    public void update(Gradient gradient) {
+        for(String paramType : gradient.gradientForVariable().keySet()) {
+            update(gradient.getGradientFor(paramType), paramType);
+        }
+    }
 
     @Override
     public void update(INDArray gradient, String paramType) {
@@ -324,8 +330,8 @@ public abstract class BaseLayer implements Layer {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        setInput(x.dup(),training);
-        applyDropOutIfNecessary(this.input,training);
+        setInput(x,training);
+        applyDropOutIfNecessary(x,training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect() && training) {
@@ -333,7 +339,8 @@ public abstract class BaseLayer implements Layer {
                 W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
             }
         }
-        INDArray ret = input().mmul(W).addiRowVector(b);
+
+        INDArray ret = x.mmul(W).addiRowVector(b);
         return ret;
     }
 

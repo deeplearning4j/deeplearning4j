@@ -74,7 +74,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         INDArray output = output(input);
         INDArray wGradient = getWeightGradient(output);
-        INDArray bGradient = wGradient.sum(0);
+
+        INDArray dy = labels.sub(output);
+        INDArray bGradient = dy.mean(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
@@ -125,7 +127,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         switch (conf.getLossFunction()) {
             case MCXENT:
                 //difference of outputs
-                INDArray dy = z.sub(labels);
+                INDArray dy = labels.sub(z);
                 return input.transpose().mmul(dy);
 
             case XENT:
@@ -144,7 +146,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             case SQUARED_LOSS:
                 return input.transpose().mmul(pow(labels.sub(z),2));
             case NEGATIVELOGLIKELIHOOD:
-                return input.transpose().mmul(log(z).negi());
+                INDArray dy2 = labels.sub(z);
+                return input.transpose().mmul(dy2);
 
 
         }
@@ -242,7 +245,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        this.input = examples.dup();
+        this.input = examples;
         applyDropOutIfNecessary(this.input,true);
         this.labels = labels;
         Solver solver = new Solver.Builder()
