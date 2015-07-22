@@ -1,7 +1,7 @@
 package org.nd4j.api
 
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.factory.{NDArrayFactory, Nd4j}
 
 import _root_.scala.util.control.Breaks._
 
@@ -33,25 +33,29 @@ object Implicits {
   }
 
 
+  /*
+   Avoid using Numeric[T].toDouble(t:T) for sequence transformation in XXColl2INDArray to minimize memory consumption.
+   */
   implicit class floatColl2INDArray(val underlying: Seq[Float]) extends AnyVal {
+    def mkNDArray(shape:Array[Int],ord:NDOrdering = NDOrdering(Nd4j.order()),offset:Int=0):INDArray = Nd4j.create(underlying.toArray,shape,ord.value,offset)
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
+    def toNDArray:INDArray = Nd4j.create(underlying.toArray)
   }
 
   implicit class doubleColl2INDArray(val underlying: Seq[Double]) extends AnyVal {
+    def mkNDArray(shape:Array[Int],ord:NDOrdering = NDOrdering(Nd4j.order()),offset:Int=0):INDArray = Nd4j.create(underlying.toArray,shape,offset,ord.value)
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
+    def toNDArray:INDArray = Nd4j.create(underlying.toArray)
   }
 
-  implicit class int2Scalar(val underlying: Int) extends AnyVal {
-    def asScalar: INDArray = Nd4j.scalar(underlying)
+  implicit class intColl2INDArray(val underlying: Seq[Int]) extends AnyVal {
+    def mkNDArray(shape:Array[Int],ord:NDOrdering = NDOrdering(Nd4j.order()),offset:Int=0):INDArray = Nd4j.create(underlying.map(_.toFloat).toArray,shape,ord.value,offset)
+    def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.map(_.toFloat).toArray, shape.toArray)
+    def toNDArray:INDArray = Nd4j.create(underlying.map(_.toFloat).toArray)
   }
-  implicit class float2Scalar(val underlying: Float) extends AnyVal {
-    def asScalar: INDArray = Nd4j.scalar(underlying)
-  }
-  implicit class double2Scalar(val underlying: Double) extends AnyVal {
-    def asScalar: INDArray = Nd4j.scalar(underlying)
-  }
-  implicit class long2Scalar(val underlying: Long) extends AnyVal {
-    def asScalar: INDArray = Nd4j.scalar(underlying)
+
+  implicit class num2Scalar[T](val underlying: T)(implicit ev:Numeric[T]){
+    def tsScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }
 
   case object -> extends IndexRange
@@ -80,6 +84,7 @@ object Implicits {
     protected[api] override def asRange(max: => Int): DRange = DRange.from(underlying, max)
   }
 
+  lazy val NDOrdering = org.nd4j.api.NDOrdering
 }
 
 sealed trait IndexNumberRange extends IndexRange {
