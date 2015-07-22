@@ -1047,14 +1047,14 @@ public class MultiLayerNetwork implements Serializable, Classifier {
             return;
         }
 
-        OutputLayer output = (OutputLayer) getOutputLayer();
+        OutputLayer outputLayer = (OutputLayer) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
-        if(output.conf().getWeightInit() == WeightInit.ZERO){
+        if(outputLayer.conf().getWeightInit() == WeightInit.ZERO){
             throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
         }
 
-        output.setLabels(labels);
+        outputLayer.setLabels(labels);
 
         //calculate and apply the backward gradient for every layer
         for(int i = 0; i < getLayerWiseConfigurations().getConf(getLayerWiseConfigurations().getConfs().size() - 1).getNumIterations(); i++) {
@@ -1069,33 +1069,24 @@ public class MultiLayerNetwork implements Serializable, Classifier {
              * to happen
              */
             int numLayers = getnLayers();
+
+            INDArray delta = outputLayer.gradient().getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
+
             List<Gradient> gradientUpdates = new ArrayList<>();
-            List<INDArray> activations = feedForward();
-            INDArray outputActivation = activations.get(activations.size() - 1);
-            INDArray outputLayerInput = activations.get(activations.size() - 2);
-
-            INDArray delta = outputActivation.sub(labels).transpose();
-
-            // add other cost functions?
-          //TODO: Need to rework this whole section
-//            if(output.conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
-//            	INDArray activationDeriv = null;
-//                delta.muli(activationDeriv);
-//            }
-
             Gradient outputLayerGradients = new DefaultGradient();
-            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(outputLayerInput).transpose());
+
+            outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(outputLayer.getInput()).transpose());
             outputLayerGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose().sum(0));
             gradientUpdates.add(outputLayerGradients);
             
             //Initialize with w^out * delta^out, appropriately transposed
-            INDArray nextEpsilon = output.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose(); //Expected shape: [m,n^out]
+//            INDArray nextEpsilon = outputLayer.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose(); //Expected shape: [m,n^out]
+            Pair<Gradient, INDArray> pair = new Pair<>(outputLayerGradients, outputLayer.getParam(DefaultParamInitializer.WEIGHT_KEY));
 
             // Calculate gradients for previous layers & drops output layer in count
             for(int j = numLayers - 2; j >= 0; j--) {
-                Pair<Gradient,INDArray> pair = getLayers()[j].backwardGradient(nextEpsilon); 
+                pair = getLayers()[j].backwardGradient(pair.getFirst(), pair.getSecond());
                 gradientUpdates.add(pair.getFirst());
-                nextEpsilon = pair.getSecond();
             }
 
             Collections.reverse(gradientUpdates);
