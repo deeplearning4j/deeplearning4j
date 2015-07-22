@@ -224,6 +224,11 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
+    public void setListeners(IterationListener... listeners) {
+
+    }
+
+    @Override
     public void setListeners(Collection<IterationListener> listeners) {
 
     }
@@ -244,7 +249,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
 
     }
 

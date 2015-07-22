@@ -56,7 +56,7 @@ public interface Model {
     /**
      * Update the score
      */
-    void setScore();
+    void computeGradientAndScore();
 
     /**
      * Sets a rolling tally for the score. This is useful for mini batch learning when
