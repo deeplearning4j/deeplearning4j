@@ -1041,7 +1041,6 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     protected void doBackWard(INDArray input,INDArray labels) {
         setInput(input);
         this.labels = labels;
-        Gradient nextGradients = new DefaultGradient();
 
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You can ignore this message if you just intend on using a a deep neural network with no output layer.");
@@ -1056,6 +1055,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
         };
 
         output.setLabels(labels);
+        Gradient nextGradients;
 
         //calculate and apply the backward gradient for every layer
         for(int i = 0; i < getLayerWiseConfigurations().getConf(getLayerWiseConfigurations().getConfs().size() - 1).getNumIterations(); i++) {
@@ -1071,24 +1071,15 @@ public class MultiLayerNetwork implements Serializable, Classifier {
              */
             int numLayers = getnLayers();
             List<Gradient> gradientUpdates = new ArrayList<>();
+            //reuse activations (only compute once)
             Pair<List<INDArray>,List<INDArray>> activationsAndDeriv = feedForwardActivationsAndDerivatives(true);
             List<INDArray> activations = activationsAndDeriv.getFirst();
             INDArray outputActivation = activations.get(activations.size() - 1);
 
             List<INDArray> derivatives = activationsAndDeriv.getSecond();
+            //compute initial gradient
             INDArray activationDeriv = derivatives.get(derivatives.size() - 1);
-            INDArray layerInput = activations.get(activations.size() - 2);
-
-            INDArray delta = outputActivation.sub(labels).transpose();
-
-            // add other cost functions?
-            if(output.conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
-                delta.muli(activationDeriv);
-            }
-
-            nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
-            nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
-
+            nextGradients = output.backwardGradient(activationDeriv, null, null, outputActivation);
             gradientUpdates.add(nextGradients);
 
             // Calculate gradients for previous layers & drops output layer in count
