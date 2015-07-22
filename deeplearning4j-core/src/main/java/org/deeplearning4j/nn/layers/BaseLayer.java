@@ -149,6 +149,7 @@ public abstract class BaseLayer implements Layer {
     public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
+
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
         INDArray epsilon = weights.mmul(gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY).transpose()).transpose();
 
@@ -352,7 +353,6 @@ public abstract class BaseLayer implements Layer {
         if(conf.isUseDropConnect() && training) {
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
-
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
         return ret;
     }
