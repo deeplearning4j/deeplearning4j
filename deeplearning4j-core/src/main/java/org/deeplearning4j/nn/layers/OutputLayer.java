@@ -24,7 +24,6 @@ import java.io.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -42,7 +41,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
@@ -85,24 +83,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.gradient = g;
         setScoreWithZ(output);
 
-    }
-
-    @Override
-    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
-        Gradient nextGradients = new DefaultGradient();
-        INDArray activationDeriv = derivative;
-        INDArray layerInput = input;
-
-        INDArray delta = activation.sub(labels).transpose();
-
-        // add other cost functions?
-        if(conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
-            delta.muli(activationDeriv);
-        }
-
-        nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
-        nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
-        return nextGradients;
     }
 
     @Override
@@ -279,7 +259,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
-                .listeners(getIterationListeners())
+                .listeners(getListeners())
                 .model(this).build();
         solver.optimize();
     }

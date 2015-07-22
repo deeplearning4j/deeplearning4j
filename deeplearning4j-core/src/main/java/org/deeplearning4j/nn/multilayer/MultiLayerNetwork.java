@@ -61,7 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Adam Gibson
  */
-public class MultiLayerNetwork implements Serializable, Classifier {
+public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
     private static final Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
@@ -74,7 +74,7 @@ public class MultiLayerNetwork implements Serializable, Classifier {
     protected INDArray input, labels;
     //sometimes we may need to transform weights; this allows a
     protected boolean initCalled = false;
-    private List<IterationListener> listeners = new ArrayList<>();
+    private Collection<IterationListener> listeners = new ArrayList<>();
 
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
@@ -85,6 +85,8 @@ protected Gradient gradient;
       Binary drop connect mask
      */
     protected INDArray mask;
+    
+    private int layerIndex;	//For Layer.get/setIndex()
 
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
@@ -331,7 +333,7 @@ protected Gradient gradient;
     public void init() {
         if (layerWiseConfigurations == null || layers == null)
             intializeConfigurations();
-        if(initCalled)
+        if (initCalled)
             return;
 
         INDArray layerInput = input();
@@ -343,7 +345,7 @@ protected Gradient gradient;
         int numHiddenLayersSizesUsed = 0;
 
         if (this.layers == null || this.layers[0] == null) {
-            if(this.layers == null)
+            if (this.layers == null)
                 this.layers = new Layer[getnLayers()];
 
             // construct multi-layer
@@ -362,8 +364,7 @@ protected Gradient gradient;
                     if (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
                         conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                     }
-                }
-                else if (i < getLayers().length) {
+                } else if (i < getLayers().length) {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1, layerInput,true);
                     /**
@@ -419,6 +420,11 @@ protected Gradient gradient;
         return getLayers()[layer].activate();
     }
 
+    @Override
+    public INDArray activate(INDArray input) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Triggers the activation of the given layer
      *
@@ -430,6 +436,10 @@ protected Gradient gradient;
         return getLayers()[layer].activate(input);
     }
 
+    @Override
+    public INDArray activationMean() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Sets the input and labels from this dataset
@@ -517,7 +527,7 @@ protected Gradient gradient;
     public List<INDArray> computeZ(INDArray input,boolean training) {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
-        else if(this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
+        else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
             this.input = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input);
         else
             this.input = input;
@@ -529,7 +539,7 @@ protected Gradient gradient;
      *
      * @return the list of activations for each layer
      */
-    public List<INDArray> feedForward(INDArray input,boolean test) {
+    public List<INDArray> feedForward(INDArray input, boolean test) {
         this.input = input;
         return feedForward(test);
     }
@@ -568,6 +578,7 @@ protected Gradient gradient;
     /**
      * Compute input linear transformation (z)
      * Compute activations (applies activation transformation to z)
+     *
      * @return a pair of activations and corresponding derivatives
      */
     public Pair<List<INDArray>,List<INDArray>> feedForwardActivationsAndDerivatives(boolean training) {
@@ -580,8 +591,8 @@ protected Gradient gradient;
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
             //special case: row wise softmax
-            if(layers[i].conf().getActivationFunction().equals("softmax"))
-                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",currInput.dup()),1));
+            if (layers[i].conf().getActivationFunction().equals("softmax"))
+                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", currInput.dup()), 1));
             else
                 activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
         }
@@ -591,8 +602,8 @@ protected Gradient gradient;
             currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
             INDArray dup = currInput.dup();
             //special case: row wise softmax
-            if(layers[i].conf().getActivationFunction().equals("softmax"))
-                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative(),1));
+            if (layers[i].conf().getActivationFunction().equals("softmax"))
+                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative(), 1));
             else
                 derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative()));
         }
@@ -610,7 +621,7 @@ protected Gradient gradient;
     public List<INDArray> feedForward(INDArray input) {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
-        else if(this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
+        else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
             this.input = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input);
         else
             this.input = input;
@@ -620,7 +631,7 @@ protected Gradient gradient;
     @Override
     public Gradient gradient() {
         Gradient ret = new DefaultGradient();
-        for (int i = 0; i < layers.length; i ++) {
+        for (int i = 0; i < layers.length; i++) {
             ret.gradientForVariable().put(String.valueOf(i), layers[i].gradient().gradient());
         }
 
@@ -642,7 +653,7 @@ protected Gradient gradient;
     protected void applyDropConnectIfNecessary(INDArray input) {
         if (layerWiseConfigurations.isUseDropConnect()) {
             INDArray mean = Nd4j.valueArrayOf(input.slices(), input.columns(), 0.5);
-            INDArray mask =Nd4j.getDistributions().createBinomial(1,mean).sample(mean.shape());
+            INDArray mask = Nd4j.getDistributions().createBinomial(1, mean).sample(mean.shape());
             input.muli(mask);
             //apply l2 for drop connect
             if (defaultConfiguration.getL2() > 0)
@@ -682,7 +693,7 @@ protected Gradient gradient;
             deltas[i] = activations.get(i).transpose().mmul(rix);
 
             if (i > 0)
-                rix = rix.mmul(weights.get(i).addRowVector(biases.get(i)).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activations.get(i)).derivative()));
+                rix = rix.mmul(weights.get(i).addRowVector(biases.get(i)).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1), activations.get(i)).derivative()));
 
         }
 
@@ -759,7 +770,7 @@ protected Gradient gradient;
 
             if (i > 0) {
                 //W[i] + b[i] * f'(z[i - 1])
-                ix = ix.mmul(weights.get(i).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1),activations.get(i)).derivative()));
+                ix = ix.mmul(weights.get(i).transpose()).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFunctions.get(i - 1), activations.get(i)).derivative()));
             }
         }
 
@@ -774,7 +785,6 @@ protected Gradient gradient;
 
         return deltaRet;
     }
-
 
 
     /**
@@ -915,7 +925,6 @@ protected Gradient gradient;
     }
 
 
-
     /**
      * Unpacks a parameter matrix in to a
      * transform of pairs(w,hbias)
@@ -1031,9 +1040,9 @@ protected Gradient gradient;
             iter.reset();
             finetune(iter);
         }
-        if(layerWiseConfigurations.isBackward()) {
+        if (layerWiseConfigurations.isBackward()) {
             iter.reset();
-            while(iter.hasNext()) {
+            while (iter.hasNext()) {
                 DataSet next = iter.next();
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
@@ -1093,19 +1102,26 @@ protected Gradient gradient;
         }
 
 
-    public List<IterationListener> getListeners() {
+    public Collection<IterationListener> getListeners() {
         return listeners;
     }
 
-    public void setListeners(List<IterationListener> listeners) {
+    @Override
+    public void setListeners(Collection<IterationListener> listeners) {
         this.listeners = listeners;
 
-        if(layers == null) {
+        if (layers == null) {
             init();
         }
-        for(Layer layer : layers) {
+        for (Layer layer : layers) {
             layer.setListeners(listeners);
         }
+    }
+
+
+    @Override
+    public void setListeners(IterationListener... listeners) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -1134,7 +1150,7 @@ protected Gradient gradient;
                 if (getOutputLayer() instanceof OutputLayer) {
                     OutputLayer o = (OutputLayer) getOutputLayer();
                     o.setListeners(getListeners());
-                    o.fit(o.input(),getLabels());
+                    o.fit(o.input(), getLabels());
                 }
             } else {
                 throw new UnsupportedOperationException();
@@ -1171,9 +1187,7 @@ protected Gradient gradient;
             List<INDArray> activations = feedForward();
             o.setListeners(getListeners());
             o.fit(activations.get(activations.size() - 2), labels);
-        }
-
-        else {
+        } else {
             throw new UnsupportedOperationException();
         }
     }
@@ -1214,13 +1228,12 @@ protected Gradient gradient;
     /**
      * Fit the model
      *
-     * @param data the examples to classify (one example in each row)
-     * @param labels   the example labels(a binary outcome matrix)
+     * @param data   the examples to classify (one example in each row)
+     * @param labels the example labels(a binary outcome matrix)
      */
     @Override
     public void fit(INDArray data, INDArray labels) {
         setInput(data.dup());
-
 
 
         if (layerWiseConfigurations.isPretrain()) {
@@ -1275,7 +1288,7 @@ protected Gradient gradient;
     /**
      * Label the probabilities of the input
      *
-     * @param x the input to label
+     * @param x    the input to label
      * @param test whether the output
      *             is test or train. This mainly
      *             affect hyper parameters such as
@@ -1283,12 +1296,12 @@ protected Gradient gradient;
      *             be applied with activations
      * @return a vector of probabilities
      * given each label.
-     * <p/>
+     * <p>
      * This is typically of the form:
      * [0.5, 0.5] or some other probability distribution summing to one
      */
-    public INDArray output(INDArray x,boolean test) {
-        List<INDArray> activations = feedForward(x,test);
+    public INDArray output(INDArray x, boolean test) {
+        List<INDArray> activations = feedForward(x, test);
         //last activation is input
         return activations.get(activations.size() - 1);
     }
@@ -1299,7 +1312,7 @@ protected Gradient gradient;
      * @param x the input to label
      * @return a vector of probabilities
      * given each label.
-     * <p/>
+     * <p>
      * This is typically of the form:
      * [0.5, 0.5] or some other probability distribution summing to one
      */
@@ -1319,7 +1332,7 @@ protected Gradient gradient;
      * relative to the size of the last hidden layer.
      * This is great for data compression and visualizing
      * high dimensional data (or just doing dimensionality reduction).
-     * <p/>
+     * <p>
      * This is typically of the form:
      * [0.5, 0.5] or some other probability distribution summing to one
      */
@@ -1352,7 +1365,8 @@ protected Gradient gradient;
     public void update(MultiLayerNetwork network) {
         this.defaultConfiguration = network.defaultConfiguration;
         this.input = network.input;
-        this.labels = network.labels;this.layers = ArrayUtils.clone(network.layers);
+        this.labels = network.labels;
+        this.layers = ArrayUtils.clone(network.layers);
     }
 
 
@@ -1429,13 +1443,12 @@ protected Gradient gradient;
     public void accumulateScore(double accum) {
 
     }
-
-
+    
     /**
      * Clear the inputs
      */
     public void clear() {
-        for(Layer layer : layers)
+        for (Layer layer : layers)
             layer.clear();
 
 
@@ -1458,6 +1471,17 @@ protected Gradient gradient;
         return ret + regCost;
     }
 
+    /**
+     * Averages the given logistic regression
+     * from a mini batch in to this one
+     *
+     * @param layer     the logistic regression to average in to this one
+     * @param batchSize the batch size
+     */
+    @Override
+    public void merge(Layer layer, int batchSize) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Merges this network with the other one.
@@ -1495,13 +1519,13 @@ protected Gradient gradient;
      * @param input
      */
     public void setInput(INDArray input) {
-        if(getLayerWiseConfigurations().getInputPreProcess(0) != null)
+        if (getLayerWiseConfigurations().getInputPreProcess(0) != null)
             this.input = this.layerWiseConfigurations.getInputPreProcess(0).preProcess(input);
         else
-            this.input =  input;
-        if ( this.layers == null)
+            this.input = input;
+        if (this.layers == null)
             this.initializeLayers(getInput());
-        else if(this.input == null)
+        else if (this.input == null)
             this.input = input;
 
     }
@@ -1509,7 +1533,6 @@ protected Gradient gradient;
     private void initMask() {
         setMask(Nd4j.ones(1, pack().length()));
     }
-
 
 
     /**
@@ -1536,7 +1559,7 @@ protected Gradient gradient;
 
             int range = layer.numParams();
             INDArray get = params.get(NDArrayIndex.interval(idx, range + idx));
-            if(get.length() < 1)
+            if (get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
             layer.computeGradientAndScore();
@@ -1636,14 +1659,13 @@ protected Gradient gradient;
     }
 
 
-
-
     public void setLabels(INDArray labels) {
         this.labels = labels;
     }
 
     /**
      * Get the number of layers in the network
+     *
      * @return the number of layers in the network
      */
     public int getnLayers() {
@@ -1654,7 +1676,7 @@ protected Gradient gradient;
         return layers;
     }
 
-    public Layer getLayer( int i ){
+    public Layer getLayer(int i) {
         return layers[i];
     }
 
@@ -1669,11 +1691,114 @@ protected Gradient gradient;
     public void setMask(INDArray mask) {
         this.mask = mask;
     }
+    
+    //==========
+    //Layer methods
 
+    @Override
+    public Gradient error(INDArray errorSignal) {
+        throw new UnsupportedOperationException();
+    }
+    @Override
+    public Gradient errorSignal(Gradient error, INDArray input) {
+        throw new UnsupportedOperationException();
+    }
 
+        @Override
+    public Type type() {
+        return Type.MULTILAYER;
+    }
 
+    @Override
+    public INDArray derivativeActivation(INDArray input) {
+        throw new UnsupportedOperationException();
+    }
 
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray activation) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray preOutput(INDArray x) {
+        INDArray lastLayerActivation = x;
+        for( int i=0; i<layers.length-2; i++ ){
+        	lastLayerActivation = layers[i].activate(lastLayerActivation);
+        }
+        return layers[layers.length-1].preOutput(x);
+    }
+
+    @Override
+    public Layer transpose() {
+        throw new UnsupportedOperationException();
+    }
+    @Deprecated
+    @Override
+    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
+        throw new UnsupportedOperationException();
+    }
+
+    // TODO move this to compute gradient
+    @Override
+    public Pair<Gradient, INDArray> backwardGradient(Gradient nextGradient, INDArray weights) {
+    	//Pair<Gradient,INDArray> backwardGradient(INDArray epsilon)
+    	INDArray currEpsilon = null;//= epsilon;
+
+    	Gradient outputGradient = new DefaultGradient();
+    	Map<String,INDArray> gradientMap = outputGradient.gradientForVariable();
+    	for( int i=layers.length-1; i>=0; i-- ){
+    		Pair<Gradient,INDArray> out = null;	//layers[i].backwardGradient(currEpsilon);
+    		currEpsilon = out.getSecond();
+
+    		Map<String,INDArray> layerGradMap = out.getFirst().gradientForVariable();
+    		for( Map.Entry<String, INDArray> entry : layerGradMap.entrySet() ){
+    			String newKey = String.valueOf(i) + "_" + entry.getKey();
+    			gradientMap.put(newKey, entry.getValue());
+    		}
+    	}
+
+//    	return new Pair<>(outputGradient,currEpsilon);
+    	return null;
+    }
+
+    @Override
+    public void setIndex(int index){
+        layerIndex = index;
+    }
+
+    @Override
+    public int getIndex(){
+        return layerIndex;
+    }
+
+	@Override
+	public double l2Magnitude() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public double l1Magnitude() {
+		throw new UnsupportedOperationException();
+	}
+
+    @Override
+    public void update(Gradient gradient) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray preOutput(INDArray x, boolean training) {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        throw new UnsupportedOperationException();
+    }
 }
-
-
-

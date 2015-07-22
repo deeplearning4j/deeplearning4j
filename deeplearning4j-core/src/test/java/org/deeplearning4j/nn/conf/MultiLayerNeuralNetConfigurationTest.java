@@ -135,11 +135,11 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         Layer[] l1 = model1.getLayers();
         for( int i = 0; i < l1.length; i++ )
-            assertTrue(l1[i].getIterationListeners() != null && l1[i].getIterationListeners().size() == 1);
+            assertTrue(l1[i].getListeners() != null && l1[i].getListeners().size() == 1);
 
         Layer[] l2 = model2.getLayers();
         for( int i = 0; i < l2.length; i++ )
-            assertTrue(l2[i].getIterationListeners() != null && l2[i].getIterationListeners().size() == 1);
+            assertTrue(l2[i].getListeners() != null && l2[i].getListeners().size() == 1);
     }
 
 

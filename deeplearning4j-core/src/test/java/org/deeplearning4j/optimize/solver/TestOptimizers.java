@@ -751,7 +751,7 @@ public class TestOptimizers {
 				Gradient deltas, INDArray activation, String previousActivation) { throw new UnsupportedOperationException(); }
 
 		@Override
-		public Collection<IterationListener> getIterationListeners() { return null; }
+		public Collection<IterationListener> getListeners() { return null; }
 
 		@Override
 		public void setListeners(Collection<IterationListener> listeners) { throw new UnsupportedOperationException(); }
