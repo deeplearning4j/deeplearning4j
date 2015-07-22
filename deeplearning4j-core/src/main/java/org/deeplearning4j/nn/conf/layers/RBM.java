@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -52,37 +53,68 @@ import org.deeplearning4j.nn.weights.WeightInit;
 public class RBM extends BasePretrainNetwork {
 
     private static final long serialVersionUID = 485040309806445606L;
-
     private HiddenUnit hidden;
     private VisibleUnit visible;
     private int k;
 
     public enum VisibleUnit {
-        BINARY,GAUSSIAN,SOFTMAX,LINEAR
+        BINARY, GAUSSIAN, SOFTMAX, LINEAR
     }
-
     public enum HiddenUnit {
-        RECTIFIED,BINARY,GAUSSIAN,SOFTMAX
+        RECTIFIED, BINARY, GAUSSIAN, SOFTMAX
     }
 
-    public RBM(HiddenUnit hiddenFunction, VisibleUnit visibleFunction) {
-        this.hidden = hiddenFunction;
-        this.visible = visibleFunction;
+    // Builder
+    private RBM(Builder builder) {
+        this.hidden = builder.hidden;
+        this.visible = builder.visible;
+        this.k = builder.k;
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
 
-    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction) {
-        this.nIn = nIn; // number of visible units
-        this.nOut = nOut; // number of hidden units
-        this.hidden = hiddenFunction;
-        this.visible = visibleFunction;
-    }
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder {
+        private HiddenUnit hidden;
+        private VisibleUnit visible;
+        private int k;
 
-    // contrastiveConvergenceIterations by default is 1
-    public RBM(int nIn, int nOut, HiddenUnit hiddenFunction, VisibleUnit visibleFunction, int contrastiveConvergenceIterations) {
-        this.nIn = nIn; // number of visible units
-        this.nOut = nOut; // number of hidden units
-        this.hidden = hiddenFunction;
-        this.visible = visibleFunction;
-        this.k = contrastiveConvergenceIterations;
+        public Builder(HiddenUnit hidden, VisibleUnit visible) {
+            this.hidden = hidden;
+            this.visible = visible;
+        }
+
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+        @Override
+        @SuppressWarnings("unchecked")
+        public RBM build() {
+            return new RBM(this);
+        }
     }
 }
