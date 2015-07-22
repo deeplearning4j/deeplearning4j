@@ -35,6 +35,7 @@ public class layerBuilderTest {
         Convolution.Type convType = Convolution.Type.FULL;
 
         ConvolutionLayer conv = new ConvolutionLayer.Builder(filterSize, filterDepth, convType).activation(act).build();
+
         SubsamplingLayer sample = new SubsamplingLayer.Builder(poolType, filterSize, stride).build();
         RBM rbm = new RBM.Builder(hidden, visible, k).nIn(numIn).nOut(numOut).build();
         OutputLayer out = new OutputLayer.Builder(LossFunction.MCXENT).nIn(numIn).nOut(numOut).activation(act).dropOut(drop).build();

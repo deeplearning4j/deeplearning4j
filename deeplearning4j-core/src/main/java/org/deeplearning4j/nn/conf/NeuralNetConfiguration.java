@@ -841,6 +841,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.rho = rho;
             ret.updater = updater;
             ret.channels = channels;
+            //override the properties from the layer
+            if(layer != null) {
+                Class<? extends Layer> layerClazz = layer.getClass();
+                Field[] neuralNetConfFields = NeuralNetConfiguration.class.getDeclaredFields();
+                Field[] layerFields = layerClazz.getDeclaredFields();
+                for(Field neuralNetField : neuralNetConfFields) {
+                    for(Field layerField : layerFields) {
+                        if(neuralNetField.getName().equals(layerField.getName())) {
+                            try {
+                                Object valForConfig = neuralNetField.get(this);
+                                Object layerFieldValue = layerField.get(layer);
+                                if(layerFieldValue != null) {
+                                    if(valForConfig.getClass().isAssignableFrom(layerFieldValue.getClass())) {
+                                        neuralNetField.set(this,layerFieldValue);
+                                    }
+                                }
+                            } catch(Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }
+                }
+            }
+
             return ret;
         }
 
