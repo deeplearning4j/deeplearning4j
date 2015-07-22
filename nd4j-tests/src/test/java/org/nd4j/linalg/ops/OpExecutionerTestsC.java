@@ -376,7 +376,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertFalse(softmax.z().equals(softmax.x()));
         //original x not modified
         assertFalse(softmax.z().equals(linspace));
-        
+
 
     }
 

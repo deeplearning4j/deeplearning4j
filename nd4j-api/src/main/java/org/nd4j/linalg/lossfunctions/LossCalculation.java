@@ -20,6 +20,7 @@ class LossCalculation {
     private LossFunctions.LossFunction lossFunction;
     private boolean useRegularization;
     private INDArray delta;
+    private boolean miniBatch = false;
 
     public double score() {
         double ret = 0.0;
@@ -74,8 +75,8 @@ class LossCalculation {
             ret += l1 * l1Magnitude;
         }
 
-
-        //ret /= (double) labels.rows();
+        if(miniBatch)
+            ret /= (double) labels.rows();
         return ret;
     }
 
