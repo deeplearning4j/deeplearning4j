@@ -70,17 +70,17 @@ object Implicits {
   case object ---> extends IndexRange
 
   implicit class IntRange(val underlying: Int) extends IndexNumberRange {
-    protected[api] override def asRange(max: => Int): DRange = DRange(underlying, underlying, 1, max)
+    protected[api] override def asRange(max: => Int): DRange = DRange(underlying, underlying, true, 1, max)
 
     override def toString: String = s"$underlying"
   }
 
   implicit class TupleRange(val underlying: _root_.scala.Tuple2[Int, Int]) extends IndexNumberRange {
-    protected[api] override def asRange(max: => Int): DRange = DRange(underlying._1, underlying._2, 1, max)
+    protected[api] override def asRange(max: => Int): DRange = DRange(underlying._1, underlying._2, false, 1, max)
 
     override def toString: String = s"${underlying._1}->${underlying._2}"
 
-    def by(i: Int) = new IndexRangeWrapper(underlying._1 to underlying._2 by i)
+    def by(i: Int) = new IndexRangeWrapper(underlying._1 until underlying._2 by i)
   }
 
   implicit class IntRangeFromGen(val underlying: Int) extends AnyVal {
@@ -89,6 +89,7 @@ object Implicits {
 
   implicit class IndexRangeWrapper(val underlying: Range) extends IndexNumberRange {
     protected[api] override def asRange(max: => Int): DRange = DRange.from(underlying, max)
+
     override def toString: String = s"${underlying.start}->${underlying.end} by ${underlying.step}"
   }
 
@@ -107,21 +108,22 @@ case class IntRangeFrom(underlying: Int) extends IndexRange {
   override def toString: String = s"$underlying->"
 }
 
-private[api] case class DRange(startR: Int, endR: Int, step: Int, max: Int) {
+private[api] case class DRange(startR: Int, endR: Int, isInclusive: Boolean, step: Int, max: Int) {
   lazy val (start, end) = {
     val start = if (startR >= 0) startR else max + startR
-    val end = if (endR >= 0) endR else max + endR
-    (start, end)
+    val diff = if (isInclusive) 0 else if (step >= 0) -1 else +1
+    val endInclusive = if (endR >= 0) endR + diff else max + endR + diff
+    (start, endInclusive)
   }
-  lazy val length = (end - start) / step + 1
+  lazy val length = (end  - start) / step + 1
 
   def toList: List[Int] = List.iterate(start, length)(_ + step)
 
-  override def toString: String = s"${getClass.getSimpleName}(start:$start,end:$end,step:$step,length:$length)"
+  override def toString: String = s"${getClass.getSimpleName}(start:$start,endIncl:$end,step:$step,length:$length)"
 }
 
 private[api] object DRange extends {
-  def from(r: Range, max: => Int): DRange = DRange(r.start, r.end, r.step, max)
+  def from(r: Range, max: => Int): DRange = DRange(r.start, r.end, r.isInclusive, r.step, max)
 
-  def apply(startR: Int, endR: Int, step: Int): DRange = DRange(startR, endR, step, Int.MinValue)
+  def apply(startR: Int, endR: Int, step: Int): DRange = DRange(startR, endR, false, step, Int.MinValue)
 }

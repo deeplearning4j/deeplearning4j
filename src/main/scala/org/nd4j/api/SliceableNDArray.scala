@@ -21,13 +21,13 @@ trait SliceableNDArray {
 
     @tailrec
     def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[DRange]): List[DRange] = input match {
-      case -> :: t => modifyTargetIndices(t, i + 1, DRange(0, originalShape(i) - 1, 1) :: acc)
+      case -> :: t => modifyTargetIndices(t, i + 1, DRange(0, originalShape(i), 1) :: acc)
       case ---> :: t =>
         val ellipsised = List.fill(originalShape.length - i - t.size)(->)
         modifyTargetIndices(ellipsised ::: t, i, acc)
       case IntRangeFrom(from: Int) :: t =>
         val max = originalShape(i)
-        modifyTargetIndices(t, i + 1, DRange(from, max - 1, 1, max) :: acc)
+        modifyTargetIndices(t, i + 1, DRange(from, max, false, 1, max) :: acc)
       case (inr: IndexNumberRange) :: t =>
         modifyTargetIndices(t, i + 1, inr.asRange(originalShape(i)) :: acc)
 
@@ -40,10 +40,6 @@ trait SliceableNDArray {
         Array(1, modifiedTarget.head.length)
       else
         modifiedTarget.map(_.length).toArray
-
-    (modifiedTarget zip underlying.stride()).collect {
-      case (range, stride) => range.toList
-    }
 
     def calcIndices(tgt: List[DRange], stride: List[Int]): List[Int] =
       (tgt.reverse zip stride).collect {

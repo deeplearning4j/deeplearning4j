@@ -19,7 +19,7 @@ class NDArrayExtractionTest extends FlatSpec {
     Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray = (1 to 9).asNDArray(3, 3)
 
-    val extracted = ndArray(1 -> 2, 0 -> 1)
+    val extracted = ndArray(1 -> 3, 0 -> 2)
     assert(extracted.rows() == 2)
     assert(extracted.columns() == 2)
 
@@ -34,7 +34,7 @@ class NDArrayExtractionTest extends FlatSpec {
     Nd4j.factory().setOrder(NDOrdering.Fortran.value)
     val ndArray = (1 to 9).asNDArray(3, 3)
 
-    val extracted = ndArray(1 -> 2, 0 -> 1)
+    val extracted = ndArray(1 -> 3, 0 -> 2)
     assert(extracted.rows() == 2)
     assert(extracted.columns() == 2)
 
@@ -49,7 +49,7 @@ class NDArrayExtractionTest extends FlatSpec {
     Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray = (1 to 8).asNDArray(2, 2, 2)
 
-    val extracted = ndArray(0, 0 -> 1, ->)
+    val extracted = ndArray(0, 0 -> 2, ->)
     val lv = extracted.linearView()
     assert(lv.getFloat(0) == 1)
     assert(lv.getFloat(1) == 3)
@@ -61,7 +61,7 @@ class NDArrayExtractionTest extends FlatSpec {
     Nd4j.factory().setOrder(NDOrdering.Fortran.value)
     val ndArray = (1 to 8).asNDArray(2, 2, 2)
 
-    val extracted = ndArray(0, 0 -> 1, ->)
+    val extracted = ndArray(0, 0 -> 2, ->)
     val lv = extracted.linearView()
     assert(lv.getFloat(0) == 1)
     assert(lv.getFloat(1) == 5)
@@ -106,15 +106,17 @@ class NDArrayExtractionTest extends FlatSpec {
     assert(ellipsisedOneHand == notEllipsisedOneHand)
   }
 
-  it should "be able to extract submatrix with index range by step in C ordering" in{
+  it should "be able to extract submatrix with index range by step in C ordering" in {
     Nd4j.factory().setOrder(NDOrdering.C.value)
-    val ndArray = (1f to 9f by 1).asNDArray(3,3)
+    val ndArray = (1f to 9f by 1).asNDArray(3, 3)
 
-    val extracted = ndArray(0->3 by 2,->)
-    val extractedWithRange = ndArray(0 to 3 by 2,->)
+    val extracted = ndArray(0 -> 3 by 2, ->)
+    val extractedWithRange = ndArray(0 until 3 by 2, ->)
+    val extractedWithInclusiveRange = ndArray(0 to 2 by 2, ->)
 
     val lv = extracted.linearView()
     assert(extracted == extractedWithRange)
+    assert(extracted == extractedWithInclusiveRange)
     assert(lv.getFloat(0) == 1)
     assert(lv.getFloat(1) == 3)
     assert(lv.getFloat(2) == 4)
@@ -122,13 +124,23 @@ class NDArrayExtractionTest extends FlatSpec {
     assert(lv.getFloat(4) == 7)
     assert(lv.getFloat(5) == 9)
 
-    val list = (0f to 9f by 1).asNDArray(1,10)
-    val filtered = list(-2 -> 9).linearView()
+    /*
+     Equivalent with NumPy document examples.
+     @see http://docs.scipy.org/doc/numpy/reference/arrays.indexing.html#basic-slicing-and-indexing
+    */
+    val list = (0 to 9).toNDArray
+    val step = list(1 -> 7 by 2).linearView()
+    assert(step.length() == 3)
+    assert(step.getFloat(0)== 1)
+    assert(step.getFloat(1)== 3)
+    assert(step.getFloat(2)== 5)
+
+    val filtered = list(-2 -> 10).linearView()
     assert(filtered.length() == 2)
     assert(filtered.getFloat(0) == 8)
     assert(filtered.getFloat(1) == 9)
 
-    val nStep = list(-3 -> 4 by -1).linearView()
+    val nStep = list(-3 -> 3 by -1).linearView()
     assert(nStep.length() == 4)
     assert(nStep.getFloat(0) == 7)
     assert(nStep.getFloat(1) == 6)
