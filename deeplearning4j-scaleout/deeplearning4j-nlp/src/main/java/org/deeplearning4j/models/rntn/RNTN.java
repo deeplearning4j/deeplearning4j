@@ -1163,7 +1163,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+    public Pair<Gradient,INDArray> backwardGradient(Gradient nextGradient, INDArray weights) {
         return null;
     }
 
