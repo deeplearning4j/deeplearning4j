@@ -15,29 +15,62 @@ class NDArrayExtractionTest extends FlatSpec {
     assert(!(ndArray > 5))
   }
 
-  it should "be able to extract a part of 2d matrix" in {
-    val ndArray = List(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f).asNDArray(3, 3)
+  it should "be able to extract a part of 2d matrix in C ordering" in {
+    Nd4j.factory().setOrder(NDOrdering.C.value)
+    val ndArray = (1 to 9).asNDArray(3, 3)
 
     val extracted = ndArray(1 -> 2, 0 -> 1)
     assert(extracted.rows() == 2)
     assert(extracted.columns() == 2)
-    assert(extracted.getFloat(0) == 2)
-    assert(extracted.getFloat(1) == 3)
-    assert(extracted.getFloat(2) == 5)
-    assert(extracted.getFloat(3) == 6)
+
+    val lv = extracted.linearView()
+    assert(lv.getFloat(0) == 2)
+    assert(lv.getFloat(1) == 3)
+    assert(lv.getFloat(2) == 5)
+    assert(lv.getFloat(3) == 6)
   }
 
-  it should "be able to extract a part of 3d matrix" in {
-    val ndArray = (1f to 8f by 1).asNDArray(2, 2, 2)
+  it should "be able to extract a part of 2d matrix in Fortran ordering" in {
+    Nd4j.factory().setOrder(NDOrdering.Fortran.value)
+    val ndArray = (1 to 9).asNDArray(3, 3)
+
+    val extracted = ndArray(1 -> 2, 0 -> 1)
+    assert(extracted.rows() == 2)
+    assert(extracted.columns() == 2)
+
+    val lv = extracted.linearView()
+    assert(lv.getFloat(0) == 2)
+    assert(lv.getFloat(1) == 5)
+    assert(lv.getFloat(2) == 3)
+    assert(lv.getFloat(3) == 6)
+  }
+
+  it should "be able to extract a part of 3d matrix in C ordering" in {
+    Nd4j.factory().setOrder(NDOrdering.C.value)
+    val ndArray = (1 to 8).asNDArray(2, 2, 2)
 
     val extracted = ndArray(0, 0 -> 1, ->)
-    assert(extracted.getFloat(0) == 1)
-    assert(extracted.getFloat(1) == 3)
-    assert(extracted.getFloat(2) == 5)
-    assert(extracted.getFloat(3) == 7)
+    val lv = extracted.linearView()
+    assert(lv.getFloat(0) == 1)
+    assert(lv.getFloat(1) == 3)
+    assert(lv.getFloat(2) == 5)
+    assert(lv.getFloat(3) == 7)
   }
 
-  it should "return original NDArray if indexRange is all in 2d matrix" in {
+  it should "be able to extract a part of 3d matrix in Fortran ordering" in {
+    Nd4j.factory().setOrder(NDOrdering.Fortran.value)
+    val ndArray = (1 to 8).asNDArray(2, 2, 2)
+
+    val extracted = ndArray(0, 0 -> 1, ->)
+    val lv = extracted.linearView()
+    assert(lv.getFloat(0) == 1)
+    assert(lv.getFloat(1) == 5)
+    assert(lv.getFloat(2) == 3)
+    assert(lv.getFloat(3) == 7)
+  }
+
+  it should "return original NDArray if indexRange is all in 2d matrix in C ordering" in {
+    Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray = (1f to 9f by 1).asNDArray(3, 3)
     val extracted = ndArray(->, ->)
     assert(ndArray == extracted)
@@ -46,7 +79,8 @@ class NDArrayExtractionTest extends FlatSpec {
     assert(ellipsised == ndArray)
   }
 
-  it should "return original NDArray if indexRange is all in 3d matrix" in {
+  it should "return original NDArray if indexRange is all in 3d matrix in C ordering" in {
+    Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray = (1f to 8f by 1).asNDArray(2, 2, 2)
     val extracted = ndArray(->, ->, ->)
     assert(ndArray == extracted)
@@ -55,7 +89,8 @@ class NDArrayExtractionTest extends FlatSpec {
     assert(ellipsised == ndArray)
   }
 
-  it should "accept partially ellipsis indices" in {
+  it should "accept partially ellipsis indices in C ordering" in {
+    Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray = (1f to 8f by 1).asNDArray(2, 2, 2)
 
     val ellipsised = ndArray(--->, 0)
@@ -71,31 +106,39 @@ class NDArrayExtractionTest extends FlatSpec {
     assert(ellipsisedOneHand == notEllipsisedOneHand)
   }
 
-  it should "be able to extract submatrix with index range by step" in{
+  it should "be able to extract submatrix with index range by step in C ordering" in{
+    Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray = (1f to 9f by 1).asNDArray(3,3)
 
     val extracted = ndArray(0->3 by 2,->)
     val extractedWithRange = ndArray(0 to 3 by 2,->)
 
+    val lv = extracted.linearView()
     assert(extracted == extractedWithRange)
-    assert(extracted.getFloat(0) == 1)
-    assert(extracted.getFloat(1) == 3)
-    assert(extracted.getFloat(2) == 4)
-    assert(extracted.getFloat(3) == 6)
-    assert(extracted.getFloat(4) == 7)
-    assert(extracted.getFloat(5) == 9)
+    assert(lv.getFloat(0) == 1)
+    assert(lv.getFloat(1) == 3)
+    assert(lv.getFloat(2) == 4)
+    assert(lv.getFloat(3) == 6)
+    assert(lv.getFloat(4) == 7)
+    assert(lv.getFloat(5) == 9)
 
-    val list = (0f to 9f by 1).asNDArray(10)
-    val filtered = list(-2 -> 9)
+    val list = (0f to 9f by 1).asNDArray(1,10)
+    val filtered = list(-2 -> 9).linearView()
     assert(filtered.length() == 2)
     assert(filtered.getFloat(0) == 8)
     assert(filtered.getFloat(1) == 9)
 
-    val nStep = list(-3 -> 4 by -1)
+    val nStep = list(-3 -> 4 by -1).linearView()
     assert(nStep.length() == 4)
     assert(nStep.getFloat(0) == 7)
     assert(nStep.getFloat(1) == 6)
     assert(nStep.getFloat(2) == 5)
     assert(nStep.getFloat(3) == 4)
+  }
+
+  "num2Scalar" should "convert number to Scalar INDArray" in {
+    assert(1.toScalar == List(1).toNDArray)
+    assert(2f.toScalar == List(2).toNDArray)
+    assert(3d.toScalar == List(3).toNDArray)
   }
 }
