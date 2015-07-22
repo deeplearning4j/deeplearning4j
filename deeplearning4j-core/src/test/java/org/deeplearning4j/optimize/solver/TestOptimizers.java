@@ -29,9 +29,12 @@ import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.Cos;
+import org.nd4j.linalg.api.ops.impl.transforms.Sin;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -192,13 +195,13 @@ public class TestOptimizers {
 	private static ConvexOptimizer getOptimizer( OptimizationAlgorithm oa, NeuralNetConfiguration conf, Model m ){
 		switch(oa){
 		case STOCHASTIC_GRADIENT_DESCENT:
-			return new StochasticGradientDescent(conf,new DefaultStepFunction(),null,m);
+			return new StochasticGradientDescent(conf,new NegativeDefaultStepFunction(),null,m);
 		case LINE_GRADIENT_DESCENT:
-			return new LineGradientDescent(conf,new DefaultStepFunction(),null,m);
+			return new LineGradientDescent(conf,new NegativeDefaultStepFunction(),null,m);
 		case CONJUGATE_GRADIENT:
-			return new ConjugateGradient(conf,new DefaultStepFunction(),null,m);
+			return new ConjugateGradient(conf,new NegativeDefaultStepFunction(),null,m);
 		case LBFGS:
-			return new LBFGS(conf,new DefaultStepFunction(),null,m);
+			return new LBFGS(conf,new NegativeDefaultStepFunction(),null,m);
 		default:
 			throw new UnsupportedOperationException();
 		}
@@ -292,6 +295,11 @@ public class TestOptimizers {
 			Gradient g = new DefaultGradient();
 			g.gradientForVariable().put("x", gradient);
 			return g;
+		}
+
+		@Override
+		public void setListeners(IterationListener... listeners) {
+
 		}
 	}
 	
@@ -391,13 +399,13 @@ public class TestOptimizers {
 			if( nExceeds512 > 0 ) return Double.POSITIVE_INFINITY;
 			
 			//Otherwise:
-			int nDim = parameters.length();
 			double costFn = 10*parameters.length();
+			costFn += Nd4j.getBlasWrapper().dot(parameters,parameters);	//xi*xi
+			INDArray temp = parameters.mul(2.0*Math.PI);
+			Nd4j.getExecutioner().exec(new Cos(temp));
+			temp.muli(-10.0);	//After this: each element is -10*cos(2*Pi*xi)
+			costFn += temp.sum(Integer.MAX_VALUE).getDouble(0);
 			
-			for( int i=0; i<nDim; i++ ){
-				double xi = parameters.getDouble(i);
-				costFn += xi*xi - 10.0*Math.cos(2.0*Math.PI*xi);
-			}
 			return costFn;
 		}
 
@@ -406,16 +414,19 @@ public class TestOptimizers {
 			//Gradient decomposes due to sum, so:
 			//d(x^2 - 10*cos(2*Pi*x))/dx
 			// = 2x + 20*pi*sin(2*Pi*x)
-			int nDim = parameters.length();
-			INDArray gradient = Nd4j.zeros(nDim);
-			for( int i=0; i<nDim; i++ ){
-				double xi = parameters.getDouble(i);
-				double g = 2*xi + 20*Math.PI*Math.sin(2*Math.PI*xi);
-				gradient.put(0, i, g);
-			}
+			INDArray gradient = parameters.mul(2*Math.PI);
+			Nd4j.getExecutioner().exec(new Sin(gradient));
+			gradient.muli(20*Math.PI);
+			gradient.addi(parameters.mul(2));
+			
 			Gradient g = new DefaultGradient();
 			g.gradientForVariable().put("x", gradient);
 			return g;
+		}
+
+		@Override
+		public void setListeners(IterationListener... listeners) {
+
 		}
 	}
 	
@@ -548,6 +559,11 @@ public class TestOptimizers {
 			g.gradientForVariable().put("x", gradient);
 			return g;
 		}
+
+		@Override
+		public void setListeners(IterationListener... listeners) {
+
+		}
 	}
 	
 	
@@ -577,6 +593,41 @@ public class TestOptimizers {
 		}
 
 		@Override
+		public void setListeners(IterationListener... listeners) {
+
+		}
+
+		@Override
+		public void update(Gradient gradient) {
+
+		}
+
+		@Override
+		public INDArray preOutput(INDArray x, boolean training) {
+			return null;
+		}
+
+		@Override
+		public INDArray activate(boolean training) {
+			return null;
+		}
+
+		@Override
+		public INDArray activate(INDArray input, boolean training) {
+			return null;
+		}
+
+		@Override
+		public double score() {
+			return 0;
+		}
+
+		@Override
+		public Gradient gradient() {
+			return null;
+		}
+
+		@Override
 		public double l2Magnitude() {
 			return 0;
 		}
@@ -587,7 +638,7 @@ public class TestOptimizers {
 		}
 
 		@Override
-		public void setScore() { }
+		public void computeGradientAndScore() { }
 
 		@Override
 		public void accumulateScore(double accum) { throw new UnsupportedOperationException(); }
@@ -671,8 +722,8 @@ public class TestOptimizers {
 		public Gradient errorSignal(Gradient error, INDArray input){ throw new UnsupportedOperationException(); }
 
 		@Override
-		public Gradient backwardGradient(INDArray z, Layer nextLayer,
-				Gradient nextGradient, INDArray activation) { throw new UnsupportedOperationException(); }
+		public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights){
+			throw new UnsupportedOperationException(); }
 
 		@Override
 		public void merge(Layer layer, int batchSize) { throw new UnsupportedOperationException(); }
