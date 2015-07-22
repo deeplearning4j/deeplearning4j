@@ -40,9 +40,11 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.rng.DefaultRandom;
+import org.deeplearning4j.util.Dl4jReflection;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -91,7 +93,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //weight init scheme, this can either be a distribution or a applyTransformToDestination scheme
     protected WeightInit weightInit = WeightInit.XAVIER;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-    protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+    public LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
     /* RNG for sampling. */
@@ -125,6 +127,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     //convolutional nets: this is the feature map shape
     private int[] filterSize = {2,2};
+    private int filterDepth = 5;
     //aka pool size for subsampling
     private int[] stride = {2,2};
     //kernel size for a convolutional net
@@ -175,6 +178,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
                                   int[] filterSize,
+                                  int filterDepth,
                                   int[] stride,
                                   int[] featureMapSize,
                                   int kernel,
@@ -230,6 +234,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         else
             this.weightShape = new int[]{nIn,nOut};
         this.filterSize = filterSize;
+        this.filterDepth = filterDepth;
         this.stride = stride;
     }
 
@@ -504,7 +509,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 5;
         private int[] weightShape;
-        private int[] filterSize = {2,2,2,2};
+        private int[] filterSize = {2,2};
+        private int filterDepth = 5;
+        @Deprecated
         private int[] featureMapSize = {2,2};
         //subsampling layers
         private int[] stride = {2,2};
@@ -662,16 +669,21 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
         public Builder stride(int[] stride) {
+            if(stride.length != 2)
+                throw new IllegalArgumentException("Invalid stride  must be length 2");
             this.stride = stride;
             return this;
         }
 
         public Builder filterSize(int...filterSize) {
-            if(filterSize == null)
-                return this;
-            if(filterSize.length != 4)
-                throw new IllegalArgumentException("Invalid filter size must be length 4");
+            if(filterSize.length != 2)
+                throw new IllegalArgumentException("Invalid filter size must be length 2");
             this.filterSize = filterSize;
+            return this;
+        }
+
+        public Builder filterDepth(int filterDepth) {
+            this.filterDepth = filterDepth;
             return this;
         }
 
@@ -831,7 +843,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  rng, seed,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize,stride,featureMapSize,kernel
+                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize, filterDepth, stride,featureMapSize,kernel
                     ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
                     l1,customLossFunction);
             ret.useAdaGrad = this.useAdaGrad;
@@ -844,17 +856,20 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             //override the properties from the layer
             if(layer != null) {
                 Class<? extends Layer> layerClazz = layer.getClass();
-                Field[] neuralNetConfFields = NeuralNetConfiguration.class.getDeclaredFields();
-                Field[] layerFields = layerClazz.getDeclaredFields();
+                Field[] neuralNetConfFields = Dl4jReflection.getAllFields(NeuralNetConfiguration.class);
+                Field[] layerFields = Dl4jReflection.getAllFields(layerClazz);
                 for(Field neuralNetField : neuralNetConfFields) {
+                    neuralNetField.setAccessible(true);
                     for(Field layerField : layerFields) {
+                        layerField.setAccessible(true);
                         if(neuralNetField.getName().equals(layerField.getName())) {
                             try {
-                                Object valForConfig = neuralNetField.get(this);
+                                Object valForConfig = neuralNetField.get(ret);
                                 Object layerFieldValue = layerField.get(layer);
                                 if(layerFieldValue != null) {
-                                    if(valForConfig.getClass().isAssignableFrom(layerFieldValue.getClass())) {
-                                        neuralNetField.set(this,layerFieldValue);
+                                    if(valForConfig.getClass().equals(layerFieldValue.getClass())) {
+                                        System.out.println(neuralNetField);
+                                        neuralNetField.set(ret, layerFieldValue);
                                     }
                                 }
                             } catch(Exception e) {

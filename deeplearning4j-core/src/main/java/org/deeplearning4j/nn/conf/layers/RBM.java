@@ -53,9 +53,9 @@ import org.deeplearning4j.nn.weights.WeightInit;
 public class RBM extends BasePretrainNetwork {
 
     private static final long serialVersionUID = 485040309806445606L;
-    private HiddenUnit hidden;
-    private VisibleUnit visible;
-    private int k;
+    protected HiddenUnit hiddenUnit;
+    protected VisibleUnit visibleUnit;
+    protected int k;
 
     public enum VisibleUnit {
         BINARY, GAUSSIAN, SOFTMAX, LINEAR
@@ -66,8 +66,8 @@ public class RBM extends BasePretrainNetwork {
 
     // Builder
     private RBM(Builder builder) {
-        this.hidden = builder.hidden;
-        this.visible = builder.visible;
+        this.hiddenUnit = builder.hiddenUnit;
+        this.visibleUnit = builder.visibleUnit;
         this.k = builder.k;
         this.nIn = builder.nIn;
         this.nOut = builder.nOut;
@@ -77,13 +77,13 @@ public class RBM extends BasePretrainNetwork {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private HiddenUnit hidden;
-        private VisibleUnit visible;
+        private HiddenUnit hiddenUnit;
+        private VisibleUnit visibleUnit;
         private int k;
 
-        public Builder(HiddenUnit hidden, VisibleUnit visible) {
-            this.hidden = hidden;
-            this.visible = visible;
+        public Builder(HiddenUnit hiddenUnit, VisibleUnit visibleUnit) {
+            this.hiddenUnit = hiddenUnit;
+            this.visibleUnit = visibleUnit;
         }
 
         @Override
@@ -98,8 +98,7 @@ public class RBM extends BasePretrainNetwork {
         }
         @Override
         public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
+            throw new UnsupportedOperationException("RBM does not accept activation");
         }
         @Override
         public Builder weightInit(WeightInit weightInit) {

@@ -14,9 +14,9 @@ import org.nd4j.linalg.convolution.Convolution;
 public class ConvolutionLayer extends Layer {
 
     private static final long serialVersionUID = 3073633667258683720L;
-    private int[] filterSize; // Square filter
-    private int filterDepth; // Depth of the each column of neurons
-    private Convolution.Type convolutionType; // FULL / VALID / SAME
+    protected int[] filterSize; // Square filter
+    protected int filterDepth; // Depth of the each column of neurons
+    protected Convolution.Type convolutionType; // FULL / VALID / SAME
 
     private ConvolutionLayer(Builder builder) {
         this.filterSize = builder.filterSize;
@@ -52,6 +52,7 @@ public class ConvolutionLayer extends Layer {
         public Builder dropOut(double dropOut) {
             throw new UnsupportedOperationException("ConvolutionLayer Layer does not accept dropout");
         }
+
         @Override
         @SuppressWarnings("unchecked")
         public ConvolutionLayer build() {
