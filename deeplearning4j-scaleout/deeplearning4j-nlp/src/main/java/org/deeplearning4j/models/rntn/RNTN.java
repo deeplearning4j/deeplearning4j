@@ -1208,6 +1208,11 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public void update(Gradient gradient) {
+
+    }
+
+    @Override
     public NeuralNetConfiguration conf() {
         return null;
     }

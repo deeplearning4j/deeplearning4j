@@ -593,6 +593,16 @@ public class TestOptimizers {
 		}
 
 		@Override
+		public void setListeners(IterationListener... listeners) {
+
+		}
+
+		@Override
+		public void update(Gradient gradient) {
+
+		}
+
+		@Override
 		public INDArray preOutput(INDArray x, boolean training) {
 			return null;
 		}
