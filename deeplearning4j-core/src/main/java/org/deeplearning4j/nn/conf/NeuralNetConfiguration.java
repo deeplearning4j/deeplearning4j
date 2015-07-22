@@ -141,6 +141,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //number of channels for a conv net
     protected int channels = 1;
 
+    protected boolean miniBatch = false;
+
 
     protected ConvolutionLayer.ConvolutionType convolutionType = ConvolutionLayer.ConvolutionType.MAX;
 
@@ -515,7 +517,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double rho;
         private Updater updater = Updater.ADAGRAD;
         private int channels = 1;
-
+        private boolean miniBatch = false;
 
         /**
          * Number of channels for a conv net
@@ -546,6 +548,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          */
         public Builder rho(double rho) {
             this.rho = rho;
+            return this;
+        }
+
+
+        public Builder miniBatch(boolean miniBatch) {
+            this.miniBatch = miniBatch;
             return this;
         }
 
@@ -825,6 +833,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
             ret.useDropConnect = useDropConnect;
+            ret.miniBatch = miniBatch;
             ret.rho = rho;
             ret.updater = updater;
             ret.channels = channels;
