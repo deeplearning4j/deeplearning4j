@@ -32,9 +32,8 @@ class LossCalculation {
                 ret = -labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case MCXENT:
-                INDArray sums = log(z);
-                INDArray columnSums = labels.mul(sums);
-                ret = -columnSums.sum(Integer.MAX_VALUE).getDouble(0);
+                INDArray sums = labels.mul(log(z));
+                ret = -sums.sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case XENT:
                 INDArray xEntLogZ = log(z);
@@ -60,10 +59,11 @@ class LossCalculation {
                 ret = pow(delta == null ? labels.sub(z) : delta, 2).sum(Integer.MAX_VALUE).getDouble(0);
                 break;
             case NEGATIVELOGLIKELIHOOD:
-                ret = -Nd4j.sum(
+                INDArray sums2 = Nd4j.sum(
                         labels.mul(log(z))
                                 .addi(labels.rsub(1).muli(log(z.rsub(1))))
-                        , 1).getDouble(0);
+                        , 1);
+                ret = -Nd4j.mean(sums2).mean(Integer.MAX_VALUE).getDouble(0);
 
 
 
@@ -75,7 +75,7 @@ class LossCalculation {
         }
 
 
-        ret /= (double) labels.rows();
+        //ret /= (double) labels.rows();
         return ret;
     }
 

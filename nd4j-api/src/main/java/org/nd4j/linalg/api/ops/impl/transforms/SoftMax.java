@@ -179,7 +179,7 @@ public class SoftMax extends BaseTransformOp {
                 throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
             INDArray xMinusMax = Nd4j.create(x.shape());
             for(int i = 0; i < x.slices(); i++) {
-                x.slice(i).subi(maxAlongDimension.getDouble(i));
+                xMinusMax.putSlice(i,x.slice(i).sub(maxAlongDimension.getDouble(i)));
             }
 
             this.y = Transforms.exp(xMinusMax);

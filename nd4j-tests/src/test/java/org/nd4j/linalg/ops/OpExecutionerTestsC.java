@@ -369,11 +369,17 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         assertEquals(getFailureMessage(),1.0, softMax.z().sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
 
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
-        SoftMax matrix = new SoftMax(linspace);
-        Nd4j.getExecutioner().exec(matrix);
-
+        SoftMax softmax = new SoftMax(linspace.dup());
+        Nd4j.getExecutioner().exec(softmax);
+        assertEquals(linspace.rows(), softmax.z().sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        //copy not modified
+        assertFalse(softmax.z().equals(softmax.x()));
+        //original x not modified
+        assertFalse(softmax.z().equals(linspace));
+        
 
     }
+
 
 
     @Test
