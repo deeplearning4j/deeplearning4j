@@ -19,12 +19,16 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
  * A neural network layer.
@@ -39,9 +43,33 @@ import lombok.Data;
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         })
 @Data
+@NoArgsConstructor
 public abstract class Layer implements Serializable {
-
     private static final long serialVersionUID = 492217000569721428L;
-    protected int nIn;
-    protected int nOut;
+    protected String activationFunction;
+    protected WeightInit weightInit;
+    protected double dropOut;
+
+    public abstract static class Builder {
+        protected String activationFunction;
+        protected WeightInit weightInit;
+        protected double dropOut;
+
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+
+        public abstract <E extends Layer> E build();
+    }
 }

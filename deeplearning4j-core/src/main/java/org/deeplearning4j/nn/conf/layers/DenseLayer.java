@@ -18,8 +18,10 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
  * Output layer with different objective co-occurrences for different objectives.
@@ -28,14 +30,50 @@ import lombok.NoArgsConstructor;
  */
 @Data
 @NoArgsConstructor
-public class DenseLayer extends Layer {
+public class DenseLayer extends FeedForwardLayer {
 
     private static final long serialVersionUID = 8554480736972510788L;
-    private String activationFunction;
 
-    public DenseLayer(int nIn, int nOut, String activationFunction) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.activationFunction = activationFunction;
+    private DenseLayer(Builder builder) {
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.activationFunction = builder.activationFunction;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
+
+    public static class Builder extends FeedForwardLayer.Builder {
+
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+        @Override
+        @SuppressWarnings("unchecked")
+        public DenseLayer build() {
+            return new DenseLayer(this);
+        }
+    }
+
 }

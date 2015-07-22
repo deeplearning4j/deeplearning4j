@@ -18,9 +18,11 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
  * Output layer with different objective co-occurrences for different objectives.
@@ -29,35 +31,53 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  */
 @Data
 @NoArgsConstructor
-public class OutputLayer extends Layer {
+public class OutputLayer extends FeedForwardLayer {
 
     private static final long serialVersionUID = 8554480736972510788L;
-    private String activationFunction;
-    private LossFunctions.LossFunction lossFunction;
+    private LossFunction lossFunction;
 
-    public OutputLayer(int nIn, int nOut) {
-        this.nIn = nIn;
-        this.nOut = nOut;
+    private OutputLayer(Builder builder) {
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.activationFunction = builder.activationFunction;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
 
-    public OutputLayer(int nIn, int nOut, String activationFunction) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.activationFunction = activationFunction;
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder {
+        private LossFunction lossFunction;
+
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+        @Override
+        @SuppressWarnings("unchecked")
+        public OutputLayer build() {
+            return new OutputLayer(this);
+        }
     }
-
-    public OutputLayer(int nIn, int nOut, LossFunctions.LossFunction lossFunction) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.lossFunction = lossFunction;
-    }
-
-    public OutputLayer(int nIn, int nOut, String activationFunction, LossFunctions.LossFunction lossFunction) {
-        this.nIn = nIn;
-        this.nOut = nOut;
-        this.activationFunction = activationFunction;
-        this.lossFunction = lossFunction;
-    }
-
-
 }
+
