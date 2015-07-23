@@ -73,4 +73,14 @@ public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPre
 
         return output.reshape(output.size(0),channels,rows,cols);
     }
+
+    @Override
+    public INDArray backward(INDArray toReverse) {
+        return null;
+    }
+
+    @Override
+    public INDArray backwardPreProcess(INDArray input) {
+        return null;
+    }
 }
