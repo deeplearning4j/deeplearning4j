@@ -46,6 +46,25 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
 	}
+	@Test
+	public void testNesterovs() {
+		int rows = 10;
+		int cols = 2;
+
+
+		Nesterovs grad = new Nesterovs(0.5);
+		INDArray W = Nd4j.zeros(rows, cols);
+		Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
+		for(int i = 0; i < W.rows(); i++)
+			W.putRow(i, Nd4j.create(dist.sample(W.columns())));
+
+		for(int i = 0; i < 5; i++) {
+			String learningRates = String.valueOf("\nAdagrad\n " + grad.getGradient(W,i)).replaceAll(";","\n");
+			System.out.println(learningRates);
+			W.addi(Nd4j.randn(rows, cols));
+		}
+
+	}
 
 
 	@Test

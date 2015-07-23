@@ -15,11 +15,22 @@ import java.io.Serializable;
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
     private INDArray lastGradient;
+    private double lr;
 
-    public Nesterovs(double momentum) {
+    public Nesterovs(double momentum,double lr) {
         this.momentum = momentum;
+        this.lr = lr;
+
     }
 
+    /**
+     * Initialize with a learning rate of 0.1
+     * @param momentum the momentum to initialize with
+     */
+    public Nesterovs(double momentum) {
+        this(momentum,0.1);
+
+    }
     public double getMomentum() {
         return momentum;
     }
@@ -28,22 +39,29 @@ public class Nesterovs implements Serializable,GradientUpdater {
         this.momentum = momentum;
     }
 
+    public double getLr() {
+        return lr;
+    }
 
+    public void setLr(double lr) {
+        this.lr = lr;
+    }
 
     /**
-     * Get the nesterov udpdate
-     * @param gradient the gradient to get the update for
+     * Get the nesterov update
+     * @param gradient the
+     *                 gradient to get the update for
      *
      * @param iteration
      * @return
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-      if(lastGradient == null)
-          lastGradient = Nd4j.zeros(gradient.shape());
+        if(lastGradient == null)
+            lastGradient = Nd4j.zeros(gradient.shape());
         INDArray ret  = lastGradient.mul(momentum).subi(gradient);
         lastGradient = ret;
-        return ret;
+        return ret.mul(lr);
     }
 
 
