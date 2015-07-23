@@ -51,5 +51,7 @@ public class MultiNeuralNetConfLayerBuilderTest {
         double newSparsity = 0.5;
         HiddenUnit newHidden = HiddenUnit.BINARY;
         VisibleUnit newVisible = VisibleUnit.BINARY;
+
+        
     }
 }
