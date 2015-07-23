@@ -18,33 +18,62 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
  * Output layer with different objective co-occurrences for different objectives.
  * This includes classification as well as prediction
  *
  */
-public class DenseLayer extends Layer {
+@Data
+@NoArgsConstructor
+public class DenseLayer extends FeedForwardLayer {
 
     private static final long serialVersionUID = 8554480736972510788L;
 
-    @Override
-    public int hashCode() {
-        return 0;
+    private DenseLayer(Builder builder) {
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.activationFunction = builder.activationFunction;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
+    public static class Builder extends FeedForwardLayer.Builder {
+
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+        @Override
+        @SuppressWarnings("unchecked")
+        public DenseLayer build() {
+            return new DenseLayer(this);
+        }
     }
 
-    public String toString() {
-        return "Denselayer{" +
-                '}';
-    }
 }

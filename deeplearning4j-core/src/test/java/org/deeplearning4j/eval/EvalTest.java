@@ -128,6 +128,9 @@ public class EvalTest {
         double eval2F1 = eval2.f1();
         double eval2Acc = eval2.accuracy();
 
+        System.out.println(eval2F1);
+        System.out.println(eval2Acc);
+
         //Assert the two implementations give same f1 and accuracy (since one batch)
         assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
     }
