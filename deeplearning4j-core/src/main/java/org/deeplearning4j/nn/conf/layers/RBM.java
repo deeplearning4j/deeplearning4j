@@ -53,6 +53,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 public class RBM extends BasePretrainNetwork {
 
     private static final long serialVersionUID = 485040309806445606L;
+    protected int ind;
     protected HiddenUnit hiddenUnit;
     protected VisibleUnit visibleUnit;
     protected int k;
