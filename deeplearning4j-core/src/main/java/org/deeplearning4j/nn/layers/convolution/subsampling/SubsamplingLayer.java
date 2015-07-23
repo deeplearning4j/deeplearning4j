@@ -116,11 +116,11 @@ public class SubsamplingLayer implements Layer {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
         INDArray z = preOutput(input, true);
 
-        INDArray error = Nd4j.create(conf.getFilterSize());
+        INDArray error = Nd4j.create(Ints.concat(new int[]{conf.getNIn(),conf.getNOut()},conf.getFeatureMapSize()));
 
         if(layer.conf().getPoolingType() == PoolingType.AVG) {
             //TODO tile - change code
-            int[] filterSize = conf.getFilterSize();
+            int[] filterSize = conf.getKernelSize();
             int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
             int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
             if (filterSize.length < 4)
@@ -143,7 +143,7 @@ public class SubsamplingLayer implements Layer {
 
         else if(layer.conf().getPoolingType() == PoolingType.MAX){
             //TODO rotation - change code
-            int[] filterSize = conf.getFilterSize();
+            int[] filterSize = conf.getKernelSize();
             int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
             int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
             if (filterSize.length < 4)
