@@ -355,10 +355,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
                     }
-                    conf.setNIn(inputSize);
 
                     if (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        if(hiddenLayerSizes != null)
+                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+
+
                     }
                 } else if (i < getLayers().length) {
                     if (input != null)
@@ -380,12 +382,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                      * for every layer.
                      */
                     if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        if(i != (layers.length-1)) {
+                        if(i != layers.length - 1) {
                             numHiddenLayersSizesUsed++;
                             conf.setNIn(layerInput.size(1));
-                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                            if(hiddenLayerSizes != null)
+                                conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         } else {
-                            conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                            if(hiddenLayerSizes != null)
+                                conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         }
                     }
                 }
@@ -1032,7 +1036,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iter.reset();
             finetune(iter);
         }
-        if (layerWiseConfigurations.isBackprop()) {
+        if (layerWiseConfigurations.isBackward()) {
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
@@ -1131,7 +1135,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void finetune(DataSetIterator iter) {
         log.info("Finetune phase ");
-        if(layerWiseConfigurations.isBackprop()) {
+        if(layerWiseConfigurations.isBackward()) {
             log.info("Will use backpropagation for finetune");
             return;
         }
@@ -1175,7 +1179,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
 
-        if(layerWiseConfigurations.isBackprop()) {
+        if(layerWiseConfigurations.isBackward()) {
             log.info("Will use backpropagation for finetune");
             return;
         }
@@ -1241,7 +1245,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             finetune(labels);
         }
 
-        if(layerWiseConfigurations.isBackprop())
+        if(layerWiseConfigurations.isBackward())
             setLabels(labels);
             backprop();
     }
