@@ -57,6 +57,6 @@ trait SliceableNDArray {
     val lv = underlying.linearView()
     val filtered = indices.map { i => lv.getDouble(i)}
 
-    filtered.mkNDArray(targetShape, NDOrdering(underlying.ordering()), underlying.offset())
+    filtered.mkNDArray(targetShape, NDOrdering(underlying.ordering()),0)
   }
 }

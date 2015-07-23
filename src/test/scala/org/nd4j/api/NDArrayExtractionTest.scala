@@ -39,6 +39,38 @@ class NDArrayExtractionTest extends FlatSpec {
     assert(extracted == expected)
   }
 
+  it should "be able to extract a part of 2d matrix in C ordering with offset" in {
+    val ndArray = (1 to 9).mkNDArray(Array(2, 2), NDOrdering.C, offset = 4)
+
+    val expectedArray = Array(
+      Array(5, 6),
+      Array(7, 8)
+    ).toNDArray
+    assert(ndArray == expectedArray)
+
+    val expectedSlice = Array(
+      Array(5),
+      Array(7)
+    ).toNDArray
+    assert(ndArray(->, 0) == expectedSlice)
+  }
+
+  it should "be able to extract a part of 2d matrix in F ordering with offset" in {
+    val ndArray = (1 to 9).mkNDArray(Array(2, 2), NDOrdering.Fortran, offset = 4)
+
+    val expectedArray = Array(
+      Array(5, 7),
+      Array(6, 8)
+    ).toNDArray
+    assert(ndArray == expectedArray)
+
+    val expectedSlice = Array(
+      Array(5),
+      Array(6)
+    ).toNDArray
+    assert(ndArray(->, 0) == expectedSlice)
+  }
+
   it should "be able to extract a part of vertically long matrix in C ordering" in {
     Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray =
