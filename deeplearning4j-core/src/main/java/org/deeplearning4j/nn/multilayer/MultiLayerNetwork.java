@@ -1077,23 +1077,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
          */
         int numLayers = getnLayers();
 
-        Gradient layerGradient = outputLayer.backpropGradient(null, null);
+//        Gradient layerGradient = outputLayer.backpropGradient(null,null, null);
+        Pair<Gradient,INDArray> currentPair = outputLayer.backpropGradient(null,null, null);
 
         for (String paramType: outputLayer.gradient().gradientForVariable().keySet()) {
             String multiGradientKey = String.valueOf(numLayers)+ "_" + paramType;
             gradient.setGradientFor(multiGradientKey, outputLayer.gradient().getGradientFor(paramType));
         }
 
-        //Initialize with w^out * delta^out, appropriately transposed
-//            INDArray nextEpsilon = outputLayer.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose(); //Expected shape: [m,n^out]
-
         prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayers()[j];
-            layerGradient = currLayer.backpropGradient(layerGradient, prevLayer);
+            currentPair = currLayer.backpropGradient(currentPair.getSecond(), currentPair.getFirst(), prevLayer);
             prevLayer = currLayer;
 
+            Gradient layerGradient = currentPair.getFirst();
             for (String paramType: layerGradient.gradientForVariable().keySet()) {
                 String multiGradientKey = String.valueOf(j)+ "_" + paramType;
                 gradient.setGradientFor(multiGradientKey, layerGradient.getGradientFor(paramType));
@@ -1737,8 +1736,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public Gradient backpropGradient(Gradient nextGradient, Layer layer) {
-        return null;
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

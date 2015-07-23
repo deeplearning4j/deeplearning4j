@@ -24,7 +24,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -67,8 +66,13 @@ public class GravesLSTM extends BaseLayer {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
+	/**@see Layer.backpropGradient()
+	 * @param epsilon Time-series weights^(L+1)*delta^(L+1) (or equivalent)
+	 * @param gradient Not used
+	 * @param layers Not used
+	 */
 	@Override
-	public Gradient backpropGradient(Gradient gradient, Layer layers) {
+	public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layers) {
 		//First: Do forward pass to get gate activations etc.
 		INDArray[] activations = activateHelper(input(), true);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
 		INDArray outputActivations = activations[0];
@@ -82,9 +86,9 @@ public class GravesLSTM extends BaseLayer {
 		//Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
 		int hiddenLayerSize = recurrentWeights.rows();	//i.e., n^L
 		int prevLayerSize = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS).shape()[0];
-		int miniBatchSize = nextDelta.size(0);
-		boolean is2dInput = nextDelta.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
-		int timeSeriesLength = (is2dInput? 1: nextDelta.size(2));
+		int miniBatchSize = epsilon.size(0);
+		boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
+		int timeSeriesLength = (is2dInput? 1: epsilon.size(2));
 		
 		INDArray wi = inputWeights.get(interval(0,prevLayerSize),interval(0,hiddenLayerSize));
 		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
@@ -114,13 +118,8 @@ public class GravesLSTM extends BaseLayer {
 //		INDArray timeSeriesMaskArray = Nd4j.ones(miniBatchSize,timeSeriesLength);	//For now: assume that all data in mini-batch is of length 'timeSeriesLength'
 
 		for( int t=timeSeriesLength-1; t>=0; t-- ){
-			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : memCellActivations.slice(t-1, 2) );	//Shape: [n^L, n^L]
-			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : outputActivations.slice(t-1,2) );	//Shape: [n^L, n^L]; i.e., layer output at prev. time step.
-
-			INDArray nextLayerDeltaSlice = nextDelta;	//delta^{(L+1)t}
-			if (!is2dInput) {
-				nextLayerDeltaSlice = nextDelta.slice(t, 2);
-			}
+			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : memCellActivations.slice(t-1, 2) );	//Shape: [m, n^L]
+			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : outputActivations.slice(t-1,2) );	//Shape: [m, n^L]; i.e., layer output at prev. time step.
 					
 			//delta_i^{L(t+1)}
 			INDArray deltaiNext = (t==timeSeriesLength-1 ?
@@ -152,7 +151,7 @@ public class GravesLSTM extends BaseLayer {
 
 			//LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
 			//INDArray nablaOut = nextLayerDeltaSlice.mmul(nextWeights.transpose())
-			INDArray epsilonSlice = epsilon.slice(t, 2);		//(w^{L+1}*(delta^{(L+1)t})^T)^T
+			INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.slice(t, 2));		//(w^{L+1}*(delta^{(L+1)t})^T)^T
 			INDArray nablaOut = epsilonSlice
 					.addi(deltaiNext.mmul(wI.transpose()))
 					.addi(deltafNext.mmul(wF.transpose()))
@@ -231,7 +230,6 @@ public class GravesLSTM extends BaseLayer {
 				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3 * hiddenLayerSize)}, deltao);
 				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)}, deltag);
 			}
-			// TODO potential issue...
 			//Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
 			//But here, need to add 4 weights * deltas for the IFOG gates
 			INDArray epsilonNextSlice = wi.mmul(deltai.transpose()).transpose()
@@ -247,7 +245,7 @@ public class GravesLSTM extends BaseLayer {
 		ret.gradientForVariable().put(GravesLSTMParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients.sum(2));
 		ret.gradientForVariable().put(GravesLSTMParamInitializer.BIAS, biasGradients.sum(2).sum(0));
 		
-		return ret;
+		return new Pair<>(ret,epsilonNext);
 	}
 
 	@Override
@@ -257,6 +255,7 @@ public class GravesLSTM extends BaseLayer {
 
 	@Override
 	public INDArray activate(INDArray input, boolean training){
+		setInput(input,training);
 		return activateHelper(input, training)[0];
 	}
 
@@ -271,12 +270,11 @@ public class GravesLSTM extends BaseLayer {
 		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS);			//Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
 		INDArray biases = getParam(GravesLSTMParamInitializer.BIAS); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
-		int[] dataShape = input.shape();
-		boolean is2dInput = dataShape.length < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
-		int timeSeriesLength = (is2dInput ? 1 : dataShape[2]);
+		boolean is2dInput = input.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
+		int timeSeriesLength = (is2dInput? 1: input.size(2));
 		int hiddenLayerSize = recurrentWeights.rows();	//.shape()[0];
-		int miniBatchSize = dataShape[0];
-		int nIn = inputWeights.shape()[0];		//Size of previous layer (or input)
+		int miniBatchSize = input.size(0);
+		int nIn = inputWeights.size(0);		//Size of previous layer (or input)
 
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {

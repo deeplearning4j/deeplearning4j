@@ -76,6 +76,7 @@ public class GravesLSTMTest {
 		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf);
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
+		assertNotNull(lstm.input());
 		
 		//Create pseudo-gradient for input to LSTM layer (i.e., as if created by OutputLayer)
 		//This should have two elements: bias and weight gradients.
@@ -85,7 +86,12 @@ public class GravesLSTMTest {
 		INDArray pseudoWeightGradients = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,nOut,timeSeriesLength);
 		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoWeightGradients);
 		
-		Gradient outGradient = lstm.backpropGradient(gradient, lstm);
+		INDArray epsilon = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,timeSeriesLength);
+		
+		Pair<Gradient,INDArray> out = lstm.backpropGradient(epsilon,null, null);
+		Gradient outGradient = out.getFirst();
+		INDArray nextEpsilon = out.getSecond();
+		
 
 		INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS);
 		INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHTS);
@@ -98,9 +104,8 @@ public class GravesLSTMTest {
 		assertArrayEquals(inWeightGradient.shape(),new int[]{nIn,4*lstmNHiddenUnits});
 		assertArrayEquals(recurrentWeightGradient.shape(),new int[]{lstmNHiddenUnits,4*lstmNHiddenUnits+3});
 
-		// TODO figure how to rework
-//		assertNotNull(nextEpsilon);
-//		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
+		assertNotNull(nextEpsilon);
+		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
 		
 		//Check update:
 		for( String s : outGradient.gradientForVariable().keySet() ){

@@ -146,22 +146,19 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient backpropGradient(Gradient gradient, Layer layer) {
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
-
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
-        INDArray epsilon = weights.mmul(gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY).transpose()).transpose();
-
         INDArray delta = epsilon.muli(activationDerivative);
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(input).transpose());
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
         
+        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
 
-        return ret;
+        return new Pair<>(ret,epsilonNext);
     }
 
     public void fit() {
