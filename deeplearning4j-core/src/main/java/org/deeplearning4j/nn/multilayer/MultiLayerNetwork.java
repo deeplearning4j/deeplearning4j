@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.multilayer;
 
 
-import com.sun.org.apache.xpath.internal.operations.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
@@ -40,7 +39,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -51,7 +49,6 @@ import java.io.Serializable;
 import java.lang.String;
 import java.lang.reflect.Constructor;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -915,8 +912,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the score for the given input,label pairs
      */
     @Override
-    public double score(org.nd4j.linalg.dataset.api.DataSet data) {
-        return score(data.getFeatureMatrix(), data.getLabels());
+    public double f1Score(org.nd4j.linalg.dataset.api.DataSet data) {
+        return f1Score(data.getFeatureMatrix(), data.getLabels());
     }
 
 
@@ -1041,14 +1038,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 DataSet next = iter.next();
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
-                doBackWard();
+                backprop();
 
             }
         }
     }
 
-        //do gradient descent for n iterations
-    protected void doBackWard() {
+    protected void backprop() {
         setInput(input);
         gradient = new DefaultGradient();
         if(!(getOutputLayer() instanceof  OutputLayer)) {
@@ -1244,7 +1240,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if(layerWiseConfigurations.isBackward())
             setLabels(labels);
-            doBackWard();
+            backprop();
     }
 
     /**
@@ -1380,7 +1376,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the score for the given input,label pairs
      */
     @Override
-    public double score(INDArray input, INDArray labels) {
+    public double f1Score(INDArray input, INDArray labels) {
         feedForward(input);
         setLabels(labels);
         Evaluation eval = new Evaluation();
@@ -1398,7 +1394,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return labels.columns();
     }
 
-//TODO - determine if still neeeds to be here
     /**
      * Sets the input and labels and returns a score for the prediction
      * wrt true labels
@@ -1435,7 +1430,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void computeGradientAndScore() {
-        doBackWard();
+        backprop();
     }
 
     @Override
