@@ -42,6 +42,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
+
+
 /**
  * Subsampling layer.
  *
@@ -110,14 +113,13 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public Gradient backpropGradient(Gradient gradient, Layer layer){
-
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
         INDArray z = preOutput(input, true);
 
         INDArray error = Nd4j.create(conf.getFilterSize());
 
-        if(layer.conf().getConvolutionType() == ConvolutionLayer.ConvolutionType.AVG) {
-        //TODO tile - change code
+        if(layer.conf().getPoolingType() == PoolingType.AVG) {
+            //TODO tile - change code
             int[] filterSize = conf.getFilterSize();
             int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
             int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
@@ -136,8 +138,8 @@ public class SubsamplingLayer implements Layer {
                     error.putSlice(i, featureMapError);
                 }
             }
-        } else if(layer.conf().getConvolutionType() == ConvolutionLayer.ConvolutionType.MAX){
-        //TODO rotation - change code
+        } else if(layer.conf().getPoolingType() == PoolingType.MAX){
+            //TODO rotation - change code
             int[] filterSize = conf.getFilterSize();
             int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
             int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
@@ -162,8 +164,8 @@ public class SubsamplingLayer implements Layer {
         }
 
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, );
-        return ret;
+        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, error);
+        return new Pair<>(ret,z);
 
     }
 

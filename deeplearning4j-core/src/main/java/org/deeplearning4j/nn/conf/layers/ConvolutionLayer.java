@@ -1,37 +1,62 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.convolution.Convolution;
+
 /**
  * @author Adam Gibson
  */
+@Data
+@NoArgsConstructor
 public class ConvolutionLayer extends Layer {
 
-    /**
-     * Convolution type: max avg or sum
-     */
-    public enum ConvolutionType {
-        MAX,AVG,SUM,NONE
-    }
-
     private static final long serialVersionUID = 3073633667258683720L;
+    protected int[] filterSize; // Square filter
+    protected int filterDepth; // Depth of the each column of neurons
+    protected Convolution.Type convolutionType; // FULL / VALID / SAME
 
-    @Override
-    public int hashCode() {
-        return 0;
+    private ConvolutionLayer(Builder builder) {
+        this.filterSize = builder.filterSize;
+        this.filterDepth = builder.filterDepth;
+        this.convolutionType = builder.convolutionType;
+        this.activationFunction = builder.activationFunction;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    @AllArgsConstructor
+    public static class Builder extends Layer.Builder {
+        private int[] filterSize; // Square filter
+        private int filterDepth; // Depth of the each column of neurons
+        private Convolution.Type convolutionType; // FULL / VALID / SAME
 
-    public String toString() {
-        return "ConvolutionLayer{" +
-                '}';
+        public Builder(int[] filterSize, int filterDepth) {
+            this.filterSize = filterSize;
+            this.filterDepth = filterDepth;
+        }
+
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            throw new UnsupportedOperationException("ConvolutionLayer Layer does not accept dropout");
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public ConvolutionLayer build() {
+            return new ConvolutionLayer(this);
+        }
     }
 }
