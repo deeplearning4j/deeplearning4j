@@ -89,13 +89,12 @@ public class NeuralNetConfLayerBuilderTest {
                 .activationFunction(act)
                 .filterSize(filterSize)
                 .filterDepth(filterDepth)
-                .layer(new ConvolutionLayer.Builder(newFS, newFD, newConvType).activation(newAct).build())
+                .layer(new ConvolutionLayer.Builder(newFS,newConvType).activation(newAct).build())
                 .build();
 
         Layer conv = LayerFactories.getFactory(convConf.getLayer()).create(convConf);
 
-        assertTrue(conv.conf().getFilterSize() == newFS);
-        assertTrue(conv.conf().getFilterDepth() == newFD);
+        assertTrue(conv.conf().getKernelSize() == newFS);
         assertTrue(conv.conf().getConvolutionType().equals(newConvType));
 
         // Subsampling layer

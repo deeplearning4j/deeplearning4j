@@ -194,8 +194,8 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        INDArray ret = Nd4j.create(conf.getFilterSize());
-        int[] filterSize = conf.getFilterSize();
+        INDArray ret = Nd4j.create(conf.getKernelSize());
+        int[] filterSize = conf.getKernelSize();
         int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
         int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
         if(filterSize.length < 4)

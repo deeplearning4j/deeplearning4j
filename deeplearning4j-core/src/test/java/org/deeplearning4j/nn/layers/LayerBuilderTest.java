@@ -1,12 +1,9 @@
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.poolingType;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -17,7 +14,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 /**
  * @author Jeffrey Tang.
  */
-public class layerBuilderTest {
+public class LayerBuilderTest {
     int numIn = 10;
     int numOut = 5;
     double drop = 0.3;
@@ -31,14 +28,12 @@ public class layerBuilderTest {
     int k  = 1;
     Convolution.Type convType = Convolution.Type.FULL;
     LossFunction loss = LossFunction.MCXENT;
-    WeightInit weight = WeightInit.XAVIER;
-    double corrupt = 0.4;
-    double sparsity = 0.3;
+
 
     @Test
     public void testLayerBuilderAPI() {
         // Make new Convolutional layer
-        ConvolutionLayer conv = new ConvolutionLayer.Builder(filterSize, filterDepth, convType).activation(act).build();
+        ConvolutionLayer conv = new ConvolutionLayer.Builder(filterSize, convType).activation(act).build();
         // Make new Subsampling layer
         SubsamplingLayer sample = new SubsamplingLayer.Builder(poolType, stride).build();
         // Make new RBM layer
@@ -53,8 +48,7 @@ public class layerBuilderTest {
         assertTrue(out.getActivationFunction().equals(act));
         // Test Convolution layer API
         assertTrue(conv.getConvolutionType() == convType);
-        assertTrue(conv.getFilterSize() == filterSize);
-        assertTrue(conv.getFilterDepth() == filterDepth && conv.getActivationFunction().equals(act));
+        assertTrue(conv.getKernelSize() == filterSize);
         // Test Subsampling layer API
         assertTrue(sample.getPoolingType() == poolType);
         assertTrue(sample.getStride() == stride);
