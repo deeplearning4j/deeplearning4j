@@ -82,7 +82,7 @@ public class GravesLSTM extends BaseLayer {
 		int prevLayerSize = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS).shape()[0];
 		int miniBatchSize = nextDelta.size(0);
 		boolean is2dInput = nextDelta.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
-		int timeSeriesLength = (is2dInput? 1: nextDelta.size(2));
+		int timeSeriesLength = (is2dInput? 1 : nextDelta.size(2));
 
 		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
 		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2*hiddenLayerSize));
@@ -106,8 +106,8 @@ public class GravesLSTM extends BaseLayer {
 //		INDArray timeSeriesMaskArray = Nd4j.ones(miniBatchSize,timeSeriesLength);	//For now: assume that all data in mini-batch is of length 'timeSeriesLength'
 
 		for( int t=timeSeriesLength-1; t>=0; t-- ){
-			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : memCellActivations.slice(t-1, 2) );	//Shape: [n^L, n^L]
-			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : outputActivations.slice(t-1,2) );	//Shape: [n^L, n^L]; i.e., layer output at prev. time step.
+			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : memCellActivations.slice(t-1, 2) );	//Shape: [m, n^L]
+			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : outputActivations.slice(t-1, 2) );	//Shape: [m, n^L]; i.e., layer output at prev. time step.
 
 			INDArray nextLayerDeltaSlice = nextDelta;
 			if (!is2dInput) {
@@ -255,12 +255,11 @@ public class GravesLSTM extends BaseLayer {
 		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS);			//Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
 		INDArray biases = getParam(GravesLSTMParamInitializer.BIAS); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
-		int[] dataShape = input.shape();
-		boolean is2dInput = dataShape.length < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
-		int timeSeriesLength = (is2dInput ? 1 : dataShape[2]);
-		int hiddenLayerSize = recurrentWeights.rows();	//.shape()[0];
-		int miniBatchSize = dataShape[0];
-		int nIn = inputWeights.shape()[0];		//Size of previous layer (or input)
+		boolean is2dInput = input.rank() < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
+		int timeSeriesLength = (is2dInput ? 1 : input.size(2));
+		int hiddenLayerSize = recurrentWeights.size(0);
+		int miniBatchSize = input.size(0);
+		int nIn = inputWeights.size(0);		//Size of previous layer (or input)
 
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
