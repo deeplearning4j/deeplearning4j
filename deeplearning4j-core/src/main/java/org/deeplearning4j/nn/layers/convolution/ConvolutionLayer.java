@@ -49,7 +49,6 @@ import java.util.Map;
  */
 public class ConvolutionLayer implements Layer {
 
-    protected INDArray input;
     private NeuralNetConfiguration conf;
     private Map<String,INDArray> params;
     protected ParamInitializer paramInitializer;
@@ -109,23 +108,21 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Gradient backpropGradient(Gradient gradient, Layer layer) {
-        INDArray z = preOutput(input);
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
-
-        // TODO - check transpose and if that makes sense with the tensors...
-        INDArray weights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
-        INDArray epsilon = Nd4j.tensorMmul(weights, gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS).transpose(), new int[][]{{0, 1}}).transpose();
-        INDArray delta = epsilon.muli(activationDerivative);
-        delta = Nd4j.rollAxis(delta,3);
-
-        Gradient ret = new DefaultGradient();
-        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, Convolution.conv2d(delta.transpose(), input, Convolution.Type.VALID).transpose());
-        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS, delta.sum(0, 2, 3));
-
-        return ret;
-
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+        INDArray gy = gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        INDArray biasGradient = gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
+        getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
+        INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
+        gcol = Nd4j.rollAxis(gcol,3);
+        INDArray z = preOutput(input());
+        INDArray weightGradient =  Convolution.conv2d(gcol,z, conf.getConvolutionType());// TODO: Use user specified type of convolution
+        Gradient retGradient = new DefaultGradient();
+        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
+        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
+        return new Pair<>(retGradient,weightGradient);
     }
+
+
 
     @Override
     public void merge(Layer layer, int batchSize) {
@@ -169,7 +166,7 @@ public class ConvolutionLayer implements Layer {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
         //number of feature maps for the weights
-        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
+        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf); // This returns the filterSize as an int
         //number of channels of the input
         int inputChannels = ConvolutionUtils.numChannels(input.shape());
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));
@@ -221,8 +218,9 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Collection<IterationListener> getListeners() {
-        return listeners;
+        return null;
     }
+
 
     @Override
     public void setListeners(IterationListener... listeners) {

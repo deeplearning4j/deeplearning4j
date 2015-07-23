@@ -116,7 +116,7 @@ public class MultiLayerTestRNN {
 
                     }
                 })
-                .backward(true)
+                .backprop(true)
                 .pretrain(false)
                 .build();
 

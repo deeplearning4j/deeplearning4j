@@ -23,6 +23,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.nd4j.linalg.factory.Nd4j;
@@ -52,9 +53,7 @@ public class MultiLayerConfiguration implements Serializable {
     protected double dampingFactor = 100;
     protected Map<Integer,OutputPreProcessor> processors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-    @Deprecated
     protected boolean backward = false;
-    protected boolean backprop = false;
 
 
 
@@ -68,7 +67,6 @@ public class MultiLayerConfiguration implements Serializable {
         this.dampingFactor = multiLayerConfiguration.dampingFactor;
         this.processors = new HashMap<>(multiLayerConfiguration.processors);
         this.backward = multiLayerConfiguration.backward;
-        this.backprop = multiLayerConfiguration.backprop;
         this.inputPreProcessors = multiLayerConfiguration.inputPreProcessors;
 
     }
@@ -165,9 +163,8 @@ public class MultiLayerConfiguration implements Serializable {
         protected double dampingFactor = 100;
         protected Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessor = new HashMap<>();
-        @Deprecated
         protected boolean backward = false;
-        protected boolean backprop = false;
+//        @Deprecated To be deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
 
@@ -183,19 +180,13 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-        @Deprecated
-        public Builder backward(boolean backward) {
-            this.backward = backward;
-            return this;
-        }
-
         /**
          * Whether to do back prop or not
-         * @param backprop whether to do back prop or not
+         * @param backward whether to do back prop or not
          * @return
          */
-        public Builder backprop(boolean backprop) {
-            this.backprop = backprop;
+        public Builder backprop(boolean backward) {
+            this.backward = backward;
             return this;
         }
 
@@ -246,8 +237,6 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-
-
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
@@ -270,8 +259,8 @@ public class MultiLayerConfiguration implements Serializable {
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            if(hiddenLayerSizes == null)
-                throw new IllegalStateException("Please specify hidden layer sizes");
+//            if(hiddenLayerSizes == null)
+//                throw new IllegalStateException("Please specify hidden layer sizes");
             conf.hiddenLayerSizes = this.hiddenLayerSizes;
             conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
@@ -279,7 +268,6 @@ public class MultiLayerConfiguration implements Serializable {
             conf.dampingFactor = dampingFactor;
             conf.processors = preProcessors;
             conf.backward = backward;
-            conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessor;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
@@ -329,20 +317,16 @@ public class MultiLayerConfiguration implements Serializable {
             return result;
         }
 
+//        @Deprecated To be Deprecated
         public Builder override(ConfOverride override) {
             confOverrides.put(confOverrides.size(),override);
             return this;
         }
-
+//        @Deprecated To be Deprecated
         public Builder override(int layer,ConfOverride override) {
             confOverrides.put(layer,override);
             return this;
         }
 
-
     }
-
-
-
-
 }
