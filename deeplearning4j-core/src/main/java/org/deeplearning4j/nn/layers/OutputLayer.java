@@ -24,6 +24,7 @@ import java.io.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -74,7 +75,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         INDArray output = output(input);
         INDArray wGradient = getWeightGradient(output);
-        INDArray bGradient = wGradient.sum(0);
+
+        INDArray dy = labels.sub(output);
+        INDArray bGradient = dy.sum(0);
         Gradient g = new DefaultGradient();
 
         g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
@@ -82,6 +85,24 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         this.gradient = g;
         setScoreWithZ(output);
 
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+        Gradient nextGradients = new DefaultGradient();
+        INDArray activationDeriv = derivative;
+        INDArray layerInput = input;
+
+        INDArray delta = activation.sub(labels).transpose();
+
+        // add other cost functions?
+        if(conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
+            delta.muli(activationDeriv);
+        }
+
+        nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
+        nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
+        return nextGradients;
     }
 
     @Override
@@ -125,7 +146,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         switch (conf.getLossFunction()) {
             case MCXENT:
                 //difference of outputs
-                INDArray dy = z.sub(labels);
+                INDArray dy = labels.sub(z);
                 return input.transpose().mmul(dy);
 
             case XENT:
@@ -144,7 +165,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             case SQUARED_LOSS:
                 return input.transpose().mmul(pow(labels.sub(z),2));
             case NEGATIVELOGLIKELIHOOD:
-                return input.transpose().mmul(log(z).negi());
+                INDArray dy2 = labels.sub(z);
+                return input.transpose().mmul(dy2);
 
 
         }
@@ -242,7 +264,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        this.input = examples.dup();
+        this.input = examples;
         applyDropOutIfNecessary(this.input,true);
         this.labels = labels;
         Solver solver = new Solver.Builder()
@@ -358,7 +380,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        INDArray preOutput = preOutput(x);
+        INDArray preOutput = preOutput(x,!test);
         if(conf.getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);

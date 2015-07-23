@@ -19,6 +19,7 @@
 package org.deeplearning4j.optimize.solvers;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -51,12 +52,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
             Pair<Gradient,Double> pair = gradientAndScore();
-            for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
-                model.update(pair.getFirst().getGradientFor(paramType), paramType);
-            }
-
+            getUpdater().applyUpdate((Layer) model,pair.getFirst());
             model.computeGradientAndScore();
-
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model, i);
         }
