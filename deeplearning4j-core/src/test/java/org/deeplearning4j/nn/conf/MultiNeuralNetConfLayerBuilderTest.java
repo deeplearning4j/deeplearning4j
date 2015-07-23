@@ -52,6 +52,17 @@ public class MultiNeuralNetConfLayerBuilderTest {
         HiddenUnit newHidden = HiddenUnit.BINARY;
         VisibleUnit newVisible = VisibleUnit.BINARY;
 
-        
+        MultiLayerConfiguration multiConf1 = new NeuralNetConfiguration.Builder()
+                .activationFunction(act)
+                .nIn(numIn).nOut(numOut)
+                .lossFunction(loss)
+                .list(2)
+                .layer(0, new DenseLayer.Builder().nIn(newNumIn).nOut(newNumOut).build())
+                .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1).build())
+                .build();
+        NeuralNetConfiguration firstLayer = multiConf1.getConf(0);
+        NeuralNetConfiguration secondLayer = multiConf1.getConf(1);
+
+        assertFalse(firstLayer.equals(secondLayer));
     }
 }
