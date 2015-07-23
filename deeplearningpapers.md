@@ -145,3 +145,7 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 -  [Yann LeCun](http://yann.lecun.com/)
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
 -  [Juergen Schmidhuber](http://people.idsia.ch/~juergen/)
+
+## Other Resources
+
+* [Andrew Ng's Lecture Notes for Stanford's CS229 Machine Learning](http://cs229.stanford.edu/materials.html)
