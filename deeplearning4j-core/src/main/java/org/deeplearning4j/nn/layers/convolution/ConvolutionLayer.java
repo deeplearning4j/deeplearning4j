@@ -110,7 +110,6 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights) {
-        // TODO confirm input is activation
         INDArray z = preOutput(input);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
 
@@ -120,7 +119,7 @@ public class ConvolutionLayer implements Layer {
         delta = Nd4j.rollAxis(delta,3);
 
         Gradient ret = new DefaultGradient();
-        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, Convolution.conv2d(epsilon, input, Convolution.Type.VALID));
+        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, Convolution.conv2d(delta, input, Convolution.Type.VALID));
         ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS, delta.sum(0, 2, 3));
 
         return new Pair<>(ret, getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS));

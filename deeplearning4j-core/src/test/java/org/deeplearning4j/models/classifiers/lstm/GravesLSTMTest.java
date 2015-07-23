@@ -85,8 +85,7 @@ public class GravesLSTMTest {
 		INDArray pseudoWeightGradients = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,nOut,timeSeriesLength);
 		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoWeightGradients);
 		
-		INDArray epsilon = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,timeSeriesLength);
-		Pair<Gradient,INDArray> pair = lstm.backwardGradient(epsilon);
+		Pair<Gradient,INDArray> pair = lstm.backwardGradient(gradient, lstm.getParam(DefaultParamInitializer.WEIGHT_KEY));
 		Gradient outGradient = pair.getFirst();
 		INDArray nextEpsilon = pair.getSecond();
 		
