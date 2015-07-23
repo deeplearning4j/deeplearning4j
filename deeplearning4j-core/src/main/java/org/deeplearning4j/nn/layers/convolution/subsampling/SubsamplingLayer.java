@@ -138,7 +138,10 @@ public class SubsamplingLayer implements Layer {
                     error.putSlice(i, featureMapError);
                 }
             }
-        } else if(layer.conf().getPoolingType() == PoolingType.MAX){
+        }
+
+
+        else if(layer.conf().getPoolingType() == PoolingType.MAX){
             //TODO rotation - change code
             int[] filterSize = conf.getFilterSize();
             int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
