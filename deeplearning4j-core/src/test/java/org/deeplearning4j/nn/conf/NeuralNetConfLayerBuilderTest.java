@@ -198,6 +198,10 @@ public class NeuralNetConfLayerBuilderTest {
         assertEquals(VisibleUnit.BINARY,network.getLayer(1).conf().getVisibleUnit());
         assertEquals(HiddenUnit.BINARY, network.getLayer(2).conf().getHiddenUnit());
         assertEquals(VisibleUnit.BINARY,network.getLayer(2).conf().getVisibleUnit());
+        assertEquals(784,network.getLayer(0).conf().getNIn());
+        assertEquals(600,network.getLayer(0).conf().getNOut());
+        assertEquals(600,network.getLayer(1).conf().getNIn());
+        assertEquals(500,network.getLayer(1).conf().getNOut());
 
     }
 
