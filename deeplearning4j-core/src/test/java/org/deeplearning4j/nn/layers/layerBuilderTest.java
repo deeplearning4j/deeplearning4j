@@ -1,12 +1,8 @@
 package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.AutoEncoder;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.poolingType;
 import org.deeplearning4j.nn.api.Layer;
@@ -155,7 +151,7 @@ public class layerBuilderTest {
                         .activation(newAct).weightInit(newWeight).build())
                 .build();
 
-        Layer auto = LayerFactories.getFactory(outputConf.getLayer()).create(autoConf);
+        Layer auto = LayerFactories.getFactory(autoConf.getLayer()).create(autoConf);
 
         assertTrue(auto.conf().getNIn() == newNumIn);
         assertTrue(auto.conf().getNOut() == newNumOut);
@@ -175,12 +171,45 @@ public class layerBuilderTest {
                         .weightInit(newWeight).build())
                 .build();
 
-        BaseLayer rbm = LayerFactories.getFactory(outputConf.getLayer()).create(rbmConf);
+        Layer rbm = LayerFactories.getFactory(rbmConf.getLayer()).create(rbmConf);
 
-        assertTrue(rbm.conf.getNIn() == newNumIn);
-        assertTrue(rbm.conf.getNOut() == newNumOut);
-        assertTrue(rbm.conf.getHiddenUnit().equals(newHidden));
-        assertTrue(rbm.conf.getVisibleUnit().equals(newVisible));
-        assertTrue(rbm.conf.getWeightInit().equals(newWeight));
+        assertTrue(rbm.conf().getNIn() == newNumIn);
+        assertTrue(rbm.conf().getNOut() == newNumOut);
+        assertTrue(rbm.conf().getHiddenUnit().equals(newHidden));
+        assertTrue(rbm.conf().getVisibleUnit().equals(newVisible));
+        assertTrue(rbm.conf().getWeightInit().equals(newWeight));
+
+        // Generative LSTM
+        NeuralNetConfiguration lstmConf = new NeuralNetConfiguration.Builder()
+                .activationFunction(act)
+                .nIn(numIn).nOut(numOut)
+                .weightInit(weight)
+                .dropOut(drop)
+                .layer(new LSTM.Builder().nIn(newNumIn).nOut(newNumOut)
+                        .weightInit(newWeight).dropOut(newDrop).build())
+                .build();
+
+        Layer lstm = LayerFactories.getFactory(lstmConf.getLayer()).create(lstmConf);
+        assertTrue(lstm.conf().getNIn() == newNumIn);
+        assertTrue(lstm.conf().getNOut() == newNumOut);
+        assertTrue(lstm.conf().getWeightInit().equals(newWeight));
+        assertTrue(lstm.conf().getDropOut() == newDrop);
+
+        // Supervised LSTM
+        NeuralNetConfiguration gLstmConf = new NeuralNetConfiguration.Builder()
+                .activationFunction(act)
+                .nIn(numIn).nOut(numOut)
+                .weightInit(weight)
+                .dropOut(drop)
+                .layer(new LSTM.Builder().nIn(newNumIn).nOut(newNumOut)
+                        .weightInit(newWeight).dropOut(newDrop).build())
+                .build();
+
+        Layer gLstm = LayerFactories.getFactory(gLstmConf.getLayer()).create(gLstmConf);
+        assertTrue(gLstm.conf().getNIn() == newNumIn);
+        assertTrue(gLstm.conf().getNOut() == newNumOut);
+        assertTrue(gLstm.conf().getWeightInit().equals(newWeight));
+        assertTrue(gLstm.conf().getDropOut() == newDrop);
+
     }
 }
