@@ -87,8 +87,7 @@ public class NeuralNetConfLayerBuilderTest {
         // Convolutional layer
         NeuralNetConfiguration convConf = new NeuralNetConfiguration.Builder()
                 .activationFunction(act)
-                .filterSize(filterSize)
-                .filterDepth(filterDepth)
+                .kernelSize(filterSize)
                 .layer(new ConvolutionLayer.Builder(newFS,newConvType).activation(newAct).build())
                 .build();
 

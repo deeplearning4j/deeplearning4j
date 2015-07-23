@@ -168,7 +168,7 @@ public class ConvolutionLayer implements Layer {
         int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf); // This returns the kernelSize as an int
         //number of channels of the input
         int inputChannels = ConvolutionUtils.numChannels(input.shape());
-        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));
+        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getKernelSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
@@ -176,7 +176,7 @@ public class ConvolutionLayer implements Layer {
         }
 
         for(int i = 0; i < currentFeatureMaps; i++) {
-            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), conf.getKernelSize()[1]}, conf.getFeatureMapSize()));
+            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), conf.getKernelSize()[1]}, conf.getKernelSize()));
             for(int j = 0; j <  inputChannels; j++) {
                 INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
                 featureMap.addi(convolved.broadcast(featureMap.shape()));
