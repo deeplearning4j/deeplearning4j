@@ -78,7 +78,7 @@ public class TestOptimizers {
 		.applySparsity(false).sparsity(0.0)
 		.seed(12345L)
 		.list(4).hiddenLayerSizes(8,10,5)
-		.backward(true).pretrain(false)
+		.backprop(true).pretrain(false)
 		.useDropConnect(false)
 
 		.override(3, new ConfOverride() {

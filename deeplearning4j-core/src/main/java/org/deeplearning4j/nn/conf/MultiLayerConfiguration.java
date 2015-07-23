@@ -52,7 +52,9 @@ public class MultiLayerConfiguration implements Serializable {
     protected double dampingFactor = 100;
     protected Map<Integer,OutputPreProcessor> processors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
+    @Deprecated
     protected boolean backward = false;
+    protected boolean backprop = false;
 
 
 
@@ -66,6 +68,7 @@ public class MultiLayerConfiguration implements Serializable {
         this.dampingFactor = multiLayerConfiguration.dampingFactor;
         this.processors = new HashMap<>(multiLayerConfiguration.processors);
         this.backward = multiLayerConfiguration.backward;
+        this.backprop = multiLayerConfiguration.backprop;
         this.inputPreProcessors = multiLayerConfiguration.inputPreProcessors;
 
     }
@@ -162,7 +165,9 @@ public class MultiLayerConfiguration implements Serializable {
         protected double dampingFactor = 100;
         protected Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessor = new HashMap<>();
+        @Deprecated
         protected boolean backward = false;
+        protected boolean backprop = false;
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
 
@@ -178,13 +183,19 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-        /**
-         * Whether to do back prop or not
-         * @param backward whether to do back prop or not
-         * @return
-         */
+        @Deprecated
         public Builder backward(boolean backward) {
             this.backward = backward;
+            return this;
+        }
+
+        /**
+         * Whether to do back prop or not
+         * @param backprop whether to do back prop or not
+         * @return
+         */
+        public Builder backprop(boolean backprop) {
+            this.backprop = backprop;
             return this;
         }
 
@@ -268,6 +279,7 @@ public class MultiLayerConfiguration implements Serializable {
             conf.dampingFactor = dampingFactor;
             conf.processors = preProcessors;
             conf.backward = backward;
+            conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessor;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;

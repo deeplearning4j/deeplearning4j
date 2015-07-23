@@ -126,7 +126,7 @@ public class MultiLayerTest {
                 .activationFunction("tanh")
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
-                .list(3).backward(true).pretrain(false)
+                .list(3).backprop(true).pretrain(false)
                 .hiddenLayerSizes(3,2).override(2, new ConfOverride() {
                     @Override
                     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {

@@ -335,10 +335,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
 
-
-
+        @Deprecated
         public ListBuilder backward(boolean backward) {
             this.backward = backward;
+            return this;
+        }
+
+        public ListBuilder backprop(boolean backprop) {
+            this.backprop = backprop;
             return this;
         }
 
@@ -360,7 +364,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     confOverrides.get(i).overrideLayer(i,layerwise.get(i));
                 list.add(layerwise.get(i).build());
             }
-            return new MultiLayerConfiguration.Builder().backward(backward).inputPreProcessors(inputPreProcessor)
+            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessor)
                     .useDropConnect(useDropConnect).pretrain(pretrain).preProcessors(preProcessors)
                     .hiddenLayerSizes(hiddenLayerSizes)
                     .confs(list).build();
