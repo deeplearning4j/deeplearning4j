@@ -25,384 +25,386 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 public class BackPropMLPTest {
-	
-	@Test
-	public void testMLPTrivial(){
-		//Simplest possible case: 1 hidden layer, 1 hidden neuron, batch size of 1.
-		MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},"sigmoid"));
-		network.init();
-		
-		DataSetIterator iter = new IrisDataSetIterator(1,10);
-		
-		while( iter.hasNext() ) network.fit(iter.next());
-	}
-	
-	@Test
-	public void testMLP(){
-		//Simple mini-batch test with multiple hidden layers
-		MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,4,3},"sigmoid");
-		System.out.println(conf);
-		MultiLayerNetwork network = new MultiLayerNetwork(conf);
-		network.init();
 
-		network.setListeners(Arrays.asList(new NeuralNetPlotterIterationListener(10),
-				new LossPlotterIterationListener(10)));
-		DataSetIterator iter = new IrisDataSetIterator(10,100);
-		
-		while( iter.hasNext() ) network.fit(iter.next());
-	}
-	
-	@Test
-	public void testMLP2(){
-		//Simple mini-batch test with multiple hidden layers
+    @Test
+    public void testMLPTrivial(){
+        //Simplest possible case: 1 hidden layer, 1 hidden neuron, batch size of 1.
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},"sigmoid"));
+        network.init();
+
+        DataSetIterator iter = new IrisDataSetIterator(1,10);
+
+        while( iter.hasNext() ) network.fit(iter.next());
+    }
+
+    @Test
+    public void testMLP(){
+        //Simple mini-batch test with multiple hidden layers
+        MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,4,3},"sigmoid");
+        System.out.println(conf);
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+
+        network.setListeners(Arrays.asList(new NeuralNetPlotterIterationListener(10),
+                new LossPlotterIterationListener(10)));
+        DataSetIterator iter = new IrisDataSetIterator(10,100);
+
+        while( iter.hasNext() ) network.fit(iter.next());
+    }
+
+    @Test
+    public void testMLP2(){
+        //Simple mini-batch test with multiple hidden layers
 //		MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{15,25,10},"tanh");
-		MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,15,3},"tanh");
-		System.out.println(conf);
-		MultiLayerNetwork network = new MultiLayerNetwork(conf);
-		network.init();
-		
-		DataSetIterator iter = new IrisDataSetIterator(12,120);
-		
-		while( iter.hasNext() ) network.fit(iter.next());
-	}
-	
-	@Test
-	public void testSingleExampleWeightUpdates(){
-		//Simplest possible case: 1 hidden layer, 1 hidden neuron, batch size of 1.
-		//Manually calculate weight updates (entirely outside of DL4J and ND4J)
-		// and compare expected and actual weights after backprop
-		
-		DataSetIterator iris = new IrisDataSetIterator(1,10);
-		
-		MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},"sigmoid"));
-		network.init();
-		
-		Layer[] layers = network.getLayers();
-		
-		final boolean printCalculations = true;
-		
-		while(iris.hasNext()){
-			DataSet data = iris.next();
-			INDArray x = data.getFeatureMatrix();
-			INDArray y = data.getLabels();
-			float[] xFloat = asFloat(x);
-			float[] yFloat = asFloat(y);
+        MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,15,3},"tanh");
+        System.out.println(conf);
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
 
-			//Do forward pass:
-			INDArray l1Weights = layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();	//Hidden layer
-			INDArray l2Weights = layers[1].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();	//Output layer
-			INDArray l1Bias = layers[0].getParam(DefaultParamInitializer.BIAS_KEY).dup();
-			INDArray l2Bias = layers[1].getParam(DefaultParamInitializer.BIAS_KEY).dup();
-			float[] l1WeightsFloat = asFloat(l1Weights);
-			float[] l2WeightsFloat = asFloat(l2Weights);
-			float l1BiasFloat = l1Bias.getFloat(0);
-			float l2BiasFloat = l2Bias.getFloat(0);
-			float[] l2BiasFloatArray = asFloat(l2Bias);
+        DataSetIterator iter = new IrisDataSetIterator(12,120);
 
-			float hiddenUnitPreSigmoid = dotProduct(l1WeightsFloat,xFloat)+l1BiasFloat;	//z=w*x+b
-			float hiddenUnitPostSigmoid = sigmoid(hiddenUnitPreSigmoid);				//a=sigma(z)
+        while( iter.hasNext() ) network.fit(iter.next());
+    }
 
-			float[] outputPreSoftmax = new float[3];
-			//Normally a matrix multiplication here, but only one hidden unit in this trivial example
-			for( int i=0; i<3; i++ ) outputPreSoftmax[i] = hiddenUnitPostSigmoid*l2WeightsFloat[i]+l2BiasFloatArray[i];
-			float[] outputPostSoftmax = softmax(outputPreSoftmax);
+    @Test
+    public void testSingleExampleWeightUpdates(){
+        //Simplest possible case: 1 hidden layer, 1 hidden neuron, batch size of 1.
+        //Manually calculate weight updates (entirely outside of DL4J and ND4J)
+        // and compare expected and actual weights after backprop
 
-			//Do backward pass:
-			float[] deltaOut = vectorDifference(outputPostSoftmax,yFloat);	//out-labels
-			//deltaHidden = sigmaPrime(hiddenUnitZ) * sum_k (w_jk * \delta_k); here, only one j
-			float deltaHidden = 0.0f;
-			for( int i=0; i<3; i++ ) deltaHidden += l2WeightsFloat[i]*deltaOut[i];
-			deltaHidden *= derivOfSigmoid(hiddenUnitPreSigmoid);
+        DataSetIterator iris = new IrisDataSetIterator(1,10);
 
-			//Calculate weight/bias updates:
-			//dL/dw = delta * (activation of prev. layer)
-			//dL/db = delta
-			float[] dLdwOut = new float[3];
-			for( int i=0; i<dLdwOut.length; i++) dLdwOut[i] = deltaOut[i] * hiddenUnitPostSigmoid;
-			float[] dLdwHidden = new float[4];
-			for( int i=0; i<dLdwHidden.length; i++) dLdwHidden[i] = deltaHidden * xFloat[i];
-			float[] dLdbOut = deltaOut;
-			float dLdbHidden = deltaHidden;
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},"sigmoid"));
+        network.init();
 
-			if(printCalculations){
-				System.out.println("deltaOut = " + Arrays.toString(deltaOut));
-				System.out.println("deltaHidden = " + deltaHidden);
-				System.out.println("dLdwOut = " + Arrays.toString(dLdwOut));
-				System.out.println("dLdbOut = " + Arrays.toString(dLdbOut));
-				System.out.println("dLdwHidden = " + Arrays.toString(dLdwHidden));
-				System.out.println("dLdbHidden = " + dLdbHidden);
-			}
+        Layer[] layers = network.getLayers();
 
+        final boolean printCalculations = true;
 
-			//Calculate new parameters:
-			//w_i = w_i - (learningRate)/(batchSize) * sum_j (dL_j/dw_i)
-			//b_i = b_i - (learningRate)/(batchSize) * sum_j (dL_j/db_i)
-			//Which for batch size of one (here) is simply:
-			//w_i = w_i - learningRate * dL/dw
-			//b_i = b_i - learningRate * dL/db
-			float[] expectedL1WeightsAfter = new float[4];
-			float[] expectedL2WeightsAfter = new float[3];
-			float expectedL1BiasAfter = l1BiasFloat - 0.1f * dLdbHidden;
-			float[] expectedL2BiasAfter = new float[3];
+        while(iris.hasNext()){
+            DataSet data = iris.next();
+            INDArray x = data.getFeatureMatrix();
+            INDArray y = data.getLabels();
+            float[] xFloat = asFloat(x);
+            float[] yFloat = asFloat(y);
 
-			for( int i=0; i<4; i++ ) expectedL1WeightsAfter[i] = l1WeightsFloat[i] - 0.1f * dLdwHidden[i];
-			for( int i=0; i<3; i++ ) expectedL2WeightsAfter[i] = l2WeightsFloat[i] - 0.1f * dLdwOut[i];
-			for( int i=0; i<3; i++ ) expectedL2BiasAfter[i] = l2BiasFloatArray[i] - 0.1f * dLdbOut[i];
+            //Do forward pass:
+            INDArray l1Weights = layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();	//Hidden layer
+            INDArray l2Weights = layers[1].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();	//Output layer
+            INDArray l1Bias = layers[0].getParam(DefaultParamInitializer.BIAS_KEY).dup();
+            INDArray l2Bias = layers[1].getParam(DefaultParamInitializer.BIAS_KEY).dup();
+            float[] l1WeightsFloat = asFloat(l1Weights);
+            float[] l2WeightsFloat = asFloat(l2Weights);
+            float l1BiasFloat = l1Bias.getFloat(0);
+            float l2BiasFloat = l2Bias.getFloat(0);
+            float[] l2BiasFloatArray = asFloat(l2Bias);
 
-			if( printCalculations ){
-				System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
-				System.out.println("Expected L2 weights = " + Arrays.toString(expectedL2WeightsAfter));
-				System.out.println("Expected L1 bias = " + expectedL1BiasAfter);
-				System.out.println("Expected L2 bias = " + Arrays.toString(expectedL2BiasAfter));
-			}
+            float hiddenUnitPreSigmoid = dotProduct(l1WeightsFloat,xFloat)+l1BiasFloat;	//z=w*x+b
+            float hiddenUnitPostSigmoid = sigmoid(hiddenUnitPreSigmoid);				//a=sigma(z)
 
-			//Finally, do back-prop on network, and compare parameters vs. expected parameters
-			network.fit(data);
+            float[] outputPreSoftmax = new float[3];
+            //Normally a matrix multiplication here, but only one hidden unit in this trivial example
+            for( int i=0; i<3; i++ ) outputPreSoftmax[i] = hiddenUnitPostSigmoid*l2WeightsFloat[i]+l2BiasFloatArray[i];
+            float[] outputPostSoftmax = softmax(outputPreSoftmax);
 
-			INDArray l1WeightsAfter = layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY);	//Hidden layer
-			INDArray l2WeightsAfter = layers[1].getParam(DefaultParamInitializer.WEIGHT_KEY);	//Output layer
-			INDArray l1BiasAfter = layers[0].getParam(DefaultParamInitializer.BIAS_KEY);
-			INDArray l2BiasAfter = layers[1].getParam(DefaultParamInitializer.BIAS_KEY);
-			float[] l1WeightsFloatAfter = asFloat(l1WeightsAfter);
-			float[] l2WeightsFloatAfter = asFloat(l2WeightsAfter);
-			float l1BiasFloatAfter = l1BiasAfter.getFloat(0);
-			float[] l2BiasFloatAfter = asFloat(l2BiasAfter);
+            //Do backward pass:
+            float[] deltaOut = vectorDifference(outputPostSoftmax,yFloat);	//out-labels
+            //deltaHidden = sigmaPrime(hiddenUnitZ) * sum_k (w_jk * \delta_k); here, only one j
+            float deltaHidden = 0.0f;
+            for( int i = 0; i < 3; i++ )
+                deltaHidden += l2WeightsFloat[i] * deltaOut[i];
+            deltaHidden *= derivOfSigmoid(hiddenUnitPreSigmoid);
+
+            //Calculate weight/bias updates:
+            //dL/dw = delta * (activation of prev. layer)
+            //dL/db = delta
+            float[] dLdwOut = new float[3];
+            for( int i = 0; i <  dLdwOut.length; i++)
+                dLdwOut[i] = deltaOut[i] * hiddenUnitPostSigmoid;
+            float[] dLdwHidden = new float[4];
+            for( int i = 0; i < dLdwHidden.length; i++)
+                dLdwHidden[i] = deltaHidden * xFloat[i];
+            float[] dLdbOut = deltaOut;
+            float dLdbHidden = deltaHidden;
+
+            if(printCalculations){
+                System.out.println("deltaOut = " + Arrays.toString(deltaOut));
+                System.out.println("deltaHidden = " + deltaHidden);
+                System.out.println("dLdwOut = " + Arrays.toString(dLdwOut));
+                System.out.println("dLdbOut = " + Arrays.toString(dLdbOut));
+                System.out.println("dLdwHidden = " + Arrays.toString(dLdwHidden));
+                System.out.println("dLdbHidden = " + dLdbHidden);
+            }
 
 
-			float eps = 0.0001f;
-			assertArrayEquals(l1WeightsFloatAfter,expectedL1WeightsAfter,eps);
-			assertArrayEquals(l2WeightsFloatAfter,expectedL2WeightsAfter,eps);
-			assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);
-			assertArrayEquals(l2BiasFloatAfter,expectedL2BiasAfter,eps);
-		}
-	}
-	
-	@Test
-	public void testMiniBatchWeightUpdates(){
-		//Manually calculate weight updates (outside of DL4J, but using ND4J matrix ops)
-			// and compare expected and actual weights after backprop
-		
-		testIrisMiniBatchWeightUpdates(1,new int[]{1}, "sigmoid");
-		testIrisMiniBatchWeightUpdates(1,new int[]{5},"sigmoid");
-		testIrisMiniBatchWeightUpdates(12,new int[]{15,25,10},"sigmoid");
-		testIrisMiniBatchWeightUpdates(50,new int[]{10,50,200,50,10},"tanh");
-	}
-	
-	private static void testIrisMiniBatchWeightUpdates( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction ){
-		
-		int totalExamples = 10 * miniBatchSize;
-		if( totalExamples > 150 ){
-			totalExamples = miniBatchSize * (150/miniBatchSize);
-		}
-		if( miniBatchSize > 150 ) fail();
-		DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,totalExamples);
-		
-		if(!activationFunction.equals("tanh") && !activationFunction.equals("sigmoid") ) fail();
-		boolean sigmoid = activationFunction.equals("sigmoid");
-		
-		MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,activationFunction));
-		network.init();
-		
-		Layer[] layers = network.getLayers();
-		int nLayers = layers.length;
-		
-		final float learningRate = 0.1f;
-		while(iris.hasNext()){
-			DataSet data = iris.next();
-			INDArray x = data.getFeatureMatrix();
-			INDArray y = data.getLabels();
-			
-			//Do forward pass:
-			INDArray[] layerWeights = new INDArray[nLayers];
-			INDArray[] layerBiases = new INDArray[nLayers];
-			for( int i=0; i<nLayers; i++ ){
-				layerWeights[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-				layerBiases[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
-			}
-			
-			INDArray[] layerZs = new INDArray[nLayers];
-			INDArray[] layerActivations = new INDArray[nLayers];
-			for( int i=0; i<nLayers; i++ ){
-				INDArray layerInput = (i==0 ? x : layerActivations[i-1]);
-				layerZs[i] = layerInput.mmul(layerWeights[i]).addiRowVector(layerBiases[i]);
-				if(sigmoid) layerActivations[i] = (i==nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doSigmoid(layerZs[i].dup()) );
-				else layerActivations[i] = (i==nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doTanh(layerZs[i].dup()) );
-			}
-			
-			//Do backward pass:
-			INDArray[] deltas = new INDArray[nLayers];
-			deltas[nLayers-1] = layerActivations[nLayers-1].sub(y);	//Out - labels; shape=[miniBatchSize,nOut];
-			assertArrayEquals(deltas[nLayers-1].shape(),new int[]{miniBatchSize,3});
-			for( int i=nLayers-2; i>=0; i--){
-				INDArray sigmaPrimeOfZ;
-				if(sigmoid) sigmaPrimeOfZ = doSigmoidDerivative(layerZs[i]);
-				else sigmaPrimeOfZ = doTanhDerivative(layerZs[i]);
-				deltas[i] = deltas[i+1].mmul(layerWeights[i+1].transpose()).mul(sigmaPrimeOfZ);
-				assertArrayEquals(deltas[i].shape(),new int[]{miniBatchSize,hiddenLayerSizes[i]});
-			}
-			
-			INDArray[] dLdw = new INDArray[nLayers];
-			INDArray[] dLdb = new INDArray[nLayers];
-			for( int i=0; i<nLayers; i++ ){
-				INDArray prevActivations = (i==0 ? x : layerActivations[i-1]);
-				dLdw[i] = deltas[i].transpose().mmul(prevActivations).div(miniBatchSize).transpose();	//Shape: [nIn, nOut]
-				dLdb[i] = deltas[i].mean(0); //Shape: [1,nOut]
-				
-				int nIn = (i==0?4:hiddenLayerSizes[i-1]);
-				int nOut = (i<nLayers-1?hiddenLayerSizes[i]:3);
-				assertArrayEquals(dLdw[i].shape(),new int[]{nIn, nOut});
-				assertArrayEquals(dLdb[i].shape(),new int[]{1, nOut});
-			}
-			
-			INDArray[] expectedWeights = new INDArray[nLayers];
-			INDArray[] expectedBiases = new INDArray[nLayers];
-			for( int i=0; i<nLayers; i++ ){
-				expectedWeights[i] = layerWeights[i].sub(dLdw[i].mul(learningRate));
-				expectedBiases[i] = layerBiases[i].sub(dLdb[i].mul(learningRate));
-				
-				int nIn = (i==0?4:hiddenLayerSizes[i-1]);
-				int nOut = (i<nLayers-1?hiddenLayerSizes[i]:3);
-				assertArrayEquals(expectedWeights[i].shape(),new int[]{nIn, nOut});
-				assertArrayEquals(expectedBiases[i].shape(),new int[]{1, nOut});
-			}
-			
-			//Do backprop, and compare resulting weights with expected weights:
-			network.fit(data);
-			INDArray[] layerWeightsAfter = new INDArray[nLayers];
-			INDArray[] layerBiasesAfter = new INDArray[nLayers];
-			for( int i=0; i<nLayers; i++ ){
-				layerWeightsAfter[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
-				layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
-			}
-			
-			float eps = 1e-1f;
-			for( int i=0; i<nLayers; i++ ){
-				float[] expWeights = asFloat(expectedWeights[i]);
-				float[] actWeights = asFloat(layerWeightsAfter[i]);
-				assertArrayEquals(expWeights,actWeights,eps);
-				
-				float[] expBiases = asFloat(expectedBiases[i]);
-				float[] actBiases = asFloat(layerBiasesAfter[i]);
-				assertArrayEquals(expBiases,actBiases,eps);
-			}
-		}
-	}
-	
-	
-	/** Very simple back-prop config set up for Iris.
-	 * Learning Rate = 0.1
-	 * No regularization, no Adagrad, no momentum etc. One iteration.
-	 */
-	private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction ) {
-		MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-				.nIn(4).nOut(3)
-				.weightInit(WeightInit.DISTRIBUTION)
-				.dist(new NormalDistribution(0, 0.1))
+            //Calculate new parameters:
+            //w_i = w_i - (learningRate)/(batchSize) * sum_j (dL_j/dw_i)
+            //b_i = b_i - (learningRate)/(batchSize) * sum_j (dL_j/db_i)
+            //Which for batch size of one (here) is simply:
+            //w_i = w_i - learningRate * dL/dw
+            //b_i = b_i - learningRate * dL/db
+            float[] expectedL1WeightsAfter = new float[4];
+            float[] expectedL2WeightsAfter = new float[3];
+            float expectedL1BiasAfter = l1BiasFloat - 0.1f * dLdbHidden;
+            float[] expectedL2BiasAfter = new float[3];
 
-				.activationFunction(activationFunction)
-				.lossFunction(LossFunction.XENT)
-				.optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+            for( int i=0; i<4; i++ )
+                expectedL1WeightsAfter[i] = l1WeightsFloat[i] + 0.1f * dLdwHidden[i];
+            for( int i=0; i<3; i++ )
+                expectedL2WeightsAfter[i] = l2WeightsFloat[i] + 0.1f * dLdwOut[i];
+            for( int i = 0; i < 3; i++ )
+                expectedL2BiasAfter[i] = l2BiasFloatArray[i] + 0.1f * dLdbOut[i];
 
-				.iterations(1)
-				.batchSize(1)
-				.constrainGradientToUnitNorm(false)
-				.corruptionLevel(0.0)
+            if( printCalculations ){
+                System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
+                System.out.println("Expected L2 weights = " + Arrays.toString(expectedL2WeightsAfter));
+                System.out.println("Expected L1 bias = " + expectedL1BiasAfter);
+                System.out.println("Expected L2 bias = " + Arrays.toString(expectedL2BiasAfter));
+            }
 
-				.layer(new RBM())
-				.learningRate(0.1).useAdaGrad(false)
+            //Finally, do back-prop on network, and compare parameters vs. expected parameters
+            network.fit(data);
 
-				.regularization(false)
-				.l1(0.0)
-				.l2(0.0)
-				.dropOut(0.0)
-				.momentum(0.0)
-				.applySparsity(false).sparsity(0.0)
-				.seed(12345L)
+            INDArray l1WeightsAfter = layers[0].getParam(DefaultParamInitializer.WEIGHT_KEY);	//Hidden layer
+            INDArray l2WeightsAfter = layers[1].getParam(DefaultParamInitializer.WEIGHT_KEY);	//Output layer
+            INDArray l1BiasAfter = layers[0].getParam(DefaultParamInitializer.BIAS_KEY);
+            INDArray l2BiasAfter = layers[1].getParam(DefaultParamInitializer.BIAS_KEY);
+            float[] l1WeightsFloatAfter = asFloat(l1WeightsAfter);
+            float[] l2WeightsFloatAfter = asFloat(l2WeightsAfter);
+            float l1BiasFloatAfter = l1BiasAfter.getFloat(0);
+            float[] l2BiasFloatAfter = asFloat(l2BiasAfter);
 
-				.list(hiddenLayerSizes.length + 1).hiddenLayerSizes(hiddenLayerSizes)
-				.backward(true).pretrain(false)
-				.useDropConnect(false)
 
-				.override(hiddenLayerSizes.length, new ConfOverride() {
-					@Override
-					public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-						builder.activationFunction("softmax");
-						builder.layer(new OutputLayer());
-						builder.weightInit(WeightInit.DISTRIBUTION);
-						builder.dist(new NormalDistribution(0, 0.1));
-					}
-				}).build();
+            float eps = 0.1f;
+            assertArrayEquals(l1WeightsFloatAfter,expectedL1WeightsAfter,eps);
+            assertArrayEquals(l2WeightsFloatAfter,expectedL2WeightsAfter,eps);
+            assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);
+            assertArrayEquals(l2BiasFloatAfter,expectedL2BiasAfter,eps);
+        }
+    }
 
-		return c;
-	}
+    @Test
+    public void testMiniBatchWeightUpdates(){
+        //Manually calculate weight updates (outside of DL4J, but using ND4J matrix ops)
+        // and compare expected and actual weights after backprop
 
-	public static float[] asFloat( INDArray arr ){
-		int len = arr.length();
-		float[] f = new float[len];
-		for( int i=0; i<len; i++ ) f[i] = arr.getFloat(i);
-		return f;
-	}
-	
-	public static float dotProduct( float[] x, float[] y ){
-		float sum = 0.0f;
-		for( int i=0; i<x.length; i++ ) sum += x[i]*y[i];
-		return sum;
-	}
-	
-	public static float sigmoid( float in ){
-		return (float)(1.0/(1.0+Math.exp(-in)));
-	}
-	
-	public static float[] sigmoid( float[] in ){
-		float[] out = new float[in.length];
-		for( int i=0; i<in.length; i++ ) out[i] = sigmoid(in[i]);
-		return out;
-	}
-	
-	public static float derivOfSigmoid( float in ){
+        testIrisMiniBatchWeightUpdates(1,new int[]{1}, "sigmoid");
+        testIrisMiniBatchWeightUpdates(1, new int[]{5}, "sigmoid");
+        testIrisMiniBatchWeightUpdates(12,new int[]{15,25,10},"sigmoid");
+        testIrisMiniBatchWeightUpdates(50,new int[]{10,50,200,50,10},"tanh");
+    }
+
+    private static void testIrisMiniBatchWeightUpdates( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction ){
+
+        int totalExamples = 10 * miniBatchSize;
+        if( totalExamples > 150 ){
+            totalExamples = miniBatchSize * (150/miniBatchSize);
+        }
+        if( miniBatchSize > 150 ) fail();
+        DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,totalExamples);
+
+        if(!activationFunction.equals("tanh") && !activationFunction.equals("sigmoid") ) fail();
+        boolean sigmoid = activationFunction.equals("sigmoid");
+
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,activationFunction));
+        network.init();
+
+        Layer[] layers = network.getLayers();
+        int nLayers = layers.length;
+
+        final float learningRate = 0.1f;
+        while(iris.hasNext()){
+            DataSet data = iris.next();
+            INDArray x = data.getFeatureMatrix();
+            INDArray y = data.getLabels();
+
+            //Do forward pass:
+            INDArray[] layerWeights = new INDArray[nLayers];
+            INDArray[] layerBiases = new INDArray[nLayers];
+            for( int i=0; i < nLayers; i++ ){
+                layerWeights[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
+                layerBiases[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
+            }
+
+            INDArray[] layerZs = new INDArray[nLayers];
+            INDArray[] layerActivations = new INDArray[nLayers];
+            for( int  i= 0; i < nLayers; i++ ){
+                INDArray layerInput = (i == 0 ? x : layerActivations[i-1]);
+                layerZs[i] = layerInput.mmul(layerWeights[i]).addiRowVector(layerBiases[i]);
+                if(sigmoid) layerActivations[i] = (i==nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doSigmoid(layerZs[i].dup()) );
+                else layerActivations[i] = (i == nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doTanh(layerZs[i].dup()) );
+            }
+
+            //Do backward pass:
+            INDArray[] deltas = new INDArray[nLayers];
+            deltas[nLayers - 1] = layerActivations[nLayers-1].sub(y);	//Out - labels; shape=[miniBatchSize,nOut];
+            assertArrayEquals(deltas[nLayers-1].shape(),new int[]{miniBatchSize,3});
+            for( int i = nLayers - 2; i >= 0; i--){
+                INDArray sigmaPrimeOfZ;
+                if(sigmoid) sigmaPrimeOfZ = doSigmoidDerivative(layerZs[i]);
+                else sigmaPrimeOfZ = doTanhDerivative(layerZs[i]);
+                deltas[i] = deltas[i + 1].mmul(layerWeights[i+1].transpose()).mul(sigmaPrimeOfZ);
+                assertArrayEquals(deltas[i].shape(),new int[]{miniBatchSize,hiddenLayerSizes[i]});
+            }
+
+            INDArray[] dLdw = new INDArray[nLayers];
+            INDArray[] dLdb = new INDArray[nLayers];
+            for( int i = 0; i<nLayers; i++ ){
+                INDArray prevActivations = (i == 0 ? x : layerActivations[i-1]);
+                dLdw[i] = deltas[i].transpose().mmul(prevActivations).div(miniBatchSize).transpose();	//Shape: [nIn, nOut]
+                dLdb[i] = deltas[i].mean(0); //Shape: [1,nOut]
+
+                int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
+                int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);
+                assertArrayEquals(dLdw[i].shape(),new int[]{nIn, nOut});
+                assertArrayEquals(dLdb[i].shape(),new int[]{1, nOut});
+            }
+
+            INDArray[] expectedWeights = new INDArray[nLayers];
+            INDArray[] expectedBiases = new INDArray[nLayers];
+            for( int i = 0; i < nLayers; i++ ){
+                expectedWeights[i] = layerWeights[i].sub(dLdw[i].mul(learningRate));
+                expectedBiases[i] = layerBiases[i].sub(dLdb[i].mul(learningRate));
+
+                int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
+                int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);
+                assertArrayEquals(expectedWeights[i].shape(),new int[]{nIn, nOut});
+                assertArrayEquals(expectedBiases[i].shape(),new int[]{1, nOut});
+            }
+
+            //Do backprop, and compare resulting weights with expected weights:
+            network.fit(data);
+            INDArray[] layerWeightsAfter = new INDArray[nLayers];
+            INDArray[] layerBiasesAfter = new INDArray[nLayers];
+            for( int i=0; i<nLayers; i++ ){
+                layerWeightsAfter[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
+                layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
+            }
+
+            for( int i = 0; i < nLayers; i++ ){
+                assertEquals(expectedWeights[i], layerWeightsAfter[i]);
+                assertEquals(expectedBiases[i], layerBiasesAfter[i]);
+            }
+        }
+    }
+
+
+    /** Very simple back-prop config set up for Iris.
+     * Learning Rate = 0.1
+     * No regularization, no Adagrad, no momentum etc. One iteration.
+     */
+    private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction ) {
+        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
+                .nIn(4).nOut(3)
+                .weightInit(WeightInit.DISTRIBUTION)
+                .dist(new NormalDistribution(0, 0.1))
+
+                .activationFunction(activationFunction)
+                .lossFunction(LossFunction.XENT)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+
+                .iterations(1)
+                .batchSize(1)
+                .constrainGradientToUnitNorm(false)
+                .corruptionLevel(0.0)
+
+                .layer(new RBM())
+                .learningRate(0.1).useAdaGrad(false)
+
+                .regularization(false)
+                .l1(0.0)
+                .l2(0.0)
+                .dropOut(0.0)
+                .momentum(0.0)
+                .applySparsity(false).sparsity(0.0)
+                .seed(12345L)
+
+                .list(hiddenLayerSizes.length + 1).hiddenLayerSizes(hiddenLayerSizes)
+                .backward(true).pretrain(false)
+                .useDropConnect(false)
+
+                .override(hiddenLayerSizes.length, new ConfOverride() {
+                    @Override
+                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
+                        builder.activationFunction("softmax");
+                        builder.layer(new OutputLayer());
+                        builder.weightInit(WeightInit.DISTRIBUTION);
+                        builder.dist(new NormalDistribution(0, 0.1));
+                    }
+                }).build();
+
+        return c;
+    }
+
+    public static float[] asFloat( INDArray arr ){
+        int len = arr.length();
+        float[] f = new float[len];
+        for( int i = 0; i < len; i++ )
+            f[i] = arr.getFloat(i);
+        return f;
+    }
+
+    public static float dotProduct( float[] x, float[] y ){
+        float sum = 0.0f;
+        for( int i = 0; i < x.length; i++ )
+            sum += x[i]*y[i];
+        return sum;
+    }
+
+    public static float sigmoid( float in ){
+        return (float)(1.0 / (1.0 + Math.exp(-in)));
+    }
+
+    public static float[] sigmoid(float[] in) {
+        float[] out = new float[in.length];
+        for( int i=0; i<in.length; i++ ) out[i] = sigmoid(in[i]);
+        return out;
+    }
+
+    public static float derivOfSigmoid( float in ){
 //		float v = (float)( Math.exp(in) / Math.pow(1+Math.exp(in),2.0) );
         float v = in * (1-in);
-		return v;
-	}
-	
-	public static float[] derivOfSigmoid( float[] in ){
-		float[] out = new float[in.length];
-		for( int i=0; i<in.length; i++ ) out[i] = derivOfSigmoid(in[i]);
-		return out;
-	}
-	
-	public static float[] softmax( float[] in ){
-		float[] out = new float[in.length];
-		float sumExp = 0.0f;
-		for( int i=0; i<in.length; i++ ) sumExp += Math.exp(in[i]);
-		for( int i=0; i<in.length; i++ ) out[i] = (float)Math.exp(in[i])/sumExp;
-		return out;
-	}
-	
-	public static float[] vectorDifference(float[] x, float[] y){
-		float[] out = new float[x.length];
-		for( int i=0; i<x.length; i++ ) out[i] = x[i]-y[i];
-		return out;
-	}
-	
-	public static INDArray doTanh(INDArray input){
-		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input));
-	}
-	
-	public static INDArray doTanhDerivative(INDArray input){
-		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input).derivative());
-	}
-	
-	public static INDArray doSoftmax(INDArray input, int dimension){
-		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", input), dimension);
-	}
-	
-	public static INDArray doSigmoid(INDArray input){
-		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input));
-	}
-	
-	public static INDArray doSigmoidDerivative(INDArray input){
-		return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input).derivative());
-	}
+        return v;
+    }
+
+    public static float[] derivOfSigmoid( float[] in ){
+        float[] out = new float[in.length];
+        for( int i=0; i<in.length; i++ ) out[i] = derivOfSigmoid(in[i]);
+        return out;
+    }
+
+    public static float[] softmax( float[] in ){
+        float[] out = new float[in.length];
+        float sumExp = 0.0f;
+        for( int i=0; i<in.length; i++ ) sumExp += Math.exp(in[i]);
+        for( int i=0; i<in.length; i++ ) out[i] = (float)Math.exp(in[i])/sumExp;
+        return out;
+    }
+
+    public static float[] vectorDifference(float[] x, float[] y){
+        float[] out = new float[x.length];
+        for( int i=0; i<x.length; i++ ) out[i] = x[i]-y[i];
+        return out;
+    }
+
+    public static INDArray doTanh(INDArray input){
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input));
+    }
+
+    public static INDArray doTanhDerivative(INDArray input){
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", input).derivative());
+    }
+
+    public static INDArray doSoftmax(INDArray input, int dimension){
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", input), dimension);
+    }
+
+    public static INDArray doSigmoid(INDArray input){
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input));
+    }
+
+    public static INDArray doSigmoidDerivative(INDArray input){
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input).derivative());
+    }
 
 }
