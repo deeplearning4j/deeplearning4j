@@ -12,6 +12,7 @@ layout: default
 * [Nando de Freitas's Deep Learning Class at Oxford](https://www.youtube.com/playlist?list=PLE6Wd9FR--EfW8dtjAuPoTuPcqmOV53Fu)  (2015)
 * [Andrej Karphathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
+* [Machine Learning & Computer Vision Talks](http://www.machinelearningtalks.com)
 
 ## Deep- and Machine-Learning Fora
 
