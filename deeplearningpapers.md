@@ -27,7 +27,7 @@ layout: default
 
 **[Semantic Compositionality through Recursive Matrix-Vector Spaces](http://ttic.uchicago.edu/~haotang/speech/SocherHuvalManningNg_EMNLP2012.pdf)**; Richard Socher, Brody Huval, Christopher D. Manning and Andrew Y. Ng; Computer Science Department, Stanford University
 
-**[Deep learning of the tissue-regulated splicing code](http://www.psi.toronto.edu/publications/2014/DeepSplicingCode.pdf); Michael K. K. Leung, Hui Yuan Xiong, Leo J. Lee and Brendan J. Frey
+**[Deep learning of the tissue-regulated splicing code](http://www.psi.toronto.edu/publications/2014/DeepSplicingCode.pdf)**; Michael K. K. Leung, Hui Yuan Xiong, Leo J. Lee and Brendan J. Frey
 
 **[Notes on AdaGrad](http://www.ark.cs.cmu.edu/cdyer/adagrad.pdf)**; Chris Dyer; School of Computer Science, Carnegie Mellon University
 
