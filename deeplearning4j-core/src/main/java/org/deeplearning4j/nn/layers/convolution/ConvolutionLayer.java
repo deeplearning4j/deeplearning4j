@@ -114,7 +114,7 @@ public class ConvolutionLayer implements Layer {
         getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
         INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
         gcol = Nd4j.rollAxis(gcol,3);
-        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);
+        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);// TODO: Use user specified type of convolution
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
@@ -163,7 +163,7 @@ public class ConvolutionLayer implements Layer {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
         //number of feature maps for the weights
-        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
+        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf); // This returns the filterSize as an int
         //number of channels of the input
         int inputChannels = ConvolutionUtils.numChannels(input.shape());
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));

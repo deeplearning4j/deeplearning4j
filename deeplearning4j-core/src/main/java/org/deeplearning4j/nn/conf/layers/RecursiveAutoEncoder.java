@@ -18,34 +18,61 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
 *
 * Recursive AutoEncoder.
 * Uses back propagation through structure.
 *
 */
-public class RecursiveAutoEncoder extends Layer {
+@Data
+@NoArgsConstructor
+public class RecursiveAutoEncoder extends FeedForwardLayer {
 
     private static final long serialVersionUID = -2963611662325083203L;
 
-    @Override
-    public int hashCode() {
-        return 0;
+    private RecursiveAutoEncoder(Builder builder) {
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.activationFunction = builder.activationFunction;
+        this.weightInit = builder.weightInit;
+        this.dropOut = builder.dropOut;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    public static class Builder extends FeedForwardLayer.Builder {
 
-    public String toString() {
-        return "RecursiveAutoEncoder{" +
-                '}';
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+        @Override
+        @SuppressWarnings("unchecked")
+        public RecursiveAutoEncoder build() {
+            return new RecursiveAutoEncoder(this);
+        }
     }
 }
