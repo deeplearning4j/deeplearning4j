@@ -38,4 +38,12 @@ public interface OutputPreProcessor  extends Serializable {
      */
     INDArray preProcess(INDArray output);
 
+
+    /**
+     * Reverse the process for backward
+     * @param toReverse the reverse process
+     * @return the reverse of the pre preprocessing on the output
+     */
+    INDArray backward(INDArray toReverse);
+
 }
