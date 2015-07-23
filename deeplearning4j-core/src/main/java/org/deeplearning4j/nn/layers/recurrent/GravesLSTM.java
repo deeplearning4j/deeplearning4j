@@ -82,10 +82,9 @@ public class GravesLSTM extends BaseLayer {
 		//Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
 		int hiddenLayerSize = recurrentWeights.rows();	//i.e., n^L
 		int prevLayerSize = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS).shape()[0];
-		INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
-		INDArray epsilon = weights.mmul(gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY).transpose()).transpose();
-		int miniBatchSize = epsilon.size(0);
-		int timeSeriesLength = (epsilon.rank()<3 ? 1 : epsilon.size(2));	//Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
+		int miniBatchSize = nextDelta.size(0);
+		boolean is2dInput = nextDelta.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
+		int timeSeriesLength = (is2dInput? 1: nextDelta.size(2));
 		
 		INDArray wi = inputWeights.get(interval(0,prevLayerSize),interval(0,hiddenLayerSize));
 		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
@@ -117,6 +116,12 @@ public class GravesLSTM extends BaseLayer {
 		for( int t=timeSeriesLength-1; t>=0; t-- ){
 			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : memCellActivations.slice(t-1, 2) );	//Shape: [n^L, n^L]
 			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : outputActivations.slice(t-1,2) );	//Shape: [n^L, n^L]; i.e., layer output at prev. time step.
+
+			INDArray nextLayerDeltaSlice = nextDelta;	//delta^{(L+1)t}
+			if (!is2dInput) {
+				nextLayerDeltaSlice = nextDelta.slice(t, 2);
+			}
+					
 			//delta_i^{L(t+1)}
 			INDArray deltaiNext = (t==timeSeriesLength-1 ?
 					Nd4j.zeros(miniBatchSize,hiddenLayerSize) :
