@@ -131,7 +131,7 @@ public class Word2Vec implements Serializable {
         log.info("Built vocab..");
 
         final Word2VecParam param = new Word2VecParam.Builder()
-                .negative(lookupTable.getNegative()).window(conf.getInt(Word2VecPerformer.WINDOW,5))
+                .negative(0.0).window(conf.getInt(Word2VecPerformer.WINDOW,5))
                 .expTable(sc.broadcast(lookupTable.getExpTable())).setAlpha(lookupTable.getLr().get())
                 .setMinAlpha(1e-2).setVectorLength(lookupTable.getVectorLength())
                 .useAdaGrad(lookupTable.isUseAdaGrad()).weights(lookupTable)
