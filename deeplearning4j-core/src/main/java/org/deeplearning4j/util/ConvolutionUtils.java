@@ -36,7 +36,7 @@ public class ConvolutionUtils {
      * @return the configuration to get height and width from
      */
     public static int[] getHeightAndWidth(NeuralNetConfiguration conf) {
-        return getHeightAndWidth(conf.getFilterSize());
+        return getHeightAndWidth(conf.getKernelSize());
     }
 
 
@@ -48,7 +48,7 @@ public class ConvolutionUtils {
      * the filter size of the configuration
      */
     public static int numFeatureMap(NeuralNetConfiguration conf) {
-        return numFeatureMap(conf.getFilterSize());
+        return numFeatureMap(conf.getKernelSize());
     }
 
     /**
