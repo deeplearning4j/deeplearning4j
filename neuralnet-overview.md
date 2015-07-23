@@ -37,7 +37,9 @@ Traditional machine learning relies on shallow nets, composed of one input and o
 
 In deep-learning networks, each layer of nodes is trains on a distinct set of features based on the previous layer's output. The further you advance into the neural net, the more complex the features your nodes can recognize, since they aggregate and recombine features from the previous layer. 
 
-This is known as **feature hierarchy**, and it is a hierarchy of increasing complexity and abstraction. It makes deep-learning networks capable of handling very large, high-dimensional data sets with billions of parameters passing through [nonlinear functions](../glossary.html#nonlineartransformfunction). 
+![Alt text](../img/feature_hierarchy.png)
+
+This is known as **feature hierarchy**, and it is a hierarchy of increasing complexity and abstraction. It makes deep-learning networks capable of handling very large, high-dimensional data sets with billions of parameters that pass through [nonlinear functions](../glossary.html#nonlineartransformfunction). 
 
 Above all, these nets are capable of discovering latent structures within **unlabeled, unstructured data**, which is the vast majority of data in the world. Another word for unstructured data is simply raw media; i.e. pictures, texts, video and audio recordings. Therefore, one of the problems deep learning solves best is in processing and clustering the world's raw, unlabeled media, discerning similarities and anomalies in data that no human has organized in a relational database or put a name to. 
 
