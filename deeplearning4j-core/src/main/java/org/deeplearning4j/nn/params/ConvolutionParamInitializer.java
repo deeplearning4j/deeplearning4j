@@ -25,7 +25,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -41,7 +40,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     public final static String CONVOLUTION_WEIGHTS = "convweights";
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        if(conf.getFilterSize().length < 2)
+        if(conf.getKernelSize().length < 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
         params.put(CONVOLUTION_BIAS,createBias(conf));
@@ -59,7 +58,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf) {
         //the bias is a 1D tensor -- one bias per output feature map
-        return Nd4j.zeros(conf.getFilterSize()[0]);
+        return Nd4j.zeros(conf.getKernelSize()[0]);
     }
 
 
@@ -75,7 +74,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          */
 
         Distribution dist = Distributions.createDistribution(conf.getDist());
-        return WeightInitUtil.initWeights(conf.getFilterSize(),conf.getWeightInit(), dist);
+        return WeightInitUtil.initWeights(conf.getKernelSize(),conf.getWeightInit(), dist);
     }
 
 }

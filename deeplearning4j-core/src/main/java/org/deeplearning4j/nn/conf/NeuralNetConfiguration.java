@@ -125,9 +125,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private int[] weightShape;
 
-    //convolutional nets: this is the feature map shape
-    private int[] filterSize = {2,2};
-    private int filterDepth = 5;
+    //convolutional nets: this is the height and width of the kernel
+    private int[] kernelSize = {2,2};
     //aka pool size for subsampling
     private int[] stride = {2,2};
     //kernel size for a convolutional net
@@ -143,8 +142,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected int[] featureMapSize = {9,9};
 
     protected double rmsDecay = 0.0;
-    //number of channels for a conv net
-    protected int channels = 1;
+
 
     protected boolean miniBatch = false;
 
@@ -231,8 +229,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.weightShape = weightShape;
         else
             this.weightShape = new int[]{nIn,nOut};
-        this.filterSize = filterSize;
-        this.filterDepth = filterDepth;
+        this.kernelSize = filterSize;
         this.stride = stride;
     }
 
@@ -902,7 +899,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.miniBatch = miniBatch;
             ret.rho = rho;
             ret.updater = updater;
-            ret.channels = channels;
 
             //override the properties from the layer
             ret = overRideFields(ret, layer);

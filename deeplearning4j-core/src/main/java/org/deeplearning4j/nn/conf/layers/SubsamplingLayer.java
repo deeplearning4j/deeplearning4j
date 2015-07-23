@@ -24,14 +24,14 @@ public class SubsamplingLayer extends Layer {
     private SubsamplingLayer(Builder builder) {
         this.poolingType = builder.poolingType;
         this.stride = builder.stride;
-//        this.filterSize = builder.filterSize;
+//        this.kernelSize = builder.kernelSize;
     }
 
     @AllArgsConstructor
     public static class Builder extends Layer.Builder {
         private PoolingType poolingType;
         private int[] stride; // Default is 2. Down-sample by a factor of 2
-//        private int[] filterSize; // Same as filter size from the last conv layer
+//        private int[] kernelSize; // Same as filter size from the last conv layer
 
         @Override
         public Builder activation(String activationFunction) {
