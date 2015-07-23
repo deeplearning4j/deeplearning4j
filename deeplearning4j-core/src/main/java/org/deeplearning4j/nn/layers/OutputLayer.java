@@ -73,15 +73,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             return;
 
         INDArray output = output(input);
-        INDArray wGradient = getWeightGradient(output);
-
-        INDArray dy = labels.sub(output);
-        INDArray bGradient = dy.sum(0);
-        Gradient g = new DefaultGradient();
-
-        g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
-        g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bGradient);
-        this.gradient = g;
+        Pair<Gradient,INDArray> pair = getGradientsAndDelta(output);
+        this.gradient = pair.getFirst();
         setScoreWithZ(output);
 
     }
@@ -108,16 +101,13 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return new Pair<>(gradient(),score());
     }
 
-    public Gradient backpropGradient(Gradient nextGradient, Layer layer) {
-        INDArray output = output(input);
+    @Override
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
+    	Pair<Gradient,INDArray> pair = getGradientsAndDelta(output(input));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+    	INDArray delta = pair.getSecond();
 
-        INDArray delta = gradient().getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-
-        Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(input).transpose());
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
-
-        return ret;
+        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+        return new Pair<>(pair.getFirst(),epsilonNext);
     }
 
     /**
@@ -130,40 +120,45 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return gradient;
 
     }
+    
+    private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray output){
+    	INDArray labelsSubOut = labels.sub(output);
+    	Gradient gradient = new DefaultGradient();
+    	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, labelsSubOut.sum(0));
+    	
+    	switch (conf.getLossFunction()) {
+        case MCXENT:
+            gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
+            return new Pair<>(gradient,labelsSubOut);
 
-
-    // TODO verfiy if any of the functions require application of activation derivative
-    private INDArray getWeightGradient(INDArray z) {
-        switch (conf.getLossFunction()) {
-            case MCXENT:
-                //difference of outputs
-                INDArray dy = labels.sub(z);
-                return input.transpose().mmul(dy);
-
-            case XENT:
-                INDArray xEntDiff = labels.sub(z);
-                return input.transpose().mmul(xEntDiff.div(z.mul(z.rsub(1))));
-            case MSE:
-                INDArray mseDelta = labels.sub(z);
-                return input.transpose().mmul(mseDelta.neg());
-            case EXPLL:
-                return input.transpose().mmul(labels.rsub(1).divi(z));
-            case RMSE_XENT:
-                INDArray rmseXentDiff = labels.sub(z);
-                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
-                INDArray sqrt = sqrt(squaredrmseXentDiff);
-                return input.transpose().mmul(sqrt);
-            case SQUARED_LOSS:
-                return input.transpose().mmul(pow(labels.sub(z),2));
-            case NEGATIVELOGLIKELIHOOD:
-                INDArray dy2 = labels.sub(z);
-                return input.transpose().mmul(dy2);
-
-
-        }
-
-        throw new IllegalStateException("Invalid loss function");
-
+        case XENT:
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.div(output.mul(output.rsub(1)))));
+        	return new Pair<>(gradient,labelsSubOut);
+        	
+        case MSE:
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.neg()));
+            return new Pair<>(gradient,labelsSubOut);
+        	
+        case EXPLL:
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
+            return new Pair<>(gradient,labelsSubOut);
+            
+        case RMSE_XENT:
+        	INDArray squaredrmseXentDiff = pow(labelsSubOut, 2.0);
+        	INDArray sqrt = sqrt(squaredrmseXentDiff);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
+            return new Pair<>(gradient,labelsSubOut);
+        	
+        case SQUARED_LOSS:
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(labelsSubOut,2))));
+            return new Pair<>(gradient,labelsSubOut);
+            
+        case NEGATIVELOGLIKELIHOOD:
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
+            return new Pair<>(gradient,labelsSubOut);
+        default:
+        	throw new IllegalStateException("Invalid loss function: " + conf.getLossFunction());
+    	}
     }
 
 
