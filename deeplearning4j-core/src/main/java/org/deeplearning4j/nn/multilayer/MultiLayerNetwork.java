@@ -353,10 +353,12 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
                     }
-                    conf.setNIn(inputSize);
 
                     if (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                        if(hiddenLayerSizes != null)
+                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+
+
                     }
                 }
                 else if (i < getLayers().length) {
@@ -379,12 +381,14 @@ public class MultiLayerNetwork implements Serializable, Classifier {
                      * for every layer.
                      */
                     if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        if(i != (layers.length-1)) {
+                        if(i != layers.length - 1) {
                             numHiddenLayersSizesUsed++;
                             conf.setNIn(layerInput.size(1));
-                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                            if(hiddenLayerSizes != null)
+                                conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         } else {
-                            conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
+                            if(hiddenLayerSizes != null)
+                                conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         }
                     }
                 }
