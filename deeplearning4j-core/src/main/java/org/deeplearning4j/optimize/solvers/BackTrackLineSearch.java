@@ -25,7 +25,7 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -61,7 +61,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     private Model layer;
-    private StepFunction stepFunction = new DefaultStepFunction();
+    private StepFunction stepFunction = new NegativeDefaultStepFunction();
     private ConvexOptimizer optimizer;
     private int maxIterations = 5;
     double stepMax = 100;
@@ -92,7 +92,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
      * @param optimizer
      */
     public BackTrackLineSearch(Model optimizable, ConvexOptimizer optimizer) {
-        this(optimizable, new DefaultStepFunction(), optimizer);
+        this(optimizable, new NegativeDefaultStepFunction(), optimizer);
     }
 
 
@@ -129,6 +129,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
         if(Nd4j.ENFORCE_NUMERICAL_STABILITY) {
             BooleanIndexing.applyWhere(parameters, Conditions.isNan(),new Value(Nd4j.EPS_THRESHOLD));
         }
+
         layer.setParams(parameters);
         layer.computeGradientAndScore();
         return layer.score();
@@ -166,7 +167,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
 
         score2 = oldScore = layer.score();
 
-        if( logger.isTraceEnabled() ){
+        if(logger.isTraceEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
             logger.trace("Entering BackTrackLinnSearch, value = " + oldScore + ",\ndirection.oneNorm:"
                     +	searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
@@ -178,8 +179,8 @@ public class BackTrackLineSearch implements LineOptimizer  {
             searchDirection.muli(stepMax / sum);
         }
 
-        if( slope >= 0.0 )
-            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
+        if( slope <= 0.0 )
+            throw new InvalidStepException("Slope " + slope + " is <= 0.0. Expect slope > 0.0");
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
@@ -196,9 +197,11 @@ public class BackTrackLineSearch implements LineOptimizer  {
                 throw new IllegalArgumentException("Current step == oldStep");
 
             // step
-            if( candidateParameters == null )
+            if(candidateParameters == null)
                 candidateParameters = parameters.dup();
-            else candidateParameters.assign(parameters);
+            else
+                candidateParameters.assign(parameters);
+
             stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
 
@@ -219,7 +222,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             logger.debug("Model score after step = {}", score);
 
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
-            if(score <= oldScore + ALF * step * slope) {
+            if(score <= oldScore - ALF * step * slope) {
                 logger.debug("Sufficient decrease (Wolfe cond.), exiting backtrack on iter {}: score={}, oldScore={}",iteration,score,oldScore);
                 if (score > oldScore)
                     throw new IllegalStateException
@@ -241,10 +244,10 @@ public class BackTrackLineSearch implements LineOptimizer  {
             // backtrack
             else {
                 if(step == 1.0) // first time through
-                    tmpStep = -slope / (2.0 * ( score - oldScore - slope ));
+                    tmpStep = slope / (2.0 * ( score - oldScore + slope ));
                 else {
-                    rhs1 = score - oldScore - step * slope;
-                    rhs2 = score2 - oldScore - step2 * slope;
+                    rhs1 = score - oldScore + step * slope;
+                    rhs2 = score2 - oldScore + step2 * slope;
                     if(step == step2)
                         throw new IllegalStateException("FAILURE: dividing by step-step2 which equals 0. step=" + step);
                     double stepSquared = step*step;
@@ -252,16 +255,16 @@ public class BackTrackLineSearch implements LineOptimizer  {
                     a = ( rhs1/stepSquared - rhs2/step2Squared ) / (step - step2);
                     b = ( -step2*rhs1/stepSquared + step*rhs2/step2Squared ) / (step - step2);
                     if(a == 0.0)
-                        tmpStep = -slope / (2.0 * b);
+                        tmpStep = slope / (2.0 * b);
                     else {
-                        disc = b * b - 3.0 * a * slope;
+                        disc = b * b + 3.0 * a * slope;
                         if(disc < 0.0) {
                             tmpStep = 0.5 * step;
                         }
                         else if (b <= 0.0)
                             tmpStep = (-b + FastMath.sqrt(disc))/(3.0 * a );
                         else
-                            tmpStep = -slope / (b +FastMath.sqrt(disc));
+                            tmpStep = slope / (b +FastMath.sqrt(disc));
                     }
                     if (tmpStep > 0.5 * step)
                         tmpStep = 0.5 * step;    // lambda <= 0.5 lambda_1

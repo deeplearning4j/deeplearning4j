@@ -18,8 +18,6 @@
 
 package org.deeplearning4j.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
