@@ -183,8 +183,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    public double score(DataSet data) {
-        return score(data.getFeatureMatrix(), data.getLabels());
+    public double f1Score(DataSet data) {
+        return f1Score(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -197,7 +197,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param labels   the true labels
      * @return the scores for each ndarray
      */
-    public double score(INDArray examples, INDArray labels) {
+    public double f1Score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
         return  eval.f1();

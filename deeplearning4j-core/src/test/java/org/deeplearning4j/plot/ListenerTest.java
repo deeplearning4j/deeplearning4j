@@ -173,7 +173,7 @@ public class ListenerTest {
 
                 .list(hiddenLayerSizes.length + 1)
                 .hiddenLayerSizes(hiddenLayerSizes)
-                .backward(true).pretrain(false)
+                .backprop(true).pretrain(false)
                 .useDropConnect(false)
 
                 .override(hiddenLayerSizes.length, new ConfOverride() {
