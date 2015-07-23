@@ -29,6 +29,8 @@ layout: default
 
 **[Deep learning of the tissue-regulated splicing code](http://www.psi.toronto.edu/publications/2014/DeepSplicingCode.pdf)**; Michael K. K. Leung, Hui Yuan Xiong, Leo J. Lee and Brendan J. Frey
 
+**[The human splicing code reveals new insights into the genetic determinants of disease](http://www.sciencemag.org/content/347/6218/1254806.abstract)**; Hui Y. Xiong et al
+
 **[Notes on AdaGrad](http://www.ark.cs.cmu.edu/cdyer/adagrad.pdf)**; Chris Dyer; School of Computer Science, Carnegie Mellon University
 
 **[Adaptive Step-Size for Online Temporal Difference Learning](http://people.cs.umass.edu/~wdabney/papers/alphaBounds.pdf)**; William Dabney and Andrew G. Barto; University of Massachusetts Amherst
