@@ -14,7 +14,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 /**
  * @author Jeffrey Tang.
  */
-public class layerBuilderTest {
+public class LayerBuilderTest {
     int numIn = 10;
     int numOut = 5;
     double drop = 0.3;
@@ -35,7 +35,7 @@ public class layerBuilderTest {
     @Test
     public void testLayerBuilderAPI() {
         // Make new Convolutional layer
-        ConvolutionLayer conv = new ConvolutionLayer.Builder(filterSize, filterDepth, convType).activation(act).build();
+        ConvolutionLayer conv = new ConvolutionLayer.Builder(filterSize, convType).activation(act).build();
         // Make new Subsampling layer
         SubsamplingLayer sample = new SubsamplingLayer.Builder(poolType, stride).build();
         // Make new RBM layer
@@ -50,9 +50,7 @@ public class layerBuilderTest {
         assertTrue(out.getActivationFunction().equals(act));
         // Test Convolution layer API
         assertTrue(conv.getConvolutionType() == convType);
-        assertTrue(conv.getFilterSize() == filterSize);
-        assertTrue(conv.getFilterDepth() == filterDepth && conv.getActivationFunction().equals(act));
-        // Test Subsampling layer API
+         // Test Subsampling layer API
         assertTrue(sample.getPoolingType() == poolType);
         assertTrue(sample.getStride() == stride);
         // Test RBM layer API
