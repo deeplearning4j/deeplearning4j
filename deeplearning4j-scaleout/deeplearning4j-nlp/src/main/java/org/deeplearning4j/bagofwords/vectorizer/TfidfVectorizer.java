@@ -105,6 +105,9 @@ public class TfidfVectorizer extends BaseTextVectorizer implements Serializable 
 
     @Override
     public DataSet vectorize(String text, String label) {
+        if (labels.indexOf(label) < 0) {
+            throw new IllegalArgumentException("Label not found in a dictionary.");
+        }
         INDArray tfidf  = tfidfForInput(text);
         INDArray label2 = FeatureUtil.toOutcomeVector(labels.indexOf(label), labels.size());
         return new DataSet(tfidf,label2);
