@@ -390,6 +390,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layerwise.size() < ind + 1) {
                 throw new IllegalArgumentException("IndexOutOfBoundsError: Layer index exceeds listed size");
             }
+
             Builder builderWithLayer = layerwise.get(ind).layer(layer);
             layerwise.put(ind, builderWithLayer);
             return this;
