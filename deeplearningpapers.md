@@ -9,6 +9,7 @@ layout: default
 
 * [Geoff Hinton's Neural Networks Class on Coursera](class.coursera.org/neuralnets-2012-001/lecture) (2012)
 * [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info)
+* [Ng's Lecture Notes for Stanford's CS229 Machine Learning](http://cs229.stanford.edu/materials.html)
 * [Nando de Freitas's Deep Learning Class at Oxford](https://www.youtube.com/playlist?list=PLE6Wd9FR--EfW8dtjAuPoTuPcqmOV53Fu)  (2015)
 * [Andrej Karphathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
@@ -145,7 +146,3 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 -  [Yann LeCun](http://yann.lecun.com/)
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
 -  [Juergen Schmidhuber](http://people.idsia.ch/~juergen/)
-
-## Other Resources
-
-* [Andrew Ng's Lecture Notes for Stanford's CS229 Machine Learning](http://cs229.stanford.edu/materials.html)
