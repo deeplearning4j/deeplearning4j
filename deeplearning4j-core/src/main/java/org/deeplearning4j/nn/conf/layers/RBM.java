@@ -76,7 +76,7 @@ public class RBM extends BasePretrainNetwork {
         this.dropOut = builder.dropOut;
     }
 
-    @AllArgsConstructor
+    @AllArgsConstructor @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
         private HiddenUnit hiddenUnit;
         private VisibleUnit visibleUnit;
