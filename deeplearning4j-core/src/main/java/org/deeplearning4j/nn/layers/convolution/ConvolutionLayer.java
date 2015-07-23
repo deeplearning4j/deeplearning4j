@@ -109,20 +109,21 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights) {
+    public Gradient backpropGradient(Gradient gradient, Layer layer) {
         INDArray z = preOutput(input);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
 
-        // TODO - do we transpose?
-        INDArray epsilon = Nd4j.tensorMmul(weights, gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS), new int[][]{{0, 1}});
+        // TODO - check transpose and if that makes sense with the tensors...
+        INDArray weights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        INDArray epsilon = Nd4j.tensorMmul(weights, gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS).transpose(), new int[][]{{0, 1}}).transpose();
         INDArray delta = epsilon.muli(activationDerivative);
         delta = Nd4j.rollAxis(delta,3);
 
         Gradient ret = new DefaultGradient();
-        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, Convolution.conv2d(delta, input, Convolution.Type.VALID));
+        ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, Convolution.conv2d(delta.transpose(), input, Convolution.Type.VALID).transpose());
         ret.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS, delta.sum(0, 2, 3));
 
-        return new Pair<>(ret, getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS));
+        return ret;
 
     }
 

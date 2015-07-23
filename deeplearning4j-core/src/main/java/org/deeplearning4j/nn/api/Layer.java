@@ -115,7 +115,7 @@ public interface Layer extends Serializable,Cloneable,Model {
      * @return Pair<Gradient,INDArray> where Gradient is gradient for this layer, INDArray is weights needed by next
      *  layer
      */
-    Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights);
+    Gradient backpropGradient(Gradient gradient, Layer layer);
 
 
     /**

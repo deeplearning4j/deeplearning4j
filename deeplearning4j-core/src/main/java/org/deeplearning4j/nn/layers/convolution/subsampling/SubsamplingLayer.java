@@ -109,7 +109,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights){
+    public Gradient backpropGradient(Gradient gradient, Layer layer){
         return null;
     }
 

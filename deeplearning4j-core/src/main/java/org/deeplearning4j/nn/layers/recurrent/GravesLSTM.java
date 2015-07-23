@@ -68,8 +68,7 @@ public class GravesLSTM extends BaseLayer {
 	}
 
 	@Override
-//    public Pair<Gradient,INDArray> backwardGradient(INDArray derivative, INDArray epsilon, INDArray activation) {
-	public Pair<Gradient,INDArray> backwardGradient(Gradient gradient, INDArray weights) {
+	public Gradient backpropGradient(Gradient gradient, Layer layers) {
 		//First: Do forward pass to get gate activations etc.
 		INDArray[] activations = activateHelper(input(), true);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
 		INDArray outputActivations = activations[0];
@@ -83,6 +82,7 @@ public class GravesLSTM extends BaseLayer {
 		//Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
 		int hiddenLayerSize = recurrentWeights.rows();	//i.e., n^L
 		int prevLayerSize = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS).shape()[0];
+		INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
 		INDArray epsilon = weights.mmul(gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY).transpose()).transpose();
 		int miniBatchSize = epsilon.size(0);
 		int timeSeriesLength = (epsilon.rank()<3 ? 1 : epsilon.size(2));	//Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
@@ -242,7 +242,7 @@ public class GravesLSTM extends BaseLayer {
 		ret.gradientForVariable().put(GravesLSTMParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients.sum(2));
 		ret.gradientForVariable().put(GravesLSTMParamInitializer.BIAS, biasGradients.sum(2).sum(0));
 		
-		return new Pair<>(ret, getParam(DefaultParamInitializer.WEIGHT_KEY));
+		return ret;
 	}
 
 	@Override
