@@ -335,17 +335,43 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             variables.add(variable);
     }
 
+    private static <T> T overRideFields(T configInst, Layer layer) {
+        // overwrite builder with fields with layer fields
+        Class<?> layerClazz = layer.getClass();
+        Field[] neuralNetConfFields = Dl4jReflection.getAllFields(NeuralNetConfiguration.class);
+        Field[] layerFields = Dl4jReflection.getAllFields(layerClazz);
+        for(Field neuralNetField : neuralNetConfFields) {
+            neuralNetField.setAccessible(true);
+            for(Field layerField : layerFields) {
+                layerField.setAccessible(true);
+                if(neuralNetField.getName().equals(layerField.getName())) {
+                    try {
+                        Object valForConfig = neuralNetField.get(configInst);
+                        Object layerFieldValue = layerField.get(layer);
+                        if(layerFieldValue != null) {
+                            if(valForConfig.getClass().equals(layerFieldValue.getClass())) {
+                                neuralNetField.set(configInst, layerFieldValue);
+                            }
+                        }
+                    } catch(Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+        return configInst;
+    }
 
     /**
      * Fluent interface for building a list of configurations
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
-        private List<Builder> layerwise;
-        public ListBuilder(List<Builder> list) {
-            this.layerwise = list;
+        private HashMap<Integer, Builder> layerwise;
+
+        // Constructor
+        public ListBuilder(HashMap<Integer, Builder> layerMap) {
+            this.layerwise = layerMap;
         }
-
-
 
 
         public ListBuilder backward(boolean backward) {
@@ -358,6 +384,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public ListBuilder layer(int ind, Layer layer) {
+            if (layerwise.size() < 2) {
+                throw new IllegalArgumentException("IndexOutOfBounds: Layer Index exceeds listed size. List at least 2 layers");
+            }
+            if (layerwise.size() < ind + 1) {
+                throw new IllegalArgumentException("IndexOutOfBounds: Layer Index exceeds listed size");
+            }
+            Builder overRiddenBuilder = overRideFields(layerwise.get(ind), layer);
+            layerwise.put(ind, overRiddenBuilder);
+            return this;
+        }
+
         /**
          * Build the multi layer network
          * based on this neural network and
@@ -367,8 +405,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++) {
-                if(confOverrides.get(i) != null)
-                    confOverrides.get(i).overrideLayer(i,layerwise.get(i));
+//                if(confOverrides.get(i) != null)
+//                    confOverrides.get(i).overrideLayer(i,layerwise.get(i));
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backward(backward).inputPreProcessors(inputPreProcessor)
@@ -533,6 +571,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int channels = 1;
         private boolean miniBatch = false;
 
+
         /**
          * Number of channels for a conv net
          *
@@ -649,10 +688,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(size < 2)
                 throw new IllegalArgumentException("Number of layers must be > 1");
 
-            List<Builder> list = new ArrayList<>();
+            HashMap<Integer, Builder> layerMap = new HashMap<>();
             for(int i = 0; i < size; i++)
-                list.add(clone());
-            return new ListBuilder(list);
+                layerMap.put(i, clone());
+            return new ListBuilder(layerMap);
         }
 
         public Builder clone() {
@@ -863,34 +902,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.updater = updater;
             ret.channels = channels;
             //override the properties from the layer
-            if(layer != null) {
-                Class<? extends Layer> layerClazz = layer.getClass();
-                Field[] neuralNetConfFields = Dl4jReflection.getAllFields(NeuralNetConfiguration.class);
-                Field[] layerFields = Dl4jReflection.getAllFields(layerClazz);
-                for(Field neuralNetField : neuralNetConfFields) {
-                    neuralNetField.setAccessible(true);
-                    for(Field layerField : layerFields) {
-                        layerField.setAccessible(true);
-                        if(neuralNetField.getName().equals(layerField.getName())) {
-                            try {
-                                Object valForConfig = neuralNetField.get(ret);
-                                Object layerFieldValue = layerField.get(layer);
-                                if(layerFieldValue != null) {
-                                    if(valForConfig.getClass().equals(layerFieldValue.getClass())) {
-                                        System.out.println(neuralNetField);
-                                        neuralNetField.set(ret, layerFieldValue);
-                                    }
-                                }
-                            } catch(Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    }
-                }
-            }
-
+            if(layer != null)
+                ret = overRideFields(ret, layer);
             return ret;
         }
-
     }
 }
