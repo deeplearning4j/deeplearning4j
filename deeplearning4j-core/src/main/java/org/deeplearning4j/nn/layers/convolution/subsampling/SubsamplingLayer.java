@@ -23,6 +23,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -110,7 +111,60 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient backpropGradient(Gradient gradient, Layer layer){
-        return null;
+
+        INDArray z = preOutput(input, true);
+
+        INDArray error = Nd4j.create(conf.getFilterSize());
+
+        if(layer.conf().getConvolutionType() == ConvolutionLayer.ConvolutionType.AVG) {
+        //TODO tile - change code
+            int[] filterSize = conf.getFilterSize();
+            int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
+            int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
+            if (filterSize.length < 4)
+                throw new IllegalStateException("Illegal filter size found ");
+
+            //activation is the forward layers convolution
+            for (int i = 0; i < forwardLayerFeatureMaps; i++) {
+                for (int j = 0; j < currLayerFeatureMaps; j++) {
+                    INDArray featureMapError = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
+                    //rotated filter for convolution
+                    INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(), NDArrayIndex.all()).slice(i).slice(j));
+                    //forward error for the particular slice
+                    INDArray forwardError = z.slice(j);
+                    featureMapError.addi(Nd4j.getConvolution().convn(forwardError, rotatedFilter, Convolution.Type.FULL));
+                    error.putSlice(i, featureMapError);
+                }
+            }
+        } else if(layer.conf().getConvolutionType() == ConvolutionLayer.ConvolutionType.MAX){
+        //TODO rotation - change code
+            int[] filterSize = conf.getFilterSize();
+            int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
+            int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
+            if (filterSize.length < 4)
+                throw new IllegalStateException("Illegal filter size found ");
+
+            //activation is the forward layers convolution
+            for (int i = 0; i < forwardLayerFeatureMaps; i++) {
+                for (int j = 0; j < currLayerFeatureMaps; j++) {
+                    INDArray featureMapError = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
+                    //rotated filter for convolution
+                    INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(), NDArrayIndex.all()).slice(i).slice(j));
+                    //forward error for the particular slice
+                    INDArray forwardError = z.slice(j);
+                    featureMapError.addi(Nd4j.getConvolution().convn(forwardError, rotatedFilter, Convolution.Type.FULL));
+                    error.putSlice(i, featureMapError);
+                }
+            }
+
+        } else {
+            throw new IllegalArgumentException("Convolution type is not average and max");
+        }
+
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, );
+        return ret;
+
     }
 
     @Override
@@ -192,35 +246,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        INDArray ret = Nd4j.create(conf.getFilterSize());
-        int[] filterSize = conf.getFilterSize();
-        int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
-        int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
-        if(filterSize.length < 4)
-            throw new IllegalStateException("Illegal filter size found ");
-
-        //activation is the forward layers convolution
-        for(int i = 0; i < forwardLayerFeatureMaps; i++) {
-            for(int j = 0; j < currLayerFeatureMaps; j++) {
-                INDArray featureMapError  = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
-                //rotated filter for convolution
-                INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(),NDArrayIndex.all()).slice(i).slice(j));
-                //forward error for the particular slice
-                INDArray forwardError = activation.slice(j);
-                featureMapError.addi(Nd4j.getConvolution().convn(forwardError,rotatedFilter, Convolution.Type.FULL));
-                ret.putSlice(i,featureMapError);
-            }
-
-
-
-
-        }
-
-        Gradient ret2 = new DefaultGradient();
-        ret2.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS,ret);
-        return new Pair<>(ret2,ret2);
-    }
+    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) { return null;}
 
     @Override
     public Collection<IterationListener> getListeners() {
