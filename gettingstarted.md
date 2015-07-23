@@ -111,6 +111,7 @@ which will import the source and set everything up.
 * To compile some ND4J dependencies, you need to install some dev tools for C and C++. [Please see our ND4J guide](http://nd4j.org/getstarted.html#devtools).
 * Some problems encountered using DL4J may be due to a lack of familiarity with the ideas and techniques of machine learning. We strongly encourage all Deeplearning4j users to rely on resources beyond this website to understand the fundamentals. Andrew Ng's excellent [machine-learning lectures on Coursera](https://www.coursera.org/course/ml) are a great place to start. [Geoff Hinton's neural nets course](https://www.youtube.com/watch?v=S3bx8xKpdQE), available on Youtube, is also highly instructive. While we've partially documented DL4J, many parts of the code are essentially a raw, domain-specific language for deep learning.
 * The include path for [Java CPP](https://github.com/bytedeco/javacpp) doesn't always work on **Windows**. One workaround is to take the the header files from the include directory of Visual Studio, and put them in the include directory of the Java Run-Time Environment (JRE), where Java is installed. This will affect files such as standardio.h.)
+* Instructions on monitoring your GPUs are [here](http://nd4j.org/getstarted.html#gpu).
 * When using `deeplearning4j-nlp` from a Clojure application and building an uberjar with Leiningen, it is necessary to specify the following in the `project.clj` so that the akka `reference.conf` resource files are properly merged.
 
     :uberjar-merge-with {#"\.properties$" [slurp str spit]
