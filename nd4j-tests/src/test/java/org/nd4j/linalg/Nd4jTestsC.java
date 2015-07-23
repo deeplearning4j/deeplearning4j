@@ -735,8 +735,26 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(test, multiSliceRow1);
         assertEquals(test2,multiSliceRow2);
 
+
+
+        INDArray threeByThree = Nd4j.create(3,3);
+        INDArray threeByThreeRow1AndTwo = threeByThree.get(NDArrayIndex.interval(1,3),NDArrayIndex.all());
+        threeByThreeRow1AndTwo.putRow(1,Nd4j.ones(3));
+        assertEquals(Nd4j.ones(3),threeByThreeRow1AndTwo.getRow(1));
+
     }
 
+
+    @Test
+    public void testMulRowVector() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        arr.muliRowVector(Nd4j.linspace(1,2,2));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {1,4},{3,8}
+        });
+
+        assertEquals(assertion,arr);
+    }
 
 
 

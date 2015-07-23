@@ -1190,6 +1190,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
+
+
+
     @Test
     public void testAssign() {
         INDArray vector = Nd4j.linspace(1, 5, 5);
