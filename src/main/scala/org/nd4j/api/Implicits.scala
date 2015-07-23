@@ -33,7 +33,6 @@ object Implicits {
     def apply(target: IndexRange*): INDArray = subMatrix(target: _*)
   }
 
-
   /*
    Avoid using Numeric[T].toDouble(t:T) for sequence transformation in XXColl2INDArray to minimize memory consumption.
    */
@@ -45,12 +44,28 @@ object Implicits {
     def toNDArray: INDArray = Nd4j.create(underlying.toArray)
   }
 
+  implicit class floatArray2INDArray(val underlying: Array[Float]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying, shape, ord.value, offset)
+
+    def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying, shape.toArray)
+
+    def toNDArray: INDArray = Nd4j.create(underlying)
+  }
+
   implicit class doubleColl2INDArray(val underlying: Seq[Double]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying.toArray, shape, offset, ord.value)
 
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
 
     def toNDArray: INDArray = Nd4j.create(underlying.toArray)
+  }
+
+  implicit class doubleArray2INDArray(val underlying: Array[Double]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying, shape, offset, ord.value)
+
+    def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying, shape.toArray)
+
+    def toNDArray: INDArray = Nd4j.create(underlying)
   }
 
   implicit class intColl2INDArray(val underlying: Seq[Int]) extends AnyVal {
@@ -61,6 +76,32 @@ object Implicits {
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toFloat).toArray)
   }
 
+  implicit class intArray2INDArray(val underlying: Array[Int]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying.map(_.toFloat), shape, ord.value, offset)
+
+    def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.map(_.toFloat), shape.toArray)
+
+    def toNDArray: INDArray = Nd4j.create(underlying.map(_.toFloat).toArray)
+  }
+
+  implicit class floatMtrix2INDArray(val underlying: Seq[Seq[Float]]) extends AnyVal {
+    def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
+  }
+  implicit class floatArrayMtrix2INDArray(val underlying: Array[Array[Float]]) extends AnyVal {
+    def toNDArray: INDArray = Nd4j.create(underlying)
+  }
+  implicit class doubleMtrix2INDArray(val underlying: Seq[Seq[Double]]) extends AnyVal {
+    def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
+  }
+  implicit class doubleArrayMtrix2INDArray(val underlying: Array[Array[Double]]) extends AnyVal {
+    def toNDArray: INDArray = Nd4j.create(underlying)
+  }
+  implicit class intMtrix2INDArray(val underlying: Seq[Seq[Int]]) extends AnyVal {
+    def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat).toArray).toArray)
+  }
+  implicit class intArrayMtrix2INDArray(val underlying: Array[Array[Int]]) extends AnyVal {
+    def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat)))
+  }
   implicit class num2Scalar[T](val underlying: T)(implicit ev: Numeric[T]) {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }
@@ -124,6 +165,5 @@ private[api] case class DRange(startR: Int, endR: Int, isInclusive: Boolean, ste
 
 private[api] object DRange extends {
   def from(r: Range, max: => Int): DRange = DRange(r.start, r.end, r.isInclusive, r.step, max)
-
   def apply(startR: Int, endR: Int, step: Int): DRange = DRange(startR, endR, false, step, Int.MinValue)
 }

@@ -1,6 +1,7 @@
 package org.nd4j.api
 
 import org.nd4j.api.Implicits._
+import org.nd4j.api.NDOrdering.Fortran
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
@@ -31,10 +32,15 @@ trait SliceableNDArray {
       case (inr: IndexNumberRange) :: t =>
         modifyTargetIndices(t, i + 1, inr.asRange(originalShape(i)) :: acc)
 
-      case Nil => acc.reverse
+      case Nil =>
+        if(underlying.ordering() == NDOrdering.Fortran.value)
+          acc
+        else
+          acc.reverse
     }
 
     val modifiedTarget = modifyTargetIndices(target.toList, 0, Nil)
+
     val targetShape =
       if (underlying.isRowVector)
         Array(1, modifiedTarget.head.length)
@@ -42,7 +48,7 @@ trait SliceableNDArray {
         modifiedTarget.map(_.length).toArray
 
     def calcIndices(tgt: List[DRange], stride: List[Int]): List[Int] =
-      (tgt.reverse zip stride).collect {
+      (tgt zip stride).collect {
         case (range, st) => range.toList.map(_ * st)
       }.reduceLeft[List[Int]] { case (l, r) => l.flatMap { i => r.map(_ + i)}}
 
@@ -51,6 +57,6 @@ trait SliceableNDArray {
     val lv = underlying.linearView()
     val filtered = indices.map { i => lv.getDouble(i)}
 
-    filtered.mkNDArray(targetShape, NDOrdering(underlying.ordering()), underlying.offset())
+    filtered.mkNDArray(targetShape, NDOrdering(underlying.ordering()),0)
   }
 }
