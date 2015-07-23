@@ -59,9 +59,9 @@ public class Nesterovs implements Serializable,GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(lastGradient == null)
             lastGradient = Nd4j.zeros(gradient.shape());
-        INDArray ret  = lastGradient.mul(momentum).subi(gradient);
+        INDArray ret  = lastGradient.mul(momentum).subi(gradient.mul(lr));
         lastGradient = ret;
-        return ret.mul(lr);
+        return ret;
     }
 
 
