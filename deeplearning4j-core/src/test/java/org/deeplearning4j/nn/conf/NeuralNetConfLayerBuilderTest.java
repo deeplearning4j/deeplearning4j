@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.layers.RBM.*;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.poolingType;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -181,4 +182,27 @@ public class NeuralNetConfLayerBuilderTest {
         assertTrue(gLstm.conf().getDropOut() == newDrop);
 
     }
+
+    @Test
+    public void testCreateMultiLayerNetwork() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list(3).layer(0,new RBM.Builder(HiddenUnit.RECTIFIED,VisibleUnit.GAUSSIAN).nIn(784).nOut(600).build())
+                .layer(1,new RBM.Builder().nIn(600).nOut(500).build())
+                .layer(2,new RBM.Builder().nIn(784).nOut(600).build()).build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        assertEquals(HiddenUnit.RECTIFIED, network.getLayer(0).conf().getHiddenUnit());
+        assertEquals(VisibleUnit.GAUSSIAN, network.getLayer(0).conf().getVisibleUnit());
+        assertEquals(HiddenUnit.BINARY, network.getLayer(1).conf().getHiddenUnit());
+        assertEquals(VisibleUnit.BINARY,network.getLayer(1).conf().getVisibleUnit());
+        assertEquals(HiddenUnit.BINARY, network.getLayer(2).conf().getHiddenUnit());
+        assertEquals(VisibleUnit.BINARY,network.getLayer(2).conf().getVisibleUnit());
+        assertEquals(784,network.getLayer(0).conf().getNIn());
+        assertEquals(600,network.getLayer(0).conf().getNOut());
+        assertEquals(600,network.getLayer(1).conf().getNIn());
+        assertEquals(500,network.getLayer(1).conf().getNOut());
+
+    }
+
 }
