@@ -78,8 +78,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     protected NeuralNetConfiguration defaultConfiguration;
     protected MultiLayerConfiguration layerWiseConfigurations;
-    protected Map<Integer,Object> multiGradientAndScore = new HashMap<>();
-protected Gradient gradient;
+    protected Gradient gradient;
     protected double score;
     /*
       Binary drop connect mask
@@ -628,14 +627,10 @@ protected Gradient gradient;
         return feedForward();
     }
 
+
     @Override
     public Gradient gradient() {
-        Gradient ret = new DefaultGradient();
-        for (int i = 0; i < layers.length; i++) {
-            ret.gradientForVariable().put(String.valueOf(i), layers[i].gradient().gradient());
-        }
-
-        return ret;
+        return gradient;
     }
 
     @Override
@@ -1055,7 +1050,7 @@ protected Gradient gradient;
         //do gradient descent for n iterations
     protected void doBackWard() {
         setInput(input);
-
+        gradient = new DefaultGradient();
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You cannot use backprop without an output layer.");
             return;
@@ -1072,34 +1067,40 @@ protected Gradient gradient;
 
         outputLayer.setLabels(labels);
         outputLayer.computeGradientAndScore();
-        Gradient nextGradients;
 
         //calculate and apply the backward gradient for every layer
-            /**
-             * Skip the output layer for the indexing and just loop backwards updating the coefficients for each layer.
-             *
-             * Activate applies the activation function for each layer and sets that as the input for the following layer.
-             *
-             * Typical literature contains most trivial case for the error calculation: wT * weights
-             * This interpretation transpose a few things to get mini batch because ND4J is rows vs columns organization for params
-             */
-            int numLayers = getnLayers();
+        /**
+         * Skip the output layer for the indexing and just loop backwards updating the coefficients for each layer.
+         *
+         * Activate applies the activation function for each layer and sets that as the input for the following layer.
+         *
+         * Typical literature contains most trivial case for the error calculation: wT * weights
+         * This interpretation transpose a few things to get mini batch because ND4J is rows vs columns organization for params
+         */
+        int numLayers = getnLayers();
 
-            Pair<Gradient, INDArray> pair = outputLayer.backwardGradient(null, null);
+        Pair<Gradient, INDArray> pair = outputLayer.backwardGradient(null, null);
 
+        for (String paramType: outputLayer.gradient().gradientForVariable().keySet()) {
+            String multiGradientKey = String.valueOf(numLayers)+ "_" + paramType;
+            gradient.setGradientFor(multiGradientKey, outputLayer.gradient().getGradientFor(paramType));
+        }
 
-            multiGradientAndScore.put(numLayers, outputLayer.gradientAndScore());
-            //Initialize with w^out * delta^out, appropriately transposed
+        //Initialize with w^out * delta^out, appropriately transposed
 //            INDArray nextEpsilon = outputLayer.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose(); //Expected shape: [m,n^out]
 
-            // Calculate gradients for previous layers & drops output layer in count
-            for(int j = numLayers - 2; j >= 0; j--) {
-                Layer currLayer = getLayers()[j];
-                pair = currLayer.backwardGradient(pair.getFirst(), pair.getSecond());
-                multiGradientAndScore.put(j, currLayer.gradientAndScore());
-            }
+        // Calculate gradients for previous layers & drops output layer in count
+        for(int j = numLayers - 2; j >= 0; j--) {
+            Layer currLayer = getLayers()[j];
+            pair = currLayer.backwardGradient(pair.getFirst(), pair.getSecond());
 
+            for (String paramType: currLayer.gradient().gradientForVariable().keySet()) {
+                String multiGradientKey = String.valueOf(j)+ "_" + paramType;
+                gradient.setGradientFor(multiGradientKey, pair.getFirst().getGradientFor(paramType));
+            }
         }
+        score = outputLayer.score();
+    }
 
 
     public Collection<IterationListener> getListeners() {
@@ -1397,7 +1398,7 @@ protected Gradient gradient;
         return labels.columns();
     }
 
-
+//TODO - determine if still neeeds to be here
     /**
      * Sets the input and labels and returns a score for the prediction
      * wrt true labels
@@ -1419,7 +1420,6 @@ protected Gradient gradient;
 
     @Override
     public void update(INDArray gradient, String paramType) {
-
     }
 
 
@@ -1430,13 +1430,12 @@ protected Gradient gradient;
      */
     @Override
     public double score() {
-        if (getOutputLayer().input() == null)
-            feedForward();
-        return getOutputLayer().score();
+        return score;
     }
 
     @Override
     public void computeGradientAndScore() {
+        doBackWard();
     }
 
     @Override
