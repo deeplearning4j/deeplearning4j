@@ -24,6 +24,7 @@ import java.io.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -107,16 +108,16 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return new Pair<>(gradient(),score());
     }
 
-    public Pair<Gradient, INDArray> backwardGradient(Gradient nextGradient, INDArray weights) {
+    public Gradient backpropGradient(Gradient nextGradient, Layer layer) {
         INDArray output = output(input);
 
         INDArray delta = gradient().getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(input).transpose());
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose().sum(0));
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
 
-        return new Pair<>(ret, getParam(DefaultParamInitializer.WEIGHT_KEY));
+        return ret;
     }
 
     /**

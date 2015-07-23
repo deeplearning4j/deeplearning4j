@@ -1032,7 +1032,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iter.reset();
             finetune(iter);
         }
-        if (layerWiseConfigurations.isBackward()) {
+        if (layerWiseConfigurations.isBackprop()) {
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
@@ -1047,6 +1047,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void backprop() {
         setInput(input);
         gradient = new DefaultGradient();
+        Layer currLayer, prevLayer;
+
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You cannot use backprop without an output layer.");
             return;
@@ -1075,7 +1077,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
          */
         int numLayers = getnLayers();
 
-        Pair<Gradient, INDArray> pair = outputLayer.backwardGradient(null, null);
+        Gradient layerGradient = outputLayer.backpropGradient(null, null);
 
         for (String paramType: outputLayer.gradient().gradientForVariable().keySet()) {
             String multiGradientKey = String.valueOf(numLayers)+ "_" + paramType;
@@ -1085,14 +1087,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         //Initialize with w^out * delta^out, appropriately transposed
 //            INDArray nextEpsilon = outputLayer.getParam(DefaultParamInitializer.WEIGHT_KEY).mmul(delta).transpose(); //Expected shape: [m,n^out]
 
+        prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
-            Layer currLayer = getLayers()[j];
-            pair = currLayer.backwardGradient(pair.getFirst(), pair.getSecond());
+            currLayer = getLayers()[j];
+            layerGradient = currLayer.backpropGradient(layerGradient, prevLayer);
+            prevLayer = currLayer;
 
-            for (String paramType: currLayer.gradient().gradientForVariable().keySet()) {
+            for (String paramType: layerGradient.gradientForVariable().keySet()) {
                 String multiGradientKey = String.valueOf(j)+ "_" + paramType;
-                gradient.setGradientFor(multiGradientKey, pair.getFirst().getGradientFor(paramType));
+                gradient.setGradientFor(multiGradientKey, layerGradient.getGradientFor(paramType));
             }
         }
         score = outputLayer.score();
@@ -1128,7 +1132,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void finetune(DataSetIterator iter) {
         log.info("Finetune phase ");
-        if(layerWiseConfigurations.isBackward()) {
+        if(layerWiseConfigurations.isBackprop()) {
             log.info("Will use backpropagation for finetune");
             return;
         }
@@ -1172,7 +1176,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
 
-        if(layerWiseConfigurations.isBackward()) {
+        if(layerWiseConfigurations.isBackprop()) {
             log.info("Will use backpropagation for finetune");
             return;
         }
@@ -1238,7 +1242,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             finetune(labels);
         }
 
-        if(layerWiseConfigurations.isBackward())
+        if(layerWiseConfigurations.isBackprop())
             setLabels(labels);
             backprop();
     }
@@ -1732,27 +1736,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         throw new UnsupportedOperationException();
     }
 
-    // TODO move this to compute gradient
     @Override
-    public Pair<Gradient, INDArray> backwardGradient(Gradient nextGradient, INDArray weights) {
-    	//Pair<Gradient,INDArray> backwardGradient(INDArray epsilon)
-    	INDArray currEpsilon = null;//= epsilon;
-
-    	Gradient outputGradient = new DefaultGradient();
-    	Map<String,INDArray> gradientMap = outputGradient.gradientForVariable();
-    	for( int i=layers.length-1; i>=0; i-- ){
-    		Pair<Gradient,INDArray> out = null;	//layers[i].backwardGradient(currEpsilon);
-    		currEpsilon = out.getSecond();
-
-    		Map<String,INDArray> layerGradMap = out.getFirst().gradientForVariable();
-    		for( Map.Entry<String, INDArray> entry : layerGradMap.entrySet() ){
-    			String newKey = String.valueOf(i) + "_" + entry.getKey();
-    			gradientMap.put(newKey, entry.getValue());
-    		}
-    	}
-
-//    	return new Pair<>(outputGradient,currEpsilon);
-    	return null;
+    public Gradient backpropGradient(Gradient nextGradient, Layer layer) {
+        return null;
     }
 
     @Override

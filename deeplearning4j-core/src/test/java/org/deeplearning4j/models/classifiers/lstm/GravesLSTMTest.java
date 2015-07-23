@@ -85,10 +85,8 @@ public class GravesLSTMTest {
 		INDArray pseudoWeightGradients = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,nOut,timeSeriesLength);
 		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoWeightGradients);
 		
-		Pair<Gradient,INDArray> pair = lstm.backwardGradient(gradient, lstm.getParam(DefaultParamInitializer.WEIGHT_KEY));
-		Gradient outGradient = pair.getFirst();
-		INDArray nextEpsilon = pair.getSecond();
-		
+		Gradient outGradient = lstm.backpropGradient(gradient, lstm);
+
 		INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS);
 		INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHTS);
 		INDArray recurrentWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
@@ -99,9 +97,10 @@ public class GravesLSTMTest {
 		assertArrayEquals(biasGradient.shape(),new int[]{1,4*lstmNHiddenUnits});
 		assertArrayEquals(inWeightGradient.shape(),new int[]{nIn,4*lstmNHiddenUnits});
 		assertArrayEquals(recurrentWeightGradient.shape(),new int[]{lstmNHiddenUnits,4*lstmNHiddenUnits+3});
-		
-		assertNotNull(nextEpsilon);
-		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
+
+		// TODO figure how to rework
+//		assertNotNull(nextEpsilon);
+//		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
 		
 		//Check update:
 		for( String s : outGradient.gradientForVariable().keySet() ){
