@@ -38,4 +38,11 @@ public class ComposableOutputPostProcessor implements OutputPreProcessor {
           output = outputPreProcessor.preProcess(output);
         return output;
     }
+
+    @Override
+    public INDArray backward(INDArray toReverse) {
+        for(OutputPreProcessor outputPreProcessor : outputPreProcessors)
+            toReverse = outputPreProcessor.backward(toReverse);
+        return toReverse;
+    }
 }
