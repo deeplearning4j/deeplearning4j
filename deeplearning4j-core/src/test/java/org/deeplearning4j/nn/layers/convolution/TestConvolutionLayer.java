@@ -32,7 +32,7 @@ public class TestConvolutionLayer {
     @Test
     public void testFeedForward() throws Exception  {
         DataSetIterator mnist = new MnistDataSetIterator(10,10);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().featureMapSize(20,20)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().kernelSize(20,20)
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
                 .kernelSize(9,9)
                 .layer(new ConvolutionLayer())
