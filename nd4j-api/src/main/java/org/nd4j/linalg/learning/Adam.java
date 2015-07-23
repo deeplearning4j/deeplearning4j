@@ -27,6 +27,15 @@ public class Adam implements Serializable,GradientUpdater {
     public Adam() {
     }
 
+    /**
+     *
+     * @param alpha
+     * @param beta1
+     * @param beta2
+     * @param lam
+     * @param lr
+     * @param beta1T
+     */
     public Adam(double alpha, double beta1, double beta2, double lam, double lr, double beta1T) {
         this.alpha = alpha;
         this.beta1 = beta1;
@@ -60,8 +69,10 @@ public class Adam implements Serializable,GradientUpdater {
             v = Nd4j.zeros(gradient.shape());
         v.addi(1 - beta2).muli(gradient.mul(gradient).subi(v));
         lr = lr();
-
-        return m.mul(lr).divi(Transforms.sqrt(v).add(Nd4j.EPS_THRESHOLD));
+        INDArray mTimesLr = m.mul(lr);
+        INDArray sqrtV = Transforms.sqrt(v).add(Nd4j.EPS_THRESHOLD);
+        Nd4j.clearNans(sqrtV);
+        return mTimesLr.divi(sqrtV);
     }
 
     public double getAlpha() {
