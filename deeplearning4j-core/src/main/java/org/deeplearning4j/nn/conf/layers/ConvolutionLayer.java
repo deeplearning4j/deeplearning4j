@@ -11,16 +11,16 @@ import org.nd4j.linalg.convolution.Convolution;
  */
 @Data
 @NoArgsConstructor
-public class ConvolutionLayer extends Layer {
+public class ConvolutionLayer extends FeedForwardLayer {
 
     private static final long serialVersionUID = 3073633667258683720L;
-    protected int[] filterSize; // Square filter
-    protected int filterDepth; // Depth of the each column of neurons
+    protected int[] kernelSize; // Square filter
     protected Convolution.Type convolutionType; // FULL / VALID / SAME
 
     private ConvolutionLayer(Builder builder) {
-        this.filterSize = builder.filterSize;
-        this.filterDepth = builder.filterDepth;
+        this.nIn = builder.nIn;
+        this.nOut = builder.nOut;
+        this.kernelSize = builder.filterSize;
         this.convolutionType = builder.convolutionType;
         this.activationFunction = builder.activationFunction;
         this.weightInit = builder.weightInit;
@@ -28,14 +28,24 @@ public class ConvolutionLayer extends Layer {
     }
 
     @AllArgsConstructor
-    public static class Builder extends Layer.Builder {
+    public static class Builder extends FeedForwardLayer.Builder {
         private int[] filterSize; // Square filter
-        private int filterDepth; // Depth of the each column of neurons
         private Convolution.Type convolutionType; // FULL / VALID / SAME
 
-        public Builder(int[] filterSize, int filterDepth) {
+        public Builder(int[] filterSize) {
             this.filterSize = filterSize;
-            this.filterDepth = filterDepth;
+        }
+
+        @Override
+        public Builder nIn(int nIn) {
+            super.nIn(nIn);
+            return this;
+        }
+
+        @Override
+        public Builder nOut(int nOut) {
+            super.nOut(nOut);
+            return this;
         }
 
         @Override
