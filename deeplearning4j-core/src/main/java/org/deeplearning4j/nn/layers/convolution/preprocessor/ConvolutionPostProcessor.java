@@ -61,4 +61,9 @@ public class ConvolutionPostProcessor implements OutputPreProcessor {
 
         return output.reshape(shape);
     }
+
+    @Override
+    public INDArray backward(INDArray toReverse) {
+        return null;
+    }
 }
