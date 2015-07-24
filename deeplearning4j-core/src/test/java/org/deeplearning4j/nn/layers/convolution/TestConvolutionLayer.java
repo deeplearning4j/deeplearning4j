@@ -35,7 +35,7 @@ public class TestConvolutionLayer {
         DataSetIterator mnist = new MnistDataSetIterator(10,10);
         DataSet next = mnist.next();
 
-        Layer layer = getCNNConfig(1, 1, 2, 9, 9);
+        Layer layer = getCNNConfig(1, 2, 9, 9, new int[] {3});
 
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1,28,28);
         INDArray conv = layer.activate(input);
@@ -51,7 +51,7 @@ public class TestConvolutionLayer {
         int inputHeight = 28;
         int kernelWidth = 9;
         int kernelHeight = 9;
-        int stride = 3;
+        int[] stride = new int[] {3};
         int padding = 1;
         int nIn = 1;
         int nOut = 2;
@@ -59,12 +59,12 @@ public class TestConvolutionLayer {
         DataSetIterator mnist = new MnistDataSetIterator(10, 10);
         DataSet next = mnist.next();
 
-        Layer layer = getCNNConfig(1, nIn, nOut, kernelWidth, kernelHeight);
+        Layer layer = getCNNConfig(nIn, nOut, kernelWidth, kernelHeight, stride);
 
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1, inputWidth, inputHeight);
         INDArray conv = layer.activate(input);
 
-        int featureMapWidth = (inputWidth - kernelWidth) + (2*padding) / stride + 1;
+        int featureMapWidth = (inputWidth - kernelWidth) + (2*padding) / stride[0] + 1;
         assertEquals(featureMapWidth, conv.shape()[0]);
         assertEquals(nOut, conv.shape()[2]);
 
@@ -72,10 +72,11 @@ public class TestConvolutionLayer {
 
 
 
-    private static Layer getCNNConfig(int iterations, int nIn, int nOut, int kernelWidth, int kernelHeight){
+    private static Layer getCNNConfig(int nIn, int nOut, int kernelWidth, int kernelHeight, int[] stride){
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu")
-                .iterations(iterations)
+                .iterations(1)
+                .stride(stride)
                 .layer(new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight}, Convolution.Type.SAME)
                         .nIn(nIn)
                         .nOut(nOut)
