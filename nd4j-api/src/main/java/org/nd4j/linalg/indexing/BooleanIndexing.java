@@ -118,6 +118,23 @@ public class BooleanIndexing {
             }
     }
 
+    /**
+     * Based on the matching elements
+     * op to based on condition to with function function
+     *
+     * @param to        the ndarray to op
+     * @param condition the condition on op
+     * @param function  the function to apply the op to
+     */
+    public static void applyWhere(INDArray to, Condition condition, Function<Number, Number> function, Function<Number, Number> alternativeFunction) {
+        INDArray linear = to.linearView();
+        for (int i = 0; i < linear.linearView().length(); i++)
+            if (condition.apply(linear.getFloat(i))) {
+                linear.putScalar(i, function.apply(linear.getDouble(i)).floatValue());
+            } else {
+                linear.putScalar(i, alternativeFunction.apply(linear.getDouble(i)).floatValue());
+            }
+    }
 
     /**
      * Based on the matching elements
