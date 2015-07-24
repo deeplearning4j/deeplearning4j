@@ -35,7 +35,7 @@ public class TestConvolutionLayer {
         DataSetIterator mnist = new MnistDataSetIterator(10,10);
         DataSet next = mnist.next();
 
-        Layer layer = getCNNConfig(1, 2, 9, 9, new int[] {3});
+        Layer layer = getCNNConfig(1, 2, 9, 9, new int[] {3,3}, 1);
 
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1,28,28);
         INDArray conv = layer.activate(input);
@@ -51,7 +51,7 @@ public class TestConvolutionLayer {
         int inputHeight = 28;
         int kernelWidth = 9;
         int kernelHeight = 9;
-        int[] stride = new int[] {3};
+        int[] stride = new int[] {3,3};
         int padding = 1;
         int nIn = 1;
         int nOut = 2;
@@ -59,7 +59,7 @@ public class TestConvolutionLayer {
         DataSetIterator mnist = new MnistDataSetIterator(10, 10);
         DataSet next = mnist.next();
 
-        Layer layer = getCNNConfig(nIn, nOut, kernelWidth, kernelHeight, stride);
+        Layer layer = getCNNConfig(nIn, nOut, kernelWidth, kernelHeight, stride, padding);
 
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1, inputWidth, inputHeight);
         INDArray conv = layer.activate(input);
@@ -72,11 +72,12 @@ public class TestConvolutionLayer {
 
 
 
-    private static Layer getCNNConfig(int nIn, int nOut, int kernelWidth, int kernelHeight, int[] stride){
+    private static Layer getCNNConfig(int nIn, int nOut, int kernelWidth, int kernelHeight, int[] stride, int padding){
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu")
                 .iterations(1)
                 .stride(stride)
+                .padding(padding)
                 .layer(new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight}, Convolution.Type.SAME)
                         .nIn(nIn)
                         .nOut(nOut)
