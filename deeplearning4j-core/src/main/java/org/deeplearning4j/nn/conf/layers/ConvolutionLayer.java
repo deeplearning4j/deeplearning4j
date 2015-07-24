@@ -20,7 +20,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     private ConvolutionLayer(Builder builder) {
         this.nIn = builder.nIn;
         this.nOut = builder.nOut;
-        this.kernelSize = builder.filterSize;
+        this.kernelSize = builder.kernelSize;
         this.convolutionType = builder.convolutionType;
         this.activationFunction = builder.activationFunction;
         this.weightInit = builder.weightInit;
@@ -29,11 +29,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private int[] filterSize; // Square filter
+        private int[] kernelSize; // Square filter
         private Convolution.Type convolutionType; // FULL / VALID / SAME
 
-        public Builder(int[] filterSize) {
-            this.filterSize = filterSize;
+        public Builder(int[] kernelSize) {
+            this.kernelSize = kernelSize;
         }
 
         @Override
