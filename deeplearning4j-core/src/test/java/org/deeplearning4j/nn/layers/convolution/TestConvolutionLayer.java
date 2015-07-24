@@ -31,23 +31,57 @@ import static org.junit.Assert.*;
 public class TestConvolutionLayer {
 
     @Test
-    public void testFeedForwardNumExamplesMatch() throws Exception  {
+    public void testNumExamplesMatch() throws Exception  {
         DataSetIterator mnist = new MnistDataSetIterator(10,10);
         DataSet next = mnist.next();
 
-
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activationFunction("relu")
-                .layer(new ConvolutionLayer.Builder(new int[]{9, 9}, Convolution.Type.SAME).nIn(1).nOut(2).build())
-                .build();
-        Layer convolutionLayer =  LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
+        Layer layer = getCNNConfig(1, 1, 2, 9, 9);
 
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1,28,28);
-        INDArray conv = convolutionLayer.activate(input);
+        INDArray conv = layer.activate(input);
 
-        int v = input.slices();
         assertEquals(input.slices(), conv.slices());
 
+    }
+
+
+    @Test
+    public void testFeatureMapSpaceSize() throws Exception  {
+        int inputWidth = 28;
+        int inputHeight = 28;
+        int kernelWidth = 9;
+        int kernelHeight = 9;
+        int stride = 3;
+        int padding = 1;
+        int nIn = 1;
+        int nOut = 2;
+
+        DataSetIterator mnist = new MnistDataSetIterator(10, 10);
+        DataSet next = mnist.next();
+
+        Layer layer = getCNNConfig(1, nIn, nOut, kernelWidth, kernelHeight);
+
+        INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1, inputWidth, inputHeight);
+        INDArray conv = layer.activate(input);
+
+        int featureMapWidth = (inputWidth - kernelWidth) + (2*padding) / stride + 1;
+        assertEquals(featureMapWidth, conv.shape()[0]);
+        assertEquals(nOut, conv.shape()[2]);
+
+    }
+
+
+
+    private static Layer getCNNConfig(int iterations, int nIn, int nOut, int kernelWidth, int kernelHeight){
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activationFunction("relu")
+                .iterations(iterations)
+                .layer(new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight}, Convolution.Type.SAME)
+                        .nIn(nIn)
+                        .nOut(nOut)
+                        .build())
+                .build();
+        return LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
 
     }
 
