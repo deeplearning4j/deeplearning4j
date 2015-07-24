@@ -168,26 +168,29 @@ public class GravesLSTM extends BaseLayer {
 					.addi(deltagNext.mmul(Nd4j.diag(wGG)));
 
 			//Forget gate delta:
-			INDArray zf = ifogZs.slice(t, 0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//z_f^{Lt}	shape: [m,n^L]
+			INDArray zf = ifogZs.slice(t, 2).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//z_f^{Lt}	shape: [m,n^L]
 			INDArray deltaf = nablaCellState.mul(prevMemCellActivations)
 					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zf).derivative()));
 			//Shape: [m,n^L]
 
 			//Input modulation gate delta:
-			INDArray zg = ifogZs.slice(t, 0).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize));	//z_g^{Lt}	shape: [m,n^L]
-			INDArray ai = ifogAs.slice(t, 0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//a_i^{Lt}	shape: [m,n^L]
+			INDArray zg = ifogZs.slice(t, 2).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize));	//z_g^{Lt}	shape: [m,n^L]
+			INDArray ai = ifogAs.slice(t, 2).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//a_i^{Lt}	shape: [m,n^L]
 			INDArray deltag = nablaCellState.mul(ai)
 					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", zg).derivative()));
 			//Shape: [m,n^L]
 
 			//Network input delta:
-			INDArray zi = ifogZs.slice(t, 0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//z_i^{Lt}	shape: [m,n^L]
-			INDArray ag = ifogAs.slice(t, 0).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize));	//a_g^{Lt}	shape: [m,n^L]
+			INDArray zi = ifogZs.slice(t, 2).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//z_i^{Lt}	shape: [m,n^L]
+			INDArray ag = ifogAs.slice(t, 2).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize));	//a_g^{Lt}	shape: [m,n^L]
 			INDArray deltai = nablaCellState.mul(ag)
 					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", zi).derivative()));
 			//Shape: [m,n^L]
 
-			INDArray prevLayerActivationSlice = activation.slice(t, 2);
+			INDArray prevLayerActivationSlice = activation;
+			if (!is2dInput) {
+				prevLayerActivationSlice = activation.slice(t, 2);
+			}
 			//Indexing here: all columns (==interval(0,n^(L-1)), 3rd dimension based on IFOG order. Sum over mini-batches occurs in delta*prevLayerActivations
 			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai.transpose().mmul(prevLayerActivationSlice).transpose());
 			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}, deltaf.transpose().mmul(prevLayerActivationSlice).transpose());
