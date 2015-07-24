@@ -176,8 +176,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   RBM.VisibleUnit visibleUnit,
                                   RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
-                                  int[] filterSize,
-                                  int filterDepth,
+                                  int[] kernelSize,
                                   int[] stride,
                                   int[] featureMapSize,
                                   int kernel,
@@ -227,7 +226,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.weightShape = weightShape;
         else
             this.weightShape = new int[]{nIn,nOut};
-        this.kernelSize = filterSize;
+        this.kernelSize = kernelSize;
         this.stride = stride;
     }
 
@@ -545,7 +544,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int numIterations = 5;
         private int[] weightShape;
         private int[] kernelSize = {2,2};
-        private int filterDepth = 5;
         @Deprecated
         private int[] featureMapSize = {2,2};
         //subsampling layers
@@ -878,7 +876,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  rng, seed,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape, kernelSize, filterDepth, stride,featureMapSize,kernel
+                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape, kernelSize, stride,featureMapSize,kernel
                     ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
                     l1,customLossFunction);
             ret.useAdaGrad = this.useAdaGrad;
