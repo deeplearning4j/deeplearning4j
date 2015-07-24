@@ -114,7 +114,7 @@ public class ConvolutionLayer implements Layer {
         INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
         gcol = Nd4j.rollAxis(gcol,3);
         INDArray z = preOutput(input());
-        INDArray weightGradient =  Convolution.conv2d(gcol,z, conf.getConvolutionType());// TODO: Use user specified type of convolution
+        INDArray weightGradient =  Convolution.conv2d(gcol, z, conf.getConvolutionType());// TODO: Use user specified type of convolution
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
@@ -164,27 +164,35 @@ public class ConvolutionLayer implements Layer {
         if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect() && training) {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
-        //number of feature maps for the weights
-        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf); // This returns the kernelSize as an int
+        //number of kernels to apply aka number feature maps as a result
+        int numFeatureMaps = conf.getNOut();
         //number of channels of the input
-        int inputChannels = ConvolutionUtils.numChannels(input.shape());
-        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getKernelSize()));
+        int inputChannels = conf.getNIn();
+        // Activations
+        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(), numFeatureMaps},conf.getKernelSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
-        INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        // TODO - need weights for each kernel / filter - this only covers 1
+        INDArray kernelWeights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
-            filters = filters.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(filters.shape()));
+            kernelWeights = kernelWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(kernelWeights.shape()));
         }
 
-        for(int i = 0; i < currentFeatureMaps; i++) {
-            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), conf.getKernelSize()[1]}, conf.getKernelSize()));
+        // Creates number of feature maps wanted (depth) in the convolution layer = number kernels
+        for(int i = 0; i < numFeatureMaps; i++) {
+            // TODO make sure the right depth value is passed from input - should be channels in
+            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), inputChannels}, conf.getKernelSize()));
+            // TODO this should be a matrix that is multiplied to all input matricies - it was just 1 weight before change to WeightUtil
+            // Apply kernel weights to all inputs
             for(int j = 0; j <  inputChannels; j++) {
-                INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
+                INDArray temp = kernelWeights.slice(i).slice(j);
+                // TODO break up the input into the right dimensions to apply the kernel - currently doesn't appear to work
+                INDArray convolved = Nd4j.getConvolution().convn(input, kernelWeights.slice(i).slice(j), conf.getConvolutionType());
                 featureMap.addi(convolved.broadcast(featureMap.shape()));
             }
-
+            //add bias
             featureMap.addi(bias.getDouble(i));
-            INDArray activationForSlice = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), featureMap));
-            ret.put(new NDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),new NDArrayIndex(new int[]{i}),NDArrayIndex.all()},activationForSlice);
+            INDArray activationForFeatureMap = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), featureMap));
+            ret.put(new NDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),new NDArrayIndex(new int[]{i}),NDArrayIndex.all()}, activationForFeatureMap);
         }
         return ret;
     }

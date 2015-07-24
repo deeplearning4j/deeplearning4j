@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -30,18 +31,22 @@ import static org.junit.Assert.*;
 public class TestConvolutionLayer {
 
     @Test
-    public void testFeedForward() throws Exception  {
+    public void testFeedForwardNumExamplesMatch() throws Exception  {
         DataSetIterator mnist = new MnistDataSetIterator(10,10);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().kernelSize(20,20)
-                .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .kernelSize(9,9)
-                .layer(new ConvolutionLayer())
-                .nIn(1).nOut(2).build();
-        Layer convolutionLayer =  LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
         DataSet next = mnist.next();
+
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activationFunction("relu")
+                .layer(new ConvolutionLayer.Builder(new int[]{9, 9}, Convolution.Type.SAME).nIn(1).nOut(2).build())
+                .build();
+        Layer convolutionLayer =  LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
+
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1,28,28);
         INDArray conv = convolutionLayer.activate(input);
-        assertEquals(input.slices(),conv.slices());
+
+        int v = input.slices();
+        assertEquals(input.slices(), conv.slices());
 
 
     }
