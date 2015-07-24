@@ -21,7 +21,7 @@ Torch7, while powerful, [was not designed to be widely accessible](https://news.
 
 ### Caffe
 
-[Caffe](http://caffe.berkeleyvision.org/) is a well-known and widely used machine-vision library written in C and C++. It is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. 
+[Caffe](http://caffe.berkeleyvision.org/) is a well-known and widely used machine-vision library that ported Matlab's implementation of fast convolutional nets to C and C++. It is not intended for other deep-learning applications such as text, sound or time series data. Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. 
 
 ### Licensing
 
@@ -29,9 +29,9 @@ Licensing is another distinction among these open-source projects: Theano, Torch
 
 ### Speed
 
-While both Torch7 and DL4J employ parallelism, DL4J's **parallelism is automatic**. That is, we automate the setting up of worker nodes and connections, allowing users to bypass libs while creating a massively parallel network on [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark), [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), or with [Akka and AWS](http://deeplearning4j.org/scaleout.html). Deeplearning4j is best suited for solving specific problems, and doing so quickly. 
+Deeplearning4j's underlying linear algebra computations, performed with ND4J, have been shown to run [at least twice as fast](http://nd4j.org/benchmarking) as Numpy on very large matrix multiplies. That's one reasons why we've been adopted by teams at NASA's Jet Propulsion Laboratory. Moreover, Deeplearning4j has been optimized to run on various chips including x86 and GPUs with CUDA C.
 
-This brings us to the issue of speed. The bottleneck for speed that most deeplearning frameworks encounter is in [BLAS](http://www.netlib.org/blas/), or Basic Linear Algebra Subprograms, so if you use BLAS and the framework correctly, then you will [approach the same speed limit](https://www.quora.com/Deep-Learning/How-fast-is-Theano-compared-to-other-DBN-implementations). The question, however, is how easy a project's documentation makes it to handle large amounts of data.  
+While both Torch7 and DL4J employ parallelism, DL4J's **parallelism is automatic**. That is, we automate the setting up of worker nodes and connections, allowing users to bypass libs while creating a massively parallel network on [Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark), [Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn), or with [Akka and AWS](http://deeplearning4j.org/scaleout.html). Deeplearning4j is best suited for solving specific problems, and doing so quickly. 
 
 For a full list of Deeplearning4j's features, please see our [features page](../features.html).
 
