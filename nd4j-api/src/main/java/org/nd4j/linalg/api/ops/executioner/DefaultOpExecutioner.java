@@ -431,7 +431,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return ret;
             }
             else {
-                INDArray ret = Nd4j.create(ArrayUtil.removeIndex(op.x().shape(), dimension));
+                int[] shape = ArrayUtil.removeIndex(op.x().shape(), dimension);
+                INDArray ret = Nd4j.create(shape);
                 INDArray linear = ret.linearView();
                 for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
                     Op op2 = op.opForDimension(i, dimension);

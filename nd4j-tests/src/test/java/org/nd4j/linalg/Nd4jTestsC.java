@@ -761,7 +761,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSum() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-        INDArray test = Nd4j.create(new float[]{3, 11, 7, 15}, new int[]{2, 2});
+        INDArray test = Nd4j.create(new float[]{3,7,11, 15}, new int[]{2, 2});
         INDArray sum = n.sum(n.shape().length - 1);
         assertEquals(test, sum);
 
@@ -1562,8 +1562,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVectorAlongDimension() {
-        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new float[]{7,8}, new int[]{1,2});
+      /*  INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
+        INDArray assertion = Nd4j.create(new float[]{7, 8}, new int[]{1, 2});
         INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
         assertEquals(assertion,vectorDimensionTest);
         INDArray zeroOne = arr.vectorAlongDimension(0, 1);
@@ -1575,7 +1575,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(testColumn2Assertion, testColumn2);
 
 
-        INDArray testColumn3Assertion = Nd4j.create(new float[]{13,15,17});
+        INDArray testColumn3Assertion = Nd4j.create(new float[]{13, 15, 17});
         INDArray testColumn3 = arr.vectorAlongDimension(2, 1);
         assertEquals(testColumn3Assertion, testColumn3);
 
@@ -1590,9 +1590,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(testRowV1Assertion, testRowV1);
 
         INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2});
-        INDArray vectorOne = n.vectorAlongDimension(1,2);
-        INDArray assertionVectorOne = Nd4j.create(new double[]{5,6});
+        INDArray vectorOne = n.vectorAlongDimension(1, 2);
+        INDArray assertionVectorOne = Nd4j.create(new double[]{5, 6});
         assertEquals(assertionVectorOne,vectorOne);
+*/
+
+
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+
+        assertEquals(Nd4j.create(new double[]{1,3}),arr.vectorAlongDimension(0,0));
+        assertEquals(Nd4j.create(new double[]{2,4}),arr.vectorAlongDimension(1,0));
+        assertEquals(Nd4j.create(new double[]{1,2}),arr.vectorAlongDimension(0,1));
+        assertEquals(Nd4j.create(new double[]{3,4}),arr.vectorAlongDimension(1,1));
+
+        INDArray oneThroughSixteen = Nd4j.linspace(1, 16, 16).reshape(2,2,2,2);
+        for(int i = 0; i < oneThroughSixteen.vectorsAlongDimension(1); i++) {
+            System.out.println(oneThroughSixteen.vectorAlongDimension(i,1));
+        }
+        assertEquals(8,oneThroughSixteen.vectorsAlongDimension(1));
+        assertEquals(Nd4j.create(new double[]{1,5}),oneThroughSixteen.vectorAlongDimension(0, 1));
+        assertEquals(Nd4j.create(new double[]{2,6}),oneThroughSixteen.vectorAlongDimension(1,1));
+        assertEquals(Nd4j.create(new double[]{3,7}),oneThroughSixteen.vectorAlongDimension(2,1));
+        assertEquals(Nd4j.create(new double[]{4,8}),oneThroughSixteen.vectorAlongDimension(3,1));
+        assertEquals(Nd4j.create(new double[]{9,13}),oneThroughSixteen.vectorAlongDimension(4,1));
+        assertEquals(Nd4j.create(new double[]{10,14}),oneThroughSixteen.vectorAlongDimension(5,1));
+        assertEquals(Nd4j.create(new double[]{11,15}),oneThroughSixteen.vectorAlongDimension(6,1));
+        assertEquals(Nd4j.create(new double[]{12,16}),oneThroughSixteen.vectorAlongDimension(7,1));
+
 
     }
 
@@ -1631,7 +1655,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(eightFirstAssertion, eightFirstTest);
 
         INDArray eightFirstTestSecond = n.vectorAlongDimension(1, 2);
-        INDArray eightFirstTestSecondAssertion = Nd4j.create(new float[]{5,6});
+        INDArray eightFirstTestSecondAssertion = Nd4j.create(new float[]{3,4});
         assertEquals(eightFirstTestSecondAssertion, eightFirstTestSecond);
 
     }

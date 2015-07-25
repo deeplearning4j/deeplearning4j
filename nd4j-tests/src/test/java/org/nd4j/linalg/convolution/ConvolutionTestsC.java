@@ -22,35 +22,29 @@ package org.nd4j.linalg.convolution;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 import java.util.Arrays;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 9/6/14.
  */
-public  class ConvolutionTests extends BaseNd4jTest {
-    public ConvolutionTests(String name, Nd4jBackend backend) {
+public  class ConvolutionTestsC extends BaseNd4jTest {
+    public ConvolutionTestsC(String name, Nd4jBackend backend) {
         super(name, backend);
     }
 
-    public ConvolutionTests(Nd4jBackend backend) {
+    public ConvolutionTestsC(Nd4jBackend backend) {
         super(backend);
     }
 
-    public ConvolutionTests(String name) {
+    public ConvolutionTestsC(String name) {
         super(name);
     }
 
-    public ConvolutionTests() {
+    public ConvolutionTestsC() {
     }
 
     @Test
@@ -66,38 +60,11 @@ public  class ConvolutionTests extends BaseNd4jTest {
         System.out.println(ret);
     }
 
-    @Test
-    public void testConv() {
-        Nd4j.EPS_THRESHOLD = 1e-1;
-        INDArray arr = Nd4j.linspace(1, 8, 8);
-        INDArray kernel = Nd4j.linspace(1, 3, 3);
-        INDArray answer = Nd4j.create(new double[]{1.0000012});
-        INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
-        assertEquals(getFailureMessage(),answer, test);
-    }
-
-    @Test
-    public void testDownSample() {
-        INDArray zeros = Nd4j.create(56,56);
-        INDArray downsampled = Transforms.downSample(zeros,new int[]{2,2});
-        assertTrue(getFailureMessage(),Arrays.equals(new int[]{28,28},downsampled.shape()));
-    }
-
-
-    @Test
-    public void testConv2d() {
-        INDArray arr = Nd4j.linspace(1, 8, 8).reshape(2,4);
-        INDArray kernel = Nd4j.linspace(1, 6, 6).reshape(2,3);
-        INDArray answer = Nd4j.create(new double[]{56,98});
-        INDArray test = Convolution.convn(arr, kernel, Convolution.Type.VALID);
-        assertEquals(getFailureMessage(),answer, test);
-    }
-
 
 
 
     @Override
     public char ordering() {
-        return 'f';
+        return 'c';
     }
 }
