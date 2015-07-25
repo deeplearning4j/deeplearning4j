@@ -157,3 +157,5 @@ For people just getting started with deep learning, the following tutorials and 
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
 * [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
+* [Iris Flower Dataset Tutorial](../iris-flower-dataset-tutorial.html)
+* [Deeplearning4j Examples via Quickstart](../quickstart.html)
