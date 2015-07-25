@@ -7,7 +7,7 @@ layout: default
 
 Broadly speaking, neural networks are used for unsupervised learning, classification or linear regression. They help group unlabeled data, they classify data or they predict continuous values after supervised training. 
 
-While classification typically converts continuous data into dummy variables like 0 and 1 to apply a label -- e.g. given someone's height, weight and age you might bucket them as a heart-disease candidate or not -- linear regression maps one set of continuous data to another set of continuous outputs. 
+While classification typically uses logistic regression to convert continuous data into dummy variables like 0 and 1 -- e.g. given someone's height, weight and age you might bucket them as a heart-disease candidate or not -- linear regression maps one set of continuous data to another set of continuous outputs. 
 
 For example, given the age and floor space of a house and its distance from a good school, you might predict what the house would sell for. No dummy variables like in classification, just mapping independent variables *x* to a continuous *y*.
 
