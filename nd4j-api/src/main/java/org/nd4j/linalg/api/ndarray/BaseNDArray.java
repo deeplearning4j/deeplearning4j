@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
+import com.sun.org.apache.bcel.internal.generic.ICONST;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
@@ -740,7 +741,7 @@ public abstract class BaseNDArray implements INDArray {
                 if(ordering() == NDArrayFactory.C)
                     return create(data,
                             new int[]{1, shape[dimension]}
-                            , Nd4j.getComplexStrides(shape2, ordering()),
+                            , getStrides(shape2, ordering()),
                             calcoffset(index));
                 //c ordering
                 return create(data,
@@ -767,7 +768,7 @@ public abstract class BaseNDArray implements INDArray {
 
             else {
                 int sliceOffset = sliceOffsetForVectorCOrdering(index,dimension);
-                if(sliceOffset == 0)
+                if(sliceOffset == 0 && dimension == 0 || dimension == rank() - 1)
                     arrOffset = offset + index *  stride(-1)  + sliceOffsetForVectorCOrdering(index,dimension);
                 else
                     arrOffset = sliceOffset;
@@ -877,14 +878,12 @@ public abstract class BaseNDArray implements INDArray {
     private int sliceOffsetForVectorCOrdering(int idx,int dimension) {
         int sliceLength = ArrayUtil.prod(ArrayUtil.removeIndex(shape,0));
         //number of matrices per slice / length of vector
-        int vectorsPerSlice = (sliceLength / size(-1));
-        if(idx < vectorsPerSlice)
-            return 0;
-        else if(dimension == 0) {
-            int sliceIdx = idx / vectorsPerSlice;
-            int sliceOffset = offset + (sliceIdx  * size(1)) +  idx - vectorsPerSlice;
-            return sliceOffset;
-        }
+        int sizeOfDimension = dimension > 0 ? size(dimension) : size(-1);
+        int vectorsPerSlice = (sliceLength / sizeOfDimension);
+        if(vectorsPerSlice < 1)
+            vectorsPerSlice = 1;
+        if(idx < vectorsPerSlice || dimension == 0)
+            return offset + idx;
         else {
             int sliceIdx = idx / vectorsPerSlice;
             int sliceOffset = offset + (sliceIdx  * majorStride()) +  idx - vectorsPerSlice;
@@ -2171,64 +2170,120 @@ public abstract class BaseNDArray implements INDArray {
     private void applyVectorOp(INDArray vector,char operation) {
         int count = 0;
         if(this instanceof IComplexNDArray) {
+            IComplexNDArray complexThis = (IComplexNDArray) this;
             IComplexNDArray complexLinear = (IComplexNDArray) linearView();
             IComplexNDArray row = (IComplexNDArray) vector;
-            for(int i = 0; i < complexLinear.length(); i++,count++) {
-                switch (operation) {
-                    case 'a':
-                        complexLinear.putScalar(i, row.getComplex(count).add(complexLinear.getComplex(i)));
-                        break;
-                    case 's':
-                        complexLinear.putScalar(i, complexLinear.getComplex(i).sub(row.getComplex(count)));
-                        break;
-                    case 'm':
-                        complexLinear.putScalar(i, complexLinear.getComplex(i).mul(row.getComplex(count)));
-                        break;
-                    case 'd':
-                        complexLinear.putScalar(i, complexLinear.getComplex(i).div(row.getComplex(count)));
-                        break;
-                    case 'h':
-                        complexLinear.putScalar(i, row.getComplex(count).sub(complexLinear.getComplex(i)));
-                        break;
-                    case 't':
-                        complexLinear.putScalar(i, row.getComplex(count).div(complexLinear.getComplex(i)));
-                        break;
+            if(Shape.isColumnVectorShape(vector.shape())) {
+                for(int i = 0; i < vector.rows(); i++) {
+                    IComplexNumber curr = row.getComplex(i);
+                    switch (operation) {
+                        case 'a':
+                            complexThis.getRow(i).addi(curr);
+                            break;
+                        case 's':
+                            complexThis.getRow(i).subi(curr);
+                            break;
+                        case 'm':
+                            complexThis.getRow(i).muli(curr);
+                            break;
+                        case 'd':
+                            complexThis.getRow(i).divi(curr);
+                            break;
+                        case 'h':
+                            complexThis.getRow(i).rsubi(curr);
+                            break;
+                        case 't':
+                            complexThis.getRow(i).rdivi(curr);
+                            break;
+                    }
                 }
-
-                if(count >= vector.length() - 1)
-                    count = 0;
-
             }
+            else {
+                for(int i = 0; i < complexLinear.length(); i++,count++) {
+                    switch (operation) {
+                        case 'a':
+                            complexLinear.putScalar(i, row.getComplex(count).add(complexLinear.getComplex(i)));
+                            break;
+                        case 's':
+                            complexLinear.putScalar(i, complexLinear.getComplex(i).sub(row.getComplex(count)));
+                            break;
+                        case 'm':
+                            complexLinear.putScalar(i, complexLinear.getComplex(i).mul(row.getComplex(count)));
+                            break;
+                        case 'd':
+                            complexLinear.putScalar(i, complexLinear.getComplex(i).div(row.getComplex(count)));
+                            break;
+                        case 'h':
+                            complexLinear.putScalar(i, row.getComplex(count).sub(complexLinear.getComplex(i)));
+                            break;
+                        case 't':
+                            complexLinear.putScalar(i, row.getComplex(count).div(complexLinear.getComplex(i)));
+                            break;
+                    }
+
+                    if(count >= vector.length() - 1)
+                        count = 0;
+
+                }
+            }
+
         }
         else {
-            INDArray linear = linearView();
-            for(int i = 0; i < linear.length(); i++,count = count >= vector.length() - 1 ? 0 : count + 1) {
-                double val = vector.getDouble(count);
-                double linearI = linearView().getDouble(i);
-                switch (operation) {
-                    case 'a':
-                        linear.putScalar(i, val + linearI);
-                        break;
-                    case 's':
-                        linear.putScalar(i, linearI - val);
-                        break;
-                    case 'm':
-                        linear.putScalar(i, linearI * val);
-                        break;
-                    case 'd':
-                        linear.putScalar(i, linearI /val);
-                        break;
-                    case 'h':
-                        linear.putScalar(i, val - linearI);
-                        break;
-                    case 't':
-                        linear.putScalar(i, val / linearI);
-                        break;
+            if (Shape.isColumnVectorShape(vector.shape())) {
+                for(int i = 0; i < vector.rows(); i++) {
+                    switch (operation) {
+                        case 'a':
+                            getRow(i).addi(vector.getDouble(i));
+                            break;
+                        case 's':
+                            getRow(i).subi(vector.getDouble(i));
+                            break;
+                        case 'm':
+                            getRow(i).muli(vector.getDouble(i));
+                            break;
+                        case 'd':
+                            getRow(i).divi(vector.getDouble(i));
+                            break;
+                        case 'h':
+                            getRow(i).rsubi(vector.getDouble(i));
+                            break;
+                        case 't':
+                           getRow(i).rdivi(vector.getDouble(i));
+                            break;
+                    }
+                }
+            }
+            else {
+                INDArray linear = linearView();
+                for (int i = 0; i < linear.length(); i++, count = count >= vector.length() - 1 ? 0 : count + 1) {
+                    double val = vector.getDouble(count);
+                    double linearI = linearView().getDouble(i);
+                    switch (operation) {
+                        case 'a':
+                            linear.putScalar(i, val + linearI);
+                            break;
+                        case 's':
+                            linear.putScalar(i, linearI - val);
+                            break;
+                        case 'm':
+                            linear.putScalar(i, linearI * val);
+                            break;
+                        case 'd':
+                            linear.putScalar(i, linearI / val);
+                            break;
+                        case 'h':
+                            linear.putScalar(i, val - linearI);
+                            break;
+                        case 't':
+                            linear.putScalar(i, val / linearI);
+                            break;
+                    }
+
+
                 }
 
-
-
             }
+
 
         }
     }
