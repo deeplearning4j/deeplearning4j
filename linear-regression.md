@@ -28,3 +28,9 @@ That is, a neural network performing linear regression will have one output node
 To perform backpropagation and make the network learn, you simply compare ŷ to the ground-truth value of y and adjust the weights and biases of the network until error is minimized, much as you would with a classifier. 
 
 In this way, you can use a neural network to get the function relating an arbitrary number of independent variables x to a dependent variable y that you're trying to predict. 
+
+### Other Resources
+
+* [Introduction to Deep Neural Networks](../neuralnet-overview.html)
+* [Iris Tutorial](../iris-flower-dataset-tutorial.html)
+* [Deeplearning4j Quickstart Examples](../quickstart.html)
