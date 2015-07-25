@@ -34,6 +34,7 @@ To perform regression with a neural network in Deeplearning4j, you would [set up
 		.nIn($NumberOfInputFeatures)
 		.nOut(1)
 		.activationFunction('identity')
+		.lossFunction(LossFunctions.LossFunction.RMSE)
 
 `nOut` is the number of nodes in any layer. `nIn` is the number of features being passed from the previous layer -- in the diagram above it would be 4. `activationFunction` should be set to `'identity'`.
 
