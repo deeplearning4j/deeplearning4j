@@ -23,6 +23,7 @@ package org.nd4j.linalg.convolution;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,58 @@ public class Convolution {
      */
     private Convolution() {
     }
+
+    /**
+     * Implement column formatted images
+     * @param img the image to process
+     * @param kh the kernel height
+     * @param kw the kernel width
+     * @param sy the stride along y
+     * @param sx the stride along x
+     * @param ph the padding width
+     * @param pw the padding height
+     * @param pval the padding value
+     * @param coverAll whether to cover the whole image or not
+     * @return the column formatted image
+     *
+     */
+    public static INDArray im2col(INDArray img,int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean coverAll) {
+        int n = img.size(0);
+        int c = img.size(1);
+        int h = img.size(2);
+        int w = img.size(3);
+        int outWidth = outSize(h, kh, sy, ph, coverAll);
+        int outHeight = outSize(w, kw, sx, pw, coverAll);
+        INDArray padded = Nd4j.pad(img, new int[][]{
+                {0, 0}
+                , {0, 0}
+                , {ph, ph + sy - 1}, {pw, pw + sx - 1}}, Nd4j.PadMode.CONSTANT);
+        INDArray ret =   Nd4j.create(n, c, kh, kw, outHeight, outWidth);
+        for(int i = 0; i < kh; i++) {
+           int i_lim = i + sy * outHeight;
+            for(int j = 0; j < kw; j++) {
+                int  jLim = j + sx * outWidth;
+                ret.put(new NDArrayIndex[]{NDArrayIndex.all()
+                        ,NDArrayIndex.all()
+                        ,new NDArrayIndex(i)
+                        ,new NDArrayIndex(j),NDArrayIndex.all(),NDArrayIndex.all()}, padded.get(
+                        NDArrayIndex.all()
+                        , NDArrayIndex.all()
+                        , NDArrayIndex.interval(i, i_lim)
+                        , NDArrayIndex.interval(j,jLim),
+                        NDArrayIndex.all(),NDArrayIndex.all()));
+            }
+        }
+        return ret;
+    }
+
+    public static int outSize(int size,int k,int s,int p, boolean coverAll) {
+        if (coverAll)
+            return (size + p * 2 - k + s - 1) / s + 1;
+        else
+            return (size + p * 2 - k) / s + 1;
+    }
+
 
     /**
      * 2d convolution (aka the last 2 dimensions

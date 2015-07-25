@@ -1042,6 +1042,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
                     arrVecLength += arrVec.length();
                     notIncremented = false;
                 }
+
                 for(int j = 0; j < arrVec.length(); j++)
                     retVec.putScalar(j + vectorOffset,arrVec.getDouble(j));
             }

@@ -244,7 +244,7 @@ public abstract class BaseNDArray implements INDArray {
      * @param shape  the shape of the ndarray
      */
     public BaseNDArray(List<INDArray> slices, int[] shape, char ordering) {
-        this(slices, shape, Nd4j.getStrides(shape,ordering), ordering);
+        this(slices, shape, Nd4j.getStrides(shape, ordering), ordering);
     }
 
 
@@ -655,6 +655,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray vectorAlongDimension(int index, int dimension) {
+
         if(dimension < 0)
             dimension = stride.length + dimension;
         //return the whole thing
@@ -749,7 +750,31 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-        int arrOffset = offset == 0 && dimension > 0 ? offset + index * majorStride() : offset + index;
+
+      /*  //flip the indices
+        if(ordering() == 'c') {
+
+        }
+        */
+        int arrOffset = -1;
+        if(ordering == 'f') {
+            arrOffset = offset == 0  ? offset + index *  majorStride() : offset + index;
+        }
+        else {
+
+            if(dimension == rank() - 1)
+                arrOffset = offset == 0  ? offset + index *  getLastNonOneStride() : offset + index;
+
+            else {
+                int sliceOffset = sliceOffsetForVectorCOrdering(index,dimension);
+                if(sliceOffset == 0)
+                    arrOffset = offset + index *  stride(-1)  + sliceOffsetForVectorCOrdering(index,dimension);
+                else
+                    arrOffset = sliceOffset;
+
+            }
+
+        }
 
         /**
          * The offset is greater than the dimensions.
@@ -788,6 +813,8 @@ public abstract class BaseNDArray implements INDArray {
          [ 21.,  22.],
          [ 23.,  24.]]])
 
+         This array is fortran order
+
 
          Iterating along dimension 2 gives us:
 
@@ -815,26 +842,66 @@ public abstract class BaseNDArray implements INDArray {
 
          *
          */
-        if(arrOffset >= length()) {
+        //note this should only be for fortran ordering
+        if(arrOffset + stride(dimension) >= length() && ordering() == 'f') {
             int numDecremented = 0;
             int startIndex = index;
+
             while(startIndex >= slices()) {
                 numDecremented++;
                 startIndex -= slices();
             }
 
-            arrOffset = offset + ((startIndex * stride[0]) + (numDecremented * stride[1]));
+            int startStride = stride(0);
+            int endStride = stride(1);
+            arrOffset = offset + ((startIndex * startStride) + (numDecremented * endStride));
 
         }
+        else if(arrOffset + stride(dimension) >= length() && !isVector())
+            throw new IllegalStateException("Illegal offset; c ordering should iterate row wise");
+
+        int dimStride = stride(dimension);
+
+
+        int[] retStride = new int[]{elementStride(), dimStride};
 
         return create(data,
                 new int[]{1, shape[dimension]}
-                , new int[]{1, stride[dimension]},
+                , retStride,
                 arrOffset);
 
     }
 
 
+
+    private int sliceOffsetForVectorCOrdering(int idx,int dimension) {
+        int sliceLength = ArrayUtil.prod(ArrayUtil.removeIndex(shape,0));
+        //number of matrices per slice / length of vector
+        int vectorsPerSlice = (sliceLength / size(-1));
+        if(idx < vectorsPerSlice)
+            return 0;
+        else if(dimension == 0) {
+            int sliceIdx = idx / vectorsPerSlice;
+            int sliceOffset = offset + (sliceIdx  * size(1)) +  idx - vectorsPerSlice;
+            return sliceOffset;
+        }
+        else {
+            int sliceIdx = idx / vectorsPerSlice;
+            int sliceOffset = offset + (sliceIdx  * majorStride()) +  idx - vectorsPerSlice;
+            return sliceOffset;
+        }
+    }
+
+
+
+    private int getLastNonOneStride() {
+        for(int j = stride.length - 1; j >= 0; j--) {
+            if(stride(j) != 1)
+                return stride(j);
+        }
+
+        return stride(0);
+    }
 
 
     private int getFirstNonOneStride() {
