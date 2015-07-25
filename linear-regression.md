@@ -19,7 +19,7 @@ Reasonable people can disagree about whether using neural networks for linear re
 
 In the diagram above, x stands for input, the features passed forward from the network's previous layer. Many x's will be fed into each node of the last hidden layer, and each x will be multiplied by a corresponding weight, w.
 
-The sum of those products is added to a bias and fed into an activation function. In this case the activation function is a rectified linear unit (ReLU), commonly used and highly useful because it doesn't saturate on shallow gradients like sigmoid functions.
+The sum of those products is added to a bias and fed into an activation function. In this case the activation function is a rectified linear unit (ReLU), commonly used and highly useful because it doesn't saturate on shallow gradients as sigmoid activation functions do.
  
 For each hidden node, ReLU outputs an activation, a, and the activations are summed going into the output node, which simply passes the activations' sum through. 
 
