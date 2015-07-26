@@ -45,4 +45,4 @@ And finally, if you wanted to make art with kd-trees, you could do a lot worse t
 
 ![Alt text](../img/kd-tree-mondrian.png) 
 
-*(Hat tip to Andrew Moore of CMU for his excellent diagrams.)*
+*(Hat tip to [Andrew Moore of CMU](http://www.autonlab.org/autonweb/14665/version/2/part/5/data/moore-tutorial.pdf?branch=main&language=en) for his excellent diagrams.)*
