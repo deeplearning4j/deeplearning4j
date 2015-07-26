@@ -63,3 +63,4 @@ And finally, if you want to make art with kd-trees, you could do a lot worse tha
 * [Introduction to Deep Neural Networks](../neuralnet-overview.html)
 * [Iris Tutorial](../iris-flower-dataset-tutorial.html)
 * [Deeplearning4j Quickstart Examples](../quickstart.html)
+* [ND4J: Numpy for the JVM](http://nd4j.org)
