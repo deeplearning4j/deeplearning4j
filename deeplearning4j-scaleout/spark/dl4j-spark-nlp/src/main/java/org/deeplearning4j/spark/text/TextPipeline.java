@@ -97,8 +97,8 @@ public class TextPipeline {
                 .reduce(new Function2<Pair<VocabCache,Long>, Pair<VocabCache,Long>, Pair<VocabCache,Long>>() {
                     public Pair<VocabCache,Long> call(Pair<VocabCache,Long> a, Pair<VocabCache,Long> b) {
                         // Add InMemoryLookupCache
-                        InMemoryLookupCache bVocabCache = (InMemoryLookupCache) b.getFirst();
-                        InMemoryLookupCache aVocabCache = (InMemoryLookupCache) a.getFirst();
+                        InMemoryLookupCache bVocabCache = (InMemoryLookupCache)b.getFirst();
+                        InMemoryLookupCache aVocabCache = (InMemoryLookupCache)a.getFirst();
                         Counter<String> bWordFreq = bVocabCache.getWordFrequencies();
                         bWordFreq.incrementAll(aVocabCache.getWordFrequencies());
                         bVocabCache.setWordFrequencies(bWordFreq);
@@ -108,12 +108,7 @@ public class TextPipeline {
                     }
                 });
     }
-
-    //Instantiate accumulator
-    //Override addInPlace to be a Counter
-    //If stopword, add to STOP, otherwise count them as normal
-    //Trim the words that are fewer than 5 words
-
+    
     /**
      * Get a vocab cache with all of the vocab based on the
      * specified stop words and minimum word frequency
