@@ -95,6 +95,7 @@ public class TextPipeline {
         return corpus.map(new TokenizerFunction(tokenizer,nGrams))
                 .map(new VocabCacheFunction(minWordFrequency,new InMemoryLookupCache(),broadcast))
                 .reduce(new Function2<Pair<VocabCache,Long>, Pair<VocabCache,Long>, Pair<VocabCache,Long>>() {
+                    // Function to computer the vocab to word count of each word in vocab
                     public Pair<VocabCache,Long> call(Pair<VocabCache,Long> a, Pair<VocabCache,Long> b) {
                         // Add InMemoryLookupCache
                         InMemoryLookupCache bVocabCache = (InMemoryLookupCache)b.getFirst();
@@ -108,7 +109,7 @@ public class TextPipeline {
                     }
                 });
     }
-    
+
     /**
      * Get a vocab cache with all of the vocab based on the
      * specified stop words and minimum word frequency
