@@ -16,7 +16,7 @@ The features learned by deep neural networks can be used for the purposes of cla
 
 Neural nets are simply universal approximators using non-linearities. They produce "good" features by learning to reconstruct data through pretraining or through backpropagation. In the latter case, neural nets plug into arbitrary loss functions to map inputs to outputs.
 
-The features learned by neural networks can be fed into any variety of other algorithms, including traditional machine-learning algorithms that group input, softmax/logistic regression that classifies it, or simple linear regression that predicts a value. 
+The features learned by neural networks can be fed into any variety of other algorithms, including traditional machine-learning algorithms that group input, softmax/logistic regression that classifies it, or simple regression that predicts a value. 
 
 So you can think of neural networks as feature-producers that plug modularly into other functions. For example, you could make a convolutional neural network learn image features on ImageNet with supervised training, and then you could take the activations/features learned by that neural network and feed it into a second algorithm that would learn to group images.
 
