@@ -349,6 +349,7 @@ public abstract class BaseLayer implements Layer {
         if(conf.isUseDropConnect() && training) {
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
+
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
         return ret;
     }

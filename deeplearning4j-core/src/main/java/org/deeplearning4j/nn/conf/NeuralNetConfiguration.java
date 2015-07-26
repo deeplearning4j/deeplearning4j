@@ -400,8 +400,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++) {
-//                if(confOverrides.get(i) != null)
-//                    confOverrides.get(i).overrideLayer(i,layerwise.get(i));
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backward).inputPreProcessors(inputPreProcessor)
@@ -881,6 +879,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape, kernelSize, filterDepth, stride,featureMapSize,kernel
                     ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
                     l1,customLossFunction);
+
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;

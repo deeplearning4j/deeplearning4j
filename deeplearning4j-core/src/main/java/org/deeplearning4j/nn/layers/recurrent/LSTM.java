@@ -496,10 +496,14 @@ public class LSTM extends BaseLayer {
 
     @Override
     public INDArray transform(INDArray data) {
-        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
+        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi, xs)).derivative(), 1);
     }
 
 
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi, xs)).derivative(), 1);
+    }
 
     @Override
     public void setParams(INDArray params) {
