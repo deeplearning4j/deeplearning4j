@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import lombok.Data;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.berkeley.Counter;
@@ -39,10 +40,11 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
+@Data
 public class InMemoryLookupCache implements VocabCache,Serializable {
 
     private Index wordIndex = new Index();
-    private Counter<String> wordFrequencies = Util.parallelCounter();
+    public Counter<String> wordFrequencies = Util.parallelCounter();
     private Counter<String> docFrequencies = Util.parallelCounter();
     private Map<String,VocabWord> vocabs = new ConcurrentHashMap<>();
     private Map<String,VocabWord> tokens = new ConcurrentHashMap<>();
