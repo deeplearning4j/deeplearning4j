@@ -82,6 +82,22 @@ public class TextPipeline {
         this(corpus,StopWords.getStopWords(),minWordFrequency);
     }
 
+
+    class ReduceVocab implements Function2<Pair<VocabCache,Long>, Pair<VocabCache,Long>, Pair<VocabCache,Long>> {
+        // Function to computer the vocab to word count of each word in vocab
+        public Pair<VocabCache,Long> call(Pair<VocabCache,Long> a, Pair<VocabCache,Long> b) {
+            // Add InMemoryLookupCache
+            InMemoryLookupCache bVocabCache = (InMemoryLookupCache)b.getFirst();
+            InMemoryLookupCache aVocabCache = (InMemoryLookupCache)a.getFirst();
+            Counter<String> bWordFreq = bVocabCache.getWordFrequencies();
+            bWordFreq.incrementAll(aVocabCache.getWordFrequencies());
+            bVocabCache.setWordFrequencies(bWordFreq);
+            // Add words encountered
+            Long sumWordEncountered = b.getSecond() + a.getSecond();
+            return new Pair<>((VocabCache)bVocabCache, sumWordEncountered);
+        }
+    }
+
     /**
      * Get a vocab cache with all of the vocab based on the
      * specified stop words and minimum word frequency
@@ -94,20 +110,7 @@ public class TextPipeline {
         int nGrams = corpus.context().conf().getInt(Word2VecPerformer.N_GRAMS,1);
         return corpus.map(new TokenizerFunction(tokenizer,nGrams))
                 .map(new VocabCacheFunction(minWordFrequency,new InMemoryLookupCache(),broadcast))
-                .reduce(new Function2<Pair<VocabCache,Long>, Pair<VocabCache,Long>, Pair<VocabCache,Long>>() {
-                    // Function to computer the vocab to word count of each word in vocab
-                    public Pair<VocabCache,Long> call(Pair<VocabCache,Long> a, Pair<VocabCache,Long> b) {
-                        // Add InMemoryLookupCache
-                        InMemoryLookupCache bVocabCache = (InMemoryLookupCache)b.getFirst();
-                        InMemoryLookupCache aVocabCache = (InMemoryLookupCache)a.getFirst();
-                        Counter<String> bWordFreq = bVocabCache.getWordFrequencies();
-                        bWordFreq.incrementAll(aVocabCache.getWordFrequencies());
-                        bVocabCache.setWordFrequencies(bWordFreq);
-                        // Add words encountered
-                        Long sumWordEncountered = b.getSecond() + a.getSecond();
-                        return new Pair<>((VocabCache)bVocabCache, sumWordEncountered);
-                    }
-                });
+                .reduce(new ReduceVocab());
     }
 
     /**
@@ -119,8 +122,8 @@ public class TextPipeline {
         JavaSparkContext sc = new JavaSparkContext(corpus.context());
         Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
         return corpus.map(new TokenizerFunction(DefaultTokenizerFactory.class.getName()))
-                .map(new VocabCacheFunction(minWordFrequency,new InMemoryLookupCache(),broadcast))
-                .cache().collect().get(0);
+                .map(new VocabCacheFunction(minWordFrequency, new InMemoryLookupCache(), broadcast))
+                .reduce(new ReduceVocab());
     }
 
 
