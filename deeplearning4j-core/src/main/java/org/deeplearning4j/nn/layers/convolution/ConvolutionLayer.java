@@ -165,9 +165,12 @@ public class ConvolutionLayer implements Layer {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
         //number of feature maps for the weights
-        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf); // This returns the kernelSize as an int
+        int currentFeatureMaps = input.size(1);
+        if(currentFeatureMaps != conf.getKernelSize()[1]) {
+            throw new IllegalArgumentException("Input feature maps must be equal to number of feature maps for thwe kernel");
+        }
         //number of channels of the input
-        int inputChannels = ConvolutionUtils.numChannels(input.shape());
+        int inputChannels = currentFeatureMaps;
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getKernelSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
