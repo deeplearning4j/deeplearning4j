@@ -41,7 +41,11 @@ If you were to visualize those nodes in two dimensions, partitioning space at ea
 
 ![Alt text](../img/kd-tree-hyperplanes.png) 
 
-And finally, if you wanted to make art with kd-trees, you could do a lot worse than this:
+Now, let's saw you place a new input, X, in the tree's partitioned space. This allows you to identify both the parent and child of that space within the tree. The X then constitutes the center of a circle whose radius is the distance to the child node of that space. By definition, only other nodes within the circle's circumference can be nearer. 
+
+![Alt text](../img/kd-tree-nearest.png) 
+
+And finally, if you want to make art with kd-trees, you could do a lot worse than this:
 
 ![Alt text](../img/kd-tree-mondrian.png) 
 
