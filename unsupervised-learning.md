@@ -57,3 +57,9 @@ And finally, if you want to make art with kd-trees, you could do a lot worse tha
 ![Alt text](../img/kd-tree-mondrian.png) 
 
 *(Hat tip to [Andrew Moore of CMU](http://www.autonlab.org/autonweb/14665/version/2/part/5/data/moore-tutorial.pdf?branch=main&language=en) for his excellent diagrams.)*
+
+### Other Resources
+
+* [Introduction to Deep Neural Networks](../neuralnet-overview.html)
+* [Iris Tutorial](../iris-flower-dataset-tutorial.html)
+* [Deeplearning4j Quickstart Examples](../quickstart.html)
