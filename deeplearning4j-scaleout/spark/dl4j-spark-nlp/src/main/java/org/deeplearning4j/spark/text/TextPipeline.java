@@ -82,22 +82,6 @@ public class TextPipeline {
         this(corpus,StopWords.getStopWords(),minWordFrequency);
     }
 
-
-    class ReduceVocab implements Function2<Pair<VocabCache,Long>, Pair<VocabCache,Long>, Pair<VocabCache,Long>> {
-        // Function to computer the vocab to word count of each word in vocab
-        public Pair<VocabCache,Long> call(Pair<VocabCache,Long> a, Pair<VocabCache,Long> b) {
-            // Add InMemoryLookupCache
-            InMemoryLookupCache bVocabCache = (InMemoryLookupCache)b.getFirst();
-            InMemoryLookupCache aVocabCache = (InMemoryLookupCache)a.getFirst();
-            Counter<String> bWordFreq = bVocabCache.getWordFrequencies();
-            bWordFreq.incrementAll(aVocabCache.getWordFrequencies());
-            bVocabCache.setWordFrequencies(bWordFreq);
-            // Add words encountered
-            Long sumWordEncountered = b.getSecond() + a.getSecond();
-            return new Pair<>((VocabCache)bVocabCache, sumWordEncountered);
-        }
-    }
-
     /**
      * Get a vocab cache with all of the vocab based on the
      * specified stop words and minimum word frequency
