@@ -13,7 +13,7 @@ For example, given the age and floor space of a house and its distance from a go
 
 Reasonable people can disagree about whether using neural networks for regression is overkill. The point of this post is just to explain how it can be done (it's pretty easy).
 
-![Alt text](../img/neural-network-linear-regression.png)
+![Alt text](../img/neural-network-regression.png)
 
 In the diagram above, x stands for input, the features passed forward from the network's previous layer. Many x's will be fed into each node of the last hidden layer, and each x will be multiplied by a corresponding weight, w.
 
