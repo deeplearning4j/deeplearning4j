@@ -5,7 +5,7 @@ layout: default
 
 # Using Neural Networks With Regression
 
-Broadly speaking, neural networks are used for the purpose of unsupervised learning, classification or regression. They help group unlabeled data, classify data or predict continuous values after supervised training. 
+Broadly speaking, neural networks are used for the purpose of [unsupervised learning](../unsupervised-learning.html), classification or regression. They help group unlabeled data, classify data or predict continuous values after supervised training. 
 
 While classification typically uses logistic regression to convert continuous data into dummy variables like 0 and 1 -- e.g. given someone's height, weight and age you might bucket them as a heart-disease candidate or not -- true regression maps one set of continuous data to another set of continuous outputs. 
 
