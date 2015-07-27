@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers.convolution.preprocessor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
@@ -44,8 +45,9 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
-public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPreProcessor {
+public class ConvolutionInputPreProcessor implements InputPreProcessor {
     private int rows,cols,channels = 1;
+    private int[] shape;
 
     /**
      * Reshape to a channels x rows x columns tensor
@@ -65,22 +67,33 @@ public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPre
     }
 
     @Override
-    public INDArray preProcess(INDArray output) {
-        if(output.shape().length == 4)
-            return output;
-        if(output.columns() != rows * cols)
-            throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(output.shape()));
+    public INDArray preProcess(INDArray input) {
+        if(input.shape().length == 4)
+            return input;
+        if(input.columns() != rows * cols)
+            throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(input.shape()));
 
-        return output.reshape(output.size(0),channels,rows,cols);
+        return input.reshape(input.size(0),channels,rows,cols);
     }
 
     @Override
-    public INDArray backward(INDArray toReverse) {
-        return null;
+    public INDArray backprop(INDArray output) {
+
+        if(shape == null || ArrayUtil.prod(shape) != output.length()) {
+            if(output.shape().length == 4) {
+                int[] otherOutputs = new int[3];
+                int[] outputShape = output.shape();
+                System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
+                shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+            }
+            else if(output.shape().length == 3) {
+                int[] otherOutputs = new int[2];
+                int[] outputShape = output.shape();
+                System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
+                shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+            }
+        }
+        return output.reshape(shape);
     }
 
-    @Override
-    public INDArray backwardPreProcess(INDArray input) {
-        return null;
-    }
 }

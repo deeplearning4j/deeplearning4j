@@ -404,8 +404,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 //                    confOverrides.get(i).overrideLayer(i,layerwise.get(i));
                 list.add(layerwise.get(i).build());
             }
-            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessor)
-                    .useDropConnect(useDropConnect).pretrain(pretrain).preProcessors(preProcessors)
+            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
+                    .useDropConnect(useDropConnect).pretrain(pretrain).outputPreProcessors(outputPreProcessors)
                     .hiddenLayerSizes(hiddenLayerSizes)
                     .confs(list).build();
         }

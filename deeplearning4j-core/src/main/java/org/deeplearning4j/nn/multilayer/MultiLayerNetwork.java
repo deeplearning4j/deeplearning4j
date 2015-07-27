@@ -472,8 +472,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
 
         INDArray ret = layers[curr].preOutput(input, training);
-        if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
-            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
+        if (getLayerWiseConfigurations().getOutputPreProcessors() != null && getLayerWiseConfigurations().getOutputPreProcess(curr) != null) {
+            ret = getLayerWiseConfigurations().getOutputPreProcess(curr).preProcess(ret);
             return ret;
         }
         return ret;
@@ -490,8 +490,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
         INDArray ret = layers[curr].activate(input,training);
-        if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
-            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
+        if (getLayerWiseConfigurations().getOutputPreProcessors() != null && getLayerWiseConfigurations().getOutputPreProcess(curr) != null) {
+            ret = getLayerWiseConfigurations().getOutputPreProcess(curr).preProcess(ret);
             return ret;
         }
         return ret;
