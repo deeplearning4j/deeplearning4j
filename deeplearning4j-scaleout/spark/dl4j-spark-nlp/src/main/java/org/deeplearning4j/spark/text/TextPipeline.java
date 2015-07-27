@@ -21,10 +21,7 @@ package org.deeplearning4j.spark.text;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
@@ -92,9 +89,9 @@ public class TextPipeline {
         JavaSparkContext sc = new JavaSparkContext(corpus.context());
         Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
         int nGrams = corpus.context().conf().getInt(Word2VecPerformer.N_GRAMS,1);
-        return corpus.map(new TokenizerFunction(tokenizer,nGrams))
-                .map(new VocabCacheFunction(minWordFrequency,new InMemoryLookupCache(),broadcast))
-                .reduce(new ReduceVocab());
+        return corpus.map(new TokenizerFunction(tokenizer, nGrams))
+                .map(new VocabCacheFunction(minWordFrequency, new InMemoryLookupCache(), broadcast))
+                .reduce(new ReduceVocabFunction());
     }
 
     /**
@@ -107,7 +104,7 @@ public class TextPipeline {
         Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
         return corpus.map(new TokenizerFunction(DefaultTokenizerFactory.class.getName()))
                 .map(new VocabCacheFunction(minWordFrequency, new InMemoryLookupCache(), broadcast))
-                .reduce(new ReduceVocab());
+                .reduce(new ReduceVocabFunction());
     }
 
 
