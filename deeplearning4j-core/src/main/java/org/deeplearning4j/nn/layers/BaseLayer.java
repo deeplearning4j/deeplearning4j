@@ -561,26 +561,6 @@ public abstract class BaseLayer implements Layer {
         return layer;
     }
 
-    @Deprecated
-    @Override
-    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
-        //figure out how to set ixes and deltas
-        INDArray delta = activation.transpose().mmul(ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY));
-        INDArray biasDelta = delta.mean(0);
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY).transpose();
-        Gradient ret = new DefaultGradient();
-        INDArray errorForEach = ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray nextIx =  errorForEach.mmul(weights).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(previousActivation, activation).derivative()));
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, nextIx);
-        INDArray deltaColumnSums = nextIx.isVector() ? nextIx.dup() : nextIx.mean(0);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,deltaColumnSums);
-        Gradient weightDelta = new DefaultGradient();
-        weightDelta.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,delta);
-        weightDelta.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasDelta);
-        return new Pair<>(ret,weightDelta);
-
-    }
-
     @Override
     public void accumulateScore(double accum) {
         score += accum;

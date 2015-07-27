@@ -211,11 +211,6 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Collection<IterationListener> getListeners() {
         return null;
     }
