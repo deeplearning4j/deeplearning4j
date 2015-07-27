@@ -80,7 +80,7 @@ public class RBM extends BasePretrainNetwork {
     public static class Builder extends FeedForwardLayer.Builder {
         private HiddenUnit hiddenUnit;
         private VisibleUnit visibleUnit;
-        private int k;
+        private int k = 1;
 
         public Builder(HiddenUnit hiddenUnit, VisibleUnit visibleUnit) {
             this.hiddenUnit = hiddenUnit;
@@ -115,6 +115,21 @@ public class RBM extends BasePretrainNetwork {
         @SuppressWarnings("unchecked")
         public RBM build() {
             return new RBM(this);
+        }
+        
+        public Builder k(int k){
+        	this.k = k;
+        	return this;
+        }
+        
+        public Builder hiddenUnit(HiddenUnit hiddenUnit){
+        	this.hiddenUnit =  hiddenUnit;
+        	return this;
+        }
+        
+        public Builder visibleUnit(VisibleUnit visibleUnit){
+        	this.visibleUnit = visibleUnit;
+        	return this;
         }
     }
 }
