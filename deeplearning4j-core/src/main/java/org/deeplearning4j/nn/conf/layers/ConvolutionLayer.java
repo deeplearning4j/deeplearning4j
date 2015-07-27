@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -18,13 +20,9 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected Convolution.Type convolutionType; // FULL / VALID / SAME
 
     private ConvolutionLayer(Builder builder) {
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
+    	super(builder);
         this.kernelSize = builder.filterSize;
         this.convolutionType = builder.convolutionType;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
     }
 
     @AllArgsConstructor
@@ -61,6 +59,12 @@ public class ConvolutionLayer extends FeedForwardLayer {
         @Override
         public Builder dropOut(double dropOut) {
             throw new UnsupportedOperationException("ConvolutionLayer Layer does not accept dropout");
+        }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
         }
 
         @Override

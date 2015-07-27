@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -29,23 +31,17 @@ import org.deeplearning4j.nn.weights.WeightInit;
  * a reconstruction function.
  *
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class AutoEncoder extends BasePretrainNetwork {
-
     private static final long serialVersionUID = -7624965662728637504L;
     protected double corruptionLevel;
     protected double sparsity;
 
     // Builder
     private AutoEncoder(Builder builder) {
+    	super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
-        this.activationFunction = builder.activationFunction;
     }
 
     @AllArgsConstructor
@@ -55,6 +51,16 @@ public class AutoEncoder extends BasePretrainNetwork {
 
         public Builder(double corruptionLevel) {
             this.corruptionLevel = corruptionLevel;
+        }
+        
+        public Builder corruptionLevel(double corruptionLevel){
+        	this.corruptionLevel = corruptionLevel;
+        	return this;
+        }
+        
+        public Builder sparsity(double sparsity){
+        	this.sparsity = sparsity;
+        	return this;
         }
 
         @Override
@@ -91,6 +97,12 @@ public class AutoEncoder extends BasePretrainNetwork {
         @SuppressWarnings("unchecked")
         public AutoEncoder build() {
             return new AutoEncoder(this);
+        }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	this.dist = dist;
+        	return this;
         }
     }
 }
