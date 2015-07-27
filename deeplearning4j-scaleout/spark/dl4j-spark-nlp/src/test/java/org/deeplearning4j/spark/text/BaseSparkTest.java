@@ -50,7 +50,7 @@ public abstract class BaseSparkTest implements Serializable {
             return sc;
         // set to test mode
         SparkConf sparkConf = new SparkConf()
-                .setMaster("local[8]")
+                .setMaster("local[4]")
                 .setAppName("sparktest");
 
 
