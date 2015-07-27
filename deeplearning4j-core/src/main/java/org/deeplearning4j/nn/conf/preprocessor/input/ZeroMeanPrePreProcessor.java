@@ -26,10 +26,18 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
+
     @Override
     public INDArray preProcess(INDArray input) {
         INDArray columnMeans = input.mean(0);
         input.subiRowVector(columnMeans);
         return input;
     }
+
+    @Override
+    public INDArray backprop(INDArray toReverse) {
+        return null;
+    }
+
+
 }

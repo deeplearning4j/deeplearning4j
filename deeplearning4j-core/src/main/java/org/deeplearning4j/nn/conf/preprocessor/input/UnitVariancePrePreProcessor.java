@@ -27,12 +27,20 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adma Gibson
  */
 public class UnitVariancePrePreProcessor extends BaseInputPreProcessor {
+    INDArray columnStds;
+
     @Override
     public INDArray preProcess(INDArray input) {
-        INDArray columnStds = input.std(0);
+        columnStds = input.std(0);
         columnStds.addi(Nd4j.EPS_THRESHOLD);
         input.diviRowVector(columnStds);
         return input;
-
     }
+
+    @Override
+    public INDArray backprop(INDArray output) {
+        return null;
+    }
+
+
 }

@@ -23,6 +23,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 
+import java.util.Arrays;
+
 /**
  * Used for feeding the output of a conv net in to a 2d classifier.
  * Takes the output shape of the convolution in 4d and reshapes it to a 2d
@@ -32,6 +34,7 @@ import org.nd4j.linalg.util.Shape;
  * @author Adam Gibson
  */
 public class ConvolutionPostProcessor implements OutputPreProcessor {
+    private int rows,cols,channels = 1;
     private int[] shape;
 
     public ConvolutionPostProcessor(int[] shape) {
@@ -54,16 +57,19 @@ public class ConvolutionPostProcessor implements OutputPreProcessor {
                 int[] outputShape = output.shape();
                 System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
                 shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
-
             }
-
         }
-
         return output.reshape(shape);
     }
 
     @Override
-    public INDArray backward(INDArray toReverse) {
-        return null;
+    public INDArray backprop(INDArray input) {
+        if (input.shape().length == 4)
+            return input;
+        if (input.columns() != rows * cols)
+            throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(input.shape()));
+
+        return input.reshape(input.size(0), channels, rows, cols);
     }
+
 }
