@@ -23,13 +23,17 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
 import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecPerformer;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.util.Index;
 
 import java.util.List;
+import java.util.Map.Entry;
 
 /**
  * A spark based text pipeline
@@ -42,8 +46,6 @@ public class TextPipeline {
     private List<String> stopWords;
     private int minWordFrequency;
     public final static String MIN_WORDS = "org.deeplearning4j.spark.text.minwords";
-
-
 
     /**
      *
@@ -79,6 +81,41 @@ public class TextPipeline {
         this(corpus,StopWords.getStopWords(),minWordFrequency);
     }
 
+    public Pair<VocabCache, Long> filterMinWordAddVocab(Pair<VocabCache, Long> pair) {
+        // The first item is InMemoryLookupCache
+        InMemoryLookupCache lookupCacheObject =  (InMemoryLookupCache)pair.getFirst();
+        // The second item is word count of the corpus (reduced from word count of sentences)
+        // Don't need to touch this
+        Long wordCount = pair.getSecond();
+
+        for (Entry<String, Double> entry : lookupCacheObject.getWordFrequencies().entrySet()) {
+            String stringToken = entry.getKey();
+            Double tokenCount = entry.getValue();
+            if (tokenCount < minWordFrequency) {
+                // If word frequency below min word count, it will be UNK (unknown)
+                stringToken = org.deeplearning4j.models.word2vec.Word2Vec.UNK;
+            }
+            // Making string token into actual token if not already an actual token (vocabWord)
+            VocabWord actualToken;
+            if(lookupCacheObject.hasToken(stringToken))
+                actualToken = lookupCacheObject.tokenFor(stringToken);
+            else {
+                actualToken = new VocabWord(1.0, stringToken);
+            }
+
+            // Set the index of the actual token (vocabWord)
+            // Put vocabWord into vocabs in InMemoryVocabCache
+            boolean vocabContainsWord = lookupCacheObject.containsWord(stringToken);
+            if(!vocabContainsWord) {
+                lookupCacheObject.addToken(actualToken);
+                int idx = lookupCacheObject.numWords();
+                actualToken.setIndex(idx);
+                lookupCacheObject.putVocabWord(stringToken);
+            }
+        }
+        return new Pair<>((VocabCache)lookupCacheObject, wordCount);
+    }
+
     /**
      * Get a vocab cache with all of the vocab based on the
      * specified stop words and minimum word frequency
@@ -88,10 +125,12 @@ public class TextPipeline {
     public Pair<VocabCache,Long> process(String tokenizer) {
         JavaSparkContext sc = new JavaSparkContext(corpus.context());
         Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
-        int nGrams = corpus.context().conf().getInt(Word2VecPerformer.N_GRAMS,1);
-        return corpus.map(new TokenizerFunction(tokenizer, nGrams))
-                .map(new VocabCacheFunction(minWordFrequency, new InMemoryLookupCache(), broadcast))
+        int nGrams = corpus.context().conf().getInt(Word2VecPerformer.N_GRAMS, 1);
+        // Just getting the tokens by splitting on space, doesn't take care of punctuations
+        JavaRDD<Pair<List<String>, Long>> tokenizedRDD = corpus.map(new TokenizerFunction(tokenizer, nGrams));
+        Pair<VocabCache, Long> corpusCounterPair = tokenizedRDD.map(new VocabCacheFunction(new InMemoryLookupCache(), broadcast))
                 .reduce(new ReduceVocabFunction());
+        return filterMinWordAddVocab(corpusCounterPair);
     }
 
     /**
@@ -102,11 +141,10 @@ public class TextPipeline {
     public Pair<VocabCache,Long> process() {
         JavaSparkContext sc = new JavaSparkContext(corpus.context());
         Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
-        return corpus.map(new TokenizerFunction(DefaultTokenizerFactory.class.getName()))
-                .map(new VocabCacheFunction(minWordFrequency, new InMemoryLookupCache(), broadcast))
+        // Just getting the tokens by splitting on space, doesn't take care of punctuations
+        JavaRDD<Pair<List<String>, Long>> tokenizedRDD = corpus.map(new TokenizerFunction(DefaultTokenizerFactory.class.getName()));
+        Pair<VocabCache, Long> corpusCounterPair = tokenizedRDD.map(new VocabCacheFunction(new InMemoryLookupCache(), broadcast))
                 .reduce(new ReduceVocabFunction());
+        return filterMinWordAddVocab(corpusCounterPair);
     }
-
-
-
 }
