@@ -50,6 +50,47 @@ public class ShapeTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testThreeTwoTwo() {
+        INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray[] assertions = new INDArray[] {
+                Nd4j.create(new double[]{1,3}),
+                Nd4j.create(new double[]{2,4}),
+                Nd4j.create(new double[]{5,7}),
+                Nd4j.create(new double[]{6,8}),
+                Nd4j.create(new double[]{9,11}),
+                Nd4j.create(new double[]{10,12}),
+
+        };
+
+        assertEquals(assertions.length,threeTwoTwo.tensorssAlongDimension(1));
+        for(int i = 0; i < assertions.length; i++) {
+            assertEquals(assertions[i],threeTwoTwo.tensorAlongDimension(i,1));
+        }
+
+    }
+
+    @Test
+    public void testThreeTwoTwoTwo() {
+        INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray[] assertions = new INDArray[] {
+                Nd4j.create(new double[]{1,2}),
+                Nd4j.create(new double[]{3,4}),
+                Nd4j.create(new double[]{5,6}),
+                Nd4j.create(new double[]{7,8}),
+                Nd4j.create(new double[]{9,10}),
+                Nd4j.create(new double[]{11,12}),
+
+        };
+
+        assertEquals(assertions.length,threeTwoTwo.tensorssAlongDimension(2));
+        for(int i = 0; i < assertions.length; i++) {
+            assertEquals(assertions[i],threeTwoTwo.tensorAlongDimension(i,2));
+        }
+
+    }
+
+
+    @Test
     public void testSixteenFirstDim() {
         INDArray baseArr = Nd4j.linspace(1,16,16).reshape(2, 2, 2, 2);
         INDArray[] assertions = new INDArray[] {
