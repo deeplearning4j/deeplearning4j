@@ -64,8 +64,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      *               has a value of 1 in the desired column with the label)
      */
     public DataSet(INDArray first, INDArray second) {
-        if (first.rows() != second.rows())
-            throw new IllegalStateException("Invalid data transform; first and second do not have equal rows. First was " + first.rows() + " second was " + second.rows());
+        if (first.size(0) != second.size(0))
+            throw new IllegalStateException("Invalid data transform; first and second do not have equal rows. First was " + first.size(0) + " second was " + second.size(0));
         this.features = first;
         this.labels = second;
     }
@@ -342,7 +342,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void validate() {
-        if (getFeatures().rows() != getLabels().rows())
+        if (getFeatures().size(0) != getLabels().size(0))
             throw new IllegalStateException("Invalid dataset");
     }
 
@@ -766,7 +766,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int numExamples() {
-        return getFeatures().rows();
+        return getFeatures().size(0);
     }
 
 
