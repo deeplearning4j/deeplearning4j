@@ -33,6 +33,7 @@ import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -55,7 +56,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
-public class Word2Vec implements Serializable {
+public class Word2Vec extends WordVectorsImpl implements Serializable  {
 
     private  Broadcast<VocabCache> vocabCacheBroadcast;
     private String tokenizerFactoryClazz;
@@ -83,7 +84,6 @@ public class Word2Vec implements Serializable {
             c1.incrementAll(c2);
             return c1;
         }
-
         @Override
         public Counter<Integer> zero(Counter<Integer> initialCounter) {
             return new Counter<>();
@@ -129,7 +129,6 @@ public class Word2Vec implements Serializable {
                 .map(new TokentoVocabWord(vocabCacheBroadcast));
 
         log.info("Built vocab..");
-
         final Word2VecParam param = new Word2VecParam.Builder()
                 .negative(0.0).window(conf.getInt(Word2VecPerformer.WINDOW,5))
                 .expTable(sc.broadcast(lookupTable.getExpTable())).setAlpha(lookupTable.getLr().get())
@@ -137,6 +136,7 @@ public class Word2Vec implements Serializable {
                 .useAdaGrad(lookupTable.isUseAdaGrad()).weights(lookupTable)
                 .build();
 
+        param.getTotalWords();
         param.setTotalWords(vocabAndNumWords.getSecond().intValue());
 
         log.info("Counting words within sentences..");
@@ -180,6 +180,7 @@ public class Word2Vec implements Serializable {
         };
 
         // Partition mapping to fold within partition
+        @SuppressWarnings("unchecked")
         JavaRDD<Long> foldWithinPartitionRDD = frequencies.mapPartitionsWithIndex(foldWithinPartition, true);
         // Action to fill the accumulator
         foldWithinPartitionRDD.foreachPartition(new VoidFunction<Iterator<Long>>() {
@@ -213,7 +214,9 @@ public class Word2Vec implements Serializable {
                 return itemsAddedToList.iterator();
             }
         };
+        @SuppressWarnings("unchecked")
         JavaRDD foldBetweenPartitionRDD = foldWithinPartitionRDD.mapPartitionsWithIndex(foldBetweenPartitions, true);
+        @SuppressWarnings("unchecked")
         final List<Long> wordsSeen = foldBetweenPartitionRDD.collect();
 
 
@@ -250,15 +253,9 @@ public class Word2Vec implements Serializable {
                 }
             });
 
-
             change2.unpersist();
-            change2 = null;
             log.info("Iteration " + i);
-
-
-
         }
-
 
         return new Pair<VocabCache, WeightLookupTable>(vocabCacheBroadcast.getValue(),lookupTable);
 
