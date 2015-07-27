@@ -25,14 +25,24 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class ReshapePreProcessor extends BaseOutputPreProcessor {
-    private int[] shape;
+    private int[] prevShape;
+    private int[] newShape;
+
 
     public ReshapePreProcessor(int...shape) {
-        this.shape = shape;
+        this.newShape = shape;
     }
 
     @Override
     public INDArray preProcess(INDArray output) {
-        return output.reshape(shape);
+        this.prevShape = output.shape();
+        return output.reshape(newShape);
     }
+
+    @Override
+    public INDArray backprop(INDArray input) {
+        return input.reshape(prevShape);
+    }
+
+
 }
