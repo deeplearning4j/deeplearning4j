@@ -36,4 +36,11 @@ public class ZeroMeanAndUnitVariancePrePreProcessor extends BaseInputPreProcesso
         input.diviRowVector(columnStds);
         return input;
     }
+
+    @Override
+    public INDArray backprop(INDArray toReverse) {
+        return null;
+    }
+
+
 }
