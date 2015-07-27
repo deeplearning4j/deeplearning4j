@@ -81,7 +81,11 @@ public class ContextHolder {
     private AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private ContextHolder(){
-        getNumDevices();
+        try {
+            getNumDevices();
+        }catch(Exception e) {
+            log.warn("Unable to initialize cuda",e);
+        }
     }
 
     /**

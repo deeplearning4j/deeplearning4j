@@ -60,7 +60,7 @@ import java.util.*;
 
 import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
 import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
-
+import static org.nd4j.linalg.util.ArrayUtil.sum;
 
 
 /**
@@ -601,20 +601,38 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int tensorssAlongDimension(int... dimension) {
-        if(dimension.length == 1)
-            return vectorsAlongDimension(dimension[0]);
         int[] tensorShape = ArrayUtil.keep(shape(), dimension);
         return length / ArrayUtil.prod(tensorShape);
     }
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        if(dimension.length == 1)
-            return vectorAlongDimension(index, dimension[0]);
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
-        int[] stride = ArrayUtil.keep(stride(), dimension);
-        int idx = offset + index * ArrayUtil.prod(ArrayUtil.removeIndex(stride(),dimension));
-        return create(data(), tensorShape, stride, idx, ordering());
+        int[] stride = ArrayUtil.keep(stride(),dimension);
+        int[] leftOverStride = ArrayUtil.removeIndex(stride(),dimension);
+
+        if(tensorShape.length >= 2) {
+            int idx = offset + index * (leftOverStride[leftOverStride.length - 1]);
+            return create(data(), tensorShape, stride, idx, ordering());
+        }
+        else {
+            tensorShape = new int[] {1,tensorShape[0]};
+            stride = new int[] {stride[0],1};
+            int idx = 0;
+            if(index / stride[0] > 0) {
+                int baseIndex = index /stride[0];
+                int delta = index - baseIndex * stride[0];
+                int realIndex = baseIndex + delta;
+                idx = offset + (tensorShape[1] * index) - delta;
+
+            }
+            else
+                idx = offset + index;
+            return create(data(), tensorShape, stride, idx, ordering());
+
+
+        }
+
     }
 
     /**
@@ -664,16 +682,84 @@ public abstract class BaseNDArray implements INDArray {
             return linearView();
         }
 
+        if(isMatrix()) {
+            if(ordering() == NDArrayFactory.FORTRAN) {
+                if(isMatrix()) {
+                    if(dimension == 0) {
+                        return create(data,
+                                new int[]{shape[dimension],1}
+                                ,  new int[]{stride[dimension],elementStride()},
+                                offset + index * stride[stride.length - 1]);
+                    }
+                    else if(dimension == 1) {
+                        return create(data,
+                                new int[]{1, shape[dimension]}
+                                , new int[]{stride[dimension],elementStride()},
+                                calcoffset(index));
+                    }
+                }
 
-        if(ordering() == NDArrayFactory.FORTRAN) {
-            if(isMatrix()) {
+                int shapeDimension = dimension;
+                int strideDimension = shapeDimension;
+
+                //account for leading ones
+                int vectorSize = size(shapeDimension);
+                if(vectorSize == 1 && getLeadingOnes() > 0 && dimension == 0 && getTrailingOnes() == 0 && rank() > 2) {
+                    for(int i = 1; i < rank(); i++) {
+                        if(size(i) != 1) {
+                            vectorSize = size(i);
+                            break;
+                        }
+                    }
+                }
+
+                else if(getTrailingOnes() > 0  && rank() > 2) {
+                    for(int  i = rank() - 1; i >= 0; i--) {
+                        if(size(i) != 1) {
+                            vectorSize = size(i);
+                            break;
+                        }
+                    }
+                }
+
+                else if(getTrailingOnes() > 0 && getLeadingOnes() > 0 && rank() > 2) {
+                    for(int  i = rank() - 1; i >= 0; i--) {
+                        if(size(i) != 1) {
+                            vectorSize = size(i);
+                            break;
+                        }
+                    }
+                }
+
+
+
+
+
+                INDArray ret =  create(data,
+                        new int[]{1, vectorSize}
+                        , new int[]{elementStride(), stride[strideDimension]},
+                        calcoffset(index));
+                return ret;
+            }
+            else {
                 if(dimension == 0) {
+                    int[] shape2 =  new int[]{shape[dimension],1};
+                    int realOffset = offset + (index * (ordering() == 'f' ? stride(0) : stride(1)));
+                    int[] retStride = new int[] {majorStride(),elementStride()};
                     return create(data,
-                            new int[]{shape[dimension],1}
-                            ,  new int[]{stride[dimension],elementStride()},
-                            offset + index * stride[stride.length - 1]);
+                            shape2
+                            ,retStride,
+                            realOffset);
                 }
                 else if(dimension == 1) {
+                    int[] shape2 =  new int[]{1,shape[dimension]};
+
+                    if(ordering() == NDArrayFactory.C)
+                        return create(data,
+                                new int[]{1, shape[dimension]}
+                                , getStrides(shape2, ordering()),
+                                calcoffset(index));
+                    //c ordering
                     return create(data,
                             new int[]{1, shape[dimension]}
                             , new int[]{stride[dimension],elementStride()},
@@ -681,209 +767,48 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
 
-            int shapeDimension = dimension;
-            int strideDimension = shapeDimension;
-
-            //account for leading ones
-            int vectorSize = size(shapeDimension);
-            if(vectorSize == 1 && getLeadingOnes() > 0 && dimension == 0 && getTrailingOnes() == 0 && rank() > 2) {
-                for(int i = 1; i < rank(); i++) {
-                    if(size(i) != 1) {
-                        vectorSize = size(i);
-                        break;
-                    }
-                }
-            }
-
-            else if(getTrailingOnes() > 0  && rank() > 2) {
-                for(int  i = rank() - 1; i >= 0; i--) {
-                    if(size(i) != 1) {
-                        vectorSize = size(i);
-                        break;
-                    }
-                }
-            }
-
-            else if(getTrailingOnes() > 0 && getLeadingOnes() > 0 && rank() > 2) {
-                for(int  i = rank() - 1; i >= 0; i--) {
-                    if(size(i) != 1) {
-                        vectorSize = size(i);
-                        break;
-                    }
-                }
-            }
-
-
-
-
-
-            INDArray ret =  create(data,
-                    new int[]{1, vectorSize}
-                    , new int[]{elementStride(), stride[strideDimension]},
-                    calcoffset(index));
-            return ret;
-
-        }
-
-        if(isMatrix()) {
-            if(dimension == 0) {
-                int[] shape2 =  new int[]{shape[dimension],1};
-                int realOffset = offset + (index * (ordering() == 'f' ? stride(0) : stride(1)));
-                int[] retStride = new int[] {majorStride(),elementStride()};
-                return create(data,
-                        shape2
-                        ,retStride,
-                        realOffset);
-            }
-            else if(dimension == 1) {
-                int[] shape2 =  new int[]{1,shape[dimension]};
-
-                if(ordering() == NDArrayFactory.C)
-                    return create(data,
-                            new int[]{1, shape[dimension]}
-                            , getStrides(shape2, ordering()),
-                            calcoffset(index));
-                //c ordering
-                return create(data,
-                        new int[]{1, shape[dimension]}
-                        , new int[]{stride[dimension],elementStride()},
-                        calcoffset(index));
-            }
         }
 
 
-      /*  //flip the indices
-        if(ordering() == 'c') {
-
-        }
-        */
-        int arrOffset = -1;
-        if(ordering == 'f') {
-            arrOffset = offset == 0  ? offset + index *  majorStride() : offset + index;
-        }
-        else {
-
-            if(dimension == rank() - 1)
-                arrOffset = offset == 0  ? offset + index *  getLastNonOneStride() : offset + index;
-
-            else {
-                int sliceOffset = sliceOffsetForVectorCOrdering(index,dimension);
-                if(sliceOffset == 0 && dimension == 0 || dimension == rank() - 1)
-                    arrOffset = offset + index *  stride(-1)  + sliceOffsetForVectorCOrdering(index,dimension);
-                else
-                    arrOffset = sliceOffset;
-
-            }
-
-        }
-
-        /**
-         * The offset is greater than the dimensions.
-         * When doing vector along dimension
-         * you will often run in to situations
-         * where you need to go back up the slices.
-         *
-         * This will perform a reset of the offset
-         * to be relative to the index of the vector
-         * and set it to the appropriate offset.
-         *
-         * An example of this situation:
-         * Shape: 4 x 3 x2
-         * Stride: 6 x 2 x 1
-         *
-         * The array has 4 slices.
-         *
-         * In order to iterate through the array properly,
-         * we will need to reset the offset. This situation
-         * will always occur when iterating along the final dimension.
-         * Given an array:
-         *
-         * ([[[  1.,   2.],
-         [  3.,   4.],
-         [  5.,   6.]],
-
-         [[  7.,   8.],
-         [  9.,  10.],
-         [ 11.,  12.]],
-
-         [[ 13.,  14.],
-         [ 15.,  16.],
-         [ 17.,  18.]],
-
-         [[ 19.,  20.],
-         [ 21.,  22.],
-         [ 23.,  24.]]])
-
-         This array is fortran order
-
-
-         Iterating along dimension 2 gives us:
-
-         1,2
-         7,8
-         13,14
-         19,20
-         3,4
-         9,10,
-         15,16
-         21,22,
-         5,6,
-         11,12
-         17,18
-         23,24
-
-         You will notice that we iterate through the array by going up and down.
-
-         This allows us to continuously iterate through an array seamlessly
-         even along the last dimension.
-
-         This algorithm adjusts the offsets wrt the index such that the
-         index is placed properly when "going up" the array.
-
-
-         *
-         */
-        //note this should only be for fortran ordering
-        if(arrOffset + stride(dimension) >= length() && ordering() == 'f') {
-            int numDecremented = 0;
-            int startIndex = index;
-
-            while(startIndex >= slices()) {
-                numDecremented++;
-                startIndex -= slices();
-            }
-
-            int startStride = stride(0);
-            int endStride = stride(1);
-            arrOffset = offset + ((startIndex * startStride) + (numDecremented * endStride));
-
-        }
-        else if(arrOffset + stride(dimension) >= length() && !isVector())
-            throw new IllegalStateException("Illegal offset; c ordering should iterate row wise");
-
-        int dimStride = stride(dimension);
-
-
-        int[] retStride = new int[]{elementStride(), dimStride};
-
-        return create(data,
-                new int[]{1, shape[dimension]}
-                , retStride,
-                arrOffset);
+        INDArray tensor = tensorAlongDimension(index,dimension);
+        System.out.println(tensor);
+        return tensor;
 
     }
 
 
 
     private int sliceOffsetForVectorCOrdering(int idx,int dimension) {
-        int sliceLength = ArrayUtil.prod(ArrayUtil.removeIndex(shape,0));
+        int sliceLength = ArrayUtil.prod(ArrayUtil.removeIndex(shape,dimension));
         //number of matrices per slice / length of vector
         int sizeOfDimension = dimension > 0 ? size(dimension) : size(-1);
         int vectorsPerSlice = (sliceLength / sizeOfDimension);
         if(vectorsPerSlice < 1)
             vectorsPerSlice = 1;
-        if(idx < vectorsPerSlice || dimension == 0)
-            return offset + idx;
+        if(idx < vectorsPerSlice || dimension == 0) {
+            int sliceIdx = idx / ArrayUtil.prod(new int[]{size(-2),size(-1)});
+            //get the size of a matrix. The number of matrices in a tensor
+            //are just the number of vectors / the size of the last 2 dimensions.
+            int matrixIndex = idx / 2;
+            if(sliceIdx == 0) {
+                //column wise strides;
+                if(dimension == rank() -2) {
+                    if(matrixIndex > 0) {
+                        int vectorsPerMatrix = vectorsPerSlice / ArrayUtil.prod(new int[]{size(-2),size(-1)});
+                        int vectorIndex = idx % size(-2);
+                        return offset + (idx) + vectorIndex * stride(dimension);
+                    }
+                    else
+                        return offset + idx;
+                }
+                return offset + idx;
+
+            }
+            else {
+                return offset + idx * sliceIdx * stride(1);
+            }
+        }
+
         else {
             int sliceIdx = idx / vectorsPerSlice;
             int sliceOffset = offset + (sliceIdx  * majorStride()) +  idx - vectorsPerSlice;
@@ -2248,7 +2173,7 @@ public abstract class BaseNDArray implements INDArray {
                             getRow(i).rsubi(vector.getDouble(i));
                             break;
                         case 't':
-                           getRow(i).rdivi(vector.getDouble(i));
+                            getRow(i).rdivi(vector.getDouble(i));
                             break;
                     }
                 }
