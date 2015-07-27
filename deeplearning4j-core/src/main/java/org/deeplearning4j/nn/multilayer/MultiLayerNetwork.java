@@ -1733,11 +1733,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public Layer transpose() {
         throw new UnsupportedOperationException();
     }
-    @Deprecated
-    @Override
-    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {

@@ -747,10 +747,6 @@ public class TestOptimizers {
 		public Layer clone() { throw new UnsupportedOperationException(); }
 
 		@Override
-		public Pair<Gradient, Gradient> backWard(Gradient errors,
-				Gradient deltas, INDArray activation, String previousActivation) { throw new UnsupportedOperationException(); }
-
-		@Override
 		public Collection<IterationListener> getListeners() { return null; }
 
 		@Override
