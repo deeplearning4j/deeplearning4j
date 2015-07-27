@@ -126,6 +126,5 @@ public class AutoEncoder extends BasePretrainNetwork  {
         gradient = createGradient(wGradient, vBiasGradient, hBiasGradient);
         setScoreWithZ(z);
 
-
     }
 }
