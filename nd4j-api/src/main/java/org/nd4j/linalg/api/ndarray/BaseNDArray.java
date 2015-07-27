@@ -622,7 +622,6 @@ public abstract class BaseNDArray implements INDArray {
             if(index / stride[0] > 0) {
                 int baseIndex = index /stride[0];
                 int delta = index - baseIndex * stride[0];
-                int realIndex = baseIndex + delta;
                 idx = offset + (tensorShape[1] * index) - delta;
 
             }
