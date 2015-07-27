@@ -26,12 +26,19 @@ import org.nd4j.linalg.factory.Nd4j;
  * Binomial sampling pre processor
  * @author Adam Gibson
  */
-public class BinomialSamplingPreProcessor extends BaseOutputPreProcessor {
+public class BinomialSamplingOutputPreProcessor extends BaseOutputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray output) {
         return Nd4j.getDistributions().createBinomial(1,output).sample(output.shape());
     }
+
+    @Override
+    public INDArray backprop(INDArray input) {
+        // TODO - How to reverse?
+        return null;
+    }
+
 
 
 

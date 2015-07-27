@@ -46,7 +46,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
-                .list(2).preProcessor(0,new ConvolutionPostProcessor())
+                .list(2).outputPreProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(3).build();
         String json = conf.toJson();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);
@@ -77,7 +77,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
-                .list(2).preProcessor(0,new ConvolutionPostProcessor())
+                .list(2).outputPreProcessor(0,new ConvolutionPostProcessor())
                 .hiddenLayerSizes(3).build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
