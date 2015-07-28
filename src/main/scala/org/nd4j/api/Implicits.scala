@@ -7,7 +7,7 @@ import _root_.scala.util.control.Breaks._
 
 object Implicits {
 
-  implicit class RichINDArray(val underlying: INDArray) extends SliceableNDArray with OperatableNDArray {
+  implicit class RichINDArray(val underlying: INDArray) extends SliceableNDArray with OperatableNDArray with CollectionLikeNDArray{
     def forall(f: Double => Boolean): Boolean = {
       var result = true
       val lv = underlying.linearView()
