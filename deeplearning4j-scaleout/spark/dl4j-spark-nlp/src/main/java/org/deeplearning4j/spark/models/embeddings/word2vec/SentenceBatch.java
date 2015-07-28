@@ -57,8 +57,6 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
     }
 
 
-
-
     /**
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
@@ -66,13 +64,15 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
     public void trainSentence(Word2VecParam param,final List<VocabWord> sentence,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
         if (sentence != null && !sentence.isEmpty()) {
             for (int i = 0; i < sentence.size(); i++) {
-                if (!sentence.get(i).getWord().endsWith("STOP")) {
-                    nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                    skipGram(param,i, sentence, (int) nextRandom.get() % param.getWindow(), alpha,changed);
+                VocabWord vocabWord = sentence.get(i);
+                if (vocabWord != null) {
+                    if (vocabWord.getWord().endsWith("STOP")) {
+                        nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                        skipGram(param,i, sentence, (int) nextRandom.get() % param.getWindow(), alpha,changed);
+                    }
                 }
             }
         }
-
     }
 
 
@@ -133,7 +133,7 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
 
             INDArray syn1 = weights.getSyn1().slice(point);
 
-            double dot = Nd4j.getBlasWrapper().dot(l1,syn1);
+            double dot = Nd4j.getBlasWrapper().level1().dot(syn1.length(),1.0,l1,syn1);
 
             if(dot < -MAX_EXP || dot >= MAX_EXP)
                 continue;
