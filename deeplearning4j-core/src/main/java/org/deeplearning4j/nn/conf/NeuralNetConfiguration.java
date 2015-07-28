@@ -569,7 +569,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         @Deprecated
         private DefaultRandom rng = null;
         private long seed = System.currentTimeMillis();
-        @Deprecated
         private Distribution dist  = new NormalDistribution(1e-3,1);
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
