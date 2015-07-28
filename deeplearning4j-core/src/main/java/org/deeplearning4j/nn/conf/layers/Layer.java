@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -54,6 +55,7 @@ public abstract class Layer implements Serializable {
         protected String activationFunction;
         protected WeightInit weightInit;
         protected double dropOut;
+        protected Distribution dist;
 
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
@@ -65,10 +67,16 @@ public abstract class Layer implements Serializable {
             return this;
         }
 
+        public Builder dist(Distribution dist) {
+            this.dist = dist;
+            return this;
+        }
+
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
             return this;
         }
+
 
         public abstract <E extends Layer> E build();
     }

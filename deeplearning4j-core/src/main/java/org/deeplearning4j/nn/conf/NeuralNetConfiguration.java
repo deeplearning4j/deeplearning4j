@@ -105,8 +105,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected StepFunction stepFunction = new GradientStepFunction();
     protected Layer layer;
 
-
-
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
     //feed forward nets
