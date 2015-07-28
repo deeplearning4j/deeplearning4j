@@ -134,7 +134,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         case XENT:
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.div(output.mul(output.rsub(1)))));
         	return new Pair<>(gradient,labelsSubOut);
-        	
+
         case MSE:
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.neg()));
             return new Pair<>(gradient,labelsSubOut);

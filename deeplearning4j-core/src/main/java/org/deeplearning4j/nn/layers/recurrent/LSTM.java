@@ -88,7 +88,7 @@ public class LSTM extends BaseLayer {
      * @param y
      * @return {@link org.deeplearning4j.nn.gradient.Gradient}
      */
-    public Gradient backward(INDArray y) {
+    public Gradient backprop(INDArray y) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
 
@@ -476,7 +476,7 @@ public class LSTM extends BaseLayer {
     public void computeGradientAndScore() {
         INDArray forward = forward(xi, xs);
         INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
-        gradient = backward(probas);
+        gradient = backprop(probas);
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, forward);
             create.exec();
