@@ -23,7 +23,7 @@ public class LayerwiseConfigurationTest {
 		
 		//Without layerwise override:
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-		.activationFunction("sigmoid")
+		.activationFunction("relu")
 		.list(2)
 		.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
 		.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
@@ -31,8 +31,8 @@ public class LayerwiseConfigurationTest {
 		MultiLayerNetwork net = new MultiLayerNetwork(conf);
 		net.init();
 		
-		assertTrue(conf.getConf(0).getActivationFunction().equals("sigmoid"));
-		assertTrue(conf.getConf(1).getActivationFunction().equals("sigmoid"));
+		assertTrue(conf.getConf(0).getActivationFunction().equals("relu"));
+		assertTrue(conf.getConf(1).getActivationFunction().equals("relu"));
 		
 		//With:
 		conf = new NeuralNetConfiguration.Builder()
@@ -88,6 +88,55 @@ public class LayerwiseConfigurationTest {
 		for( int i=0; i<w0.length(); i++ ) assertTrue(w0.getDouble(i)>=10.0 && w0.getDouble(i)<=11.0);
 		w1 = net.getLayer(1).getParam(DefaultParamInitializer.WEIGHT_KEY).linearView();
 		for( int i=0; i<w1.length(); i++ ) assertTrue(w1.getDouble(i)>=20.0 && w0.getDouble(i)<=21.0);
+		
+		
+		conf = new NeuralNetConfiguration.Builder()
+			.activationFunction("sigmoid")
+			.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-30,-20))
+			.list(2)
+			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+			.build();
+		net = new MultiLayerNetwork(conf);
+		net.init();
+		assertTrue(conf.getConf(0).getWeightInit() == WeightInit.DISTRIBUTION);
+		assertTrue(conf.getConf(1).getWeightInit() == WeightInit.DISTRIBUTION);
+		assertTrue(conf.getConf(0).getDist() instanceof UniformDistribution);
+		assertTrue(conf.getConf(1).getDist() instanceof UniformDistribution);
+	}
+	
+	@Test
+	public void testLayerDropout(){
+		
+		//Without layerwise override:
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+		.dropOut(0.47)
+		.list(2)
+		.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+		.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+		.build();
+		MultiLayerNetwork net = new MultiLayerNetwork(conf);
+		net.init();
+		
+		System.out.println(conf.getConf(0).getDropOut());
+		assertTrue(conf.getConf(0).getDropOut() == 0.47);
+		assertTrue(conf.getConf(1).getDropOut() == 0.47);
+		
+		//With:
+		conf = new NeuralNetConfiguration.Builder()
+			.dropOut(0.5)
+			.list(2)
+			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).dropOut(0.2).build() )
+			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).dropOut(0.4).build() )
+			.build();
+		
+		net = new MultiLayerNetwork(conf);
+		net.init();
+		
+//		net.getLayerWiseConfigurations().getConf(0).getLayer().
+		
+		assertTrue(conf.getConf(0).getDropOut()==0.2);
+		assertTrue(conf.getConf(1).getDropOut()==0.4);
 	}
 
 }

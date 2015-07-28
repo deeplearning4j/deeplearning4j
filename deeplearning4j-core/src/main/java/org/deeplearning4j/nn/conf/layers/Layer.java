@@ -64,7 +64,7 @@ public abstract class Layer implements Serializable {
         protected String activationFunction;
         protected WeightInit weightInit;
         protected Distribution dist = new NormalDistribution(0,0.01);
-        protected double dropOut;
+        protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
 
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
