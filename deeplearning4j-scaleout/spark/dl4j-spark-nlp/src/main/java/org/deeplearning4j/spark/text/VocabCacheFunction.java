@@ -18,65 +18,66 @@
 
 package org.deeplearning4j.spark.text;
 
+import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import java.util.List;
 
 /**
- * Vocab vocab function: handles word counts
- * @author Adam Gibson
+ * @author Jeffrey Tang
  */
-public class VocabCacheFunction implements Function<Pair<List<String>,Long>,Pair<VocabCache,Long>> {
+public class VocabCacheFunction implements VoidFunction<Pair<List<String>, Long>> {
 
-    private VocabCache vocab;
     private Broadcast<List<String>> stopWords;
+    private Accumulator<Counter<String>> wordFreqAcc;
+    private Accumulator<Double> wordCountAcc;
 
-    public VocabCacheFunction(VocabCache vocab, Broadcast<List<String>> stopWords) {
-        this.vocab = vocab;
+    //Getters
+    public Accumulator<Counter<String>> getWordFreqAcc() {
+        return wordFreqAcc;
+    }
+
+    public Accumulator<Double> getWordCountAcc() {
+        return wordCountAcc;
+    }
+    //
+
+    public VocabCacheFunction(Broadcast<List<String>> stopWords,
+
+                              Accumulator<Counter<String>> wordFreqAcc,
+                              Accumulator<Double> wordCountAcc) {
+        this.wordFreqAcc = wordFreqAcc;
+        this.wordCountAcc = wordCountAcc;
         this.stopWords = stopWords;
     }
 
-
+    // Function to add to word freq counter and total count of words
     @Override
-    public Pair<VocabCache, Long> call(Pair<List<String>, Long> v1) throws Exception {
+    public void call(Pair<List<String>, Long> pair) throws Exception {
+        // Add the count of the sentence to the global count of all words
+        Long sentenceWordCount = pair.getSecond();
+        wordCountAcc.add((double)sentenceWordCount);
+        // Set up the list of words and the stop words and the counter
+        List<String> lstOfWords = pair.getFirst();
+        List<String> stops = stopWords.getValue();
+        Counter<String> counter = new Counter<>();
 
-        // The total number of words in a sentence
-        long wordsEncountered = v1.getSecond();
-
-        // If stop word, assign to "STOP", if empty, carry on
-        for(String token : v1.getFirst()) {
-            boolean isStopWord = stopWords.getValue().contains(token);
-            if(isStopWord)
-                token = "STOP";
-            if(token.isEmpty())
+        for (String w : lstOfWords) {
+            if(w.isEmpty())
                 continue;
 
-            //Increment word in vocab by 1 in wordFrequency (InMemoryLookupCache)
-            vocab.incrementWordCount(token);
-
-            // token2 is a token. A token becomes vocab when it is not already in vocab
-            // token is a string of the word
-//            VocabWord token2;
-//            if(vocab.hasToken(token))
-//                token2 = vocab.tokenFor(token);
-//            else {
-//                token2 = new VocabWord(1.0, token);
-//                vocab.addToken(token2);
-//            }
-//
-//            //note that for purposes of word frequency, the
-            //internal vocab and the final vocab
-            //at the class level contain the same references
-//            if(!vocab.containsWord(token)) {
-//                int idx = vocab.numWords();
-//                token2.setIndex(idx);
-//                vocab.putVocabWord(token);
-//            }
+            if (stops.contains(w)) {
+                counter.incrementCount("STOP", 1.0);
+            } else {
+                counter.incrementCount(w, 1.0);
+            }
         }
-
-        return new Pair<>(vocab,wordsEncountered);
+        wordFreqAcc.add(counter);
     }
 }
+

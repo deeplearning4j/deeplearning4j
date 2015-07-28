@@ -57,8 +57,6 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
     }
 
 
-
-
     /**
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
