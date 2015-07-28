@@ -51,11 +51,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.util.NDArrayMath;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
@@ -640,9 +642,11 @@ public abstract class BaseNDArray implements INDArray {
             else {
                 int[] rearrange = Ints.concat(ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension), dimension);
                 INDArray move = permute(rearrange);
-                NDArrayIndex[] copy = NDArrayIndex.nTimes(NDArrayIndex.empty(),rank());
-                copy[copy.length - 1] = new NDArrayIndex(index,index + 1);
-                INDArray ret2 = move.get(copy);
+                INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index,move,0));
+                while(!ret2.isVector()) {
+                    int slice = NDArrayMath.sliceForVector(index,ret2,0);
+                    ret2 = ret2.slice(slice);
+                }
                 return ret2;
 
             }
@@ -1815,17 +1819,16 @@ public abstract class BaseNDArray implements INDArray {
         int delta = rank() - offsets.length;
         int[] dotProductOffsets = offsets;
         int[] dotProductStride = stride;
-
-
+        if(ordering() == 'f') {
+            dotProductStride = ArrayUtil.reverseCopy(dotProductStride);
+        }
         int[] zeros = new int[delta];
         int[] ones = ArrayUtil.nTimes(delta,1);
-        dotProductOffsets = delta > 0 ? Ints.concat(zeros,offsets) : offsets;
-        dotProductStride = delta > 0 ? Ints.concat(ones,stride) : stride;
-        if(ordering() == NDArrayFactory.FORTRAN) {
+        dotProductOffsets = delta > 0 ? Ints.concat(zeros,dotProductOffsets) : dotProductOffsets;
+        dotProductStride = delta > 0 ? Ints.concat(ones,dotProductStride) : dotProductStride;
 
-        }
 
-        int offset = this.offset + ArrayUtil.dotProduct(dotProductOffsets, ordering() == 'f' ? ArrayUtil.reverseCopy(this.stride) : this.stride);
+        int offset = this.offset + ArrayUtil.dotProduct(dotProductOffsets,dotProductStride);
 
 
         //prevent off by 1
@@ -1836,7 +1839,7 @@ public abstract class BaseNDArray implements INDArray {
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
-                    , ArrayUtil.reverseCopy(stride)
+                    , stride
                     , offset, ordering
             );
         }
@@ -1844,7 +1847,7 @@ public abstract class BaseNDArray implements INDArray {
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
-                    , stride
+                    , ArrayUtil.reverseCopy(stride)
                     , offset, ordering
             );
         }
@@ -3976,16 +3979,9 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         int[] stride = this.stride();
-        if(ordering() == NDArrayFactory.C) {
-            stride = ArrayUtil.reverseCopy(getStrides(shape,ordering));
+        if(stride.length > shape.length) {
+            stride = Arrays.copyOfRange(stride,Math.abs(stride.length - shape.length),stride.length);
         }
-        else if(ordering() == NDArrayFactory.FORTRAN && Shape.isRowVectorShape(shape)) {
-            if(stride.length > shape.length) {
-                stride = new int[] {1,stride[stride.length - 1]};
-            }
-
-        }
-
 
         return subArray(offsets, shape,stride);
     }

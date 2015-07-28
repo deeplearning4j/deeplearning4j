@@ -85,7 +85,8 @@ public class ShapeTests extends BaseNd4jTest {
 
         assertEquals(assertions.length,threeTwoTwo.tensorssAlongDimension(2));
         for(int i = 0; i < assertions.length; i++) {
-            assertEquals(assertions[i],threeTwoTwo.tensorAlongDimension(i,2));
+            INDArray test = threeTwoTwo.tensorAlongDimension(i, 2);
+            assertEquals(assertions[i],test);
         }
 
     }
