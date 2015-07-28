@@ -338,18 +338,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 layerField.setAccessible(true);
                 if(neuralNetField.getName().equals(layerField.getName())) {
                     try {
-                        Object valForConfig = neuralNetField.get(configInst);
                         Object layerFieldValue = layerField.get(layer);
                         if(layerFieldValue != null ) {
-                            if(valForConfig.getClass().equals(layerFieldValue.getClass())) {
-                            	if(!ClassUtils.isPrimitiveOrWrapper(valForConfig.getClass()) ){
+                        	if(neuralNetField.getType().isAssignableFrom(layerField.getType())){
+                        		//Same class, or neuralNetField is superclass/superinterface of layer field
+                        		if(!ClassUtils.isPrimitiveOrWrapper(layerField.getType()) ){
                             		neuralNetField.set(configInst, layerFieldValue);
                             	} else {
                             		//Primitive -> autoboxed by Field.get(...). Hence layerFieldValue is never null for primitive fields,
                             		// even if not explicitly set (due to default value for primitives)
                             		//Convention here is to use Double.NaN, Float.NaN, Integer.MIN_VALUE, etc. as defaults in layer configs
                             		// to signify 'not set'
-                            		Class<?> primitiveClass = valForConfig.getClass();
+                            		Class<?> primitiveClass = layerField.getType();
                             		if( primitiveClass == double.class || primitiveClass == Double.class ){
                             			if( !Double.isNaN((double)layerFieldValue) ){
                             				neuralNetField.set(configInst, layerFieldValue);
