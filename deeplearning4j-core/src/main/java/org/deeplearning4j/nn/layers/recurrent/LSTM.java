@@ -72,6 +72,16 @@ public class LSTM extends BaseLayer {
     /**
      * Forward propagation
      * @param xi the current example
+     * @return
+     */
+    public INDArray forward(INDArray xi) {
+        return activate(xi);
+    }
+
+
+    /**
+     * Forward propagation
+     * @param xi the current example
      * @param xs the tim series to predict based on
      * @return
      */
@@ -165,6 +175,8 @@ public class LSTM extends BaseLayer {
 
     }
 
+
+
     @Override
     public INDArray input() {
         return xi;
@@ -172,6 +184,8 @@ public class LSTM extends BaseLayer {
 
     @Override
     public INDArray activate(INDArray input) {
+        this.x = input;
+
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
         INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
@@ -496,7 +510,7 @@ public class LSTM extends BaseLayer {
 
     @Override
     public INDArray transform(INDArray data) {
-        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi,xs)).derivative(), 1);
+        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", activate(data)).derivative(), 1);
     }
 
 
