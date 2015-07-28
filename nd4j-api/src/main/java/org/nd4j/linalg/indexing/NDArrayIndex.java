@@ -35,6 +35,22 @@ public class NDArrayIndex {
     private int[] indices = new int[1];
     private boolean isInterval = false;
     private static NDArrayIndexAll ALL = new NDArrayIndexAll();
+    private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
+    /**
+     * Repeat a copy of copy n times
+     * @param copy the ndarray index to copy
+     * @param n the number of times to copy
+     * @return an array of length n containing copies of
+     * the given ndarray index
+     */
+    public static NDArrayIndex[] nTimes(NDArrayIndex copy,int n) {
+        NDArrayIndex[] ret = new NDArrayIndex[n];
+        for(int i = 0; i < n; i++) {
+            ret[i] = copy;
+        }
+
+        return ret;
+    }
 
     /**
      * NDArrayIndexing based on the given
@@ -45,7 +61,16 @@ public class NDArrayIndex {
         this.indices = indices;
     }
 
-
+    /**
+     * Represents collecting no elements
+     *
+     * @return an ndarray index
+     * meaning collect
+     * no elements
+     */
+    public static NDArrayIndex empty() {
+        return EMPTY;
+    }
     /**
      * Represents collecting all elements
      *
@@ -246,6 +271,12 @@ public class NDArrayIndex {
     }
 
 
+    //static type checking used for checking if an index should be represented as all
+    public static class  NDArrayIndexEmpty  extends NDArrayIndex {
+        public NDArrayIndexEmpty(int... indices) {
+            super(indices);
+        }
+    }
 
 
     //static type checking used for checking if an index should be represented as all

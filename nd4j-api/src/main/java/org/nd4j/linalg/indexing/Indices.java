@@ -128,12 +128,18 @@ public class Indices {
     public static int[] offsets(NDArrayIndex... indices) {
         int[] ret = new int[indices.length];
         for (int i = 0; i < indices.length; i++) {
-            int offset = indices[i].offset();
-            if (offset == 0 && i > 0 && i < indices.length - 1)
-                ret[i] = 1;
-            else
-                ret[i] = indices[i].offset();
+            if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
+                ret[i] = 0;
+            else {
+                int offset = indices[i].offset();
+                if (offset == 0 && i > 0 && i < indices.length - 1)
+                    ret[i] = 1;
+                else
+                    ret[i] = indices[i].offset();
+            }
+
         }
+
         if(ret.length == 1) {
             ret = new int[] {ret[0],0};
         }
@@ -376,6 +382,9 @@ public class Indices {
         for (int i = 0; i < ret.length; i++) {
             if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
                 ret[i] = shape[i];
+            }
+            else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
+                ret[i] = 0;
             }
             else {
                 int[] currIndices = indices[i].indices();
