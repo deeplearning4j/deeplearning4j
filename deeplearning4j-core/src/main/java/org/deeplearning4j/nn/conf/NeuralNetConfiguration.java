@@ -101,6 +101,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double rho;
     protected long seed;
     //weight initialization
+    @Deprecated
     protected Distribution dist;
     protected StepFunction stepFunction = new GradientStepFunction();
     protected Layer layer;
@@ -249,6 +250,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if(dist == null)
             this.dist = new NormalDistribution(0.01,1);
 
+    }
+    
+    public Distribution getDist(){
+    	return layer.getDist();
     }
 
 
