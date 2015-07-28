@@ -37,6 +37,7 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.spark.text.MaxPerPartitionAccumulator;
 import org.deeplearning4j.spark.text.TextPipeline;
 import org.deeplearning4j.spark.text.TokenizerFunction;
 import org.deeplearning4j.spark.text.TokentoVocabWord;
@@ -76,29 +77,6 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         this(DefaultTokenizerFactory.class.getName());
     }
 
-    // A class for custom counter for keeping a running count of how many words in a sentence
-    static class MaxPerPartition implements AccumulatorParam<Counter<Integer>> {
-
-        @Override
-        public Counter<Integer> addInPlace(Counter<Integer> c1, Counter<Integer> c2) {
-            c1.incrementAll(c2);
-            return c1;
-        }
-        @Override
-        public Counter<Integer> zero(Counter<Integer> initialCounter) {
-            return new Counter<>();
-        }
-
-        @Override
-        public Counter<Integer> addAccumulator(Counter<Integer> c1, Counter<Integer> c2) {
-            if (c1 == null) {
-                return new Counter<>();
-            }
-            addInPlace(c1, c2);
-            return c1;
-        }
-    }
-
     /**
      * Train and return the result based on the given records.
      * Each string is assumed to be a document
@@ -106,9 +84,10 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
      * @return the vocab and lookup table for the model
      */
     public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> rdd) {
-        TextPipeline pipeline = new TextPipeline(rdd);
-        Pair<VocabCache,Long> vocabAndNumWords = pipeline.process(tokenizerFactoryClazz);
         SparkConf conf = rdd.context().getConf();
+        int minWords = conf.getInt(Word2VecPerformer.NUM_WORDS, 5);
+        TextPipeline pipeline = new TextPipeline(rdd, minWords);
+        Pair<VocabCache,Long> vocabAndNumWords = pipeline.process(tokenizerFactoryClazz);
         final JavaSparkContext sc = new JavaSparkContext(rdd.context());
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
         final InMemoryLookupTable lookupTable = this.table != null ? table : (InMemoryLookupTable) new InMemoryLookupTable.Builder()
@@ -149,8 +128,8 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         }).cache();
 
         // Accumulator to get the max of the cumulative sum in each partition
-        final Accumulator<Counter<Integer>> maxPerPartitionAcc = sc.accumulator(new Counter<Integer>(), new MaxPerPartition());
-
+        final Accumulator<Counter<Integer>> maxPerPartitionAcc = sc.accumulator(new Counter<Integer>(),
+                new MaxPerPartitionAccumulator());
 
         //Do a scan-left equivalent in each partition
         Function2 foldWithinPartition = new Function2<Integer, Iterator<AtomicLong>, Iterator<Long>>(){
@@ -257,9 +236,35 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
             log.info("Iteration " + i);
         }
 
+        // For WordVectorImpl, so nearestWord can be called
+        super.lookupTable = lookupTable;
+        super.vocab = vocabCacheBroadcast.getValue();
+
         return new Pair<VocabCache, WeightLookupTable>(vocabCacheBroadcast.getValue(),lookupTable);
 
     }
 
+    public Broadcast<VocabCache> getVocabCacheBroadcast() {
+        return vocabCacheBroadcast;
+    }
 
+    public void setVocabCacheBroadcast(Broadcast<VocabCache> vocabCacheBroadcast) {
+        this.vocabCacheBroadcast = vocabCacheBroadcast;
+    }
+
+    public String getTokenizerFactoryClazz() {
+        return tokenizerFactoryClazz;
+    }
+
+    public void setTokenizerFactoryClazz(String tokenizerFactoryClazz) {
+        this.tokenizerFactoryClazz = tokenizerFactoryClazz;
+    }
+
+    public InMemoryLookupTable getTable() {
+        return table;
+    }
+
+    public void setTable(InMemoryLookupTable table) {
+        this.table = table;
+    }
 }
