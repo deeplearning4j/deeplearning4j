@@ -88,7 +88,7 @@ public class GravesLSTMTest {
 		GravesLSTM lstm = LayerFactories.getFactory(conf.getLayer()).create(conf);
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
-//		assertNotNull(lstm.input());
+		assertNotNull(lstm.input());
 		
 		//Create pseudo-gradient for input to LSTM layer (i.e., as if created by OutputLayer)
 		//This should have two elements: bias and weight gradients.
@@ -109,12 +109,11 @@ public class GravesLSTMTest {
 		assertNotNull(recurrentWeightGradient);
 
 		assertArrayEquals(biasGradient.shape(),new int[]{1,4*lstmNHiddenUnits});
-//		assertArrayEquals(biasGradient.shape(),new int[]{miniBatchSize,4*lstmNHiddenUnits});
 		assertArrayEquals(inWeightGradient.shape(),new int[]{nIn,4*lstmNHiddenUnits});
 		assertArrayEquals(recurrentWeightGradient.shape(),new int[]{lstmNHiddenUnits,4*lstmNHiddenUnits+3});
 
 		assertNotNull(nextEpsilon);
-//		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
+		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
 		
 		//Check update:
 		for( String s : outGradient.gradientForVariable().keySet() ){
