@@ -18,19 +18,20 @@
 
 package org.deeplearning4j.spark.text;
 
+import org.apache.spark.Accumulator;
+import org.apache.spark.AccumulatorParam;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
 import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecPerformer;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.util.Index;
 
 import java.util.List;
 import java.util.Map.Entry;
@@ -81,14 +82,10 @@ public class TextPipeline {
         this(corpus,StopWords.getStopWords(),minWordFrequency);
     }
 
-    public Pair<VocabCache, Long> filterMinWordAddVocab(Pair<VocabCache, Long> pair) {
-        // The first item is InMemoryLookupCache
-        InMemoryLookupCache lookupCacheObject =  (InMemoryLookupCache)pair.getFirst();
-        // The second item is word count of the corpus (reduced from word count of sentences)
-        // Don't need to touch this
-        Long wordCount = pair.getSecond();
+    public Pair<VocabCache, Long> filterMinWordAddVocab(Counter<String> wordFreq, Long wordCount) {
+        InMemoryLookupCache lookupCacheObject = new InMemoryLookupCache();
 
-        for (Entry<String, Double> entry : lookupCacheObject.getWordFrequencies().entrySet()) {
+        for (Entry<String, Double> entry : wordFreq.entrySet()) {
             String stringToken = entry.getKey();
             Double tokenCount = entry.getValue();
             if (tokenCount < minWordFrequency) {
@@ -112,6 +109,8 @@ public class TextPipeline {
                 actualToken.setIndex(idx);
                 lookupCacheObject.putVocabWord(stringToken);
             }
+            // Set the word freq to the output from the accumulator
+            lookupCacheObject.setWordFrequencies(wordFreq);
         }
         return new Pair<>((VocabCache)lookupCacheObject, wordCount);
     }
@@ -124,13 +123,23 @@ public class TextPipeline {
      */
     public Pair<VocabCache,Long> process(String tokenizer) {
         JavaSparkContext sc = new JavaSparkContext(corpus.context());
-        Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
+        // This keeps track of the word frequency of each of the vocab words
+        Accumulator<Counter<String>> wordFreqAcc = sc.accumulator(new Counter<String>(), new WordFreqAccumulator());
+        // This keep track of the total number of words
+        Accumulator<Double> wordCountAcc = sc.accumulator(0L);
+        // Broadcast stopwords to all the partitions
+        final Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
+        // Getting the number of n-grams
         int nGrams = corpus.context().conf().getInt(Word2VecPerformer.N_GRAMS, 1);
         // Just getting the tokens by splitting on space, doesn't take care of punctuations
         JavaRDD<Pair<List<String>, Long>> tokenizedRDD = corpus.map(new TokenizerFunction(tokenizer, nGrams));
-        Pair<VocabCache, Long> corpusCounterPair = tokenizedRDD.map(new VocabCacheFunction(new InMemoryLookupCache(), broadcast))
-                .reduce(new ReduceVocabFunction());
-        return filterMinWordAddVocab(corpusCounterPair);
+        // Update the 2 accumulators
+        VocabCacheFunction accClass = new VocabCacheFunction(broadcast, wordFreqAcc, wordCountAcc);
+        tokenizedRDD.foreach(accClass);
+        // Get the values of the accumulators
+        Long totalWordCount = accClass.getWordCountAcc().value().longValue();
+        Counter<String> wordFreq = accClass.getWordFreqAcc().value();
+        return filterMinWordAddVocab(wordFreq, totalWordCount);
     }
 
     /**
@@ -140,11 +149,21 @@ public class TextPipeline {
      */
     public Pair<VocabCache,Long> process() {
         JavaSparkContext sc = new JavaSparkContext(corpus.context());
-        Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
+        // This keeps track of the word frequency of each of the vocab words
+        Accumulator<Counter<String>> wordFreqAcc = sc.accumulator(new Counter<String>(), new WordFreqAccumulator());
+        // This keep track of the total number of words
+        Accumulator<Double> wordCountAcc = sc.accumulator(0L);
+        // Broadcast stopwords to all the partitions
+        final Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
         // Just getting the tokens by splitting on space, doesn't take care of punctuations
         JavaRDD<Pair<List<String>, Long>> tokenizedRDD = corpus.map(new TokenizerFunction(DefaultTokenizerFactory.class.getName()));
-        Pair<VocabCache, Long> corpusCounterPair = tokenizedRDD.map(new VocabCacheFunction(new InMemoryLookupCache(), broadcast))
-                .reduce(new ReduceVocabFunction());
-        return filterMinWordAddVocab(corpusCounterPair);
+        // Update the 2 accumulators
+        VocabCacheFunction accClass = new VocabCacheFunction(broadcast, wordFreqAcc, wordCountAcc);
+        tokenizedRDD.foreach(accClass);
+        // Get the values of the accumulators
+        Long totalWordCount = accClass.getWordCountAcc().value().longValue();
+        Counter<String> wordFreq = accClass.getWordFreqAcc().value();
+        Pair<VocabCache, Long> pair = filterMinWordAddVocab(wordFreq, totalWordCount);
+        return pair;
     }
 }
