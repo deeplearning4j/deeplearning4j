@@ -127,7 +127,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //aka pool size for subsampling
     private int[] stride = {2,2};
     // convolution net padding
-    private int padding = 0;
+    private int[] padding = {0,0};
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected int batchSize = 10;
     //minimize or maximize objective
@@ -173,7 +173,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int[] weightShape,
                                   int[] kernelSize,
                                   int[] stride,
-                                  int padding,
+                                  int[] padding,
                                   int batchSize,
                                   int numLineSearchIterations,
                                   int maxNumLineSearchIterations,
@@ -535,7 +535,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int[] kernelSize = {2,2};
         // convolution & subsampling layers
         private int[] stride = {2,2};
-        private int padding = 0;
+        private int[] padding = {0,0};
         private StepFunction stepFunction = new NegativeDefaultStepFunction();
         private Layer layer;
         private int batchSize = 100;
@@ -694,7 +694,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
 
-        public Builder padding(int padding){
+        public Builder padding(int[] padding){
             this.padding = padding;
             return this;
         }
