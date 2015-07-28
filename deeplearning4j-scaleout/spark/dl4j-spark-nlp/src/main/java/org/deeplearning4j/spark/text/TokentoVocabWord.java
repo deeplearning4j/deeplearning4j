@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class TokentoVocabWord implements Function<Pair<List<String>,Long>,Pair<List<VocabWord>,AtomicLong>> {
     private  Broadcast<VocabCache> vocab;
-    private AtomicLong lastSeen = new AtomicLong(0);
 
     public TokentoVocabWord(Broadcast<VocabCache> vocab) {
         this.vocab = vocab;
