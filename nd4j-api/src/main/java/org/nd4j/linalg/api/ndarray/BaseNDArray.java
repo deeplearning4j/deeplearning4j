@@ -1911,10 +1911,8 @@ public abstract class BaseNDArray implements INDArray {
         //handle strides/offsets < rank
         if(offsets.length != stride.length)
             throw new IllegalStateException("Offsets and stride must be same length");
-        int delta = rank() - offsets.length;
         int[] dotProductOffsets = offsets;
         int[] dotProductStride = stride;
-
 
         int offset = this.offset + NDArrayIndex.offset(dotProductStride,dotProductOffsets);
 
@@ -1924,7 +1922,7 @@ public abstract class BaseNDArray implements INDArray {
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
-                    , ArrayUtil.reverseCopy(stride)
+                    ,stride
                     , offset, ordering
             );
         }
@@ -3020,12 +3018,23 @@ public abstract class BaseNDArray implements INDArray {
             return offset;
 
         if(ordering() == NDArrayFactory.C) {
-            int realStride = stride(0);
-            int idx = offset + (i * realStride);
+            if(isColumnVector()) {
+                int realStride = stride(0);
+                int idx = offset + (i * realStride);
 
-            if (data != null && idx >= data.length() && !isWrapAround())
-                throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
-            return idx;
+                if (data != null && idx >= data.length() && !isWrapAround())
+                    throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
+                return idx;
+            }
+            else {
+                int realStride = stride(-1);
+                int idx = offset + (i * realStride);
+
+                if (data != null && idx >= data.length() && !isWrapAround())
+                    throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
+                return idx;
+            }
+
         }
         else {
             int realStride = stride(-1);

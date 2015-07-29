@@ -40,7 +40,7 @@ public class NDArrayStrings {
                 return ((IComplexNDArray) arr).getComplex(0).toString();
             return decimalFormat.format(arr.getDouble(0));
         }
-        else if(arr.isRowVector()) {
+        else if(arr.isVector()) {
 
             sb.append("[");
             for(int i = 0; i < arr.length(); i++) {
