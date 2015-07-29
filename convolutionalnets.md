@@ -10,10 +10,10 @@ Contents
 * <a href="#intro">Convolutional Net Introduction</a>
 * <a href="#tensors">Tensors</a>
 * <a href="#define">ConvNet Definition</a>
-* <a href="#forward">Example: Feedforward Networks</a>
-* <a href="#logistic">Logistic Regression & Classifiers</a>
-* <a href="#ai">Neural Networks & Artificial Intelligence</a>
-* <a href="#intro">Other Introductory Resources</a>
+* <a href="#work">How Convolutional Nets Work</a>
+* <a href="#max">Maxpooling/Downsampling</a>
+* <a href="#code">DL4J Code Sample</a>
+* <a href="#resource">Other Resources</a>
 
 ##<a name="intro">Convolutional Net Introduction</a>
 
@@ -62,7 +62,7 @@ Convolutional nets perform more operations on input than just convolutions thems
 
 After a convolutional layer, input is passed through a nonlinear transform such as *tanh* or *rectified linear* unit, which will squash input values into a range between -1 and 1. 
 
-## How Convolutional Networks Work
+##<a name="work">How Convolutional Networks Work</a>
 
 The first thing to know about convolutional networks is that they don't perceive images like humans do. Therefore, you are going to have to think in a different way about what an image means as it is fed to and processed by a convolutional network. 
 
@@ -103,19 +103,19 @@ What we just described is a convolution. You can think of Convolution as a fancy
 
 One of the main problems with images is that they are high-dimensional, which means they cost a lot of time and computing power to process. Convolutional networks are designed to reduce the dimensionality of images in a variety of ways. Filter stride is one way to reduce dimensionality. Another way is through downsampling. 
 
-## Max Pooling / Downsampling / Subsampling
+##<a name="max">Max Pooling/Downsampling</a>
 
 Only the locations on the image that showed the strongest correlation to the feature (the maximum value) are preserved, and those maximum values are combined in a lower-dimensional space. 
 
 Much information about lesser values is lost in this step, also known as downsampling, and that has spurred research into alternative methods. But downsampling has the advantage, precisely because information is lost, of decreasing the amount of storage and processing required by the net. 
 
-### DL4J Code Example
+##<a name="code">DL4J Code Example</a>
 
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/convolution/CNNMnistExample.java?slice=32:100"></script>
 
-### ConvNets in Academia
+##<a name="resource">Other Resources</a>
 
 [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf), a professor at New York University and director of research at Facebook, has done much to advance and promote the use of convolutional nets, which are used heavily in machine vision tasks. 
 
