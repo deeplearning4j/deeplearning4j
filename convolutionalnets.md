@@ -97,7 +97,7 @@ Now, because images have lines going in many directions, and contain many differ
 
 What we just described is a convolution. You can think of Convolution as a fancy kind of multiplication used in signal processing. Another way to think about the two matrices creating a dot product is as two functions. The image is the underlying function, and the filter is the function you roll over it. 
 
-<iframe src="http://mathworld.wolfram.com//images/gifs/convgaus.gif" width="100%" height="300px;" style="border:none;"></iframe>
+<iframe src="http://mathworld.wolfram.com//images/gifs/convgaus.gif" width="100%" height="250px;" style="border:none;"></iframe>
 
 One of the main problems with images is that they are high-dimensional, which means they cost a lot of time and computing power to process. Convolutional networks are designed to reduce the dimensionality of images in a variety of ways. Filter stride is one way to reduce dimensionality. Another way is through downsampling. 
 
