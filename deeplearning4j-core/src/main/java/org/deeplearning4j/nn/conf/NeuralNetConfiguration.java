@@ -502,7 +502,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.registerModule(module);
         return ret;
     }
-    
+
+
     public static class Builder {
         private Layer layer;
         private int nIn;
