@@ -20,23 +20,20 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
  * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
- *
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class GravesLSTM extends FeedForwardLayer {
+	private static final long serialVersionUID = -8006953482655433335L;
 
-    private GravesLSTM(Builder builder) {
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
+	private GravesLSTM(Builder builder) {
+    	super(builder);
     }
 
     public static class Builder extends FeedForwardLayer.Builder {
@@ -61,6 +58,13 @@ public class GravesLSTM extends FeedForwardLayer {
             this.weightInit = weightInit;
             return this;
         }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
+        }
+        
         @Override
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
