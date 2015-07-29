@@ -1804,31 +1804,6 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-
-
-        /**
-         * Any situation where the second row vector offset is 0
-         * will cause the dot product to screw up.
-         *
-         * This will set those offsets beyond the first to be 1.
-         */
-        boolean adjustOffsets = false;
-        if(offsets.length > 1 && Shape.isRowVectorShape(shape) && offsets[0] > 0) {
-            for(int i = 1; i < offsets.length; i++) {
-                if(offsets[i] == 0) {
-                    adjustOffsets = true;
-                    break;
-                }
-            }
-
-            if(adjustOffsets) {
-                for(int i = 1; i < offsets.length; i++) {
-                    if(offsets[i] < 1)
-                        offsets[i] = 1;
-                }
-            }
-        }
-
         //handle strides/offsets < rank
         if(offsets.length != stride.length)
             throw new IllegalStateException("Offsets and stride must be same length");
@@ -1847,9 +1822,6 @@ public abstract class BaseNDArray implements INDArray {
         int offset = this.offset + ArrayUtil.dotProduct(dotProductOffsets,dotProductStride);
 
 
-        //prevent off by 1
-        if(adjustOffsets)
-            offset--;
 
         if(ordering() == NDArrayFactory.C ) {
             return create(
@@ -3995,6 +3967,17 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         int[] stride = this.stride();
+        if (Shape.isRowVectorShape(shape)) {
+            if(offsets[0] > 0) {
+                stride = new int[] {stride(0),elementStride()};
+            }
+            else
+                stride = new int[]{1, stride(1)};
+        }
+
+        else if (Shape.isColumnVectorShape(shape)) {
+            stride = new int[]{stride(0), elementStride()};
+        }
         if(stride.length > shape.length) {
             stride = Arrays.copyOfRange(stride,Math.abs(stride.length - shape.length),stride.length);
         }

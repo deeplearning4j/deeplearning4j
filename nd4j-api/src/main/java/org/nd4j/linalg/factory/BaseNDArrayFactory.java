@@ -1030,7 +1030,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int vectorOffset = 0;
         int arrVecLength = 0;
         boolean notIncremented = true;
-        int retVectorsAlongDimension = ret.vectorsAlongDimension(dimension);
+        int retVectorsAlongDimension = ret.tensorssAlongDimension(dimension);
         for(INDArray arr : toConcat) {
             int arrVectorsAlongDimension = arr.vectorsAlongDimension(dimension);
             if(arrVectorsAlongDimension != retVectorsAlongDimension)

@@ -402,13 +402,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testGetIndicesVector() {
-        INDArray line = Nd4j.linspace(1, 4, 4);
-        INDArray test = Nd4j.create(new float[]{2, 3});
-        INDArray result = line.get(new NDArrayIndex(0), NDArrayIndex.interval(1, 3));
-        assertEquals(test, result);
-    }
 
 
     @Test
@@ -765,11 +758,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray scalar = Nd4j.scalar(385);
         assertEquals(getFailureMessage(),scalar, innerProduct);
 
-
-        INDArray ten = Nd4j.linspace(1,100,100).reshape(10,10);
-        INDArray square = ten.get(new NDArrayIndex(new int[]{5, 6, 7, 8, 9}), NDArrayIndex.all()).transpose();
-
-        INDArray other = Nd4j.linspace(1, 600, 600).reshape(10, 60);
 
     }
 
@@ -1165,20 +1153,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testArangeMul() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        INDArray zeroPointTwoFive = Nd4j.ones(2,2).mul(0.25);
-        INDArray mul = get.mul(zeroPointTwoFive);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {0.25, 0.5},
-                {1.25, 1.5}
-        });
-        assertEquals(assertion, mul);
 
-    }
 
 
 
