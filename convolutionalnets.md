@@ -103,6 +103,10 @@ One of the main problems with images is that they are high-dimensional, which me
 
 ##<a name="max">Max Pooling/Downsampling</a>
 
+The next layer in a convolutional network has three names: max pooling, downsampling and subsampling. The activation maps are fed into a downsampling layer, and like convolutions, this method is applied one patch at a time. In this case, max pooling simply takes the largest value from one patch of an image, places it in a new matrix next to the max values from other patches, and discards the rest of the information contained in the activation maps.
+
+![Alt text](../img/maxpool.png) 
+
 Only the locations on the image that showed the strongest correlation to the feature (the maximum value) are preserved, and those maximum values are combined in a lower-dimensional space. 
 
 Much information about lesser values is lost in this step, also known as downsampling, and that has spurred research into alternative methods. But downsampling has the advantage, precisely because information is lost, of decreasing the amount of storage and processing required by the net. 
