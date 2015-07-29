@@ -635,8 +635,12 @@ public abstract class BaseNDArray implements INDArray {
             linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-1),stride(-2)),offset);
             linearView.setWrapAround(true);
         }
-        else
+        else {
+            // linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-2),stride(-1)),offset);
+            // linearView.setWrapAround(true);
             linearView = new LinearViewNDArray(this);
+
+        }
 
 
     }
@@ -1910,14 +1914,6 @@ public abstract class BaseNDArray implements INDArray {
         int delta = rank() - offsets.length;
         int[] dotProductOffsets = offsets;
         int[] dotProductStride = stride;
-        if(ordering() == 'f') {
-            dotProductStride = ArrayUtil.reverseCopy(dotProductStride);
-        }
-
-        int[] zeros = new int[delta];
-        int[] ones = ArrayUtil.nTimes(delta,1);
-        dotProductOffsets = delta > 0 ? Ints.concat(zeros,dotProductOffsets) : dotProductOffsets;
-        dotProductStride = delta > 0 ? Ints.concat(ones,dotProductStride) : dotProductStride;
 
 
         int offset = this.offset + NDArrayIndex.offset(dotProductStride,dotProductOffsets);
@@ -2016,7 +2012,7 @@ public abstract class BaseNDArray implements INDArray {
         int idx = linearIndex(i);
         if (idx >= data.length())
             throw new IllegalArgumentException("Illegal indices " + i);
-        return createScalarForIndex(idx,false);
+        return createScalarForIndex(idx, false);
     }
 
     protected void assertColumnVector(INDArray column) {
@@ -3023,12 +3019,23 @@ public abstract class BaseNDArray implements INDArray {
         else if(isScalar() && i <= 1)
             return offset;
 
-        int realStride = stride(0);
-        int idx = offset + (i * realStride);
+        if(ordering() == NDArrayFactory.C) {
+            int realStride = stride(0);
+            int idx = offset + (i * realStride);
 
-        if (data != null && idx >= data.length() && !isWrapAround())
-            throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
-        return idx;
+            if (data != null && idx >= data.length() && !isWrapAround())
+                throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
+            return idx;
+        }
+        else {
+            int realStride = stride(-1);
+            int idx = offset + (i * realStride);
+
+            if (data != null && idx >= data.length() && !isWrapAround())
+                throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
+            return idx;
+        }
+
     }
 
     /**
@@ -3197,7 +3204,7 @@ public abstract class BaseNDArray implements INDArray {
         if (ix >= data.length())
             throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
 
-        return createScalarForIndex(ix,false);
+        return createScalarForIndex(ix, false);
     }
 
     @Override
@@ -3899,10 +3906,11 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray get(NDArrayIndex... indexes) {
-        if(indexes.length > 2 && indexes[0].length() == 1 && indexes[0].offset() == 0) {
+      /*  if(indexes.length > 2 && indexes[0].length() == 1 && indexes[0].offset() == 0 && size(0) == 1) {
             NDArrayIndex[] newIndexes = Arrays.copyOfRange(indexes,1,indexes.length);
             return get(newIndexes);
-        }
+        }*/
+
         ensureNotCleanedUp();
         //fill in to match the rest of the dimensions: aka grab all the content
         //in the dimensions not filled in
@@ -3951,6 +3959,40 @@ public abstract class BaseNDArray implements INDArray {
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
         int[] stride = Indices.stride(this);
+        int offsetAugment = 0;
+        if(shape[0] == 1 && shape.length > 2) {
+            int[] newShape  = new int[shape.length - 1];
+            for(int i = 0; i < newShape.length; i++) {
+                newShape[i] = shape[i + 1];
+            }
+
+            shape = newShape;
+            if(offsets.length > newShape.length) {
+                int[] newOffsets = new int[offsets.length - 1];
+                for(int i = 0; i < newOffsets.length; i++) {
+                    newOffsets[i] = offsets[i + 1];
+                }
+                if(ordering() == 'c')
+                    offsetAugment = offsets[0] * stride[0];
+                else {
+                    offsetAugment = offsets[0] * stride[0];
+                }
+                offsets = newOffsets;
+            }
+
+            if(stride.length > offsets.length) {
+                int[] newStrides = new int[stride.length - 1];
+                for(int i = 0; i < newStrides.length; i++) {
+                    newStrides[i] = stride[i + 1];
+                }
+                stride = newStrides;
+            }
+
+
+
+        }
+
+
         if(stride.length > offsets.length) {
             stride = Arrays.copyOfRange(stride,1,stride.length);
         }
@@ -4053,7 +4095,13 @@ public abstract class BaseNDArray implements INDArray {
         }
 
 
-        return subArray(offsets, shape,stride);
+        INDArray ret =  subArray(offsets, shape,stride);
+        //account for truncated in indexes and offsets
+        // (for example when asking for a row/column, this will account for the
+        // original offset) while still accounting for the truncated shape
+        if(offsetAugment > 0)
+            ret = Nd4j.create(ret.data(),ret.shape(),ret.stride(),ret.offset() + offsetAugment);
+        return ret;
     }
 
 
@@ -4464,7 +4512,20 @@ public abstract class BaseNDArray implements INDArray {
         checkArrangeArray(rearrange);
         int[] newShape = doPermuteSwap(shape, rearrange);
         int[] newStride = doPermuteSwap(stride, rearrange);
+        //leading one on tensor
+        if(newStride[0] == elementStride() && newStride.length > 2) {
+            List<Integer> newStrides = new ArrayList<>();
+            for(int i = 0; i < newStride.length; i++) {
+                if(newStride[i] != 1)
+                    newStrides.add(newStride[i]);
+            }
 
+            int delta = newStride.length - newStrides.size();
+            for(int i = 0; i < delta; i++)
+                newStrides.add(elementStride());
+            newStride = Ints.toArray(newStrides);
+
+        }
         if(ArrayUtil.isInverse(newStride,stride())) {
             char inverse = ordering() == NDArrayFactory.C ? 'f' : 'c';
             return create(data(),newShape,getStrides(newShape,inverse),offset,inverse);

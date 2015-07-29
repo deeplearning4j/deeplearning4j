@@ -132,10 +132,7 @@ public class Indices {
                 ret[i] = 0;
             else {
                 int offset = indices[i].offset();
-                if (offset == 0 && i > 0 && i < indices.length - 1)
-                    ret[i] = 1;
-                else
-                    ret[i] = indices[i].offset();
+                ret[i] = indices[i].offset();
             }
 
         }
@@ -436,10 +433,6 @@ public class Indices {
      * @return the strides used for indexing
      */
     public static int[] stride(INDArray arr) {
-        if(arr.stride(0) == arr.elementStride()) {
-            return ArrayUtil.reverseCopy(arr.stride());
-        }
-
         return arr.stride();
     }
 
