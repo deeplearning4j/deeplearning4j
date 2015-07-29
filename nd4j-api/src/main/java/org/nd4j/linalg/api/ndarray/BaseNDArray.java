@@ -642,11 +642,23 @@ public abstract class BaseNDArray implements INDArray {
             else {
                 int[] rearrange = Ints.concat(ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension), dimension);
                 INDArray move = permute(rearrange);
-                INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index,move,0));
-                while(!ret2.isVector()) {
+                int vectorsPerSlice = NDArrayMath.vectorsPerSlice(move);
+
+                INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index, move, 0));
+                if(index >= vectorsPerSlice)
+                    index %= vectorsPerSlice;
+
+
+                while(ret2.rank() > 2) {
                     int slice = NDArrayMath.sliceForVector(index,ret2,0);
                     ret2 = ret2.slice(slice);
                 }
+                if(ret2.isMatrix()) {
+                    int modulo = NDArrayMath.vectorsPerSlice(ret2);
+                    int idx2 = index % modulo;
+                    return ret2.slice(idx2);
+                }
+
                 return ret2;
 
             }

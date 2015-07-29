@@ -79,7 +79,7 @@ public class NDArrayMath {
             return ArrayUtil.prod(new int[]{arr.size(-1),arr.size(-2)});
         }
 
-        return 1;
+        return arr.slices();
     }
 
     /**
