@@ -107,9 +107,11 @@ The next layer in a convolutional network has three names: max pooling, downsamp
 
 ![Alt text](../img/maxpool.png) 
 
-Only the locations on the image that showed the strongest correlation to the feature (the maximum value) are preserved, and those maximum values are combined in a lower-dimensional space. 
+Only the locations on the image that showed the strongest correlation to each feature (the maximum value) are preserved, and those maximum values combine to form a lower-dimensional space. 
 
-Much information about lesser values is lost in this step, also known as downsampling, and that has spurred research into alternative methods. But downsampling has the advantage, precisely because information is lost, of decreasing the amount of storage and processing required by the net. 
+Much information about lesser values is lost in this step, which has spurred research into alternative methods. But downsampling has the advantage, precisely because information is lost, of decreasing the amount of storage and processing required. 
+
+### Alternating Layers
 
 The image below is another attempt to show the sequence of transformations involved in a typical convolutional network. From left to right you see:
 
