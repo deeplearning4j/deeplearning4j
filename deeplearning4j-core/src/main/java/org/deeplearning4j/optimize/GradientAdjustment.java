@@ -83,7 +83,7 @@ public class GradientAdjustment {
             gradient = gradient.mul(conf.getLr()).negi().divi(Transforms.sqrt(lastStep.add(Nd4j.EPS_THRESHOLD)));
         }
 
-        if (conf.isUseAdaGrad()) {
+        if (conf.getResetAdaGradIterations() > 0) {
             gradient = adaGrad.getGradient(gradient,0);
         } else {
             gradient.muli(conf.getLr());
