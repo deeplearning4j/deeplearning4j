@@ -138,4 +138,4 @@ Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
 [Here's our Github test for ConvNets](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/layers/ConvolutionDownSampleLayerTest.java).
 
- <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/test/java/org/deeplearning4j/models/layers/ConvolutionDownSampleLayerTest.java?slice=55:99"></script>
+To see DL4J convolutional networks in action, please run our [examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/tree/master/src/main/java/org/deeplearning4j/convolution) after folling the instructions on the [Quickstart page](http://deeplearning4j.org/quickstart.html). 
