@@ -610,7 +610,6 @@ public abstract class BaseNDArray implements INDArray {
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
         int[] stride = ArrayUtil.keep(stride(),dimension);
         int[] leftOverStride = ArrayUtil.removeIndex(stride(), dimension);
-        int[] leftOverShape = Shape.squeeze(ArrayUtil.removeIndex(shape(), dimension));
 
         if(leftOverStride.length < 2) {
             leftOverStride = new int[] {1,leftOverStride[0]};
@@ -618,7 +617,6 @@ public abstract class BaseNDArray implements INDArray {
 
         if(tensorShape.length >= 2) {
             int idx = offset + index * (leftOverStride[leftOverStride.length - 1]);
-            idx = adjustOffsetForFortranOrdering(idx,index,leftOverStride[1],leftOverStride[0],tensorShape[0]);
             return create(data(), tensorShape, stride, idx, ordering());
         }
         else {
@@ -740,7 +738,13 @@ public abstract class BaseNDArray implements INDArray {
             return linearView();
         }
 
-        return tensorAlongDimension(index, dimension);
+        INDArray ret =  tensorAlongDimension(index, dimension);
+        //column vector
+        if(dimension == 0) {
+            return Nd4j.create(ret.data(),ArrayUtil.reverseCopy(ret.shape()),ret.stride(),ret.offset());
+        }
+
+        return ret;
     }
 
 
