@@ -81,6 +81,7 @@ Those numbers are the initial, raw, sensory features being fed into the convolut
 Rather than focus on one pixel at a time, a convolutional net takes in square patches of pixels and passes them through a *filter*. That filter is also a square matrix smaller than the image itself, and equal in size to the patch. It is also called a *kernel*, which will ring a bell for those familiar with support-vector machines, and the job of the filter is to find patterns in the pixels. 
 
 <iframe src="https://cs231n.github.io/assets/conv-demo/index.html" width="100%" height="700px;" style="border:none;"></iframe>
+*Credit for this excellent animation goes to [Andrej Karpathy](https://cs231n.github.io/).*
 
 Imagine two matrices. One is 30x30, and another is 3x3. That is, the filter covers one-tenth of one image channel's surface area. 
 
@@ -96,7 +97,7 @@ Now, because images have lines going in many directions, and contain many differ
 
 What we just described is a convolution. You can think of Convolution as a fancy kind of multiplication used in signal processing. Another way to think about the two matrices creating a dot product is as two functions. The image is the underlying function, and the filter is the function you roll over it. 
 
-<iframe src="http://mathworld.wolfram.com//images/gifs/convgaus.gif" width="100%" height="700px;" style="border:none;"></iframe>
+<iframe src="http://mathworld.wolfram.com//images/gifs/convgaus.gif" width="100%" height="300px;" style="border:none;"></iframe>
 
 One of the main problems with images is that they are high-dimensional, which means they cost a lot of time and computing power to process. Convolutional networks are designed to reduce the dimensionality of images in a variety of ways. Filter stride is one way to reduce dimensionality. Another way is through downsampling. 
 
