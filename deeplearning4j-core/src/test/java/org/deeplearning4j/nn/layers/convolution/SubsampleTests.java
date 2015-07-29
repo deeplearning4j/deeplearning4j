@@ -28,7 +28,7 @@ public class SubsampleTests {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .poolingType(SubsamplingLayer.poolingType.MAX).filterSize(5,1,28,28)
+                .poolingType(SubsamplingLayer.poolingType.MAX).kernelSize(new int[]{28,28})
                 .layer(new SubsamplingLayer())
                 .nIn(784).nOut(1).build();
 

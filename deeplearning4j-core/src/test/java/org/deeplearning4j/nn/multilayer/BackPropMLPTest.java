@@ -309,7 +309,7 @@ public class BackPropMLPTest {
                 .corruptionLevel(0.0)
 
                 .layer(new RBM())
-                .learningRate(0.1).useAdaGrad(false)
+                .learningRate(0.1)
 
                 .regularization(false)
                 .l1(0.0)

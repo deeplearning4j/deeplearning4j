@@ -71,7 +71,6 @@ public class NeuralNetConfigurationTest {
                 .nOut(trainingSet.numOutcomes())
                 .weightInit(WeightInit.SIZE)
                 .iterations(3)
-                .useAdaGrad(false)
                 .regularization(false)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
