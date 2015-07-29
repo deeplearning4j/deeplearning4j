@@ -56,8 +56,6 @@ So convolutional networks perform a sort of search. Picture a small magnifying g
 
 Each time a match is found, it is mapped onto a feature space particular to that visual element. In that space, the location of each vertical line match is recorded, a bit like birdwatchers leave pins in a map to mark where they last saw a great blue heron. A convolutional net runs many, many searches over a single image – horizontal lines, diagonal ones, as many as there are visual elements to be sought. 
 
-![Alt text](../img/convnet.png) 
-
 Convolutional nets perform more operations on input than just convolutions themselves. 
 
 After a convolutional layer, input is passed through a nonlinear transform such as *tanh* or *rectified linear* unit, which will squash input values into a range between -1 and 1. 
@@ -108,6 +106,17 @@ One of the main problems with images is that they are high-dimensional, which me
 Only the locations on the image that showed the strongest correlation to the feature (the maximum value) are preserved, and those maximum values are combined in a lower-dimensional space. 
 
 Much information about lesser values is lost in this step, also known as downsampling, and that has spurred research into alternative methods. But downsampling has the advantage, precisely because information is lost, of decreasing the amount of storage and processing required by the net. 
+
+The image below is another attempt to show the sequence of transformations involved in a typical convolutional network. From left to right you see:
+
+* The input image that is scanned for features. The light rectangle is the filter that passes over it. 
+* Activation maps stacked atop one another, one for each filter you employ. The larger rectangle is one patch to be downsampled.
+* The activation maps condensed through downsampling.
+* A new set of activation maps created by passing filters over the first downsampled stack. 
+* The second downsampling, which condenses the second set of activation maps. 
+* A fully connected layer that classifies output with one label per node. 
+
+![Alt text](../img/convnet.png) 
 
 ##<a name="code">DL4J Code Example</a>
 
