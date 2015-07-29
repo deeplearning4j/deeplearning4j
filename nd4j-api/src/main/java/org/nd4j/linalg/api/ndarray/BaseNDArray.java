@@ -51,16 +51,16 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.util.NDArrayMath;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Array;
 import java.util.*;
 
-import static org.nd4j.linalg.util.ArrayUtil.calcStrides;
-import static org.nd4j.linalg.util.ArrayUtil.calcStridesFortran;
-
+import static org.nd4j.linalg.util.ArrayUtil.*;
 
 
 /**
@@ -601,20 +601,94 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int tensorssAlongDimension(int... dimension) {
-        if(dimension.length == 1)
-            return vectorsAlongDimension(dimension[0]);
         int[] tensorShape = ArrayUtil.keep(shape(), dimension);
         return length / ArrayUtil.prod(tensorShape);
     }
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        if(dimension.length == 1)
-            return vectorAlongDimension(index, dimension[0]);
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
-        int[] stride = ArrayUtil.keep(stride(), dimension);
-        int idx = offset + index * ArrayUtil.prod(ArrayUtil.removeIndex(stride(),dimension));
-        return create(data(), tensorShape, stride, idx, ordering());
+        int[] stride = ArrayUtil.keep(stride(),dimension);
+        int[] leftOverStride = ArrayUtil.removeIndex(stride(), dimension);
+
+        if(leftOverStride.length < 2) {
+            leftOverStride = new int[] {1,leftOverStride[0]};
+        }
+
+        if(tensorShape.length >= 2) {
+            int idx = offset + index * (leftOverStride[leftOverStride.length - 1]);
+            return create(data(), tensorShape, stride, idx, ordering());
+        }
+        else {
+
+            int idx = 0;
+            if(ordering == NDArrayFactory.C) {
+                tensorShape = new int[] {1,tensorShape[0]};
+                stride = new int[] {stride[0],1};
+
+                if(index / stride[0] > 0) {
+                    int baseIndex = index /stride[0];
+                    int delta = index - baseIndex * stride[0];
+                    idx = offset + (tensorShape[1] * index) - delta;
+
+                }
+
+                else
+                    idx = offset + index;
+            }
+
+            else {
+                int[] rearrange = Ints.concat(ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension), dimension);
+                INDArray move = permute(rearrange);
+                int vectorsPerSlice = NDArrayMath.vectorsPerSlice(move);
+
+                INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index, move, 0));
+                if(index >= vectorsPerSlice)
+                    index %= vectorsPerSlice;
+
+
+                while(ret2.rank() > 2) {
+                    int slice = NDArrayMath.sliceForVector(index,ret2,0);
+                    ret2 = ret2.slice(slice);
+                }
+                if(ret2.isMatrix()) {
+                    int modulo = NDArrayMath.vectorsPerSlice(ret2);
+                    int idx2 = index % modulo;
+                    return ret2.slice(idx2);
+                }
+
+                return ret2;
+
+            }
+
+            return create(data(), tensorShape, stride, idx, ordering());
+        }
+
+    }
+
+
+
+    private int adjustOffsetForFortranOrdering(int offset,int index,int stride,int tailStride,int shapeZero) {
+        if(offset  + stride >= length() && ordering() == 'f') {
+            int numDecremented = 0;
+            int startIndex = index;
+
+            while(startIndex >= shapeZero) {
+                numDecremented++;
+                startIndex -=  shapeZero;
+            }
+
+            int startStride = stride;
+            int endStride = tailStride;
+            //int startStride = stride(0);
+            //int endStride = stride(1);
+            //arrOffset = offset + ((startIndex * startStride) + (numDecremented * endStride));
+
+            offset = this.offset + ((startIndex * startStride) + (numDecremented * endStride));
+
+        }
+
+        return offset;
     }
 
     /**
@@ -664,243 +738,17 @@ public abstract class BaseNDArray implements INDArray {
             return linearView();
         }
 
-
-        if(ordering() == NDArrayFactory.FORTRAN) {
-            if(isMatrix()) {
-                if(dimension == 0) {
-                    return create(data,
-                            new int[]{shape[dimension],1}
-                            ,  new int[]{stride[dimension],elementStride()},
-                            offset + index * stride[stride.length - 1]);
-                }
-                else if(dimension == 1) {
-                    return create(data,
-                            new int[]{1, shape[dimension]}
-                            , new int[]{stride[dimension],elementStride()},
-                            calcoffset(index));
-                }
-            }
-
-            int shapeDimension = dimension;
-            int strideDimension = shapeDimension;
-
-            //account for leading ones
-            int vectorSize = size(shapeDimension);
-            if(vectorSize == 1 && getLeadingOnes() > 0 && dimension == 0 && getTrailingOnes() == 0 && rank() > 2) {
-                for(int i = 1; i < rank(); i++) {
-                    if(size(i) != 1) {
-                        vectorSize = size(i);
-                        break;
-                    }
-                }
-            }
-
-            else if(getTrailingOnes() > 0  && rank() > 2) {
-                for(int  i = rank() - 1; i >= 0; i--) {
-                    if(size(i) != 1) {
-                        vectorSize = size(i);
-                        break;
-                    }
-                }
-            }
-
-            else if(getTrailingOnes() > 0 && getLeadingOnes() > 0 && rank() > 2) {
-                for(int  i = rank() - 1; i >= 0; i--) {
-                    if(size(i) != 1) {
-                        vectorSize = size(i);
-                        break;
-                    }
-                }
-            }
-
-
-
-
-
-            INDArray ret =  create(data,
-                    new int[]{1, vectorSize}
-                    , new int[]{elementStride(), stride[strideDimension]},
-                    calcoffset(index));
-            return ret;
-
+        INDArray ret =  tensorAlongDimension(index, dimension);
+        //column vector
+        if(dimension == 0) {
+            return Nd4j.create(ret.data(),ArrayUtil.reverseCopy(ret.shape()),ret.stride(),ret.offset());
         }
 
-        if(isMatrix()) {
-            if(dimension == 0) {
-                int[] shape2 =  new int[]{shape[dimension],1};
-                int realOffset = offset + (index * (ordering() == 'f' ? stride(0) : stride(1)));
-                int[] retStride = new int[] {majorStride(),elementStride()};
-                return create(data,
-                        shape2
-                        ,retStride,
-                        realOffset);
-            }
-            else if(dimension == 1) {
-                int[] shape2 =  new int[]{1,shape[dimension]};
-
-                if(ordering() == NDArrayFactory.C)
-                    return create(data,
-                            new int[]{1, shape[dimension]}
-                            , getStrides(shape2, ordering()),
-                            calcoffset(index));
-                //c ordering
-                return create(data,
-                        new int[]{1, shape[dimension]}
-                        , new int[]{stride[dimension],elementStride()},
-                        calcoffset(index));
-            }
-        }
-
-
-      /*  //flip the indices
-        if(ordering() == 'c') {
-
-        }
-        */
-        int arrOffset = -1;
-        if(ordering == 'f') {
-            arrOffset = offset == 0  ? offset + index *  majorStride() : offset + index;
-        }
-        else {
-
-            if(dimension == rank() - 1)
-                arrOffset = offset == 0  ? offset + index *  getLastNonOneStride() : offset + index;
-
-            else {
-                int sliceOffset = sliceOffsetForVectorCOrdering(index,dimension);
-                if(sliceOffset == 0 && dimension == 0 || dimension == rank() - 1)
-                    arrOffset = offset + index *  stride(-1)  + sliceOffsetForVectorCOrdering(index,dimension);
-                else
-                    arrOffset = sliceOffset;
-
-            }
-
-        }
-
-        /**
-         * The offset is greater than the dimensions.
-         * When doing vector along dimension
-         * you will often run in to situations
-         * where you need to go back up the slices.
-         *
-         * This will perform a reset of the offset
-         * to be relative to the index of the vector
-         * and set it to the appropriate offset.
-         *
-         * An example of this situation:
-         * Shape: 4 x 3 x2
-         * Stride: 6 x 2 x 1
-         *
-         * The array has 4 slices.
-         *
-         * In order to iterate through the array properly,
-         * we will need to reset the offset. This situation
-         * will always occur when iterating along the final dimension.
-         * Given an array:
-         *
-         * ([[[  1.,   2.],
-         [  3.,   4.],
-         [  5.,   6.]],
-
-         [[  7.,   8.],
-         [  9.,  10.],
-         [ 11.,  12.]],
-
-         [[ 13.,  14.],
-         [ 15.,  16.],
-         [ 17.,  18.]],
-
-         [[ 19.,  20.],
-         [ 21.,  22.],
-         [ 23.,  24.]]])
-
-         This array is fortran order
-
-
-         Iterating along dimension 2 gives us:
-
-         1,2
-         7,8
-         13,14
-         19,20
-         3,4
-         9,10,
-         15,16
-         21,22,
-         5,6,
-         11,12
-         17,18
-         23,24
-
-         You will notice that we iterate through the array by going up and down.
-
-         This allows us to continuously iterate through an array seamlessly
-         even along the last dimension.
-
-         This algorithm adjusts the offsets wrt the index such that the
-         index is placed properly when "going up" the array.
-
-
-         *
-         */
-        //note this should only be for fortran ordering
-        if(arrOffset + stride(dimension) >= length() && ordering() == 'f') {
-            int numDecremented = 0;
-            int startIndex = index;
-
-            while(startIndex >= slices()) {
-                numDecremented++;
-                startIndex -= slices();
-            }
-
-            int startStride = stride(0);
-            int endStride = stride(1);
-            arrOffset = offset + ((startIndex * startStride) + (numDecremented * endStride));
-
-        }
-        else if(arrOffset + stride(dimension) >= length() && !isVector())
-            throw new IllegalStateException("Illegal offset; c ordering should iterate row wise");
-
-        int dimStride = stride(dimension);
-
-
-        int[] retStride = new int[]{elementStride(), dimStride};
-
-        return create(data,
-                new int[]{1, shape[dimension]}
-                , retStride,
-                arrOffset);
-
+        return ret;
     }
 
 
 
-    private int sliceOffsetForVectorCOrdering(int idx,int dimension) {
-        int sliceLength = ArrayUtil.prod(ArrayUtil.removeIndex(shape,0));
-        //number of matrices per slice / length of vector
-        int sizeOfDimension = dimension > 0 ? size(dimension) : size(-1);
-        int vectorsPerSlice = (sliceLength / sizeOfDimension);
-        if(vectorsPerSlice < 1)
-            vectorsPerSlice = 1;
-        if(idx < vectorsPerSlice || dimension == 0)
-            return offset + idx;
-        else {
-            int sliceIdx = idx / vectorsPerSlice;
-            int sliceOffset = offset + (sliceIdx  * majorStride()) +  idx - vectorsPerSlice;
-            return sliceOffset;
-        }
-    }
-
-
-
-    private int getLastNonOneStride() {
-        for(int j = stride.length - 1; j >= 0; j--) {
-            if(stride(j) != 1)
-                return stride(j);
-        }
-
-        return stride(0);
-    }
 
 
     private int getFirstNonOneStride() {
@@ -1981,8 +1829,23 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
+        //handle strides/offsets < rank
+        if(offsets.length != stride.length)
+            throw new IllegalStateException("Offsets and stride must be same length");
+        int delta = rank() - offsets.length;
+        int[] dotProductOffsets = offsets;
+        int[] dotProductStride = stride;
+        if(ordering() == 'f') {
+            dotProductStride = ArrayUtil.reverseCopy(dotProductStride);
+        }
+        int[] zeros = new int[delta];
+        int[] ones = ArrayUtil.nTimes(delta,1);
+        dotProductOffsets = delta > 0 ? Ints.concat(zeros,dotProductOffsets) : dotProductOffsets;
+        dotProductStride = delta > 0 ? Ints.concat(ones,dotProductStride) : dotProductStride;
 
-        int offset = this.offset + ArrayUtil.dotProduct(offsets, this.stride);
+
+        int offset = this.offset + ArrayUtil.dotProduct(dotProductOffsets,dotProductStride);
+
 
         //prevent off by 1
         if(adjustOffsets)
@@ -1992,7 +1855,7 @@ public abstract class BaseNDArray implements INDArray {
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
-                    , ArrayUtil.reverseCopy(stride)
+                    , stride
                     , offset, ordering
             );
         }
@@ -2000,7 +1863,7 @@ public abstract class BaseNDArray implements INDArray {
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
-                    , stride
+                    , ArrayUtil.reverseCopy(stride)
                     , offset, ordering
             );
         }
@@ -2248,7 +2111,7 @@ public abstract class BaseNDArray implements INDArray {
                             getRow(i).rsubi(vector.getDouble(i));
                             break;
                         case 't':
-                           getRow(i).rdivi(vector.getDouble(i));
+                            getRow(i).rdivi(vector.getDouble(i));
                             break;
                     }
                 }
@@ -4034,6 +3897,9 @@ public abstract class BaseNDArray implements INDArray {
 
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
+        if(offsets.length > shape.length) {
+            offsets = ArrayUtil.removeIndex(offsets,ArrayUtil.range(0,shape.length));
+        }
         if(ArrayUtil.prod(shape) == 1 && rank() > 2) {
             if(this instanceof IComplexNDArray) {
                 IComplexNDArray arr = (IComplexNDArray) this;
@@ -4129,13 +3995,9 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         int[] stride = this.stride();
-        if(ordering() == NDArrayFactory.C) {
-            stride = ArrayUtil.reverseCopy(getStrides(shape,ordering));
+        if(stride.length > shape.length) {
+            stride = Arrays.copyOfRange(stride,Math.abs(stride.length - shape.length),stride.length);
         }
-        else if(ordering() == NDArrayFactory.FORTRAN && Shape.isRowVectorShape(shape))
-            stride = ArrayUtil.reverseCopy(stride);
-
-
 
         return subArray(offsets, shape,stride);
     }

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.util;
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -69,7 +70,7 @@ public class Shape {
             return ret;
         }
         else {
-           INDArray ret = Nd4j.create(arr.shape());
+            INDArray ret = Nd4j.create(arr.shape());
             for(int i = 0; i < ret.slices(); i++)
                 ret.putSlice(i,arr.slice(i));
             return ret;
@@ -178,6 +179,46 @@ public class Shape {
             if (shape[i] != 1)
                 ret.add(shape[i]);
         return ArrayUtil.toArray(ret);
+    }
+
+    /**
+     * Keep all the non one dimensions
+     * @param dimensions the dimensions to start with
+     * @param shape the shapes to inspect
+     * @return the non one dimensions of the given input
+     */
+    public static int[] nonOneDimensions(int[] dimensions,int[] shape) {
+        if(dimensions.length != shape.length)
+            throw new IllegalArgumentException("Dimensions and shape must be the same length");
+
+         List<Integer> list = new ArrayList<>();
+        for(int i = 0; i < dimensions.length; i++) {
+            if(shape[i] != 1) {
+                list.add(list.size());
+            }
+        }
+
+        return Ints.toArray(list);
+    }
+
+    /**
+     * Get rid ones in the shape when
+     * its not a vector
+     * @param original the original shape
+     *                 to prune
+     * @return the pruned array
+     */
+    public static int[] leadingAndTrailingOnes(int[] original) {
+        List<Integer> ints = new ArrayList<>();
+        if (!Shape.isVector(original)) {
+            for (int i = 0; i < original.length; i++) {
+                if(original[i] != 1)
+                    ints.add(original[i]);
+            }
+
+            return Ints.toArray(ints);
+        }
+        return original;
     }
 
 
