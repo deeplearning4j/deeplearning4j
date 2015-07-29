@@ -770,7 +770,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray square = ten.get(new NDArrayIndex(new int[]{5, 6, 7, 8, 9}), NDArrayIndex.all()).transpose();
 
         INDArray other = Nd4j.linspace(1, 600, 600).reshape(10, 60);
-       
+
     }
 
 
