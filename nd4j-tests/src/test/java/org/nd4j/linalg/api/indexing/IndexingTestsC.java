@@ -11,14 +11,40 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  */
 public class IndexingTestsC extends BaseNd4jTest {
     @Test
-    public void testGetIndices2d() throws Exception{
+    public void testOffsetsC() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        assertEquals(3, NDArrayIndex.offset(arr,1,1));
+        assertEquals(3,NDArrayIndex.offset(arr,new NDArrayIndex(1),new NDArrayIndex(1)));
+
+        INDArray arr2 = Nd4j.linspace(1,6,6).reshape(3,2);
+        assertEquals(3, NDArrayIndex.offset(arr2,1,1));
+        assertEquals(3, NDArrayIndex.offset(arr2, new NDArrayIndex(1), new NDArrayIndex(1)));
+        assertEquals(4, NDArrayIndex.offset(arr2,2,2));
+        assertEquals(4, NDArrayIndex.offset(arr2, new NDArrayIndex(2), new NDArrayIndex(2)));
+
+
+
+    }
+
+    @Test
+    public void testGetScalar() {
+        INDArray arr = Nd4j.linspace(1,5,5);
+        INDArray d = arr.get(new NDArrayIndex(1));
+        assertTrue(d.isScalar());
+        assertEquals(2.0,d.getDouble(0));
+
+    }
+
+
+    @Test
+    public void testGetIndices2d() throws Exception {
         INDArray twoByTwo = Nd4j.linspace(1, 6, 6).reshape(3, 2);
         INDArray firstRow = twoByTwo.getRow(0);
         INDArray secondRow = twoByTwo.getRow(1);
         INDArray firstAndSecondRow = twoByTwo.getRows(new int[]{1, 2});
         INDArray firstRowViaIndexing = twoByTwo.get(NDArrayIndex.interval(0, 1));
         assertEquals(firstRow, firstRowViaIndexing);
-        INDArray secondRowViaIndexing = twoByTwo.get(NDArrayIndex.interval(1, 2));
+        INDArray secondRowViaIndexing = twoByTwo.get(new NDArrayIndex(1));
         assertEquals(secondRow, secondRowViaIndexing);
 
         INDArray firstAndSecondRowTest = twoByTwo.get(NDArrayIndex.interval(1, 3));
@@ -57,7 +83,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray mul = get.mul(ones);
         INDArray assertion = Nd4j.create(new double[][]{
                 {0.25, 0.5},
-                {0.75, 1}
+                {1.25, 1.5}
         });
         assertEquals(assertion, mul);
 

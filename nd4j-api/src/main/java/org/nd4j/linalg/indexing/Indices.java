@@ -430,4 +430,19 @@ public class Indices {
     }
 
 
+    /**
+     * Return the stride to be used for indexing
+     * @param arr the array to get the strides for
+     * @return the strides used for indexing
+     */
+    public static int[] stride(INDArray arr) {
+        if(arr.stride(0) == arr.elementStride()) {
+            return ArrayUtil.reverseCopy(arr.stride());
+        }
+
+        return arr.stride();
+    }
+
+
+
 }

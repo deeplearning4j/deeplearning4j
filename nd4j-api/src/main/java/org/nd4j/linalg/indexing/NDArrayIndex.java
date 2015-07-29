@@ -36,6 +36,81 @@ public class NDArrayIndex {
     private boolean isInterval = false;
     private static NDArrayIndexAll ALL = new NDArrayIndexAll();
     private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
+
+    /**
+     * Compute the offset given an array of offsets.
+     * The offset is computed(for both fortran an d c ordering) as:
+     * sum from i to n - 1 o[i] * s[i]
+     * where i is the index o is the offset and s is the stride
+     * Notice the -1 at the end.
+     * @param arr the array to compute the offset for
+     * @param offsets the offsets for each dimension
+     * @return the offset that should be used for indexing
+     */
+    public static int offset(INDArray arr,int...offsets) {
+        return offset(arr.stride(),offsets);
+    }
+
+    /**
+     * Compute the offset given an array of offsets.
+     * The offset is computed(for both fortran an d c ordering) as:
+     * sum from i to n - 1 o[i] * s[i]
+     * where i is the index o is the offset and s is the stride
+     * Notice the -1 at the end.
+     * @param arr the array to compute the offset for
+     * @param indices the offsets for each dimension
+     * @return the offset that should be used for indexing
+     */
+    public static int offset(INDArray arr,NDArrayIndex...indices) {
+        return offset(arr.stride(),Indices.offsets(indices));
+    }
+
+    /**
+     * Compute the offset given an array of offsets.
+     * The offset is computed(for both fortran an d c ordering) as:
+     * sum from i to n - 1 o[i] * s[i]
+     * where i is the index o is the offset and s is the stride
+     * Notice the -1 at the end.
+     * @param strides the strides to compute the offset for
+     * @param indices the offsets for each dimension
+     * @return the offset that should be used for indexing
+     */
+    public static int offset(int[] strides,NDArrayIndex...indices) {
+        return offset(strides,Indices.offsets(indices));
+    }
+
+
+    /**
+     * Compute the offset given an array of offsets.
+     * The offset is computed(for both fortran an d c ordering) as:
+     * sum from i to n - 1 o[i] * s[i]
+     * where i is the index o is the offset and s is the stride
+     * Notice the -1 at the end.
+     * @param strides the strides to compute the offset for
+     * @param offsets the offsets for each dimension
+     * @return the offset that should be used for indexing
+     */
+    public static int offset(int[] strides,int[] offsets) {
+        int ret = 0;
+
+        if(ArrayUtil.prod(offsets) == 1) {
+            for(int i = 0; i < offsets.length ; i++) {
+                ret += offsets[i] * strides[i];
+            }
+        }
+        else {
+            for (int i = 0; i < offsets.length - 1; i++) {
+                ret += offsets[i] * strides[i];
+            }
+
+        }
+
+        return ret;
+
+
+    }
+
+
     /**
      * Repeat a copy of copy n times
      * @param copy the ndarray index to copy
@@ -220,7 +295,7 @@ public class NDArrayIndex {
      * @return the interval
      */
     public static NDArrayIndex interval(int begin, int end, boolean inclusive) {
-       return interval(begin,1,end,inclusive);
+        return interval(begin,1,end,inclusive);
     }
 
     public int end() {

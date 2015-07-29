@@ -49,6 +49,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.NDArrayMath;
@@ -104,6 +105,7 @@ public abstract class BaseNDArray implements INDArray {
     protected int majorStride = -1;
     protected Boolean isVector = null;
     protected Boolean isScalar = null;
+    protected boolean isWrapAround = false;
 
     public BaseNDArray() {
     }
@@ -275,12 +277,25 @@ public abstract class BaseNDArray implements INDArray {
         }
     }
 
-
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param ordering
+     */
     public BaseNDArray(float[] data, int[] shape, int[] stride, char ordering) {
         this(data, shape, stride, 0, ordering);
     }
 
-
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     */
     public BaseNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
 
 
@@ -301,6 +316,13 @@ public abstract class BaseNDArray implements INDArray {
 
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     */
     public BaseNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         this.data = data;
         this.stride = stride;
@@ -310,35 +332,82 @@ public abstract class BaseNDArray implements INDArray {
 
     }
 
-
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param strides
+     */
     public BaseNDArray(int[] data, int[] shape, int[] strides) {
         this(Nd4j.createBuffer(data), shape, strides);
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     */
     public BaseNDArray(DataBuffer data, int[] shape) {
         this(data, shape, Nd4j.getStrides(shape, Nd4j.order()), 0, Nd4j.order());
     }
 
+
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param offset
+     */
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
         this(buffer, shape, Nd4j.getStrides(shape), offset);
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param ordering
+     */
     public BaseNDArray(double[] data, int[] shape, char ordering) {
         this(Nd4j.createBuffer(data), shape, ordering);
     }
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     * @param ordering
+     */
     public BaseNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
         this(Nd4j.createBuffer(data), shape, stride, offset, ordering);
     }
 
+    /**
+     *
+     * @param data
+     * @param order
+     */
     public BaseNDArray(float[] data, char order) {
         this(Nd4j.createBuffer(data), order);
     }
 
+    /**
+     *
+     * @param floatBuffer
+     * @param order
+     */
     public BaseNDArray(DataBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{(int) floatBuffer.length()}, Nd4j.getStrides(new int[]{(int) floatBuffer.length()},order), 0, order);
+        this(floatBuffer, new int[]{(int) floatBuffer.length()}, Nd4j.getStrides(new int[]{(int) floatBuffer.length()}, order), 0, order);
     }
 
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param strides
+     */
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] strides) {
         this(buffer, shape, strides, 0, Nd4j.order());
     }
@@ -382,10 +451,20 @@ public abstract class BaseNDArray implements INDArray {
         this(shape, stride, 0);
     }
 
+    /**
+     *
+     * @param shape
+     * @param offset
+     */
     public BaseNDArray(int[] shape, int offset) {
         this(shape, calcStrides(shape), offset);
     }
 
+    /**
+     *
+     * @param shape
+     * @param ordering
+     */
     public BaseNDArray(int[] shape, char ordering) {
         this(shape, 0, ordering);
     }
@@ -435,11 +514,21 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
+    /**
+     *
+     * @param data
+     * @param shape
+     * @param stride
+     * @param offset
+     */
     public BaseNDArray(float[] data, int[] shape, int[] stride, int offset) {
         this(data, shape, stride, offset, Nd4j.order());
     }
 
-
+    /**
+     *
+     * @param data
+     */
     public BaseNDArray(float[] data) {
         this.data = Nd4j.createBuffer(data);
     }
@@ -481,6 +570,15 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
+    @Override
+    public void setWrapAround(boolean wrapAround) {
+        this.isWrapAround = wrapAround;
+    }
+
+    @Override
+    public boolean isWrapAround() {
+        return isWrapAround;
+    }
 
     /**
      * Returns whether the ndarray is valid or not
@@ -533,8 +631,9 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if(isVector() || isScalar() || length() == 1)
             linearView = this;
-        else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
-            linearView = Nd4j.create(data(),new int[]{1,length()},new int[]{1,elementStride()},offset);
+        else if(ordering() == NDArrayFactory.C) {
+            linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-1),stride(-2)),offset);
+            linearView.setWrapAround(true);
         }
         else
             linearView = new LinearViewNDArray(this);
@@ -556,6 +655,7 @@ public abstract class BaseNDArray implements INDArray {
             majorStride = elementStride();
             return elementStride();
         }
+
         if(ordering() == NDArrayFactory.C) {
             if(stride[shape().length - 1] == 1 && !isMatrix() || Shape.isRowVectorShape(shape())) {
                 int ret =  getFirstNonOneStride();
@@ -1813,13 +1913,14 @@ public abstract class BaseNDArray implements INDArray {
         if(ordering() == 'f') {
             dotProductStride = ArrayUtil.reverseCopy(dotProductStride);
         }
+
         int[] zeros = new int[delta];
         int[] ones = ArrayUtil.nTimes(delta,1);
         dotProductOffsets = delta > 0 ? Ints.concat(zeros,dotProductOffsets) : dotProductOffsets;
         dotProductStride = delta > 0 ? Ints.concat(ones,dotProductStride) : dotProductStride;
 
 
-        int offset = this.offset + ArrayUtil.dotProduct(dotProductOffsets,dotProductStride);
+        int offset = this.offset + NDArrayIndex.offset(dotProductStride,dotProductOffsets);
 
 
 
@@ -1827,7 +1928,7 @@ public abstract class BaseNDArray implements INDArray {
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
-                    , stride
+                    , ArrayUtil.reverseCopy(stride)
                     , offset, ordering
             );
         }
@@ -1835,7 +1936,7 @@ public abstract class BaseNDArray implements INDArray {
             return create(
                     data
                     , Arrays.copyOf(shape, shape.length)
-                    , ArrayUtil.reverseCopy(stride)
+                    , stride
                     , offset, ordering
             );
         }
@@ -2916,16 +3017,16 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        if(isScalar() && i > 1)
+        if(isScalar() && i > 1 && !isWrapAround())
             throw new IllegalArgumentException("Illegal index for scalar " + i);
 
         else if(isScalar() && i <= 1)
             return offset;
 
-        int realStride = majorStride();
+        int realStride = stride(0);
         int idx = offset + (i * realStride);
 
-        if (data != null && idx >= data.length())
+        if (data != null && idx >= data.length() && !isWrapAround())
             throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
         return idx;
     }
@@ -2952,73 +3053,12 @@ public abstract class BaseNDArray implements INDArray {
 
         if(slice < 0)
             slice += shape.length;
-
-            //slice of a vector is a scalar
-        else if (shape.length == 1) {
-            if (size(0) == 1)
-                return create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice);
-            else
-                return create(data, ArrayUtil.empty(), ArrayUtil.empty(), offset + slice * stride[0]);
-
-
+        List<NDArrayIndex> indices = new ArrayList<>();
+        indices.add(new NDArrayIndex(slice));
+        for(int i = 1; i < rank(); i++) {
+            indices.add(NDArrayIndex.all());
         }
-
-
-        //slice of a matrix is a vector
-        if(isRowVector())
-            return createScalarForIndex(slice,true);
-
-        else {
-            int offset = calcoffset(slice);
-            if (size(0) == 1) {
-                INDArray slice2 = create(data,
-                        Arrays.copyOfRange(shape, 1, shape.length),
-                        Arrays.copyOfRange(stride,1,stride.length),
-                        offset, ordering);
-                return slice2;
-            }
-
-            else {
-                if(stride(-1) == 1 && rank() > 2) {
-                    int[] sliceShape = !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(shape, 1, shape.length) : shape();
-                    //trailing ones should not count
-                    int[] retStride =  getStrides(sliceShape,ordering());
-
-                    //enforce 1 x m
-                    if(Shape.isRowVectorShape(sliceShape) && retStride.length < 2) {
-                        sliceShape = new int[] {1,sliceShape[0]};
-                        retStride = ordering() == 'f'  ?  ArrayUtil.of(retStride[0],elementStride()) : ArrayUtil.of(elementStride(),retStride[0]);
-                    }
-
-                    INDArray slice2 = create(data,
-                            sliceShape,
-                            retStride,
-                            offset, ordering);
-                    return slice2;
-                }
-                else {
-                    int[] sliceShape = !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(shape, 1, shape.length) : shape();
-                    int[] retStride =  !Shape.isRowVectorShape(shape) ? Arrays.copyOfRange(stride,1,stride.length) : stride();
-
-                    //enforce 1 x m
-                    if(Shape.isRowVectorShape(sliceShape) && retStride.length < 2) {
-                        sliceShape = new int[] {1,sliceShape[0]};
-                        retStride = ordering() == 'f'  ?  ArrayUtil.of(retStride[0],elementStride()) : ArrayUtil.of(elementStride(),retStride[0]);
-                    }
-
-                    INDArray slice2 = create(data,
-                            sliceShape,
-                            retStride,
-                            offset, ordering);
-                    return slice2;
-                }
-
-            }
-
-
-        }
-
-
+        return get(indices.toArray(new NDArrayIndex[indices.size()]));
     }
 
 
@@ -3032,12 +3072,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
-    public boolean hasOneStride() {
-        for(int i = 0; i < stride().length; i++)
-            if(stride[i] == 1)
-                return true;
-        return false;
-    }
+
 
     @Override
     public int getTrailingOnes() {
@@ -3375,7 +3410,13 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
+
         int idx = linearIndex(i);
+        if(isWrapAround()) {
+            if(idx >= data.length()) {
+                idx %= stride(1);
+            }
+        }
         if (idx < 0)
             throw new IllegalStateException("Illegal index " + i);
         return data.getDouble(idx);
@@ -3858,17 +3899,62 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray get(NDArrayIndex... indexes) {
+        if(indexes.length > 2 && indexes[0].length() == 1 && indexes[0].offset() == 0) {
+            NDArrayIndex[] newIndexes = Arrays.copyOfRange(indexes,1,indexes.length);
+            return get(newIndexes);
+        }
         ensureNotCleanedUp();
         //fill in to match the rest of the dimensions: aka grab all the content
         //in the dimensions not filled in
         //also prune indices greater than the shape to be the shape instead
+        if(isVector()) {
+            //allow shortcuts (omitting second argument)
+            if(isRowVector()) {
+                if(indexes.length == 1) {
+                    int offset = NDArrayIndex.offset(this,indexes[0]);
+                    int length = indexes[0].length();
+                    return Nd4j.create(data,new int[]{1,length},stride(),offset);
+                }
+                //use the column index only
+                else {
+                    if(indexes[0].offset() > 0)
+                        throw new IllegalArgumentException("Illegal index specified on first input. Must be zero for a row vector");
+                    int offset = NDArrayIndex.offset(this,indexes[1]);
+                    int length = indexes[1].length();
+                    return Nd4j.create(data,new int[]{1,length},stride(),offset);
 
-        indexes = Indices.adjustIndices(shape(), indexes);
+                }
+            }
+            else {
+                //allow shortcuts (omitting second argument)
+                if(indexes.length == 1) {
+                    int offset = NDArrayIndex.offset(this,indexes[0]);
+                    int length =  indexes[0].length();
+                    return Nd4j.create(data,new int[]{length,1},stride(),offset);
+
+                }
+                //use the row index only
+                else {
+                    if(indexes[1].offset() > 0)
+                        throw new IllegalArgumentException("Illegal index specified on second input. Must be zero for a column vector");
+
+                    int offset = NDArrayIndex.offset(this,indexes[0]);
+                    int length = indexes[0].length();
+                    return Nd4j.create(data,new int[]{length,1},stride(),offset);
+                }
+            }
+        }
+
 
 
 
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
+        int[] stride = Indices.stride(this);
+        if(stride.length > offsets.length) {
+            stride = Arrays.copyOfRange(stride,1,stride.length);
+        }
+
         if(offsets.length > shape.length) {
             offsets = ArrayUtil.removeIndex(offsets,ArrayUtil.range(0,shape.length));
         }
@@ -3966,21 +4052,6 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
-        int[] stride = this.stride();
-        if (Shape.isRowVectorShape(shape)) {
-            if(offsets[0] > 0) {
-                stride = new int[] {stride(0),elementStride()};
-            }
-            else
-                stride = new int[]{1, stride(1)};
-        }
-
-        else if (Shape.isColumnVectorShape(shape)) {
-            stride = new int[]{stride(0), elementStride()};
-        }
-        if(stride.length > shape.length) {
-            stride = Arrays.copyOfRange(stride,Math.abs(stride.length - shape.length),stride.length);
-        }
 
         return subArray(offsets, shape,stride);
     }
@@ -4513,62 +4584,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public String toString() {
         ensureNotCleanedUp();
-        if (isScalar()) {
-            return element().toString();
-        }
-
-
-        if (isVector()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("[");
-            if (rows > 1)
-                sb.append("[");
-            int numElementsToPrint = Nd4j.MAX_ELEMENTS_PER_SLICE < 0 ? length : Nd4j.MAX_ELEMENTS_PER_SLICE;
-            for (int i = 0; i < length; i++) {
-                sb.append(getDouble(i));
-                if (i < length - 1) {
-                    if (rows > 1)
-                        sb.append(",\n  ");
-                    else
-                        sb.append(", ");
-                }
-                if (i >= numElementsToPrint) {
-                    int numElementsLeft = length - i;
-                    //set towards the end of the buffer
-                    if (numElementsLeft > numElementsToPrint) {
-                        i += numElementsLeft - numElementsToPrint - 1;
-                        sb.append(", ..., ");
-                    }
-                }
-
-            }
-            if (rows > 1)
-                sb.append("]");
-            sb.append("]\n ");
-            return sb.toString();
-        }
-
-
-        StringBuilder sb = new StringBuilder();
-        int length = shape[0];
-        sb.append("[");
-        if (length > 0) {
-            sb.append(slice(0).toString());
-            int slices = Nd4j.MAX_SLICES_TO_PRINT > 0 ? Nd4j.MAX_SLICES_TO_PRINT : slices();
-            if (slices > slices())
-                slices = slices();
-            for (int i = 1; i < slices; i++) {
-                sb.append(slice(i).toString());
-                if (i < length - 1)
-                    sb.append(" ,");
-
-            }
-
-
-        }
-        sb.setLength(sb.length() - 2);
-        sb.append("]\n");
-        return sb.toString();
+        return new NDArrayStrings().format(this);
     }
 
 

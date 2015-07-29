@@ -1064,8 +1064,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testOffset() {
 
-
+    }
 
 
 
@@ -1142,24 +1144,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(testRowV1Assertion, testRowV1);
 
     }
-
-    @Test
-    public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(Nd4j.create(new double[]{1,2,5,6}),linearViewNDArray);
-
-    }
-
-
-
-
-
-
-
-
 
     @Test
     public void testNumVectorsAlongDimension() {
