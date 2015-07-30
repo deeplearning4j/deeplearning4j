@@ -8,7 +8,7 @@ layout: default
 Contents
 
 * <a href="#intro">Convolutional Net Introduction</a>
-* <a href="#tensors">Tensors</a>
+* <a href="#tensors">Images = 4-D Tensors</a>
 * <a href="#define">ConvNet Definition</a>
 * <a href="#work">How Convolutional Nets Work</a>
 * <a href="#max">Maxpooling/Downsampling</a>
