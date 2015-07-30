@@ -1,12 +1,12 @@
 package org.nd4j.api
 
-import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
 import _root_.scala.util.control.Breaks._
 
-object Implicits extends LowPriorityImplicits{
+object Implicits {
+
   implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray with OperatableNDArray[A] with CollectionLikeNDArray {
     def forall(f: Double => Boolean): Boolean = {
       var result = true
