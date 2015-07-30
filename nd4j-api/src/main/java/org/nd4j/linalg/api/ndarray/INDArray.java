@@ -36,6 +36,25 @@ import java.util.List;
 public interface INDArray extends Serializable  {
 
     /**
+     * Set the ndarray to wrap around
+     * @param wrapAround thewrap around
+     */
+    void setWrapAround(boolean wrapAround);
+
+    /**
+     * Returns true if the ndarray
+     * on linear indexing wraps around
+     * based on the stride(1) of the ndarray
+     * This is a useful optimization in linear view
+     * where strides that might otherwise
+     * go out of bounds but wrap around instead.
+     *
+     * @return true if this ndarray wraps around on linear
+     * indexing, false otherwise
+     */
+    boolean isWrapAround();
+
+    /**
      * The rank of the ndarray (the number of dimensions
      * @return the rank for the ndarray
      */
@@ -336,13 +355,32 @@ public interface INDArray extends Serializable  {
      */
     INDArray epsi(INDArray other);
 
-
+    /**
+     * Not equal
+     * @param other
+     * @return
+     */
     INDArray neq(Number other);
 
+    /**
+     * In place not equal
+     * @param other
+     * @return
+     */
     INDArray neqi(Number other);
 
+    /**
+     *
+     * @param other
+     * @return
+     */
     INDArray neq(INDArray other);
 
+    /**
+     *
+     * @param other
+     * @return
+     */
     INDArray neqi(INDArray other);
 
     /**
@@ -600,6 +638,8 @@ public interface INDArray extends Serializable  {
      * @return a view of the array with the specified indices
      */
     INDArray get(NDArrayIndex... indexes);
+
+
 
 
     /**

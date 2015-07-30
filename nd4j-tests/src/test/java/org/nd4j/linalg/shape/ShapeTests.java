@@ -19,15 +19,18 @@ public class ShapeTests extends BaseNd4jTest {
     public void testSixteenZeroOne() {
         INDArray baseArr = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);
         assertEquals(4,baseArr.tensorssAlongDimension(0, 1));
-        INDArray columnVectorFirst = Nd4j.create(new double[]{1,2,3,4},new int[]{2,2});
-        INDArray columnVectorSecond = Nd4j.create(new double[]{9,10,11,12},new int[]{2,2});
-        INDArray columnVectorThird = Nd4j.create(new double[]{5,6,7,8},new int[]{2,2});
-        INDArray columnVectorFourth = Nd4j.create(new double[]{13,14,15,16},new int[]{2,2});
+        INDArray columnVectorFirst = Nd4j.create(new double[]{1,3,2,4},new int[]{2,2});
+        INDArray columnVectorSecond = Nd4j.create(new double[]{9,11,10,12},new int[]{2,2});
+        INDArray columnVectorThird = Nd4j.create(new double[]{5,7,6,8},new int[]{2,2});
+        INDArray columnVectorFourth = Nd4j.create(new double[]{13,15,14,16},new int[]{2,2});
         INDArray[] assertions = new INDArray[] {
                 columnVectorFirst,columnVectorSecond,columnVectorThird,columnVectorFourth
         };
+
+        INDArray permute = baseArr.permute(2,3,1,0);
         for(int i = 0; i < baseArr.tensorssAlongDimension(0,1); i++) {
-            assertEquals("Wrong at index " + i,assertions[i],baseArr.tensorAlongDimension(i,0,1));
+            INDArray test = baseArr.tensorAlongDimension(i, 0, 1);
+            assertEquals("Wrong at index " + i,assertions[i],test);
         }
 
     }
@@ -49,6 +52,9 @@ public class ShapeTests extends BaseNd4jTest {
         };
 
         INDArray permute = baseArr.permute(0,1,3,2);
+        for(int i = 0; i < 2; i++) {
+            INDArray last = permute.slice(i,-1);
+        }
         for(int i = 0; i < baseArr.tensorssAlongDimension(2); i++) {
             INDArray arr = baseArr.tensorAlongDimension(i, 2);
             assertEquals("Failed at index " + i, assertions[i], arr);
@@ -71,7 +77,8 @@ public class ShapeTests extends BaseNd4jTest {
 
         assertEquals(assertions.length,threeTwoTwo.tensorssAlongDimension(1));
         for(int i = 0; i < assertions.length; i++) {
-            assertEquals(assertions[i],threeTwoTwo.tensorAlongDimension(i,1));
+            INDArray test = threeTwoTwo.tensorAlongDimension(i, 1);
+            assertEquals(assertions[i],test);
         }
 
     }
@@ -122,12 +129,13 @@ public class ShapeTests extends BaseNd4jTest {
     }
 
 
+
     @Test
     public void testEight() {
         INDArray baseArr = Nd4j.linspace(1,8,8).reshape(2,2,2);
         assertEquals(2,baseArr.tensorssAlongDimension(0,1));
-        INDArray columnVectorFirst = Nd4j.create(new double[]{1,2,3,4}, new int[]{2,2});
-        INDArray columnVectorSecond = Nd4j.create(new double[]{5,6,7,8},new int[]{2,2});
+        INDArray columnVectorFirst = Nd4j.create(new double[]{1,3,2,4}, new int[]{2,2});
+        INDArray columnVectorSecond = Nd4j.create(new double[]{5,7,6,8},new int[]{2,2});
         assertEquals(columnVectorFirst,baseArr.tensorAlongDimension(0,0,1));
         assertEquals(columnVectorSecond,baseArr.tensorAlongDimension(1,0,1));
 

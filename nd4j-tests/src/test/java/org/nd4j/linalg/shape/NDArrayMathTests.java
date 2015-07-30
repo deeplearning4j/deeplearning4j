@@ -44,30 +44,17 @@ public class NDArrayMathTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testSliceForVector() {
-        INDArray arr = Nd4j.create(2, 2, 2, 2);
-        assertEquals(0,NDArrayMath.sliceForVector(1,arr,0));
-        assertEquals(1,NDArrayMath.sliceForVector(4,arr,0));
-    }
-
-    @Test
     public void toffsetForSlice() {
         INDArray arr = Nd4j.create(3,2,2);
         int slice = 1;
-        assertEquals(4,NDArrayMath.offsetForSlice(arr,slice));
+        assertEquals(4,NDArrayMath.offsetForSlice(arr, slice));
     }
 
-    @Test
-    public void testSliceForVectorOffset() {
-        INDArray arr = Nd4j.create(3,2,2);
-        assertEquals(0,NDArrayMath.sliceForVector(1,arr,0));
-        assertEquals(1,NDArrayMath.sliceForVector(2,arr,0));
-    }
 
     @Test
     public void testMapOntoVector() {
         INDArray arr = Nd4j.create(3,2,2);
-        assertEquals(NDArrayMath.mapIndexOntoVector(2,arr),4);
+        assertEquals(NDArrayMath.mapIndexOntoVector(2, arr),4);
     }
 
     @Test
@@ -79,6 +66,40 @@ public class NDArrayMathTests extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testOffsetForSlice() {
+        INDArray arr = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
+        int[] dimensions = {0,1};
+        INDArray permuted = arr.permute(2,3,0,1);
+        int[] test = {0,0,1,1};
+        for(int i = 0; i < permuted.tensorssAlongDimension(dimensions); i++) {
+            assertEquals(test[i], NDArrayMath.sliceOffsetForTensor(i, permuted, new int[]{2, 2}));
+        }
+
+        int arrTensorsPerSlice = NDArrayMath.tensorsPerSlice(arr,new int[]{2,2});
+        assertEquals(2,arrTensorsPerSlice);
+
+        INDArray arr2 = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        int[] assertions = {0,1,2};
+        for(int i = 0; i < assertions.length; i++) {
+            assertEquals(assertions[i], NDArrayMath.sliceOffsetForTensor(i, arr2, new int[]{2, 2}));
+        }
+
+
+
+        int tensorsPerSlice = NDArrayMath.tensorsPerSlice(arr2,new int[]{2,2});
+        assertEquals(1,tensorsPerSlice);
+
+
+        INDArray otherTest = Nd4j.linspace(1,144,144).reshape(6,3,2,2,2);
+        System.out.println(otherTest);
+        INDArray baseArr = Nd4j.linspace(1,8,8).reshape(2,2,2);
+        for(int i = 0; i < baseArr.tensorssAlongDimension(0,1); i++) {
+            System.out.println(NDArrayMath.sliceOffsetForTensor(i,baseArr,new int[]{2,2}));
+        }
+
+
+    }
 
     @Test
     public void testOddDimensions() {

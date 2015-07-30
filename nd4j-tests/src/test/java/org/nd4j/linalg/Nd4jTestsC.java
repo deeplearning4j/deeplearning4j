@@ -154,16 +154,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testOtherReshape() {
-        INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
-
-        INDArray slice = nd.slice(1, 0);
-
-        INDArray vector = slice.reshape(1, 2);
-        assertEquals(Nd4j.create(new double[]{2, 5}),vector);
-    }
-
 
 
 
@@ -316,7 +306,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         NDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(getFailureMessage(),Nd4j.create(new double[]{1, 2, 3, 4}),linearViewNDArray);
+        assertEquals(getFailureMessage(),Nd4j.create(new double[]{1, 2, 5,6}),linearViewNDArray);
 
     }
 
@@ -331,42 +321,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testConcatColumns() {
-        INDArray input1 = Nd4j.zeros(2, 1);
-        INDArray input2 = Nd4j.ones(2, 1);
-        INDArray concat = Nd4j.concat(1, input1, input2);
-        INDArray assertion = Nd4j.create(new double[][]{{0, 1}, {0, 1}});
-        assertEquals(assertion,concat);
-    }
-
-    @Test
-    public void testGetIndicesVector() {
-        INDArray line = Nd4j.linspace(1, 4, 4);
-        INDArray test = Nd4j.create(new float[]{2, 3});
-        INDArray result = line.get(new NDArrayIndex(0), NDArrayIndex.interval(1, 3));
-        assertEquals(test, result);
-    }
-
-    @Test
-    public void testGetIndices2d() throws Exception{
-        INDArray twoByTwo = Nd4j.linspace(1, 6, 6).reshape(3, 2);
-        INDArray firstRow = twoByTwo.getRow(0);
-        INDArray secondRow = twoByTwo.getRow(1);
-        INDArray firstAndSecondRow = twoByTwo.getRows(new int[]{1, 2});
-        INDArray firstRowViaIndexing = twoByTwo.get(NDArrayIndex.interval(0, 1));
-        assertEquals(firstRow, firstRowViaIndexing);
-        INDArray secondRowViaIndexing = twoByTwo.get(NDArrayIndex.interval(1, 2));
-        assertEquals(secondRow, secondRowViaIndexing);
-
-        INDArray firstAndSecondRowTest = twoByTwo.get(NDArrayIndex.interval(1, 3));
-        assertEquals(firstAndSecondRow, firstAndSecondRowTest);
-
-        INDArray individualElement = twoByTwo.get(NDArrayIndex.interval(1, 2), NDArrayIndex.interval(1, 2));
-        assertEquals(Nd4j.create(new float[]{4}), individualElement);
 
 
-    }
 
 
     @Test
@@ -1322,15 +1278,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, test);
     }
 
-    @Test
-    public void testRand() {
-        INDArray rand = Nd4j.randn(5, 5);
-        Nd4j.getDistributions().createUniform(0.4, 4).sample(5);
-        Nd4j.getDistributions().createNormal(1, 5).sample(10);
-        //Nd4j.getDistributions().createBinomial(5, 1.0).sample(new int[]{5, 5});
-        //Nd4j.getDistributions().createBinomial(1, Nd4j.ones(5, 5)).sample(rand.shape());
-        Nd4j.getDistributions().createNormal(rand, 1).sample(rand.shape());
-    }
 
 
     @Test
@@ -1341,45 +1288,11 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(true, Arrays.equals(new int[]{4, 3, 2}, arr.shape()));
         assertEquals(true, Arrays.equals(new int[]{2, 3, 4}, reshaped.shape()));
 
-
-
-
     }
 
-    @Test
-    public void testSwapReshape() {
-        INDArray n2 = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
-        INDArray swapped = n2.swapAxes(n2.shape().length - 1, 1);
-        INDArray firstSlice2 = swapped.slice(0).slice(0);
-        INDArray oneThreeFiveSevenNine = Nd4j.create(new float[]{1,3,5,7,9});
-        assertEquals(firstSlice2, oneThreeFiveSevenNine);
-        INDArray raveled = oneThreeFiveSevenNine.reshape(5, 1);
-        INDArray raveledOneThreeFiveSevenNine = oneThreeFiveSevenNine.reshape(5, 1);
-        assertEquals(raveled, raveledOneThreeFiveSevenNine);
 
 
-        INDArray firstSlice3 = swapped.slice(0).slice(1);
-        INDArray twoFourSixEightTen = Nd4j.create(new float[]{2, 4, 6, 8, 10});
-        assertEquals(firstSlice2, oneThreeFiveSevenNine);
-        INDArray raveled2 = twoFourSixEightTen.reshape(5, 1);
-        INDArray raveled3 = firstSlice3.reshape(5, 1);
-        assertEquals(raveled2, raveled3);
-    }
 
-    @Test
-    public void testMoreReshape() {
-        INDArray nd = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9,
-
-                10, 11, 12}, new int[]{2, 6});
-
-
-        INDArray ndv = nd.getRow(0);
-        INDArray other = ndv.reshape(2, 3);
-        assertEquals(ndv.linearView(),other.linearView());
-
-        INDArray otherVec = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6});
-        assertEquals(ndv,otherVec);
-    }
 
 
     @Test
@@ -1642,20 +1555,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testArangeMul() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        INDArray ones = Nd4j.ones(2,2).mul(0.25);
-        INDArray mul = get.mul(ones);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {0.25,0.5},
-                {0.75,1}
-        });
-        assertEquals(assertion, mul);
-
-    }
 
 
     @Test

@@ -353,15 +353,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testLinearViewGetAndPut() throws Exception {
-        INDArray test = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray linear = test.linearView();
-        linear.putScalar(2, 6);
-        linear.putScalar(3, 7);
-        assertEquals(6, linear.getFloat(2), 1e-1);
-        assertEquals(7, linear.getFloat(3), 1e-1);
-    }
+
 
 
 
@@ -395,6 +387,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testSwapAxesFortranOrder() {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
+        for(int i = 0; i < n.slices(); i++) {
+            INDArray nSlice = n.slice(i);
+            System.out.println(nSlice);
+        }
         INDArray slice = n.swapAxes(2, 1);
         INDArray assertion = Nd4j.create(new double[]{1, 4, 7, 10, 13});
         INDArray test = slice.slice(0).slice(0);
@@ -402,13 +398,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testGetIndicesVector() {
-        INDArray line = Nd4j.linspace(1, 4, 4);
-        INDArray test = Nd4j.create(new float[]{2, 3});
-        INDArray result = line.get(new NDArrayIndex(0), NDArrayIndex.interval(1, 3));
-        assertEquals(test, result);
-    }
 
 
     @Test
@@ -502,16 +491,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSlices() {
-        INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
-        for (int i = 0; i < arr.slices(); i++) {
-            INDArray slice  = arr.slice(i).slice(1);
-            int slices = slice.slices();
-            assertEquals(1, slices);
-        }
 
-    }
 
 
 
@@ -766,11 +746,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(getFailureMessage(),scalar, innerProduct);
 
 
-        INDArray ten = Nd4j.linspace(1,100,100).reshape(10,10);
-        INDArray square = ten.get(new NDArrayIndex(new int[]{5, 6, 7, 8, 9}), NDArrayIndex.all()).transpose();
-
-        INDArray other = Nd4j.linspace(1, 600, 600).reshape(10, 60);
-
     }
 
 
@@ -971,22 +946,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testSlice() {
-        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {1, 13}
-                , {5, 17}
-                , {9, 21}
-        });
-
-        INDArray firstSlice = arr.slice(0);
-        assertEquals(assertion,firstSlice);
-
-    }
-
-
-
 
     @Test
     public void testAppendBias() {
@@ -1009,15 +968,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testLinearViewAlignment() {
-        INDArray twoToFour = Nd4j.create(new double[][]{
-                {1, 2},
-                {3, 4}
-        });
-        INDArray linear = twoToFour.linearView();
-        assertEquals(Nd4j.create(new double[]{1, 2, 3, 4}), linear);
-    }
 
 
     @Test
@@ -1076,8 +1026,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testOffset() {
 
-
+    }
 
 
 
@@ -1154,37 +1106,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(testRowV1Assertion, testRowV1);
 
     }
-
-    @Test
-    public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(Nd4j.create(new double[]{1,2,5,6}),linearViewNDArray);
-
-    }
-
-    @Test
-    public void testArangeMul() {
-        INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        INDArray zeroPointTwoFive = Nd4j.ones(2,2).mul(0.25);
-        INDArray mul = get.mul(zeroPointTwoFive);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {0.25, 0.5},
-                {1.25, 1.5}
-        });
-        assertEquals(assertion, mul);
-
-    }
-
-
-
-
-
-
 
     @Test
     public void testNumVectorsAlongDimension() {
