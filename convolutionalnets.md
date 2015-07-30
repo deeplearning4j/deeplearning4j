@@ -113,22 +113,24 @@ Much information about lesser values is lost in this step, which has spurred res
 
 ### Alternating Layers
 
-The image below is another attempt to show the sequence of transformations involved in a typical convolutional network. From left to right you see:
+The image below is another attempt to show the sequence of transformations involved in a typical convolutional network. 
+
+![Alt text](../img/convnet.png) 
+
+From left to right you see:
 
 * The input image that is scanned for features. The light rectangle is the filter that passes over it. 
-* Activation maps stacked atop one another, one for each filter you employ. The larger rectangle is one patch to be downsampled.
+* Activation maps stacked atop one another, one for each filter you employ. The larger rectangle is one patch to be downsampled. 
 * The activation maps condensed through downsampling.
 * A new set of activation maps created by passing filters over the first downsampled stack. 
 * The second downsampling, which condenses the second set of activation maps. 
 * A fully connected layer that classifies output with one label per node. 
 
-![Alt text](../img/convnet.png) 
-
 ##<a name="code">DL4J Code Example</a>
 
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/convolution/CNNMnistExample.java?slice=32:100"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/convolution/CNNMnistExample.java?slice=34:102"></script>
 
 ##<a name="resource">Other Resources</a>
 
