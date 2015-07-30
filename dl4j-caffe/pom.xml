@@ -17,6 +17,7 @@
         <spring.version>3.2.5.RELEASE</spring.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <lombok.version>1.16.4</lombok.version>
+        <slf4j.version>1.7.12</slf4j.version>
     </properties>
 
     <dependencies>
@@ -27,7 +28,11 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>integration</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

@@ -83,12 +83,13 @@ public class CaffeTest {
     }
 
     @Test
-    public void testReadCaffeWithWeights() throws IOException{
+    public void testReadCaffeWithoutWeights() throws IOException{
 
         String textFormatNetPath = getImageNetBinaryNetPath();
         String textFormatSolverPath = getImageNetTextFormatSolverPath();
-        CaffeSolverNetContainer solverNet = CaffeModelToJavaClass.readCaffeWithWeights(textFormatNetPath,
-                                            textFormatSolverPath, 1000);
+        // Read in Caffe Net configuration and solver without pre-trained weights
+        CaffeSolverNetContainer solverNet = CaffeModelToJavaClass.readCaffe(textFormatNetPath,
+                                            textFormatSolverPath, false);
         SolverParameter solver = solverNet.getSolver();
         NetParameter net = solverNet.getNet();
         assertTrue(solver != null && net != null);

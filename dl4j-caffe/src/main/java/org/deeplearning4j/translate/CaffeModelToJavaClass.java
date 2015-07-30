@@ -7,11 +7,16 @@ import org.deeplearning4j.caffe.Caffe.*;
 import com.google.protobuf.CodedInputStream;
 
 import java.io.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jeffreytang
  */
 public class CaffeModelToJavaClass {
+
+    private static Logger log = LoggerFactory.getLogger(CaffeModelToJavaClass.class);
+
 
     /**
      *
@@ -67,19 +72,23 @@ public class CaffeModelToJavaClass {
         SolverParameter solver;
     }
 
-    public static CaffeSolverNetContainer readCaffeWithWeights(String binaryNetPath,
-                                                               String textFormatSolverPath,
-                                                               int sizeLimitMb) throws IOException {
-        NetParameter net = readBinaryNet(binaryNetPath, sizeLimitMb);
-        SolverParameter solver = readTextFormatSolver(textFormatSolverPath);
+    public static CaffeSolverNetContainer readCaffe(String netPath, String solverPath, boolean binaryFile) throws IOException {
+        NetParameter net;
+        SolverParameter solver;
+
+        if (binaryFile) {
+            log.info("Reading in binary format Caffe netowrk configurations");
+            try {
+                net = readBinaryNet(netPath, 10000);
+            } catch (OutOfMemoryError e) {
+                throw new OutOfMemoryError("Model is bigger than 10GB. If you want o raise the limit, specify the sizeLimitMb");
+            }
+        } else {
+            net = readTextFormatNet(netPath);
+        }
+
+        solver = readTextFormatSolver(solverPath);
+
         return new CaffeSolverNetContainer(net, solver);
     }
-
-    public static CaffeSolverNetContainer readCaffeWithoutWeights(String textFormatNetPath,
-                                                                  String textFormatSolverPath) throws IOException {
-        NetParameter net = readTextFormatNet(textFormatNetPath);
-        SolverParameter solver = readTextFormatSolver(textFormatSolverPath);
-        return new CaffeSolverNetContainer(net, solver);
-    }
-
 }
