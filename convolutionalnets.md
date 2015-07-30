@@ -21,11 +21,11 @@ Convolutional nets perform object recognition with images. They can identify fac
 
 The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
-##<a name="tensors">Tensors</a>
+##<a name="tensors">Images = 4-D Tensors</a>
 
 Convolutional nets ingest and process images as tensors, and tensors are matrices of numbers with additional dimensions. 
 
-They can be hard to visualize, so let’s approach them by analogy. A scalar is just a number, such as 7; a vector is a list of numbers (e.g., `[7,8,9]`); and a matrix is a rectangular grid of numbers occupying several rows and columns. Geometrically, if a scalar is a point, then a vector is a one-dimensional line, and a matrix is a two-dimensional plane. For reference, here’s a 2 x 2 matrix:
+They can be hard to visualize, so let’s approach them by analogy. A scalar is just a number, such as 7; a vector is a list of numbers (e.g., `[7,8,9]`); and a matrix is a rectangular grid of numbers occupying several rows and columns like a spreadsheet. Geometrically, if a scalar is a zero-dimensional point, then a vector is a one-dimensional line, a matrix is a two-dimensional plane, a stack of matrices is a three-dimensional cube, and when each element of those stacks is stacked again, you enter the fourth dimension. For reference, here’s a 2 x 2 matrix:
 
 [ 1, 2 ] 
 [ 5, 8 ]
