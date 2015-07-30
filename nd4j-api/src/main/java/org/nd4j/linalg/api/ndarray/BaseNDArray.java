@@ -21,15 +21,11 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
-import com.sun.org.apache.bcel.internal.generic.ICONST;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
-import org.nd4j.linalg.api.ops.executioner.Loop;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -58,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
@@ -632,7 +627,7 @@ public abstract class BaseNDArray implements INDArray {
         if(isVector() || isScalar() || length() == 1)
             linearView = this;
         else if(ordering() == NDArrayFactory.C) {
-            linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-1),stride(-2)),offset);
+            linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-2),stride(-1)),offset);
             linearView.setWrapAround(true);
         }
         else {
@@ -712,44 +707,39 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
-        int[] stride = ArrayUtil.keep(stride(),dimension);
-        int[] leftOverStride = ArrayUtil.removeIndex(stride(), dimension);
 
-
-        if(tensorShape.length >= 2) {
-            int idx = offset + index * (leftOverStride[leftOverStride.length - 1]);
-            return create(data(), tensorShape, stride, idx, ordering());
-        }
-        else {
-
-            int[] rearrange = Ints.concat(ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension), dimension);
-            INDArray move = permute(rearrange);
-            int vectorsPerSlice = NDArrayMath.vectorsPerSlice(move);
-
-            INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index, move, 0));
-            if(index >= vectorsPerSlice)
-                index %= vectorsPerSlice;
-
-
-            while(ret2.rank() > 2) {
-                int slice = NDArrayMath.sliceForVector(index,ret2,0);
-                ret2 = ret2.slice(slice);
-            }
-            if(ret2.isMatrix()) {
-                int modulo = NDArrayMath.vectorsPerSlice(ret2);
-                int idx2 = index % modulo;
-                return ret2.slice(idx2);
-
-
-
-            }
-
+        int[] reverseDimensions = ArrayUtil.reverseCopy(dimension);
+        int[] remove = ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension);
+        int[] newPermuteDims = Ints.concat(remove, reverseDimensions);
+        INDArray permuted = permute(newPermuteDims);
+        int sliceIdx = NDArrayMath.sliceOffsetForTensor(index, permuted, tensorShape);
+        INDArray ret2 = permuted.slice(sliceIdx);
+        if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length())
             return ret2;
+        int length = ArrayUtil.prod(tensorShape);
+        int tensorLength = ArrayUtil.prod(tensorShape);
+        int offset = index * tensorLength / NDArrayMath.lengthPerSlice(ret2);
+        if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2))
+            return ret2.slice(offset);
+        if(length == NDArrayMath.lengthPerSlice(ret2)) {
+            while(offset >= ret2.slices())
+                offset -= ret2.slices();
 
+            ret2 = ret2.slice(offset);
+            return ret2;
+        }
+
+        int originalSliceIdx = sliceIdx;
+        sliceIdx = index;
+        while(ret2.length() > length) {
+            sliceIdx = NDArrayMath.sliceOffsetForTensor(index, ret2, tensorShape);
+            while(sliceIdx >= ret2.slices())
+                sliceIdx -= ret2.slices();
+            ret2 = ret2.slice(sliceIdx);
 
         }
 
-
+        return  ret2;
     }
 
 
@@ -2984,6 +2974,7 @@ public abstract class BaseNDArray implements INDArray {
                     throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
                 return idx;
             }
+
             else {
                 int realStride = stride(-1);
                 int idx = offset + (i * realStride);
@@ -3105,6 +3096,9 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray slice(int slice, int dimension) {
+        if(dimension < 0)
+            dimension += rank();
+
         if (shape.length == 2) {
             //rows
             if (dimension == 1)
@@ -4479,20 +4473,7 @@ public abstract class BaseNDArray implements INDArray {
         checkArrangeArray(rearrange);
         int[] newShape = doPermuteSwap(shape, rearrange);
         int[] newStride = doPermuteSwap(stride, rearrange);
-        //leading one on tensor
-        if(newStride[0] == elementStride() && newStride.length > 2) {
-            List<Integer> newStrides = new ArrayList<>();
-            for(int i = 0; i < newStride.length; i++) {
-                if(newStride[i] != 1)
-                    newStrides.add(newStride[i]);
-            }
 
-            int delta = newStride.length - newStrides.size();
-            for(int i = 0; i < delta; i++)
-                newStrides.add(elementStride());
-            newStride = Ints.toArray(newStrides);
-
-        }
         if(ArrayUtil.isInverse(newStride,stride())) {
             char inverse = ordering() == NDArrayFactory.C ? 'f' : 'c';
             return create(data(),newShape,getStrides(newShape,inverse),offset,inverse);

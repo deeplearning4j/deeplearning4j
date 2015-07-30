@@ -40,7 +40,7 @@ public class NDArrayMath {
      * @return the number of elements per slice in an array
      */
     public static int lengthPerSlice(INDArray arr) {
-        return lengthPerSlice(arr,0);
+        return lengthPerSlice(arr, 0);
     }
 
 
@@ -80,6 +80,18 @@ public class NDArrayMath {
         }
 
         return arr.slices();
+    }
+
+
+    /**
+     * Computes the tensors per slice
+     * given a tensor shape and array
+     * @param arr the array to get the tensors per slice for
+     * @param tensorShape the desired tensor shape
+     * @return the tensors per slice of an ndarray
+     */
+    public static int tensorsPerSlice(INDArray arr,int[] tensorShape) {
+        return lengthPerSlice(arr) / ArrayUtil.prod(tensorShape);
     }
 
     /**
@@ -122,6 +134,35 @@ public class NDArrayMath {
 
     }
 
+    /**
+     * calculates the offset for a tensor
+     * @param index
+     * @param arr
+     * @param tensorShape
+     * @return
+     */
+    public static int sliceOffsetForTensor(int index, INDArray arr, int[] tensorShape) {
+        int tensorLength = ArrayUtil.prod(tensorShape);
+        int offset = index * tensorLength / NDArrayMath.lengthPerSlice(arr);
+        return offset;
+    }
+
+
+    /**
+     * This maps an index of a vector
+     * on to a vector in the matrix that can be used
+     * for indexing in to a tensor
+     * @param index the index to map
+     * @param arr the array to use
+     *            for indexing
+     * @param rank the dimensions to compute a slice for
+     * @return the mapped index
+     */
+    public static int mapIndexOntoTensor(int index,INDArray arr,int...rank) {
+        int ret = index * ArrayUtil.prod(ArrayUtil.removeIndex(arr.shape(), rank));
+        return ret;
+    }
+
 
     /**
      * This maps an index of a vector
@@ -133,38 +174,10 @@ public class NDArrayMath {
      * @return the mapped index
      */
     public static int mapIndexOntoVector(int index,INDArray arr) {
-        int numVectors = NDArrayMath.numVectors(arr);
         int ret = index * arr.size(-1);
         return ret;
     }
 
-    /**
-     * Returns the slice a vector belongs to
-     * @param vector the vector to get the slice for
-     * @param arr the array to get the vector for
-     * @param rank the dimensions to slice
-     * @return the slice for a particular vector
-     */
-    public static int sliceForVector(int vector,INDArray arr,int...rank) {
-        if(vector == 0)
-            return 0;
-
-        int mapped = NDArrayMath.mapIndexOntoVector(vector,arr);
-        int ret = 0;
-        for(int i = 0; i < arr.slices(); i++) {
-            int offset = NDArrayMath.offsetForSlice(arr,i);
-            if(mapped >= offset) {
-                ret = i;
-            }
-
-        }
-
-        return ret;
-
-
-
-
-    }
 
 
 }
