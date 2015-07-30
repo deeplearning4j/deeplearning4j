@@ -84,7 +84,7 @@ public class LossFunctions {
                 INDArray xEntLogZ2 = log(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
-                ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
+                ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).meanNumber().doubleValue();
                 break;
             case MCXENT:
                 INDArray sums = log(z);

@@ -193,7 +193,7 @@ public class SoftMax extends BaseTransformOp {
 
         }
         else if(x.isVector()) {
-           double max = x.max(Integer.MAX_VALUE).getDouble(0);
+           double max = x.maxNumber().doubleValue();
             this.y = Transforms.exp(x.sub(max));
             this.y.divi(y.sumNumber().doubleValue());
             this.z = y;

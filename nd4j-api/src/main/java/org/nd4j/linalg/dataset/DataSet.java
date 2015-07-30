@@ -667,7 +667,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
 
     private int getLabel(DataSet data) {
-        Float f = (Float) data.getLabels().max(Integer.MAX_VALUE).element();
+        Float f = data.getLabels().maxNumber().floatValue();
         return f.intValue();
     }
 

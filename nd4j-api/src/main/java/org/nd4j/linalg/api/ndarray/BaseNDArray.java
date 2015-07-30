@@ -605,51 +605,46 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
-        int[] tensorShape = ArrayUtil.keep(shape(),dimension);
-        int[] stride = ArrayUtil.keep(stride(),dimension);
+        int[] tensorShape = ArrayUtil.keep(shape(), dimension);
+        int[] stride = ArrayUtil.keep(stride(), dimension);
         int[] leftOverStride = ArrayUtil.removeIndex(stride(), dimension);
 
-        if(leftOverStride.length < 2) {
-            leftOverStride = new int[] {1,leftOverStride[0]};
+        if (leftOverStride.length < 2) {
+            leftOverStride = new int[]{1, leftOverStride[0]};
         }
 
-        if(tensorShape.length >= 2) {
+        if (tensorShape.length >= 2) {
             int idx = offset + index * (leftOverStride[leftOverStride.length - 1]);
             return create(data(), tensorShape, stride, idx, ordering());
-        }
-        else {
+        } else {
 
             int idx = 0;
-            if(ordering == NDArrayFactory.C) {
-                tensorShape = new int[] {1,tensorShape[0]};
-                stride = new int[] {stride[0],1};
+            if (ordering == NDArrayFactory.C) {
+                tensorShape = new int[]{1, tensorShape[0]};
+                stride = new int[]{stride[0], 1};
 
-                if(index / stride[0] > 0) {
-                    int baseIndex = index /stride[0];
+                if (index / stride[0] > 0) {
+                    int baseIndex = index / stride[0];
                     int delta = index - baseIndex * stride[0];
                     idx = offset + (tensorShape[1] * index) - delta;
 
-                }
-
-                else
+                } else
                     idx = offset + index;
-            }
-
-            else {
+            } else {
                 int[] rearrange = Ints.concat(ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension), dimension);
                 INDArray move = permute(rearrange);
                 int vectorsPerSlice = NDArrayMath.vectorsPerSlice(move);
 
                 INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index, move, 0));
-                if(index >= vectorsPerSlice)
+                if (index >= vectorsPerSlice)
                     index %= vectorsPerSlice;
 
 
-                while(ret2.rank() > 2) {
-                    int slice = NDArrayMath.sliceForVector(index,ret2,0);
+                while (ret2.rank() > 2) {
+                    int slice = NDArrayMath.sliceForVector(index, ret2, 0);
                     ret2 = ret2.slice(slice);
                 }
-                if(ret2.isMatrix()) {
+                if (ret2.isMatrix()) {
                     int modulo = NDArrayMath.vectorsPerSlice(ret2);
                     int idx2 = index % modulo;
                     return ret2.slice(idx2);
@@ -665,15 +660,14 @@ public abstract class BaseNDArray implements INDArray {
     }
 
 
-
-    private int adjustOffsetForFortranOrdering(int offset,int index,int stride,int tailStride,int shapeZero) {
-        if(offset  + stride >= length() && ordering() == 'f') {
+    private int adjustOffsetForFortranOrdering(int offset, int index, int stride, int tailStride, int shapeZero) {
+        if (offset + stride >= length() && ordering() == 'f') {
             int numDecremented = 0;
             int startIndex = index;
 
-            while(startIndex >= shapeZero) {
+            while (startIndex >= shapeZero) {
                 numDecremented++;
-                startIndex -=  shapeZero;
+                startIndex -= shapeZero;
             }
 
             int startStride = stride;
@@ -735,10 +729,10 @@ public abstract class BaseNDArray implements INDArray {
             return linearView();
         }
 
-        INDArray ret =  tensorAlongDimension(index, dimension);
+        INDArray ret = tensorAlongDimension(index, dimension);
         //column vector
-        if(dimension == 0) {
-            return Nd4j.create(ret.data(),ArrayUtil.reverseCopy(ret.shape()),ret.stride(),ret.offset());
+        if (dimension == 0) {
+            return Nd4j.create(ret.data(), ArrayUtil.reverseCopy(ret.shape()), ret.stride(), ret.offset());
         }
 
         return ret;
@@ -1803,21 +1797,21 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         //handle strides/offsets < rank
-        if(offsets.length != stride.length)
+        if (offsets.length != stride.length)
             throw new IllegalStateException("Offsets and stride must be same length");
         int delta = rank() - offsets.length;
         int[] dotProductOffsets = offsets;
         int[] dotProductStride = stride;
-        if(ordering() == 'f') {
+        if (ordering() == 'f') {
             dotProductStride = ArrayUtil.reverseCopy(dotProductStride);
         }
         int[] zeros = new int[delta];
-        int[] ones = ArrayUtil.nTimes(delta,1);
-        dotProductOffsets = delta > 0 ? Ints.concat(zeros,dotProductOffsets) : dotProductOffsets;
-        dotProductStride = delta > 0 ? Ints.concat(ones,dotProductStride) : dotProductStride;
+        int[] ones = ArrayUtil.nTimes(delta, 1);
+        dotProductOffsets = delta > 0 ? Ints.concat(zeros, dotProductOffsets) : dotProductOffsets;
+        dotProductStride = delta > 0 ? Ints.concat(ones, dotProductStride) : dotProductStride;
 
 
-        int offset = this.offset + ArrayUtil.dotProduct(dotProductOffsets,dotProductStride);
+        int offset = this.offset + ArrayUtil.dotProduct(dotProductOffsets, dotProductStride);
 
 
         //prevent off by 1
@@ -2800,6 +2794,19 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.getExecutioner().exec(new NormMax(this), dimension);
     }
 
+    @Override
+    public Number normmaxNumber() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return normmax(Integer.MAX_VALUE).getFloat(0);
+        else
+            return normmax(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber normmaxComplex() {
+        return Nd4j.createComplexNumber(normmaxNumber(),0);
+    }
+
     /**
      * Reverse division
      *
@@ -3585,6 +3592,19 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.getExecutioner().exec(new Prod(this), dimension);
     }
 
+    @Override
+    public Number prodNumber() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return prod(Integer.MAX_VALUE).getFloat(0);
+        else
+            return prod(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber prodComplex() {
+        return Nd4j.createComplexNumber(prodNumber(),0);
+    }
+
     /**
      * Returns the overall mean of this ndarray
      *
@@ -3594,6 +3614,19 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray mean(int... dimension) {
         return Nd4j.getExecutioner().exec(new Mean(this), dimension);
+    }
+
+    @Override
+    public Number meanNumber() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return mean(Integer.MAX_VALUE).getFloat(0);
+        else
+            return mean(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber meanComplex() {
+        return Nd4j.createComplexNumber(meanNumber(),0);
     }
 
     /**
@@ -3607,6 +3640,19 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.getExecutioner().exec(new Variance(this), dimension);
     }
 
+    @Override
+    public Number varNumber() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return var(Integer.MAX_VALUE).getFloat(0);
+        else
+            return var(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber varComplex() {
+        return Nd4j.createComplexNumber(varNumber(),0);
+    }
+
     /**
      * Returns the overall max of this ndarray
      *
@@ -3618,6 +3664,19 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.getExecutioner().exec(new Max(this), dimension);
     }
 
+    @Override
+    public Number maxNumber() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return max(Integer.MAX_VALUE).getFloat(0);
+        else
+            return max(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber maxComplex() {
+        return Nd4j.createComplexNumber(maxNumber(),0);
+    }
+
     /**
      * Returns the overall min of this ndarray
      *
@@ -3627,6 +3686,19 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray min(int... dimension) {
         return Nd4j.getExecutioner().exec(new Min(this), dimension);
+    }
+
+    @Override
+    public Number minNumber() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return min(Integer.MAX_VALUE).getFloat(0);
+        else
+            return min(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber minComplex() {
+        return Nd4j.createComplexNumber(minNumber(),0);
     }
 
     /**
@@ -3650,7 +3722,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNumber sumComplex() {
-        return Nd4j.createComplexNumber(sumNumber(),0);
+        return Nd4j.createComplexNumber(sumNumber(), 0);
     }
 
     /**
@@ -3664,6 +3736,18 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.getExecutioner().exec(new Norm1(this), dimension);
     }
 
+    @Override
+    public Number norm1Number() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return norm1(Integer.MAX_VALUE).getFloat(0);
+        else
+            return norm1(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber norm1Complex() {
+        return Nd4j.createComplexNumber(norm1Number(),0);
+    }
 
     /**
      * Standard deviation of an ndarray along a dimension
@@ -3676,6 +3760,18 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.getExecutioner().exec(new StandardDeviation(this), dimension);
     }
 
+    @Override
+    public Number stdNumber() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return std(Integer.MAX_VALUE).getFloat(0);
+        else
+            return std(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber stdComplex() {
+        return Nd4j.createComplexNumber(stdNumber(),0);
+    }
 
     /**
      * Returns the norm2 along the specified dimension
@@ -3688,6 +3784,18 @@ public abstract class BaseNDArray implements INDArray {
         return Nd4j.getExecutioner().exec(new Norm2(this), dimension);
     }
 
+    @Override
+    public Number norm2Number() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return norm2(Integer.MAX_VALUE).getFloat(0);
+        else
+            return norm2(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber norm2Complex() {
+        return Nd4j.createComplexNumber(norm2Number(),0);
+    }
 
     /**
      * Number of columns (shape[1]), throws an exception when
@@ -3843,11 +3951,11 @@ public abstract class BaseNDArray implements INDArray {
 
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
-        if(offsets.length > shape.length) {
-            offsets = ArrayUtil.removeIndex(offsets,ArrayUtil.range(0,shape.length));
+        if (offsets.length > shape.length) {
+            offsets = ArrayUtil.removeIndex(offsets, ArrayUtil.range(0, shape.length));
         }
-        if(ArrayUtil.prod(shape) == 1 && rank() > 2) {
-            if(this instanceof IComplexNDArray) {
+        if (ArrayUtil.prod(shape) == 1 && rank() > 2) {
+            if (this instanceof IComplexNDArray) {
                 IComplexNDArray arr = (IComplexNDArray) this;
                 return Nd4j.scalar(arr.getComplex(indexes[indexes.length - 1].indices()[0]));
             }
@@ -3937,11 +4045,11 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         int[] stride = this.stride();
-        if(stride.length > shape.length) {
-            stride = Arrays.copyOfRange(stride,Math.abs(stride.length - shape.length),stride.length);
+        if (stride.length > shape.length) {
+            stride = Arrays.copyOfRange(stride, Math.abs(stride.length - shape.length), stride.length);
         }
 
-        return subArray(offsets, shape,stride);
+        return subArray(offsets, shape, stride);
     }
 
 

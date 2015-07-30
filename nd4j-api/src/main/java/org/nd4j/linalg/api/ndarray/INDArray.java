@@ -1269,6 +1269,9 @@ public interface INDArray extends Serializable  {
      */
     INDArray normmax(int...dimension);
 
+    Number normmaxNumber();
+
+    IComplexNumber normmaxComplex();
 
     /**
      * Returns the norm2 along the specified dimension
@@ -1278,6 +1281,9 @@ public interface INDArray extends Serializable  {
      */
     INDArray norm2(int...dimension);
 
+    Number norm2Number();
+
+    IComplexNumber norm2Complex();
 
     /**
      * Returns the norm1 along the specified dimension
@@ -1287,6 +1293,9 @@ public interface INDArray extends Serializable  {
      */
     INDArray norm1(int...dimension);
 
+    Number norm1Number();
+
+    IComplexNumber norm1Complex();
 
     /**
      * Standard deviation of an ndarray along a dimension
@@ -1296,6 +1305,10 @@ public interface INDArray extends Serializable  {
      */
     INDArray std(int...dimension);
 
+    Number stdNumber();
+
+    IComplexNumber stdComplex();
+
     /**
      * Returns the product along a given dimension
      *
@@ -1304,6 +1317,9 @@ public interface INDArray extends Serializable  {
      */
     INDArray prod(int...dimension);
 
+    Number prodNumber();
+
+    IComplexNumber prodComplex();
 
     /**
      * Returns the overall mean of this ndarray
@@ -1313,6 +1329,9 @@ public interface INDArray extends Serializable  {
      */
     INDArray mean(int...dimension);
 
+    Number meanNumber();
+
+    IComplexNumber meanComplex();
 
     /**
      * Returns the overall variance of this ndarray
@@ -1322,6 +1341,9 @@ public interface INDArray extends Serializable  {
      */
     INDArray var(int...dimension);
 
+    Number varNumber();
+
+    IComplexNumber varComplex();
 
     /**
      * Returns the overall max of this ndarray
@@ -1331,6 +1353,10 @@ public interface INDArray extends Serializable  {
      */
     INDArray max(int...dimension);
 
+    Number maxNumber();
+
+    IComplexNumber maxComplex();
+
     /**
      * Returns the overall min of this ndarray
      *
@@ -1338,6 +1364,10 @@ public interface INDArray extends Serializable  {
      * @return the mean along the specified dimension of this ndarray
      */
     INDArray min(int...dimension);
+
+    Number minNumber();
+
+    IComplexNumber minComplex();
 
     /**
      * Returns the sum along the last dimension of this ndarray

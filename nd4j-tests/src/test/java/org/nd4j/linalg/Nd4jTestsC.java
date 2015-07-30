@@ -504,12 +504,12 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         INDArray n = Nd4j.create(new double[]{1, 2, 3, 4});
         double assertion = 5.47722557505;
-        INDArray norm3 = n.norm2(Integer.MAX_VALUE);
-        assertEquals(getFailureMessage(),assertion, norm3.getDouble(0), 1e-1);
+        double norm3 = n.norm2Number().doubleValue();
+        assertEquals(getFailureMessage(),assertion, norm3, 1e-1);
 
         INDArray row = Nd4j.create(new double[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
-        double norm2 = row1.norm2(Integer.MAX_VALUE).getDouble(0);
+        double norm2 = row1.norm2Number().doubleValue();
         double assertion2 = 5.0f;
         assertEquals(getFailureMessage(),assertion2, norm2, 1e-1);
 
@@ -520,13 +520,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testNorm2() {
         INDArray n = Nd4j.create(new float[]{1, 2, 3, 4});
         float assertion = 5.47722557505f;
-        INDArray norm3 = n.norm2(Integer.MAX_VALUE);
-        assertEquals(getFailureMessage(),assertion, norm3.getFloat(0), 1e-1);
+        float norm3 = n.norm2Number().floatValue();
+        assertEquals(getFailureMessage(),assertion, norm3, 1e-1);
 
 
         INDArray row = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         INDArray row1 = row.getRow(1);
-        float norm2 = row1.norm2(Integer.MAX_VALUE).getFloat(0);
+        float norm2 = row1.norm2Number().floatValue();
         float assertion2 = 5.0f;
         assertEquals(getFailureMessage(),assertion2, norm2, 1e-1);
 
@@ -1416,8 +1416,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray mean1 = a.mean(1);
         assertEquals(getFailureMessage(),Nd4j.create(new double[]{1.5,3.5}), mean1);
         assertEquals(getFailureMessage(),Nd4j.create(new double[]{2,3}), a.mean(0));
-        assertEquals(getFailureMessage(),2.5, Nd4j.linspace(1, 4, 4).mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
-        assertEquals(getFailureMessage(),2.5, a.mean(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),2.5, Nd4j.linspace(1, 4, 4).meanNumber().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(),2.5, a.meanNumber().doubleValue(), 1e-1);
 
     }
 

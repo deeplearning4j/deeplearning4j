@@ -64,7 +64,7 @@ class LossCalculation {
                         labels.mul(log(z))
                                 .addi(labels.rsub(1).muli(log(z.rsub(1))))
                         , 1);
-                ret = -Nd4j.mean(sums2).mean(Integer.MAX_VALUE).getDouble(0);
+                ret = -Nd4j.mean(sums2).meanNumber().doubleValue();
 
 
 
