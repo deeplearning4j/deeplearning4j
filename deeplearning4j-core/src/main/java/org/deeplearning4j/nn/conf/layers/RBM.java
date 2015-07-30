@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -48,12 +50,9 @@ import org.deeplearning4j.nn.weights.WeightInit;
  * http://www.iro.umontreal.ca/~lisa/publications2/index.php/publications/show/239
  *
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class RBM extends BasePretrainNetwork {
-
     private static final long serialVersionUID = 485040309806445606L;
-    protected int ind;
     protected HiddenUnit hiddenUnit;
     protected VisibleUnit visibleUnit;
     protected int k;
@@ -65,22 +64,18 @@ public class RBM extends BasePretrainNetwork {
         RECTIFIED, BINARY, GAUSSIAN, SOFTMAX
     }
 
-    // Builder
     private RBM(Builder builder) {
+    	super(builder);
         this.hiddenUnit = builder.hiddenUnit;
         this.visibleUnit = builder.visibleUnit;
         this.k = builder.k;
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
     }
 
     @AllArgsConstructor @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
         private HiddenUnit hiddenUnit;
         private VisibleUnit visibleUnit;
-        private int k;
+        private int k = Integer.MIN_VALUE;
 
         public Builder(HiddenUnit hiddenUnit, VisibleUnit visibleUnit) {
             this.hiddenUnit = hiddenUnit;
@@ -106,6 +101,13 @@ public class RBM extends BasePretrainNetwork {
             this.weightInit = weightInit;
             return this;
         }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
+        }
+        
         @Override
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
@@ -115,6 +117,21 @@ public class RBM extends BasePretrainNetwork {
         @SuppressWarnings("unchecked")
         public RBM build() {
             return new RBM(this);
+        }
+        
+        public Builder k(int k){
+        	this.k = k;
+        	return this;
+        }
+        
+        public Builder hiddenUnit(HiddenUnit hiddenUnit){
+        	this.hiddenUnit =  hiddenUnit;
+        	return this;
+        }
+        
+        public Builder visibleUnit(VisibleUnit visibleUnit){
+        	this.visibleUnit = visibleUnit;
+        	return this;
         }
     }
 }
