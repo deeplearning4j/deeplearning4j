@@ -36,7 +36,7 @@ A tensor encompasses the dimensions beyond that 2-D plane. You can easily pictur
 
 In code, the tensor above would appear like this: `[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]]`. In other words, tensors are formed by arrays nested within arrays, and that nesting can go on infinitely, accounting for an arbitrary number of dimensions far greater than what we can visualize spatially. A 4-D tensor would simply replace each of these scalars with an array nested one level deeper. Convolutional networks deal in 4-D tensors.  
 
-ND4J and Deeplearning4j use NDArray synonymously with tensor. A tensor’s dimensionality `(1,2,3…n)` is called its order; i.e. a fifth-order tensor.
+ND4J and Deeplearning4j use `NDArray` synonymously with tensor. A tensor’s dimensionality `(1,2,3…n)` is called its order; i.e. a fifth-order tensor.
 
 The width and height of an image are easily understood. The depth is due to how colors are encoded. Red-Green-Blue (RGB) encoding, for example, produces an image three layers deep. Each of the layers produces a stack of activation maps which exist in the fourth dimension, just down the street from time itself. So instead of thinking of images as two-dimensional areas, in convolutional nets they are treated as four-dimensional volumes. These ideas will be explored more thoroughly below. 
 
