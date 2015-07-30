@@ -267,7 +267,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6);
         SoftMax softMax = new SoftMax(arr);
         opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(),1.0, softMax.z().sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
 
 
     }
@@ -314,7 +314,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         softMax.exec(1);
         INDArray z = softMax.z();
         INDArray zSums = z.sum(1);
-        assertEquals(zSums.length(),zSums.sum(Integer.MAX_VALUE).getDouble(0),1e-1);
+        assertEquals(zSums.length(),zSums.sumNumber().doubleValue(),1e-1);
 
     }
 
@@ -366,12 +366,12 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6);
         SoftMax softMax = new SoftMax(arr);
         opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(),1.0, softMax.z().sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(getFailureMessage(),1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
 
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         SoftMax softmax = new SoftMax(linspace.dup());
         Nd4j.getExecutioner().exec(softmax);
-        assertEquals(linspace.rows(), softmax.z().sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(linspace.rows(), softmax.z().sumNumber().doubleValue(), 1e-1);
         //copy not modified
         assertFalse(softmax.z().equals(softmax.x()));
         //original x not modified
@@ -388,7 +388,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         SoftMax max = new SoftMax(linspace);
         Nd4j.getExecutioner().exec(max, 1);
         linspace.assign(max.z());
-        assertEquals(getFailureMessage(), linspace.getRow(0).sum(Integer.MAX_VALUE).getDouble(0), 1.0, 1e-1);
+        assertEquals(getFailureMessage(), linspace.getRow(0).sumNumber().doubleValue(), 1.0, 1e-1);
 
     }
 

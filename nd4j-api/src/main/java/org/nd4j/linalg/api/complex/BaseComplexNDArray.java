@@ -1135,8 +1135,28 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
+    public Number normmaxNumber() {
+        return normmaxComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber normmaxComplex() {
+        return normmax(Integer.MAX_VALUE).getComplex(0);
+    }
+
+    @Override
     public IComplexNDArray prod(int...dimension) {
         return Nd4j.createComplex(super.prod(dimension));
+    }
+
+    @Override
+    public Number prodNumber() {
+        return prodComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber prodComplex() {
+        return prod(Integer.MAX_VALUE).getComplex(0);
     }
 
     @Override
@@ -1145,8 +1165,28 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
+    public Number meanNumber() {
+        return meanComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber meanComplex() {
+        return mean(Integer.MAX_VALUE).getComplex(0);
+    }
+
+    @Override
     public IComplexNDArray var(int...dimension) {
         return Nd4j.createComplex(super.var(dimension));
+    }
+
+    @Override
+    public Number varNumber() {
+        return varComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber varComplex() {
+        return var(Integer.MAX_VALUE).getComplex(0);
     }
 
     @Override
@@ -1155,8 +1195,28 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
+    public Number maxNumber() {
+        return maxComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber maxComplex() {
+        return max(Integer.MAX_VALUE).getComplex(0);
+    }
+
+    @Override
     public IComplexNDArray sum(int...dimension) {
         return Nd4j.createComplex(super.sum(dimension));
+    }
+
+    @Override
+    public Number sumNumber() {
+        return sumComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber sumComplex() {
+        return sum(Integer.MAX_VALUE).getComplex(0);
     }
 
     @Override
@@ -1165,8 +1225,28 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
+    public Number minNumber() {
+        return minComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber minComplex() {
+        return min(Integer.MAX_VALUE).getComplex(0);
+    }
+
+    @Override
     public IComplexNDArray norm1(int...dimension) {
         return Nd4j.createComplex(super.norm1(dimension));
+    }
+
+    @Override
+    public Number norm1Number() {
+        return norm1Complex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber norm1Complex() {
+        return norm1(Integer.MAX_VALUE).getComplex(0);
     }
 
     @Override
@@ -1175,8 +1255,28 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
+    public Number stdNumber() {
+        return stdComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber stdComplex() {
+        return std(Integer.MAX_VALUE).getComplex(0);
+    }
+
+    @Override
     public IComplexNDArray norm2(int...dimension) {
         return Nd4j.createComplex(super.norm2(dimension));
+    }
+
+    @Override
+    public Number norm2Number() {
+        return norm2Complex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber norm2Complex() {
+        return norm2(Integer.MAX_VALUE).getComplex(0);
     }
 
     /**

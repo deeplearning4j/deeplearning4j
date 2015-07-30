@@ -729,8 +729,7 @@ public abstract class BaseNDArray implements INDArray {
             return ret2;
         }
 
-        int originalSliceIdx = sliceIdx;
-        sliceIdx = index;
+      
         while(ret2.length() > length) {
             sliceIdx = NDArrayMath.sliceOffsetForTensor(index, ret2, tensorShape);
             while(sliceIdx >= ret2.slices())

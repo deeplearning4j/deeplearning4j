@@ -4,11 +4,17 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 /**
  * @author Adam Gibson
  */
 public class ShapeTests extends BaseNd4jTest {
+
+    public ShapeTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Test
     public void testSixteenZeroOne() {
         INDArray baseArr = Nd4j.linspace(1, 16, 16).reshape(2, 2, 2, 2);

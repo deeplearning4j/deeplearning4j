@@ -46,7 +46,7 @@ public class TestMatrixOperations {
     @Test
     public void testMean() {
         INDArray mean2 = Nd4j.linspace(1, 5, 5);
-        assertEquals(3,mean2.mean(Integer.MAX_VALUE).getDouble(0),1e-1);
+        assertEquals(3,mean2.meanNumber().doubleValue(),1e-1);
     }
 
 

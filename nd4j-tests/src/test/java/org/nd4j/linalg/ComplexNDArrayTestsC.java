@@ -216,7 +216,7 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     @Test
     public void testSum() {
         IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{2, 2, 2}));
-        assertEquals(Nd4j.createDouble(36, 0), n.sum(Integer.MAX_VALUE).getComplex(0));
+        assertEquals(Nd4j.createDouble(36, 0), n.sumComplex());
     }
 
 
@@ -742,15 +742,15 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     @Test
     public void testBasicOperations() {
         IComplexNDArray arr = Nd4j.createComplex(new double[]{0, 1, 2, 1, 1, 2, 3, 4}, new int[]{2, 2});
-        IComplexDouble scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
+        IComplexDouble scalar = (IComplexDouble) arr.sumComplex();
         double sum = scalar.realComponent();
         assertEquals(6, sum, 1e-1);
         arr.addi(1);
-        scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
+        scalar = (IComplexDouble) arr.sumComplex();
         sum = scalar.realComponent();
         assertEquals(10, sum, 1e-1);
         arr.subi(Nd4j.createDouble(1, 0));
-        scalar = (IComplexDouble) arr.sum(Integer.MAX_VALUE).element();
+        scalar = (IComplexDouble) arr.sumComplex();
 
         sum = scalar.realComponent();
         assertEquals(6, sum, 1e-1);
@@ -778,10 +778,10 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
 
         IComplexNDArray multiDimensionElementWise = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2}));
-        IComplexDouble sum2 = (IComplexDouble) multiDimensionElementWise.sum(Integer.MAX_VALUE).element();
+        IComplexDouble sum2 = (IComplexDouble) multiDimensionElementWise.sumComplex();
         assertEquals(sum2, Nd4j.createDouble(300, 0));
         IComplexNDArray added = multiDimensionElementWise.add(Nd4j.complexScalar(1));
-        IComplexDouble sum3 = (IComplexDouble) added.sum(Integer.MAX_VALUE).element();
+        IComplexDouble sum3 = (IComplexDouble) added.sumComplex();
         assertEquals(sum3, Nd4j.createDouble(324, 0));
 
 

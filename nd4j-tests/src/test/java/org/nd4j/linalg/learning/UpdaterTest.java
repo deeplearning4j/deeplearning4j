@@ -23,6 +23,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,9 @@ public class UpdaterTest extends BaseNd4jTest {
 
 	private static final Logger log = LoggerFactory.getLogger(UpdaterTest.class);
 
+	public UpdaterTest(String name, Nd4jBackend backend) {
+		super(name, backend);
+	}
 
 	@Test
 	public void testAdaGrad1() {

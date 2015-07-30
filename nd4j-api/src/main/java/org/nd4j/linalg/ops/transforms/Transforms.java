@@ -268,7 +268,7 @@ public class Transforms {
      * @return the scaled ndarray
      */
     public static INDArray unitVec(INDArray toScale) {
-        double length = toScale.norm2(Integer.MAX_VALUE).getDouble(0);
+        double length = toScale.norm2Number().doubleValue();
 
         if (length > 0) {
             if (toScale.data().dataType() == (DataBuffer.Type.FLOAT))
