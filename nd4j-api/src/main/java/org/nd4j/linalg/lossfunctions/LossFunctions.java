@@ -84,35 +84,35 @@ public class LossFunctions {
                 INDArray xEntLogZ2 = log(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ2 = log(z).rsubi(1);
-                ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).mean(Integer.MAX_VALUE).getDouble(0);
+                ret = labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sum(1).meanNumber().doubleValue();
                 break;
             case MCXENT:
                 INDArray sums = log(z);
                 INDArray columnSums = labels.mul(log(sums));
-                ret = -columnSums.sum(Integer.MAX_VALUE).getDouble(0);
+                ret = -columnSums.sumNumber().doubleValue();
                 break;
             case XENT:
                 INDArray xEntLogZ = log(z);
                 INDArray xEntOneMinusLabelsOut = labels.rsub(1);
                 INDArray xEntOneMinusLogOneMinusZ = log(z).rsubi(1);
-                ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sumNumber().doubleValue();
                 break;
             case RMSE_XENT:
                 INDArray rmseXentDiff = labels.sub(z);
                 INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
-                ret = sqrt.sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = sqrt.sum(1).sumNumber().doubleValue();
                 break;
             case MSE:
                 INDArray mseDelta = labels.sub(z);
-                ret = 0.5 * pow(mseDelta, 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = 0.5 * pow(mseDelta, 2).sum(1).sumNumber().doubleValue();
                 break;
             case EXPLL:
                 INDArray expLLLogZ = log(z);
-                ret = z.sub(labels.mul(expLLLogZ)).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = z.sub(labels.mul(expLLLogZ)).sum(1).sumNumber().doubleValue();
                 break;
             case SQUARED_LOSS:
-                ret = pow(labels.sub(z), 2).sum(1).sum(Integer.MAX_VALUE).getDouble(0);
+                ret = pow(labels.sub(z), 2).sum(1).sumNumber().doubleValue();
                 break;
             case NEGATIVELOGLIKELIHOOD:
                 ret = -Nd4j.sum(
