@@ -38,6 +38,12 @@ import java.util.*;
  */
 public class TextPipelineTest extends BaseSparkTest {
 
+    /**
+     *
+     * Testing the TextPipeline on a toy example to make sure words and vocabs are counted correctly
+     *
+     * @throws Exception
+     */
     @Test
     public void testTextPipelineSimple() throws Exception {
         JavaRDD<String> corpus = sc.textFile(new ClassPathResource("basic/word2vec.txt").getFile().getAbsolutePath(), 3);
@@ -66,6 +72,12 @@ public class TextPipelineTest extends BaseSparkTest {
         assertTrue(pair.getSecond() == 8);
     }
 
+    /**
+     *
+     * Testing the TextPipeline on a bigger corpus to make sure words and vocabs are counted correctly
+     *
+     * @throws Exception
+     */
     @Test
     public void testTextPipelineFull() throws Exception {
         JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath(), 3);
@@ -73,10 +85,17 @@ public class TextPipelineTest extends BaseSparkTest {
         Pair<VocabCache, Long> pair = pipeline.process();
         InMemoryLookupCache lookupCache = (InMemoryLookupCache) pair.getFirst();
 
-        assertEquals(lookupCache.vocabs.size(), 7);
-
+        assertEquals(lookupCache.vocabs.size(), 542);
+        assertEquals(lookupCache.vocabs.get("SHOULD").getIndex(), 5);
+        assertEquals((int)lookupCache.wordFrequencies.getCount("SHOULD"), 4);
     }
 
+    /**
+     * Test Word2Vec on a toy dataset to make sure things at least run and check if words and vocab are
+     * counted properly after Word2Vec is trained
+     *
+     * @throws Exception
+     */
     @Test
     public void testWord2VecSimple() throws Exception {
         // Train Word2Vec
@@ -113,18 +132,20 @@ public class TextPipelineTest extends BaseSparkTest {
         assertTrue(lookupCache.wordFrequencies.getCount("abab") == 1.0);
     }
 
+    /**
+     *
+     * Run Word2Vec to a bigger corpus to make sure the results are sensible
+     *
+     * @throws Exception
+     */
     @Test
     public void testWord2VecFull() throws Exception {
         JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath());
         Word2Vec model = new Word2Vec();
         model.train(corpus);
         InMemoryLookupCache lookupCache = (InMemoryLookupCache)model.getVocabCacheBroadcast().value();
-
         Collection<String> lst = model.wordsNearest("day", 10);
-        FileWriter writer = new FileWriter("testSparkWord2Vec.txt");
-        for (String str: lst) {
-            writer.write(str + "\n");
-        }
+
     }
 
 }
