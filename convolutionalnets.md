@@ -38,7 +38,7 @@ In code, the tensor above would appear like this: [[[2,3],[3,5],[4,7]],[[3,4],[4
 
 ND4J and Deeplearning4j use NDArray synonymously with tensor. A tensor’s dimensionality (1,2,3…n) is called its order; i.e. a fifth-order tensor.
 
-The width and height of an image are easily understood. The depth is due to how colors are encoded. Red-Green-Blue (RGB) encoding, for example, produces an image three layers deep. Each of layers produces a stack of activation maps which exist in the fourth dimension, just down the street from time itself. So instead of thinking of images as two-dimensional areas, in convolutional nets they are treated as four-dimensional volumes. 
+The width and height of an image are easily understood. The depth is due to how colors are encoded. Red-Green-Blue (RGB) encoding, for example, produces an image three layers deep. Each of the layers produces a stack of activation maps which exist in the fourth dimension, just down the street from time itself. So instead of thinking of images as two-dimensional areas, in convolutional nets they are treated as four-dimensional volumes. These ideas will be explored more thoroughly below. 
 
 ##<a name="define">Definition</a>
 
@@ -108,6 +108,7 @@ One of the main problems with images is that they are high-dimensional, which me
 The next layer in a convolutional network has three names: max pooling, downsampling and subsampling. The activation maps are fed into a downsampling layer, and like convolutions, this method is applied one patch at a time. In this case, max pooling simply takes the largest value from one patch of an image, places it in a new matrix next to the max values from other patches, and discards the rest of the information contained in the activation maps.
 
 ![Alt text](../img/maxpool.png) 
+*Credit to [Andrej Karpathy](https://cs231n.github.io/).*
 
 Only the locations on the image that showed the strongest correlation to each feature (the maximum value) are preserved, and those maximum values combine to form a lower-dimensional space. 
 
@@ -121,18 +122,20 @@ The image below is another attempt to show the sequence of transformations invol
 
 From left to right you see:
 
-* The input image that is scanned for features. The light rectangle is the filter that passes over it. 
-* Activation maps stacked atop one another, one for each filter you employ. The larger rectangle is one patch to be downsampled. 
+* The actual input image that is scanned for features. The light rectangle is the filter that passes over it. 
+* Activation maps stacked atop one another, one for each filter you employ. The larger rectangle is one patch to be downsampled.  
 * The activation maps condensed through downsampling.
 * A new set of activation maps created by passing filters over the first downsampled stack. 
 * The second downsampling, which condenses the second set of activation maps. 
 * A fully connected layer that classifies output with one label per node. 
 
+As more and more information is lost, the patterns processed by the convolutional net become more abstract and grow more distant from visual patterns we recognize as humans. So forgive yourself, and us, if convolutional networks do not offer easy intuitions as they grow deeper. 
+
 ##<a name="code">DL4J Code Example</a>
 
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/convolution/CNNMnistExample.java?slice=34:102"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/convolution/CNNMnistExample.java?slice=36:104"></script>
 
 ##<a name="resource">Other Resources</a>
 
