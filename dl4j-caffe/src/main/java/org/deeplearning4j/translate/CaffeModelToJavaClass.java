@@ -23,7 +23,7 @@ public class CaffeModelToJavaClass {
     protected static NetParameter readBinaryNet(InputStream is, int sizeLimitMb) throws IOException {
         CodedInputStream codeStream = CodedInputStream.newInstance(is);
         // Increase the limit when loading bigger caffemodels size
-        int oldLimit = codeStream.setSizeLimit(sizeLimitMb * 1024 * 1024);
+        codeStream.setSizeLimit(sizeLimitMb * 1024 * 1024);
         return NetParameter.parseFrom(codeStream);
     }
 
