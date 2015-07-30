@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.NDArrayMath;
 
 
@@ -11,6 +12,11 @@ import org.nd4j.linalg.util.NDArrayMath;
  * @author Adam Gibson
  */
 public class NDArrayMathTests extends BaseNd4jTest {
+
+    public NDArrayMathTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Test
     public void testVectorPerSlice() {
         INDArray arr = Nd4j.create(2,2,2,2);
