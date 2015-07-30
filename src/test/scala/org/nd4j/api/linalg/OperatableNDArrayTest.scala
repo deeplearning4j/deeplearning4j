@@ -20,13 +20,16 @@
 package org.nd4j.api.linalg
 
 import org.junit.runner.RunWith
+import org.nd4j.api.Implicits._
+import org.nd4j.api.{FloatNDArrayEvidence, NDArrayEvidence}
+import org.nd4j.linalg.api.complex.IComplexNumber
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
-import org.nd4j.api.Implicits._
 
 @RunWith(classOf[JUnitRunner])
-class RichNDArraySpec extends FlatSpec with Matchers {
+class OperatableNDArrayTest extends FlatSpec with Matchers {
   "RichNDArray" should "use the apply method to access values" in {
     // -- 2D array
     val nd2 = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
@@ -122,5 +125,32 @@ class RichNDArraySpec extends FlatSpec with Matchers {
     val b = -a
     b.get(0) should be(-1)
     b.get(1) should be(-3)
+  }
+
+  "Sum function" should "choose return value depending on INDArray type" in {
+    val ndArray =
+      Array(
+        Array(1, 2),
+        Array(4, 5)
+      ).toNDArray
+
+    //return sum of real NDArray in Double at default
+    val sumValue = ndArray.sumT
+    sumValue shouldBe a [java.lang.Double]
+
+    val complexNDArray = Nd4j.createComplex(ndArray)
+
+    //return sum of complex NDArray in IComplexNumber
+    val sumComplexValue = complexNDArray.sumT
+    sumComplexValue shouldBe a [IComplexNumber]
+
+    //switch return value with passing corresponding evidence explicitly
+    val sumValueInFloatExplicit = ndArray.sumT(FloatNDArrayEvidence)
+    sumValueInFloatExplicit shouldBe a [java.lang.Float]
+
+    //switch return value with declaring implicit value but explicit one would be more readable.
+    implicit val f:NDArrayEvidence[INDArray] = FloatNDArrayEvidence
+    val sumValueInFloatImplicit = ndArray.sumT
+    sumValueInFloatImplicit shouldBe a [java.lang.Float]
   }
 }

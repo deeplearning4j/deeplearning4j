@@ -1,11 +1,10 @@
 package org.nd4j.api
 
-import org.scalatest.FlatSpec
-
 import org.nd4j.api.Implicits._
 import org.nd4j.linalg.factory.Nd4j
+import org.scalatest.FlatSpec
 
-class NDArrayExtractionTest extends FlatSpec {
+class NDArrayExtractionTest extends FlatSpec{
   "org.nd4j.api.Implicits.RichNDArray" should "provides forall checker" in {
     val ndArray =
       Array(

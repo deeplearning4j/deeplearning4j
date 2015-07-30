@@ -27,8 +27,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex
 /**
  * Scala DSL for arrays
  */
-trait OperatableNDArray{
-  val underlying:INDArray
+trait OperatableNDArray[A <: INDArray] {
+  val underlying: A
 
   // --- INDArray operators
   def +(that: INDArray): INDArray = underlying.add(that)
@@ -135,6 +135,26 @@ trait OperatableNDArray{
   def ===(other: Number): INDArray = underlying.eq(other)
 
   def ===(other: INDArray): INDArray = underlying.eq(other)
+
+  def sumT(implicit ev: NDArrayEvidence[A]): ev.T = ev.sum(underlying)
+
+  def meanT(implicit ev: NDArrayEvidence[A]): ev.T = ev.sum(underlying)
+
+  def normMaxT(implicit ev: NDArrayEvidence[A]): ev.T = ev.normMax(underlying)
+
+  def norm1T(implicit ev: NDArrayEvidence[A]): ev.T = ev.norm1(underlying)
+
+  def norm2T(implicit ev: NDArrayEvidence[A]): ev.T = ev.norm2(underlying)
+
+  def maxT(implicit ev: NDArrayEvidence[A]): ev.T = ev.max(underlying)
+
+  def minT(implicit ev: NDArrayEvidence[A]): ev.T = ev.min(underlying)
+
+  def stdT(implicit ev: NDArrayEvidence[A]): ev.T = ev.standardDeviation(underlying)
+
+  def prodT(implicit ev: NDArrayEvidence[A]): ev.T = ev.product(underlying)
+
+  def varT()(implicit ev: NDArrayEvidence[A]): ev.T = ev.variance(underlying)
 }
 
 // https://gist.github.com/teroxik/5349331

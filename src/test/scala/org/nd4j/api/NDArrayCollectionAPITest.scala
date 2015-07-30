@@ -1,7 +1,6 @@
 package org.nd4j.api
 
 import org.nd4j.api.Implicits._
-import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.FlatSpec
 
 class NDArrayCollectionAPITest extends FlatSpec {
