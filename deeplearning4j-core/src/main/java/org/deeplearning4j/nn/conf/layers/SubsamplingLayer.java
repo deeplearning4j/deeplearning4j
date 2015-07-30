@@ -3,13 +3,14 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
  * @author Adam Gibson
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class SubsamplingLayer extends Layer {
 
     private static final long serialVersionUID = -7095644470333017030L;
@@ -22,6 +23,7 @@ public class SubsamplingLayer extends Layer {
     }
 
     private SubsamplingLayer(Builder builder) {
+    	super(builder);
         this.poolingType = builder.poolingType;
         this.stride = builder.stride;
 //        this.kernelSize = builder.kernelSize;
@@ -40,6 +42,10 @@ public class SubsamplingLayer extends Layer {
         @Override
         public Builder weightInit(WeightInit weightInit) {
             throw new UnsupportedOperationException("SubsamplingLayer does not accept weight init");
+        }
+        @Override
+        public Builder dist(Distribution dist){
+        	throw new UnsupportedOperationException("SubsamplingLayer does not accept weight init");
         }
         @Override
         public Builder dropOut(double dropOut) {
