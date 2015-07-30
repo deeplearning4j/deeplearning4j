@@ -1,13 +1,13 @@
 package org.nd4j.api
 
+import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.factory.{NDArrayFactory, Nd4j}
+import org.nd4j.linalg.factory.Nd4j
 
 import _root_.scala.util.control.Breaks._
 
-object Implicits {
-
-  implicit class RichINDArray(val underlying: INDArray) extends SliceableNDArray with OperatableNDArray with CollectionLikeNDArray{
+object Implicits extends LowPriorityImplicits{
+  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray with OperatableNDArray[A] with CollectionLikeNDArray {
     def forall(f: Double => Boolean): Boolean = {
       var result = true
       val lv = underlying.linearView()
@@ -87,21 +87,27 @@ object Implicits {
   implicit class floatMtrix2INDArray(val underlying: Seq[Seq[Float]]) extends AnyVal {
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
   }
+
   implicit class floatArrayMtrix2INDArray(val underlying: Array[Array[Float]]) extends AnyVal {
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
+
   implicit class doubleMtrix2INDArray(val underlying: Seq[Seq[Double]]) extends AnyVal {
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
   }
+
   implicit class doubleArrayMtrix2INDArray(val underlying: Array[Array[Double]]) extends AnyVal {
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
+
   implicit class intMtrix2INDArray(val underlying: Seq[Seq[Int]]) extends AnyVal {
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat).toArray).toArray)
   }
+
   implicit class intArrayMtrix2INDArray(val underlying: Array[Array[Int]]) extends AnyVal {
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat)))
   }
+
   implicit class num2Scalar[T](val underlying: T)(implicit ev: Numeric[T]) {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }
@@ -156,7 +162,7 @@ private[api] case class DRange(startR: Int, endR: Int, isInclusive: Boolean, ste
     val endInclusive = if (endR >= 0) endR + diff else max + endR + diff
     (start, endInclusive)
   }
-  lazy val length = (end  - start) / step + 1
+  lazy val length = (end - start) / step + 1
 
   def toList: List[Int] = List.iterate(start, length)(_ + step)
 
@@ -165,5 +171,6 @@ private[api] case class DRange(startR: Int, endR: Int, isInclusive: Boolean, ste
 
 private[api] object DRange extends {
   def from(r: Range, max: => Int): DRange = DRange(r.start, r.end, r.isInclusive, r.step, max)
+
   def apply(startR: Int, endR: Int, step: Int): DRange = DRange(startR, endR, false, step, Int.MinValue)
 }

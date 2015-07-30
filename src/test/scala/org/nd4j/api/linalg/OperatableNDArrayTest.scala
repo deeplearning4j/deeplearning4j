@@ -20,13 +20,16 @@
 package org.nd4j.api.linalg
 
 import org.junit.runner.RunWith
+import org.nd4j.api.Implicits._
+import org.nd4j.api.{FloatNDArrayEvidence, NDArrayEvidence}
+import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
-import org.nd4j.api.Implicits._
 
 @RunWith(classOf[JUnitRunner])
-class RichNDArraySpec extends FlatSpec with Matchers {
+class OperatableNDArrayTest extends FlatSpec with Matchers {
   "RichNDArray" should "use the apply method to access values" in {
     // -- 2D array
     val nd2 = Nd4j.create(Array[Double](1, 2, 3, 4), Array(4, 1))
@@ -45,7 +48,7 @@ class RichNDArraySpec extends FlatSpec with Matchers {
     val nd1 = Nd4j.create(Array[Double](1, 2, 3), Array(3, 1))
     nd1.shape should equal(Array(3, 1))
     val nd1t = nd1.T
-    nd1t.shape should equal(Array(1,3))
+    nd1t.shape should equal(Array(1, 3))
   }
 
   it should "add correctly" in {
@@ -122,5 +125,51 @@ class RichNDArraySpec extends FlatSpec with Matchers {
     val b = -a
     b.get(0) should be(-1)
     b.get(1) should be(-3)
+  }
+
+  it should "workd with ComplexNDArray correctly" in {
+    val complexNDArray = Nd4j.createComplex(
+      Array(
+        Array(Nd4j.createComplexNumber(1, 1), Nd4j.createComplexNumber(1, 1)),
+        Array(Nd4j.createComplexNumber(1, 1), Nd4j.createComplexNumber(1, 1)))
+    )
+
+    val result = complexNDArray + 2
+    result shouldBe a[IComplexNDArray]
+
+    result shouldBe Nd4j.createComplex(
+      Array(
+        Array(Nd4j.createComplexNumber(3, 1), Nd4j.createComplexNumber(3, 1)),
+        Array(Nd4j.createComplexNumber(3, 1), Nd4j.createComplexNumber(3, 1)))
+    )
+  }
+
+  "Sum function" should "choose return value depending on INDArray type" in {
+    val ndArray =
+      Array(
+        Array(1, 2),
+        Array(4, 5)
+      ).toNDArray
+
+    //return Double in real NDArray at default
+    ndArray.get(0) shouldBe a [java.lang.Double]
+    val sumValue = ndArray.sumT
+    sumValue shouldBe a [java.lang.Double]
+
+    val complexNDArray = Nd4j.createComplex(ndArray)
+
+    //return ComplexNumber in ComplexNDArray in IComplexNumber
+    complexNDArray.get(0) shouldBe a [IComplexNumber]
+    val sumComplexValue = complexNDArray.sumT
+    sumComplexValue shouldBe a[IComplexNumber]
+
+    //switch return value with passing corresponding evidence explicitly
+    val sumValueInFloatExplicit = ndArray.sumT(FloatNDArrayEvidence)
+    sumValueInFloatExplicit shouldBe a[java.lang.Float]
+
+    //switch return value with declaring implicit value but explicit one would be more readable.
+    import org.nd4j.api.Evidences.float
+    val sumValueInFloatImplicit = ndArray.sumT
+    sumValueInFloatImplicit shouldBe a[java.lang.Float]
   }
 }
