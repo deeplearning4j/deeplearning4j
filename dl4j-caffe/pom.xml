@@ -17,11 +17,16 @@
         <spring.version>3.2.5.RELEASE</spring.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <lombok.version>1.16.4</lombok.version>
-        <slf4j.version>1.7.12</slf4j.version>
+        <dl4j.version>0.0.3.3.5.alpha2-SNAPSHOT</dl4j.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-core</artifactId>
+            <version>${dl4j.version}</version>
 
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -30,8 +35,8 @@
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>integration</artifactId>
-            <version>${slf4j.version}</version>
+            <artifactId>slf4j-parent</artifactId>
+            <version>1.7.12</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

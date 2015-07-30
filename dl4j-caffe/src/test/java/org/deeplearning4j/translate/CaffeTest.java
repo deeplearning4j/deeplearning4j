@@ -3,15 +3,12 @@ package org.deeplearning4j.translate;
 import org.deeplearning4j.caffe.Caffe.NetParameter;
 import org.deeplearning4j.caffe.Caffe.SolverParameter;
 import org.springframework.core.io.ClassPathResource;
-import org.deeplearning4j.translate.CaffeModelToJavaClass.CaffeSolverNetContainer;
 import org.junit.Test;
-
 import java.io.IOException;
-
 import static org.junit.Assert.*;
 
 /**
- * Created by jeffreytang on 7/11/15.
+ * @author jeffreytang
  */
 public class CaffeTest {
 
@@ -36,7 +33,7 @@ public class CaffeTest {
     public void testBinaryCaffeModelToJavaClass() throws Exception {
 
         // Read the Binary File to a Java Class
-        NetParameter net = CaffeModelToJavaClass.readBinaryNet(getImageNetBinaryNetPath(), 1000);
+        NetParameter net = TranslateCaffe.readBinaryNet(getImageNetBinaryNetPath(), 1000);
 
         // Test the binary file is read in correctly
         assertEquals(net.getName(), "CaffeNet");
@@ -54,7 +51,7 @@ public class CaffeTest {
     public void testTextFormatSolverProtoToJavaClass() throws IOException {
 
         // Read the Solver proto-text File to a Java Class
-        SolverParameter solver = CaffeModelToJavaClass.readTextFormatSolver(getImageNetTextFormatSolverPath());
+        SolverParameter solver = TranslateCaffe.readTextFormatSolver(getImageNetTextFormatSolverPath());
 
         assertEquals(solver.getMaxIter(), 450000);
         assertEquals(solver.getMomentum(), 0.9f, 1e-3);
@@ -72,7 +69,7 @@ public class CaffeTest {
     public void testTextFormatNetProtoToJavaClass() throws IOException {
 
         // Read the Net proto-text File to a Java Class
-        NetParameter net = CaffeModelToJavaClass.readTextFormatNet(getImageNetTextFormatNetPath());
+        NetParameter net = TranslateCaffe.readTextFormatNet(getImageNetTextFormatNetPath());
 
         assertEquals(net.getName(), "nin_imagenet");
         // Not 31 because there is an extra test data layer and an accuracy layer,
@@ -82,17 +79,17 @@ public class CaffeTest {
         assertEquals(net.getLayers(32).getName(), "loss");
     }
 
-    @Test
-    public void testReadCaffeWithoutWeights() throws IOException{
-
-        String textFormatNetPath = getImageNetBinaryNetPath();
-        String textFormatSolverPath = getImageNetTextFormatSolverPath();
-        // Read in Caffe Net configuration and solver without pre-trained weights
-        CaffeSolverNetContainer solverNet = CaffeModelToJavaClass.readCaffe(textFormatNetPath,
-                                            textFormatSolverPath, false);
-        SolverParameter solver = solverNet.getSolver();
-        NetParameter net = solverNet.getNet();
-        assertTrue(solver != null && net != null);
-    }
+//    @Test
+//    public void testReadCaffeWithoutWeights() throws IOException{
+//
+//        String textFormatNetPath = getImageNetBinaryNetPath();
+//        String textFormatSolverPath = getImageNetTextFormatSolverPath();
+//        // Read in Caffe Net configuration and solver without pre-trained weights
+//        SolverNetBuilderContainer solverNet = TranslateCaffe.read(textFormatNetPath,
+//                textFormatSolverPath, false);
+//        SolverParameter solver = solverNet.getSolver();
+//        NetParameter net = solverNet.getNet();
+//        assertTrue(solver != null && net != null);
+//    }
 
 }
