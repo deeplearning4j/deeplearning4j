@@ -64,7 +64,8 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         assertEquals(assertions.length,threeTwoTwo.tensorssAlongDimension(1));
         for(int i = 0; i < assertions.length; i++) {
-            assertEquals(assertions[i],threeTwoTwo.tensorAlongDimension(i,1));
+            INDArray arr = threeTwoTwo.tensorAlongDimension(i,1);
+            assertEquals(assertions[i],arr);
         }
 
     }
@@ -124,6 +125,21 @@ public class ShapeTestsC extends BaseNd4jTest {
         assertEquals(columnVectorSecond,baseArr.tensorAlongDimension(1,0,1));
 
     }
+
+
+    @Test
+    public void testOtherReshape() {
+        INDArray nd = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new int[]{2, 3});
+
+        INDArray slice = nd.slice(1, 0);
+
+        INDArray vector = slice.reshape(1, 2);
+        for(int i = 0; i < vector.length(); i++) {
+          System.out.println(vector.getDouble(i));
+        }
+        assertEquals(Nd4j.create(new double[]{2, 5}),vector);
+    }
+
 
     @Override
     public char ordering() {

@@ -154,16 +154,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testOtherReshape() {
-        INDArray nd = Nd4j.create(new double[]{1,2,3,4,5,6},new int[]{2,3});
-
-        INDArray slice = nd.slice(1, 0);
-
-        INDArray vector = slice.reshape(1, 2);
-        assertEquals(Nd4j.create(new double[]{2, 5}),vector);
-    }
-
 
 
 
@@ -1288,15 +1278,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, test);
     }
 
-    @Test
-    public void testRand() {
-        INDArray rand = Nd4j.randn(5, 5);
-        Nd4j.getDistributions().createUniform(0.4, 4).sample(5);
-        Nd4j.getDistributions().createNormal(1, 5).sample(10);
-        //Nd4j.getDistributions().createBinomial(5, 1.0).sample(new int[]{5, 5});
-        //Nd4j.getDistributions().createBinomial(1, Nd4j.ones(5, 5)).sample(rand.shape());
-        Nd4j.getDistributions().createNormal(rand, 1).sample(rand.shape());
-    }
 
 
     @Test
@@ -1306,9 +1287,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(arr.length(), reshaped.length());
         assertEquals(true, Arrays.equals(new int[]{4, 3, 2}, arr.shape()));
         assertEquals(true, Arrays.equals(new int[]{2, 3, 4}, reshaped.shape()));
-
-
-
 
     }
 

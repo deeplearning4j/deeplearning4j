@@ -715,9 +715,6 @@ public abstract class BaseNDArray implements INDArray {
         int[] stride = ArrayUtil.keep(stride(),dimension);
         int[] leftOverStride = ArrayUtil.removeIndex(stride(), dimension);
 
-        if(leftOverStride.length < 2) {
-            leftOverStride = new int[] {1,leftOverStride[0]};
-        }
 
         if(tensorShape.length >= 2) {
             int idx = offset + index * (leftOverStride[leftOverStride.length - 1]);
@@ -725,75 +722,39 @@ public abstract class BaseNDArray implements INDArray {
         }
         else {
 
-            int idx = 0;
-            if(ordering == NDArrayFactory.C) {
-                tensorShape = new int[] {1,tensorShape[0]};
-                stride = new int[] {stride[0],1};
+            int[] rearrange = Ints.concat(ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension), dimension);
+            INDArray move = permute(rearrange);
+            int vectorsPerSlice = NDArrayMath.vectorsPerSlice(move);
 
-                if(index / stride[0] > 0) {
-                    int baseIndex = index /stride[0];
-                    int delta = index - baseIndex * stride[0];
-                    idx = offset + (tensorShape[1] * index) - delta;
+            INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index, move, 0));
+            if(index >= vectorsPerSlice)
+                index %= vectorsPerSlice;
 
-                }
 
-                else
-                    idx = offset + index;
+            while(ret2.rank() > 2) {
+                int slice = NDArrayMath.sliceForVector(index,ret2,0);
+                ret2 = ret2.slice(slice);
             }
-
-            else {
-                int[] rearrange = Ints.concat(ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension), dimension);
-                INDArray move = permute(rearrange);
-                int vectorsPerSlice = NDArrayMath.vectorsPerSlice(move);
-
-                INDArray ret2 = move.slice(NDArrayMath.sliceForVector(index, move, 0));
-                if(index >= vectorsPerSlice)
-                    index %= vectorsPerSlice;
+            if(ret2.isMatrix()) {
+                int modulo = NDArrayMath.vectorsPerSlice(ret2);
+                int idx2 = index % modulo;
+                return ret2.slice(idx2);
 
 
-                while(ret2.rank() > 2) {
-                    int slice = NDArrayMath.sliceForVector(index,ret2,0);
-                    ret2 = ret2.slice(slice);
-                }
-                if(ret2.isMatrix()) {
-                    int modulo = NDArrayMath.vectorsPerSlice(ret2);
-                    int idx2 = index % modulo;
-                    return ret2.slice(idx2);
-                }
-
-                return ret2;
 
             }
 
-            return create(data(), tensorShape, stride, idx, ordering());
+            return ret2;
+
+
         }
+
 
     }
 
 
 
-    private int adjustOffsetForFortranOrdering(int offset,int index,int stride,int tailStride,int shapeZero) {
-        if(offset  + stride >= length() && ordering() == 'f') {
-            int numDecremented = 0;
-            int startIndex = index;
 
-            while(startIndex >= shapeZero) {
-                numDecremented++;
-                startIndex -=  shapeZero;
-            }
-
-            int startStride = stride;
-            int endStride = tailStride;
-            //int startStride = stride(0);
-            //int endStride = stride(1);
-            //arrOffset = offset + ((startIndex * startStride) + (numDecremented * endStride));
-
-            offset = this.offset + ((startIndex * startStride) + (numDecremented * endStride));
-
-        }
-
-        return offset;
-    }
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -1560,10 +1521,7 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
-                if(ordering() == 'f')
-                    return create(data, newShape, new int[]{stride[0],elementStride()}, offset);
-                else
-                    return create(data, newShape, stride(), offset);
+                return create(data, newShape, stride(), offset);
 
             }
         }
