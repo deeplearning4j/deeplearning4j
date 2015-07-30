@@ -729,7 +729,7 @@ public abstract class BaseNDArray implements INDArray {
             return ret2;
         }
 
-      
+
         while(ret2.length() > length) {
             sliceIdx = NDArrayMath.sliceOffsetForTensor(index, ret2, tensorShape);
             while(sliceIdx >= ret2.slices())
@@ -858,6 +858,108 @@ public abstract class BaseNDArray implements INDArray {
 
 
         return this;
+    }
+
+    @Override
+    public Number normmaxNumber() {
+        return normmax(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber normmaxComplex() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Number norm2Number() {
+        return norm2(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber norm2Complex() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Number norm1Number() {
+        return norm1(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber norm1Complex() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Number stdNumber() {
+        return std(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber stdComplex() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Number prodNumber() {
+        return prod(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber prodComplex() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Number meanNumber() {
+        return mean(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber meanComplex() {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public Number varNumber() {
+        return var(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber varComplex() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Number maxNumber() {
+        return max(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber maxComplex() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Number minNumber() {
+        return min(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber minComplex() {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public Number sumNumber() {
+        return sum(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public IComplexNumber sumComplex() {
+        throw new UnsupportedOperationException();
     }
 
     /**
