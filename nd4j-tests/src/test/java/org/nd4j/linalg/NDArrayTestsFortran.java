@@ -94,7 +94,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         n.checkDimensions(n.divi(Nd4j.scalar(1.0d)));
 
         n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
-        assertEquals(27, n.sum(Integer.MAX_VALUE).getDouble(0), 1e-1);
+        assertEquals(27, n.sumNumber().doubleValue(), 1e-1);
         INDArray a = n.slice(2);
         assertEquals(true, Arrays.equals(new int[]{3, 3}, a.shape()));
 
@@ -899,7 +899,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     @Test
     public void testEps() {
         INDArray ones = Nd4j.ones(5);
-        double sum = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z().sum(Integer.MAX_VALUE).getDouble(0);
+        double sum = Nd4j.getExecutioner().exec(new Eps(ones, ones, ones, ones.length())).z().sumNumber().doubleValue();
         assertEquals(5, sum, 1e-1);
     }
 

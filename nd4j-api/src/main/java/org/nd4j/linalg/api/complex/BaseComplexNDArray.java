@@ -1160,6 +1160,16 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
+    public Number sumNumber() {
+        return sumComplex().absoluteValue();
+    }
+
+    @Override
+    public IComplexNumber sumComplex() {
+        return sum(Integer.MAX_VALUE).getComplex(0);
+    }
+
+    @Override
     public IComplexNDArray min(int...dimension) {
         return Nd4j.createComplex(super.min(dimension));
     }

@@ -1347,6 +1347,10 @@ public interface INDArray extends Serializable  {
      */
     INDArray sum(int...dimension);
 
+    Number sumNumber();
+
+    IComplexNumber sumComplex();
+
     /**
      * stride setter
      * @param stride
