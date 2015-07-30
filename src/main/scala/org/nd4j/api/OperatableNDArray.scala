@@ -31,65 +31,65 @@ trait OperatableNDArray[A <: INDArray] {
   val underlying: A
 
   // --- INDArray operators
-  def +(that: INDArray): INDArray = underlying.add(that)
+  def +(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.add(underlying,that)
 
-  def -(that: INDArray): INDArray = underlying.sub(that)
+  def -(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.sub(underlying,that)
 
   /** element-by-element multiplication */
-  def *(that: INDArray): INDArray = underlying.mul(that)
+  def *(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mul(underlying,that)
 
   /** matrix multiplication */
-  def **(that: INDArray): INDArray = underlying.mmul(that)
+  def **(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mmul(underlying,that)
 
   /** matrix multiplication using Numpy syntax for arrays */
-  def dot(that: INDArray): INDArray = underlying.mmul(that)
+  def dot(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mmul(underlying,that)
 
-  def /(that: INDArray): INDArray = underlying.div(that)
+  def /(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray  = ev.div(underlying,that)
 
   /** right division ... is this the correct symbol? */
-  def \(that: INDArray): INDArray = underlying.rdiv(that)
+  def \(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray  = ev.rdiv(underlying,that)
 
   // --- In-place INDArray opertors
   /** In-place addition */
-  def +=(that: INDArray): INDArray = underlying.addi(that)
+  def +=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.addi(underlying,that)
 
   /** In-place subtraction */
-  def -=(that: INDArray): INDArray = underlying.subi(that)
+  def -=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.subi(underlying,that)
 
   /** In-placeelement-by-element multiplication */
-  def *=(that: INDArray): INDArray = underlying.muli(that)
+  def *=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.muli(underlying,that)
 
   /** In-place matrix multiplication */
-  def **=(that: INDArray): INDArray = underlying.mmuli(that)
+  def **=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mmuli(underlying,that)
 
   /** In-place division */
-  def /=(that: INDArray): INDArray = underlying.divi(that)
+  def /=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.divi(underlying,that)
 
   /** In-place right division */
-  def \=(that: INDArray): INDArray = underlying.rdivi(that)
+  def \=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.rdivi(underlying,that)
 
   // --- Number operators
-  def +(that: Number): INDArray = underlying.add(that)
+  def +(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.add(underlying,that)
 
-  def -(that: Number): INDArray = underlying.sub(that)
+  def -(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.sub(underlying,that)
 
-  def *(that: Number): INDArray = underlying.mul(that)
+  def *(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mul(underlying,that)
 
-  def /(that: Number): INDArray = underlying.div(that)
+  def /(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.div(underlying,that)
 
-  def \(that: Number): INDArray = underlying.rdiv(that)
+  def \(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.rdiv(underlying,that)
 
   // --- In-place Number operators
-  def +=(that: Number): INDArray = underlying.addi(that)
+  def +=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.addi(underlying,that)
 
-  def -=(that: Number): INDArray = underlying.subi(that)
+  def -=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.subi(underlying,that)
 
-  def *=(that: Number): INDArray = underlying.muli(that)
+  def *=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.muli(underlying,that)
 
-  def /=(that: Number): INDArray = underlying.divi(that)
+  def /=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.divi(underlying,that)
 
   /** right division ... is this the correct symbol? */
-  def \=(that: Number): INDArray = underlying.rdivi(that)
+  def \=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.rdivi(underlying,that)
 
   // --- Complex operators
   def +(that: IComplexNumber): IComplexNDArray = underlying.add(that)
@@ -100,19 +100,19 @@ trait OperatableNDArray[A <: INDArray] {
 
   def /(that: IComplexNumber): IComplexNDArray = underlying.div(that)
 
-  def get(i: Int): Double = underlying.getDouble(i)
+  def get(i: Int)(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,i)
 
-  def get(i: Int, j: Int): Double = underlying.getDouble(i, j)
+  def get(i: Int, j: Int)(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,i, j)
 
-  def get(indices: Int*): Double = underlying.getDouble(indices: _*)
+  def get(indices: Int*)(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,indices: _*)
 
-  def get(indices: Array[Int]): Double = underlying.getDouble(indices: _*)
+  def get(indices: Array[Int])(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,indices: _*)
 
-  def update(i: Int, element: INDArray): INDArray = underlying.put(i, element)
+  def update(i: Int, element: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.put(underlying,i, element)
+
+  def update(indices: Array[Int], element: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.put(underlying, indices, element)
 
   def update(indices: Array[NDArrayIndex], element: INDArray): INDArray = underlying.put(indices, element)
-
-  def update(indices: Array[Int], element: INDArray): INDArray = underlying.put(indices, element)
 
   def update(i: Int, j: Int, element: INDArray): INDArray = underlying.put(i, j, element)
 
@@ -136,45 +136,23 @@ trait OperatableNDArray[A <: INDArray] {
 
   def ===(other: INDArray): INDArray = underlying.eq(other)
 
-  def sumT(implicit ev: NDArrayEvidence[A]): ev.T = ev.sum(underlying)
+  def sumT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.sum(underlying)
 
-  def meanT(implicit ev: NDArrayEvidence[A]): ev.T = ev.sum(underlying)
+  def meanT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.sum(underlying)
 
-  def normMaxT(implicit ev: NDArrayEvidence[A]): ev.T = ev.normMax(underlying)
+  def normMaxT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.normMax(underlying)
 
-  def norm1T(implicit ev: NDArrayEvidence[A]): ev.T = ev.norm1(underlying)
+  def norm1T(implicit ev: NDArrayEvidence[A]): ev.Value = ev.norm1(underlying)
 
-  def norm2T(implicit ev: NDArrayEvidence[A]): ev.T = ev.norm2(underlying)
+  def norm2T(implicit ev: NDArrayEvidence[A]): ev.Value = ev.norm2(underlying)
 
-  def maxT(implicit ev: NDArrayEvidence[A]): ev.T = ev.max(underlying)
+  def maxT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.max(underlying)
 
-  def minT(implicit ev: NDArrayEvidence[A]): ev.T = ev.min(underlying)
+  def minT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.min(underlying)
 
-  def stdT(implicit ev: NDArrayEvidence[A]): ev.T = ev.standardDeviation(underlying)
+  def stdT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.standardDeviation(underlying)
 
-  def prodT(implicit ev: NDArrayEvidence[A]): ev.T = ev.product(underlying)
+  def prodT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.product(underlying)
 
-  def varT()(implicit ev: NDArrayEvidence[A]): ev.T = ev.variance(underlying)
-}
-
-// https://gist.github.com/teroxik/5349331
-class RichComplexNDArray(a: IComplexNDArray) {
-
-  def +(that: INDArray): IComplexNDArray = a.add(that)
-
-  def -(that: INDArray): IComplexNDArray = a.sub(that)
-
-  /** element-by-element multiplication */
-  def *(that: INDArray): IComplexNDArray = a.mul(that)
-
-  /** matrix multiplication */
-  def **(that: INDArray): IComplexNDArray = a.mmul(that)
-
-  /** matrix multiplication using Numpy syntax for arrays */
-  def dot(that: INDArray): IComplexNDArray = a.mmul(that)
-
-  def /(that: INDArray): IComplexNDArray = a.div(that)
-
-  /** right division ... is this the correct symbol? */
-  def \(that: INDArray): IComplexNDArray = a.rdiv(that)
+  def varT()(implicit ev: NDArrayEvidence[A]): ev.Value = ev.variance(underlying)
 }
