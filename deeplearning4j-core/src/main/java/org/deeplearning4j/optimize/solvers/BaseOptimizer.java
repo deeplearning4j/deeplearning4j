@@ -113,7 +113,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public Pair<Gradient,Double> gradientAndScore() {
         model.computeGradientAndScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
-        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize(), iteration);
+        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
         return pair;
     }
 
@@ -229,7 +229,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
-    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, int iterat) {
+    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
         if(updater == null)
             updater = UpdaterCreator.getUpdater(model.conf());
         Layer layer = (Layer) model;
