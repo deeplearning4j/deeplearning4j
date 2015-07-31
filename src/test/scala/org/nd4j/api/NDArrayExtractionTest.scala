@@ -214,6 +214,8 @@ class NDArrayExtractionTest extends FlatSpec{
     val step = list(1 -> 7 by 2).linearView()
     assert(step.length() == 3)
     assert(step.getFloat(0) == 1)
+    assert(step(0) == 1.toScalar)
+    assert(step(0,0) == 1.toScalar)
     assert(step.getFloat(1) == 3)
     assert(step.getFloat(2) == 5)
 
