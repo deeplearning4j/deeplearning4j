@@ -65,6 +65,12 @@ public class ConvolutionInputPreProcessor implements InputPreProcessor {
         this.cols = cols;
     }
 
+    public ConvolutionInputPreProcessor(int[] shape) {
+        this.shape = shape;
+    }
+
+    public ConvolutionInputPreProcessor(){}
+
     @Override
     public INDArray preProcess(INDArray input) {
         if(input.shape().length == 4)
@@ -77,21 +83,22 @@ public class ConvolutionInputPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray output) {
-
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
-            if(output.shape().length == 4) {
-                int[] otherOutputs = new int[3];
-                int[] outputShape = output.shape();
-                System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
-                shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+            int[] otherOutputs = null;
+            if(output.shape().length == 2) {
+                return output;
+            } else if(output.shape().length == 4) {
+                otherOutputs = new int[3];
             }
             else if(output.shape().length == 3) {
-                int[] otherOutputs = new int[2];
-                int[] outputShape = output.shape();
-                System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
-                shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+                otherOutputs = new int[2];
             }
+            int outputShape = output.shape()[0];
+            System.arraycopy(output.shape(), 1, otherOutputs, 0, otherOutputs.length);
+            shape = new int[] {outputShape, ArrayUtil.prod(otherOutputs)};
+
         }
+
         return output.reshape(shape);
     }
 
