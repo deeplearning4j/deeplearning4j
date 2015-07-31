@@ -32,15 +32,15 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
-public class ConvolutionPostProcessor implements OutputPostProcessor {
+public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
     private int rows,cols,channels = 1;
     private int[] shape;
 
-    public ConvolutionPostProcessor(int[] shape) {
+    public ConvolutionOutputPostProcessor(int[] shape) {
         this.shape = shape;
     }
 
-    public ConvolutionPostProcessor() {}
+    public ConvolutionOutputPostProcessor() {}
 
     @Override
     public INDArray preProcess(INDArray output) {
