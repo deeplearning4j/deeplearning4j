@@ -3997,50 +3997,6 @@ public abstract class BaseNDArray implements INDArray {
             return get(newIndexes);
         }*/
 
-        ensureNotCleanedUp();
-        //fill in to match the rest of the dimensions: aka grab all the content
-        //in the dimensions not filled in
-        //also prune indices greater than the shape to be the shape instead
-        if(isVector()) {
-            //allow shortcuts (omitting second argument)
-            if(isRowVector()) {
-                if(indexes.length == 1) {
-                    int offset = NDArrayIndex.offset(this,indexes[0]);
-                    int length = indexes[0].length();
-                    return create(data, new int[]{1, length}, stride(), offset);
-                }
-                //use the column index only
-                else {
-                    if(indexes[0].offset() > 0)
-                        throw new IllegalArgumentException("Illegal index specified on first input. Must be zero for a row vector");
-                    int offset = NDArrayIndex.offset(this,indexes[1]);
-                    int length = indexes[1].length();
-                    return create(data, new int[]{1, length}, stride(), offset);
-
-                }
-            }
-            else {
-                //allow shortcuts (omitting second argument)
-                if(indexes.length == 1) {
-                    int offset = NDArrayIndex.offset(this,indexes[0]);
-                    int length =  indexes[0].length();
-                    return create(data, new int[]{length, 1}, stride(), offset);
-
-                }
-                //use the row index only
-                else {
-                    if(indexes[1].offset() > 0)
-                        throw new IllegalArgumentException("Illegal index specified on second input. Must be zero for a column vector");
-
-                    int offset = NDArrayIndex.offset(this,indexes[0]);
-                    int length = indexes[0].length();
-                    return create(data, new int[]{length, 1}, stride(), offset);
-                }
-            }
-        }
-
-
-
 
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
