@@ -439,7 +439,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
-                    .useDropConnect(useDropConnect).pretrain(pretrain).outputPreProcessors(outputPreProcessors)
+                    .useDropConnect(useDropConnect).pretrain(pretrain).outputPostProcessors(outputPostProcessors)
                     .hiddenLayerSizes(hiddenLayerSizes)
                     .confs(list).build();
         }
@@ -520,8 +520,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.enable(SerializationFeature.INDENT_OUTPUT);
         SimpleModule module = new SimpleModule();
 
-        module.addSerializer(OutputPreProcessor.class,new PreProcessorSerializer());
-        module.addDeserializer(OutputPreProcessor.class,new PreProcessorDeSerializer());
+        module.addSerializer(OutputPostProcessor.class,new PreProcessorSerializer());
+        module.addDeserializer(OutputPostProcessor.class,new PreProcessorDeSerializer());
 
         ret.registerModule(module);
         return ret;
@@ -538,8 +538,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.enable(SerializationFeature.INDENT_OUTPUT);
         SimpleModule module = new SimpleModule();
 
-        module.addSerializer(OutputPreProcessor.class,new PreProcessorSerializer());
-        module.addDeserializer(OutputPreProcessor.class,new PreProcessorDeSerializer());
+        module.addSerializer(OutputPostProcessor.class,new PreProcessorSerializer());
+        module.addDeserializer(OutputPostProcessor.class,new PreProcessorDeSerializer());
 
         ret.registerModule(module);
         return ret;

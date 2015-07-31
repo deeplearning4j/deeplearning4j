@@ -18,10 +18,9 @@
 
 package org.deeplearning4j.nn.layers.convolution.preprocessor;
 
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
+import org.deeplearning4j.nn.conf.OutputPostProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
 
 import java.util.Arrays;
 
@@ -33,7 +32,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
-public class ConvolutionPostProcessor implements OutputPreProcessor {
+public class ConvolutionPostProcessor implements OutputPostProcessor {
     private int rows,cols,channels = 1;
     private int[] shape;
 
