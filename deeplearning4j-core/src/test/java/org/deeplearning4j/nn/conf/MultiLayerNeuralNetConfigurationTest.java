@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
-import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
+import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionOutputPostProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -46,7 +46,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
-                .list(2).outputPostProcessor(0, new ConvolutionPostProcessor())
+                .list(2).outputPostProcessor(0, new ConvolutionOutputPostProcessor())
                 .hiddenLayerSizes(3).build();
         String json = conf.toJson();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);
@@ -77,7 +77,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
-                .list(2).outputPostProcessor(0, new ConvolutionPostProcessor())
+                .list(2).outputPostProcessor(0, new ConvolutionOutputPostProcessor())
                 .hiddenLayerSizes(3).build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
