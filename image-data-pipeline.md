@@ -37,7 +37,7 @@ The RecordReader is a class in Canova that helps convert the byte-oriented input
 
 The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
 
-Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with Canova:
+Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with Canova (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
 
 ![Alt text](../img/recordreader_extensions.png)
 
@@ -123,7 +123,6 @@ After the model has been trained, run data through it to test and evaluate its p
         }
         
         System.out.println(eval.stats());
-
 
 An alternative approach to apply cross validation in this effort, would be to load all the data and split it up into a train and test set. Iris is a small enough dataset to load all the data and accomplish the split. Many datasets used for production neural nets are not. For the alternative approach in this example, use the following code:
 
