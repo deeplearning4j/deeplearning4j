@@ -849,7 +849,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),shape,complexStrides,offset,ordering);
+        return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2), shape, complexStrides, offset, ordering);
     }
 
     /**
@@ -923,7 +923,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray ones(int columns) {
-        return ones(new int[]{1,columns});
+        return ones(new int[]{1, columns});
     }
 
     /**
@@ -934,7 +934,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexOnes(int columns) {
-        IComplexNDArray base = createComplex(new int[]{1,columns});
+        IComplexNDArray base = createComplex(new int[]{1, columns});
         base.assign(1);
         return base;
     }
@@ -1137,7 +1137,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * @param arrs
      */
     public INDArray hstack(INDArray... arrs) {
-        return Nd4j.concat(1,arrs);
+        return Nd4j.concat(0,arrs);
     }
 
     /**
@@ -1148,30 +1148,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray vstack(final INDArray... arrs) {
-        int cols = arrs[0].columns();
-        int rows = arrs[0].rows();
+        return Nd4j.concat(1,arrs);
 
-        for (int i = 1; i < arrs.length; i++) {
-            rows += arrs[i].rows();
-            if (arrs[i].columns() != cols)
-                throw new IllegalStateException("Illegal number of rows for array " + i);
-
-        }
-
-
-        final INDArray ret = Nd4j.create(rows, cols);
-
-
-        int count = 0;
-        for (INDArray arr : arrs) {
-            for(int j = 0; j < arr.rows(); j++) {
-                ret.putRow(count++, arr.getRow(j));
-            }
-
-        }
-
-
-        return ret;
     }
 
 

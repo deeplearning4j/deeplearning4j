@@ -793,12 +793,15 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray ret =  tensorAlongDimension(index, dimension);
+
         return ret;
     }
 
 
-
-
+    @Override
+    public void setShape(int... shape) {
+        this.shape = shape;
+    }
 
     private int getFirstNonOneStride() {
         if(firstNonOneStride >= 0)
@@ -3111,6 +3114,9 @@ public abstract class BaseNDArray implements INDArray {
                 throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
         }
+
+        if(isVector())
+            return Nd4j.scalar(getDouble(slice));
 
         if(slice < 0)
             slice += shape.length;

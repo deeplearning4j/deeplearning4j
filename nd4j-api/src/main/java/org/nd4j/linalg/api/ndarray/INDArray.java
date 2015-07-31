@@ -1417,15 +1417,30 @@ public interface INDArray extends Serializable  {
      */
     INDArray sum(int...dimension);
 
+    /**
+     * Sum the entire array
+     * @return
+     */
     Number sumNumber();
 
+    /**
+     * Sum the entire array
+     * @return
+     */
     IComplexNumber sumComplex();
 
     /**
      * stride setter
      * @param stride
      */
-    void setStride(int[] stride);
+    void setStride(int...stride);
+
+    /**
+     * Shape setter
+     * @param shape
+     */
+    void setShape(int...shape);
+
 
     /**
      * @param offsets
