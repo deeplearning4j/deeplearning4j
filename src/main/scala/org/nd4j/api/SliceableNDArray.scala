@@ -15,10 +15,15 @@ trait SliceableNDArray {
   */
   def subMatrix(target: IndexRange*): INDArray = {
     require(target.size <= underlying.shape().length, "Matrix dimension must be equal or larger than shape's dimension to extract.")
-    val originalShape = if (underlying.isRowVector)
-      underlying.shape().drop(1)
+    val originalShape = if (underlying.isRowVector && underlying.shape().length == 1)
+      1 +: underlying.shape()
     else
       underlying.shape()
+
+    val originalTarget = if(underlying.isRowVector && target.size == 1)
+      IntRange(0) +: target
+    else
+      target
 
     @tailrec
     def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[DRange]): List[DRange] = input match {
@@ -39,13 +44,9 @@ trait SliceableNDArray {
           acc.reverse
     }
 
-    val modifiedTarget = modifyTargetIndices(target.toList, 0, Nil)
+    val modifiedTarget = modifyTargetIndices(originalTarget.toList, 0, Nil)
 
-    val targetShape =
-      if (underlying.isRowVector)
-        Array(1, modifiedTarget.head.length)
-      else
-        modifiedTarget.map(_.length).toArray
+    val targetShape = modifiedTarget.map(_.length).toArray
 
     def calcIndices(tgt: List[DRange], stride: List[Int]): List[Int] =
       (tgt zip stride).collect {
