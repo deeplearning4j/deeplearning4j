@@ -226,6 +226,14 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
     @Test
+    public void testConcatStrides() {
+        INDArray arr = Nd4j.create(2,2);
+        INDArray arr1 = Nd4j.create(2,1);
+        int[] ret = Shape.createConcatStrides(arr, arr1);
+        System.out.println(Shape.createConcatStrides(arr,arr1));
+    }
+
+    @Test
     public void testRepmat() {
         INDArray rowVector = Nd4j.create(1, 4);
         INDArray repmat = rowVector.repmat(4, 4);
@@ -250,9 +258,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testReadWriteTxt() throws Exception {
         INDArray write = Nd4j.create(5);
         File writeTo = new File(UUID.randomUUID().toString());
-        Nd4j.writeTxt(write,writeTo.getAbsolutePath(),"\t");
+        Nd4j.writeTxt(write, writeTo.getAbsolutePath(), "\t");
         INDArray read = Nd4j.readTxt(writeTo.getAbsolutePath());
-        assertEquals(write,read);
+        assertEquals(write, read);
 
     }
 
@@ -457,7 +465,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray vec3 = Nd4j.create(new float[]{0.2f, 0.3f, 0.4f, 0.5f});
         INDArray vec4 = Nd4j.create(new float[]{0.6f, 0.7f, 0.8f, 0.9f});
         sim = Transforms.cosineSim(vec3, vec4);
-        assertEquals(getFailureMessage(),0.98, sim, 1e-1);
+        assertEquals(getFailureMessage(), 0.98, sim, 1e-1);
 
     }
 
@@ -561,14 +569,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         assertEquals(true, columnVector.isColumnVector());
     }
 
-    @Test
-    public void testConcatColumnWise() {
-        INDArray rand = Nd4j.rand(123, new int[]{1, 1000});
-        INDArray otherParameters = Nd4j.toFlattened(rand);
-        INDArray wordvectors = Nd4j.rand(100, 68000);
-        INDArray flattened = Nd4j.toFlattened(wordvectors);
-        Nd4j.concat(0, otherParameters, flattened);
-    }
 
     @Test
     public void testAssignOffset() {
@@ -583,7 +583,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new int[]{3, 2});
         INDArray column2 = arr.getColumn(0);
         //assertEquals(true, Shape.shapeEquals(new int[]{3, 1}, column2.shape()));
-        INDArray column = Nd4j.create(new double[]{1, 2, 3}, new int[]{1,3});
+        INDArray column = Nd4j.create(new double[]{1, 2, 3}, new int[]{1, 3});
         arr.putColumn(0, column);
 
         INDArray firstColumn = arr.getColumn(0);
@@ -770,7 +770,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray five = Nd4j.ones(5);
         five.addi(five.dup());
         INDArray twos = Nd4j.valueArrayOf(5, 2);
-        assertEquals(getFailureMessage(),twos, five);
+        assertEquals(getFailureMessage(), twos, five);
 
     }
 
@@ -883,7 +883,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8).data(), new int[]{2, 2, 2});
         INDArray permuted = toPermute.permute(2, 1, 0);
         assertNotEquals(toPermute,permuted);
-        assertEquals('c',permuted.ordering());
 
         INDArray permuteOther = toPermute.permute(1, 2, 0);
         for(int i = 0; i < permuteOther.slices(); i++) {

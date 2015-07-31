@@ -4579,18 +4579,6 @@ public abstract class BaseNDArray implements INDArray {
         int[] newShape = doPermuteSwap(shape, rearrange);
         int[] newStride = doPermuteSwap(stride, rearrange);
 
-        if(ArrayUtil.isInverse(newStride,stride())) {
-            char inverse = ordering() == NDArrayFactory.C ? 'f' : 'c';
-            return create(data(),newShape,getStrides(newShape,inverse),offset,inverse);
-        }
-
-
-        if(isVector() || isMatrix()) {
-            if(Arrays.equals(rearrange,ArrayUtil.reverseCopy(ArrayUtil.range(0,2))))
-                return transpose();
-            return this;
-        }
-
 
         INDArray value = create(
                 data(),

@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.Shape;
 
 /**
  * Base NDArrayFactory class.
@@ -945,7 +946,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape,ordering), 0, ordering);
+        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape, ordering), 0, ordering);
     }
 
     /**
@@ -959,101 +960,88 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray concat(int dimension, INDArray... toConcat) {
         if (toConcat.length == 1)
             return toConcat[0];
-
-
-        if (toConcat[0].isScalar()) {
-            int[] outputShape = dimension == 0 ? new int[]{toConcat.length, 1} : new int[]{1,toConcat.length};
-            INDArray ret = Nd4j.create(outputShape);
-            for (int i = 0; i < ret.length(); i++) {
-                ret.putScalar(i, toConcat[i].getDouble(0));
-            }
-            return ret;
-        }
-
-        else if (toConcat[0].isVector()) {
-            if (toConcat[0].isRowVector()) {
-                if (dimension == 1 || dimension == 0) {
-                    int length = 0;
-                    for(INDArray toConcat2 : toConcat)
-                        length += toConcat2.length();
-
-                    INDArray ret = Nd4j.create(1,length);
-                    int count = 0;
-                    for (INDArray arr : toConcat) {
-                        for (int i = 0; i < arr.length(); i++) {
-                            ret.putScalar(count++, arr.getDouble(i));
-                        }
-                    }
-
-                    return ret;
-
-                } else
-                    throw new IllegalArgumentException("Illegal dimension " + dimension);
-
-            } else if (toConcat[0].isColumnVector()) {
-                if (dimension == 1) {
-                    INDArray ret = Nd4j.create(toConcat[0].rows(), toConcat.length);
-                    int count = 0;
-                    for (INDArray arr : toConcat) {
-                        ret.putColumn(count++, arr);
-                    }
-                    return ret;
-                } else if (dimension == 0) {
-                    int length = 0;
-                    for(INDArray toConcat2 : toConcat)
-                        length += toConcat2.length();
-
-                    INDArray ret = Nd4j.create(length, 1);
-                    int count = 0;
-                    for (INDArray arr : toConcat) {
-                        for (int i = 0; i < arr.length(); i++) {
-                            ret.putScalar(count++, arr.getDouble(i));
-                        }
-                    }
-                    return ret;
-
-                }
-
-
-            }
-        }
-
+        int rank = toConcat[0].rank();
         int sumAlongDim = 0;
         for (int i = 0; i < toConcat.length; i++)
             sumAlongDim += toConcat[i].shape()[dimension];
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
         outputShape[dimension] = sumAlongDim;
-
-        //the output ndarray
-        INDArray ret = Nd4j.create(outputShape);
-        int vectorOffset = 0;
-        int arrVecLength = 0;
-        boolean notIncremented = true;
-        int retVectorsAlongDimension = ret.tensorssAlongDimension(dimension);
-        for(INDArray arr : toConcat) {
-            int arrVectorsAlongDimension = arr.vectorsAlongDimension(dimension);
-            if(arrVectorsAlongDimension != retVectorsAlongDimension)
-                throw new IllegalStateException("Vectors along dimension must be same");
-            for(int i = 0; i < arr.vectorsAlongDimension(dimension); i++) {
-                INDArray retVec = ret.vectorAlongDimension(i,dimension);
-                INDArray arrVec = arr.vectorAlongDimension(i,dimension);
-                if(notIncremented) {
-                    arrVecLength += arrVec.length();
-                    notIncremented = false;
-                }
-
-                for(int j = 0; j < arrVec.length(); j++)
-                    retVec.putScalar(j + vectorOffset,arrVec.getDouble(j));
-            }
-
-            vectorOffset += arrVecLength;
-            notIncremented = true;
-
+        int[] sortedStrides = Shape.createConcatStrides(toConcat);
+        int s = 1;
+        for (int idim = rank - 1; idim >= 0; idim--) {
+            int iperm = sortedStrides[idim];
+            sortedStrides[iperm] = s;
+            s *= outputShape[iperm];
         }
 
 
-        return ret;
+
+
+
+        if(toConcat[0] instanceof IComplexNDArray) {
+            IComplexNDArray ret = Nd4j.createComplex(outputShape, sortedStrides);
+            //the output ndarray
+            int vectorOffset = 0;
+            int arrVecLength = 0;
+            boolean notIncremented = true;
+            int retVectorsAlongDimension = ret.tensorssAlongDimension(dimension);
+            for(INDArray arr : toConcat) {
+                int arrVectorsAlongDimension = arr.vectorsAlongDimension(dimension);
+                if(arrVectorsAlongDimension != retVectorsAlongDimension)
+                    throw new IllegalStateException("Vectors along dimension must be same");
+                for(int i = 0; i < arr.vectorsAlongDimension(dimension); i++) {
+                    INDArray retVec = ret.vectorAlongDimension(i,dimension);
+                    INDArray arrVec = arr.vectorAlongDimension(i,dimension);
+                    if(notIncremented) {
+                        arrVecLength += arrVec.length();
+                        notIncremented = false;
+                    }
+
+                    for(int j = 0; j < arrVec.length(); j++)
+                        retVec.putScalar(j + vectorOffset,arrVec.getDouble(j));
+                }
+
+                vectorOffset += arrVecLength;
+                notIncremented = true;
+
+            }
+
+            return ret;
+
+        }
+        else {
+            INDArray ret = Nd4j.create(outputShape,sortedStrides);
+            //the output ndarray
+            int vectorOffset = 0;
+            int arrVecLength = 0;
+            boolean notIncremented = true;
+            int retVectorsAlongDimension = ret.tensorssAlongDimension(dimension);
+            for(INDArray arr : toConcat) {
+                int arrVectorsAlongDimension = arr.vectorsAlongDimension(dimension);
+                if(arrVectorsAlongDimension != retVectorsAlongDimension)
+                    throw new IllegalStateException("Vectors along dimension must be same");
+                for(int i = 0; i < arr.vectorsAlongDimension(dimension); i++) {
+                    INDArray retVec = ret.vectorAlongDimension(i,dimension);
+                    INDArray arrVec = arr.vectorAlongDimension(i,dimension);
+                    if(notIncremented) {
+                        arrVecLength += arrVec.length();
+                        notIncremented = false;
+                    }
+
+                    for(int j = 0; j < arrVec.length(); j++)
+                        retVec.putScalar(j + vectorOffset,arrVec.getDouble(j));
+                }
+
+                vectorOffset += arrVecLength;
+                notIncremented = true;
+
+            }
+
+            return ret;
+
+        }
+
 
     }
 

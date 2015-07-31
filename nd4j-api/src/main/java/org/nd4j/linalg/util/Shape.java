@@ -191,7 +191,7 @@ public class Shape {
         if(dimensions.length != shape.length)
             throw new IllegalArgumentException("Dimensions and shape must be the same length");
 
-         List<Integer> list = new ArrayList<>();
+        List<Integer> list = new ArrayList<>();
         for(int i = 0; i < dimensions.length; i++) {
             if(shape[i] != 1) {
                 list.add(list.size());
@@ -298,6 +298,99 @@ public class Shape {
         return
                 (shape.length == 2
                         && shape[1] == 1);
+
+    }
+
+
+    /**
+     * A port of numpy's stride resolution algorithm
+     * for multiple arrays
+     * @param arrays the arrays to get concat strides for
+     * @return the resolved strides for concat
+     */
+    public static int[] createConcatStrides(INDArray...arrays) {
+        int rank = arrays[0].rank();
+        for(INDArray arr : arrays) {
+            if(arr.rank() != rank)
+                throw new IllegalArgumentException("All arrays must have same rank");
+        }
+
+        int[] ret = new int[rank];
+
+        int i0, i1, ipos, ax_j0, ax_j1, iarrays;
+
+    /* Initialize the strideperm values to the identity. */
+        for (i0 = 0; i0 < rank; ++i0) {
+            ret[i0] = i0;
+        }
+
+    /*
+     * This is the same as the custom stable insertion sort in
+     * the NpyIter object, but sorting in the reverse order as
+     * in the iterator. The iterator sorts from smallest stride
+     * to biggest stride (Fortran order), whereas here we sort
+     * from biggest stride to smallest stride (C order).
+     */
+        for (i0 = 1; i0 < rank; i0++) {
+
+            ipos = i0;
+            ax_j0 = ret[i0];
+
+            for (i1 = i0 - 1; i1 >= 0; --i1) {
+                boolean ambig = true, shouldswap = false;
+
+                ax_j1 = ret[i1];
+
+                for (iarrays = 0; iarrays < arrays.length; ++iarrays) {
+                    if (arrays[iarrays].size(ax_j0) != 1 &&
+                            arrays[iarrays].size(ax_j1) != 1) {
+                        if (Math.abs(arrays[iarrays].stride(ax_j0)) <=
+                                Math.abs(arrays[iarrays].size(ax_j1))) {
+                        /*
+                         * Set swap even if it's not ambiguous already,
+                         * because in the case of conflicts between
+                         * different operands, C-order wins.
+                         */
+                            shouldswap = false;
+                        }
+                        else {
+                        /* Only set swap if it's still ambiguous */
+                            if (ambig) {
+                                shouldswap = true;
+                            }
+                        }
+
+                    /*
+                     * A comparison has been done, so it's
+                     * no longer ambiguous
+                     */
+                        ambig = false;
+                    }
+                }
+            /*
+             * If the comparison was unambiguous, either shift
+             * 'ipos' to 'i1' or stop looking for an insertion point
+             */
+                if (!ambig) {
+                    if (shouldswap) {
+                        ipos = i1;
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+
+        /* Insert out_strideperm[i0] into the right place */
+            if (ipos != i0) {
+                for (i1 = i0; i1 > ipos; i1--) {
+                    ret[i1] = ret[i1-1];
+                }
+                ret[ipos] = ax_j0;
+            }
+        }
+
+        return ret;
 
     }
 
