@@ -793,11 +793,6 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray ret =  tensorAlongDimension(index, dimension);
-        //column vector
-        if(dimension == 0) {
-            return Nd4j.create(ret.data(),ArrayUtil.reverseCopy(ret.shape()),ret.stride(),ret.offset());
-        }
-
         return ret;
     }
 
@@ -3359,9 +3354,10 @@ public abstract class BaseNDArray implements INDArray {
                 }
                 else {
                     INDArray ret = Nd4j.create(shape);
+                    INDArray retLinear = ret.linearView();
                     int curr = 0;
                     for(int i = 0; i < ret.length(); i++) {
-                        ret.putScalar(i,getDouble(curr));
+                        retLinear.putScalar(i, getDouble(curr));
                         curr++;
                         if(curr >= length()) {
                             curr = 0;
@@ -3373,9 +3369,11 @@ public abstract class BaseNDArray implements INDArray {
             }
             else {
                 INDArray ret = Nd4j.create(shape);
+                INDArray retLinear = ret.linearView();
+
                 int curr = 0;
                 for(int i = 0; i < ret.length(); i++) {
-                    ret.putScalar(i,getDouble(curr));
+                    retLinear.putScalar(i,getDouble(curr));
                     curr++;
                     if(curr >= length()) {
                         curr = 0;

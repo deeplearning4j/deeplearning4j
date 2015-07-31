@@ -962,43 +962,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(linear.getDouble(0,1),1,1e-1);
     }
 
-    @Test
-    public void testColumnMean() {
-        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray columnMean = twoByThree.mean(0);
-        INDArray assertion = Nd4j.create(new float[]{2, 3});
-        assertEquals(assertion, columnMean);
-    }
 
-
-
-
-    @Test
-    public void testColumnVar() {
-        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
-        INDArray columnStd = twoByThree.var(0);
-        INDArray assertion = Nd4j.create(new float[]{30200f, 30200f, 30200f, 30200f});
-        assertEquals(assertion, columnStd);
-
-    }
-
-    @Test
-    public void testColumnStd() {
-        Nd4j.MAX_ELEMENTS_PER_SLICE = Integer.MAX_VALUE;
-        Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
-        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
-        INDArray columnStd = twoByThree.std(0);
-        INDArray assertion = Nd4j.create(new float[]{173.78147196982766f, 173.78147196982766f, 173.78147196982766f, 173.78147196982766f});
-        assertEquals(assertion, columnStd);
-
-    }
-
-    @Test
-    public void testDim1() {
-        INDArray sum = Nd4j.linspace(1,2, 2).reshape(2, 1);
-        INDArray same = sum.dup();
-        assertEquals(same.sum(1),sum);
-    }
 
 
     @Test
@@ -1110,53 +1074,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testColumnVariance() {
-        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray columnVar = twoByThree.var(0);
-        INDArray assertion = Nd4j.create(new float[]{2f, 2f});
-        assertEquals(assertion, columnVar);
 
-    }
-
-    @Test
-    public void testColumnSumDouble() {
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
-        INDArray columnVar = twoByThree.sum(0);
-        INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(getFailureMessage(),assertion, columnVar);
-
-    }
-
-
-    @Test
-    public void testColumnSum() {
-        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
-        INDArray columnVar = twoByThree.sum(0);
-        INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
-        assertEquals(getFailureMessage(),assertion, columnVar);
-
-    }
-
-    @Test
-    public void testRowMean() {
-        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray rowMean = twoByThree.mean(1);
-        INDArray assertion = Nd4j.create(new double[]{1.5,3.5});
-        assertEquals(getFailureMessage(),assertion, rowMean);
-
-
-    }
-
-    @Test
-    public void testRowStd() {
-        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        INDArray rowStd = twoByThree.std(1);
-        INDArray assertion = Nd4j.create(new float[]{0.7071067811865476f, 0.7071067811865476f});
-        assertEquals(getFailureMessage(),assertion, rowStd);
-
-    }
 
 
     @Test
@@ -1214,26 +1132,12 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         for (int i = 0; i < 5; i++)
             testList.add(Nd4j.scalar(i + 1));
 
-        INDArray test = Nd4j.create(testList, new int[]{testList.size()}).reshape(1,5);
+        INDArray test = Nd4j.create(testList, new int[]{1,testList.size()}).reshape(1,5);
         INDArray expected = Nd4j.create(new float[]{1, 2, 3, 4, 5}, new int[]{1,5});
         assertEquals(expected, test);
     }
 
-    @Test
-    public void testSlicing() {
-        INDArray matrix = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray slice0 = matrix.slice(0);
-        INDArray slice1 = matrix.slice(1);
-        assertEquals(0,slice0.offset());
-        assertEquals(2,slice1.offset());
 
-        INDArray tensorSlicing = Nd4j.linspace(1,100,100).reshape(5,5,4);
-        INDArray slice0Tensor = tensorSlicing.slice(0).slice(0);
-        INDArray slice1Tensor = tensorSlicing.slice(0).slice(1);
-        System.out.println(slice0);
-
-
-    }
 
 
 
@@ -1346,22 +1250,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testCumSum() {
-        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{1,4});
-        INDArray cumSumAnswer = Nd4j.create(new float[]{1, 3, 6, 10}, new int[]{1,4});
-        INDArray cumSumTest = n.cumsum(0);
-        assertEquals(getFailureMessage(),cumSumAnswer, cumSumTest);
-
-        INDArray n2 = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
-
-        INDArray axis0assertion = Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0
-                , 8.0, 10.0, 12.0, 14.0, 16.0,
-                18.0, 21.0, 24.0, 27.0, 30.0, 33.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0}, n2.shape());
-        INDArray axis0Test = n2.cumsum(0);
-        assertEquals(getFailureMessage(),axis0assertion, axis0Test);
-
-    }
 
 
 

@@ -2,6 +2,7 @@ package org.nd4j.linalg.shape;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -13,6 +14,17 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     public ShapeTestsC(String name, Nd4jBackend backend) {
         super(name, backend);
+    }
+
+    public ShapeTestsC(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public ShapeTestsC() {
+    }
+
+    public ShapeTestsC(String name) {
+        super(name);
     }
 
     @Test
@@ -69,7 +81,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         };
 
-        assertEquals(assertions.length,threeTwoTwo.tensorssAlongDimension(1));
+        assertEquals(assertions.length, threeTwoTwo.tensorssAlongDimension(1));
         for(int i = 0; i < assertions.length; i++) {
             INDArray arr = threeTwoTwo.tensorAlongDimension(i,1);
             assertEquals(assertions[i],arr);
@@ -79,7 +91,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testThreeTwoTwoTwo() {
-        INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3, 2, 2);
         INDArray[] assertions = new INDArray[] {
                 Nd4j.create(new double[]{1,2}),
                 Nd4j.create(new double[]{3,4}),
@@ -148,6 +160,75 @@ public class ShapeTestsC extends BaseNd4jTest {
         }
         assertEquals(Nd4j.create(new double[]{2, 5}),vector);
     }
+
+
+    @Test
+    public void testColumnSum() {
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
+        INDArray columnVar = twoByThree.sum(0);
+        INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
+        assertEquals(getFailureMessage(),assertion, columnVar);
+
+    }
+
+    @Test
+    public void testRowMean() {
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray rowMean = twoByThree.mean(1);
+        INDArray assertion = Nd4j.create(new double[]{1.5, 3.5});
+        assertEquals(getFailureMessage(),assertion, rowMean);
+
+
+    }
+
+    @Test
+    public void testRowStd() {
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray rowStd = twoByThree.std(1);
+        INDArray assertion = Nd4j.create(new float[]{0.7071067811865476f, 0.7071067811865476f});
+        assertEquals(getFailureMessage(),assertion, rowStd);
+
+    }
+
+
+    @Test
+    public void testColumnSumDouble() {
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        INDArray twoByThree = Nd4j.linspace(1, 600, 600).reshape(150, 4);
+        INDArray columnVar = twoByThree.sum(0);
+        INDArray assertion = Nd4j.create(new float[]{44850.0f, 45000.0f, 45150.0f, 45300.0f});
+        assertEquals(getFailureMessage(),assertion, columnVar);
+
+    }
+
+
+    @Test
+    public void testColumnVariance() {
+        INDArray twoByThree = Nd4j.linspace(1, 4, 4).reshape(2, 2);
+        INDArray columnVar = twoByThree.var(0);
+        INDArray assertion = Nd4j.create(new float[]{2f, 2f});
+        assertEquals(assertion, columnVar);
+
+    }
+
+
+    @Test
+    public void testCumSum() {
+        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{1,4});
+        INDArray cumSumAnswer = Nd4j.create(new float[]{1, 3, 6, 10}, new int[]{1,4});
+        INDArray cumSumTest = n.cumsum(0);
+        assertEquals(getFailureMessage(),cumSumAnswer, cumSumTest);
+
+        INDArray n2 = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
+
+        INDArray axis0assertion = Nd4j.create(new double[]{1.0, 2.0, 3.0, 4.0, 5.0, 6.0
+                , 8.0, 10.0, 12.0, 14.0, 16.0,
+                18.0, 21.0, 24.0, 27.0, 30.0, 33.0, 36.0, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0}, n2.shape());
+        INDArray axis0Test = n2.cumsum(0);
+        assertEquals(getFailureMessage(),axis0assertion, axis0Test);
+
+    }
+
 
 
     @Override
