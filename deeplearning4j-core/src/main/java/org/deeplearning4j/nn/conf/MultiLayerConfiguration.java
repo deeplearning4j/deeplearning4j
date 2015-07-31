@@ -23,8 +23,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -51,7 +49,7 @@ public class MultiLayerConfiguration implements Serializable {
     /* Sample if true, otherwise use the straight activation function */
     protected boolean useRBMPropUpAsActivations = true;
     protected double dampingFactor = 100;
-    protected Map<Integer,OutputPreProcessor> outputPreProcessors = new HashMap<>();
+    protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     @Deprecated
     protected boolean backward = false;
@@ -67,7 +65,7 @@ public class MultiLayerConfiguration implements Serializable {
         this.pretrain = multiLayerConfiguration.pretrain;
         this.useRBMPropUpAsActivations = multiLayerConfiguration.useRBMPropUpAsActivations;
         this.dampingFactor = multiLayerConfiguration.dampingFactor;
-        this.outputPreProcessors = new HashMap<>(multiLayerConfiguration.outputPreProcessors);
+        this.outputPostProcessors = new HashMap<>(multiLayerConfiguration.outputPostProcessors);
         this.backward = multiLayerConfiguration.backward;
         this.backprop = multiLayerConfiguration.backprop;
         this.inputPreProcessors = multiLayerConfiguration.inputPreProcessors;
@@ -152,8 +150,8 @@ public class MultiLayerConfiguration implements Serializable {
         return inputPreProcessors.get(curr);
     }
 
-    public OutputPreProcessor getOutputPreProcess(int curr) {
-        return outputPreProcessors.get(curr);
+    public OutputPostProcessor getOutputPostProcess(int curr) {
+        return outputPostProcessors.get(curr);
     }
 
     public static class Builder {
@@ -164,7 +162,7 @@ public class MultiLayerConfiguration implements Serializable {
         protected boolean pretrain = true;
         protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
-        protected Map<Integer,OutputPreProcessor> outputPreProcessors = new HashMap<>();
+        protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backward = false;
         protected boolean backprop = false;
@@ -199,13 +197,13 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-        public Builder outputPreProcessor(Integer layer,OutputPreProcessor preProcessor) {
-            outputPreProcessors.put(layer,preProcessor);
+        public Builder outputPostProcessor(Integer layer, OutputPostProcessor preProcessor) {
+            outputPostProcessors.put(layer, preProcessor);
             return this;
         }
 
-        public Builder outputPreProcessors(Map<Integer,OutputPreProcessor> preProcessors) {
-            this.outputPreProcessors = preProcessors;
+        public Builder outputPostProcessors(Map<Integer, OutputPostProcessor> preProcessors) {
+            this.outputPostProcessors = preProcessors;
             return this;
         }
 
@@ -270,7 +268,7 @@ public class MultiLayerConfiguration implements Serializable {
             conf.pretrain = pretrain;
             conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
-            conf.outputPreProcessors = outputPreProcessors;
+            conf.outputPostProcessors = outputPostProcessors;
             conf.backward = backward;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
@@ -288,7 +286,7 @@ public class MultiLayerConfiguration implements Serializable {
                     ", pretrain=" + pretrain +
                     ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
                     ", dampingFactor=" + dampingFactor +
-                    ", preProcessors=" + outputPreProcessors +
+                    ", preProcessors=" + outputPostProcessors +
                     '}';
         }
 
@@ -318,7 +316,7 @@ public class MultiLayerConfiguration implements Serializable {
             result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
             temp = Double.doubleToLongBits(dampingFactor);
             result = 31 * result + (int) (temp ^ (temp >>> 32));
-            result = 31 * result + (outputPreProcessors != null ? outputPreProcessors.hashCode() : 0);
+            result = 31 * result + (outputPostProcessors != null ? outputPostProcessors.hashCode() : 0);
             return result;
         }
 

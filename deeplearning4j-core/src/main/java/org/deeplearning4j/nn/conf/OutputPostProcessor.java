@@ -23,12 +23,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.Serializable;
 
 /**
- * Output pre processor's handle layer to layer interactions
+ * Output post processor's handle layer to layer interactions
  * to ensure things like proper shape for input among other things.
  *
  * @author Adam Gibson
  */
-public interface OutputPreProcessor  extends Serializable {
+public interface OutputPostProcessor extends Serializable {
     /**
      * Used for handling pre processing of layer output.
      * The typical use case is for handling reshaping of output

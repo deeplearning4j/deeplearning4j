@@ -18,31 +18,28 @@
 
 package org.deeplearning4j.nn.conf.preprocessor.output;
 
+
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Reshape post processor
+ * Binomial sampling pre processor
  * @author Adam Gibson
  */
-public class ReshapePreProcessor extends BaseOutputPreProcessor {
-    private int[] prevShape;
-    private int[] newShape;
-
-
-    public ReshapePreProcessor(int...shape) {
-        this.newShape = shape;
-    }
+public class BinomialSamplingOutputPostProcessor extends BaseOutputPostProcessor {
 
     @Override
     public INDArray preProcess(INDArray output) {
-        this.prevShape = output.shape();
-        return output.reshape(newShape);
+        return Nd4j.getDistributions().createBinomial(1,output).sample(output.shape());
     }
 
     @Override
     public INDArray backprop(INDArray input) {
-        return input.reshape(prevShape);
+        // TODO - How to reverse?
+        return null;
     }
+
+
 
 
 }
