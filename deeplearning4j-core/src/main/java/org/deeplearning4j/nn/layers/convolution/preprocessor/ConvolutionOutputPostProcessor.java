@@ -40,24 +40,36 @@ public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
         this.shape = shape;
     }
 
-    public ConvolutionOutputPostProcessor() {}
+    public ConvolutionOutputPostProcessor(int rows, int cols, int channels) {
+        this.rows = rows;
+        this.cols = cols;
+        this.channels = channels;
+    }
+
+    public ConvolutionOutputPostProcessor(int rows, int cols) {
+        this.rows = rows;
+        this.cols = cols;
+    }
+
+    public ConvolutionOutputPostProcessor(){}
 
     @Override
     public INDArray preProcess(INDArray output) {
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
-            if(output.shape().length == 4) {
-                int[] otherOutputs = new int[3];
-                int[] outputShape = output.shape();
-                System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
-                shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+            int[] otherOutputs = null;
+            if(output.shape().length == 2) {
+                return output;
+            } else if(output.shape().length == 4) {
+                otherOutputs = new int[3];
             }
             else if(output.shape().length == 3) {
-                int[] otherOutputs = new int[2];
-                int[] outputShape = output.shape();
-                System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
-                shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
+                otherOutputs = new int[2];
             }
+            int[] outputShape = output.shape();
+            System.arraycopy(outputShape, 1, otherOutputs, 0, otherOutputs.length);
+            shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
         }
+
         return output.reshape(shape);
     }
 
@@ -67,7 +79,6 @@ public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
             return input;
         if (input.columns() != rows * cols)
             throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(input.shape()));
-
         return input.reshape(input.size(0), channels, rows, cols);
     }
 
