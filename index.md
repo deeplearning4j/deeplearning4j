@@ -12,7 +12,7 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 
 ### [Deep learning use cases](use_cases.html)
 
-* [Face/image recognition](http://deeplearning4j.org/facial-reconstruction-tutorial.html)
+* Face/image recognition
 * Voice search
 * Speech-to-text (transcription)
 * Spam filtering (anomaly detection)
