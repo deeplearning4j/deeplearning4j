@@ -15,7 +15,7 @@ public class SubsamplingLayer extends Layer {
 
     private static final long serialVersionUID = -7095644470333017030L;
     protected PoolingType poolingType;
-    protected int[] filterSize; // Same as filter size from the last conv layer
+    protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
 
     public enum PoolingType {
@@ -26,30 +26,39 @@ public class SubsamplingLayer extends Layer {
     	super(builder);
         this.poolingType = builder.poolingType;
         this.stride = builder.stride;
-//        this.kernelSize = builder.kernelSize;
+        this.kernelSize = kernelSize;
     }
 
     @AllArgsConstructor
     public static class Builder extends Layer.Builder {
         private PoolingType poolingType;
         private int[] stride; // Default is 2. Down-sample by a factor of 2
-//        private int[] kernelSize; // Same as filter size from the last conv layer
+        private int[] kernelSize; // Same as filter size from the last conv layer
+
+        public Builder(PoolingType poolingType, int[] stride) {
+            this.poolingType = poolingType;
+            this.stride = stride;
+        }
 
         @Override
         public Builder activation(String activationFunction) {
-            throw new UnsupportedOperationException("SubsamplingLayer does not accept activation");
+            this.activationFunction = activationFunction;
+            return this;
         }
         @Override
         public Builder weightInit(WeightInit weightInit) {
-            throw new UnsupportedOperationException("SubsamplingLayer does not accept weight init");
+            this.weightInit = weightInit;
+            return this;
         }
         @Override
         public Builder dist(Distribution dist){
-        	throw new UnsupportedOperationException("SubsamplingLayer does not accept weight init");
+            this.dist = dist;
+            return this;
         }
         @Override
         public Builder dropOut(double dropOut) {
-            throw new UnsupportedOperationException("SubsamplingLayer does not accept dropout");
+            this.dropOut = dropOut;
+            return this;
         }
         @Override
         @SuppressWarnings("unchecked")
