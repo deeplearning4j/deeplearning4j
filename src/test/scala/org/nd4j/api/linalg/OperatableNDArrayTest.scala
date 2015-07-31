@@ -128,11 +128,11 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
   }
 
   it should "workd with ComplexNDArray correctly" in {
-    val complexNDArray = Nd4j.createComplex(
+    val complexNDArray =
       Array(
-        Array(Nd4j.createComplexNumber(1, 1), Nd4j.createComplexNumber(1, 1)),
-        Array(Nd4j.createComplexNumber(1, 1), Nd4j.createComplexNumber(1, 1)))
-    )
+        Array(1 + i, 1 + i),
+        Array(1 + 3 * i, 1 + 3 * i)
+      ).toNDArray
 
     val result = complexNDArray + 2
     result shouldBe a[IComplexNDArray]
@@ -140,7 +140,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
     result shouldBe Nd4j.createComplex(
       Array(
         Array(Nd4j.createComplexNumber(3, 1), Nd4j.createComplexNumber(3, 1)),
-        Array(Nd4j.createComplexNumber(3, 1), Nd4j.createComplexNumber(3, 1)))
+        Array(Nd4j.createComplexNumber(3, 3), Nd4j.createComplexNumber(3, 3)))
     )
   }
 
@@ -152,14 +152,14 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
       ).toNDArray
 
     //return Double in real NDArray at default
-    ndArray.get(0) shouldBe a [java.lang.Double]
+    ndArray.get(0) shouldBe a[java.lang.Double]
     val sumValue = ndArray.sumT
-    sumValue shouldBe a [java.lang.Double]
+    sumValue shouldBe a[java.lang.Double]
 
     val complexNDArray = Nd4j.createComplex(ndArray)
 
     //return ComplexNumber in ComplexNDArray in IComplexNumber
-    complexNDArray.get(0) shouldBe a [IComplexNumber]
+    complexNDArray.get(0) shouldBe a[IComplexNumber]
     val sumComplexValue = complexNDArray.sumT
     sumComplexValue shouldBe a[IComplexNumber]
 

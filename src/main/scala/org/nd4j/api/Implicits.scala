@@ -1,5 +1,6 @@
 package org.nd4j.api
 
+import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
@@ -36,15 +37,10 @@ object Implicits {
   /*
    Avoid using Numeric[T].toDouble(t:T) for sequence transformation in XXColl2INDArray to minimize memory consumption.
    */
-  implicit class floatColl2INDArray(val underlying: Seq[Float]) extends AnyVal {
-    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying.toArray, shape, ord.value, offset)
 
-    def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
-
-    def toNDArray: INDArray = Nd4j.create(underlying.toArray)
-  }
-
-  implicit class floatArray2INDArray(val underlying: Array[Float]) extends AnyVal {
+  implicit def floatArray2INDArray(s:Array[Float]):FloatArray2INDArray = new FloatArray2INDArray(s)
+  implicit def floatColl2INDArray(s:Seq[Float]):FloatArray2INDArray = new FloatArray2INDArray(s.toArray)
+  class FloatArray2INDArray(val underlying: Array[Float]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying, shape, ord.value, offset)
 
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying, shape.toArray)
@@ -52,15 +48,9 @@ object Implicits {
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
 
-  implicit class doubleColl2INDArray(val underlying: Seq[Double]) extends AnyVal {
-    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying.toArray, shape, offset, ord.value)
-
-    def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.toArray, shape.toArray)
-
-    def toNDArray: INDArray = Nd4j.create(underlying.toArray)
-  }
-
-  implicit class doubleArray2INDArray(val underlying: Array[Double]) extends AnyVal {
+  implicit def doubleArray2INDArray(s:Array[Double]):DoubleArray2INDArray = new DoubleArray2INDArray(s)
+  implicit def doubleArray2CollArray(s:Seq[Double]):DoubleArray2INDArray = new DoubleArray2INDArray(s.toArray)
+  class DoubleArray2INDArray(val underlying: Array[Double]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying, shape, offset, ord.value)
 
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying, shape.toArray)
@@ -68,20 +58,25 @@ object Implicits {
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
 
-  implicit class intColl2INDArray(val underlying: Seq[Int]) extends AnyVal {
-    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying.map(_.toFloat).toArray, shape, ord.value, offset)
+  implicit def intColl2INDArray(s:Seq[Int]):IntArray2INDArray = new IntArray2INDArray(s.toArray)
+  implicit def intArray2INDArray(s:Array[Int]):IntArray2INDArray = new IntArray2INDArray(s)
 
-    def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.map(_.toFloat).toArray, shape.toArray)
-
-    def toNDArray: INDArray = Nd4j.create(underlying.map(_.toFloat).toArray)
-  }
-
-  implicit class intArray2INDArray(val underlying: Array[Int]) extends AnyVal {
+  class IntArray2INDArray(val underlying: Array[Int]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = Nd4j.create(underlying.map(_.toFloat), shape, ord.value, offset)
 
     def asNDArray(shape: Int*): INDArray = Nd4j.create(underlying.map(_.toFloat), shape.toArray)
 
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toFloat).toArray)
+  }
+
+  implicit def complexArray2INDArray(underlying: Array[IComplexNumber]):ComplexArray2INDArray = new ComplexArray2INDArray(underlying)
+  implicit def complexColl2INDArray(underlying: Seq[IComplexNumber]):ComplexArray2INDArray = new ComplexArray2INDArray(underlying.toArray)
+  class ComplexArray2INDArray(val underlying: Array[IComplexNumber]) extends AnyVal {
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): IComplexNDArray = Nd4j.createComplex(underlying, shape, offset,ord.value)
+
+    def asNDArray(shape: Int*): IComplexNDArray = Nd4j.createComplex(underlying, shape.toArray)
+
+    def toNDArray: IComplexNDArray = Nd4j.createComplex(underlying)
   }
 
   implicit class floatMtrix2INDArray(val underlying: Seq[Seq[Float]]) extends AnyVal {
@@ -106,6 +101,14 @@ object Implicits {
 
   implicit class intArrayMtrix2INDArray(val underlying: Array[Array[Int]]) extends AnyVal {
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat)))
+  }
+
+  implicit class complexArrayMtrix2INDArray(val underlying: Array[Array[IComplexNumber]]) extends AnyVal {
+    def toNDArray: IComplexNDArray = Nd4j.createComplex(underlying)
+  }
+
+  implicit class complexCollMtrix2INDArray(val underlying: Seq[Seq[IComplexNumber]]) extends AnyVal {
+    def toNDArray: IComplexNDArray = Nd4j.createComplex(underlying.map(_.toArray).toArray)
   }
 
   implicit class num2Scalar[T](val underlying: T)(implicit ev: Numeric[T]) {
@@ -141,6 +144,24 @@ object Implicits {
   }
 
   lazy val NDOrdering = org.nd4j.api.NDOrdering
+
+  implicit def int2ComplexNumberBuilder(underlying: Int): ComplexNumberBuilder[Integer] = new ComplexNumberBuilder[Integer](underlying)
+
+  implicit def float2ComplexNumberBuilder(underlying: Float): ComplexNumberBuilder[java.lang.Float] = new ComplexNumberBuilder[java.lang.Float](underlying)
+
+  implicit def double2ComplexNumberBuilder(underlying: Double): ComplexNumberBuilder[java.lang.Double] = new ComplexNumberBuilder[java.lang.Double](underlying)
+
+  lazy val i = new ImaginaryNumber[Integer](1)
+}
+
+private[api] class ComplexNumberBuilder[T <: Number](val value: T) extends AnyVal {
+  def +[A <: Number](imaginary: ImaginaryNumber[A]): IComplexNumber = Nd4j.createComplexNumber(value, imaginary.value)
+
+  def *(in: ImaginaryNumber[Integer]): ImaginaryNumber[T] = new ImaginaryNumber[T](value)
+}
+
+private[api] class ImaginaryNumber[T <: Number](val value: T) extends AnyVal {
+  override def toString: String = s"${value}i"
 }
 
 sealed trait IndexNumberRange extends IndexRange {
