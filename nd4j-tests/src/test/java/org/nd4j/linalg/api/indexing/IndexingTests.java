@@ -5,6 +5,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
@@ -12,7 +13,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  */
 public class IndexingTests extends BaseNd4jTest {
 
-
+    public IndexingTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     @Test
     public void testGetScalar() {
