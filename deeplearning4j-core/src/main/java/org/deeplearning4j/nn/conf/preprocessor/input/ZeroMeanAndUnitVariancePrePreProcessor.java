@@ -38,7 +38,7 @@ public class ZeroMeanAndUnitVariancePrePreProcessor extends BaseInputPreProcesso
     }
 
     @Override
-    public INDArray backprop(INDArray toReverse) {
+    public INDArray backprop(INDArray output) {
         return null;
     }
 

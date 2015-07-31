@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.layers.convolution.preprocessor;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
