@@ -69,11 +69,9 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="source">Working With Source</a>
 
-We highly recommend downloading the [Deeplearning4j JAR files from Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), rather than working with source, unless you plan on making significant commits to the project (which are always welcome, of course). To download from Maven, please follow the [instructions on the ND4J site](http://nd4j.org/getstarted.html#maven).
+To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
 
-If you are working with source, you will need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
-
-For a deeper dive, check out our [Github repo](https://github.com/SkymindIO/deeplearning4j/). If you want to develop for Deeplearning4j, install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then *git clone* the repository, and run this command for Maven:
+Our [Github repo is here](https://github.com/deeplearning4j/deeplearning4j/). Install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then *git clone* the repository, and run this command for Maven:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
