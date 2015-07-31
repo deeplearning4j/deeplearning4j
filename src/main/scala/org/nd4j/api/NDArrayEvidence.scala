@@ -17,7 +17,7 @@ object NDArrayEvidence {
   implicit val complexNDArrayEvidence = ComplexNDArrayEvidence
 }
 
-trait NDArrayEvidence[A] {
+trait NDArrayEvidence[A <: INDArray] {
   type Value
   type NDArray = A
 
