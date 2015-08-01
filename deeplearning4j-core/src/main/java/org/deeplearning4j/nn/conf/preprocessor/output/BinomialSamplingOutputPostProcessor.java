@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf.preprocessor.output;
 
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -27,19 +29,15 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class BinomialSamplingOutputPostProcessor extends BaseOutputPostProcessor {
+	private static final long serialVersionUID = 2238512275682333895L;
 
-    @Override
+	@Override
     public INDArray preProcess(INDArray output) {
         return Nd4j.getDistributions().createBinomial(1,output).sample(output.shape());
     }
 
     @Override
-    public INDArray backprop(INDArray input) {
-        // TODO - How to reverse?
-        return null;
+    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> input) {
+        return input;	//No op?
     }
-
-
-
-
 }
