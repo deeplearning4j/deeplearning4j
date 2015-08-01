@@ -127,8 +127,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, labelsSubOut.sum(0));
     	
     	switch (conf.getLossFunction()) {
-
-        case XENT: // cross-entropy
+    	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
+    		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
+    		return new Pair<>(gradient,labelsSubOut);
+        case XENT: // cross-entropy (single binary output variable)
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.div(output.mul(output.rsub(1)))));
         	return new Pair<>(gradient,labelsSubOut);
 
