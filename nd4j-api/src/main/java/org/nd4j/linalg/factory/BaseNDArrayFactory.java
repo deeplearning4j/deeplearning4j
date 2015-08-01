@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.Shape;
 
 /**
  * Base NDArrayFactory class.
@@ -849,7 +850,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2),shape,complexStrides,offset,ordering);
+        return createComplex(Nd4j.createBuffer(ArrayUtil.prod(shape) * 2), shape, complexStrides, offset, ordering);
     }
 
     /**
@@ -923,7 +924,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray ones(int columns) {
-        return ones(new int[]{1,columns});
+        return ones(new int[]{1, columns});
     }
 
     /**
@@ -934,7 +935,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public IComplexNDArray complexOnes(int columns) {
-        IComplexNDArray base = createComplex(new int[]{1,columns});
+        IComplexNDArray base = createComplex(new int[]{1, columns});
         base.assign(1);
         return base;
     }
@@ -945,7 +946,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(shape.length == 1 && shape[0] == 0) {
             shape = new int[]{1,1};
         }
-        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape,ordering), 0, ordering);
+        return create(Nd4j.createBuffer(data), shape, Nd4j.getStrides(shape, ordering), 0, ordering);
     }
 
     /**
@@ -959,99 +960,46 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray concat(int dimension, INDArray... toConcat) {
         if (toConcat.length == 1)
             return toConcat[0];
-
-
-        if (toConcat[0].isScalar()) {
-            int[] outputShape = dimension == 0 ? new int[]{toConcat.length, 1} : new int[]{1,toConcat.length};
-            INDArray ret = Nd4j.create(outputShape);
-            for (int i = 0; i < ret.length(); i++) {
-                ret.putScalar(i, toConcat[i].getDouble(0));
-            }
-            return ret;
-        }
-
-        else if (toConcat[0].isVector()) {
-            if (toConcat[0].isRowVector()) {
-                if (dimension == 1 || dimension == 0) {
-                    int length = 0;
-                    for(INDArray toConcat2 : toConcat)
-                        length += toConcat2.length();
-
-                    INDArray ret = Nd4j.create(1,length);
-                    int count = 0;
-                    for (INDArray arr : toConcat) {
-                        for (int i = 0; i < arr.length(); i++) {
-                            ret.putScalar(count++, arr.getDouble(i));
-                        }
-                    }
-
-                    return ret;
-
-                } else
-                    throw new IllegalArgumentException("Illegal dimension " + dimension);
-
-            } else if (toConcat[0].isColumnVector()) {
-                if (dimension == 1) {
-                    INDArray ret = Nd4j.create(toConcat[0].rows(), toConcat.length);
-                    int count = 0;
-                    for (INDArray arr : toConcat) {
-                        ret.putColumn(count++, arr);
-                    }
-                    return ret;
-                } else if (dimension == 0) {
-                    int length = 0;
-                    for(INDArray toConcat2 : toConcat)
-                        length += toConcat2.length();
-
-                    INDArray ret = Nd4j.create(length, 1);
-                    int count = 0;
-                    for (INDArray arr : toConcat) {
-                        for (int i = 0; i < arr.length(); i++) {
-                            ret.putScalar(count++, arr.getDouble(i));
-                        }
-                    }
-                    return ret;
-
-                }
-
-
-            }
-        }
-
+        int rank = toConcat[0].rank();
         int sumAlongDim = 0;
-        for (int i = 0; i < toConcat.length; i++)
+        int length = 0;
+        DataBuffer[] assign = new DataBuffer[toConcat.length];
+
+        for (int i = 0; i < toConcat.length; i++) {
             sumAlongDim += toConcat[i].shape()[dimension];
+            length += toConcat[i].data().length();
+            assign[i] = toConcat[i].ravel().data();
+        }
+
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
         outputShape[dimension] = sumAlongDim;
-
-        //the output ndarray
-        INDArray ret = Nd4j.create(outputShape);
-        int vectorOffset = 0;
-        int arrVecLength = 0;
-        boolean notIncremented = true;
-        int retVectorsAlongDimension = ret.tensorssAlongDimension(dimension);
-        for(INDArray arr : toConcat) {
-            int arrVectorsAlongDimension = arr.vectorsAlongDimension(dimension);
-            if(arrVectorsAlongDimension != retVectorsAlongDimension)
-                throw new IllegalStateException("Vectors along dimension must be same");
-            for(int i = 0; i < arr.vectorsAlongDimension(dimension); i++) {
-                INDArray retVec = ret.vectorAlongDimension(i,dimension);
-                INDArray arrVec = arr.vectorAlongDimension(i,dimension);
-                if(notIncremented) {
-                    arrVecLength += arrVec.length();
-                    notIncremented = false;
-                }
-
-                for(int j = 0; j < arrVec.length(); j++)
-                    retVec.putScalar(j + vectorOffset,arrVec.getDouble(j));
-            }
-
-            vectorOffset += arrVecLength;
-            notIncremented = true;
-
+        int[] sortedStrides = Shape.createConcatStrides(toConcat);
+        int s = 1;
+        for (int idim = rank - 1; idim >= 0; idim--) {
+            int iperm = sortedStrides[idim];
+            sortedStrides[iperm] = s;
+            s *= outputShape[iperm];
         }
 
+        INDArray ret = Nd4j.create(outputShape,sortedStrides);
+        int arrOffset = 0;
+        for(INDArray arr : toConcat) {
+            int arrTensorLength = -1;
+            for(int i = 0; i < arr.tensorssAlongDimension(0); i++) {
+                INDArray retLinear = ret.tensorAlongDimension(i,0).linearView();
+                INDArray arrTensor = arr.tensorAlongDimension(i,0).linearView();
+                arrTensorLength = arrTensor.length();
+                for(int j = 0; j < arrTensor.length(); j++) {
+                    retLinear.putScalar(j + arrOffset,arrTensor.getDouble(j));
+                }
+
+
+            }
+            //bump the sliding window
+            arrOffset += arrTensorLength;
+
+        }
 
         return ret;
 
@@ -1148,30 +1096,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray vstack(final INDArray... arrs) {
-        int cols = arrs[0].columns();
-        int rows = arrs[0].rows();
+        return Nd4j.concat(0,arrs);
 
-        for (int i = 1; i < arrs.length; i++) {
-            rows += arrs[i].rows();
-            if (arrs[i].columns() != cols)
-                throw new IllegalStateException("Illegal number of rows for array " + i);
-
-        }
-
-
-        final INDArray ret = Nd4j.create(rows, cols);
-
-
-        int count = 0;
-        for (INDArray arr : arrs) {
-            for(int j = 0; j < arr.rows(); j++) {
-                ret.putRow(count++, arr.getRow(j));
-            }
-
-        }
-
-
-        return ret;
     }
 
 

@@ -40,5 +40,8 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
         assertEquals(expected, test);
     }
 
-
+    @Override
+    public char ordering() {
+        return 'f';
+    }
 }

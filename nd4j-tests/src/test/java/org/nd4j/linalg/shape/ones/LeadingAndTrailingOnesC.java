@@ -21,4 +21,9 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTest  {
     public LeadingAndTrailingOnesC(Nd4jBackend backend) {
         super(backend);
     }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

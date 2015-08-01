@@ -101,6 +101,7 @@ public abstract class BaseNDArray implements INDArray {
     protected Boolean isVector = null;
     protected Boolean isScalar = null;
     protected boolean isWrapAround = false;
+    protected int linearStride = -1;
 
     public BaseNDArray() {
     }
@@ -793,12 +794,15 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray ret =  tensorAlongDimension(index, dimension);
+
         return ret;
     }
 
 
-
-
+    @Override
+    public void setShape(int... shape) {
+        this.shape = shape;
+    }
 
     private int getFirstNonOneStride() {
         if(firstNonOneStride >= 0)
@@ -993,9 +997,11 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray putScalar(int i, double value) {
         ensureNotCleanedUp();
-        int idx = linearIndex(i);
-        data.put(idx, value);
-        return this;
+        if(isRowVector())
+            return putScalar(new int[]{0,i},value);
+        else if(isColumnVector())
+            return putScalar(new int[]{1,i},value);
+        throw new IllegalArgumentException("Only allowed for vectors");
     }
 
     @Override
@@ -1012,19 +1018,15 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray putScalar(int[] indexes, double value) {
         ensureNotCleanedUp();
-        if(isRowVector() && indexes.length == 2 && indexes[0] == 0) {
-            int ix = linearIndex(indexes[1]);
-            data.put(ix,value);
+
+        int ix = offset;
+        for (int i = 0; i < shape.length; i++) {
+            ix += indexes[i] * stride[i];
         }
-        else {
-            int ix = offset;
-            for (int i = 0; i < shape.length; i++) {
-                ix += indexes[i] * stride[i];
-            }
-            if (ix >= data.length())
-                throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
-            data.put(ix, value);
-        }
+        if (ix >= data.length())
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
+        data.put(ix, value);
+
 
 
         return this;
@@ -1372,20 +1374,11 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public double getDouble(int... indices) {
         ensureNotCleanedUp();
-        if(isRowVector() && indices[0] == 0 && indices.length == 2) {
-            int ix = linearIndex(indices[1]);
-            return data.getDouble(ix);
-        }
+        int ix = offset;
+        for (int i = 0; i < indices.length; i++)
+            ix += indices[i] * stride[i];
 
-        else {
-            int ix = offset;
-            for (int i = 0; i < indices.length; i++)
-                ix += indices[i] * stride[i];
-
-            return data.getDouble(ix);
-        }
-
-
+        return data.getDouble(ix);
     }
 
     /**
@@ -1596,47 +1589,7 @@ public abstract class BaseNDArray implements INDArray {
 
     protected INDArray newShape(int[] newShape, char ordering) {
         ensureNotCleanedUp();
-        if (Shape.isVector(newShape) && isVector()) {
-            if (isRowVector() && Shape.isColumnVectorShape(newShape)) {
-                int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.reverseCopy(stride()) : getStrides(new int[]{columns(),1},ordering());
-                return create(data, newShape,stride,offset);
-            }
-            //handle case where row vector is reshaped to row vector
-            else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {
-                this.shape = newShape;
-            }
-
-            else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
-                return create(data, newShape, stride(), offset);
-
-            }
-        }
-
-
-        if(ordering() != ordering) {
-            INDArray raveled = ravel();
-            return create(raveled.data(),newShape,Nd4j.getStrides(newShape,ordering));
-        }
-        else {
-            INDArray newCopy = this;
-            int[] newStrides = null;
-            //needed to copy data
-            if (newStrides == null) {
-                //need new strides for shape (the first stride messes with it)
-                newStrides = this instanceof IComplexNDArray ? Nd4j.getComplexStrides(newShape, ordering()) : Nd4j.getStrides(newShape, ordering());
-            }
-
-            //create a new copy of the ndarray
-            if (shape().length > 1 || this.ordering != ordering || newShape.length != shape().length) {
-                newCopy = create(data, newShape, newStrides, offset, ordering);
-                return newCopy;
-            }
-
-            return create(newCopy.data(), newShape, newStrides, offset);
-        }
-
-
-
+        return create(data(), newShape, stride(), offset);
     }
 
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, int offset, char ordering) {
@@ -1662,11 +1615,11 @@ public abstract class BaseNDArray implements INDArray {
 
     /**
      * Return the new strides based on the shape and ordering or null
-     * if we can't do a reshape
+     * if we can't do a newShapeNoCopy
      *
      * @param newShape the new shape
      * @param ordering the ordering of the new shape
-     * @return the new strides or null if we can't reshape
+     * @return the new strides or null if we can't newShapeNoCopy
      */
     protected int[] noCopyReshape(int[] newShape, char ordering) {
         ensureNotCleanedUp();
@@ -3055,42 +3008,25 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int linearIndex(int i) {
-        if(isScalar() && i > 1 && !isWrapAround())
-            throw new IllegalArgumentException("Illegal index for scalar " + i);
-
-        else if(isScalar() && i <= 1)
-            return offset;
-
-        if(ordering() == NDArrayFactory.C) {
-            if(isColumnVector()) {
-                int realStride = stride(0);
-                int idx = offset + (i * realStride);
-
-                if (data != null && idx >= data.length() && !isWrapAround())
-                    throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
-                return idx;
-            }
-
-            else {
-                int realStride = stride(-1);
-                int idx = offset + (i * realStride);
-
-                if (data != null && idx >= data.length() && !isWrapAround())
-                    throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
-                return idx;
-            }
-
+        setLinearStride();
+        int idx = i;
+        for(int j = 0; j < stride.length - 1; j++) {
+            if(size(i) == 1)
+                continue;
+            idx += i * stride(j);
         }
-        else {
-            int realStride = stride(-1);
-            int idx = offset + (i * realStride);
+        return  offset + (idx);
+    }
 
-            if (data != null && idx >= data.length() && !isWrapAround())
-                throw new IllegalArgumentException("Illegal index " + idx + " derived from " + i + " with offset of " + offset + " and stride of " + realStride);
-            return idx;
-        }
+    private void setLinearStride() {
+        if(linearStride >= 0)
+            return;
+
+
+        linearStride = majorStride();
 
     }
+
 
     /**
      * Returns the specified slice of this matrix.
@@ -3111,6 +3047,9 @@ public abstract class BaseNDArray implements INDArray {
                 throw new IllegalArgumentException("Can't slice a 0-d NDArray");
 
         }
+
+        if(isVector())
+            return Nd4j.scalar(getDouble(slice));
 
         if(slice < 0)
             slice += shape.length;
@@ -3477,16 +3416,12 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
+        if(isRowVector())
+            return getDouble(0,i);
+        else if(isColumnVector())
+            return getDouble(i,0);
 
-        int idx = linearIndex(i);
-        if(isWrapAround()) {
-            if(idx >= data.length()) {
-                idx %= stride(1);
-            }
-        }
-        if (idx < 0)
-            throw new IllegalStateException("Illegal index " + i);
-        return data.getDouble(idx);
+        throw new IllegalStateException("Must be a vector");
     }
 
     @Override
@@ -3595,59 +3530,12 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray reshape(char order, int... newShape) {
-        int numberNegativesOnes = 0;
-        int[] shape = newShape;
-        for(int i = 0; i < shape.length; i++) {
-            if(shape[i] < 0) {
-                if(numberNegativesOnes >= 1)
-                    throw new IllegalArgumentException("Only one dimension can be negative ones");
-
-                numberNegativesOnes++;
-
-                int shapeLength = 1;
-                for(int j = 0; j < shape.length; j++)
-                    if(shape[j] >= 1)
-                        shapeLength *= shape[j];
-                int realShape = Math.abs(length() / shapeLength);
-                int[] thisNewShape = new int[shape.length];
-                for(int j = 0; j < shape.length; j++) {
-                    if(i != j) {
-                        thisNewShape[j] = shape[j];
-                    }
-                    else
-                        thisNewShape[j] = realShape;
-                }
-
-                shape = thisNewShape;
-                break;
-
-            }
-
-        }
-
-
-
-        assert ArrayUtil.prod(shape) == ArrayUtil.prod(this.shape()) : "Illegal reshape must be of same length as data";
-        ensureNotCleanedUp();
-        if (Shape.isVector(shape) && isVector()) {
-            if (isRowVector() && Shape.isColumnVectorShape(shape)) {
-                int[] stride = ordering() == NDArrayFactory.C ? ArrayUtil.copy(stride()) : getStrides(new int[]{columns(),1},ordering());
-                return create(data, shape,stride,offset);
-            }
-            //handle case where row vector is reshaped to row vector
-            else if(isRowVector() && newShape.length == 1 || isRowVector() && newShape.length == 2) {
-                this.shape = shape;
-            }
-
-            else if (isColumnVector() && Shape.isRowVectorShape(newShape)) {
-                return create(data, shape, new int[]{stride[0],1}, offset);
-
-            }
-        }
-
+        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, newShape, Nd4j.order() == 'f');
+        if(reshapeAttempt != null)
+            return reshapeAttempt;
 
         INDArray raveled = ravel();
-        return create(raveled.data(), shape, Nd4j.getStrides(shape, order));
+        return create(raveled.data(), newShape, Nd4j.getStrides(shape, order));
 
 
 
@@ -3671,39 +3559,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray reshape(int...shape) {
-        int numberNegativesOnes = 0;
-        for(int i = 0; i < shape.length; i++) {
-            if(shape[i] < 0) {
-                if(numberNegativesOnes >= 1)
-                    throw new IllegalArgumentException("Only one dimension can be negative ones");
-
-                numberNegativesOnes++;
-
-                int shapeLength = 1;
-                for(int j = 0; j < shape.length; j++)
-                    if(shape[j] >= 1)
-                        shapeLength *= shape[j];
-                int realShape = Math.abs(length() / shapeLength);
-                int[] thisNewShape = new int[shape.length];
-                for(int j = 0; j < shape.length; j++) {
-                    if(i != j) {
-                        thisNewShape[j] = shape[j];
-                    }
-                    else
-                        thisNewShape[j] = realShape;
-                }
-
-                shape = thisNewShape;
-                break;
-
-            }
-
-        }
-
-
-
-        assert ArrayUtil.prod(shape) == ArrayUtil.prod(this.shape()) : "Illegal reshape must be of same length as data";
-        return newShape(shape, ordering);
+        return reshape(ordering(),shape);
     }
 
     @Override
@@ -3966,56 +3822,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray get(NDArrayIndex... indexes) {
-      /*  if(indexes.length > 2 && indexes[0].length() == 1 && indexes[0].offset() == 0 && size(0) == 1) {
-            NDArrayIndex[] newIndexes = Arrays.copyOfRange(indexes,1,indexes.length);
-            return get(newIndexes);
-        }*/
-
-        ensureNotCleanedUp();
-        //fill in to match the rest of the dimensions: aka grab all the content
-        //in the dimensions not filled in
-        //also prune indices greater than the shape to be the shape instead
-        if(isVector()) {
-            //allow shortcuts (omitting second argument)
-            if(isRowVector()) {
-                if(indexes.length == 1) {
-                    int offset = NDArrayIndex.offset(this,indexes[0]);
-                    int length = indexes[0].length();
-                    return Nd4j.create(data,new int[]{1,length},stride(),offset);
-                }
-                //use the column index only
-                else {
-                    if(indexes[0].offset() > 0)
-                        throw new IllegalArgumentException("Illegal index specified on first input. Must be zero for a row vector");
-                    int offset = NDArrayIndex.offset(this,indexes[1]);
-                    int length = indexes[1].length();
-                    return Nd4j.create(data,new int[]{1,length},stride(),offset);
-
-                }
-            }
-            else {
-                //allow shortcuts (omitting second argument)
-                if(indexes.length == 1) {
-                    int offset = NDArrayIndex.offset(this,indexes[0]);
-                    int length =  indexes[0].length();
-                    return Nd4j.create(data,new int[]{length,1},stride(),offset);
-
-                }
-                //use the row index only
-                else {
-                    if(indexes[1].offset() > 0)
-                        throw new IllegalArgumentException("Illegal index specified on second input. Must be zero for a column vector");
-
-                    int offset = NDArrayIndex.offset(this,indexes[0]);
-                    int length = indexes[0].length();
-                    return Nd4j.create(data,new int[]{length,1},stride(),offset);
-                }
-            }
-        }
-
-
-
-
         int[] offsets = Indices.offsets(indexes);
         int[] shape = Indices.shape(shape(), indexes);
         int[] stride = Indices.stride(this);
@@ -4572,18 +4378,6 @@ public abstract class BaseNDArray implements INDArray {
         checkArrangeArray(rearrange);
         int[] newShape = doPermuteSwap(shape, rearrange);
         int[] newStride = doPermuteSwap(stride, rearrange);
-
-        if(ArrayUtil.isInverse(newStride,stride())) {
-            char inverse = ordering() == NDArrayFactory.C ? 'f' : 'c';
-            return create(data(),newShape,getStrides(newShape,inverse),offset,inverse);
-        }
-
-
-        if(isVector() || isMatrix()) {
-            if(Arrays.equals(rearrange,ArrayUtil.reverseCopy(ArrayUtil.range(0,2))))
-                return transpose();
-            return this;
-        }
 
 
         INDArray value = create(
