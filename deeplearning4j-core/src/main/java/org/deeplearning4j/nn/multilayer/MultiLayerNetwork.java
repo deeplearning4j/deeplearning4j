@@ -1050,7 +1050,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     protected void backprop() {
         String multiGradientKey;
-        INDArray currGradient=null;
+//        INDArray currGradient=null;
         gradient = new DefaultGradient();
         Layer currLayer, prevLayer;
 

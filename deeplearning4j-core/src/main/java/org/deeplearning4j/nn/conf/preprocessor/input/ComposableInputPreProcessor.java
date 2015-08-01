@@ -18,8 +18,9 @@
 
 package org.deeplearning4j.nn.conf.preprocessor.input;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.OutputPostProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -27,12 +28,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class ComposableInputPreProcessor extends BaseInputPreProcessor {
-    private InputPreProcessor[] inputPreProcessors;
-    private OutputPostProcessor[] outputPostProcessors;
+	private static final long serialVersionUID = -6240753120736051385L;
+	private InputPreProcessor[] inputPreProcessors;
 
-    public ComposableInputPreProcessor(InputPreProcessor[] inputPreProcessor, OutputPostProcessor[] outputPostProcessors) {
+    public ComposableInputPreProcessor(InputPreProcessor[] inputPreProcessors) {
         this.inputPreProcessors = inputPreProcessors;
-        this.outputPostProcessors = outputPostProcessors;
     }
 
     @Override
@@ -43,11 +43,9 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output) {
-        for(OutputPostProcessor outputPostProcessor : outputPostProcessors)
-            output = outputPostProcessor.backprop(output);
+    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> output) {
+        for(InputPreProcessor inputPreProcessor : inputPreProcessors)
+            output = inputPreProcessor.backprop(output);
         return output;
     }
-
-
 }
