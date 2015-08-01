@@ -58,7 +58,8 @@ public class ConcatTests extends BaseNd4jTest {
         INDArray linspaced = Nd4j.linspace(1,3,3).reshape(3, 1);
         INDArray stacked = linspaced.dup();
         INDArray assertion = Nd4j.create(new double[]{1, 2, 3, 1, 2, 3}, new int[]{6, 1});
-        assertEquals(assertion, Nd4j.vstack(linspaced, stacked));
+        INDArray test =  Nd4j.vstack(linspaced, stacked);
+        assertEquals(assertion, test);
     }
 
 

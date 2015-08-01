@@ -1004,7 +1004,7 @@ public abstract class BaseNDArray implements INDArray {
         if(isRowVector())
             return putScalar(new int[]{0,i},value);
         else if(isColumnVector())
-            return putScalar(new int[]{1,i},value);
+            return putScalar(new int[]{i,0},value);
         throw new IllegalArgumentException("Only allowed for vectors");
     }
 

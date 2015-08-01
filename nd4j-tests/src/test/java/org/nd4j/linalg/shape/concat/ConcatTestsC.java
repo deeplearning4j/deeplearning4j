@@ -46,7 +46,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         INDArray col1 = arr2.getColumn(0);
         INDArray col2 = arr2.getColumn(1);
         INDArray vstacked = Nd4j.vstack(col1,col2);
-        assertEquals(Nd4j.create(4,1),vstacked);
+        assertEquals(Nd4j.create(2,5),vstacked);
 
 
 

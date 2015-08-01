@@ -962,13 +962,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return toConcat[0];
         int rank = toConcat[0].rank();
         int sumAlongDim = 0;
-        int length = 0;
-        DataBuffer[] assign = new DataBuffer[toConcat.length];
 
         for (int i = 0; i < toConcat.length; i++) {
             sumAlongDim += toConcat[i].shape()[dimension];
-            length += toConcat[i].data().length();
-            assign[i] = toConcat[i].ravel().data();
         }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
@@ -982,16 +978,41 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             s *= outputShape[iperm];
         }
 
+
         INDArray ret = Nd4j.create(outputShape,sortedStrides);
+        if(ret.isVector()) {
+            int offset = 0;
+            for(INDArray arr : toConcat) {
+                for(int i = 0; i < arr.length(); i++) {
+                    ret.putScalar(offset++,arr.getDouble(i));
+                }
+            }
+
+            return ret;
+        }
+
+        if(toConcat[0].isScalar()) {
+            INDArray retLinear = ret.linearView();
+            for(int i = 0; i < retLinear.length(); i++)
+                retLinear.putScalar(i,toConcat[i].getDouble(0));
+            return ret;
+        }
+
+
+
+
         int arrOffset = 0;
         for(INDArray arr : toConcat) {
             int arrTensorLength = -1;
-            for(int i = 0; i < arr.tensorssAlongDimension(0); i++) {
-                INDArray retLinear = ret.tensorAlongDimension(i,0).linearView();
-                INDArray arrTensor = arr.tensorAlongDimension(i,0).linearView();
+            if(arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
+                throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");
+            for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
+                INDArray retLinear = ret.tensorAlongDimension(i,dimension).linearView();
+                INDArray arrTensor = arr.tensorAlongDimension(i,dimension).linearView();
                 arrTensorLength = arrTensor.length();
                 for(int j = 0; j < arrTensor.length(); j++) {
-                    retLinear.putScalar(j + arrOffset,arrTensor.getDouble(j));
+                    int idx = j + (!arrTensor.isScalar() ? arrOffset : 0);
+                    retLinear.putScalar(idx,arrTensor.getDouble(j));
                 }
 
 
