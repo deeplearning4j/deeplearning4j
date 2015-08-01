@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.nn.layers.convolution.preprocessor;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -82,11 +84,12 @@ public class ConvolutionInputPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output) {
+    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> pair ){
+    	INDArray output = pair.getSecond();
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
             int[] otherOutputs = null;
             if(output.shape().length == 2) {
-                return output;
+                return new Pair<>(pair.getFirst(),output);
             } else if(output.shape().length == 4) {
                 otherOutputs = new int[3];
             }
@@ -99,7 +102,7 @@ public class ConvolutionInputPreProcessor implements InputPreProcessor {
 
         }
 
-        return output.reshape(shape);
+        return new Pair<>(pair.getFirst(),output.reshape(shape));
     }
 
 }

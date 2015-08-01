@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.nn.layers.convolution.preprocessor;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.OutputPostProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -74,12 +76,13 @@ public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray input) {
+    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> pair ){
+    	INDArray input = pair.getSecond();
         if (input.shape().length == 4)
-            return input;
+            return pair;
         if (input.columns() != rows * cols)
             throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(input.shape()));
-        return input.reshape(input.size(0), channels, rows, cols);
+        return new Pair<>(pair.getFirst(),input.reshape(input.size(0), channels, rows, cols));
     }
 
 }
