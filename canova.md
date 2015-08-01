@@ -126,6 +126,35 @@ Deeplearning4j also works with a command-line interface. A net can be trained wi
       
 The configuration of the net itself may need to be adjusted within the file that contains its instantiation and parameters. Examples of these configurations can be seen on the pages describing [restricted Boltzmann machines](http://deeplearning4j.org/restrictedboltzmannmachine.html) as well as the [Mnist tutorial](http://deeplearning4j.org/mnist-tutorial.html). 
 
+##<a name="record">Reading Records, Iterating Over Data</a>
+
+The following code shows how to work with one example, raw images, transforming them into a format that will work well with DL4J and ND4J:
+
+        // Instantiating RecordReader. Specify height and width of images.
+        RecordReader recordReader = new ImageRecordReader(28, 28, true, labels);
+
+        // Point to data path. 
+        recordReader.initialize(new FileSplit(new File(labeledPath)));
+
+The RecordReader is a class in Canova that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements that are fixed in number and indexed with a unique ID. Converting data to records is the process of vectorization. The record itself is a vector, each element of which is a feature.
+
+The [ImageRecordReader](https://github.com/deeplearning4j/Canova/blob/f03f32dd42f14af762bf443a04c4cfdcc172ac83/canova-nd4j/canova-nd4j-image/src/main/java/org/canova/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
+
+Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with Canova (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
+
+![Alt text](../img/recordreader_extensions.png)
+
+The DataSetIterator is a Deeplearning4J class that traverses the elements of a list. Iterators pass through the data list, accesses each item sequentially, keeps track of how far it has progressed by pointing to its current element, and modifies itself to point to the next element with each new step in the traversal.
+
+        // Canova to DL4J
+        DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 784, labels.size());
+
+The DataSetIterator iterates through input datasets, fetching one or more new examples with each iteration, and loading those examples into a DataSet object that neural nets can work with. The line above also tells the [RecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/3e5c6a942864ced574c7715ae548d5e3cb22982c/deeplearning4j-core/src/main/java/org/deeplearning4j/datasets/canova/RecordReaderDataSetIterator.java) to convert the image to a straight line (e.g. vector) of elements, rather than a 28 x 28 grid (e.g. matrix); it also specifies the number of labels possible.
+
+`RecordReaderDataSetIterator` can take as parameters the specific recordReader you want (for images, sound, etc.) and the batch size. For supervised learning, it will also take a label index and the number of possible labels that can be applied to the input (for LFW, the number of labels is 5,749). 
+
+For a walkthrough of the other steps associated with moving data from Canova to Deeplearning4j, you can read about [how to build a customized image data pipeline here](../image-data-pipeline.html).
+
 ## Execution
 
 Runs as both a local serial process and a MapReduce (MR engine on the roadmap) scale-out process with no code changes.
