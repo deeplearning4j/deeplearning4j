@@ -997,10 +997,14 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray putScalar(int i, double value) {
         ensureNotCleanedUp();
+        if(isScalar()) {
+            data.put(offset + i,value);
+            return this;
+        }
         if(isRowVector())
             return putScalar(new int[]{0,i},value);
         else if(isColumnVector())
-            return putScalar(new int[]{1,i},value);
+            return putScalar(new int[]{i,0},value);
         throw new IllegalArgumentException("Only allowed for vectors");
     }
 
@@ -1023,6 +1027,7 @@ public abstract class BaseNDArray implements INDArray {
         for (int i = 0; i < shape.length; i++) {
             ix += indexes[i] * stride[i];
         }
+
         if (ix >= data.length())
             throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
