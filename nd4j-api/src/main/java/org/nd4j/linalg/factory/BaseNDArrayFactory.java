@@ -974,6 +974,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int s = 1;
         for (int idim = rank - 1; idim >= 0; idim--) {
             int iperm = sortedStrides[idim];
+            if(iperm >= sortedStrides.length)
+                break;
             sortedStrides[iperm] = s;
             s *= outputShape[iperm];
         }

@@ -900,18 +900,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testAppend() {
-        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
-        //_append_const(zero_append,[3,3],1.0)
-        INDArray otherAppend = Nd4j.append(linspace, 3, 1.0, -1);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {1, 2, 1, 1, 1},
-                {3, 4, 1, 1, 1}
-        });
 
-        assertEquals(assertion, otherAppend);
-    }
 
 
 
