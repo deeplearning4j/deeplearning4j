@@ -52,6 +52,14 @@ public class IndexingTests extends BaseNd4jTest  {
 
     }
 
+    @Test
+    public void testLinearIndex() {
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        for(int i = 0; i < linspace.length(); i++) {
+            assertEquals(i + 1,linspace.getDouble(i),1e-1);
+        }
+    }
+
     @Override
     public char ordering() {
         return 'f';

@@ -174,17 +174,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testExecSubArray() {
-        INDArray nd = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new int[]{2, 3});
 
-        INDArray sub = nd.subArray(new int[]{0, 1}, new int[]{2, 2}, new int[]{3, 1});
-        Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
-        assertEquals(getFailureMessage(), Nd4j.create(new double[][]{
-                {4, 7}, {5, 8}
-        }), sub);
-
-    }
 
 
 
@@ -1062,18 +1052,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testLinearIndex() {
-        INDArray n = Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1,8});
-        for (int i = 0; i < n.length(); i++) {
-            int linearIndex = n.linearIndex(i);
-            assertEquals(i, linearIndex);
-            double d = n.getDouble(i);
-            assertEquals(i + 1, d, 1e-1);
-        }
 
-
-    }
 
     @Test
     public void testSliceConstructor() throws Exception {
