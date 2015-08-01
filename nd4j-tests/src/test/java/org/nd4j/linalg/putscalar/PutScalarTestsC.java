@@ -4,11 +4,17 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 /**
  * @author Adam Gibson
  */
 public class PutScalarTestsC extends BaseNd4jTest {
+
+    public PutScalarTestsC(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Test
     public void testRand() {
         INDArray rand = Nd4j.randn(5, 5);

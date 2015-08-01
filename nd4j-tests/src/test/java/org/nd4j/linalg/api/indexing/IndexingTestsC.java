@@ -4,12 +4,18 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
  * @author Adam Gibson
  */
 public class IndexingTestsC extends BaseNd4jTest {
+
+    public IndexingTestsC(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Test
     public void testOffsetsC() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
