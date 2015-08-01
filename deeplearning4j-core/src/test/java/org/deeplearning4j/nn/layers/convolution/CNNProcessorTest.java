@@ -2,11 +2,13 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionOutputPostProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -54,16 +56,16 @@ public class CNNProcessorTest {
 
         ConvolutionInputPreProcessor convProcessor = new ConvolutionInputPreProcessor(rows, cols, 1);
 
-        INDArray check2to2 = convProcessor.backprop(in2D);
+        INDArray check2to2 = convProcessor.backprop(new Pair<>((Gradient)null,in2D)).getSecond();
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
 
-        INDArray check3to2 = convProcessor.backprop(in3D);
+        INDArray check3to2 = convProcessor.backprop(new Pair<>((Gradient)null,in3D)).getSecond();
         int val3to2 = check3to2.shape().length;
         assertTrue(val3to2 == 2);
 
 
-        INDArray check4to2 = convProcessor.backprop(in4D);
+        INDArray check4to2 = convProcessor.backprop(new Pair<>((Gradient)null,in4D)).getSecond();
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
 
@@ -98,11 +100,11 @@ public class CNNProcessorTest {
 
         ConvolutionOutputPostProcessor convProcessor = new ConvolutionOutputPostProcessor(rows, cols, 1);
 
-        INDArray check2to4 = convProcessor.backprop(in2D);
+        INDArray check2to4 = convProcessor.backprop(new Pair<>((Gradient)null,in2D)).getSecond();
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
 
-        INDArray result2 = convProcessor.backprop(in4D);
+        INDArray result2 = convProcessor.backprop(new Pair<>((Gradient)null,in4D)).getSecond();
         int val4to4 = result2.shape().length;
         assertTrue(val4to4 == 4);
 
