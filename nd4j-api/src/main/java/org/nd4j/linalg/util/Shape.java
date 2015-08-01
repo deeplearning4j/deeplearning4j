@@ -517,6 +517,25 @@ public class Shape {
         return Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
     }
 
+
+    /**
+     * Convert the given index (such as 1,1)
+     * to a linear index
+     * @param shape the shape of the indexes to convert
+     * @param indices the index to convert
+     * @return the linear index given the shape
+     * and indices
+     */
+    public static int sub2Ind(int[] shape,int[] indices) {
+        int index = 0;
+        int shift = 1;
+        for(int i = 0; i < shape.length; i++) {
+            index += shift * indices[i];
+            shift *= shape[i];
+        }
+        return index;
+    }
+
     /**
      * Convert a linear index to
      * the equivalent nd index
