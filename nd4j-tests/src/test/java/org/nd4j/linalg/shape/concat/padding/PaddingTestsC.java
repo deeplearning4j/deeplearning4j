@@ -4,11 +4,23 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 /**
  * @author Adam Gibson
  */
 public class PaddingTestsC extends BaseNd4jTest {
+    public PaddingTestsC() {
+    }
+
+    public PaddingTestsC(String name) {
+        super(name);
+    }
+
+    public PaddingTestsC(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Override
     public char ordering() {
         return 'c';
