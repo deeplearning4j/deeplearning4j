@@ -20,8 +20,7 @@ public class LayerBuilderTest {
     double drop = 0.3;
     String act = "softmax";
     PoolingType poolType = PoolingType.MAX;
-    int[] filterSize = new int[]{2, 2};
-    int filterDepth = 6;
+    int[] kernelSize = new int[]{2, 2};
     int[] stride = new int[]{2, 2};
     HiddenUnit hidden = HiddenUnit.RECTIFIED;
     VisibleUnit visible = VisibleUnit.GAUSSIAN;
@@ -35,7 +34,7 @@ public class LayerBuilderTest {
     @Test
     public void testLayerBuilderAPI() {
         // Make new Convolutional layer
-        ConvolutionLayer conv = new ConvolutionLayer.Builder(filterSize, convType).activation(act).build();
+        ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize,convType).activation(act).build();
         // Make new Subsampling layer
         SubsamplingLayer sample = new SubsamplingLayer.Builder(poolType, stride).build();
         // Make new RBM layer
