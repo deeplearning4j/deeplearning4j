@@ -12,9 +12,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.plot.iterationlistener.LossPlotterIterationListener;
@@ -294,24 +293,18 @@ public class BackPropMLPTest {
      * No regularization, no Adagrad, no momentum etc. One iteration.
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction ) {
-        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3)
+    	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
-
                 .activationFunction(activationFunction)
-                .lossFunction(LossFunction.XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-
                 .iterations(1)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
-
-                .layer(new RBM())
                 .learningRate(0.1)
                 .updater(Updater.SGD)
-
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
@@ -319,22 +312,17 @@ public class BackPropMLPTest {
                 .momentum(0.0)
                 .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
-
-                .list(hiddenLayerSizes.length + 1).hiddenLayerSizes(hiddenLayerSizes)
-                .backprop(true).pretrain(false)
-                .useDropConnect(false)
-
-                .override(hiddenLayerSizes.length, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.weightInit(WeightInit.DISTRIBUTION);
-                        builder.dist(new NormalDistribution(0, 0.1));
-                    }
-                }).build();
-
-        return c;
+                .list(hiddenLayerSizes.length + 1);
+    	
+    	for( int i=0; i<hiddenLayerSizes.length; i++ ){
+    		int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
+    		lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).build());
+    	}
+    	lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
+    			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3).activation("softmax").build());
+    	lb.pretrain(false).backprop(true);
+    	
+        return lb.build();
     }
 
     public static float[] asFloat( INDArray arr ){
