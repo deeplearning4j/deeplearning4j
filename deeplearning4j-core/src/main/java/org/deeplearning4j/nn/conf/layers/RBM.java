@@ -94,7 +94,8 @@ public class RBM extends BasePretrainNetwork {
         }
         @Override
         public Builder activation(String activationFunction) {
-            throw new UnsupportedOperationException("RBM does not accept activation");
+            this.activationFunction = activationFunction;
+            return this;
         }
         @Override
         public Builder weightInit(WeightInit weightInit) {

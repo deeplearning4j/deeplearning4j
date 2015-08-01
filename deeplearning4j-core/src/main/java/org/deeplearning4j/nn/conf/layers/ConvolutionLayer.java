@@ -58,7 +58,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
         @Override
         public Builder dropOut(double dropOut) {
-            throw new UnsupportedOperationException("ConvolutionLayer Layer does not accept dropout");
+            this.dropOut = dropOut;
+            return this;
         }
         
         @Override
