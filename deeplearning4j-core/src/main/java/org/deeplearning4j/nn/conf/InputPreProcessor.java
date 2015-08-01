@@ -41,9 +41,9 @@ public interface InputPreProcessor extends Serializable {
 
     /**
      * Reverse the process during backprop
-     * @param input the input to reverse
+     * @param output the input to reverse
      * @return the reverse of the pre process step (if any)
      */
-    INDArray backwardPreProcess(INDArray input);
+    INDArray backprop(INDArray output);
 
 }
