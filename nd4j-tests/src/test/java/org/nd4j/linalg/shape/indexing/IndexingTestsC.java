@@ -17,13 +17,14 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray nd = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new int[]{2, 3});
 
         INDArray sub = nd.get(NDArrayIndex.all(), new NDArrayIndex(0,1));
-        INDArray subLinear = sub.linearView();
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
         assertEquals(getFailureMessage(), Nd4j.create(new double[][]{
-                {4, 7}, {5, 8}
+                {3, 4}, {6, 7}
         }), sub);
 
     }
+
+
 
     @Override
     public char ordering() {

@@ -614,12 +614,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray linearView() {
         ensureNotCleanedUp();
-        if (isVector() || isScalar() || length() == 1 || length() == size(0))
-            return this;
-        if (linearView == null)
-            resetLinearView();
-
-        return linearView;
+        return this;
     }
 
     @Override
@@ -1005,7 +1000,10 @@ public abstract class BaseNDArray implements INDArray {
             return putScalar(new int[]{0,i},value);
         else if(isColumnVector())
             return putScalar(new int[]{i,0},value);
-        throw new IllegalArgumentException("Only allowed for vectors");
+        else {
+            int[] indexes = Shape.ind2sub(this,i);
+            return putScalar(indexes,value);
+        }
     }
 
     @Override
@@ -3425,8 +3423,11 @@ public abstract class BaseNDArray implements INDArray {
             return getDouble(0,i);
         else if(isColumnVector())
             return getDouble(i,0);
+        else {
+            int[] dimensions = Shape.ind2sub(this,i);
+            return getDouble(dimensions);
+        }
 
-        throw new IllegalStateException("Must be a vector");
     }
 
     @Override
