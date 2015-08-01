@@ -517,6 +517,52 @@ public class Shape {
         return Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
     }
 
+    /**
+     * Convert a linear index to
+     * the equivalent nd index
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @param numIndices the number of total indices (typically prod of shape(
+     * @return the mapped indexes along each dimension
+     */
+    public static int[] ind2sub(int[] shape,int index,int numIndices) {
+        int denom = numIndices;
+        int[] ret = new int[shape.length];
+        for(int i = ret.length - 1; i >= 0; i--) {
+            denom /= shape[i];
+            ret[i] = index / denom;
+            index %= denom;
+
+        }
+        return ret;
+    }
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+    public static int[] ind2sub(int[] shape,int index) {
+        return ind2sub(shape,index,ArrayUtil.prod(shape));
+    }
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index based on the shape of the specified ndarray.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param arr the array to compute the indexes
+     *            based on
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+    public static int[] ind2sub(INDArray arr,int index) {
+        return ind2sub(arr.shape(),index,ArrayUtil.prod(arr.shape()));
+    }
 
     /**
      * Returns true for the case where

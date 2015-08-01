@@ -627,7 +627,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if(isVector() || isScalar() || length() == 1)
             linearView = this;
-        else if(ordering() == NDArrayFactory.C) {
+        else if(ordering() == NDArrayFactory.C && offset == 0) {
             linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-2),stride(-1)),offset);
             linearView.setWrapAround(true);
         }
