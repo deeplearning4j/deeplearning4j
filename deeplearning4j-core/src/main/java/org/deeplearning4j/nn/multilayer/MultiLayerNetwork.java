@@ -472,8 +472,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
 
         INDArray ret = layers[curr].preOutput(input, training);
-        if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
-            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
+        if (getLayerWiseConfigurations().getOutputPostProcessors() != null && getLayerWiseConfigurations().getOutputPostProcess(curr) != null) {
+            ret = getLayerWiseConfigurations().getOutputPostProcess(curr).preProcess(ret);
             return ret;
         }
         return ret;
@@ -490,8 +490,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
         INDArray ret = layers[curr].activate(input,training);
-        if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
-            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
+        if (getLayerWiseConfigurations().getOutputPostProcessors() != null && getLayerWiseConfigurations().getOutputPostProcess(curr) != null) {
+            ret = getLayerWiseConfigurations().getOutputPostProcess(curr).preProcess(ret);
             return ret;
         }
         return ret;
@@ -1049,7 +1049,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     protected void backprop() {
-        setInput(input);
+        String multiGradientKey;
+        INDArray currGradient=null;
         gradient = new DefaultGradient();
         Layer currLayer, prevLayer;
 
@@ -1081,25 +1082,32 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
          */
         int numLayers = getnLayers();
 
-//        Gradient layerGradient = outputLayer.backpropGradient(null,null, null);
         Pair<Gradient,INDArray> currentPair = outputLayer.backpropGradient(null,null, null);
 
         for (String paramType: outputLayer.gradient().gradientForVariable().keySet()) {
-            String multiGradientKey = String.valueOf(numLayers)+ "_" + paramType;
-            gradient.setGradientFor(multiGradientKey, outputLayer.gradient().getGradientFor(paramType));
+            multiGradientKey = String.valueOf(numLayers)+ "_" + paramType;
+            currGradient = currentPair.getFirst().getGradientFor(paramType);
+            if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
+                currGradient = this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currGradient);
+            gradient.setGradientFor(multiGradientKey, currGradient);
         }
 
         prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayers()[j];
+            if (getLayerWiseConfigurations().getOutputPostProcess(j) != null)
+                currGradient = this.layerWiseConfigurations.getOutputPostProcess(j).backprop(currGradient);
             currentPair = currLayer.backpropGradient(currentPair.getSecond(), currentPair.getFirst(), prevLayer);
             prevLayer = currLayer;
 
             Gradient layerGradient = currentPair.getFirst();
             for (String paramType: layerGradient.gradientForVariable().keySet()) {
-                String multiGradientKey = String.valueOf(j)+ "_" + paramType;
+                multiGradientKey = String.valueOf(j)+ "_" + paramType;
+                currGradient = currentPair.getFirst().getGradientFor(paramType);
                 gradient.setGradientFor(multiGradientKey, layerGradient.getGradientFor(paramType));
+                if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
+                    currGradient = this.layerWiseConfigurations.getInputPreProcess(j).backprop(currGradient);
             }
         }
         score = outputLayer.score();
@@ -1522,12 +1530,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void setInput(INDArray input) {
         if (getLayerWiseConfigurations().getInputPreProcess(0) != null)
             this.input = this.layerWiseConfigurations.getInputPreProcess(0).preProcess(input);
+//        this.input = this.layerWiseConfigurations.getOutputPostProcess(0).preProcess(input);
         else
             this.input = input;
         if (this.layers == null)
             this.initializeLayers(getInput());
         else if (this.input == null)
             this.input = input;
+
+        //        this.input = this.layerWiseConfigurations.getInputPreProcess(0).backprop(input);
+        //        this.input = this.layerWiseConfigurations.getOutputPostProcess(0).backprop(input);
 
     }
 

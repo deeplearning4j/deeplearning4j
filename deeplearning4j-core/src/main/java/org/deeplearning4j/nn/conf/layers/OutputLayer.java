@@ -22,8 +22,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import lombok.RequiredArgsConstructor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
@@ -41,9 +43,9 @@ public class OutputLayer extends FeedForwardLayer {
         this.lossFunction = builder.lossFunction;
     }
 
-    @AllArgsConstructor
+    @AllArgsConstructor @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private LossFunction lossFunction;
+        private LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
 
         @Override
         public Builder nIn(int nIn) {
@@ -82,6 +84,7 @@ public class OutputLayer extends FeedForwardLayer {
         public OutputLayer build() {
             return new OutputLayer(this);
         }
+
     }
 }
 
