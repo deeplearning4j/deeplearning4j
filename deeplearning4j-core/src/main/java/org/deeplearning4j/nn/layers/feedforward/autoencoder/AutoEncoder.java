@@ -93,6 +93,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
+    	setInput(input,training);
         INDArray y = encode(input,training);
         return y;
     }
