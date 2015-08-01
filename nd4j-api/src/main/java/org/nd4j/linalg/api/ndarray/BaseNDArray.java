@@ -597,7 +597,10 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected INDArray create(DataBuffer data,int[] shape,int offset) {
-        return Nd4j.create(data, shape, offset);
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(data, shape, offset);
+        else
+            return Nd4j.create(data, shape, offset);
     }
 
     protected void ensureNotCleanedUp() {
@@ -628,11 +631,11 @@ public abstract class BaseNDArray implements INDArray {
         if(isVector() || isScalar() || length() == 1)
             linearView = this;
         else if(ordering() == NDArrayFactory.C) {
-            linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-2),stride(-1)),offset);
+            linearView = create(data(), new int[]{1, length()}, ArrayUtil.of(stride(-2), stride(-1)), offset);
             linearView.setWrapAround(true);
         }
         else {
-            // linearView = Nd4j.create(data(),new int[]{1,length()},ArrayUtil.of(stride(-2),stride(-1)),offset);
+            // linearView = create(data(),new int[]{1,length()},ArrayUtil.of(stride(-2),stride(-1)),offset);
             // linearView.setWrapAround(true);
             linearView = new LinearViewNDArray(this);
 
@@ -1598,19 +1601,31 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, int offset, char ordering) {
-        return Nd4j.create(data, newShape, newStrides, offset, ordering);
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(data, newShape, newStrides, offset, ordering);
+        else
+            return Nd4j.create(data, newShape, newStrides, offset, ordering);
     }
 
     protected INDArray create(DataBuffer data, int[] newShape, int[] newStrides, int offset) {
-        return Nd4j.create(data, newShape, newStrides, offset);
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(data, newShape, newStrides, offset);
+        else
+            return Nd4j.create(data, newShape, newStrides, offset);
     }
 
     protected INDArray create(int[] shape) {
-        return Nd4j.create(shape, getStrides(shape, ordering), 0);
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(shape, getStrides(shape, ordering), 0);
+        else
+            return Nd4j.create(shape, getStrides(shape, ordering), 0);
     }
 
     protected INDArray create(int[] shape,int[] strides,int offset) {
-        return Nd4j.create(shape, strides, offset);
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(shape, strides, offset);
+        else
+            return Nd4j.create(shape, strides, offset);
     }
 
     protected int[] getStrides(int[] shape,char ordering) {
@@ -2533,7 +2548,10 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected INDArray create(int[] shape, char ordering) {
-        return Nd4j.create(shape, ordering);
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(shape, ordering);
+        else
+            return Nd4j.create(shape, ordering);
     }
 
     /**
@@ -2747,7 +2765,10 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     private INDArray create(int[] shape, int[] stride) {
-        return Nd4j.create(shape, stride);
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(shape, stride);
+        else
+            return Nd4j.create(shape, stride);
     }
 
     /**
@@ -3069,7 +3090,7 @@ public abstract class BaseNDArray implements INDArray {
 
 
     protected INDArray createScalarForIndex(int i,boolean applyOffset) {
-        return Nd4j.create(data(), new int[]{1, 1}, new int[]{1, 1}, applyOffset ? offset + i : i);
+        return create(data(), new int[]{1, 1}, new int[]{1, 1}, applyOffset ? offset + i : i);
     }
 
     protected INDArray createScalar(double d) {
@@ -3283,7 +3304,7 @@ public abstract class BaseNDArray implements INDArray {
             if(isRowVector()) {
                 if(shape.length == 1) {
                     int[] shape2 = Ints.concat(new int[]{1},new int[]{ArrayUtil.prod(Ints.concat(shape,shape()))});
-                    INDArray ret = Nd4j.create(shape2);
+                    INDArray ret = create(shape2);
                     int curr = 0;
                     for(int i = 0; i < ret.length(); i++) {
                         ret.putScalar(i,getDouble(curr));
@@ -3297,7 +3318,7 @@ public abstract class BaseNDArray implements INDArray {
 
                 }
                 else {
-                    INDArray ret = Nd4j.create(shape);
+                    INDArray ret = create(shape);
                     INDArray retLinear = ret.linearView();
                     int curr = 0;
                     for(int i = 0; i < ret.length(); i++) {
@@ -3312,7 +3333,7 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
             else {
-                INDArray ret = Nd4j.create(shape);
+                INDArray ret = create(shape);
                 INDArray retLinear = ret.linearView();
 
                 int curr = 0;
@@ -3530,7 +3551,10 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {
-        return Nd4j.create(data,shape,strides,offset(),ordering());
+        if (this instanceof IComplexNDArray)
+            return Nd4j.createComplex(data, shape, strides, offset(), ordering());
+        else
+            return Nd4j.create(data,shape,strides,offset(),ordering());
     }
 
     @Override
@@ -3971,7 +3995,7 @@ public abstract class BaseNDArray implements INDArray {
         // (for example when asking for a row/column, this will account for the
         // original offset) while still accounting for the truncated shape
         if(offsetAugment > 0)
-            ret = Nd4j.create(ret.data(),ret.shape(),ret.stride(),ret.offset() + offsetAugment);
+            ret = create(ret.data(), ret.shape(), ret.stride(), ret.offset() + offsetAugment);
         return ret;
     }
 
