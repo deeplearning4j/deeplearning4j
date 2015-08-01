@@ -3861,7 +3861,7 @@ public class Nd4j {
 
     /**
      * Reshapes an ndarray to remove leading 1s
-     * @param toStrip the ndarray to reshape
+     * @param toStrip the ndarray to newShapeNoCopy
      * @return the reshaped ndarray
      */
     public static INDArray stripOnes(INDArray toStrip) {

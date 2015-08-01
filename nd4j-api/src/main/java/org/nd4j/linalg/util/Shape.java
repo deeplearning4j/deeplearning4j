@@ -396,6 +396,129 @@ public class Shape {
 
 
     /**
+     * A port of numpy's reshaping algorithm that leverages
+     * no copy where possible and returns
+     * null if the reshape
+     * couldn't happen without copying
+     * @param arr  the array to reshape
+     * @param newShape the new shape
+     * @param isFOrder whether the array will be fortran ordered or not
+     * @return null if a reshape isn't possible, or a new ndarray
+     */
+    public static  INDArray newShapeNoCopy(INDArray arr, int[] newShape, boolean isFOrder) {
+        int oldnd;
+        int[] olddims = arr.shape();
+        int[] oldstrides = arr.stride();
+        int np, op, last_stride;
+        int oi, oj, ok, ni, nj, nk;
+        int[] newStrides = new int[newShape.length];
+        oldnd = 0;
+    /*
+     * Remove axes with dimension 1 from the old array. They have no effect
+     * but would need special cases since their strides do not matter.
+     */
+        for (oi = 0; oi < arr.rank(); oi++) {
+            if (arr.size(oi) != 1) {
+                olddims[oldnd] = arr.size(oi);
+                oldstrides[oldnd] = arr.stride(oi);
+                oldnd++;
+            }
+        }
+
+        np = 1;
+        for (ni = 0; ni < newShape.length; ni++) {
+            np *= newShape[ni];
+        }
+        op = 1;
+        for (oi = 0; oi < oldnd; oi++) {
+            op *= olddims[oi];
+        }
+        if (np != op) {
+        /* different total sizes; no hope */
+            return null;
+        }
+
+        if (np == 0) {
+        /* the current code does not handle 0-sized arrays, so give up */
+            return null;
+        }
+
+    /* oi to oj and ni to nj give the axis ranges currently worked with */
+        oi = 0;
+        oj = 1;
+        ni = 0;
+        nj = 1;
+        while (ni < newShape.length && oi < oldnd) {
+            np = newShape[ni];
+            op = olddims[oi];
+
+            while (np != op) {
+                if (np < op) {
+                /* Misses trailing 1s, these are handled later */
+                    np *= newShape[nj++];
+                } else {
+                    op *= olddims[oj++];
+                }
+            }
+
+        /* Check whether the original axes can be combined */
+            for (ok = oi; ok < oj - 1; ok++) {
+                if (isFOrder) {
+                    if (oldstrides[ok + 1] != olddims[ok]*oldstrides[ok]) {
+                     /* not contiguous enough */
+                        return null;
+                    }
+                }
+                else {
+                /* C order */
+                    if (oldstrides[ok] != olddims[ok+1]*oldstrides[ok+1]) {
+                    /* not contiguous enough */
+                        return null;
+                    }
+                }
+            }
+
+             /* Calculate new strides for all axes currently worked with */
+            if (isFOrder) {
+                newStrides[ni] = oldstrides[oi];
+                for (nk = ni + 1; nk < nj; nk++) {
+                    newStrides[nk] = newStrides[nk - 1]* newShape[nk - 1];
+                }
+            }
+            else {
+            /* C order */
+                newStrides[nj - 1] = oldstrides[oj - 1];
+                for (nk = nj - 1; nk > ni; nk--) {
+                    newStrides[nk - 1] = newStrides[nk]* newShape[nk];
+                }
+            }
+            ni = nj++;
+            oi = oj++;
+        }
+
+    /*
+     * Set strides corresponding to trailing 1s of the new shape.
+     */
+        if (ni >= 1) {
+            last_stride = newStrides[ni - 1];
+        }
+        else {
+            last_stride = arr.elementStride();
+        }
+        if (isFOrder) {
+            if(ni >= 1)
+                last_stride *= newShape[ni - 1];
+        }
+        for (nk = ni; nk < newShape.length; nk++) {
+            newStrides[nk] = last_stride;
+        }
+
+
+        return Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
+    }
+
+
+    /**
      * Returns true for the case where
      * singleton dimensions are being compared
      *

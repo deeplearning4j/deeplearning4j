@@ -5,6 +5,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.util.Shape;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -80,7 +81,7 @@ public class ShapeTests extends BaseNd4jTest {
         INDArray firstTensorTest = twoTwoByThree.tensorAlongDimension(0, 0, 1);
         assertEquals(firstTensor,firstTensorTest);
         INDArray secondTensor = Nd4j.create(new double[][]{{5, 6}, {7, 8}});
-        INDArray secondTensorTest = twoTwoByThree.tensorAlongDimension(1,0,1);
+        INDArray secondTensorTest = twoTwoByThree.tensorAlongDimension(1, 0, 1);
         assertEquals(secondTensor,secondTensorTest);
 
     }
@@ -108,6 +109,39 @@ public class ShapeTests extends BaseNd4jTest {
 
     }
 
+
+
+    @Test
+    public void testVectorAlongDimension() {
+        INDArray arr = Nd4j.linspace(1, 24, 24).reshape(4, 3, 2);
+        INDArray assertion = Nd4j.create(new float[]{5,17}, new int[]{1,2});
+        INDArray vectorDimensionTest = arr.vectorAlongDimension(1, 2);
+        assertEquals(assertion,vectorDimensionTest);
+        INDArray zeroOne = arr.vectorAlongDimension(0, 1);
+        assertEquals(zeroOne, Nd4j.create(new float[]{1, 5,9}));
+
+        INDArray testColumn2Assertion = Nd4j.create(new float[]{13,17,21});
+        INDArray testColumn2 = arr.vectorAlongDimension(1, 1);
+
+        assertEquals(testColumn2Assertion, testColumn2);
+
+
+        INDArray testColumn3Assertion = Nd4j.create(new float[]{2,6,10});
+        INDArray testColumn3 = arr.vectorAlongDimension(2, 1);
+        assertEquals(testColumn3Assertion, testColumn3);
+
+
+        INDArray v1 = Nd4j.linspace(1, 4, 4).reshape(new int[]{2, 2});
+        INDArray testColumnV1 = v1.vectorAlongDimension(0, 0);
+        INDArray testColumnV1Assertion = Nd4j.create(new float[]{1, 2});
+        assertEquals(testColumnV1Assertion, testColumnV1);
+
+        INDArray testRowV1 = v1.vectorAlongDimension(1, 0);
+        INDArray testRowV1Assertion = Nd4j.create(new float[]{3, 4});
+        assertEquals(testRowV1Assertion, testRowV1);
+
+    }
+
     @Test
     public void testThreeTwoTwo() {
         INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3,2,2);
@@ -127,6 +161,13 @@ public class ShapeTests extends BaseNd4jTest {
             assertEquals(assertions[i],test);
         }
 
+    }
+
+    @Test
+    public void testNoCopy() {
+        INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12);
+        INDArray arr = Shape.newShapeNoCopy(threeTwoTwo,new int[]{3,2,2},true);
+        assertArrayEquals(arr.shape(),new int[]{3,2,2});
     }
 
     @Test
