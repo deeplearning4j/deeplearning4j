@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -30,19 +31,59 @@ import static org.junit.Assert.*;
 public class TestConvolutionLayer {
 
     @Test
-    public void testFeedForward() throws Exception  {
+    public void testNumExamplesMatch() throws Exception  {
         DataSetIterator mnist = new MnistDataSetIterator(10,10);
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().kernelSize(20,20)
-                .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .kernelSize(9,9)
-                .layer(new ConvolutionLayer())
-                .nIn(1).nOut(2).build();
-        Layer convolutionLayer =  LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
         DataSet next = mnist.next();
-        INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1,28,28);
-        INDArray conv = convolutionLayer.activate(input);
-        assertEquals(input.slices(),conv.slices());
 
+        Layer layer = getCNNConfig(1, 2, 9, 9, new int[] {3,3}, new int[] {1,1});
+
+        INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1,28,28);
+        INDArray conv = layer.activate(input);
+
+        assertEquals(input.slices(), conv.slices());
+
+    }
+
+
+    @Test
+    public void testFeatureMapSpaceSize() throws Exception  {
+        int inputWidth = 28;
+        int inputHeight = 28;
+        int kernelWidth = 9;
+        int kernelHeight = 9;
+        int[] stride = new int[] {3,3};
+        int[] padding = new int[] {1,1};
+        int nIn = 1;
+        int nOut = 2;
+
+        DataSetIterator mnist = new MnistDataSetIterator(10, 10);
+        DataSet next = mnist.next();
+
+        Layer layer = getCNNConfig(nIn, nOut, kernelWidth, kernelHeight, stride, padding);
+
+        INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1, inputWidth, inputHeight);
+        INDArray conv = layer.activate(input);
+
+        int featureMapWidth = (inputWidth - kernelWidth) + (2*padding[0]) / stride[0] + 1;
+        assertEquals(featureMapWidth, conv.shape()[0]);
+        assertEquals(nOut, conv.shape()[2]);
+
+    }
+
+
+
+    private static Layer getCNNConfig(int nIn, int nOut, int kernelWidth, int kernelHeight, int[] stride, int[] padding){
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activationFunction("relu")
+                .iterations(1)
+                .stride(stride)
+                .padding(padding)
+                .layer(new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight}, Convolution.Type.SAME)
+                        .nIn(nIn)
+                        .nOut(nOut)
+                        .build())
+                .build();
+        return LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
 
     }
 
