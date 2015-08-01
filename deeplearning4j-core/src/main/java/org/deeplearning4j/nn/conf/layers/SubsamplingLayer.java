@@ -14,11 +14,11 @@ import org.deeplearning4j.nn.weights.WeightInit;
 public class SubsamplingLayer extends Layer {
 
     private static final long serialVersionUID = -7095644470333017030L;
-    protected poolingType poolingType;
+    protected PoolingType poolingType;
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
 
-    public enum poolingType {
+    public enum PoolingType {
         MAX, AVG, SUM, NONE
     }
 
@@ -31,11 +31,11 @@ public class SubsamplingLayer extends Layer {
 
     @AllArgsConstructor
     public static class Builder extends Layer.Builder {
-        private poolingType poolingType;
+        private PoolingType poolingType;
         private int[] stride; // Default is 2. Down-sample by a factor of 2
         private int[] kernelSize; // Same as filter size from the last conv layer
 
-        public Builder(poolingType poolingType, int[] stride) {
+        public Builder(PoolingType poolingType, int[] stride) {
             this.poolingType = poolingType;
             this.stride = stride;
         }

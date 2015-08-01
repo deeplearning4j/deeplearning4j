@@ -94,7 +94,7 @@ public abstract class BaseLayer implements Layer {
 
 
     @Override
-    public Collection<IterationListener> getIterationListeners() {
+    public Collection<IterationListener> getListeners() {
         return iterationListeners;
     }
 
@@ -146,20 +146,21 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
-        //needs to be number of features by examples
-        Gradient ret = new DefaultGradient();
-        INDArray nextWeights = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray nextDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-        INDArray delta = nextWeights.mmul(nextDelta.transpose()).transpose();
-        delta.muli(derivative);
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+        //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
+        INDArray z = preOutput(input);
+        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
+        INDArray delta = epsilon.muli(activationDerivative);
 
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(activation).transpose());
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta);
-        return ret;
+        Gradient ret = new DefaultGradient();
+        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.transpose().mmul(input).transpose());
+        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
+        
+        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+
+        return new Pair<>(ret,epsilonNext);
     }
 
-    @Override
     public void fit() {
         fit(this.input);
     }
@@ -233,10 +234,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        if (!Shape.shapeEquals(gradient.shape(),getParam(paramType).shape()))
-            getParam(paramType).addi(gradient.sum(0));
-        else
-            getParam(paramType).addi(gradient);
+		setParam(paramType, getParam(paramType).addi(gradient));
     }
 
 
@@ -351,7 +349,6 @@ public abstract class BaseLayer implements Layer {
         if(conf.isUseDropConnect() && training) {
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
-
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
         return ret;
     }
@@ -487,7 +484,7 @@ public abstract class BaseLayer implements Layer {
             applyDropOutIfNecessary(this.input,true);
         }
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(getIterationListeners())
+                .model(this).configure(conf()).listeners(getListeners())
                 .build();
         this.optimizer = solver.getOptimizer();
         solver.optimize();
@@ -539,7 +536,7 @@ public abstract class BaseLayer implements Layer {
                 ", paramInitializer=" + paramInitializer +
                 ", score=" + score +
                 ", optimizer=" + optimizer +
-                ", iterationListeners=" + iterationListeners +
+                ", listeners=" + iterationListeners +
                 '}';
     }
 
@@ -562,26 +559,6 @@ public abstract class BaseLayer implements Layer {
         }
 
         return layer;
-    }
-
-    @Deprecated
-    @Override
-    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
-        //figure out how to set ixes and deltas
-        INDArray delta = activation.transpose().mmul(ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY));
-        INDArray biasDelta = delta.mean(0);
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY).transpose();
-        Gradient ret = new DefaultGradient();
-        INDArray errorForEach = ixes.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray nextIx =  errorForEach.mmul(weights).muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(previousActivation, activation).derivative()));
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, nextIx);
-        INDArray deltaColumnSums = nextIx.isVector() ? nextIx.dup() : nextIx.mean(0);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,deltaColumnSums);
-        Gradient weightDelta = new DefaultGradient();
-        weightDelta.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,delta);
-        weightDelta.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,biasDelta);
-        return new Pair<>(ret,weightDelta);
-
     }
 
     @Override

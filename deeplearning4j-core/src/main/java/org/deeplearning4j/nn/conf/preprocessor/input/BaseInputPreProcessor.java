@@ -8,10 +8,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public abstract class BaseInputPreProcessor implements InputPreProcessor {
 
-    @Override
-    public INDArray backwardPreProcess(INDArray input) {
-        return null;
-    }
 
     @Override
     public boolean equals(Object obj) {

@@ -322,7 +322,7 @@ public class RNTN implements Layer {
         this.index = index;
     }
 
-    public Collection<IterationListener> getIterationListeners() {
+    public Collection<IterationListener> getListeners() {
         return iterationListeners;
     }
 
@@ -1163,7 +1163,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
         return null;
     }
 
@@ -1255,11 +1255,6 @@ public class RNTN implements Layer {
 
     @Override
     public Layer clone() {
-        return null;
-    }
-
-    @Override
-    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
         return null;
     }
 

@@ -6,7 +6,6 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,7 +27,7 @@ public class SubsampleTests {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .poolingType(SubsamplingLayer.poolingType.MAX).filterSize(5,1,28,28)
+                .poolingType(SubsamplingLayer.PoolingType.MAX)
                 .layer(new SubsamplingLayer())
                 .nIn(784).nOut(1).build();
 

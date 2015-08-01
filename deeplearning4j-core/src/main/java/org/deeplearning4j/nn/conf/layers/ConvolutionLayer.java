@@ -21,17 +21,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     private ConvolutionLayer(Builder builder) {
     	super(builder);
-        this.kernelSize = builder.filterSize;
+        this.kernelSize = builder.kernelSize;
         this.convolutionType = builder.convolutionType;
     }
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private int[] filterSize; // Square filter
+        private int[] kernelSize; // Square filter
         private Convolution.Type convolutionType; // FULL / VALID / SAME
 
-        public Builder(int[] filterSize) {
-            this.filterSize = filterSize;
+        public Builder(int[] kernelSize) {
+            this.kernelSize = kernelSize;
         }
 
         @Override

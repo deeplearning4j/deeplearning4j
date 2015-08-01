@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.preprocessor.input;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.OutputPostProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -26,15 +27,27 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class ComposableInputPreProcessor extends BaseInputPreProcessor {
-    private InputPreProcessor[] preProcessors;
+    private InputPreProcessor[] inputPreProcessors;
+    private OutputPostProcessor[] outputPostProcessors;
 
-    public ComposableInputPreProcessor(InputPreProcessor...preProcessors) {
-        this.preProcessors  = preProcessors;
+    public ComposableInputPreProcessor(InputPreProcessor[] inputPreProcessor, OutputPostProcessor[] outputPostProcessors) {
+        this.inputPreProcessors = inputPreProcessors;
+        this.outputPostProcessors = outputPostProcessors;
     }
+
     @Override
     public INDArray preProcess(INDArray input) {
-        for(InputPreProcessor preProcessor : preProcessors)
+        for(InputPreProcessor preProcessor : inputPreProcessors)
         input = preProcessor.preProcess(input);
         return input;
     }
+
+    @Override
+    public INDArray backprop(INDArray output) {
+        for(OutputPostProcessor outputPostProcessor : outputPostProcessors)
+            output = outputPostProcessor.backprop(output);
+        return output;
+    }
+
+
 }
