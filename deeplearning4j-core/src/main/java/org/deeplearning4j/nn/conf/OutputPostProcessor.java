@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -39,11 +41,12 @@ public interface OutputPostProcessor extends Serializable {
     INDArray preProcess(INDArray output);
 
 
-    /**
-     * Reverse the process for backward
+    /**Reverse the process for backprop. Process Gradient/epsilon
+     * (from layer above) before using them to calculate the backprop
+     * gradient for this layer.
      * @param input the reverse process
      * @return the reverse of the pre preprocessing on the output
      */
-    INDArray backprop(INDArray input);
+    Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> input);
 
 }

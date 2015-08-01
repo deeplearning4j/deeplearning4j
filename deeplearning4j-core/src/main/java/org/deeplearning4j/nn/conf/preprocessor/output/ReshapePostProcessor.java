@@ -18,31 +18,44 @@
 
 package org.deeplearning4j.nn.conf.preprocessor.output;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Reshape post processor
+/**Reshape post processor.<br>
+ * Used to reshape activations on forward pass.<br>
+ * Also (optionally, if fromShape != null) used to reshape, weights*deltas
+ * during backward pass. Otherwise, no changes are made during backward pass
+ * 
  * @author Adam Gibson
  */
 public class ReshapePostProcessor extends BaseOutputPostProcessor {
-    private int[] prevShape;
-    private int[] newShape;
+	private int[] toShape;		//Activations: To this shape in forward pass
+	private int[] fromShape;	//Epsilons: To this shape in backward pass
+    
 
+	/**@param toShape The shape that activations are reshaped to
+	 * @param fromShape May be null. If null: no change/op during backward pass.
+	 * Otherwise fromShape is the shape that epsilons (weights*deltas or equiv.)
+	 *  are reshaped to by backprop(...)
+	 */
+    public ReshapePostProcessor( int[] toShape, int[] fromShape ){
+    	this.toShape = toShape;
+    	this.fromShape = fromShape;
+    }
 
-    public ReshapePostProcessor(int... shape) {
-        this.newShape = shape;
+    public ReshapePostProcessor(int... toShape) {
+        this(toShape,null);
     }
 
     @Override
     public INDArray preProcess(INDArray output) {
-        this.prevShape = output.shape();
-        return output.reshape(newShape);
+        return output.reshape(toShape);
     }
 
     @Override
-    public INDArray backprop(INDArray input) {
-        return input.reshape(prevShape);
+    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> input) {
+    	if( fromShape == null ) return input;	//no-op
+    	return new Pair<>(input.getFirst(), input.getSecond().reshape(fromShape));
     }
-
-
 }

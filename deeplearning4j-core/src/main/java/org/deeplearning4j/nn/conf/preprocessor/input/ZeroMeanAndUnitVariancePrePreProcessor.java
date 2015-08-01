@@ -18,6 +18,9 @@
 
 package org.deeplearning4j.nn.conf.preprocessor.input;
 
+
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -27,7 +30,9 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  */
 public class ZeroMeanAndUnitVariancePrePreProcessor extends BaseInputPreProcessor {
-    @Override
+	private static final long serialVersionUID = -5180141134551279180L;
+
+	@Override
     public INDArray preProcess(INDArray input) {
         INDArray columnMeans = input.mean(0);
         INDArray columnStds = input.std(0);
@@ -38,8 +43,8 @@ public class ZeroMeanAndUnitVariancePrePreProcessor extends BaseInputPreProcesso
     }
 
     @Override
-    public INDArray backprop(INDArray output) {
-        return null;
+    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> output) {
+        return output;	//no-op
     }
 
 
