@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.util.Arrays;
+
 /**
  * @author Adam Gibson
  */
@@ -48,6 +50,51 @@ public class ConcatTestsC extends BaseNd4jTest {
 
 
 
+    }
+
+
+    @Test
+    public void testConcatScalars() {
+        INDArray first = Nd4j.arange(0,1).reshape(1, 1);
+        INDArray second = Nd4j.arange(0,1).reshape(1, 1);
+        INDArray firstRet = Nd4j.concat(0, first, second);
+        assertTrue(firstRet.isColumnVector());
+        INDArray secondRet = Nd4j.concat(1, first, second);
+        assertTrue(secondRet.isRowVector());
+
+
+    }
+
+    @Test
+    public void testConcatMatrices() {
+        INDArray a = Nd4j.linspace(1,4,4).reshape(2, 2);
+        INDArray b = a.dup();
+
+
+        INDArray concat1 = Nd4j.concat(1, a, b);
+        INDArray oneAssertion = Nd4j.create(new double[][]{{1, 2, 1, 2}, {3, 4, 3, 4}});
+        assertEquals(oneAssertion,concat1);
+
+        INDArray concat = Nd4j.concat(0, a, b);
+        INDArray zeroAssertion = Nd4j.create(new double[][]{{1, 2}, {3, 4}, {1, 2}, {3, 4}});
+        assertEquals(zeroAssertion, concat);
+    }
+
+    @Test
+    public void testAssign() {
+        INDArray vector = Nd4j.linspace(1, 5, 5);
+        vector.assign(1);
+        assertEquals(Nd4j.ones(5),vector);
+        INDArray twos = Nd4j.ones(2, 2);
+        INDArray rand = Nd4j.rand(2, 2);
+        twos.assign(rand);
+        assertEquals(rand,twos);
+
+        INDArray tensor = Nd4j.rand((long) 3, 3, 3, 3);
+        INDArray ones = Nd4j.ones(3, 3, 3);
+        assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
+        ones.assign(tensor);
+        assertEquals(tensor,ones);
     }
 
     @Override

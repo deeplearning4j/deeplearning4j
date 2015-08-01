@@ -187,17 +187,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testConcatScalars() {
-        INDArray first = Nd4j.arange(0,1).reshape(1,1);
-        INDArray second = Nd4j.arange(0,1).reshape(1, 1);
-        INDArray firstRet = Nd4j.concat(0, first, second);
-        assertTrue(firstRet.isColumnVector());
-        INDArray secondRet = Nd4j.concat(1, first, second);
-        assertTrue(secondRet.isRowVector());
 
-
-    }
 
 
 
@@ -811,20 +801,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testConcatMatrices() {
-        INDArray a = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray b = a.dup();
-
-
-        INDArray concat1 = Nd4j.concat(1, a, b);
-        INDArray oneAssertion = Nd4j.create(new double[][]{{1, 2, 1, 2}, {3, 4, 3, 4}});
-        assertEquals(oneAssertion,concat1);
-
-        INDArray concat = Nd4j.concat(0, a, b);
-        INDArray zeroAssertion = Nd4j.create(new double[][]{{1, 2}, {3, 4}, {1, 2}, {3, 4}});
-        assertEquals(zeroAssertion, concat);
-    }
 
 
     @Test
@@ -937,23 +913,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, otherAppend);
     }
 
-    @Test
-    public void testPrepend() {
-        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2, 2);
-        INDArray assertion = Nd4j.create(new double[][]{
-                {1, 1, 1, 1, 2},
-                {1, 1, 1, 3, 4}
-        });
 
-        INDArray prepend = Nd4j.prepend(linspace, 3, 1.0, -1);
-        assertEquals(assertion,prepend);
-
-        INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
-        INDArray prepend2 = Nd4j.prepend(linspaced, 2, 0.0, 2);
-        INDArray tensorAssertion = Nd4j.create(new double[]{0, 0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 0, 5, 6, 7, 8, 0, 0, 0, 0, 9, 10, 11, 12, 0, 0, 0, 0, 13, 14, 15, 16}, new int[]{2, 2, 4, 2});
-        assertEquals(tensorAssertion,prepend2);
-
-    }
 
     @Test
     public void testRowVectorMultipleIndices() {
@@ -1293,22 +1253,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testAssign() {
-        INDArray vector = Nd4j.linspace(1, 5, 5);
-        vector.assign(1);
-        assertEquals(Nd4j.ones(5),vector);
-        INDArray twos = Nd4j.ones(2,2);
-        INDArray rand = Nd4j.rand(2,2);
-        twos.assign(rand);
-        assertEquals(rand,twos);
 
-        INDArray tensor = Nd4j.rand((long) 3, 3, 3, 3);
-        INDArray ones = Nd4j.ones(3, 3, 3);
-        assertTrue(Arrays.equals(tensor.shape(), ones.shape()));
-        ones.assign(tensor);
-        assertEquals(tensor,ones);
-    }
 
 
     @Test
