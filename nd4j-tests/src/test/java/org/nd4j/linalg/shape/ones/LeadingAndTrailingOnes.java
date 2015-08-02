@@ -40,6 +40,15 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
         assertEquals(expected, test);
     }
 
+    @Test
+    public void testLeadAndTrail() {
+        INDArray fourD = Nd4j.create(1, 2, 1, 1);
+        assertEquals(2,fourD.length());
+        for(int i = 0; i < fourD.length(); i++)
+            assertEquals(0.0,fourD.getDouble(i));
+
+    }
+
     @Override
     public char ordering() {
         return 'f';

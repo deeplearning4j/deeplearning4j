@@ -908,36 +908,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testGetScalar() {
-        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{4});
-        assertTrue(n.isVector());
-        for (int i = 0; i < n.length(); i++) {
-            INDArray scalar = Nd4j.scalar((float) i + 1);
-            assertEquals(scalar, n.getScalar(i));
-        }
-
-
-    }
-
-    @Test
-    public void testGetScalarFortran() {
-        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{4});
-        for (int i = 0; i < n.length(); i++) {
-            INDArray scalar = Nd4j.scalar((float) i + 1);
-            assertEquals(scalar, n.getScalar(i));
-        }
-
-
-        INDArray twoByTwo = Nd4j.create(new float[][]{{1, 2}, {3, 4}});
-        INDArray column = twoByTwo.getColumn(0);
-        assertEquals(Nd4j.create(new float[]{1, 3}), column);
-        assertEquals(1, column.getFloat(0), 1e-1);
-        assertEquals(3, column.getFloat(1), 1e-1);
-        assertEquals(Nd4j.scalar(1), column.getScalar(0));
-        assertEquals(Nd4j.scalar(3), column.getScalar(1));
-
-    }
 
 
 
@@ -1193,25 +1163,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testFlatten() {
-        INDArray arr = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
-        INDArray flattened = arr.ravel();
-        assertEquals(arr.length(), flattened.length());
-        assertEquals(true, Shape.shapeEquals(new int[]{1, arr.length()}, flattened.shape()));
-        double[] comp = new double[] {1,3,2,4};
-        for (int i = 0; i < arr.length(); i++) {
-            assertEquals(comp[i], flattened.getFloat(i), 1e-1);
-        }
-        assertTrue(flattened.isVector());
-
-
-        INDArray n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
-        INDArray nFlattened = n.ravel();
-        assertTrue(nFlattened.isVector());
-
-
-    }
 
     @Override
     public char ordering() {

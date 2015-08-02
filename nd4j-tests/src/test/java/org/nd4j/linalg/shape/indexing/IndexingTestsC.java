@@ -25,6 +25,13 @@ public class IndexingTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testLinearViewElementWiseMatching() {
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray dup = linspace.dup();
+        linspace.addi(dup);
+    }
+
 
     @Override
     public char ordering() {

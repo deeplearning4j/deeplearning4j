@@ -19,8 +19,7 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-import com.google.common.base.Preconditions;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
+
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
@@ -30,7 +29,6 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.ops.exception.BlasOpErrorMessage;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -299,39 +297,49 @@ public class DefaultOpExecutioner implements OpExecutioner {
             op.exec();
             return op.z();
         }
-        if(dimension.length == 1)
-            return execVector(op,dimension[0]);
-        else {
-            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
-            //ensure vector is proper shape
-            if(retShape.length == 1)
-                retShape = new int[] {1,retShape[0]};
-            if(op instanceof IComplexNDArray) {
-                IComplexNDArray ret = Nd4j.complexZeros(retShape);
-                IComplexNDArray linear = ret.linearView();
-                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                    Op op2 = op.opForDimension(i, dimension);
-                    IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
-                    linear.putScalar(i, result);
 
-                }
-
-                return ret;
-            }
-            else {
-                INDArray ret = Nd4j.zeros(retShape);
-                INDArray linear = ret.linearView();
-                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                    Op op2 = op.opForDimension(i, dimension);
-                    double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
-                    linear.putScalar(i, result);
-
-                }
-
-                return ret;
-            }
-
+        if(dimension[0] == Integer.MAX_VALUE) {
+            if(op.x() instanceof IComplexNDArray)
+                return Nd4j.scalar(execAndReturn(op).currentResultComplex());
+            return Nd4j.scalar(execAndReturn(op).currentResult().doubleValue());
         }
+        int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+        //ensure vector is proper shape
+        if(retShape.length == 1)
+            retShape = new int[] {1,retShape[0]};
+        if(op instanceof IComplexNDArray) {
+            IComplexNDArray ret = Nd4j.createComplex(retShape);
+            IComplexNDArray linear = ret.linearView();
+            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
+                linear.putScalar(i, result);
+
+            }
+
+            if(ret.ordering() == 'c')
+                ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
+
+
+            return ret;
+        }
+        else {
+            INDArray ret = Nd4j.create(retShape);
+            INDArray linear = ret.linearView();
+            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
+                linear.putScalar(i, result);
+
+            }
+
+            if(ret.ordering() == 'c')
+                ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
+
+            return ret;
+        }
+
+
     }
 
 

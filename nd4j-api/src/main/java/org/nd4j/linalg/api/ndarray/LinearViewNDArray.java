@@ -35,6 +35,7 @@ import java.util.List;
  * Row vector view of an ndarray
  * @author Adam Gibson
  */
+@Deprecated
 public class LinearViewNDArray  extends BaseNDArray {
     private INDArray wrapped;
     private List<INDArray> vectors;

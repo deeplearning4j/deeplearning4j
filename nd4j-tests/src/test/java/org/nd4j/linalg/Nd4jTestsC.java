@@ -793,14 +793,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testToFlattened() {
-        INDArray arr = Nd4j.linspace(1,4,4).reshape(2, 2);
-        INDArray flattened = Nd4j.create(new double[]{1, 2, 3, 4, 1, 2, 3, 4});
-        INDArray arr3 = Nd4j.toFlattened(Arrays.asList(arr, arr));
-        assertEquals(flattened, arr3);
-    }
-
 
     @Test
     public void testRowsColumns() {
@@ -1378,25 +1370,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
-    @Test
-    public void testFlatten() {
-        INDArray arr = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
-        INDArray flattened = arr.ravel();
-        assertEquals(arr.length(), flattened.length());
-        assertEquals(true, Shape.shapeEquals(new int[]{1, arr.length()}, flattened.shape()));
-        double[] comp = new double[] {1,2,3,4};
-        for (int i = 0; i < arr.length(); i++) {
-            assertEquals(comp[i], flattened.getFloat(i), 1e-1);
-        }
-        assertTrue(flattened.isVector());
-
-
-        INDArray n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
-        INDArray nFlattened = n.ravel();
-        assertTrue(nFlattened.isVector());
-
-
-    }
 
     @Override
     public char ordering() {
