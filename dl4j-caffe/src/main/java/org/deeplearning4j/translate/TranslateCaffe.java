@@ -19,79 +19,10 @@ public class TranslateCaffe {
 
     protected static Logger log = LoggerFactory.getLogger(TranslateCaffe.class);
 
-
-    /**
-     *
-     * @param is InputStream of the caffemodel
-     * @param sizeLimitMb Size limit of the CodedInputStream
-     * @return NetParameter Java Class
-     * @throws IOException
-     */
-    protected static NetParameter readBinaryNet(InputStream is, int sizeLimitMb) throws IOException {
-        CodedInputStream codeStream = CodedInputStream.newInstance(is);
-        // Increase the limit when loading bigger caffemodels size
-        codeStream.setSizeLimit(sizeLimitMb * 1024 * 1024);
-        return NetParameter.parseFrom(codeStream);
-    }
-
-    /**
-     *
-     * @param binaryNetPath Path of caffemodel
-     * @param sizeLimitMb Size limit of the CodedInputStream
-     * @return NetParameter Java Class
-     * @throws IOException
-     */
-    protected static NetParameter readBinaryNet(String binaryNetPath, int sizeLimitMb) throws IOException {
-        InputStream is = new BufferedInputStream(new FileInputStream(binaryNetPath));
-        return readBinaryNet(is, sizeLimitMb);
-    }
-
-    protected static NetParameter readTextFormatNet(String textFormatNetPath) throws IOException{
-
-        InputStream is = new FileInputStream(textFormatNetPath);
-        InputStreamReader isReader = new InputStreamReader(is, "ASCII");
-
-        NetParameter.Builder builder = NetParameter.newBuilder();
-        TextFormat.merge(isReader, builder);
-        return builder.build();
-    }
-
-    protected static SolverParameter readTextFormatSolver(String textFormatSolverPath) throws IOException {
-
-        InputStream is = new FileInputStream(textFormatSolverPath);
-        InputStreamReader isReader = new InputStreamReader(is, "ASCII");
-
-        SolverParameter.Builder builder = SolverParameter.newBuilder();
-        TextFormat.merge(isReader, builder);
-        return builder.build();
-    }
-
-    protected static SolverNetBuilderContainer read(String netPath,
-                                                String solverPath,
-                                                boolean binaryFile) throws IOException {
-        NetParameter net;
-        SolverParameter solver;
-
-        if (binaryFile) {
-            log.info("Reading in binary format Caffe netowrk configurations");
-            try {
-                net = readBinaryNet(netPath, 10000);
-            } catch (OutOfMemoryError e) {
-                throw new OutOfMemoryError("Model is bigger than 10GB. If you want o raise the limit, " +
-                        "specify the sizeLimitMb");
-            }
-        } else {
-            net = readTextFormatNet(netPath);
-        }
-
-        solver = readTextFormatSolver(solverPath);
-
-        return new SolverNetBuilderContainer(solver, net);
-    }
-
     protected static void translateSolverNet(SolverNetBuilderContainer solverNetBuilder) {
         // logic to translate solver
-        // CODE HERE
+        SolverParameter solver = solverNetBuilder.getSolver();
+//        solver.
         // Instantiate builder and set global
         // setBuilder()
 
@@ -120,7 +51,7 @@ public class TranslateCaffe {
                                                    boolean binaryFile) throws IOException {
 
         // Read the Caffe objects into a Java class
-        SolverNetBuilderContainer solverNetContainer = read(netPath, solverPath, binaryFile);
+        SolverNetBuilderContainer solverNetContainer = LoadCaffe.load(netPath, solverPath, binaryFile);
 
         // Translate SolverParameter and NetParameter
         translateSolverNet(solverNetContainer);

@@ -23,6 +23,7 @@ public class SolverNetBuilderContainer {
     public Builder builder;
     public ListBuilder listBuilder;
 
+    // lombok customized constructor
     public SolverNetBuilderContainer(Caffe.SolverParameter solver, Caffe.NetParameter net) {
         this.solver = solver;
         this.net = net;
@@ -36,7 +37,6 @@ public class SolverNetBuilderContainer {
             return false;
         }
     }
-
 
     // If Net is parsed, then the listBuilder field will be populated
     public Boolean getParsedNet() {

@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 /**
  * @author jeffreytang
  */
-public class CaffeTest {
+public class ReadCaffeTest {
 
     // Define all the paths as String
     public static String getImageNetBinaryNetPath() throws IOException{
@@ -33,7 +33,7 @@ public class CaffeTest {
     public void testBinaryCaffeModelToJavaClass() throws Exception {
 
         // Read the Binary File to a Java Class
-        NetParameter net = TranslateCaffe.readBinaryNet(getImageNetBinaryNetPath(), 1000);
+        NetParameter net = ReadCaffe.readBinaryNet(getImageNetBinaryNetPath(), 1000);
 
         // Test the binary file is read in correctly
         assertEquals(net.getName(), "CaffeNet");
@@ -51,7 +51,7 @@ public class CaffeTest {
     public void testTextFormatSolverProtoToJavaClass() throws IOException {
 
         // Read the Solver proto-text File to a Java Class
-        SolverParameter solver = TranslateCaffe.readTextFormatSolver(getImageNetTextFormatSolverPath());
+        SolverParameter solver = ReadCaffe.readTextFormatSolver(getImageNetTextFormatSolverPath());
 
         assertEquals(solver.getMaxIter(), 450000);
         assertEquals(solver.getMomentum(), 0.9f, 1e-3);
@@ -69,7 +69,7 @@ public class CaffeTest {
     public void testTextFormatNetProtoToJavaClass() throws IOException {
 
         // Read the Net proto-text File to a Java Class
-        NetParameter net = TranslateCaffe.readTextFormatNet(getImageNetTextFormatNetPath());
+        NetParameter net = ReadCaffe.readTextFormatNet(getImageNetTextFormatNetPath());
 
         assertEquals(net.getName(), "nin_imagenet");
         // Not 31 because there is an extra test data layer and an accuracy layer,
@@ -78,18 +78,5 @@ public class CaffeTest {
         assertEquals(net.getLayers(0).getName(), "data");
         assertEquals(net.getLayers(32).getName(), "loss");
     }
-
-//    @Test
-//    public void testReadCaffeWithoutWeights() throws IOException{
-//
-//        String textFormatNetPath = getImageNetBinaryNetPath();
-//        String textFormatSolverPath = getImageNetTextFormatSolverPath();
-//        // Read in Caffe Net configuration and solver without pre-trained weights
-//        SolverNetBuilderContainer solverNet = TranslateCaffe.read(textFormatNetPath,
-//                textFormatSolverPath, false);
-//        SolverParameter solver = solverNet.getSolver();
-//        NetParameter net = solverNet.getNet();
-//        assertTrue(solver != null && net != null);
-//    }
 
 }
