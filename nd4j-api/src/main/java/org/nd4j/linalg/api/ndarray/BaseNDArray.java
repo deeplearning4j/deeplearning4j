@@ -205,6 +205,13 @@ public abstract class BaseNDArray implements INDArray {
         this(shape, stride, 0, ordering);
     }
 
+
+    /**
+     *
+     * @param shape
+     * @param offset
+     * @param ordering
+     */
     public BaseNDArray(int[] shape, int offset, char ordering) {
         this(shape, Nd4j.getStrides(shape, ordering), offset, ordering);
     }
@@ -3586,7 +3593,7 @@ public abstract class BaseNDArray implements INDArray {
             return reshapeAttempt;
 
         INDArray raveled = ravel();
-        return create(raveled.data(), shape, Nd4j.getStrides(shape, order));
+        return create(raveled.data(), shape, getStrides(shape, order));
 
 
 
@@ -3921,58 +3928,6 @@ public abstract class BaseNDArray implements INDArray {
             offsets = ArrayUtil.removeIndex(offsets,ArrayUtil.range(0,shape.length));
         }
 
-        //no stride will help here, need to do manually
-        if (!Indices.isContiguous(indexes)) {
-            INDArray ret = create(shape);
-            if (ret.isVector() && isVector()) {
-                int[] indices = indexes[0].indices();
-                for (int i = 0; i < ret.length(); i++) {
-                    ret.putScalar(i, getDouble(indices[i]));
-                }
-
-                return ret;
-            }
-            if (!ret.isVector()) {
-                if(slices() == 1) {
-                    INDArray newSlice = slice(0);
-                    NDArrayIndex[] putIndices = Arrays.copyOfRange(indexes, 1, indexes.length);
-                    return newSlice.get(putIndices);
-                }
-                else if(indexes.length == 2 && isMatrix()) {
-                    for (int i = 0; i < ret.slices(); i++) {
-                        int sliceToGetFrom = indexes[0].indices()[i];
-                        if(sliceToGetFrom >= slices())
-                            break;
-
-                        INDArray slice = slice(sliceToGetFrom);
-                        INDArray retSlice = ret.slice(i);
-                        int[] finalIndices = indexes[1].indices();
-                        for(int j = 0; j < retSlice.length(); j++) {
-                            if(j >= retSlice.length() || finalIndices[j] >= slice.length())
-                                break;
-                            retSlice.putScalar(j, slice.getDouble(finalIndices[j]));
-                        }
-
-                    }
-                }
-                else {
-                    for (int i = 0; i < ret.slices(); i++) {
-                        INDArray slice = slice(i);
-                        INDArray putSlice = slice.get(Arrays.copyOfRange(indexes, 1, indexes.length));
-                        ret.putSlice(i, putSlice);
-
-                    }
-                }
-
-            } else {
-                INDArray putSlice = slice(0).get(Arrays.copyOfRange(indexes, 1, indexes.length));
-                ret.putSlice(0, putSlice);
-
-            }
-
-
-            return ret;
-        }
 
         //This means upsampling.
         if (ArrayUtil.prod(shape) > length()) {

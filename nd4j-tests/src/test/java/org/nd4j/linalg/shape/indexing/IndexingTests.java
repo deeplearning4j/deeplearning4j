@@ -46,11 +46,38 @@ public class IndexingTests extends BaseNd4jTest  {
         assertEquals(firstAssertion,firstTest);
         INDArray secondAssertion = Nd4j.create(new double[]{3,9});
         INDArray secondTest = threeTwoTwo.get(new NDArrayIndex(2), new NDArrayIndex(0), NDArrayIndex.all());
-        assertEquals(secondAssertion,secondTest);
+        assertEquals(secondAssertion, secondTest);
 
 
 
     }
+
+    @Test
+    public void testGetRows() {
+        INDArray arr = Nd4j.linspace(1,9,9).reshape(3,3);
+        INDArray testAssertion = Nd4j.create(new double[][]{
+                {5, 8},
+                {6, 9}
+        });
+
+        INDArray test = arr.get(new NDArrayIndex(1, 3), new NDArrayIndex(1, 3));
+        assertEquals(testAssertion, test);
+
+    }
+
+    @Test
+    public void testFirstColumn() {
+        INDArray arr = Nd4j.create(new double[][]{
+                {5, 6},
+                {7, 8}
+        });
+
+        INDArray assertion = Nd4j.create(new double[]{5,7});
+        INDArray test = arr.get(NDArrayIndex.all(), new NDArrayIndex(0));
+        assertEquals(assertion,test);
+    }
+
+
 
     @Test
     public void testLinearIndex() {

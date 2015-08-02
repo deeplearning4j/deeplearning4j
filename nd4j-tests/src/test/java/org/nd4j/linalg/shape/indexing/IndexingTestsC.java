@@ -27,11 +27,36 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testLinearViewElementWiseMatching() {
-        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2, 2);
         INDArray dup = linspace.dup();
         linspace.addi(dup);
     }
 
+
+    @Test
+    public void testGetRows() {
+        INDArray arr = Nd4j.linspace(1,9,9).reshape(3,3);
+        INDArray testAssertion = Nd4j.create(new double[][]{
+                {5, 6},
+                {8, 9}
+        });
+
+        INDArray test = arr.get(new NDArrayIndex(1, 3), new NDArrayIndex(1, 3));
+        assertEquals(testAssertion, test);
+
+    }
+
+    @Test
+    public void testFirstColumn() {
+        INDArray arr = Nd4j.create(new double[][]{
+                {5,7},
+                {6,8}
+        });
+
+        INDArray assertion = Nd4j.create(new double[]{5,6});
+        INDArray test = arr.get(NDArrayIndex.all(), new NDArrayIndex(0));
+        assertEquals(assertion,test);
+    }
 
     @Override
     public char ordering() {
