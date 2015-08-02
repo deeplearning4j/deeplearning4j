@@ -29,10 +29,12 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,6 +53,7 @@ public class ConvolutionLayer implements Layer {
     protected ParamInitializer paramInitializer;
     private List<IterationListener> listeners = new ArrayList<>();
     protected int index = 0;
+    private INDArray dropoutMask;
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -65,6 +68,16 @@ public class ConvolutionLayer implements Layer {
     @Override
     public void setIndex(int index) {
         this.index = index;
+    }
+
+    @Override
+    public double l2Magnitude() {
+        return Transforms.pow(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return Transforms.abs(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -100,7 +113,7 @@ public class ConvolutionLayer implements Layer {
         getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
         INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
         gcol = Nd4j.rollAxis(gcol,3);
-        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);
+        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);// TODO: Use user specified type of convolution
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
@@ -119,6 +132,11 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
+    public void update(Gradient gradient) {
+
+    }
+
+    @Override
     public void update(INDArray gradient, String paramType) {
         throw new UnsupportedOperationException();
     }
@@ -129,17 +147,22 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException();
+    public INDArray preOutput(INDArray x, boolean training) {
+        return null;
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-        if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect()) {
-            input = input.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(input.shape()));
+    public INDArray activate(boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect() && training) {
+            input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
         //number of feature maps for the weights
-        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
+        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf); // This returns the kernelSize as an int
         //number of channels of the input
         int inputChannels = ConvolutionUtils.numChannels(input.shape());
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));
@@ -150,7 +173,7 @@ public class ConvolutionLayer implements Layer {
         }
 
         for(int i = 0; i < currentFeatureMaps; i++) {
-            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), 1}, conf.getFeatureMapSize()));
+            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), conf.getKernelSize()[1]}, conf.getFeatureMapSize()));
             for(int j = 0; j <  inputChannels; j++) {
                 INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
                 featureMap.addi(convolved.broadcast(featureMap.shape()));
@@ -162,6 +185,17 @@ public class ConvolutionLayer implements Layer {
         }
         return ret;
     }
+
+    @Override
+    public INDArray activate() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray activate(INDArray input) {
+        return activate(input,true);
+    }
+
 
     @Override
     public Layer transpose() {
@@ -184,6 +218,12 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
+    public void setListeners(IterationListener... listeners) {
+        for(IterationListener l : listeners)
+            this.listeners.add(l);
+    }
+
+    @Override
     public void setListeners(Collection<IterationListener> listeners) {
         this.listeners = new ArrayList<>(listeners);
     }
@@ -200,7 +240,7 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
 
     }
 
@@ -255,12 +295,12 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Gradient gradient() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -280,7 +320,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public INDArray input() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -290,7 +330,7 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override

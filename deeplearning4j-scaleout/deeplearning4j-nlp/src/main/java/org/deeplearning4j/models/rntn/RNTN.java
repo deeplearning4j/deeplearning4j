@@ -326,6 +326,11 @@ public class RNTN implements Layer {
         return iterationListeners;
     }
 
+    @Override
+    public void setListeners(IterationListener... listeners) {
+
+    }
+
     public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
     }
@@ -902,7 +907,7 @@ public class RNTN implements Layer {
                 binaryTensors.values().iterator(),
                 unaryClassification.values().iterator(),
                 featureVectors.vectors());
-        setScore();
+        computeGradientAndScore();
     }
 
     public int getNumParameters() {
@@ -1123,6 +1128,16 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public double l2Magnitude() {
+        return 0;
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return 0;
+    }
+
+    @Override
     public Layer.Type type() {
         return Layer.Type.RECURSIVE;
     }
@@ -1193,6 +1208,11 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public void update(Gradient gradient) {
+
+    }
+
+    @Override
     public NeuralNetConfiguration conf() {
         return null;
     }
@@ -1200,6 +1220,21 @@ public class RNTN implements Layer {
 
     @Override
     public INDArray preOutput(INDArray x) {
+        return null;
+    }
+
+    @Override
+    public INDArray preOutput(INDArray x, boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
         return null;
     }
 
@@ -1229,7 +1264,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
 
     }
 

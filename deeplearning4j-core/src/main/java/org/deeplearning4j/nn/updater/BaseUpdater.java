@@ -21,19 +21,19 @@ public abstract class BaseUpdater implements Updater {
 
     @Override
     public void update(Layer layer, Gradient gradient,int iteration) {
-        Map<String,INDArray> newGradients = new HashMap<>();
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             GradientUpdater updater = init(gradientPair.getKey(),gradientPair.getValue(),layer);
             INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
             postApply(layer,gradient2,gradientPair.getKey());
-            newGradients.put(gradientPair.getKey(),gradient2);
+            gradient.setGradientFor(gradientPair.getKey(),gradient2);
         }
+    }
 
-        //apply the updates
-        for(Map.Entry<String,INDArray> gradientPair : newGradients.entrySet()) {
-            gradient.setGradientFor(gradientPair.getKey(),gradientPair.getValue());
+    @Override
+    public void applyUpdate(Layer layer, Gradient gradient) {
+        for(Map.Entry<String,INDArray> variables : layer.paramTable().entrySet()) {
+            layer.getParam(variables.getKey()).addi(gradient.getGradientFor(variables.getKey()));
         }
-
     }
 
     /**
@@ -47,15 +47,20 @@ public abstract class BaseUpdater implements Updater {
         INDArray params = layer.getParam(param);
         if(conf.isUseRegularization() && conf.getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(params.mul(conf.getL2()));
-        else if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
             gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
+        if(conf.isMiniBatch())
+            gradient.divi((double) layer.input().size(0));
 
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
-        gradient.divi((double) layer.input().size(0));
     }
+
+
+
+
 
     public abstract void init();
 

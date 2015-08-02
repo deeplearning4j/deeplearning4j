@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,13 +49,13 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class SubsamplingLayer implements Layer {
-    //fmSize = floor(self.layers{lL-1}.fmSize./stride);
-    //aka the feature map size relative to a convolution layer
     private NeuralNetConfiguration conf;
     private Layer convLayer;
     protected ParamInitializer paramInitializer;
     private Map<String,INDArray> params;
-    protected int index=0;
+    protected int index = 0;
+    protected INDArray input;
+    private INDArray dropoutMask;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -68,6 +69,16 @@ public class SubsamplingLayer implements Layer {
     @Override
     public void setIndex(int index) {
         this.index = index;
+    }
+
+    @Override
+    public double l2Magnitude() {
+        return 0;
+    }
+
+    @Override
+    public double l1Magnitude() {
+        return 0;
     }
 
     @Override
@@ -94,7 +105,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient errorSignal(Gradient error, INDArray input) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -111,12 +122,45 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray activationMean() {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void update(Gradient gradient) {
+
     }
 
     @Override
     public INDArray preOutput(INDArray x) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray preOutput(INDArray x, boolean training) {
+        return activate(x,training);
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        return activate(this.input,training);
+    }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        if(training && conf.getDropOut() > 0) {
+            this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
+        }
+
+        INDArray ret = null;
+        int numFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
+        for(int i = 0; i < input.slices(); i++) {
+            INDArray downSampled = Transforms.downSample(input.slice(i),conf.getStride());
+            if(ret == null) {
+                ret = Nd4j.create(Ints.concat(new int[]{input.slices(),numFeatureMaps},downSampled.shape()));
+            }
+            ret.putSlice(i, downSampled);
+        }
+        return ret;
     }
 
     @Override
@@ -150,8 +194,8 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        INDArray ret = Nd4j.create(conf.getFilterSize());
-        int[] filterSize = conf.getFilterSize();
+        INDArray ret = Nd4j.create(conf.getKernelSize());
+        int[] filterSize = conf.getKernelSize();
         int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
         int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
         if(filterSize.length < 4)
@@ -185,6 +229,11 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
+    public void setListeners(IterationListener... listeners) {
+
+    }
+
+    @Override
     public void setListeners(Collection<IterationListener> listeners) {
 
     }
@@ -205,7 +254,7 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
 
     }
 
@@ -262,17 +311,17 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Gradient gradient() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int batchSize() {
-        return 0;
+        return input.size(0);
     }
 
     @Override
@@ -287,7 +336,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray input() {
-        return null;
+        return input;
     }
 
     @Override

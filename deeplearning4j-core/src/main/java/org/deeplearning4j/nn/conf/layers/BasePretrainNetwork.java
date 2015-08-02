@@ -18,8 +18,14 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-public abstract class BasePretrainNetwork extends Layer {
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data @NoArgsConstructor
+public abstract class BasePretrainNetwork extends FeedForwardLayer {
     private static final long serialVersionUID = -6945800646970810896L;
-
+    
+    public BasePretrainNetwork(FeedForwardLayer.Builder builder){
+    	super(builder);
+    }
 }

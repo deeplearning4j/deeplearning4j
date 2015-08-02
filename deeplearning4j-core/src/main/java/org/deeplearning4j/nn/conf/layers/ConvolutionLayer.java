@@ -1,37 +1,77 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.convolution.Convolution;
+
 /**
  * @author Adam Gibson
  */
-public class ConvolutionLayer extends Layer {
-
-    /**
-     * Convolution type: max avg or sum
-     */
-    public enum ConvolutionType {
-        MAX,AVG,SUM,NONE
-    }
+@Data
+@NoArgsConstructor
+public class ConvolutionLayer extends FeedForwardLayer {
 
     private static final long serialVersionUID = 3073633667258683720L;
+    protected int[] kernelSize; // Square filter
+    protected Convolution.Type convolutionType; // FULL / VALID / SAME
 
-    @Override
-    public int hashCode() {
-        return 0;
+    private ConvolutionLayer(Builder builder) {
+    	super(builder);
+        this.kernelSize = builder.filterSize;
+        this.convolutionType = builder.convolutionType;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder {
+        private int[] filterSize; // Square filter
+        private Convolution.Type convolutionType; // FULL / VALID / SAME
 
-    public String toString() {
-        return "ConvolutionLayer{" +
-                '}';
+        public Builder(int[] filterSize) {
+            this.filterSize = filterSize;
+        }
+
+        @Override
+        public Builder nIn(int nIn) {
+            super.nIn(nIn);
+            return this;
+        }
+
+        @Override
+        public Builder nOut(int nOut) {
+            super.nOut(nOut);
+            return this;
+        }
+
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public ConvolutionLayer build() {
+            return new ConvolutionLayer(this);
+        }
     }
 }

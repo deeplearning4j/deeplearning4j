@@ -41,6 +41,19 @@ public interface Layer extends Serializable,Cloneable,Model {
     }
 
 
+
+    /**
+     * The l2 magnitude for the weights
+     * @return the l2 magnitude for the weights
+     */
+    double l2Magnitude();
+
+    /**
+     * The l1 magnitude for the weights
+     * @return the l1 magnitude for the weights
+     */
+    double l1Magnitude();
+
     /**
      * Returns the layer type
      * @return
@@ -130,6 +143,11 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Update layer weights and biases with gradient change
      */
 
+    void update(Gradient gradient);
+    /**
+     * Update layer weights and biases with gradient change
+     */
+
     void update(INDArray gradient, String paramType);
 
     /**
@@ -139,6 +157,32 @@ public interface Layer extends Serializable,Cloneable,Model {
      * for this layer
      */
     INDArray preOutput(INDArray x);
+
+    /**
+     * Raw activations
+     * @param x the input to transform
+     * @return the raw activation
+     * for this layer
+     */
+    INDArray preOutput(INDArray x,boolean training);
+
+
+    /**
+     * Trigger an activation with the last specified input
+     * @param training  training or test mode
+     * @return the activation of the last specified input
+     */
+    INDArray activate(boolean training);
+
+    /**
+     * Initialize the layer with the given input
+     * and return the activation for this layer
+     * given this input
+     * @param input the input to use
+     * @param training  train or test mode
+     * @return
+     */
+    INDArray activate(INDArray input,boolean training);
 
     /**
      * Trigger an activation with the last specified input
@@ -187,6 +231,10 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     Collection<IterationListener> getIterationListeners();
 
+    /**
+     * Set the iteration listeners for this layer.
+     */
+    void setListeners(IterationListener...listeners);
     /**
      * Set the iteration listeners for this layer.
      */

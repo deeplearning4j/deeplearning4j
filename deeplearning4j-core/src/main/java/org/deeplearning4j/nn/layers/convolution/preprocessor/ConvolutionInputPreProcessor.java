@@ -26,21 +26,38 @@ import java.util.Arrays;
 
 /**
  * A convolution input pre processor.
- * When passing things in to a convolutional net, a 4d tensor is expected of shape:
- * batch size,1,rows,cols
+ * When passing things in to a convolutional net,
+ * a 4d tensor is expected of shape:
+ * batch size,channels,rows,cols
  *
  * For a typical flattened dataset of images which are of:
- * batch size x rows * cols in size, this gives the equivalent transformation for a convolutional layer of:
+ * batch size x rows * cols in size, this gives the
+ * equivalent transformation
+ * for a convolutional layer of:
  *
- * batch size (inferred from matrix) x 1 x rows x columns
+ * batch size (inferred from matrix) x channels x rows x columns
  *
- * Note that for any output passed in, the number of columns of the passed in feature matrix must be equal to
+ * Note that for any output passed in,
+ * the number of columns of the passed in feature matrix
+ * must be equal to
  * rows * cols passed in to the pre processor.
  *
  * @author Adam Gibson
  */
 public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPreProcessor {
-    private int rows,cols;
+    private int rows,cols,channels = 1;
+
+    /**
+     * Reshape to a channels x rows x columns tensor
+     * @param rows the rows
+     * @param cols the columns
+     * @param channels the channels
+     */
+    public ConvolutionInputPreProcessor(int rows, int cols, int channels) {
+        this.rows = rows;
+        this.cols = cols;
+        this.channels = channels;
+    }
 
     public ConvolutionInputPreProcessor(int rows, int cols) {
         this.rows = rows;
@@ -54,6 +71,16 @@ public class ConvolutionInputPreProcessor implements OutputPreProcessor,InputPre
         if(output.columns() != rows * cols)
             throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(output.shape()));
 
-        return output.reshape(output.rows(),1,rows,cols);
+        return output.reshape(output.size(0),channels,rows,cols);
+    }
+
+    @Override
+    public INDArray backward(INDArray toReverse) {
+        return null;
+    }
+
+    @Override
+    public INDArray backwardPreProcess(INDArray input) {
+        return null;
     }
 }

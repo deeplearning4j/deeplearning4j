@@ -232,14 +232,14 @@ public class VocabActor extends UntypedActor {
         //note that for purposes of word frequency, the
         //internal vocab and the final vocab
         //at the class level contain the same references
-        if(!Util.matchesAnyStopWord(stopWords,token) && token != null && !token.isEmpty()) {
+        if(!Util.matchesAnyStopWord(stopWords,token) && !token.isEmpty()) {
             if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
                 int idx = cache.numWords();
                 token2.setIndex(idx);
                 cache.putVocabWord(token);
             }
 
-            else  if(Util.matchesAnyStopWord(stopWords,token) && token != null && !token.isEmpty()) {
+            else  if(Util.matchesAnyStopWord(stopWords,token) && !token.isEmpty()) {
                 token = "STOP";
                 if(!cache.containsWord(token) && cache.wordFrequency(token) >= minWordFrequency) {
                     int idx = cache.numWords();

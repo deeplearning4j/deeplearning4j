@@ -25,18 +25,23 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
+import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**LSTM layer implementation.
+/**
+ *
+ * LSTM layer implementation.
  * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
  * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
  * http://arxiv.org/pdf/1503.04069.pdf
+ *
+ *
  * @author Alex Black
  */
 public class GravesLSTM extends BaseLayer {
@@ -59,25 +64,26 @@ public class GravesLSTM extends BaseLayer {
 	public Gradient gradient() {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
-	
+
 	@Override
 	public Gradient calcGradient(Gradient layerError, INDArray activation){
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
-	
+
 	@Override
-    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+	public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
 		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-		
+
 		INDArray nextWeights = nextLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);		//Weights for next layer
 		INDArray nextDelta = nextGradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
-		
+
 		//Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
 		int hiddenLayerSize = recurrentWeights.rows();	//i.e., n^L
 		int prevLayerSize = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS).shape()[0];
 		int miniBatchSize = nextDelta.size(0);
-		int timeSeriesLength = (nextDelta.rank()<3 ? 1 : nextDelta.size(2));	//Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
-		
+		boolean is2dInput = nextDelta.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
+		int timeSeriesLength = (is2dInput? 1 : nextDelta.size(2));
+
 		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
 		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2*hiddenLayerSize));
 		INDArray wFF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize,4*hiddenLayerSize+1));
@@ -85,8 +91,8 @@ public class GravesLSTM extends BaseLayer {
 		INDArray wOO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize+1,4*hiddenLayerSize+2));
 		INDArray wG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(3*hiddenLayerSize,4*hiddenLayerSize));
 		INDArray wGG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize+2,4*hiddenLayerSize+3));
-		
-		
+
+
 		INDArray biasGradients = Nd4j.zeros(new int[]{miniBatchSize,4*hiddenLayerSize,timeSeriesLength});	//Shape in keeping with what BaseLayer.update() expects for bias
 		INDArray inputWeightGradients = Nd4j.zeros(new int[]{prevLayerSize,4*hiddenLayerSize,timeSeriesLength});
 		INDArray recurrentWeightGradients = Nd4j.zeros(new int[]{hiddenLayerSize,4*hiddenLayerSize+3,timeSeriesLength});	//Order: {I,F,O,G,FF,OO,GG}
@@ -98,15 +104,19 @@ public class GravesLSTM extends BaseLayer {
 		 *for the corresponding example
 		 */
 //		INDArray timeSeriesMaskArray = Nd4j.ones(miniBatchSize,timeSeriesLength);	//For now: assume that all data in mini-batch is of length 'timeSeriesLength'
-		
+
 		for( int t=timeSeriesLength-1; t>=0; t-- ){
-			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : memCellActivations.slice(t-1, 2) );	//Shape: [n^L, n^L]
-			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(hiddenLayerSize, hiddenLayerSize) : outputActivations.slice(t-1,2) );	//Shape: [n^L, n^L]; i.e., layer output at prev. time step.
-			
-			INDArray nextLayerDeltaSlice = nextDelta.slice(t, 2);		//delta^{(L+1)t}
+			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : memCellActivations.slice(t-1, 2) );	//Shape: [m, n^L]
+			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : outputActivations.slice(t-1, 2) );	//Shape: [m, n^L]; i.e., layer output at prev. time step.
+
+			INDArray nextLayerDeltaSlice = nextDelta;
+			if (!is2dInput) {
+				nextLayerDeltaSlice = nextDelta.slice(t, 2);
+			}
+					//delta^{(L+1)t}
 			//delta_i^{L(t+1)}
 			INDArray deltaiNext = (t==timeSeriesLength-1 ?
-					Nd4j.zeros(miniBatchSize,hiddenLayerSize) : 
+					Nd4j.zeros(miniBatchSize,hiddenLayerSize) :
 					biasGradients.slice(t+1,2).get(new NDArrayIndex[]{interval(0,miniBatchSize),interval(0,hiddenLayerSize)}));
 			//delta_f^{L(t+1)}
 			INDArray deltafNext = (t==timeSeriesLength-1 ?
@@ -120,7 +130,7 @@ public class GravesLSTM extends BaseLayer {
 			INDArray deltagNext = (t==timeSeriesLength-1 ?
 					Nd4j.zeros(miniBatchSize,hiddenLayerSize) :
 					biasGradients.slice(t+1,2).get(new NDArrayIndex[]{interval(0,miniBatchSize),interval(3*hiddenLayerSize,4*hiddenLayerSize)}));
-			
+
 			//For variable length mini-batch data: Zero out deltas as necessary, so deltas beyond end of each time series are always 0
 			//Not implemented yet, but left here for when this is implemented
 			/*
@@ -131,74 +141,77 @@ public class GravesLSTM extends BaseLayer {
 				deltaoNext.muliColumnVector(maskColumn);
 				deltagNext.muliColumnVector(maskColumn);
 			}*/
-			
+
 			//LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
 			INDArray nablaOut = nextLayerDeltaSlice.mmul(nextWeights.transpose())
 					.addi(deltaiNext.mmul(wI.transpose()))
 					.addi(deltafNext.mmul(wF.transpose()))
 					.addi(deltaoNext.mmul(wO.transpose()))
 					.addi(deltagNext.mmul(wG.transpose()));
-				//Shape: [m,n^L]
-			
+			//Shape: [m,n^L]
+
 			//Output gate deltas:
 			INDArray sigmahOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), prevMemCellActivations.dup()));//	shape: [m,n^L]
 			INDArray zo = ifogZs.slice(t, 2).get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
 			INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zo).derivative());//			shape: [m,n^L]
 			INDArray deltao = nablaOut.mul(sigmahOfS).muli(sigmaoPrimeOfZo);
-				//Shape: [m,n^L]
-			
+			//Shape: [m,n^L]
+
 			//Memory cell error:
 			INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), prevMemCellActivations.dup()));//	shape: [m,n^L]
 			INDArray nextForgetGateAs = (t==timeSeriesLength-1 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) :
-				ifogAs.slice(t,2).get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)) );
+					ifogAs.slice(t,2).get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3*hiddenLayerSize)) );
 			INDArray nablaCellState = nablaOut.mul(prevHiddenUnitActivation).muli(sigmahPrimeOfS)
 					.addi(nextForgetGateAs.mul(prevMemCellActivations))
 					.addi(deltafNext.mmul(Nd4j.diag(wFF)))
 					.addi(deltaoNext.mmul(Nd4j.diag(wOO)))
 					.addi(deltagNext.mmul(Nd4j.diag(wGG)));
-			
+
 			//Forget gate delta:
-			INDArray zf = ifogZs.slice(t, 0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize));	//z_f^{Lt}	shape: [m,n^L]
+			INDArray zf = ifogZs.slice(t, 2).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//z_f^{Lt}	shape: [m,n^L]
 			INDArray deltaf = nablaCellState.mul(prevMemCellActivations)
 					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zf).derivative()));
-				//Shape: [m,n^L]
-			
+			//Shape: [m,n^L]
+
 			//Input modulation gate delta:
-			INDArray zg = ifogZs.slice(t, 0).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize));	//z_g^{Lt}	shape: [m,n^L]
-			INDArray ai = ifogAs.slice(t, 0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize));	//a_i^{Lt}	shape: [m,n^L]
+			INDArray zg = ifogZs.slice(t, 2).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize));	//z_g^{Lt}	shape: [m,n^L]
+			INDArray ai = ifogAs.slice(t, 2).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//a_i^{Lt}	shape: [m,n^L]
 			INDArray deltag = nablaCellState.mul(ai)
 					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", zg).derivative()));
-				//Shape: [m,n^L]
-			
+			//Shape: [m,n^L]
+
 			//Network input delta:
-			INDArray zi = ifogZs.slice(t, 0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize));	//z_i^{Lt}	shape: [m,n^L]
-			INDArray ag = ifogAs.slice(t, 0).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize));	//a_g^{Lt}	shape: [m,n^L]
+			INDArray zi = ifogZs.slice(t, 2).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));	//z_i^{Lt}	shape: [m,n^L]
+			INDArray ag = ifogAs.slice(t, 2).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize));	//a_g^{Lt}	shape: [m,n^L]
 			INDArray deltai = nablaCellState.mul(ag)
 					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh", zi).derivative()));
-				//Shape: [m,n^L]
-			
-			INDArray prevLayerActivationSlice = activation.slice(t, 2);
+			//Shape: [m,n^L]
+
+			INDArray prevLayerActivationSlice = activation;
+			if (!is2dInput) {
+				prevLayerActivationSlice = activation.slice(t, 2);
+			}
 			//Indexing here: all columns (==interval(0,n^(L-1)), 3rd dimension based on IFOG order. Sum over mini-batches occurs in delta*prevLayerActivations
 			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai.transpose().mmul(prevLayerActivationSlice).transpose());
-			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)}, deltaf.transpose().mmul(prevLayerActivationSlice).transpose());
-			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)}, deltao.transpose().mmul(prevLayerActivationSlice).transpose());
-			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize)}, deltag.transpose().mmul(prevLayerActivationSlice).transpose());
-			
+			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}, deltaf.transpose().mmul(prevLayerActivationSlice).transpose());
+			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)}, deltao.transpose().mmul(prevLayerActivationSlice).transpose());
+			inputWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3 * hiddenLayerSize,4 * hiddenLayerSize)}, deltag.transpose().mmul(prevLayerActivationSlice).transpose());
+
 			if( t > 0 ){
 				//Minor optimization. If t==0, then prevHiddenUnitActivation==zeros(n^L,n^L), so dL/dW for recurrent weights will end up as 0 anyway. (They are initialized as 0)
 				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{Ixy} = delta_{ix} * a_{iy}^{L(t-1)}
-				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)}, deltaf.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{Fxy} = delta_{fx} * a_{iy}^{L(t-1)}
-				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)}, deltao.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{O}
-				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize)}, deltag.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{O}
-				
+				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}, deltaf.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{Fxy} = delta_{fx} * a_{iy}^{L(t-1)}
+				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)}, deltao.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{O}
+				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3 * hiddenLayerSize,4 * hiddenLayerSize)}, deltag.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{O}
+
 				INDArray dLdwFF = deltaf.mul(prevMemCellActivations);	//mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
 				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize)}, dLdwFF);	//dL/dw_{FF}
 				INDArray dLdwGG = deltag.mul(prevMemCellActivations);
-				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize+2)}, dLdwGG);	//dL/dw_{GG}
+				recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize + 2)}, dLdwGG);	//dL/dw_{GG}
 			}
 			INDArray dLdwOO = deltao.transpose().mul(memCellActivations.slice(t,2)).transpose();
-			recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize+1)}, dLdwOO);	//dL/dw_{OOxy}
-			
+			recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize + 1)}, dLdwOO);	//dL/dw_{OOxy}
+
 			if( miniBatchSize == 1 ){
 				//Mini-batch size = 1 -> nRows = 1 -> special case for indexing...
 				biasGradients.slice(t,2).put(new NDArrayIndex[]{interval(0,hiddenLayerSize)}, deltai);
@@ -207,9 +220,9 @@ public class GravesLSTM extends BaseLayer {
 				biasGradients.slice(t,2).put(new NDArrayIndex[]{interval(3*hiddenLayerSize,4*hiddenLayerSize)}, deltag);
 			} else {
 				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)}, deltaf);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)}, deltao);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize)}, deltag);
+				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}, deltaf);
+				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3 * hiddenLayerSize)}, deltao);
+				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)}, deltag);
 			}
 		}
 
@@ -218,75 +231,78 @@ public class GravesLSTM extends BaseLayer {
 		gradient.gradientForVariable().put(GravesLSTMParamInitializer.INPUT_WEIGHTS,inputWeightGradients.sum(2));
 		gradient.gradientForVariable().put(GravesLSTMParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients.sum(2));
 		gradient.gradientForVariable().put(GravesLSTMParamInitializer.BIAS, biasGradients.sum(2));
-		
+
 		//TODO: Implement returning of deltas (excluding multiplication by non-linearity) needed by next (lower) layer. This has shape [m,n^L,T],
 		//and is calculated by summing the weights(L-1 to this layer)*deltas for each of the IFOG gates.
 		//See Greff et al. pg11
-		
+
 		return gradient;
 	}
-	
+
 	@Override
-	public INDArray preOutput(INDArray x){
-		return activate(x);
+	public INDArray preOutput(INDArray x) {
+		return activate(x,true);
 	}
-	
+
 	@Override
-	public INDArray activate(){
+	public INDArray preOutput(INDArray x, boolean training) {
+		return activate(x, training);
+	}
+
+	@Override
+	public INDArray activate(INDArray input, boolean training) {
 		//Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
 		//Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
-		
+
 		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
 		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS);			//Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
 		INDArray biases = getParam(GravesLSTMParamInitializer.BIAS); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
-		
-		int[] dataShape = input.shape();
-		boolean is2dInput = dataShape.length < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
-		int timeSeriesLength = (is2dInput ? 1 : dataShape[2]);
-		int hiddenLayerSize = recurrentWeights.rows();	//.shape()[0];
-		int miniBatchSize = dataShape[0];
-		int nIn = inputWeights.shape()[0];		//Size of previous layer (or input)
-		
+
+		boolean is2dInput = input.rank() < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
+		int timeSeriesLength = (is2dInput ? 1 : input.size(2));
+		int hiddenLayerSize = recurrentWeights.size(0);
+		int miniBatchSize = input.size(0);
+		int nIn = inputWeights.size(0);		//Size of previous layer (or input)
+
 		//Apply dropconnect to input (not recurrent) weights only:
-		//TODO: double check train vs. test time for this
-		if(conf.isUseDropConnect()) {
-            if (conf.getDropOut() > 0) {
-                inputWeights = inputWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(inputWeights.shape()).divi(conf.getDropOut()));
-            }
-        }
-		
+		if(conf.isUseDropConnect() && training) {
+			if (conf.getDropOut() > 0) {
+				inputWeights = Dropout.applyDropConnect(this,GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+			}
+		}
+
 		//Extract weights and biases:
 		INDArray wi = inputWeights.get(interval(0,nIn),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize
 		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
 		INDArray bi = biases.get(interval(0,hiddenLayerSize));
-		
-		INDArray wf = inputWeights.get(interval(0,nIn),interval(hiddenLayerSize,2*hiddenLayerSize));
-		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2*hiddenLayerSize));
-		INDArray wFF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize,4*hiddenLayerSize+1));
+
+		INDArray wf = inputWeights.get(interval(0,nIn),interval(hiddenLayerSize,2 * hiddenLayerSize));
+		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2 * hiddenLayerSize));
+		INDArray wFF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize,4 * hiddenLayerSize + 1));
 		INDArray bf = biases.get(interval(hiddenLayerSize,2*hiddenLayerSize));
-		
-		INDArray wo = inputWeights.get(interval(0,nIn),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-		INDArray wO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-		INDArray wOO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize+1,4*hiddenLayerSize+2));
-		INDArray bo = biases.get(interval(2*hiddenLayerSize,3*hiddenLayerSize));
-		
-		INDArray wg = inputWeights.get(interval(0,nIn),interval(3*hiddenLayerSize,4*hiddenLayerSize));
-		INDArray wG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(3*hiddenLayerSize,4*hiddenLayerSize));
-		INDArray wGG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize+2,4*hiddenLayerSize+3));
-		INDArray bg = biases.get(interval(3*hiddenLayerSize,4*hiddenLayerSize));
-		
+
+		INDArray wo = inputWeights.get(interval(0,nIn),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
+		INDArray wO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
+		INDArray wOO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4 * hiddenLayerSize + 1,4 * hiddenLayerSize + 2));
+		INDArray bo = biases.get(interval(2*hiddenLayerSize,3 * hiddenLayerSize));
+
+		INDArray wg = inputWeights.get(interval(0,nIn),interval(3 * hiddenLayerSize,4*hiddenLayerSize));
+		INDArray wG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
+		INDArray wGG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3));
+		INDArray bg = biases.get(interval(3*hiddenLayerSize,4 * hiddenLayerSize));
+
 		//Allocate arrays for activations:
 		INDArray outputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
-		INDArray ifogZ = Nd4j.zeros(new int[]{miniBatchSize,4*hiddenLayerSize,timeSeriesLength});
-		INDArray ifogA = Nd4j.zeros(new int[]{miniBatchSize,4*hiddenLayerSize,timeSeriesLength});
-		INDArray memCellActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength}); 
+		INDArray ifogZ = Nd4j.zeros(new int[]{miniBatchSize,4 * hiddenLayerSize,timeSeriesLength});
+		INDArray ifogA = Nd4j.zeros(new int[]{miniBatchSize,4 * hiddenLayerSize,timeSeriesLength});
+		INDArray memCellActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
 
-		
-		for( int t=0; t<timeSeriesLength; t++ ){
+
+		for( int t = 0; t < timeSeriesLength; t++ ){
 			INDArray miniBatchData = (is2dInput ? input : input.slice(t, 2));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
 			INDArray prevOutputActivations = (t==0 ? Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize}) : outputActivations.slice(t-1,2));	//Shape: [m,nL]
 			INDArray prevMemCellActivations = (t==0 ? Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize}) : memCellActivations.slice(t-1,2));	//Shape: [m,nL]
-			
+
 			//Calculate activations for: network input + forget, output, input modulation gates.
 			INDArray inputActivations = miniBatchData.mmul(wi)
 					.addi(prevOutputActivations.mmul(wI))
@@ -296,7 +312,7 @@ public class GravesLSTM extends BaseLayer {
 					new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)} );
 			ifogZ.slice(t,2).put(iIndexes, inputActivations);
 			ifogA.slice(t,2).put(iIndexes, Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputActivations)));
-			
+
 
 			INDArray forgetGateActivations = miniBatchData.mmul(wf)
 					.addi(prevOutputActivations.mmul(wF))
@@ -308,7 +324,7 @@ public class GravesLSTM extends BaseLayer {
 			ifogA.slice(t,2).put(fIndexes, Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations)));
 			//Reason for diag above: convert column vector -> diagonal matrix. Cell activations are only connected to the FOG gates in the same unit.
 			//They are not connected to any other unit -> wFF_ij = 0 for i \neq j
-			
+
 			INDArray inputModGateActivations = miniBatchData.mmul(wg)
 					.addi(prevOutputActivations.mmul(wG))
 					.addi(prevMemCellActivations.mmul(Nd4j.diag(wGG)))
@@ -318,12 +334,12 @@ public class GravesLSTM extends BaseLayer {
 			ifogZ.slice(t,2).put(gIndexes, inputModGateActivations);
 			ifogA.slice(t,2).put(gIndexes,
 					Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations)));
-			
+
 			//Memory cell activations: (s_t then tanh(s_t))
 			INDArray currentMemoryCellActivations = forgetGateActivations.mul(prevMemCellActivations)
 					.addi(inputModGateActivations.mul(inputActivations));
 			currentMemoryCellActivations = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), currentMemoryCellActivations));
-			
+
 			INDArray outputGateActivations = miniBatchData.mmul(wo)
 					.addi(prevOutputActivations.mmul(wO))
 					.addi(currentMemoryCellActivations.mmul(Nd4j.diag(wOO)))
@@ -332,38 +348,41 @@ public class GravesLSTM extends BaseLayer {
 					new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)});
 			ifogZ.slice(t,2).put(oIndexes, outputGateActivations);
 			ifogA.slice(t,2).put(oIndexes,Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations)));
-			
+
 			//LSTM unit outputs:
 			INDArray currHiddenUnitActivations = outputGateActivations.mul(currentMemoryCellActivations);	//Expected shape: [m,hiddenLayerSize]
-			
+
 			outputActivations.slice(t,2).assign(currHiddenUnitActivations);
 			memCellActivations.slice(t,2).assign(currentMemoryCellActivations);
 		}
-		
+
 		//Save output activations, memory cell state, ifog gate Zs and As for use in backward pass:
 		this.ifogZs = ifogZ;
 		this.ifogAs = ifogA;
 		this.memCellActivations = memCellActivations;
 		this.outputActivations = outputActivations;
-		
+		if (is2dInput) {
+			int[] shape = outputActivations.shape();
+			outputActivations = outputActivations.reshape(shape[0], shape[1]);
+		}
 		return outputActivations;
 	}
-	
+
 	@Override
 	public INDArray activationMean(){
 		return activate();
 	}
-	
+
 	@Override
 	public Type type(){
 		return Type.RECURRENT;
 	}
-	
+
 	@Override
 	public Layer transpose(){
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
-	
+
 	@Override
 	public void clear(){
 		super.clear();
@@ -372,6 +391,6 @@ public class GravesLSTM extends BaseLayer {
 		memCellActivations = null;
 		outputActivations = null;
 	}
-	
+
 
 }

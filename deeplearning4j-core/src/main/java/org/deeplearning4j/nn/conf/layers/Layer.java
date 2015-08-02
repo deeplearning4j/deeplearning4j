@@ -25,6 +25,13 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
  * A neural network layer.
  */
@@ -37,8 +44,51 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         })
+@Data
+@NoArgsConstructor
 public abstract class Layer implements Serializable {
-
     private static final long serialVersionUID = 492217000569721428L;
+    protected String activationFunction;
+    protected WeightInit weightInit;
+    protected Distribution dist;
+    protected double dropOut;
+    
+    public Layer(Builder builder){
+    	this.activationFunction = builder.activationFunction;
+    	this.weightInit = builder.weightInit;
+    	this.dist = builder.dist;
+    	this.dropOut = builder.dropOut;
+    }
 
+    public abstract static class Builder {
+        protected String activationFunction;
+        protected WeightInit weightInit;
+        protected Distribution dist;
+        protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
+
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+        
+        /** Distribution to sample initial weights from. Used in conjunction with
+         * .weightInit(WeightInit.DISTRIBUTION)
+         */
+        public Builder dist(Distribution dist){
+        	this.dist = dist;
+        	return this;
+        }
+
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+
+        public abstract <E extends Layer> E build();
+    }
 }

@@ -108,8 +108,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
     @Override
-    public Gradient gradient() {
-
+    public void computeGradientAndScore() {
         int k = conf.getK();
 
         //POSITIVE PHASE
@@ -121,7 +120,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray chainStart = probHidden.getSecond();
 
 		/*
-		 * Note that at a later date, we can explore alternative methods of 
+		 * Note that at a later date, we can explore alternative methods of
 		 * storing the chain transitions for different kinds of sampling
 		 * and exploring the search space.
 		 */
@@ -137,11 +136,11 @@ public  class RBM extends BasePretrainNetwork {
 
 		/*
 		 * K steps of gibbs sampling. This is the positive phase of contrastive divergence.
-		 * 
+		 *
 		 * There are 4 matrices being computed for each gibbs sampling.
-		 * The samples from both the positive and negative phases and their expected values 
+		 * The samples from both the positive and negative phases and their expected values
 		 * or averages.
-		 * 
+		 *
 		 */
 
         for(int i = 0; i < k; i++) {
@@ -178,14 +177,18 @@ public  class RBM extends BasePretrainNetwork {
             hBiasGradient = probHidden.getSecond().sub(nhMeans).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  vBiasGradient = input.sub(nvSamples).sum(0);
+        INDArray  delta = input.sub(nvSamples);
+        INDArray  vBiasGradient =delta.sum(0);
+
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
-
-        return ret;
+        gradient = ret;
+        setScoreWithZ(delta);
     }
+
+
 
 
 
@@ -226,24 +229,18 @@ public  class RBM extends BasePretrainNetwork {
                 sample.muli(sqrtSigH1Mean);
                 h1Sample = h1Mean.add(sample);
                 h1Sample = max(h1Sample, 0.0);
-                //apply dropout
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case GAUSSIAN: {
                 h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
-                //apply dropout
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case SOFTMAX: {
                 h1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", h1Mean), 0);
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case BINARY: {
                 h1Sample = Nd4j.getDistributions().createBinomial(1, h1Mean).sample(h1Mean.shape());
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             default:
@@ -330,8 +327,7 @@ public  class RBM extends BasePretrainNetwork {
                 preSig = max(preSig, 0.0);
                 return preSig;
             case GAUSSIAN:
-                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
-                preSig.addi(add);
+                preSig.addi(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
                 return preSig;
             case BINARY:
                 return sigmoid(preSig);
@@ -407,7 +403,7 @@ public  class RBM extends BasePretrainNetwork {
             this.sigma = input.var(0).divi(input.rows());
 
         this.input = input.dup();
-        applyDropOutIfNecessary(this.input);
+        applyDropOutIfNecessary(this.input,true);
         contrastiveDivergence();
     }
 

@@ -18,12 +18,13 @@
 
 package org.deeplearning4j.nn.layers;
 
-import java.io.Serializable;
+import java.io.*;
 
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -31,10 +32,12 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -66,26 +69,58 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
         if(input == null || labels == null)
             return;
+
         INDArray output = output(input);
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
-            create.exec();
-            score = create.currentResult().doubleValue();
-        } else {
-            score = LossFunctions.score(
-                    labels,
-                    conf.getLossFunction(),
-                    output,
-                    conf.getL2(),
-                    conf.isUseRegularization());
+        INDArray wGradient = getWeightGradient(output);
+
+        INDArray dy = labels.sub(output);
+        INDArray bGradient = dy.sum(0);
+        Gradient g = new DefaultGradient();
+
+        g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
+        g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bGradient);
+        this.gradient = g;
+        setScoreWithZ(output);
+
+    }
+
+    @Override
+    public Gradient backwardGradient(INDArray derivative, Layer nextLayer, Gradient nextGradient, INDArray activation) {
+        Gradient nextGradients = new DefaultGradient();
+        INDArray activationDeriv = derivative;
+        INDArray layerInput = input;
+
+        INDArray delta = activation.sub(labels).transpose();
+
+        // add other cost functions?
+        if(conf().getLossFunction() != LossFunctions.LossFunction.XENT) {
+            delta.muli(activationDeriv);
         }
 
-        //maximize target
-        if(conf.isMinimize())
-            score = -score;
+        nextGradients.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, delta.mmul(layerInput).transpose());
+        nextGradients.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.transpose());
+        return nextGradients;
+    }
+
+    @Override
+    protected void setScoreWithZ(INDArray z) {
+        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
+            create.exec();
+            score = create.currentResult().doubleValue();
+        }
+
+        else {
+            score = LossCalculation.builder()
+                    .l1(conf.getL1()).l2(conf.getL2())
+                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .labels(labels).z(z).lossFunction(conf.getLossFunction())
+                    .useRegularization(conf.isUseRegularization()).build().score();
+
+        }
     }
 
     @Override
@@ -101,37 +136,17 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public Gradient gradient() {
         LinAlgExceptions.assertRows(input, labels);
-
-
-        //input activation
-        INDArray netOut = activate(input);
-        //difference of outputs
-        INDArray dy = netOut.sub(labels);
-
-
-        INDArray wGradient = getWeightGradient();
-        INDArray bGradient = dy.sum(0);
-        Gradient g = new DefaultGradient();
-
-        g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
-        g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bGradient);
-
-        return g;
+        return gradient;
 
     }
 
 
 
-    private INDArray getWeightGradient() {
-        INDArray z = output(input);
-
+    private INDArray getWeightGradient(INDArray z) {
         switch (conf.getLossFunction()) {
             case MCXENT:
-                INDArray preOut = preOutput(input);
-                //input activation
-                INDArray pYGivenX = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",preOut),1);
                 //difference of outputs
-                INDArray dy = pYGivenX.sub(labels);
+                INDArray dy = labels.sub(z);
                 return input.transpose().mmul(dy);
 
             case XENT:
@@ -150,7 +165,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             case SQUARED_LOSS:
                 return input.transpose().mmul(pow(labels.sub(z),2));
             case NEGATIVELOGLIKELIHOOD:
-                return input.transpose().mmul(log(z).negi());
+                INDArray dy2 = labels.sub(z);
+                return input.transpose().mmul(dy2);
 
 
         }
@@ -248,8 +264,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void fit(INDArray examples, INDArray labels) {
-        this.input = examples.dup();
-        applyDropOutIfNecessary(this.input);
+        this.input = examples;
+        applyDropOutIfNecessary(this.input,true);
         this.labels = labels;
         Solver solver = new Solver.Builder()
                 .configure(conf())
@@ -335,7 +351,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void iterate(INDArray input) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
 
@@ -364,15 +380,15 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
-        INDArray preOutput = preOutput(x);
+        INDArray preOutput = preOutput(x,!test);
         if(conf.getActivationFunction().equals("softmax")) {
-            INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
-            return ret;
+            SoftMax softMax = new SoftMax(preOutput);
+            softMax.exec(1);
+            return softMax.z();
         }
 
-        this.input = x.dup();
         if(!test)
-            applyDropOutIfNecessary(input());
+            applyDropOutIfNecessary(input(),!test);
 
         return super.activate();
 

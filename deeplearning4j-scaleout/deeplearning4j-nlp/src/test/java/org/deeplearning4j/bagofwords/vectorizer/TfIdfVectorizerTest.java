@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNotNull;
 
 /**
@@ -85,7 +86,6 @@ public class TfIdfVectorizerTest {
 
         List<String> labels = Arrays.asList("label1","label2");
         TokenizerFactory tokenizerFactory = new UimaTokenizerFactory();
-
         TextVectorizer vectorizer = new TfidfVectorizer.Builder()
                 .minWords(1).index(index).cache(cache)
                 .stopWords(new ArrayList<String>())
@@ -93,7 +93,12 @@ public class TfIdfVectorizerTest {
                 .iterate(iter).build();
 
         vectorizer.fit();
-        vectorizer.vectorize("",null);
+        try {
+            vectorizer.vectorize("",null);
+            fail("Vectorizer should receive non-null label.");
+        } catch (IllegalArgumentException e) {
+            ;
+        }
 
         VocabWord word = vectorizer.vocab().wordFor("file");
         assumeNotNull(word);

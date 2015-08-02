@@ -23,6 +23,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.nd4j.linalg.factory.Nd4j;
@@ -163,6 +164,7 @@ public class MultiLayerConfiguration implements Serializable {
         protected Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessor = new HashMap<>();
         protected boolean backward = false;
+//        @Deprecated To be deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
 
@@ -235,8 +237,6 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-
-
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
@@ -259,8 +259,8 @@ public class MultiLayerConfiguration implements Serializable {
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            if(hiddenLayerSizes == null)
-                throw new IllegalStateException("Please specify hidden layer sizes");
+//            if(hiddenLayerSizes == null)
+//                throw new IllegalStateException("Please specify hidden layer sizes");
             conf.hiddenLayerSizes = this.hiddenLayerSizes;
             conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
@@ -317,20 +317,16 @@ public class MultiLayerConfiguration implements Serializable {
             return result;
         }
 
+//        @Deprecated To be Deprecated
         public Builder override(ConfOverride override) {
             confOverrides.put(confOverrides.size(),override);
             return this;
         }
-
+//        @Deprecated To be Deprecated
         public Builder override(int layer,ConfOverride override) {
             confOverrides.put(layer,override);
             return this;
         }
 
-
     }
-
-
-
-
 }

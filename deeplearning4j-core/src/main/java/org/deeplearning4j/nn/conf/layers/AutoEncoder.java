@@ -18,34 +18,91 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
  *  Autoencoder.
  * Add Gaussian noise to input and learn
  * a reconstruction function.
  *
  */
+@Data @NoArgsConstructor
 public class AutoEncoder extends BasePretrainNetwork {
-
     private static final long serialVersionUID = -7624965662728637504L;
+    protected double corruptionLevel;
+    protected double sparsity;
 
-    @Override
-    public int hashCode() {
-        return 0;
+    // Builder
+    private AutoEncoder(Builder builder) {
+    	super(builder);
+        this.corruptionLevel = builder.corruptionLevel;
+        this.sparsity = builder.sparsity;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder {
+        private double corruptionLevel = Double.NaN;
+        private double sparsity = Double.NaN;
 
-    public String toString() {
-        return "AutoEncoder{" +
-                '}';
+        public Builder(double corruptionLevel) {
+            this.corruptionLevel = corruptionLevel;
+        }
+        
+        public Builder corruptionLevel(double corruptionLevel){
+        	this.corruptionLevel = corruptionLevel;
+        	return this;
+        }
+        
+        public Builder sparsity(double sparsity){
+        	this.sparsity = sparsity;
+        	return this;
+        }
+
+        @Override
+        public Builder nIn(int nIn) {
+            this.nIn = nIn;
+            return this;
+        }
+
+        @Override
+        public Builder nOut(int nOut) {
+            this.nOut = nOut;
+            return this;
+        }
+
+        @Override
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+
+        @Override
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+
+        @Override
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public AutoEncoder build() {
+            return new AutoEncoder(this);
+        }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	this.dist = dist;
+        	return this;
+        }
     }
 }
