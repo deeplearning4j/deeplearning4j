@@ -38,6 +38,13 @@ public class Convolution {
 
     private static Logger log = LoggerFactory.getLogger(Convolution.class);
 
+    public enum Type {
+        FULL, VALID, SAME
+    }
+
+
+
+
     /**
      * Default no-arg constructor.
      */
@@ -88,6 +95,15 @@ public class Convolution {
         return ret;
     }
 
+    /**
+     *
+     * @param size
+     * @param k
+     * @param s
+     * @param p
+     * @param coverAll
+     * @return
+     */
     public static int outSize(int size,int k,int s,int p, boolean coverAll) {
         if (coverAll)
             return (size + p * 2 - k + s - 1) / s + 1;
@@ -108,6 +124,13 @@ public class Convolution {
         return Nd4j.getConvolution().conv2d(input, kernel, type);
     }
 
+    /**
+     *
+     * @param input
+     * @param kernel
+     * @param type
+     * @return
+     */
     public static INDArray conv2d(IComplexNDArray input, IComplexNDArray kernel, Type type) {
         return Nd4j.getConvolution().conv2d(input, kernel, type);
     }
@@ -162,8 +185,5 @@ public class Convolution {
         return Nd4j.getConvolution().convn(input, kernel, type);
     }
 
-    public enum Type {
-        FULL, VALID, SAME
-    }
 
 }

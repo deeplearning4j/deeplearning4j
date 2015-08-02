@@ -319,8 +319,8 @@ public class Shape {
 
         int i0, i1, ipos, ax_j0, ax_j1, iarrays;
 
-    /* Initialize the strideperm values to the identity. */
-        for (i0 = 0; i0 < rank; ++i0) {
+         /* Initialize the strideperm values to the identity. */
+        for (i0 = 0; i0 < rank; i0++) {
             ret[i0] = i0;
         }
 
@@ -336,8 +336,8 @@ public class Shape {
             ipos = i0;
             ax_j0 = ret[i0];
 
-            for (i1 = i0 - 1; i1 >= 0; --i1) {
-                boolean ambig = true, shouldswap = false;
+            for (i1 = i0 - 1; i1 >= 0; i1--) {
+                boolean ambig = true, shouldSwap = false;
 
                 ax_j1 = ret[i1];
 
@@ -351,12 +351,12 @@ public class Shape {
                          * because in the case of conflicts between
                          * different operands, C-order wins.
                          */
-                            shouldswap = false;
+                            shouldSwap = false;
                         }
                         else {
                         /* Only set swap if it's still ambiguous */
                             if (ambig) {
-                                shouldswap = true;
+                                shouldSwap = true;
                             }
                         }
 
@@ -372,7 +372,7 @@ public class Shape {
              * 'ipos' to 'i1' or stop looking for an insertion point
              */
                 if (!ambig) {
-                    if (shouldswap) {
+                    if (shouldSwap) {
                         ipos = i1;
                     }
                     else {
@@ -384,8 +384,9 @@ public class Shape {
         /* Insert out_strideperm[i0] into the right place */
             if (ipos != i0) {
                 for (i1 = i0; i1 > ipos; i1--) {
-                    ret[i1] = ret[i1-1];
+                    ret[i1] = ret[i1 - 1];
                 }
+
                 ret[ipos] = ax_j0;
             }
         }

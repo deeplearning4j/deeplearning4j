@@ -28,7 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.jblas.JblasBackend;
 //import org.nd4j.linalg.jcublas.JCublasBackend;
-import org.nd4j.linalg.jcublas.JCublasBackend;
+//import org.nd4j.linalg.jcublas.JCublasBackend;
 import org.nd4j.linalg.netlib.NetlibBlasBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
