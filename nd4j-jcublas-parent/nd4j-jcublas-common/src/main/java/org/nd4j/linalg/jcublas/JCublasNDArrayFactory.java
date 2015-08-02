@@ -112,6 +112,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return new JCublasNDArray(data);
     }
 
+    @Override
+    public INDArray create(double[][] data, char ordering) {
+        return new JCublasNDArray(data,ordering);
+    }
+
     /**
      * Create a complex ndarray from the passed in indarray
      *
@@ -391,6 +396,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(float[][] floats) {
         return new JCublasNDArray(floats);
+    }
+
+    @Override
+    public INDArray create(float[][] data, char ordering) {
+        return new JCublasNDArray(data,ordering);
     }
 
     @Override

@@ -53,7 +53,10 @@ public class NetlibBlasNDArray extends BaseNDArray {
 
     public NetlibBlasNDArray(double[][] data) {
         super(data);
+    }
 
+    public NetlibBlasNDArray(double[][] data, char ordering) {
+        super(data, ordering);
     }
 
     /**
@@ -287,6 +290,9 @@ public class NetlibBlasNDArray extends BaseNDArray {
         super(floats);
     }
 
+    public NetlibBlasNDArray(float[][] data, char ordering) {
+        super(data, ordering);
+    }
 
     public NetlibBlasNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
         super(data, shape, stride, offset);
