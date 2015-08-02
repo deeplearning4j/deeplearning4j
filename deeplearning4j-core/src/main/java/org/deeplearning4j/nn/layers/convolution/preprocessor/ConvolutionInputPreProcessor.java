@@ -74,7 +74,7 @@ public class ConvolutionInputPreProcessor implements InputPreProcessor {
     public ConvolutionInputPreProcessor(){}
 
     @Override
-    public INDArray preProcess(INDArray input) {
+    public INDArray process(INDArray input) {
         if(input.shape().length == 4)
             return input;
         if(input.columns() != rows * cols)

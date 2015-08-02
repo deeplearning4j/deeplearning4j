@@ -297,7 +297,6 @@ public class BackPropMLPTest {
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
                 .activationFunction(activationFunction)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(1)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
