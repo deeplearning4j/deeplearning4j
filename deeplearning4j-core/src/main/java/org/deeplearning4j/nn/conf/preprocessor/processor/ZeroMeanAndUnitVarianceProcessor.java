@@ -16,10 +16,11 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor.input;
+package org.deeplearning4j.nn.conf.preprocessor.processor;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.preprocessor.processor.BaseProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,11 +30,11 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adam Gibson
  */
-public class ZeroMeanAndUnitVariancePrePreProcessor extends BaseInputPreProcessor {
-	private static final long serialVersionUID = -5180141134551279180L;
+public class ZeroMeanAndUnitVarianceProcessor extends BaseProcessor {
+
 
 	@Override
-    public INDArray preProcess(INDArray input) {
+    public INDArray process(INDArray input) {
         INDArray columnMeans = input.mean(0);
         INDArray columnStds = input.std(0);
         input.subiRowVector(columnMeans);

@@ -16,9 +16,10 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor.output;
+package org.deeplearning4j.nn.conf.preprocessor.processor;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.preprocessor.output.BaseOutputPostProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -29,7 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * 
  * @author Adam Gibson
  */
-public class ReshapePostProcessor extends BaseOutputPostProcessor {
+public class ReshapeProcessor extends BaseProcessor {
 	private int[] toShape;		//Activations: To this shape in forward pass
 	private int[] fromShape;	//Epsilons: To this shape in backward pass
     
@@ -39,17 +40,17 @@ public class ReshapePostProcessor extends BaseOutputPostProcessor {
 	 * Otherwise fromShape is the shape that epsilons (weights*deltas or equiv.)
 	 *  are reshaped to by backprop(...)
 	 */
-    public ReshapePostProcessor( int[] toShape, int[] fromShape ){
+    public ReshapeProcessor(int[] toShape, int[] fromShape){
     	this.toShape = toShape;
     	this.fromShape = fromShape;
     }
 
-    public ReshapePostProcessor(int... toShape) {
+    public ReshapeProcessor(int... toShape) {
         this(toShape,null);
     }
 
     @Override
-    public INDArray preProcess(INDArray output) {
+    public INDArray process(INDArray output) {
         return output.reshape(toShape);
     }
 

@@ -469,11 +469,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray zFromPrevLayer(int curr, INDArray input,boolean training) {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
+            input = getLayerWiseConfigurations().getInputPreProcess(curr).process(input);
 
         INDArray ret = layers[curr].preOutput(input, training);
         if (getLayerWiseConfigurations().getOutputPostProcessors() != null && getLayerWiseConfigurations().getOutputPostProcess(curr) != null) {
-            ret = getLayerWiseConfigurations().getOutputPostProcess(curr).preProcess(ret);
+            ret = getLayerWiseConfigurations().getOutputPostProcess(curr).process(ret);
             return ret;
         }
         return ret;
@@ -488,10 +488,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray activationFromPrevLayer(int curr, INDArray input,boolean training) {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
+            input = getLayerWiseConfigurations().getInputPreProcess(curr).process(input);
         INDArray ret = layers[curr].activate(input,training);
         if (getLayerWiseConfigurations().getOutputPostProcessors() != null && getLayerWiseConfigurations().getOutputPostProcess(curr) != null) {
-            ret = getLayerWiseConfigurations().getOutputPostProcess(curr).preProcess(ret);
+            ret = getLayerWiseConfigurations().getOutputPostProcess(curr).process(ret);
             return ret;
         }
         return ret;
@@ -528,7 +528,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            this.input = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input);
+            this.input = getLayerWiseConfigurations().getInputPreProcess(0).process(input);
         else
             this.input = input;
         return computeZ(training);
@@ -622,7 +622,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            this.input = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input);
+            this.input = getLayerWiseConfigurations().getInputPreProcess(0).process(input);
         else
             this.input = input;
         return feedForward();
@@ -1533,8 +1533,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void setInput(INDArray input) {
         if (getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            this.input = this.layerWiseConfigurations.getInputPreProcess(0).preProcess(input);
-//        this.input = this.layerWiseConfigurations.getOutputPostProcess(0).preProcess(input);
+            this.input = this.layerWiseConfigurations.getInputPreProcess(0).process(input);
+//        this.input = this.layerWiseConfigurations.getOutputPostProcess(0).process(input);
         else
             this.input = input;
         if (this.layers == null)

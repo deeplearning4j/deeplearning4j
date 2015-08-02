@@ -37,13 +37,13 @@ public interface InputPreProcessor extends Serializable {
     /**
      * Pre process input/activations for a multi layer network
      * @param input the input to pre process
-     * @return the input to pre process
+     * @return the processed input
      */
-    INDArray preProcess(INDArray input);
+    INDArray process(INDArray input);
 
     /**Reverse the process during backprop. Process Gradient/epsilons before
      * passing them to the layer below.
-     * @param Gradient and epsilon - i.e., output of Layer.backpropGradient(...)
+     * @param output which is a pair of the gradient and epsilon 
      * @return the reverse of the pre process step (if any)
      */
     Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> output);

@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.preprocessor.processor.ReshapeProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionOutputPostProcessor;
@@ -37,11 +38,11 @@ public class CNNProcessorTest {
 
         ConvolutionInputPreProcessor convProcessor = new ConvolutionInputPreProcessor(rows, cols, 1);
 
-        INDArray check2to4 = convProcessor.preProcess(in2D);
+        INDArray check2to4 = convProcessor.process(in2D);
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
 
-        INDArray result2 = convProcessor.preProcess(in4D);
+        INDArray result2 = convProcessor.process(in4D);
         int val4to4 = result2.shape().length;
         assertTrue(val4to4 == 4);
 
@@ -79,15 +80,15 @@ public class CNNProcessorTest {
 
         ConvolutionOutputPostProcessor convProcessor = new ConvolutionOutputPostProcessor(rows, cols, 1);
 
-        INDArray check2to2 = convProcessor.preProcess(in2D);
+        INDArray check2to2 = convProcessor.process(in2D);
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
 
-        INDArray check3to2 = convProcessor.preProcess(in3D);
+        INDArray check3to2 = convProcessor.process(in3D);
         int val3to2 = check3to2.shape().length;
         assertTrue(val3to2 == 2);
 
-        INDArray check4to2 = convProcessor.preProcess(in4D);
+        INDArray check4to2 = convProcessor.process(in4D);
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
 
@@ -155,9 +156,11 @@ public class CNNProcessorTest {
                         .activation("softmax")
                         .build())
                 .hiddenLayerSizes(50)
-                .inputPreProcessor(0, new ConvolutionInputPreProcessor(rows, cols))
-                .outputPostProcessor(1, new ConvolutionOutputPostProcessor())
-                .build();
+                .inputPreProcessor(0, new ReshapeProcessor(new int[]{1, 784}, new int[]{20, 1, 28, 28}))
+                .outputPostProcessor(1, new ReshapeProcessor(new int[]{20, 1, 28, 28}, new int[] {20,784}))
+//                .inputPreProcessor(0, new ConvolutionInputPreProcessor(rows, cols))
+//                .outputPostProcessor(1, new ConvolutionOutputPostProcessor())
+        .build();
         return new MultiLayerNetwork(conf);
 
     }

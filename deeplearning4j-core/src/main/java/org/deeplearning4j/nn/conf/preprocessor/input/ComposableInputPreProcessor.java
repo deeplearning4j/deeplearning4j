@@ -36,9 +36,9 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input) {
+    public INDArray process(INDArray input) {
         for(InputPreProcessor preProcessor : inputPreProcessors)
-        input = preProcessor.preProcess(input);
+        input = preProcessor.process(input);
         return input;
     }
 
