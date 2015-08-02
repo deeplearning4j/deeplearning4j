@@ -59,22 +59,24 @@ public class Convolution {
      *            transposed image to convert
      * @param sy stride y
      * @param sx stride x
-     * @param ph
-     * @param pw
+     * @param ph padding height
+     * @param pw padding width
      * @param h height
      * @param w width
      * @return
      */
     public static INDArray col2im(INDArray col,int sy,int sx,int ph,int pw,int h,int w) {
-        //    n, c, kh, kw, out_h, out_w = col.shape
         int n = col.size(0);
         int c = col.size(1);
+        //kernel height
         int kh = col.size(2);
+        //kernel width
         int kw = col.size(3);
+        //out height
         int outH = col.size(4);
+        //out width
         int outW = col.size(5);
-        //   img = numpy.zeros((n, c, h + 2 * ph + sy - 1, w + 2 * pw + sx - 1),
-        //          dtype=col.dtype)
+
         INDArray img = Nd4j.create(n,c,h + 2 * ph + sy - 1,w + 2 * pw + sx - 1);
         for(int i = 0; i < kh; i++) {
             int  i_lim = i + sy * outH;
@@ -153,6 +155,7 @@ public class Convolution {
 
     /**
      *
+     * The out size for a convolution
      * @param size
      * @param k
      * @param s
