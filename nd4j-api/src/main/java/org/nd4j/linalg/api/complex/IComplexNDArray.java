@@ -135,18 +135,46 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray assign(IComplexNDArray arr);
 
 
+    /**
+     *
+     * @param indices
+     * @param element
+     * @return
+     */
     IComplexNDArray put(NDArrayIndex[] indices, IComplexNumber element);
 
-
+    /**
+     *
+     * @param indices
+     * @param element
+     * @return
+     */
     IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element);
 
-
+    /**
+     *
+     * @param indices the indices to put the ndarray in to
+     * @param element the ndarray to put
+     * @return
+     */
     IComplexNDArray put(NDArrayIndex[] indices, Number element);
 
 
+    /**
+     *
+     * @param i
+     * @param value
+     * @return
+     */
     IComplexNDArray putScalar(int i, IComplexNumber value);
 
 
+    /**
+     *
+     * @param i     the index to insert into
+     * @param value the value to insert
+     * @return
+     */
     IComplexNDArray putScalar(int i, double value);
 
 
@@ -294,6 +322,12 @@ public interface IComplexNDArray extends INDArray {
     @Override
     IComplexNDArray rdiv(IComplexNumber n, IComplexNDArray result);
 
+    /**
+     *
+     * @param n
+     * @param result
+     * @return
+     */
     IComplexNDArray rdiv(IComplexNumber n, INDArray result);
 
 
@@ -544,29 +578,101 @@ public interface IComplexNDArray extends INDArray {
     double getReal(int i);
 
 
+    /**
+     *
+     * @param indices
+     * @param value
+     * @return
+     */
     IComplexNDArray putReal(int[] indices, float value);
 
+    /**
+     *
+     * @param indices
+     * @param value
+     * @return
+     */
     IComplexNDArray putImag(int[] indices, float value);
 
+    /**
+     *
+     * @param indices
+     * @param value
+     * @return
+     */
     IComplexNDArray putReal(int[] indices, double value);
 
+    /**
+     *
+     * @param indices
+     * @param value
+     * @return
+     */
     IComplexNDArray putImag(int[] indices, double value);
 
 
+    /**
+     *
+     * @param rowIndex
+     * @param columnIndex
+     * @param value
+     * @return
+     */
     IComplexNDArray putReal(int rowIndex, int columnIndex, float value);
 
+    /**
+     *
+     * @param rowIndex
+     * @param columnIndex
+     * @param value
+     * @return
+     */
     IComplexNDArray putImag(int rowIndex, int columnIndex, float value);
 
+    /**
+     *
+     * @param rowIndex
+     * @param columnIndex
+     * @param value
+     * @return
+     */
     IComplexNDArray putReal(int rowIndex, int columnIndex, double value);
 
+    /**
+     *
+     * @param rowIndex
+     * @param columnIndex
+     * @param value
+     * @return
+     */
     IComplexNDArray putImag(int rowIndex, int columnIndex, double value);
 
+    /**
+     *
+     * @param i
+     * @param v
+     * @return
+     */
     IComplexNDArray putReal(int i, float v);
 
+    /**
+     *
+     * @param i
+     * @param v
+     * @return
+     */
     IComplexNDArray putImag(int i, float v);
 
+    /**
+     * Return all the real components in this ndarray
+     * @return
+     */
     INDArray real();
 
+    /**
+     * Return all of the imaginary components in this ndarray
+     * @return
+     */
     INDArray imag();
 
 
@@ -597,7 +703,11 @@ public interface IComplexNDArray extends INDArray {
     @Override
     void checkDimensions(INDArray other);
 
+    @Override
+    IComplexNDArray reshape(char order, int... newShape);
 
+    @Override
+    IComplexNDArray reshape(char order, int rows, int columns);
 
     /**
      * Set the value of the ndarray to the specified value

@@ -1437,8 +1437,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     public IComplexNumber getComplex(int i) {
         if(i >= length())
             throw new IllegalArgumentException("Index " + i + " >= " + length());
-        int idx = linearIndex(i);
-        return Nd4j.createDouble(data.getDouble(idx), data.getDouble(idx + 1));
+        int[] dimensions = Shape.ind2sub(this,i);
+        return getComplex(dimensions);
     }
 
     @Override
@@ -1449,17 +1449,11 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     @Override
     public IComplexNumber getComplex(int... indices) {
         ensureNotCleanedUp();
-        if(isRowVector() && indices[0] == 0 && indices.length == 2) {
-            int ix = linearIndex(indices[1]);
-            return data.getComplex(ix);
-        }
-        else {
-            int ix = offset;
-            for (int i = 0; i < indices.length; i++)
-                ix += indices[i] * stride[i];
+        int ix = offset;
+        for (int i = 0; i < indices.length; i++)
+            ix += indices[i] * stride[i];
 
-            return data.getComplex(ix);
-        }
+        return data.getComplex(ix);
     }
 
     /**
@@ -1776,10 +1770,8 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray putScalar(int i, IComplexNumber value) {
-        int idx = linearIndex(i);
-        data.put(idx, value.realComponent().doubleValue());
-        data.put(idx + 1, value.imaginaryComponent().doubleValue());
-        return this;
+        int[] dimensions = Shape.ind2sub(this, i);
+        return putScalar(dimensions,value);
     }
 
 
@@ -3081,6 +3073,15 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
         return (IComplexNDArray) super.reshape(shape);
     }
 
+    @Override
+    public IComplexNDArray reshape(char order, int... newShape) {
+        return (IComplexNDArray) super.reshape(order, newShape);
+    }
+
+    @Override
+    public IComplexNDArray reshape(char order, int rows, int columns) {
+        return (IComplexNDArray) super.reshape(order, rows, columns);
+    }
 
     /**
      * Set the value of the ndarray to the specified value

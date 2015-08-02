@@ -513,6 +513,8 @@ public class Shape {
             newStrides[nk] = last_stride;
         }
 
+        if(arr instanceof IComplexNDArray)
+            return Nd4j.createComplex(arr.data(),newShape,newStrides,arr.offset());
 
         return Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
     }

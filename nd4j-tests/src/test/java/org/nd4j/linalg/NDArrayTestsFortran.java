@@ -20,34 +20,30 @@
 package org.nd4j.linalg;
 
 
-
-import java.io.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-//import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.*;
+import java.io.*;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
+
+//import org.nd4j.linalg.jcublas.CublasPointer;
 
 /**
  * NDArrayTests for fortran ordering
@@ -1056,37 +1052,37 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testRollAxis() {
-        INDArray toRoll = Nd4j.ones(3,4,5,6);
+        INDArray toRoll = Nd4j.ones(3, 4, 5, 6);
         assertArrayEquals(new int[]{3,6,4,5},Nd4j.rollAxis(toRoll,3,1).shape());
-        assertArrayEquals(new int[]{5,3,4,6},Nd4j.rollAxis(toRoll,3).shape());
+        assertArrayEquals(new int[]{5, 3, 4, 6}, Nd4j.rollAxis(toRoll, 3).shape());
     }
 
     @Test
     public void testTensorDot() {
-        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3,4,5);
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
-        INDArray result = Nd4j.tensorMmul(oneThroughSixty,oneThroughTwentyFour,new int[][]{{1,0},{0,1}});
+        INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][]{{1, 0}, {0, 1}});
         assertArrayEquals(new int[]{5,2},result.shape());
         INDArray assertion = Nd4j.create(new double[][]{
-                {   440. ,  1232.},
-                {  1232. ,  3752.},
-                {  2024.  , 6272.},
-                {  2816. ,  8792.},
-                {  3608. , 11312.}
+                {440., 1232.},
+                {1232., 3752.},
+                {2024., 6272.},
+                {2816., 8792.},
+                {3608., 11312.}
         });
-        assertEquals(assertion,result);
+        assertEquals(assertion, result);
 
     }
 
 
     @Test
     public void testNegativeShape() {
-        INDArray linspace = Nd4j.linspace(1,4,4);
+        INDArray linspace = Nd4j.linspace(1, 4, 4);
         INDArray reshaped = linspace.reshape(-1,2);
         assertArrayEquals(new int[]{2,2},reshaped.shape());
 
         INDArray linspace6 = Nd4j.linspace(1,6,6);
-        INDArray reshaped2 = linspace6.reshape(-1,3);
+        INDArray reshaped2 = linspace6.reshape(-1, 3);
         assertArrayEquals(new int[]{2,3},reshaped2.shape());
 
     }
