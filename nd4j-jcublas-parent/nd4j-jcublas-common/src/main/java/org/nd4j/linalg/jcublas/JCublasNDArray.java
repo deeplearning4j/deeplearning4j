@@ -41,7 +41,10 @@ public class JCublasNDArray extends BaseNDArray {
 
     public JCublasNDArray(double[][] data) {
         super(data);
+    }
 
+    public JCublasNDArray(double[][] data, char ordering) {
+        super(data, ordering);
     }
 
     public JCublasNDArray(int[] shape, DataBuffer buffer) {
@@ -297,6 +300,10 @@ public class JCublasNDArray extends BaseNDArray {
 
     public JCublasNDArray(float[][] floats) {
         super(floats);
+    }
+
+    public JCublasNDArray(float[][] data, char ordering) {
+        super(data, ordering);
     }
 
     public JCublasNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {

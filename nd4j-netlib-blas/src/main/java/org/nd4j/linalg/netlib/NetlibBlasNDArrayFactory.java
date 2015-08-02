@@ -107,6 +107,11 @@ public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
         return new NetlibBlasNDArray(data);
     }
 
+    @Override
+    public INDArray create(double[][] data, char ordering) {
+        return new NetlibBlasNDArray(data,ordering);
+    }
+
     /**
      * Create a complex ndarray from the passed in indarray
      *
@@ -390,6 +395,11 @@ public class NetlibBlasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(float[][] floats) {
         return new NetlibBlasNDArray(floats);
+    }
+
+    @Override
+    public INDArray create(float[][] data, char ordering) {
+        return new NetlibBlasNDArray(data,ordering);
     }
 
     @Override

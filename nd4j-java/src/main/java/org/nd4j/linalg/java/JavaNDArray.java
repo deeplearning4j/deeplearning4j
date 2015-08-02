@@ -50,7 +50,10 @@ public class JavaNDArray extends BaseNDArray {
 
     public JavaNDArray(double[][] data) {
         super(data);
+    }
 
+    public JavaNDArray(double[][] data, char ordering) {
+        super(data, ordering);
     }
 
     /**
@@ -286,6 +289,10 @@ public class JavaNDArray extends BaseNDArray {
 
     public JavaNDArray(float[][] floats) {
         super(floats);
+    }
+
+    public JavaNDArray(float[][] data, char ordering) {
+        super(data, ordering);
     }
 
     public JavaNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
