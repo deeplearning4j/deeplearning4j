@@ -81,15 +81,19 @@ public class Convolution {
            int i_lim = i + sy * outHeight;
             for(int j = 0; j < kw; j++) {
                 int  jLim = j + sx * outWidth;
-                ret.put(new NDArrayIndex[]{NDArrayIndex.all()
-                        ,NDArrayIndex.all()
-                        ,new NDArrayIndex(i)
-                        ,new NDArrayIndex(j),NDArrayIndex.all(),NDArrayIndex.all()}, padded.get(
+                INDArray get = padded.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
-                        , NDArrayIndex.interval(i, i_lim)
-                        , NDArrayIndex.interval(j,jLim),
-                        NDArrayIndex.all(),NDArrayIndex.all()));
+                        , NDArrayIndex.interval(i, sx, i_lim)
+                        , NDArrayIndex.interval(j, sy, jLim),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+                ret.put(new NDArrayIndex[]{
+                        NDArrayIndex.all()
+                        ,NDArrayIndex.all()
+                        ,new NDArrayIndex(i)
+                        ,new NDArrayIndex(j)
+                        ,NDArrayIndex.all()
+                        ,NDArrayIndex.all()}, get);
             }
         }
         return ret;

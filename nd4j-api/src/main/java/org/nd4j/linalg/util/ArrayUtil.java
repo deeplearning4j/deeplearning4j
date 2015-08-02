@@ -1162,25 +1162,35 @@ public class ArrayUtil {
 			current = ((Object[])current)[0];
 		}
 		
-		if( current instanceof Object[] ){
+		if(current instanceof Object[]) {
 			shape[shape.length-1] = ((Object[])current).length;
-		} else if( current instanceof double[] ){
+		}
+        else if(current instanceof double[]) {
 			shape[shape.length-1] = ((double[])current).length;
-		} else if( current instanceof float[] ){
+		}
+        else if(current instanceof float[]) {
 			shape[shape.length-1] = ((float[])current).length;
-		} else if( current instanceof long[] ){
+		}
+        else if(current instanceof long[]) {
 			shape[shape.length-1] = ((long[])current).length;
-		} else if( current instanceof int[] ){
+		}
+        else if(current instanceof int[]) {
 			shape[shape.length-1] = ((int[])current).length;
-		} else if( current instanceof byte[] ){
+		}
+        else if(current instanceof byte[]) {
 			shape[shape.length-1] = ((byte[])current).length;
-		} else if( current instanceof char[] ){
+		}
+        else if(current instanceof char[]) {
 			shape[shape.length-1] = ((char[])current).length;
-		} else if( current instanceof boolean[] ){
+		}
+        else if( current instanceof boolean[] ){
 			shape[shape.length-1] = ((boolean[])current).length;
-		} else if( current instanceof short[] ){
+		}
+        else if( current instanceof short[] ){
 			shape[shape.length-1] = ((short[])current).length;
-		} else throw new IllegalStateException("Unknown array type");	//Should never happen
+		}
+        else
+            throw new IllegalStateException("Unknown array type");	//Should never happen
 		return shape;
 	}
 }

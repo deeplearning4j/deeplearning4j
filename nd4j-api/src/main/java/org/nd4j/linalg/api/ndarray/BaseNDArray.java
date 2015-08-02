@@ -1793,65 +1793,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray put(NDArrayIndex[] indices, INDArray element) {
-        if (isVector()) {
-            assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-            int[] assign = indices[0].indices();
-            if(indices[0] instanceof NDArrayIndex.NDArrayIndexAll)
-                assign = NDArrayIndex.interval(0,length()).indices();
-            if(element.isScalar()) {
-                for (int i = 0; i < assign.length; i++) {
-                    putScalar(assign[i], element.getDouble(0));
-                }
-            }
-            else {
-                if(assign.length < element.length())
-                    for (int i = 0; i < assign.length; i++) {
-                        putScalar(assign[i], element.getDouble(i));
-                    }
-                else if(element.length() < assign.length){
-                    for (int i = 0; i < element.length(); i++) {
-                        putScalar(assign[i], element.getDouble(i));
-                    }
-                }
-                else {
-                    for (int i = 0; i < element.length(); i++) {
-                        putScalar(assign[i], element.getDouble(i));
-                    }
-                }
-            }
-
-
-            return this;
-
-        }
-
-        if (element.isVector()) {
-            if(indices[0] instanceof NDArrayIndex.NDArrayIndexAll) {
-                assign(element);
-            }
-            else {
-                slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
-
-            }
-
-        }
-        else if(isMatrix() && element.isMatrix()) {
-            NDArrayIndex[] columns = Arrays.copyOfRange(indices,1,indices.length);
-            for(int i = 0; i < element.rows(); i++) {
-                slice(i).put(columns,element.slice(i));
-            }
-        }
-
-        else {
-            NDArrayIndex[] indicesSub = Arrays.copyOfRange(indices,1,indices.length);
-
-            for (int i = 0; i < element.slices(); i++) {
-                slice(i).put(indicesSub,element.slice(i));
-            }
-        }
-
-
-        return this;
+        return get(indices).assign(element);
     }
 
     @Override
@@ -3925,7 +3867,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         if(offsets.length > shape.length) {
-            offsets = ArrayUtil.removeIndex(offsets,ArrayUtil.range(0,shape.length));
+            offsets = ArrayUtil.keep(offsets,ArrayUtil.range(0,shape.length));
         }
 
 
