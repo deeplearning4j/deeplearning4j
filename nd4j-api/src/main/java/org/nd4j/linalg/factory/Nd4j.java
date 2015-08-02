@@ -2142,6 +2142,11 @@ public class Nd4j {
         return INSTANCE.create(doubles);
     }
 
+    public static INDArray create(float[][] data, char ordering) {
+        return INSTANCE.create(data,ordering);
+    }
+
+
     /**
      * Create an ndarray based on the given data layout
      *
@@ -2150,6 +2155,10 @@ public class Nd4j {
      */
     public static INDArray create(double[][] data) {
         return INSTANCE.create(data);
+    }
+
+    public static INDArray create(double[][] data, char ordering) {
+        return INSTANCE.create(data,ordering);
     }
 
     /**

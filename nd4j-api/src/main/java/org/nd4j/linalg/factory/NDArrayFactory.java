@@ -316,6 +316,8 @@ public interface NDArrayFactory {
      */
     INDArray create(double[][] data);
 
+    INDArray create(double[][] data,char ordering);
+
     /**
      * Create a complex ndarray from the passed in indarray
      *
@@ -1298,6 +1300,8 @@ public interface NDArrayFactory {
      * @return
      */
     INDArray create(float[][] floats);
+
+    INDArray create(float[][] data,char ordering);
 
     /**
      *

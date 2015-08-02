@@ -129,7 +129,11 @@ public abstract class BaseNDArray implements INDArray {
      * @param data
      */
     public BaseNDArray(double[][] data) {
-        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length, data[0].length});
+        this(data,Nd4j.order());
+    }
+
+    public BaseNDArray(double[][] data, char ordering) {
+        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length, data[0].length},ordering);
 
         for (int r = 0; r < rows; r++) {
             assert (data[r].length == columns);
@@ -543,7 +547,11 @@ public abstract class BaseNDArray implements INDArray {
      * @param data
      */
     public BaseNDArray(float[][] data) {
-        this(data.length, data[0].length);
+        this(data,Nd4j.order());
+    }
+
+    public BaseNDArray(float[][] data,char ordering) {
+        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length, data[0].length},ordering);
 
         for (int r = 0; r < rows; r++) {
             assert (data[r].length == columns);
@@ -558,6 +566,7 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
     }
+
 
 
     /**

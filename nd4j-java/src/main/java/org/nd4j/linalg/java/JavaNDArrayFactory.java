@@ -108,6 +108,11 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
         return new JavaNDArray(data);
     }
 
+    @Override
+    public INDArray create(double[][] data, char ordering) {
+        return new JavaNDArray(data,ordering);
+    }
+
     /**
      * Create a complex ndarray from the passed in indarray
      *
@@ -391,6 +396,11 @@ public class JavaNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(float[][] floats) {
         return new JavaNDArray(floats);
+    }
+
+    @Override
+    public INDArray create(float[][] data, char ordering) {
+        return new JavaNDArray(data,ordering);
     }
 
     @Override

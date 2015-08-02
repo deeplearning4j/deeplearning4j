@@ -110,6 +110,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return new NDArray(data);
     }
 
+    @Override
+    public INDArray create(double[][] data, char ordering) {
+        return new NDArray(data,ordering);
+    }
+
     /**
      * Create a complex ndarray from the passed in indarray
      *
@@ -409,7 +414,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray create(float[][] floats) {
         return new NDArray(floats);
+    }
 
+    @Override
+    public INDArray create(float[][] data, char ordering) {
+        return new NDArray(data,ordering);
     }
 
     @Override

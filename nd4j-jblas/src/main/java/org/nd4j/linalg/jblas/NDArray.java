@@ -69,6 +69,10 @@ public class NDArray extends BaseNDArray {
         super(data);
     }
 
+    public NDArray(double[][] data, char ordering) {
+        super(data, ordering);
+    }
+
     /**
      * Create this ndarray with the given data and shape and 0 offset
      *
@@ -282,6 +286,10 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(float[][] floats) {
         super(floats);
+    }
+
+    public NDArray(float[][] data, char ordering) {
+        super(data, ordering);
     }
 
     public NDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
