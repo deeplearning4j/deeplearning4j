@@ -55,7 +55,7 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         IComplexDouble test = Nd4j.createDouble(1, 1);
         test.addi(1);
         assertEquals(2, test.realComponent().doubleValue(), 1e-1);
-        assertEquals(2, test.imaginaryComponent(), 1e-1);
+        assertEquals(1, test.imaginaryComponent(), 1e-1);
         test.subi(1);
         assertEquals(1, test.realComponent().doubleValue(), 1e-1);
         assertEquals(1, test.imaginaryComponent(), 1e-1);
@@ -65,8 +65,12 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         test.divi(2);
         assertEquals(1, test.realComponent().doubleValue(), 1e-1);
         assertEquals(1, test.imaginaryComponent(), 1e-1);
-
-
+        test.addi(Nd4j.createDouble(1, 1));
+        assertEquals(2, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(2, test.imaginaryComponent(), 1e-1);
+        test.rdivi(1);
+        assertEquals(0.25d, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(-0.25d, test.imaginaryComponent(), 1e-1);
     }
 
 
@@ -75,7 +79,7 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         IComplexFloat test = Nd4j.createFloat(1, 1);
         test.addi(1);
         assertEquals(2, test.realComponent().doubleValue(), 1e-1);
-        assertEquals(2, test.imaginaryComponent(), 1e-1);
+        assertEquals(1, test.imaginaryComponent(), 1e-1);
         test.subi(1);
         assertEquals(1, test.realComponent().doubleValue(), 1e-1);
         assertEquals(1, test.imaginaryComponent(), 1e-1);
@@ -85,8 +89,12 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         test.divi(2);
         assertEquals(1, test.realComponent().doubleValue(), 1e-1);
         assertEquals(1, test.imaginaryComponent(), 1e-1);
-
-
+        test.addi(Nd4j.createFloat(1, 1));
+        assertEquals(2, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(2, test.imaginaryComponent(), 1e-1);
+        test.rdivi(1);
+        assertEquals(0.25f, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(-0.25f, test.imaginaryComponent(), 1e-1);
     }
 
     @Override
