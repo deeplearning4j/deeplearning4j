@@ -970,16 +970,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
 
         outputShape[dimension] = sumAlongDim;
-        int[] sortedStrides = Shape.createConcatStrides(toConcat);
-        int s = 1;
-        for (int idim = rank - 1; idim >= 0; idim--) {
-            int iperm = sortedStrides[idim];
-            if(iperm >= sortedStrides.length)
-                break;
-            sortedStrides[iperm] = s;
-            s *= outputShape[iperm];
-        }
-
+        int[] sortedStrides = Nd4j.getStrides(outputShape);
 
         INDArray ret = Nd4j.create(outputShape,sortedStrides);
         if(ret.isVector()) {

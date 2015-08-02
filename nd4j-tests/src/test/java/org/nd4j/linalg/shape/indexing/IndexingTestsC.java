@@ -49,14 +49,29 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testFirstColumn() {
         INDArray arr = Nd4j.create(new double[][]{
-                {5,7},
-                {6,8}
+                {5, 7},
+                {6, 8}
         });
 
         INDArray assertion = Nd4j.create(new double[]{5,6});
         INDArray test = arr.get(NDArrayIndex.all(), new NDArrayIndex(0));
         assertEquals(assertion,test);
     }
+
+    @Test
+    public void testMultiRow() {
+        INDArray matrix = Nd4j.linspace(1,9,9).reshape(3,3);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {4, 5},
+                {7, 8}
+        });
+        INDArray test = matrix.get(new NDArrayIndex(1,3),new NDArrayIndex(0,2));
+        assertEquals(assertion,test);
+
+
+    }
+
+
 
     @Override
     public char ordering() {
