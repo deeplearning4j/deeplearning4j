@@ -3834,6 +3834,9 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray getColumn(int c) {
+        if(isColumnVector() && c == 0)
+            return this;
+        
         ensureNotCleanedUp();
         if (shape.length == 2)
             return vectorAlongDimension(c,0);
@@ -4042,6 +4045,9 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray getRow(int r) {
+        if(isRowVector() && r == 0)
+            return this;
+
         ensureNotCleanedUp();
         if (shape.length == 2) {
             if (isColumnVector())
