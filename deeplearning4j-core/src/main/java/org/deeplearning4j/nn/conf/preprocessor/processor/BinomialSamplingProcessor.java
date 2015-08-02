@@ -16,7 +16,8 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor.input;
+package org.deeplearning4j.nn.conf.preprocessor.processor;
+
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -24,26 +25,19 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Unit variance operation
- *
- * @author Adma Gibson
+ * Binomial sampling pre processor
+ * @author Adam Gibson
  */
-public class UnitVariancePrePreProcessor extends BaseInputPreProcessor {
-	private static final long serialVersionUID = -5885108359128312879L;
-	INDArray columnStds;
+public class BinomialSamplingProcessor extends BaseProcessor {
 
-    @Override
-    public INDArray preProcess(INDArray input) {
-        columnStds = input.std(0);
-        columnStds.addi(Nd4j.EPS_THRESHOLD);
-        input.diviRowVector(columnStds);
-        return input;
-    }
-
-    @Override
-    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> output) {
-        return output;	//no-op
+	@Override
+    public INDArray process(INDArray output) {
+        return Nd4j.getDistributions().createBinomial(1,output).sample(output.shape());
     }
 
 
+    @Override
+    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> input) {
+        return input;	//No op?
+    }
 }

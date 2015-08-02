@@ -56,7 +56,7 @@ public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
     public ConvolutionOutputPostProcessor(){}
 
     @Override
-    public INDArray preProcess(INDArray output) {
+    public INDArray process(INDArray output) {
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
             int[] otherOutputs = null;
             if(output.shape().length == 2) {
