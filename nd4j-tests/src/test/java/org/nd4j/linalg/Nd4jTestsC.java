@@ -115,6 +115,17 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void test2dMatrixOrderingSwitch() throws Exception {
+        char order = Nd4j.order();
+        INDArray c = Nd4j.create(new double[][]{{1,2},{3,4}},'c');
+        assertEquals('c',c.ordering());
+        assertEquals(order,Nd4j.order().charValue());
+        INDArray f = Nd4j.create(new double[][]{{1,2},{3,4}},'f');
+        assertEquals('f', f.ordering());
+        assertEquals(order,Nd4j.order().charValue());
+    }
+
 
     @Test
     public void testMatrix() {
