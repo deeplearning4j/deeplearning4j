@@ -51,6 +51,58 @@ public class Convolution {
     private Convolution() {
     }
 
+
+    /**
+     * Rearrange matrix columns into blocks
+
+     * @param col the column
+     *            transposed image to convert
+     * @param sy stride y
+     * @param sx stride x
+     * @param ph
+     * @param pw
+     * @param h height
+     * @param w width
+     * @return
+     */
+    public static INDArray col2im(INDArray col,int sy,int sx,int ph,int pw,int h,int w) {
+        //    n, c, kh, kw, out_h, out_w = col.shape
+        int n = col.size(0);
+        int c = col.size(1);
+        int kh = col.size(2);
+        int kw = col.size(3);
+        int outH = col.size(4);
+        int outW = col.size(5);
+        //   img = numpy.zeros((n, c, h + 2 * ph + sy - 1, w + 2 * pw + sx - 1),
+        //          dtype=col.dtype)
+        INDArray img = Nd4j.create(n,c,h + 2 * ph + sy - 1,w + 2 * pw + sx - 1);
+        for(int i = 0; i < kh; i++) {
+            int  i_lim = i + sy * outH;
+            for(int j = 0; j < kw; j++) {
+                int  j_lim = j + sx * outW;
+                INDArray get = img.get(
+                        NDArrayIndex.all(),
+                        NDArrayIndex.all(),
+                        NDArrayIndex.interval(i,sy,i_lim),
+                        NDArrayIndex.interval(j,sx,j_lim)
+                );
+
+                INDArray colAdd = col.get(
+                        NDArrayIndex.all()
+                        , NDArrayIndex.all()
+                        , new NDArrayIndex(i)
+                        ,new NDArrayIndex(j)
+                        ,NDArrayIndex.all()
+                        ,NDArrayIndex.all());
+                get.addi(colAdd);
+
+            }
+        }
+
+        //img[:, :, ph:h + ph, pw:w + pw]
+        return img.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(ph,ph + h),NDArrayIndex.interval(pw,pw + w));
+    }
+
     /**
      * Implement column formatted images
      * @param img the image to process
@@ -78,7 +130,7 @@ public class Convolution {
                 , {ph, ph + sy - 1}, {pw, pw + sx - 1}}, Nd4j.PadMode.CONSTANT);
         INDArray ret =   Nd4j.create(n, c, kh, kw, outHeight, outWidth);
         for(int i = 0; i < kh; i++) {
-           int i_lim = i + sy * outHeight;
+            int i_lim = i + sy * outHeight;
             for(int j = 0; j < kw; j++) {
                 int  jLim = j + sx * outWidth;
                 INDArray get = padded.get(

@@ -55,9 +55,11 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testIm2Col() {
-        INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
+        INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2, 2, 2, 2);
         INDArray ret = Convolution.im2col(linspaced,1,1,1,1,2,2,0,false);
         System.out.println(ret);
+        INDArray otherConv = Convolution.col2im(ret,1,1,1,1,2,2);
+        System.out.println(otherConv);
     }
 
 
