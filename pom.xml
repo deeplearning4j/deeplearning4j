@@ -210,7 +210,7 @@
                         <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}</LD_LIBRARY_PATH>
                     </environmentVariables>
                     <includes>
-                        <include>**/*Test*.java</include>
+                        <include>**/Nd4jTestSuite.java</include>
                     </includes>
                 </configuration>
             </plugin>
