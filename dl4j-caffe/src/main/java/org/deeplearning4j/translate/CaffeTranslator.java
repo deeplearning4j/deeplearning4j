@@ -34,9 +34,9 @@ public class CaffeTranslator {
         CaffeSolverTranslator solverTranslator = new CaffeSolverTranslator();
 
         // Parse SolverParameter and return wrapper container with solver parsed
-        nnCofigBuilderContainer = solverTranslator.translate(solver, nnCofigBuilderContainer);
+        solverTranslator.translate(solver, nnCofigBuilderContainer);
         // Parse NetParameter and return wrapper container with solver parsed
-        nnCofigBuilderContainer = netTranslator.translate(net, nnCofigBuilderContainer);
+        netTranslator.translate(net, nnCofigBuilderContainer);
         // Get ListBuilder and build
         return nnCofigBuilderContainer.getListBuilder().build();
     }

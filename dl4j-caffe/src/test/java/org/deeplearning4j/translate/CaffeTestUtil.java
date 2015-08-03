@@ -11,7 +11,15 @@ import java.io.IOException;
 @Data
 public class CaffeTestUtil {
 
+    // Reader for testing CaffeReader
     public static final CaffeReader reader = new CaffeReader();
+
+    // Get a working SolverNetContainer (given the CaffeLoader tests all run)
+    public static SolverNetContainer getSolverNet() throws IOException{
+        return new CaffeLoader().binaryNet(getLogisticBinaryNetPath())
+                .textFormatSolver(getLogisticTextFormatSolverPath())
+                .load();
+    }
 
     // Define all the paths as String
     public static String getImageNetBinaryNetPath() throws IOException {
@@ -32,5 +40,7 @@ public class CaffeTestUtil {
     public static String getLogisticTextFormatSolverPath() throws IOException{
         return new ClassPathResource("iris_logistic/solver.prototxt").getURL().getFile();
     }
+
+
 
 }
