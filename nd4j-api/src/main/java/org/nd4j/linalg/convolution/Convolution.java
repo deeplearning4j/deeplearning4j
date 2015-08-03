@@ -53,7 +53,8 @@ public class Convolution {
 
 
     /**
-     * Rearrange matrix columns into blocks
+     * Rearrange matrix
+     * columns into blocks
 
      * @param col the column
      *            transposed image to convert
@@ -66,7 +67,9 @@ public class Convolution {
      * @return
      */
     public static INDArray col2im(INDArray col,int sy,int sx,int ph,int pw,int h,int w) {
+       //number of images
         int n = col.size(0);
+        //number of columns
         int c = col.size(1);
         //kernel height
         int kh = col.size(2);
@@ -79,14 +82,16 @@ public class Convolution {
 
         INDArray img = Nd4j.create(n,c,h + 2 * ph + sy - 1,w + 2 * pw + sx - 1);
         for(int i = 0; i < kh; i++) {
-            int  i_lim = i + sy * outH;
+            //iterate over the kernel rows
+            int  iLim = i + sy * outH;
             for(int j = 0; j < kw; j++) {
-                int  j_lim = j + sx * outW;
+                //iterate over the kernel columns
+                int  jLim = j + sx * outW;
                 INDArray get = img.get(
                         NDArrayIndex.all(),
                         NDArrayIndex.all(),
-                        NDArrayIndex.interval(i,sy,i_lim),
-                        NDArrayIndex.interval(j,sx,j_lim)
+                        NDArrayIndex.interval(i,sy,iLim),
+                        NDArrayIndex.interval(j,sx,jLim)
                 );
 
                 INDArray colAdd = col.get(
@@ -101,8 +106,8 @@ public class Convolution {
             }
         }
 
-        //img[:, :, ph:h + ph, pw:w + pw]
-        return img.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(ph,ph + h),NDArrayIndex.interval(pw,pw + w));
+        //return the subset of the padded image relative to the height/width of the image and the padding width/height
+        return img.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(ph, ph + h), NDArrayIndex.interval(pw, pw + w));
     }
 
     /**
@@ -120,7 +125,9 @@ public class Convolution {
      *
      */
     public static INDArray im2col(INDArray img,int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean coverAll) {
+       //number of images
         int n = img.size(0);
+
         int c = img.size(1);
         int h = img.size(2);
         int w = img.size(3);
@@ -132,13 +139,15 @@ public class Convolution {
                 , {ph, ph + sy - 1}, {pw, pw + sx - 1}}, Nd4j.PadMode.CONSTANT);
         INDArray ret =   Nd4j.create(n, c, kh, kw, outHeight, outWidth);
         for(int i = 0; i < kh; i++) {
-            int i_lim = i + sy * outHeight;
+            //offset for the row based on the stride and output height
+            int iLim = i + sy * outHeight;
             for(int j = 0; j < kw; j++) {
+                //offset for the column based on stride and output width
                 int  jLim = j + sx * outWidth;
                 INDArray get = padded.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
-                        , NDArrayIndex.interval(i, sx, i_lim)
+                        , NDArrayIndex.interval(i, sx, iLim)
                         , NDArrayIndex.interval(j, sy, jLim),
                         NDArrayIndex.all(), NDArrayIndex.all());
                 ret.put(new NDArrayIndex[]{
@@ -198,7 +207,7 @@ public class Convolution {
      * ND Convolution
      *
      * @param input  the input to op
-     * @param kernel the kernel to op with
+     * @param kernel the kerrnel to op with
      * @param type   the type of convolution
      * @param axes   the axes to do the convolution along
      * @return the convolution of the given input and kernel
