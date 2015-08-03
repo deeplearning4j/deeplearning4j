@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.OutputPostProcessor;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public abstract  class BaseOutputPostProcessor implements OutputPostProcessor {
 
 

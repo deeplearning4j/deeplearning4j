@@ -50,6 +50,7 @@ public class MultiLayerConfiguration implements Serializable {
     /* Sample if true, otherwise use the straight activation function */
     protected boolean useRBMPropUpAsActivations = true;
     protected double dampingFactor = 100;
+    @Deprecated
     protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     @Deprecated
@@ -175,16 +176,11 @@ public class MultiLayerConfiguration implements Serializable {
          * Specify the processors.
          * These are used at each layer for doing things like normalization and
          * shaping of input.
-         * @param processor what to use to process the data.
+         * @param processor what to use to preProcess the data.
          * @return builder pattern
          */
-        public Builder inputPreProcessor(Integer layer,InputPreProcessor processor) {
+        public Builder inputPreProcessor(Integer layer, InputPreProcessor processor) {
             inputPreProcessors.put(layer,processor);
-            return this;
-        }
-
-        public Builder inputPreProcessor(Integer layer, Processor processor) {
-            inputPreProcessors.put(layer, (InputPreProcessor) processor);
             return this;
         }
 
@@ -193,16 +189,13 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
+        @Deprecated
         public Builder outputPostProcessor(Integer layer, OutputPostProcessor processor) {
             outputPostProcessors.put(layer, processor);
             return this;
         }
 
-        public Builder outputPostProcessor(Integer layer, Processor processor) {
-            outputPostProcessors.put(layer, (OutputPostProcessor) processor);
-            return this;
-        }
-
+        @Deprecated
         public Builder outputPostProcessors(Map<Integer, OutputPostProcessor> processors) {
             this.outputPostProcessors = processors;
             return this;

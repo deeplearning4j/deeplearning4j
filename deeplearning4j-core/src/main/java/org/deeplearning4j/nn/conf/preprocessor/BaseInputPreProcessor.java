@@ -1,11 +1,11 @@
-package org.deeplearning4j.nn.conf.preprocessor.input;
+package org.deeplearning4j.nn.conf.preprocessor;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * @author Adam Gibson
  */
+
 public abstract class BaseInputPreProcessor implements InputPreProcessor {
 
 

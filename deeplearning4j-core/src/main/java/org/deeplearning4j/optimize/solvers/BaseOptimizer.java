@@ -213,7 +213,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     /**
-     * Pre process to setup initial searchDirection approximation
+     * Pre preProcess to setup initial searchDirection approximation
      */
     @Override
     public  void preProcessLine() {

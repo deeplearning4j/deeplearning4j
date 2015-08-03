@@ -69,7 +69,7 @@ public interface ConvexOptimizer extends Serializable {
     void setBatchSize(int batchSize);
 
     /**
-     * Pre process a line before an iteration
+     * Pre preProcess a line before an iteration
      */
     void preProcessLine();
 
