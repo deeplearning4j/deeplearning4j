@@ -79,7 +79,7 @@ public class CaffeLoader<T> {
         } else if (textFormatSolver instanceof File) {
             solver = reader.readTextFormatSolver((File) textFormatSolver);
         } else {
-            throw new IllegalArgumentException("textFormatSolver must be of type String (file path) or File.");
+            throw new IllegalStateException("textFormatSolver must be of type String (file path) or File.");
         }
         return solver;
     }
