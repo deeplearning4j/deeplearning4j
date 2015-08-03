@@ -65,6 +65,7 @@
         </dependencies>
     </dependencyManagement>
     <build>
+        <testSourceDirectory>../../nd4j-tests/src/test</testSourceDirectory>
         <pluginManagement>
             <plugins>
                 <plugin>

@@ -95,6 +95,23 @@ Then run the following command on the dl4j repo packages to install them on your
 Note, be sure to install the nd4j modules you need first, especially the backend and then install Canova and dl4j.
 
 ---
+## Tests
+
+Run the following command to execute all tests at once.
+
+    mvn test
+
+Or, run the following command to execute TestSuite with only specified backend e.g. jcublas on GPU.
+
+    mvn test -pl nd4j-XXX
+
+- nd4j-java
+- nd4j-jblas
+- nd4j-jcublas-parent/nd4j-jcublas-X.X
+- nd4j-netlib-blas
+- nd4j-x86
+
+---
 ## Contribute
 
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.

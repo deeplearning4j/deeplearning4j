@@ -41,6 +41,7 @@
     </properties>
 
     <build>
+        <testSourceDirectory>../../nd4j-tests/src/test</testSourceDirectory>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -54,7 +55,6 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-
     </build>
 
     <dependencies>
