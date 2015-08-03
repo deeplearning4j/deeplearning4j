@@ -33,7 +33,7 @@ public class ReadCaffeTest {
     public void testBinaryCaffeModelToJavaClass() throws Exception {
 
         // Read the Binary File to a Java Class
-        NetParameter net = ReadCaffe.readBinaryNet(getImageNetBinaryNetPath(), 1000);
+        NetParameter net = CaffeReader.readBinaryNet(getImageNetBinaryNetPath(), 1000);
 
         // Test the binary file is read in correctly
         assertEquals(net.getName(), "CaffeNet");
@@ -51,7 +51,7 @@ public class ReadCaffeTest {
     public void testTextFormatSolverProtoToJavaClass() throws IOException {
 
         // Read the Solver proto-text File to a Java Class
-        SolverParameter solver = ReadCaffe.readTextFormatSolver(getImageNetTextFormatSolverPath());
+        SolverParameter solver = CaffeReader.readTextFormatSolver(getImageNetTextFormatSolverPath());
 
         assertEquals(solver.getMaxIter(), 450000);
         assertEquals(solver.getMomentum(), 0.9f, 1e-3);
@@ -69,7 +69,7 @@ public class ReadCaffeTest {
     public void testTextFormatNetProtoToJavaClass() throws IOException {
 
         // Read the Net proto-text File to a Java Class
-        NetParameter net = ReadCaffe.readTextFormatNet(getImageNetTextFormatNetPath());
+        NetParameter net = CaffeReader.readTextFormatNet(getImageNetTextFormatNetPath());
 
         assertEquals(net.getName(), "nin_imagenet");
         // Not 31 because there is an extra test data layer and an accuracy layer,

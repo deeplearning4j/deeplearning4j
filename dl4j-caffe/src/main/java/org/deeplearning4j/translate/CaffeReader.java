@@ -34,8 +34,9 @@ public class CaffeReader {
      * @throws IOException
      */
     protected static Caffe.NetParameter readBinaryNet(String binaryNetPath, int sizeLimitMb) throws IOException {
-        InputStream is = new BufferedInputStream(new FileInputStream(binaryNetPath));
-        return readBinaryNet(is, sizeLimitMb);
+        try(InputStream is = new BufferedInputStream(new FileInputStream(binaryNetPath))) {
+            return readBinaryNet(is, sizeLimitMb);
+        }
     }
 
     /**
@@ -46,12 +47,13 @@ public class CaffeReader {
      */
     protected static Caffe.NetParameter readTextFormatNet(String textFormatNetPath) throws IOException{
 
-        InputStream is = new FileInputStream(textFormatNetPath);
-        InputStreamReader isReader = new InputStreamReader(is, "ASCII");
+        try(InputStream is = new FileInputStream(textFormatNetPath)) {
+            InputStreamReader isReader = new InputStreamReader(is, "ASCII");
 
-        Caffe.NetParameter.Builder builder = Caffe.NetParameter.newBuilder();
-        TextFormat.merge(isReader, builder);
-        return builder.build();
+            Caffe.NetParameter.Builder builder = Caffe.NetParameter.newBuilder();
+            TextFormat.merge(isReader, builder);
+            return builder.build();
+        }
     }
 
     /**

@@ -1,7 +1,14 @@
 package org.deeplearning4j.translate;
 
+import org.deeplearning4j.caffe.Caffe.NetParameter;
+
 /**
- * Created by jeffreytang on 8/2/15.
+ * @author jeffreytang
  */
 public class CaffeNetTranslator {
+
+    public static NNCofigBuilderContainer translate(NetParameter net, NNCofigBuilderContainer builderContainer) {
+
+        return builderContainer; // dummy
+    }
 }

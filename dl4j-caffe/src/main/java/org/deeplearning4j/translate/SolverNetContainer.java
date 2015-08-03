@@ -3,6 +3,7 @@ package org.deeplearning4j.translate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.caffe.Caffe;
+import org.deeplearning4j.caffe.Caffe.NetParameter;
 
 /**
  * @author jeffreytang
@@ -13,6 +14,6 @@ import org.deeplearning4j.caffe.Caffe;
 @Data
 @AllArgsConstructor
 public class SolverNetContainer {
-    public Caffe.NetParameter net;
-    public Caffe.SolverParameter solver;
+    protected Caffe.SolverParameter solver;
+    protected NetParameter net;
 }
