@@ -96,17 +96,20 @@ Note, be sure to install the nd4j modules you need first, especially the backend
 
 ---
 ## Tests
-Besides test cases in each submodule, there are special submodules to execute common tests with each backend.
 
-- nd4j-java-tests
-- nd4j-jblas-tests
-- nd4j-jcublas-tests
-- nd4j-netlib-tests
-- nd4j-x86-tests
+Run the following command to execute all tests at once.
 
-Run the following command to execute tests with only specified backend e.g. jcublas on GPU.
+    mvn test
 
-    mvn test -pl nd4j-XXX-tests
+Or, run the following command to execute TestSuite with only specified backend e.g. jcublas on GPU.
+
+    mvn test -pl nd4j-XXX
+
+- nd4j-java
+- nd4j-jblas
+- nd4j-jcublas-parent/nd4j-jcublas-X.X
+- nd4j-netlib-blas
+- nd4j-x86
 
 ---
 ## Contribute
