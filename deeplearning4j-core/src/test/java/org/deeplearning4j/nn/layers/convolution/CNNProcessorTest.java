@@ -8,7 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.preprocessor.processor.ReshapeProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.ReshapeProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
 import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionOutputPostProcessor;
@@ -32,86 +32,6 @@ public class CNNProcessorTest {
     private static int cols = 28;
 
     @Test
-    public void testCNNInputPreProcessor() {
-        INDArray in2D = Nd4j.create(1, 784);
-        INDArray in4D = Nd4j.create(20, 1, 28, 28);
-
-        ConvolutionInputPreProcessor convProcessor = new ConvolutionInputPreProcessor(rows, cols, 1);
-
-        INDArray check2to4 = convProcessor.process(in2D);
-        int val2to4 = check2to4.shape().length;
-        assertTrue(val2to4 == 4);
-
-        INDArray result2 = convProcessor.process(in4D);
-        int val4to4 = result2.shape().length;
-        assertTrue(val4to4 == 4);
-
-    }
-
-
-    @Test
-    public void testCNNInputPreProcessorBackprop() {
-        INDArray in2D = Nd4j.create(1, 784);
-        INDArray in3D = Nd4j.create(1, 784, 7);
-        INDArray in4D = Nd4j.create(20, 1, 28, 28);
-
-        ConvolutionInputPreProcessor convProcessor = new ConvolutionInputPreProcessor(rows, cols, 1);
-
-        INDArray check2to2 = convProcessor.backprop(new Pair<>((Gradient)null,in2D)).getSecond();
-        int val2to2 = check2to2.shape().length;
-        assertTrue(val2to2 == 2);
-
-        INDArray check3to2 = convProcessor.backprop(new Pair<>((Gradient)null,in3D)).getSecond();
-        int val3to2 = check3to2.shape().length;
-        assertTrue(val3to2 == 2);
-
-
-        INDArray check4to2 = convProcessor.backprop(new Pair<>((Gradient)null,in4D)).getSecond();
-        int val4to2 = check4to2.shape().length;
-        assertTrue(val4to2 == 2);
-
-    }
-
-    @Test
-    public void testCNNOutputPostProcessorBackprop() {
-        INDArray in2D = Nd4j.create(1, 784);
-        INDArray in3D = Nd4j.create(1, 784, 7);
-        INDArray in4D = Nd4j.create(20, 1, 28, 28);
-
-        ConvolutionOutputPostProcessor convProcessor = new ConvolutionOutputPostProcessor(rows, cols, 1);
-
-        INDArray check2to2 = convProcessor.process(in2D);
-        int val2to2 = check2to2.shape().length;
-        assertTrue(val2to2 == 2);
-
-        INDArray check3to2 = convProcessor.process(in3D);
-        int val3to2 = check3to2.shape().length;
-        assertTrue(val3to2 == 2);
-
-        INDArray check4to2 = convProcessor.process(in4D);
-        int val4to2 = check4to2.shape().length;
-        assertTrue(val4to2 == 2);
-
-    }
-
-    @Test
-    public void testCNNOutputPostProcessor() {
-        INDArray in2D = Nd4j.create(1, 784);
-        INDArray in4D = Nd4j.create(20, 1, 28, 28);
-
-        ConvolutionOutputPostProcessor convProcessor = new ConvolutionOutputPostProcessor(rows, cols, 1);
-
-        INDArray check2to4 = convProcessor.backprop(new Pair<>((Gradient)null,in2D)).getSecond();
-        int val2to4 = check2to4.shape().length;
-        assertTrue(val2to4 == 4);
-
-        INDArray result2 = convProcessor.backprop(new Pair<>((Gradient)null,in4D)).getSecond();
-        int val4to4 = result2.shape().length;
-        assertTrue(val4to4 == 4);
-
-    }
-
-    @Test
     public void testCNNInputPreProcessorMnist() throws Exception {
         int numSamples = 1;
         int batchSize = 1;
@@ -123,9 +43,6 @@ public class CNNProcessorTest {
 
         int val2to4 = model.getLayer(0).input().shape().length;
         assertTrue(val2to4 == 4);
-
-        int val4to4 = model.getLayer(1).input().shape().length;
-        assertTrue(val4to4 == 4);
 
     }
 
@@ -156,10 +73,7 @@ public class CNNProcessorTest {
                         .activation("softmax")
                         .build())
                 .hiddenLayerSizes(50)
-                .inputPreProcessor(0, new ReshapeProcessor(new int[]{1, 784}, new int[]{20, 1, 28, 28}))
-                .outputPostProcessor(1, new ReshapeProcessor(new int[]{20, 1, 28, 28}, new int[] {20,784}))
-//                .inputPreProcessor(0, new ConvolutionInputPreProcessor(rows, cols))
-//                .outputPostProcessor(1, new ConvolutionOutputPostProcessor())
+                .inputPreProcessor(0, new ReshapeProcessor(new int[]{1, 784}, new int[]{1, 1, 28, 28}))
         .build();
         return new MultiLayerNetwork(conf);
 

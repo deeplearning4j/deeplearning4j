@@ -30,23 +30,24 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public interface OutputPostProcessor extends Serializable {
     /**
      * Used for handling pre processing of layer output.
      * The typical use case is for handling reshaping of output
      * in to shapes proper for the next layer of input.
-     * @param output the layer output to post process
+     * @param output the layer output to post preProcess
      * @return the processed output
      */
     INDArray process(INDArray output);
 
 
-    /**Reverse the process for backprop. Process Gradient/epsilon
+    /**Reverse the preProcess for backprop. Process Gradient/epsilon
      * (from layer above) before using them to calculate the backprop
      * gradient for this layer.
-     * @param input the reverse process
+     * @param input the reverse preProcess
      * @return the reverse of the pre preprocessing on the output
      */
-    Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> input);
+    INDArray backprop(INDArray input);
 
 }
