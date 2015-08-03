@@ -23,6 +23,7 @@ public class CaffeLoader<T> {
     protected Integer sizeLimitMb = 10000;
 
     protected static Logger log = LoggerFactory.getLogger(CaffeLoader.class);
+    CaffeReader reader = new CaffeReader();
 
     /**
      *
@@ -74,11 +75,11 @@ public class CaffeLoader<T> {
         SolverParameter solver;
         // Check the solver file is a path or file
         if (textFormatSolver instanceof String) {
-            solver = CaffeReader.readTextFormatSolver((String)textFormatSolver);
+            solver = reader.readTextFormatSolver((String) textFormatSolver);
         } else if (textFormatSolver instanceof File) {
-            solver = CaffeReader.readTextFormatSolver((File)textFormatSolver);
+            solver = reader.readTextFormatSolver((File) textFormatSolver);
         } else {
-            throw new UnsupportedOperationException("textFormatSolver must be of type String (file path) or File.");
+            throw new IllegalArgumentException("textFormatSolver must be of type String (file path) or File.");
         }
         return solver;
     }
@@ -93,22 +94,22 @@ public class CaffeLoader<T> {
         // Check at least there is one source for net file
         if(binaryNet != null) {
             if (binaryNet instanceof String) {
-                net = CaffeReader.readBinaryNet((String)binaryNet, sizeLimitMb);
+                net = reader.readBinaryNet((String)binaryNet, sizeLimitMb);
             } else if (binaryNet instanceof InputStream) {
-                net = CaffeReader.readBinaryNet((InputStream)binaryNet, sizeLimitMb);
+                net = reader.readBinaryNet((InputStream)binaryNet, sizeLimitMb);
             } else {
-                throw new UnsupportedOperationException("binaryNet must be of type String (file path) or InputStream.");
+                throw new IllegalStateException("binaryNet must be of type String (file path) or InputStream.");
             }
         } else if(textFormatNet != null) {
             if (textFormatNet instanceof String) {
-                net = CaffeReader.readTextFormatNet((String)textFormatNet);
+                net = reader.readTextFormatNet((String)textFormatNet);
             } else if (textFormatNet instanceof File) {
-                net = CaffeReader.readTextFormatNet((File)textFormatNet);
+                net = reader.readTextFormatNet((File)textFormatNet);
             } else {
-                throw new UnsupportedOperationException("textFormatNet must be of type String (file path) or File.");
+                throw new IllegalStateException("textFormatNet must be of type String (file path) or File.");
             }
         } else {
-            throw new UnsupportedOperationException("Must provide input for either textFormatNet or binaryNet.");
+            throw new IllegalStateException("Must provide input for either textFormatNet or binaryNet.");
         }
         return net;
     }

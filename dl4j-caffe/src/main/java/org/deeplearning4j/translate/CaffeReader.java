@@ -2,6 +2,7 @@ package org.deeplearning4j.translate;
 
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.TextFormat;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.caffe.Caffe;
 
 import java.io.*;
@@ -9,6 +10,7 @@ import java.io.*;
 /**
  * @author jeffreytang
  */
+@NoArgsConstructor
 public class CaffeReader {
 
     /**
@@ -18,7 +20,7 @@ public class CaffeReader {
      * @return NetParameter Java Class
      * @throws IOException
      */
-    protected static Caffe.NetParameter readBinaryNet(InputStream is, int sizeLimitMb) throws IOException {
+    public Caffe.NetParameter readBinaryNet(InputStream is, int sizeLimitMb) throws IOException {
         CodedInputStream codeStream = CodedInputStream.newInstance(is);
         // Increase the limit when loading bigger caffemodels size
         // Concern about having int as the size limit. There is a limit to that!
@@ -33,7 +35,7 @@ public class CaffeReader {
      * @return NetParameter Java Class
      * @throws IOException
      */
-    protected static Caffe.NetParameter readBinaryNet(String binaryNetPath, int sizeLimitMb) throws IOException {
+    public Caffe.NetParameter readBinaryNet(String binaryNetPath, int sizeLimitMb) throws IOException {
         try(InputStream is = new BufferedInputStream(new FileInputStream(binaryNetPath))) {
             return readBinaryNet(is, sizeLimitMb);
         }
@@ -45,7 +47,7 @@ public class CaffeReader {
      * @return NetParameter Java Class
      * @throws IOException
      */
-    protected static Caffe.NetParameter readTextFormatNet(String textFormatNetPath) throws IOException{
+    public Caffe.NetParameter readTextFormatNet(String textFormatNetPath) throws IOException{
 
         try(InputStream is = new FileInputStream(textFormatNetPath)) {
             InputStreamReader isReader = new InputStreamReader(is, "ASCII");
@@ -62,7 +64,7 @@ public class CaffeReader {
      * @return NetParameter Java Class
      * @throws IOException
      */
-    protected static Caffe.NetParameter readTextFormatNet(File textFormatFile) throws IOException{
+    public Caffe.NetParameter readTextFormatNet(File textFormatFile) throws IOException{
         return readTextFormatNet(textFormatFile.getPath());
     }
 
@@ -72,7 +74,7 @@ public class CaffeReader {
      * @return SolverParameter Java Class
      * @throws IOException
      */
-    protected static Caffe.SolverParameter readTextFormatSolver(String textFormatSolverPath) throws IOException {
+    public Caffe.SolverParameter readTextFormatSolver(String textFormatSolverPath) throws IOException {
 
         try(InputStream is = new FileInputStream(textFormatSolverPath)) {
             InputStreamReader isReader = new InputStreamReader(is, "ASCII");
@@ -91,7 +93,7 @@ public class CaffeReader {
      * @return SolverParameter Java Class
      * @throws IOException
      */
-    protected static Caffe.SolverParameter readTextFormatSolver(File textFormatSolverFile) throws IOException {
+    public Caffe.SolverParameter readTextFormatSolver(File textFormatSolverFile) throws IOException {
         return readTextFormatSolver(textFormatSolverFile.getPath());
     }
 

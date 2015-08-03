@@ -23,7 +23,7 @@ public class CaffeTranslator {
             this.net = solverNet.getNet();
             this.nnCofigBuilderContainer = new NNCofigBuilderContainer();
         } else {
-            throw new UnsupportedOperationException("SolverNetContainer must container SolverParameter (solver)" +
+            throw new IllegalArgumentException("SolverNetContainer must container SolverParameter (solver)" +
                     " and NetParameter (net) ");
         }
     }
