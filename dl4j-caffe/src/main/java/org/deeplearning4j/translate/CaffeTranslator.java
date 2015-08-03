@@ -30,10 +30,13 @@ public class CaffeTranslator {
 
     protected MultiLayerConfiguration translate() {
 
+        CaffeNetTranslator netTranslator = new CaffeNetTranslator();
+        CaffeSolverTranslator solverTranslator = new CaffeSolverTranslator();
+
         // Parse SolverParameter and return wrapper container with solver parsed
-        nnCofigBuilderContainer = CaffeSolverTranslator.translate(solver, nnCofigBuilderContainer);
+        nnCofigBuilderContainer = solverTranslator.translate(solver, nnCofigBuilderContainer);
         // Parse NetParameter and return wrapper container with solver parsed
-        nnCofigBuilderContainer = CaffeNetTranslator.translate(net, nnCofigBuilderContainer);
+        nnCofigBuilderContainer = netTranslator.translate(net, nnCofigBuilderContainer);
         // Get ListBuilder and build
         return nnCofigBuilderContainer.getListBuilder().build();
     }

@@ -10,15 +10,26 @@ import java.util.Map;
  */
 public class CaffeNetTranslator {
 
-    public Map<String, String> netMappings;
+    public Map<String, String> relevantLayerMappings;
+    public Map<String, String> netParamMappings;
 
-    private void populateMappings() {
-        netMappings = new HashMap<String, String>() {{
+    private void fillRelevantLayerMappings() {
+        relevantLayerMappings = new HashMap<String, String>() {{
+            put("", "");
+        }};
+    }
+
+    private void fillNetParamMappings() {
+        netParamMappings = new HashMap<String, String>() {{
            put("", "");
         }};
     }
 
-    public CaffeNetTranslator() { populateMappings(); }
+
+    public CaffeNetTranslator() {
+        fillNetParamMappings();
+        fillRelevantLayerMappings();
+    }
 
     public NNCofigBuilderContainer translate(NetParameter net, NNCofigBuilderContainer builderContainer) {
 
