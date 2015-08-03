@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor.input;
+package org.deeplearning4j.nn.conf.preprocessor;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -28,7 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class ComposableInputPreProcessor extends BaseInputPreProcessor {
-	private static final long serialVersionUID = -6240753120736051385L;
 	private InputPreProcessor[] inputPreProcessors;
 
     public ComposableInputPreProcessor(InputPreProcessor[] inputPreProcessors) {
@@ -36,14 +35,14 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray process(INDArray input) {
+    public INDArray preProcess(INDArray input) {
         for(InputPreProcessor preProcessor : inputPreProcessors)
-        input = preProcessor.process(input);
+        input = preProcessor.preProcess(input);
         return input;
     }
 
     @Override
-    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> output) {
+    public INDArray backprop(INDArray output) {
         for(InputPreProcessor inputPreProcessor : inputPreProcessors)
             output = inputPreProcessor.backprop(output);
         return output;

@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class ComposableOutputPostProcessor implements OutputPostProcessor {
 	private static final long serialVersionUID = 4406818294012989149L;
 	private OutputPostProcessor[] outputPostProcessors;
@@ -44,7 +45,7 @@ public class ComposableOutputPostProcessor implements OutputPostProcessor {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> input) {
+    public INDArray backprop(INDArray input) {
         for (OutputPostProcessor preProcessor : outputPostProcessors)
             input = preProcessor.backprop(input);
         return input;
