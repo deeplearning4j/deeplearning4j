@@ -140,12 +140,8 @@ public class CaffeReaderTest extends CaffeTestUtil {
         assertEquals(solver.getMomentum(), 0.9f, 1e-3);
         assertEquals(solver.getWeightDecay(), 5e-4, 1e-4);
         assertEquals(solver.getRegularizationType(), "L2");
-        assertEquals(solver.getRegularizationType(), "L2");
-        assertEquals(solver.getRegularizationType(), "L2");
         assertEquals(solver.getStepsize(), 0);
         assertEquals(solver.getStepvalueCount(), 0);
-        assertEquals(solver.getStepsize(), 0);
-        assertEquals(solver.getStepsize(), 0);
         assertEquals(solver.getClipGradients(), -1.0, 1e-1);
         assertEquals(solver.getSolverMode().name(), "CPU");
         //For GPU

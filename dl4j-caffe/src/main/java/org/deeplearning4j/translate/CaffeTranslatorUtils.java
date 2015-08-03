@@ -5,6 +5,7 @@ import org.deeplearning4j.util.Dl4jReflection;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * @author jeffreytang
@@ -19,7 +20,14 @@ public class CaffeTranslatorUtils {
         Field[] allCaffeInstFields = Dl4jReflection.getAllFields(caffeInst.getClass());
         for (Field caffeInstField : allCaffeInstFields) {
             String caffeFieldName = caffeInstField.getName();
-            String builderFieldName = paramMappings.get(caffeFieldName);
+            String builderFieldName;
+            try {
+                // Get the BuilderFieldName from the caffeInstFieldName
+                builderFieldName = paramMappings.get(caffeFieldName);
+            } catch (NoSuchElementException e) {
+                throw new NoSuchElementException(String.format("Cannot find the '%s' field in current mappings."
+                        , caffeFieldName));
+            }
             caffeInstField.setAccessible(true);
             Object caffeInstFieldValue = caffeInstField.get(caffeInst);
             Map<String, Object> innerMap = new HashMap<>();
@@ -27,6 +35,21 @@ public class CaffeTranslatorUtils {
             paramMap.put(caffeFieldName, innerMap);
         }
         return paramMap;
+    }
+
+    public static <T> void setFieldFromMap(T builderLikeObject, Map<String,
+            Object> builderParamMap) throws NoSuchFieldException, IllegalAccessException{
+        // Loop through the map of builderFieldName mapped to correct builderFieldValue
+        for (Map.Entry<String, Object> entry : builderParamMap.entrySet()) {
+            String builderFieldName = entry.getKey();
+            Object builderFieldValue = entry.getValue();
+            // Get the Field based on the name of the field
+            Field builderField = builderLikeObject.getClass().getDeclaredField(builderFieldName);
+            // Allow access to the field
+            builderField.setAccessible(true);
+            // Set the value to the field in the object
+            builderField.set(builderLikeObject, builderFieldValue);
+        }
     }
 
     public static Map regularTranslation(Object caffeFieldValue, String builderFieldName,
@@ -39,66 +62,4 @@ public class CaffeTranslatorUtils {
         }
         return builderParamMap;
     }
-
-
-//    private static <T> T writeToBuilderContainer(T builder, T solverNet) {
-//        // overwrite builder with fields with layer fields
-//        Class<?> layerClazz = layer.getClass();
-//        Field[] neuralNetConfFields = Dl4jReflection.getAllFields(configInst.getClass());
-//        Field[] layerFields = Dl4jReflection.getAllFields(layerClazz);
-//        for(Field neuralNetField : neuralNetConfFields) {
-//            neuralNetField.setAccessible(true);
-//            for(Field layerField : layerFields) {
-//                layerField.setAccessible(true);
-//                if(neuralNetField.getName().equals(layerField.getName())) {
-//                    try {
-//                        Object layerFieldValue = layerField.get(layer);
-//                        if(layerFieldValue != null ) {
-//                            if(neuralNetField.getType().isAssignableFrom(layerField.getType())){
-//                                //Same class, or neuralNetField is superclass/superinterface of layer field
-//                                if(!ClassUtils.isPrimitiveOrWrapper(layerField.getType()) ){
-//                                    neuralNetField.set(configInst, layerFieldValue);
-//                                } else {
-//                                    //Primitive -> autoboxed by Field.get(...). Hence layerFieldValue is never null for primitive fields,
-//                                    // even if not explicitly set (due to default value for primitives)
-//                                    //Convention here is to use Double.NaN, Float.NaN, Integer.MIN_VALUE, etc. as defaults in layer configs
-//                                    // to signify 'not set'
-//                                    Class<?> primitiveClass = layerField.getType();
-//                                    if( primitiveClass == double.class || primitiveClass == Double.class ){
-//                                        if( !Double.isNaN((double)layerFieldValue) ){
-//                                            neuralNetField.set(configInst, layerFieldValue);
-//                                        }
-//                                    } else if( primitiveClass == float.class || primitiveClass == Float.class ){
-//                                        if( !Float.isNaN((float)layerFieldValue) ){
-//                                            neuralNetField.set(configInst, layerFieldValue);
-//                                        }
-//                                    } else if( primitiveClass == int.class || primitiveClass == Integer.class ){
-//                                        if( ((int)layerFieldValue) != Integer.MIN_VALUE ){
-//                                            neuralNetField.set(configInst, layerFieldValue);
-//                                        }
-//                                    } else if( primitiveClass == long.class || primitiveClass == Long.class ){
-//                                        if( ((long)layerFieldValue) != Long.MIN_VALUE ){
-//                                            neuralNetField.set(configInst, layerFieldValue);
-//                                        }
-//                                    } else if( primitiveClass == char.class || primitiveClass == Character.class ){
-//                                        if( ((char)layerFieldValue) != Character.MIN_VALUE ){
-//                                            neuralNetField.set(configInst, layerFieldValue);
-//                                        }
-//                                    } else {
-//                                        //Boolean: can only be true/false. No usable 'not set' value -> need some other workaround
-//                                        //Short, Byte: probably never used
-//                                        throw new RuntimeException("Primitive type not settable via reflection");
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    } catch(Exception e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                }
-//            }
-//        }
-//        return configInst;
-//    }
-
 }
