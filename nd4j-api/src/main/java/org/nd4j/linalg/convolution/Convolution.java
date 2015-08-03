@@ -125,11 +125,13 @@ public class Convolution {
      *
      */
     public static INDArray im2col(INDArray img,int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean coverAll) {
-       //number of images
+        //number of images
         int n = img.size(0);
-
+        //number of channels (depth)
         int c = img.size(1);
+        //image height
         int h = img.size(2);
+        //image width
         int w = img.size(3);
         int outWidth = outSize(h, kh, sy, ph, coverAll);
         int outHeight = outSize(w, kw, sx, pw, coverAll);
