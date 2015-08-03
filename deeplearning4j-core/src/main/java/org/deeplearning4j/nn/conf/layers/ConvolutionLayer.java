@@ -15,7 +15,6 @@ import org.nd4j.linalg.convolution.Convolution;
 @NoArgsConstructor
 public class ConvolutionLayer extends FeedForwardLayer {
 
-    private static final long serialVersionUID = 3073633667258683720L;
     protected int[] kernelSize; // Square filter
     protected Convolution.Type convolutionType; // FULL / VALID / SAME
 

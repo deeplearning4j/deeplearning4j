@@ -46,6 +46,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class ConvolutionInputPreProcessor implements InputPreProcessor {
     private int rows,cols,channels = 1;
     private int[] shape;
@@ -84,12 +85,11 @@ public class ConvolutionInputPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> pair ){
-    	INDArray output = pair.getSecond();
+    public INDArray backprop(INDArray output){
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
             int[] otherOutputs = null;
             if(output.shape().length == 2) {
-                return new Pair<>(pair.getFirst(),output);
+                return output;
             } else if(output.shape().length == 4) {
                 otherOutputs = new int[3];
             }
@@ -102,7 +102,7 @@ public class ConvolutionInputPreProcessor implements InputPreProcessor {
 
         }
 
-        return new Pair<>(pair.getFirst(),output.reshape(shape));
+        return output.reshape(shape);
     }
 
 }

@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.security.Key;
 import java.util.*;
 
 /**
@@ -49,6 +50,7 @@ public class MultiLayerConfiguration implements Serializable {
     /* Sample if true, otherwise use the straight activation function */
     protected boolean useRBMPropUpAsActivations = true;
     protected double dampingFactor = 100;
+    @Deprecated
     protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     @Deprecated
@@ -171,14 +173,31 @@ public class MultiLayerConfiguration implements Serializable {
 
 
         /**
-         * Specify the input pre processors.
+         * Specify the processors.
          * These are used at each layer for doing things like normalization and
          * shaping of input.
-         * @param inputPreProcessors the input pre processor to use.
+         * @param processor what to use to preProcess the data.
          * @return builder pattern
          */
-        public Builder inputPreProcessors(Map<Integer,InputPreProcessor> inputPreProcessors) {
-            this.inputPreProcessors = inputPreProcessors;
+        public Builder inputPreProcessor(Integer layer, InputPreProcessor processor) {
+            inputPreProcessors.put(layer,processor);
+            return this;
+        }
+
+        public Builder inputPreProcessors(Map<Integer,InputPreProcessor> processors) {
+            this.inputPreProcessors = processors;
+            return this;
+        }
+
+        @Deprecated
+        public Builder outputPostProcessor(Integer layer, OutputPostProcessor processor) {
+            outputPostProcessors.put(layer, processor);
+            return this;
+        }
+
+        @Deprecated
+        public Builder outputPostProcessors(Map<Integer, OutputPostProcessor> processors) {
+            this.outputPostProcessors = processors;
             return this;
         }
 
@@ -189,21 +208,6 @@ public class MultiLayerConfiguration implements Serializable {
          */
         public Builder backprop(boolean backprop) {
             this.backprop = backprop;
-            return this;
-        }
-
-        public Builder inputPreProcessor(Integer layer,InputPreProcessor preProcessor) {
-            inputPreProcessors.put(layer,preProcessor);
-            return this;
-        }
-
-        public Builder outputPostProcessor(Integer layer, OutputPostProcessor preProcessor) {
-            outputPostProcessors.put(layer, preProcessor);
-            return this;
-        }
-
-        public Builder outputPostProcessors(Map<Integer, OutputPostProcessor> preProcessors) {
-            this.outputPostProcessors = preProcessors;
             return this;
         }
 
