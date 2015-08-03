@@ -34,6 +34,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
     private int rows,cols,channels = 1;
     private int[] shape;
@@ -56,7 +57,7 @@ public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
     public ConvolutionOutputPostProcessor(){}
 
     @Override
-    public INDArray preProcess(INDArray output) {
+    public INDArray process(INDArray output) {
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
             int[] otherOutputs = null;
             if(output.shape().length == 2) {
@@ -76,13 +77,13 @@ public class ConvolutionOutputPostProcessor implements OutputPostProcessor {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> pair ){
-    	INDArray input = pair.getSecond();
+    public INDArray backprop(INDArray input){
+
         if (input.shape().length == 4)
-            return pair;
+            return input;
         if (input.columns() != rows * cols)
             throw new IllegalArgumentException("Output columns must be equal to rows " + rows + " x columns " + cols + " but was instead " + Arrays.toString(input.shape()));
-        return new Pair<>(pair.getFirst(),input.reshape(input.size(0), channels, rows, cols));
+        return input.reshape(input.size(0), channels, rows, cols);
     }
 
 }

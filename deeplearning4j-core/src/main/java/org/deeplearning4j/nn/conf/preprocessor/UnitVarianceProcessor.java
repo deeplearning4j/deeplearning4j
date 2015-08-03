@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor.input;
+package org.deeplearning4j.nn.conf.preprocessor;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -28,8 +28,8 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adma Gibson
  */
-public class UnitVariancePrePreProcessor extends BaseInputPreProcessor {
-	private static final long serialVersionUID = -5885108359128312879L;
+public class UnitVarianceProcessor extends BaseInputPreProcessor {
+
 	INDArray columnStds;
 
     @Override
@@ -41,7 +41,7 @@ public class UnitVariancePrePreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backprop(Pair<Gradient,INDArray> output) {
+    public INDArray backprop(INDArray output) {
         return output;	//no-op
     }
 
