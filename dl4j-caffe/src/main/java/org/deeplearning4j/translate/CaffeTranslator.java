@@ -1,13 +1,10 @@
 package org.deeplearning4j.translate;
 
-import com.google.protobuf.TextFormat;
 import org.deeplearning4j.caffe.Caffe.*;
-import com.google.protobuf.CodedInputStream;
 
 import java.io.*;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +12,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @author jeffreytang
  */
-public class TranslateCaffe {
+public class CaffeTranslator {
 
-    protected static Logger log = LoggerFactory.getLogger(TranslateCaffe.class);
+    protected static Logger log = LoggerFactory.getLogger(CaffeTranslator.class);
 
     protected static void translateSolverNet(SolverNetBuilderContainer solverNetBuilder) {
         // logic to translate solver
@@ -51,7 +48,7 @@ public class TranslateCaffe {
                                                    boolean binaryFile) throws IOException {
 
         // Read the Caffe objects into a Java class
-        SolverNetBuilderContainer solverNetContainer = LoadCaffe.load(netPath, solverPath, binaryFile);
+        SolverNetBuilderContainer solverNetContainer = CaffeLoader.load(netPath, solverPath, binaryFile);
 
         // Translate SolverParameter and NetParameter
         translateSolverNet(solverNetContainer);

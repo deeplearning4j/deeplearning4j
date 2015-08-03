@@ -9,7 +9,7 @@ import java.io.*;
 /**
  * @author jeffreytang
  */
-public class ReadCaffe {
+public class CaffeReader {
 
     /**
      *
