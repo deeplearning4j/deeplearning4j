@@ -16,10 +16,10 @@ import java.io.InputStream;
  */
 @Data
 @NoArgsConstructor
-public class CaffeLoader<T> {
-    protected T binaryNet;
-    protected T textFormatNet;
-    protected T textFormatSolver;
+public class CaffeLoader {
+    protected Object binaryNet;
+    protected Object textFormatNet;
+    protected Object textFormatSolver;
     protected Integer sizeLimitMb = 10000;
 
     protected static Logger log = LoggerFactory.getLogger(CaffeLoader.class);
@@ -30,7 +30,8 @@ public class CaffeLoader<T> {
      * @param textFormatSolver Path of file of the solver file
      * @return CaffeLoader Class
      */
-    public CaffeLoader textFormatSolver(T textFormatSolver) {
+    @SuppressWarnings("unchecked")
+    public CaffeLoader textFormatSolver(Object textFormatSolver) {
         this.textFormatSolver = textFormatSolver;
         return this;
     }
@@ -40,7 +41,8 @@ public class CaffeLoader<T> {
      * @param textFormatNet Path or file of the TextFormat net file
      * @return CaffeLoader Class
      */
-    public CaffeLoader textFormatNet(T textFormatNet) {
+    @SuppressWarnings("unchecked")
+    public CaffeLoader textFormatNet(Object textFormatNet) {
         this.textFormatNet = textFormatNet;
         return this;
     }
@@ -51,7 +53,8 @@ public class CaffeLoader<T> {
      * @param binaryNet Path or InputStream of Binary net file
      * @return CaffeLoader Class
      */
-    public CaffeLoader binaryNet(T binaryNet) {
+    @SuppressWarnings("unchecked")
+    public CaffeLoader binaryNet(Object binaryNet) {
         this.binaryNet = binaryNet;
         return this;
     }
