@@ -27,6 +27,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -125,21 +126,38 @@ public class Indices {
      * @param indices the indices
      * @return the offsets for the given set of indices
      */
-    public static int[] offsets(NDArrayIndex... indices) {
-        int[] ret = new int[indices.length];
-        for (int i = 0; i < indices.length; i++) {
-            if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
-                ret[i] = 0;
-            else {
-                int offset = indices[i].offset();
-                ret[i] = indices[i].offset();
+    public static int[] offsets(int[] shape,NDArrayIndex... indices) {
+        int[] ret = new int[shape.length];
+        if(indices.length == shape.length) {
+            for (int i = 0; i < indices.length; i++) {
+                if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
+                    ret[i] = 0;
+                else {
+                    ret[i] = indices[i].offset();
+                }
+
             }
 
+            if(ret.length == 1) {
+                ret = new int[] {ret[0],0};
+            }
         }
 
-        if(ret.length == 1) {
-            ret = new int[] {ret[0],0};
+        else {
+            for (int i = 0; i < shape.length; i++) {
+                if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
+                    ret[i] = 0;
+                else {
+                    ret[i] = indices[i].offset();
+                }
+
+            }
+
+            if(ret.length == 1) {
+                ret = new int[] {ret[0],0};
+            }
         }
+
 
         return ret;
     }
@@ -405,6 +423,11 @@ public class Indices {
             return new int[]{1,ret2[0]};
         }
 
+        if(ret2.length <= 1) {
+            ret2 = new int[] {1,1};
+        }
+
+
         return ret2;
     }
 
@@ -430,10 +453,15 @@ public class Indices {
     /**
      * Return the stride to be used for indexing
      * @param arr the array to get the strides for
+     * @param indices the shape of the output
      * @return the strides used for indexing
      */
-    public static int[] stride(INDArray arr) {
-        return arr.stride();
+    public static int[] stride(INDArray arr, int... indices) {
+        if(indices.length == arr.stride().length)
+            return arr.stride();
+        else {
+            return Arrays.copyOfRange(arr.stride(),1,indices.length);
+        }
     }
 
 

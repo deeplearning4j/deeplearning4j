@@ -62,7 +62,12 @@ public class ShapeTests extends BaseNd4jTest {
 
     @Test
     public void testMultiDimSum() {
-        INDArray assertion = Nd4j.create(new double[]{10, 26, 42});
+        double[] data = new double[]{10, 26, 42};
+        INDArray assertion = Nd4j.create(data);
+        for(int i = 0; i < data.length; i++) {
+            assertEquals(data[i],assertion.getDouble(i));
+        }
+
         INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
         INDArray tensor = twoTwoByThree.tensorAlongDimension(2, 0, 1);
         INDArray multiSum = twoTwoByThree.sum(0, 1);
@@ -75,9 +80,16 @@ public class ShapeTests extends BaseNd4jTest {
     public void testTensorAlongDimension() {
         INDArray twoTwoByThree = Nd4j.linspace(1,12,12).reshape(2, 2, 3);
         INDArray tensors = twoTwoByThree.tensorAlongDimension(0, 1, 2);
-        assertArrayEquals(new int[]{3,2},tensors.shape());
+        assertArrayEquals(new int[]{3, 2}, tensors.shape());
         assertEquals(2, twoTwoByThree.tensorssAlongDimension(1, 2));
-        INDArray firstTensor = Nd4j.create(new double[][]{{1,2},{3,4}});
+        double[][] dataInit = new double[][]{{1,2},{3,4}};
+        INDArray other = Nd4j.create(new double[]{1,3,2,4},new int[]{2,2});
+        INDArray firstTensor = Nd4j.create(dataInit);
+        for(int i = 0; i < firstTensor.rows(); i++) {
+            for(int j = 0; j < firstTensor.columns(); j++) {
+                assertEquals(dataInit[i][j],firstTensor.getDouble(i,j));
+            }
+        }
         INDArray firstTensorTest = twoTwoByThree.tensorAlongDimension(0, 0, 1);
         assertEquals(firstTensor,firstTensorTest);
         INDArray secondTensor = Nd4j.create(new double[][]{{5, 6}, {7, 8}});

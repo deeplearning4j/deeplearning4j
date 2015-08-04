@@ -67,7 +67,7 @@ public class Convolution {
      * @return
      */
     public static INDArray col2im(INDArray col,int sy,int sx,int ph,int pw,int h,int w) {
-       //number of images
+        //number of images
         int n = col.size(0);
         //number of columns
         int c = col.size(1);
@@ -87,12 +87,14 @@ public class Convolution {
             for(int j = 0; j < kw; j++) {
                 //iterate over the kernel columns
                 int  jLim = j + sx * outW;
-                INDArray get = img.get(
+                NDArrayIndex[] indices = new NDArrayIndex[]{
                         NDArrayIndex.all(),
                         NDArrayIndex.all(),
-                        NDArrayIndex.interval(i,sy,iLim),
-                        NDArrayIndex.interval(j,sx,jLim)
-                );
+                        NDArrayIndex.interval(i, sy, iLim),
+                        NDArrayIndex.interval(j, sx, jLim)
+                };
+
+                INDArray get = img.get(indices);
 
                 INDArray colAdd = col.get(
                         NDArrayIndex.all()
@@ -102,6 +104,7 @@ public class Convolution {
                         ,NDArrayIndex.all()
                         ,NDArrayIndex.all());
                 get.addi(colAdd);
+                img.put(indices,get);
 
             }
         }
@@ -150,8 +153,7 @@ public class Convolution {
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
                         , NDArrayIndex.interval(i, sx, iLim)
-                        , NDArrayIndex.interval(j, sy, jLim),
-                        NDArrayIndex.all(), NDArrayIndex.all());
+                        , NDArrayIndex.interval(j, sy, jLim));
                 ret.put(new NDArrayIndex[]{
                         NDArrayIndex.all()
                         ,NDArrayIndex.all()

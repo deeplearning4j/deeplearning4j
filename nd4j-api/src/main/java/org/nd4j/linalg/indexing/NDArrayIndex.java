@@ -62,7 +62,7 @@ public class NDArrayIndex {
      * @return the offset that should be used for indexing
      */
     public static int offset(INDArray arr,NDArrayIndex...indices) {
-        return offset(arr.stride(),Indices.offsets(indices));
+        return offset(arr.stride(),Indices.offsets(arr.shape(),indices));
     }
 
     /**
@@ -76,7 +76,7 @@ public class NDArrayIndex {
      * @return the offset that should be used for indexing
      */
     public static int offset(int[] strides,NDArrayIndex...indices) {
-        return offset(strides,Indices.offsets(indices));
+        throw new UnsupportedOperationException("Please specify a shape");
     }
 
 
@@ -99,7 +99,7 @@ public class NDArrayIndex {
             }
         }
         else {
-            for (int i = 0; i < offsets.length - 1; i++) {
+            for (int i = 0; i < offsets.length; i++) {
                 ret += offsets[i] * strides[i];
             }
 

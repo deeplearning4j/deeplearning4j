@@ -171,9 +171,9 @@ public class ArrayUtil {
     public static int sum(int[] add) {
         if (add.length < 1)
             return 0;
-        int ret = 1;
+        int ret = 0;
         for (int i = 0; i < add.length; i++)
-            ret *= add[i];
+            ret += add[i];
         return ret;
     }
     /**

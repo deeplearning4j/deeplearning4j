@@ -48,6 +48,14 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
             assertEquals(0.0,fourD.getDouble(i));
 
     }
+    @Test
+    public void testCreateLeadingAndTrailingOnes() {
+        INDArray arr = Nd4j.create(1, 10, 1, 1);
+        arr.assign(1);
+        arr.toString();
+        System.out.println(arr);
+    }
+
 
     @Override
     public char ordering() {
