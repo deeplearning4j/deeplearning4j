@@ -30,9 +30,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Adam Gibson
  */
 public class ReshapeProcessor extends BaseInputPreProcessor {
-	private int[] toShape;		//Activations: To this shape in forward pass
-	private int[] fromShape;	//Epsilons: To this shape in backward pass
-    
+    private int[] fromShape;	//Epsilons: To this shape in backward pass
+    private int[] toShape;		//Activations: To this shape in forward pass
 
 	/**
 	 * @param fromShape May be null. If null: no change/op during backward pass.
@@ -41,8 +40,8 @@ public class ReshapeProcessor extends BaseInputPreProcessor {
 	 *  are reshaped to by backprop(...)
 	 */
     public ReshapeProcessor(int[] fromShape, int[] toShape){
+        this.fromShape = fromShape;
     	this.toShape = toShape;
-    	this.fromShape = fromShape;
     }
 
     public ReshapeProcessor(int... toShape) {
@@ -51,12 +50,13 @@ public class ReshapeProcessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input) {
+        if (input.shape().length == toShape.length) return input;
         return input.reshape(toShape);
     }
 
     @Override
     public INDArray backprop(INDArray output){
-	if( fromShape == null ) return output;	//no-op
+	if( fromShape == null || output.shape().length == fromShape.length) return output;	//no-op
 	return output.reshape(fromShape);
     }
 }
