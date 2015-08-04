@@ -754,7 +754,7 @@ public abstract class BaseNDArray implements INDArray {
             return ret2.slice(offset);
         if(length == NDArrayMath.lengthPerSlice(ret2)) {
             while(offset >= ret2.slices())
-                offset -= ret2.slices();
+                offset --;
 
             ret2 = ret2.slice(offset);
             return ret2;
@@ -1032,7 +1032,7 @@ public abstract class BaseNDArray implements INDArray {
             return this;
         }
 
-        int offset  = Shape.offsetFor(this, i);
+        int offset  = this.offset + Shape.offsetFor(this, i);
         if(offset >= data().length())
             throw new IllegalArgumentException("Illegal index " + i);
         data.put(offset,value);
@@ -1722,6 +1722,57 @@ public abstract class BaseNDArray implements INDArray {
         if (shape.length < 1)
             return 0;
         return shape[0];
+    }
+
+    @Override
+    public INDArray subArray(ShapeOffsetResolution resolution) {
+        int[] offsets = resolution.getOffsets();
+        int[] shape = resolution.getShapes();
+        int[] stride = resolution.getStrides();
+
+        int offset = this.offset + resolution.getOffset();
+        ensureNotCleanedUp();
+        int n = shape.length;
+        if (shape.length < 1)
+            return create(Nd4j.createBuffer(shape));
+        if (offsets.length != n)
+            throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
+        if (shape.length != n)
+            throw new IllegalArgumentException("Invalid shape " + Arrays.toString(shape));
+
+        if (Arrays.equals(shape, this.shape)) {
+            if (ArrayUtil.isZero(offsets)) {
+                return this;
+            } else {
+                throw new IllegalArgumentException("Invalid subArray offsets");
+            }
+        }
+
+        //handle strides/offsets < rank
+        if(offsets.length != stride.length)
+            throw new IllegalStateException("Offsets and stride must be same length");
+        if(offset >= data().length())
+            offset = ArrayUtil.sum(offsets);
+
+
+        if(ordering() == NDArrayFactory.C ) {
+            return create(
+                    data
+                    , Arrays.copyOf(shape, shape.length)
+                    ,stride
+                    , offset, ordering
+            );
+        }
+        else if(ordering() == NDArrayFactory.FORTRAN) {
+            return create(
+                    data
+                    , Arrays.copyOf(shape, shape.length)
+                    , stride
+                    , offset, ordering
+            );
+        }
+        throw new IllegalStateException("Illegal ordering");
+
     }
 
     @Override
@@ -3700,9 +3751,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray get(NDArrayIndex... indexes) {
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
-        int[] offsets = resolution.getOffsets();
         int[] shape = resolution.getShapes();
-        int[] stride = resolution.getStrides();
 
         //This means upsampling.
         if (ArrayUtil.prod(shape) > length()) {
@@ -3738,7 +3787,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
 
-        INDArray ret =  subArray(offsets, shape,stride);
+        INDArray ret =  subArray(resolution);
         return ret;
     }
 

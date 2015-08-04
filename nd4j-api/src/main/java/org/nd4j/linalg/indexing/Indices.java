@@ -126,21 +126,38 @@ public class Indices {
      * @param indices the indices
      * @return the offsets for the given set of indices
      */
-    public static int[] offsets(NDArrayIndex... indices) {
-        int[] ret = new int[indices.length];
-        for (int i = 0; i < indices.length; i++) {
-            if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
-                ret[i] = 0;
-            else {
-                int offset = indices[i].offset();
-                ret[i] = indices[i].offset();
+    public static int[] offsets(int[] shape,NDArrayIndex... indices) {
+        int[] ret = new int[shape.length];
+        if(indices.length == shape.length) {
+            for (int i = 0; i < indices.length; i++) {
+                if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
+                    ret[i] = 0;
+                else {
+                    ret[i] = indices[i].offset();
+                }
+
             }
 
+            if(ret.length == 1) {
+                ret = new int[] {ret[0],0};
+            }
         }
 
-        if(ret.length == 1) {
-            ret = new int[] {ret[0],0};
+        else {
+            for (int i = 0; i < shape.length; i++) {
+                if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
+                    ret[i] = 0;
+                else {
+                    ret[i] = indices[i].offset();
+                }
+
+            }
+
+            if(ret.length == 1) {
+                ret = new int[] {ret[0],0};
+            }
         }
+
 
         return ret;
     }
@@ -406,9 +423,10 @@ public class Indices {
             return new int[]{1,ret2[0]};
         }
 
-        if(ret2.length < 1) {
+        if(ret2.length <= 1) {
             ret2 = new int[] {1,1};
         }
+
 
         return ret2;
     }

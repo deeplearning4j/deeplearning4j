@@ -2,6 +2,7 @@ package org.nd4j.linalg.indexing;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.Shape;
 
 import java.util.Arrays;
 
@@ -15,7 +16,7 @@ import java.util.Arrays;
 public class ShapeOffsetResolution {
     private INDArray arr;
     private int[] offsets,shapes,strides;
-    private int offset;
+    private int offset = -1;
 
     public ShapeOffsetResolution(INDArray arr) {
         this.arr = arr;
@@ -31,7 +32,7 @@ public class ShapeOffsetResolution {
      */
     public void exec(NDArrayIndex...indexes) {
         int[] shape = Indices.shape(arr.shape(), indexes);
-        int[] offsets = Indices.offsets(indexes);
+        int[] offsets = Indices.offsets(shape,indexes);
         if(offsets.length < shape.length) {
             int[] filledOffsets = new int[shape.length];
             System.arraycopy(offsets,0,filledOffsets,0,offsets.length);
@@ -105,44 +106,14 @@ public class ShapeOffsetResolution {
 
 
             else {
+                if(newShape.length < arr.shape().length || newShape.length < arr.stride().length) {
+                    int[] newOffsets = Shape.squeezeOffsets(shape,offsets);
+                    int[] newStrides = ArrayUtil.removeIndex(arr.stride(),0);
+                    offset = ArrayUtil.dotProduct(offsets,stride);
+                    offsets = newOffsets;
+                    stride = newStrides;
 
-                int[] newOffsets = new int[newShape.length];
-                int[] newStrides = new int[newOffsets.length];
-                for(int i = 0; i < newShape.length; i++) {
-                    if(ones[i]) {
-                        if(i > 0) {
-                            int offsetPlaceHolder = offsets[i + 1];
-                            int stridePlaceHolder = stride[i + 1];
-
-                            newOffsets[i] = newOffsets[i - 1];
-                            newStrides[i] = newStrides[i - 1];
-                            newOffsets[i - 1] = offsetPlaceHolder;
-                            newStrides[i - 1] = stridePlaceHolder;
-
-                        }
-                        else {
-                            //grab from the previous index
-                            if(offsets[i + 1] == 0 && offsets[i] > 0) {
-                                newOffsets[i] = offsets[i];
-                                newStrides[i] = stride[i];
-
-                            }
-                            else {
-                                newOffsets[i] = offsets[i + 1];
-                                newStrides[i] = stride[i + 1];
-
-                            }
-                        }
-
-                    }
-                    else {
-                        newOffsets[i] = offsets[i + 1];
-                        newStrides[i] = stride[i + 1];
-                    }
                 }
-
-                offsets = newOffsets;
-                stride = newStrides;
             }
 
         }
@@ -160,7 +131,8 @@ public class ShapeOffsetResolution {
         this.offsets = offsets;
         this.shapes = shape;
         this.strides = stride;
-        this.offset = ArrayUtil.dotProduct(offsets,stride);
+        if(offset < 0)
+            this.offset = ArrayUtil.dotProduct(offsets,stride);
 
 
     }

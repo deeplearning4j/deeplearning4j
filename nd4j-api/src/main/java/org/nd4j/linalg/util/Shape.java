@@ -591,7 +591,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(INDArray arr,int index) {
-        return ind2sub(arr.shape(),index,ArrayUtil.prod(arr.shape()));
+        return ind2sub(arr.shape(), index, ArrayUtil.prod(arr.shape()));
     }
 
     /**
@@ -615,7 +615,7 @@ public class Shape {
      */
     public static int offsetFor(INDArray arr,int index) {
         int[] indexes = Shape.ind2sub(arr, index);
-        return offsetFor(arr,indexes);
+        return offsetFor(arr, indexes);
     }
 
 
@@ -687,8 +687,15 @@ public class Shape {
         for(int i = 0; i < shape.length; i++)
             if(offsets[i] == 0)
                 squeezeIndices.add(i);
-        int[] ret = ArrayUtil.keep(offsets, Ints.toArray(squeezeIndices));
-        return ret;
+        int[] ret = ArrayUtil.removeIndex(offsets, Ints.toArray(squeezeIndices));
+        int delta = Math.abs(ret.length - shape.length);
+        if(delta == 0)
+            return ret;
+        else {
+            int[] retOffsets = new int[shape.length];
+            System.arraycopy(ret,0,retOffsets,0,ret.length);
+            return retOffsets;
+        }
     }
 
 
