@@ -99,7 +99,7 @@ public class NDArrayIndex {
             }
         }
         else {
-            for (int i = 0; i < offsets.length - 1; i++) {
+            for (int i = 0; i < offsets.length; i++) {
                 ret += offsets[i] * strides[i];
             }
 

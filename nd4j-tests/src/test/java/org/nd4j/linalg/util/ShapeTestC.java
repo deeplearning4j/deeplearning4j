@@ -15,6 +15,17 @@ public class ShapeTestC extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public ShapeTestC() {
+    }
+
+    public ShapeTestC(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public ShapeTestC(String name) {
+        super(name);
+    }
+
     @Test
     public void testToOffsetZero() {
         INDArray matrix  =  Nd4j.rand(3,5);
@@ -28,11 +39,20 @@ public class ShapeTestC extends BaseNd4jTest {
         INDArray tensor = Nd4j.rand(new int[]{3,3,3});
         INDArray getTensor = tensor.slice(1).slice(1);
         INDArray getTensorZero = Shape.toOffsetZero(getTensor);
-        assertEquals(getTensor,getTensorZero);
+        assertEquals(getTensor, getTensorZero);
 
 
     }
-    
+
+
+    @Test
+    public void testElementWiseCompareOnesInMiddle() {
+        INDArray arr = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray onesInMiddle = Nd4j.linspace(1,6,6).reshape(2,1,3);
+        for(int i = 0; i < arr.length(); i++)
+            assertEquals(arr.getDouble(i),onesInMiddle.getDouble(i));
+    }
+
     @Override
     public char ordering() {
         return 'c';

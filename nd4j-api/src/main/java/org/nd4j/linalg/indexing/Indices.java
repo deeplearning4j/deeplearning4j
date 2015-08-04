@@ -27,6 +27,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -405,6 +406,10 @@ public class Indices {
             return new int[]{1,ret2[0]};
         }
 
+        if(ret2.length < 1) {
+            ret2 = new int[] {1,1};
+        }
+
         return ret2;
     }
 
@@ -430,10 +435,15 @@ public class Indices {
     /**
      * Return the stride to be used for indexing
      * @param arr the array to get the strides for
+     * @param indices the shape of the output
      * @return the strides used for indexing
      */
-    public static int[] stride(INDArray arr) {
-        return arr.stride();
+    public static int[] stride(INDArray arr, int... indices) {
+        if(indices.length == arr.stride().length)
+            return arr.stride();
+        else {
+            return Arrays.copyOfRange(arr.stride(),1,indices.length);
+        }
     }
 
 
