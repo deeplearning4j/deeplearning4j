@@ -59,7 +59,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf) {
         //the bias is a 1D tensor -- one bias per output feature map
-        return Nd4j.zeros(conf.getKernelSize()[0]);
+        return Nd4j.zeros(conf.getNOut());
     }
 
 

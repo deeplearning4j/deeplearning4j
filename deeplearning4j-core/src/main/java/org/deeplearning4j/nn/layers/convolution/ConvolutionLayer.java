@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -28,13 +29,13 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -125,7 +126,8 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException()
+                ;
 
     }
 
@@ -173,26 +175,19 @@ public class ConvolutionLayer implements Layer {
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
 
         INDArray kernelWeights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+
+        kernelWeights = kernelWeights.reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
             kernelWeights = kernelWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(kernelWeights.shape()));
         }
 
         // Creates number of feature maps wanted (depth) in the convolution layer = number kernels
-        for(int i = 0; i < numFeatureMaps; i++) {
-            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), inputChannels}, conf.getKernelSize()));
-            // Apply kernel weights to all inputs
-            for(int j = 0; j <  inputChannels; j++) {
-                INDArray temp = kernelWeights.slice(i).slice(j);
-                // TODO break up the input into the right dimensions to apply the kernel - currently doesn't appear to work
-                INDArray convolved = Nd4j.getConvolution().convn(input, kernelWeights.slice(i).slice(j), conf.getConvolutionType());
-                featureMap.addi(convolved.broadcast(featureMap.shape()));
-            }
-            //add bias
-            featureMap.addi(bias.getDouble(i));
-            INDArray activationForFeatureMap = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), featureMap));
-            ret.put(new NDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),new NDArrayIndex(new int[]{i}),NDArrayIndex.all()}, activationForFeatureMap);
-        }
-        return ret;
+        INDArray convolved = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
+        INDArray activation = Nd4j.tensorMmul(convolved, kernelWeights, new int[][]{{1, 2, 3}, {1, 2, 3}});
+        activation = activation.reshape(activation.shape()[0],activation.shape()[1],activation.shape()[2],activation.shape()[3]);
+        bias = bias.broadcast(activation.shape());
+        activation.addi(bias.broadcast(activation.shape()));
+        return Nd4j.rollAxis(activation, 3, 1);
     }
 
     @Override
