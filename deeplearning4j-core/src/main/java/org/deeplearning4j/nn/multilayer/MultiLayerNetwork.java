@@ -337,9 +337,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
-        int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
-        int numHiddenLayersSizesUsed = 0;
-
         if (this.layers == null || this.layers[0] == null) {
             if (this.layers == null)
                 this.layers = new Layer[getnLayers()];
@@ -349,19 +346,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 Layer.Type type = LayerFactories.typeForFactory(conf);
 
-                if (i == 0) {
+                if (i == 0 && type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
                     inputSize = conf.getNIn();
                     if (input == null) {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
                     }
 
-                    if (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        if(hiddenLayerSizes != null)
-                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
-
-
-                    }
                 } else if (i < getLayers().length) {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1, layerInput,true);
@@ -383,13 +374,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                      */
                     if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
                         if(i != layers.length - 1) {
-                            numHiddenLayersSizesUsed++;
                             conf.setNIn(layerInput.size(1));
-                            if(hiddenLayerSizes != null)
-                                conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
-                        } else {
-                            if(hiddenLayerSizes != null)
-                                conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         }
                     }
                 }
@@ -1521,14 +1506,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param input
      */
     public void setInput(INDArray input) {
-        if (getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            this.input = this.layerWiseConfigurations.getInputPreProcess(0).preProcess(input);
-        else
-            this.input = input;
+        this.input = input;
         if (this.layers == null)
             this.initializeLayers(getInput());
-        else if (this.input == null)
-            this.input = input;
     }
 
     private void initMask() {
