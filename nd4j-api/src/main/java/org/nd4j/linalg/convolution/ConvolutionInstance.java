@@ -84,6 +84,5 @@ public interface ConvolutionInstance {
      */
     IComplexNDArray convn(IComplexNDArray input, IComplexNDArray kernel, Convolution.Type type);
 
-    INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] kernelSize, int[] stride, int[] padding);
 
 }

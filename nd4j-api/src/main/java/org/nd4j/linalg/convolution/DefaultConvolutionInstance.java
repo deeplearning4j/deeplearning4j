@@ -137,14 +137,7 @@ public class DefaultConvolutionInstance extends BaseConvolution {
 
         }
 
-
         return convolution.getReal();
-    }
-
-    public  INDArray convn(INDArray input, INDArray weights, Convolution.Type type, int[] kernelSize, int[] stride, int[] padding){
-        INDArray reshapedInput = Convolution.im2col(input, kernelSize[0], kernelSize[1], stride[0], stride[1], padding[0], padding[1], 0, false);
-        reshapedInput.muli(weights);
-        return reshapedInput;
     }
 
 }
