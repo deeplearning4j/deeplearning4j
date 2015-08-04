@@ -2,16 +2,12 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import static org.junit.Assert.*;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapeProcessor;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionInputPreProcessor;
-import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionOutputPostProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -49,10 +45,7 @@ public class CNNProcessorTest {
 
     public static MultiLayerNetwork getCNNMnistConfig()  {
 
-        List<INDArray> testInput = new ArrayList<>();
-        List<INDArray> testLabels = new ArrayList<>();
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
@@ -62,7 +55,7 @@ public class CNNProcessorTest {
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{9, 9}, Convolution.Type.VALID)
-                        .nIn(rows * cols)
+                        .nIn(1)
                         .nOut(20)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
@@ -72,8 +65,7 @@ public class CNNProcessorTest {
                         .nOut(10)
                         .activation("softmax")
                         .build())
-                .hiddenLayerSizes(50)
-                .inputPreProcessor(0, new ReshapeProcessor(new int[]{1, 784}, new int[]{1, 1, 28, 28}))
+                .inputPreProcessor(0, new ReshapeProcessor(new int[]{1, rows*cols}, new int[]{1, 1, rows, cols}))
         .build();
         return new MultiLayerNetwork(conf);
 
