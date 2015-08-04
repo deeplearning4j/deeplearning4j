@@ -112,6 +112,7 @@ which will import the source and set everything up.
 * The include path for [Java CPP](https://github.com/bytedeco/javacpp) doesn't always work on **Windows**. One workaround is to take the the header files from the include directory of Visual Studio, and put them in the include directory of the Java Run-Time Environment (JRE), where Java is installed. This will affect files such as standardio.h.)
 * Instructions on monitoring your GPUs are [here](http://nd4j.org/getstarted.html#gpu).
 * One major reason to use Java is its pre-baked diagnostics in the [JVisualVM](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/jvisualvm.html). If you have Java installed, just enter `jvisualvm` in your command line and you'll get visuals on your CPU, Heap, PermGen, Classes and Threads.
+![Alt text](../img/jvisualvm.png)
 * When using `deeplearning4j-nlp` from a Clojure application and building an uberjar with Leiningen, it is necessary to specify the following in the `project.clj` so that the akka `reference.conf` resource files are properly merged.
 
     :uberjar-merge-with {#"\.properties$" [slurp str spit]
