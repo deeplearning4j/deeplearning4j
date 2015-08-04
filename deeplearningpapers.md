@@ -142,6 +142,10 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[On Chomsky and the Two Cultures of Statistical Learning](http://norvig.com/chomsky.html)**; Peter Norvig
 
+**[Geometry of the restricted Boltzmann machine](http://arxiv.org/abs/0908.4425); Maria Angelica Cueto, Jason Morton, Bernd Sturmfels
+
+    The restricted Boltzmann machine is a graphical model for binary random variables. Based on a complete bipartite graph separating hidden and observed variables, it is the binary analog to the factor analysis model. We study this graphical model from the perspectives of algebraic statistics and tropical geometry, starting with the observation that its Zariski closure is a Hadamard power of the first secant variety of the Segre variety of projective lines. We derive a dimension formula for the tropicalized model, and we use it to show that the restricted Boltzmann machine is identifiable in many cases. Our methods include coding theory and geometry of linear threshold functions.
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
