@@ -171,7 +171,7 @@ public class ConvolutionLayer implements Layer {
         // Activations
         INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(), numFeatureMaps},conf.getKernelSize()));
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
-        // TODO - need weights for each kernel / filter - this only covers 1
+
         INDArray kernelWeights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
             kernelWeights = kernelWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(kernelWeights.shape()));
@@ -179,9 +179,7 @@ public class ConvolutionLayer implements Layer {
 
         // Creates number of feature maps wanted (depth) in the convolution layer = number kernels
         for(int i = 0; i < numFeatureMaps; i++) {
-            // TODO make sure the right depth value is passed from input - should be channels in
             INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), inputChannels}, conf.getKernelSize()));
-            // TODO this should be a matrix that is multiplied to all input matricies - it was just 1 weight before change to WeightUtil
             // Apply kernel weights to all inputs
             for(int j = 0; j <  inputChannels; j++) {
                 INDArray temp = kernelWeights.slice(i).slice(j);
