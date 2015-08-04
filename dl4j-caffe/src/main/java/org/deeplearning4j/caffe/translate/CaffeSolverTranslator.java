@@ -1,11 +1,11 @@
-package org.deeplearning4j.translate;
+package org.deeplearning4j.caffe.translate;
 
 import org.apache.commons.lang3.text.WordUtils;
-import org.deeplearning4j.caffeprojo.Caffe.SolverParameter;
+import org.deeplearning4j.caffe.projo.Caffe.SolverParameter;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration.Builder;
-import org.deeplearning4j.common.NNCofigBuilderContainer;
+import org.deeplearning4j.caffe.common.NNCofigBuilderContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

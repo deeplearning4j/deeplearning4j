@@ -1,6 +1,6 @@
-package org.deeplearning4j.caffedag;
+package org.deeplearning4j.caffe.dag;
 
-import org.deeplearning4j.caffedag.CaffeNode.NodeType;
+import org.deeplearning4j.caffe.dag.CaffeNode.NodeType;
 import org.deeplearning4j.dag.Graph;
 import org.junit.Test;
 

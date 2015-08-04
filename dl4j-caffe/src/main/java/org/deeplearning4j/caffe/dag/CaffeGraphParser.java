@@ -1,10 +1,10 @@
-package org.deeplearning4j.caffedag;
+package org.deeplearning4j.caffe.dag;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.caffeprojo.Caffe.LayerParameter;
+import org.deeplearning4j.caffe.projo.Caffe.LayerParameter;
 import org.deeplearning4j.dag.Graph;
-import org.deeplearning4j.caffedag.CaffeNode.NodeType;
+import org.deeplearning4j.caffe.dag.CaffeNode.NodeType;
 
 import java.util.List;
 

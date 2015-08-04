@@ -1,9 +1,9 @@
-package org.deeplearning4j.translate;
+package org.deeplearning4j.caffe.translate;
 
-import org.deeplearning4j.caffeprojo.Caffe.NetParameter;
-import org.deeplearning4j.caffeprojo.Caffe.SolverParameter;
-import org.deeplearning4j.common.CaffeLoader;
-import org.deeplearning4j.common.SolverNetContainer;
+import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
+import org.deeplearning4j.caffe.projo.Caffe.SolverParameter;
+import org.deeplearning4j.caffe.common.CaffeLoader;
+import org.deeplearning4j.caffe.common.SolverNetContainer;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author jeffreytang
  */
-public class CaffeLoaderTest extends CaffeTestUtil {
+public class CaffeLoaderTranslateTest extends CaffeTranslateTestUtil {
 
     @Test
     public void testCaffeLoaderOne() throws IOException{

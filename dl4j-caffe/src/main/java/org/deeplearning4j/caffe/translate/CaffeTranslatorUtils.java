@@ -1,4 +1,4 @@
-package org.deeplearning4j.translate;
+package org.deeplearning4j.caffe.translate;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 

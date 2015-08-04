@@ -1,9 +1,9 @@
-package org.deeplearning4j.common;
+package org.deeplearning4j.caffe.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.caffeprojo.Caffe;
-import org.deeplearning4j.caffeprojo.Caffe.NetParameter;
+import org.deeplearning4j.caffe.projo.Caffe;
+import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
 
 /**
  * @author jeffreytang

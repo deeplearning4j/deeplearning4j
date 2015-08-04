@@ -1,9 +1,9 @@
-package org.deeplearning4j.translate;
+package org.deeplearning4j.caffe.translate;
 
 import lombok.Data;
-import org.deeplearning4j.common.CaffeLoader;
-import org.deeplearning4j.common.CaffeReader;
-import org.deeplearning4j.common.SolverNetContainer;
+import org.deeplearning4j.caffe.common.CaffeLoader;
+import org.deeplearning4j.caffe.common.CaffeReader;
+import org.deeplearning4j.caffe.common.SolverNetContainer;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.io.IOException;
  * @author jeffreytang
  */
 @Data
-public class CaffeTestUtil {
+public class CaffeTranslateTestUtil {
 
     // Reader for testing CaffeReader
     public static final CaffeReader reader = new CaffeReader();

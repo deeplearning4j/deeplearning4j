@@ -1,4 +1,4 @@
-package org.deeplearning4j.common;
+package org.deeplearning4j.caffe.common;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

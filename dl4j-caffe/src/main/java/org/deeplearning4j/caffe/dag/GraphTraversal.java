@@ -1,4 +1,4 @@
-package org.deeplearning4j.caffedag;
+package org.deeplearning4j.caffe.dag;
 
 import org.deeplearning4j.berkeley.PriorityQueue;
 

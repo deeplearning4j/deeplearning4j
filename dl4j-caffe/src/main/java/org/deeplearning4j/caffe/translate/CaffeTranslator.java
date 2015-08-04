@@ -1,10 +1,10 @@
-package org.deeplearning4j.translate;
+package org.deeplearning4j.caffe.translate;
 
-import org.deeplearning4j.caffeprojo.Caffe.NetParameter;
-import org.deeplearning4j.caffeprojo.Caffe.SolverParameter;
+import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
+import org.deeplearning4j.caffe.projo.Caffe.SolverParameter;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.common.NNCofigBuilderContainer;
-import org.deeplearning4j.common.SolverNetContainer;
+import org.deeplearning4j.caffe.common.NNCofigBuilderContainer;
+import org.deeplearning4j.caffe.common.SolverNetContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

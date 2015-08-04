@@ -1,9 +1,9 @@
-package org.deeplearning4j.translate;
+package org.deeplearning4j.caffe.translate;
 
-import org.deeplearning4j.caffeprojo.Caffe;
-import org.deeplearning4j.caffeprojo.Caffe.LayerParameter;
-import org.deeplearning4j.caffeprojo.Caffe.NetParameter;
-import org.deeplearning4j.caffeprojo.Caffe.SolverParameter;
+import org.deeplearning4j.caffe.projo.Caffe;
+import org.deeplearning4j.caffe.projo.Caffe.LayerParameter;
+import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
+import org.deeplearning4j.caffe.projo.Caffe.SolverParameter;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author jeffreytang
  */
-public class CaffeReaderTest extends CaffeTestUtil {
+public class CaffeReaderTranslateTest extends CaffeTranslateTestUtil {
     /**
      * Test reading the Logistic model in binary format into a Java Class
      * This includes the network configuration and the pre-trained weights

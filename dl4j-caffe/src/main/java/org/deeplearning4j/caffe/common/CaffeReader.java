@@ -1,9 +1,9 @@
-package org.deeplearning4j.common;
+package org.deeplearning4j.caffe.common;
 
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.TextFormat;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.caffeprojo.Caffe;
+import org.deeplearning4j.caffe.projo.Caffe;
 
 import java.io.*;
 
