@@ -31,11 +31,24 @@ public class ReshapeTests extends BaseNd4jTest {
     @Test
     public void testThreeTwoTwoTwo() {
         INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray sliceZero = Nd4j.create(new double[][]{{1, 7}, {4, 10}});
+        INDArray sliceOne = Nd4j.create(new double[][]{{2,8},{5,11}});
+        INDArray sliceTwo = Nd4j.create(new double[][]{{3,9},{6,12}});
+        INDArray[] assertions = new INDArray[] {
+                sliceZero,sliceOne,sliceTwo
+        };
+
         for(int i = 0; i < threeTwoTwo.slices(); i++) {
-            System.out.println(threeTwoTwo.slice(i));
+            assertEquals(assertions[i], threeTwoTwo.slice(i));
         }
+
         INDArray linspaced = Nd4j.linspace(1,4,4).reshape(2,2);
-        System.out.println(linspaced);
+        INDArray[] assertionsTwo = new INDArray[] {
+                Nd4j.create(new double[]{1,3}),Nd4j.create(new double[]{2,4})
+        };
+
+        for(int i = 0; i < assertionsTwo.length; i++)
+            assertEquals(linspaced.slice(i),assertionsTwo[i]);
     }
 
 

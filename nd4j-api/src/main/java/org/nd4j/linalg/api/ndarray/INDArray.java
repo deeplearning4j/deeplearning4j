@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
@@ -944,7 +945,7 @@ public interface INDArray extends Serializable  {
      */
     INDArray divColumnVector(INDArray columnVector);
 
-     /**
+    /**
      * In place division of a row vector
      *
      * @param rowVector the row vector used for division
@@ -1441,6 +1442,13 @@ public interface INDArray extends Serializable  {
      */
     void setShape(int...shape);
 
+    /**
+     * Sub array based on the
+     * pre calculated shape,strides, offsets
+     * @param resolution the resolution to use
+     * @return the sub array based on the calculations from the resolution
+     */
+    INDArray subArray(ShapeOffsetResolution resolution);
 
     /**
      * @param offsets

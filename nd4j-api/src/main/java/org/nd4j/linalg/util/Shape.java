@@ -23,6 +23,9 @@ import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.Indices;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -112,7 +115,12 @@ public class Shape {
             INDArray ret = Nd4j.create(arr.shape());
             for(int i = 0; i < ret.slices(); i++) {
                 INDArray putSlice = arr.slice(i);
-                ret.putSlice(i, putSlice);
+                if(putSlice.length() == ret.length()) {
+                    ret.assign(arr);
+                    break;
+                }
+                else
+                    ret.putSlice(i, putSlice);
             }
             return ret;
         }
@@ -194,7 +202,7 @@ public class Shape {
         List<Integer> list = new ArrayList<>();
         for(int i = 0; i < dimensions.length; i++) {
             if(shape[i] != 1) {
-                list.add(list.size());
+                list.add(i);
             }
         }
 
@@ -583,8 +591,123 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(INDArray arr,int index) {
-        return ind2sub(arr.shape(),index,ArrayUtil.prod(arr.shape()));
+        return ind2sub(arr.shape(), index, ArrayUtil.prod(arr.shape()));
     }
+
+    /**
+     * Compute the offset for the given array
+     * given the indices
+     * @param arr the array to compute the offset for
+     * @param indexes the indexes along each dimension to create the offset for
+     * @return the offset for the given array and indexes
+     */
+    public static int offsetFor(INDArray arr,int[] indexes) {
+        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
+        resolution.exec(Shape.toIndexes(indexes));
+        return resolution.getOffset();
+    }
+
+    /**
+     * Compute the offset for a given index
+     * @param arr the array to compute the offset for
+     * @param index the linear index to compute the offset for
+     * @return the offset for the given linear index
+     */
+    public static int offsetFor(INDArray arr,int index) {
+        int[] indexes = Shape.ind2sub(arr, index);
+        return offsetFor(arr, indexes);
+    }
+
+
+    /**
+     * Returns a permutation of the dimensions
+     * with all 1s moved to end
+     * @param shape the shape to permute
+     * @return the permuted axes with all moving towards
+     * end
+     */
+    public static int[] moveOnesToEnd(int[] shape) {
+        List<Integer> nonOnes = new ArrayList<>();
+        List<Integer> ones = new ArrayList<>();
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] == 1)
+                ones.add(i);
+            else
+                nonOnes.add(i);
+        }
+
+        return Ints.concat(Ints.toArray(nonOnes), Ints.toArray(ones));
+    }
+
+    /**
+     * Convert the given int indexes
+     * to nd array indexes
+     * @param indices the indices to convert
+     * @return the converted indexes
+     */
+    public static NDArrayIndex[] toIndexes(int[] indices) {
+        NDArrayIndex[] ret = new NDArrayIndex[indices.length];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = new NDArrayIndex(indices[i]);
+        return ret;
+    }
+
+
+    public static int[] newStrides(int[] strides,int newLength,NDArrayIndex[] indexes) {
+        if(strides.length > newLength) {
+            int[] newStrides = new int[strides.length - 1];
+            for(int i = 0; i < newStrides.length; i++) {
+                newStrides[i] = strides[i + 1];
+            }
+            strides = newStrides;
+        }
+
+        return strides;
+    }
+
+    public static int[] newOffsets(int[] offsets,int newLength,NDArrayIndex[] indexes) {
+        if(offsets.length > newLength) {
+            int[] newOffsets = new int[offsets.length - 1];
+            for(int i = 0; i < newOffsets.length; i++) {
+                newOffsets[i] = offsets[i + 1];
+
+
+            }
+
+            offsets = newOffsets;
+        }
+
+        return offsets;
+    }
+
+
+    public static int[] squeezeOffsets(int[] shape,int[] offsets) {
+        //bump offsets
+        List<Integer> squeezeIndices = new ArrayList<>();
+        for(int i = 0; i < shape.length; i++)
+            if(offsets[i] == 0)
+                squeezeIndices.add(i);
+        int[] ret = ArrayUtil.removeIndex(offsets, Ints.toArray(squeezeIndices));
+        int delta = Math.abs(ret.length - shape.length);
+        if(delta == 0)
+            return ret;
+        else {
+            int[] retOffsets = new int[shape.length];
+            System.arraycopy(ret,0,retOffsets,0,ret.length);
+            return retOffsets;
+        }
+    }
+
+
+    public static int[] squeezeStrides(int[] shape,int[] stride) {
+        List<Integer> squeezeIndices = new ArrayList<>();
+        for(int i = 0; i < shape.length; i++)
+            if(shape[i] == 1)
+                squeezeIndices.add(i);
+        int[] ret = ArrayUtil.removeIndex(stride,Ints.toArray(squeezeIndices));
+        return ret;
+    }
+
 
     /**
      * Returns true for the case where
