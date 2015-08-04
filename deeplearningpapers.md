@@ -14,6 +14,7 @@ layout: default
 * [Andrej Karphathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
 * [Machine Learning & Computer Vision Talks](http://www.machinelearningtalks.com)
+* [Machine Learning and Probabilistic Graphical Models](http://www.cedar.buffalo.edu/~srihari/CSE574/index.html)
 
 ## Deep- and Machine-Learning Fora
 
