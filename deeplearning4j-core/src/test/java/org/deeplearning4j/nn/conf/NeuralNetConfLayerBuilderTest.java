@@ -23,7 +23,7 @@ public class NeuralNetConfLayerBuilderTest {
     double drop = 0.3;
     String act = "softmax";
     poolingType poolType = poolingType.MAX;
-    int[] filterSize = new int[]{2, 2};
+    int[] kernelSize = new int[]{2, 2};
     int filterDepth = 6;
     int[] stride = new int[]{2, 2};
     HiddenUnit hidden = HiddenUnit.RECTIFIED;
@@ -87,8 +87,7 @@ public class NeuralNetConfLayerBuilderTest {
         // Convolutional layer
         NeuralNetConfiguration convConf = new NeuralNetConfiguration.Builder()
                 .activationFunction(act)
-                .filterSize(filterSize)
-                .filterDepth(filterDepth)
+                .kernelSize(kernelSize)
                 .layer(new ConvolutionLayer.Builder(newFS,newConvType).activation(newAct).build())
                 .build();
 

@@ -65,171 +65,131 @@ import java.util.Map;
 @NoArgsConstructor
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
-    private double sparsity = 0;
-    @Deprecated
-    private boolean useAdaGrad = true;
-    private double lr = 1e-1;
-    protected double corruptionLevel = 0.3;
-    protected int numIterations = 5;
-    /* momentum for learning */
-    protected double momentum = 0.5;
-    /* L2 Regularization constant */
-    protected double l2 = 0;
-    protected boolean useRegularization = false;
-    protected Updater updater = Updater.ADAGRAD;
-    private String customLossFunction;
-    //momentum after n iterations
-    protected Map<Integer,Double> momentumAfter = new HashMap<>();
-    //reset adagrad historical gradient after n iterations
-    protected int resetAdaGradIterations = -1;
-    //number of line search iterations
-    @Deprecated
-    protected int numLineSearchIterations = 5;
-    protected int maxNumLineSearchIterations = 5;
-    protected double dropOut = 0;
-    //use only when binary hidden neuralNets are active
-    protected boolean applySparsity = false;
+    protected Layer layer;
+    protected int nIn,nOut;
+    protected long seed;
+    private int[] weightShape;
     //weight init scheme, this can either be a distribution or a applyTransformToDestination scheme
     protected WeightInit weightInit = WeightInit.XAVIER;
-    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+    protected Distribution dist;
+    protected String activationFunction;
+    private String customLossFunction;
     public LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+    protected boolean minimize = false;
+    //use only when binary hidden neuralNets are active
+    protected boolean applySparsity = false;
+    private double sparsity = 0;
+    private double lr = 1e-1;
+    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
-    /* RNG for sampling. */
-    @Deprecated
-    protected transient DefaultRandom rng;
-    //adadelta - weight for how much to consider previous history
-    protected double rho;
-    protected long seed;
-    //weight initialization
-    protected Distribution dist;
-    protected StepFunction stepFunction = new GradientStepFunction();
-    protected Layer layer;
-
-
-
-    //gradient keys used for ensuring order when getting and setting the gradient
-    protected List<String> variables = new ArrayList<>();
-    //feed forward nets
-    protected int nIn,nOut;
-
-    protected String activationFunction;
-
-    protected boolean useDropConnect = false;
-
+    protected int numIterations = 5;
+    //number of line search iterations
+    protected int maxNumLineSearchIterations = 5;
+    //reset adagrad historical gradient after n iterations
+    protected int resetAdaGradIterations = -1;
+    // momentum for learning
+    protected double momentum = 0.5;
+    //momentum after n iterations
+    protected Map<Integer,Double> momentumAfter = new HashMap<>();
+    protected double corruptionLevel = 0.3;
+    protected double dropOut = 0;
+    protected boolean useRegularization = false;
+    protected double l1 = 0.0;
+    // L2 Regularization constant
+    protected double l2 = 0;
     //RBMs
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
     protected int k = 1;
-
-    private int[] weightShape;
-
     //convolutional nets: this is the height and width of the kernel
     private int[] kernelSize = {2,2};
     //aka pool size for subsampling
     private int[] stride = {2,2};
-    //kernel size for a convolutional net
-    @Deprecated
-    protected int kernel = 5;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected int batchSize = 10;
-    //minimize or maximize objective
-    protected boolean minimize = false;
-    //l1 regularization
-    protected double l1 = 0.0;
-    //feature map
-    protected int[] featureMapSize = {9,9};
-
-    protected double rmsDecay = 0.0;
-
-
-    protected boolean miniBatch = false;
-
-
     protected Convolution.Type convolutionType = Convolution.Type.VALID;
     protected SubsamplingLayer.poolingType poolingType = SubsamplingLayer.poolingType.MAX;
+    protected double rmsDecay = 0.0;
+    protected StepFunction stepFunction = new GradientStepFunction();
+    protected boolean useDropConnect = false;
+    protected boolean miniBatch = false;
+    protected double rho;
+    protected Updater updater = Updater.ADAGRAD;
+    //gradient keys used for ensuring order when getting and setting the gradient
+    protected List<String> variables = new ArrayList<>();
 
-
-    public NeuralNetConfiguration(double sparsity,
-                                  boolean useAdaGrad,
-                                  double lr,
-                                  int k,
-                                  double corruptionLevel,
-                                  int numIterations,
-                                  double momentum,
-                                  double l2,
-                                  boolean useRegularization,
-                                  Map<Integer, Double> momentumAfter,
-                                  int resetAdaGradIterations,
-                                  double dropOut,
-                                  boolean applySparsity,
-                                  WeightInit weightInit,
-                                  OptimizationAlgorithm optimizationAlgo,
-                                  LossFunctions.LossFunction lossFunction,
-                                  boolean constrainGradientToUnitNorm,
-                                  DefaultRandom rng,
-                                  long seed,
-                                  Distribution dist,
+    public NeuralNetConfiguration(Layer layer,
                                   int nIn,
                                   int nOut,
+                                  long seed,
+                                  int[] weightShape,
+                                  WeightInit weightInit,
+                                  Distribution dist,
                                   String activationFunction,
+                                  String customLossFunction,
+                                  LossFunctions.LossFunction lossFunction,
+                                  boolean minimize,
+                                  boolean applySparsity,
+                                  double sparsity,
+                                  double lr,
+                                  OptimizationAlgorithm optimizationAlgo,
+                                  boolean constrainGradientToUnitNorm,
+                                  int numIterations,
+                                  int maxNumLineSearchIterations,
+                                  int resetAdaGradIterations,
+                                  double momentum,
+                                  Map<Integer, Double> momentumAfter,
+                                  double corruptionLevel,
+                                  double dropOut,
+                                  boolean useRegularization,
+                                  double l1,
+                                  double l2,
                                   RBM.VisibleUnit visibleUnit,
                                   RBM.HiddenUnit hiddenUnit,
-                                  int[] weightShape,
-                                  int[] filterSize,
-                                  int filterDepth,
+                                  int k,
+                                  int[] kernelSize,
                                   int[] stride,
-                                  int[] featureMapSize,
-                                  int kernel,
                                   int batchSize,
-                                  int numLineSearchIterations,
-                                  int maxNumLineSearchIterations,
-                                  boolean minimize,
-                                  Layer layer, Convolution.Type convolutionType,
-                                  SubsamplingLayer.poolingType poolingType,
-                                  double l1,String customLossFunction) {
-        this.minimize = minimize;
-        this.customLossFunction = customLossFunction;
-        this.convolutionType = convolutionType;
-        this.poolingType = poolingType;
-        this.numLineSearchIterations = numLineSearchIterations;
-        this.maxNumLineSearchIterations = maxNumLineSearchIterations;
-        this.featureMapSize = featureMapSize;
-        this.l1 = l1;
-        this.batchSize = batchSize;
+                                  Convolution.Type convolutionType,
+                                  SubsamplingLayer.poolingType poolingType) {
         this.layer = layer;
-        this.sparsity = sparsity;
-        this.useAdaGrad = useAdaGrad;
-        this.lr = lr;
-        this.kernel = kernel;
-        this.k = k;
-        this.corruptionLevel = corruptionLevel;
-        this.numIterations = numIterations;
-        this.momentum = momentum;
-        this.l2 = l2;
-        this.useRegularization = useRegularization;
-        this.momentumAfter = momentumAfter;
-        this.resetAdaGradIterations = resetAdaGradIterations;
-        this.dropOut = dropOut;
-        this.applySparsity = applySparsity;
-        this.weightInit = weightInit;
-        this.optimizationAlgo = optimizationAlgo;
-        this.lossFunction = lossFunction;
-        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
-        this.rng = null;
-        this.seed = seed;
-        this.dist = dist;
         this.nIn = nIn;
         this.nOut = nOut;
-        this.activationFunction = activationFunction;
-        this.visibleUnit = visibleUnit;
-        this.hiddenUnit = hiddenUnit;
+        this.seed = seed;
         if(weightShape != null)
             this.weightShape = weightShape;
         else
             this.weightShape = new int[]{nIn,nOut};
-        this.kernelSize = filterSize;
+        this.weightInit = weightInit;
+        this.dist = dist;
+        this.activationFunction = activationFunction;
+        this.customLossFunction = customLossFunction;
+        this.lossFunction = lossFunction;
+        this.minimize = minimize;
+        this.applySparsity = applySparsity;
+        this.sparsity = sparsity;
+        this.lr = lr;
+        this.optimizationAlgo = optimizationAlgo;
+        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+        this.numIterations = numIterations;
+        this.maxNumLineSearchIterations = maxNumLineSearchIterations;
+        this.resetAdaGradIterations = resetAdaGradIterations;
+        this.momentum = momentum;
+        this.momentumAfter = momentumAfter;
+        this.corruptionLevel = corruptionLevel;
+        this.dropOut = dropOut;
+        this.useRegularization = useRegularization;
+        this.l1 = l1;
+        this.l2 = l2;
+        this.visibleUnit = visibleUnit;
+        this.hiddenUnit = hiddenUnit;
+        this.k = k;
+        this.kernelSize = kernelSize;
         this.stride = stride;
+        this.batchSize = batchSize;
+        this.convolutionType = convolutionType;
+        this.poolingType = poolingType;
     }
 
     /**
@@ -340,42 +300,42 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     try {
                         Object layerFieldValue = layerField.get(layer);
                         if(layerFieldValue != null ) {
-                        	if(neuralNetField.getType().isAssignableFrom(layerField.getType())){
-                        		//Same class, or neuralNetField is superclass/superinterface of layer field
-                        		if(!ClassUtils.isPrimitiveOrWrapper(layerField.getType()) ){
-                            		neuralNetField.set(configInst, layerFieldValue);
-                            	} else {
-                            		//Primitive -> autoboxed by Field.get(...). Hence layerFieldValue is never null for primitive fields,
-                            		// even if not explicitly set (due to default value for primitives)
-                            		//Convention here is to use Double.NaN, Float.NaN, Integer.MIN_VALUE, etc. as defaults in layer configs
-                            		// to signify 'not set'
-                            		Class<?> primitiveClass = layerField.getType();
-                            		if( primitiveClass == double.class || primitiveClass == Double.class ){
-                            			if( !Double.isNaN((double)layerFieldValue) ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == float.class || primitiveClass == Float.class ){
-                            			if( !Float.isNaN((float)layerFieldValue) ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == int.class || primitiveClass == Integer.class ){
-                            			if( ((int)layerFieldValue) != Integer.MIN_VALUE ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == long.class || primitiveClass == Long.class ){
-                            			if( ((long)layerFieldValue) != Long.MIN_VALUE ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == char.class || primitiveClass == Character.class ){
-                            			if( ((char)layerFieldValue) != Character.MIN_VALUE ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else {
-                            			//Boolean: can only be true/false. No usable 'not set' value -> need some other workaround
-                            			//Short, Byte: probably never used
-                            			throw new RuntimeException("Primitive type not settable via reflection");
-                            		}
-                            	}
+                            if(neuralNetField.getType().isAssignableFrom(layerField.getType())) {
+                                //Same class, or neuralNetField is superclass/superinterface of layer field
+                                if(!ClassUtils.isPrimitiveOrWrapper(layerField.getType())) {
+                                    neuralNetField.set(configInst, layerFieldValue);
+                                } else {
+                                    //Primitive -> autoboxed by Field.get(...). Hence layerFieldValue is never null for primitive fields,
+                                    // even if not explicitly set (due to default value for primitives)
+                                    //Convention here is to use Double.NaN, Float.NaN, Integer.MIN_VALUE, etc. as defaults in layer configs
+                                    // to signify 'not set'
+                                    Class<?> primitiveClass = layerField.getType();
+                                    if( primitiveClass.equals(double.class) || primitiveClass.equals(Double.class) ) {
+                                        if( !Double.isNaN((double)layerFieldValue) ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass.equals(float.class) || primitiveClass.equals(Float.class) ) {
+                                        if( !Float.isNaN((float)layerFieldValue) ) {
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass.equals(int.class) || primitiveClass.equals(Integer.class) ) {
+                                        if( ((int)layerFieldValue) != Integer.MIN_VALUE ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass.equals(long.class) || primitiveClass.equals(Long.class) ) {
+                                        if( ((long)layerFieldValue) != Long.MIN_VALUE ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass.equals(char.class) || primitiveClass.equals(Character.class) ) {
+                                        if( ((char)layerFieldValue) != Character.MIN_VALUE ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else {
+                                        //Boolean: can only be true/false. No usable 'not set' value -> need some other workaround
+                                        //Short, Byte: probably never used
+                                        throw new RuntimeException("Primitive type not settable via reflection");
+                                    }
+                                }
                             }
                         }
                     } catch(Exception e) {
@@ -434,8 +394,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public MultiLayerConfiguration build() {
             List<NeuralNetConfiguration> list = new ArrayList<>();
             for(int i = 0; i < layerwise.size(); i++) {
-//                if(confOverrides.get(i) != null)
-//                    confOverrides.get(i).overrideLayer(i,layerwise.get(i));
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backward(backward).inputPreProcessors(inputPreProcessor)
@@ -545,72 +503,48 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return ret;
     }
 
+
     public static class Builder {
-        private int k = 1;
-        private String customLossFunction;
-        private double rmsDecay;
-        @Deprecated
-        private int kernel = 5;
-        private double corruptionLevel = 3e-1f;
-        private double sparsity = 0f;
-        @Deprecated
-        private boolean useAdaGrad = true;
-        private double lr = 1e-1f;
-        private double momentum = 0.5f;
-        private double l2 = 0f;
-        private boolean useRegularization = false;
-        private Map<Integer, Double> momentumAfter;
-        private int resetAdaGradIterations = -1;
-        private double dropOut = 0;
-        private boolean applySparsity = false;
-        private WeightInit weightInit = WeightInit.VI;
-        private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-        private boolean constrainGradientToUnitNorm = false;
-        @Deprecated
-        private DefaultRandom rng = null;
-        private long seed = System.currentTimeMillis();
-        private Distribution dist  = new NormalDistribution(1e-3,1);
-        private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        private Layer layer;
         private int nIn;
         private int nOut;
+        private long seed = System.currentTimeMillis();
+        private int[] weightShape;
+        private WeightInit weightInit = WeightInit.VI;
+        private Distribution dist  = new NormalDistribution(1e-3,1);
         private String activationFunction = "sigmoid";
+        private String customLossFunction;
+        private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        private boolean minimize = false;
+        private boolean applySparsity = false;
+        private double sparsity = 0f;
+        private double lr = 1e-1f;
+        private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+        private boolean constrainGradientToUnitNorm = false;
+        private int numIterations = 5;
+        private int maxNumLineSearchIterations = 5;
+        private int resetAdaGradIterations = -1;
+        private double momentum = 0.5f;
+        private Map<Integer, Double> momentumAfter;
+        private double corruptionLevel = 3e-1f;
+        private double dropOut = 0;
+        private boolean useRegularization = false;
+        private double l1 = 0.0;
+        private double l2 = 0f;
         private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
-        private int numIterations = 5;
-        private int[] weightShape;
-        private int[] filterSize = {2,2};
-        private int filterDepth = 5;
-        @Deprecated
-        private int[] featureMapSize = {2,2};
-        //subsampling layers
+        private int k = 1;
+        private int[] kernelSize = {2,2};
         private int[] stride = {2,2};
-        private StepFunction stepFunction = new NegativeDefaultStepFunction();
-        private Layer layer;
         private int batchSize = 100;
-        @Deprecated
-        private int numLineSearchIterations = 5;
-        private int maxNumLineSearchIterations = 5;
-        private boolean minimize = false;
         private Convolution.Type convolutionType = Convolution.Type.VALID;
         private SubsamplingLayer.poolingType poolingType = SubsamplingLayer.poolingType.MAX;
-        private double l1 = 0.0;
+        private double rmsDecay;
+        private StepFunction stepFunction = new NegativeDefaultStepFunction();
         private boolean useDropConnect = false;
         private double rho;
         private Updater updater = Updater.ADAGRAD;
-        private int channels = 1;
         private boolean miniBatch = false;
-
-        /**
-         * Number of channels for a conv net
-         *
-         * @param channels
-         * @return
-         */
-        public Builder channels(int channels) {
-            this.channels = channels;
-            return this;
-        }
-
 
         /**
          * The updater to use
@@ -681,12 +615,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder numLineSearchIterations(int numLineSearchIterations) {
-            this.numLineSearchIterations = numLineSearchIterations;
-            return this;
-        }
-
         public Builder maxNumLineSearchIterations(int maxNumLineSearchIterations) {
             this.maxNumLineSearchIterations = maxNumLineSearchIterations;
             return this;
@@ -697,8 +625,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder kernel(int kernel) {
-            this.kernel = kernel;
+        public Builder kernelSize(int[] kernelSize) {
+            this.kernelSize = kernelSize;
             return this;
         }
 
@@ -737,33 +665,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return b;
         }
 
-        public Builder featureMapSize(int...featureMapSize) {
-            this.featureMapSize = featureMapSize;
-            return this;
-        }
-
-
         public Builder stride(int[] stride) {
             if(stride.length != 2)
                 throw new IllegalArgumentException("Invalid stride  must be length 2");
             this.stride = stride;
-            return this;
-        }
-
-        public Builder filterSize(int...filterSize) {
-            if(filterSize.length != 2)
-                throw new IllegalArgumentException("Invalid filter size must be length 2");
-            this.filterSize = filterSize;
-            return this;
-        }
-
-        public Builder filterDepth(int filterDepth) {
-            this.filterDepth = filterDepth;
-            return this;
-        }
-
-        public Builder weightShape(int[] weightShape) {
-            this.weightShape = weightShape;
             return this;
         }
 
@@ -779,12 +684,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder sparsity(double sparsity) {
             this.sparsity = sparsity;
-            return this;
-        }
-
-        @Deprecated
-        public Builder useAdaGrad(boolean useAdaGrad) {
-            this.useAdaGrad = useAdaGrad;
             return this;
         }
 
@@ -813,12 +712,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder adagradResetIterations(int resetAdaGradIterations) {
-            this.resetAdaGradIterations = resetAdaGradIterations;
-            return this;
-        }
-
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
             return this;
@@ -834,12 +727,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder rng(DefaultRandom rng) {
-            this.rng = rng;
-            return this;
-        }
-
         public Builder seed(int seed) {
             this.seed = (long) seed;
             Nd4j.getRandom().setSeed(seed);
@@ -851,7 +738,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             Nd4j.getRandom().setSeed(seed);
             return this;
         }
-
 
         public Builder l2(double l2) {
             this.l2 = l2;
@@ -917,14 +803,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
 
-            NeuralNetConfiguration ret = new NeuralNetConfiguration( sparsity,  useAdaGrad,  lr,  k,
-                    corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
-                    resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
-                    constrainGradientToUnitNorm,  rng, seed,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape,filterSize, filterDepth, stride,featureMapSize,kernel
-                    ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
-                    l1,customLossFunction);
-            ret.useAdaGrad = this.useAdaGrad;
+            NeuralNetConfiguration ret = new NeuralNetConfiguration(layer, nIn, nOut, seed, weightShape, weightInit,
+                    dist, activationFunction, customLossFunction, lossFunction, minimize, applySparsity, sparsity,
+                    lr, optimizationAlgo, constrainGradientToUnitNorm, numIterations, maxNumLineSearchIterations,
+                    resetAdaGradIterations, momentum, momentumAfter, corruptionLevel, dropOut, useRegularization,
+                    l1, l2, visibleUnit, hiddenUnit, k, kernelSize, stride, batchSize, convolutionType, poolingType);
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
             ret.useDropConnect = useDropConnect;

@@ -71,7 +71,6 @@ public class NeuralNetConfigurationTest {
                 .nOut(trainingSet.numOutcomes())
                 .weightInit(WeightInit.SIZE)
                 .iterations(3)
-                .useAdaGrad(false)
                 .regularization(false)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
@@ -96,7 +95,6 @@ public class NeuralNetConfigurationTest {
                 .nOut(trainingSet.numOutcomes())
                 .weightInit(WeightInit.SIZE)
                 .iterations(3)
-                .useAdaGrad(false)
                 .regularization(false)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
@@ -115,7 +113,7 @@ public class NeuralNetConfigurationTest {
     public void testCopyConstructor() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dist(new NormalDistribution(1, 1))
-                .layer(new RBM()).useAdaGrad(false)
+                .layer(new RBM())
                 .build();
 
         NeuralNetConfiguration conf2 = new NeuralNetConfiguration(conf);

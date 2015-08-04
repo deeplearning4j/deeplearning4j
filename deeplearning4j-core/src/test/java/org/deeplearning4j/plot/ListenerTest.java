@@ -117,8 +117,7 @@ public class ListenerTest {
                 .corruptionLevel(0.0)
 
                 .layer(new RBM())
-                .learningRate(0.1).useAdaGrad(false)
-
+                .learningRate(0.1)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
@@ -160,7 +159,7 @@ public class ListenerTest {
                 .corruptionLevel(0.0)
 
                 .layer(new RBM())
-                .learningRate(0.1).useAdaGrad(false)
+                .learningRate(0.1)
 
                 .regularization(false)
                 .l1(0.0)
