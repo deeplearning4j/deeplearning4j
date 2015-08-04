@@ -158,4 +158,4 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 ## Other Resources
 
-* [Machine Learning: Generative and Discriminative Models](http://www.cedar.buffalo.edu/~srihari/CSE574/Discriminative-Generative.pdf)(Power Point); Sargur N. Srihari
+* [Machine Learning: Generative and Discriminative Models](http://www.cedar.buffalo.edu/~srihari/CSE574/Discriminative-Generative.pdf) (Power Point); Sargur N. Srihari
