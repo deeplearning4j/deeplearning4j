@@ -21,8 +21,6 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import lombok.RequiredArgsConstructor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -33,19 +31,25 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
  * This includes classification as well as prediction
  *
  */
-@Data @NoArgsConstructor
+@Data
 public class OutputLayer extends FeedForwardLayer {
     private static final long serialVersionUID = 8554480736972510788L;
     protected LossFunction lossFunction;
 
     private OutputLayer(Builder builder) {
-    	super(builder);
+        super(builder);
         this.lossFunction = builder.lossFunction;
     }
 
-    @AllArgsConstructor @NoArgsConstructor
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
         private LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+
+        public Builder loss(LossFunctions.LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
 
         @Override
         public Builder nIn(int nIn) {

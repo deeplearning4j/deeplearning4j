@@ -18,6 +18,7 @@
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <lombok.version>1.16.4</lombok.version>
         <dl4j.version>0.0.3.3.5.alpha2-SNAPSHOT</dl4j.version>
+        <graphchi.version>0.2.2</graphchi.version>
     </properties>
 
     <dependencies>
@@ -54,6 +55,12 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graphchi</groupId>
+            <artifactId>graphchi-java_2.11</artifactId>
+            <version>${graphchi.version}</version>
         </dependency>
     </dependencies>
 

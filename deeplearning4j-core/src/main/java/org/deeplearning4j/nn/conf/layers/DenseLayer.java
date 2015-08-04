@@ -26,7 +26,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 
 /**Dense layer: fully connected feed forward layer trainable by backprop.
  */
-@Data @NoArgsConstructor
+@Data
 public class DenseLayer extends FeedForwardLayer {
     private static final long serialVersionUID = 8554480736972510788L;
 
@@ -34,6 +34,7 @@ public class DenseLayer extends FeedForwardLayer {
     	super(builder);
     }
 
+    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
 
         @Override
