@@ -177,7 +177,6 @@ public class Nd4j {
             case CONSTANT:
                 if(padWidth.length < toPad.rank())
                     throw new IllegalArgumentException("Please specify a pad width for each dimension");
-                toPad = Nd4j.stripOnes(toPad);
 
                 List<int[]> sizes = new ArrayList<>();
                 for(int i = 0; i < toPad.rank(); i++) {
