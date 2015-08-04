@@ -113,6 +113,10 @@ public class Convolution {
         return img.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(ph, ph + h), NDArrayIndex.interval(pw, pw + w));
     }
 
+    public static INDArray im2col(INDArray img, int[] kernel, int[] stride, int[] padding) {
+        return im2col(img, kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false);
+    }
+
     /**
      * Implement column formatted images
      * @param img the image to process
