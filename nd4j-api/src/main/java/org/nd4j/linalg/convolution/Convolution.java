@@ -150,8 +150,7 @@ public class Convolution {
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
                         , NDArrayIndex.interval(i, sx, iLim)
-                        , NDArrayIndex.interval(j, sy, jLim),
-                        NDArrayIndex.all(), NDArrayIndex.all());
+                        , NDArrayIndex.interval(j, sy, jLim));
                 ret.put(new NDArrayIndex[]{
                         NDArrayIndex.all()
                         ,NDArrayIndex.all()

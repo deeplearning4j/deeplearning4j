@@ -77,4 +77,18 @@ public abstract class BaseConvolution implements ConvolutionInstance {
         return convn(input, kernel, type, ArrayUtil.range(0, input.shape().length));
     }
 
+    /**
+     * ND Convolution
+     *
+     * @param input  the input to transform
+     * @param kernel the kernel to transform with
+     * @param type   the type of convolution
+     * @return the convolution of the given input and kernel
+     */
+    @Override
+    public INDArray convn(INDArray input, INDArray kernel, Convolution.Type type, int[] kernelSize, int[] stride, int[] padding) {
+        return convn(input, kernel, type, kernelSize, stride, padding);
+    }
+
+
 }
