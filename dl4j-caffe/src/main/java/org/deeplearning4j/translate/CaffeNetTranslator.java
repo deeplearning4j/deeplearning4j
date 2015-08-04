@@ -1,7 +1,8 @@
 package org.deeplearning4j.translate;
 
-import org.deeplearning4j.caffe.Caffe.NetParameter;
+import org.deeplearning4j.caffeprojo.Caffe.NetParameter;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.common.NNCofigBuilderContainer;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.HashMap;

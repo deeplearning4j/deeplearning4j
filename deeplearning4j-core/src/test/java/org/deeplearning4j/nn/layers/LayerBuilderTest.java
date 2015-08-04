@@ -1,15 +1,17 @@
 package org.deeplearning4j.nn.layers;
 
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM.*;
+import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
+import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.poolingType;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Jeffrey Tang.

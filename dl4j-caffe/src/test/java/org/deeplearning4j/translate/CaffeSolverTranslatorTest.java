@@ -1,6 +1,8 @@
 package org.deeplearning4j.translate;
 
-import org.deeplearning4j.caffe.Caffe;
+import org.deeplearning4j.caffeprojo.Caffe;
+import org.deeplearning4j.common.NNCofigBuilderContainer;
+import org.deeplearning4j.common.SolverNetContainer;
 import org.junit.Test;
 
 import java.io.IOException;

@@ -1,6 +1,9 @@
 package org.deeplearning4j.translate;
 
 import lombok.Data;
+import org.deeplearning4j.common.CaffeLoader;
+import org.deeplearning4j.common.CaffeReader;
+import org.deeplearning4j.common.SolverNetContainer;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;

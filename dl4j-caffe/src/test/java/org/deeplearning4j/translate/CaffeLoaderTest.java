@@ -1,7 +1,9 @@
 package org.deeplearning4j.translate;
 
-import org.deeplearning4j.caffe.Caffe.NetParameter;
-import org.deeplearning4j.caffe.Caffe.SolverParameter;
+import org.deeplearning4j.caffeprojo.Caffe.NetParameter;
+import org.deeplearning4j.caffeprojo.Caffe.SolverParameter;
+import org.deeplearning4j.common.CaffeLoader;
+import org.deeplearning4j.common.SolverNetContainer;
 import org.junit.Test;
 
 import java.io.IOException;
