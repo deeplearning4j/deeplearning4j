@@ -224,6 +224,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public Op exec(Op op, int...dimension) {
+        //do op along all dimensions
+        if(dimension.length == op.x().rank())
+            dimension = new int[] {Integer.MAX_VALUE};
+
+        
         if(op.isPassThrough()) {
             op.exec(dimension);
             return op;
@@ -293,11 +298,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray exec(Accumulation op, int...dimension) {
+        //do op along all dimensions
+        if(dimension.length == op.x().rank())
+            dimension = new int[] {Integer.MAX_VALUE};
+
+        
         if(op.isPassThrough()) {
             op.exec();
             return op.z();
         }
-
+          
+       
         if(dimension[0] == Integer.MAX_VALUE) {
             if(op.x() instanceof IComplexNDArray)
                 return Nd4j.scalar(execAndReturn(op).currentResultComplex());
@@ -305,8 +316,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
         //ensure vector is proper shape
-        if(retShape.length == 1)
-            retShape = new int[] {1,retShape[0]};
+        if(retShape.length == 1) {
+            if(dimension[0] == 0)
+                retShape = new int[] {1,retShape[0]};
+            else
+                retShape = new int[] {retShape[0],1};
+
+        }
+        else if(retShape.length == 0) {
+            retShape = new int[] {1,1};
+        }
         if(op instanceof IComplexNDArray) {
             IComplexNDArray ret = Nd4j.createComplex(retShape);
             IComplexNDArray linear = ret.linearView();
@@ -461,6 +480,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray execAndReturn(TransformOp op, int...dimension) {
+        if(dimension.length == op.x().rank())
+             dimension = new int[] {Integer.MAX_VALUE};
         if(dimension.length == 1)
             return execAndReturnVector(op,dimension[0]);
         else {

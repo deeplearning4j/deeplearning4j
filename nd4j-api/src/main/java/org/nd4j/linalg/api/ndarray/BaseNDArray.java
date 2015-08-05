@@ -733,6 +733,11 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray tensorAlongDimension(int index, int... dimension) {
+        if(dimension.length == 1 && isColumnVector() && dimension[0] == 0 || isRowVector() && isRowVector() && dimension[0] == 1) {
+            return this;
+        }
+
+
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
 
         int[] reverseDimensions = ArrayUtil.reverseCopy(dimension);

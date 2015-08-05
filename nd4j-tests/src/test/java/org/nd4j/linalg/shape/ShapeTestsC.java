@@ -7,6 +7,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Adam Gibson
  */
@@ -305,6 +307,40 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     }
 
+
+    @Test
+    public void testSumRow(){
+        INDArray rowVector10 = Nd4j.ones(10);
+        INDArray sum1 = rowVector10.sum(1);
+        assertArrayEquals(sum1.shape(),new int[]{1,1});
+        assertTrue(sum1.getDouble(0) == 10);
+    }
+
+    @Test
+    public void testSumColumn(){
+        INDArray colVector10 = Nd4j.ones(10,1);
+        INDArray sum0 = colVector10.sum(0);
+        assertArrayEquals(sum0.shape(),new int[]{1,1});
+        assertTrue(sum0.getDouble(0) == 10);
+    }
+
+    @Test
+    public void testSum2d(){
+        INDArray arr = Nd4j.ones(10,10);
+        INDArray sum0 = arr.sum(0);
+        assertArrayEquals(sum0.shape(),new int[]{1,10});
+
+        INDArray sum1 = arr.sum(1);
+        assertArrayEquals(sum1.shape(),new int[]{10,1});
+    }
+
+    @Test
+    public void testSum2dv2(){
+        INDArray arr = Nd4j.ones(10,10);
+        INDArray sumBoth = arr.sum(0,1);
+        assertArrayEquals(sumBoth.shape(),new int[]{1,1});
+        assertTrue(sumBoth.getDouble(0) == 100 );
+    }
 
 
     @Override
