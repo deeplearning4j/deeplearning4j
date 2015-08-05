@@ -50,6 +50,7 @@ public class TestConvolutionLayer {
         int inputWidth = 28;
         int inputHeight = 28;
         int kernelWidth = 9;
+
         int kernelHeight = 9;
         int[] stride = new int[] {1,1};
         int[] padding = new int[] {0,0};
@@ -74,17 +75,19 @@ public class TestConvolutionLayer {
 
 
     private static Layer getCNNConfig(int nIn, int nOut, int kernelWidth, int kernelHeight, int[] stride, int[] padding){
+       ConvolutionLayer layer = new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight}, Convolution.Type.SAME)
+               .nIn(nIn)
+               .nOut(nOut)
+               .build();
+
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu")
                 .iterations(1)
                 .stride(stride)
                 .padding(padding)
-                .layer(new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight}, Convolution.Type.SAME)
-                        .nIn(nIn)
-                        .nOut(nOut)
-                        .build())
+                .layer(layer)
                 .build();
-        return LayerFactories.getFactory(new ConvolutionLayer()).create(conf);
+        return LayerFactories.getFactory(conf).create(conf);
 
     }
 

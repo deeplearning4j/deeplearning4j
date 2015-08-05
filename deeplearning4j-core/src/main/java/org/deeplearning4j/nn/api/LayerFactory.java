@@ -51,6 +51,8 @@ public interface LayerFactory {
     */
     <E extends Layer> E create(NeuralNetConfiguration conf);
 
+
+
     /**
      *
      * Create a layer based on the based in configuration
