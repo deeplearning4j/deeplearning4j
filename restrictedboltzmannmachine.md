@@ -31,7 +31,7 @@ Next, it is useful to see how many inputs combine at one hidden node. Each is mu
 
 So, RBMs’ nodes form a *symmetrical bipartite graph* where data passes through the visible layer on the left to the hidden layer on the right. 
 
-Symmetrical means that visible node is connected with each hidden node. Bipartite means it has two parts, or layers, and the graph is a mathematical term for a structure made of nodes. 
+Symmetrical means that visible node is connected with each hidden node. Bipartite means it has two parts, or layers, and the graph is a mathematical term for a web of nodes. 
 
 At each hidden node, each input x is multiplied by its respective weight w. That is, a single input x would have three weights here, making 12 weights altogether. The weights between two layers will always form a matrix where the rows are equal to the input nodes, and the columns are equal to the output nodes. 
 
@@ -104,6 +104,12 @@ This process of creating sequential sets of activations by grouping features and
 With each new hidden layer, the weights are adjusted until that layer is able to approximate the input from the previous layer. This is greedy, layerwise and unsupervised pre-training. It requires no labels to improve the weights of the network. 
 
 Because those weights already approximate the features of the data, they are well positioned to learn better when, in a second step you try to classify images with the deep-belief network in a subsequent supervised learning stage.
+
+To synthesize restricted Boltzmann machines in one diagram, here is a symmetrical bipartite and bidirectional graph:
+
+![Alt text](../img/sym_bipartite_graph_RBM.jpg)
+
+For those interested in studying the structure of RBMs in greater depth, they are one type of [directional, acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 
 ### Initiating an RBM on Iris
 
