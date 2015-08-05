@@ -173,7 +173,7 @@ public class ConvolutionLayer implements Layer {
 
         INDArray kernelWeights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
 
-        kernelWeights = kernelWeights.reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
+        kernelWeights = kernelWeights.dup().reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
             kernelWeights = kernelWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(kernelWeights.shape()));
         }

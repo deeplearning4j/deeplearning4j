@@ -1011,12 +1011,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(iter);
             iter.reset();
-            finetune(iter);
+            while (iter.hasNext()) {
+                DataSet next = iter.next();
+                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                    break;
+                setInput(next.getFeatureMatrix());
+                setLabels(next.getLabels());
+                finetune();
+            }
+
         }
         if (layerWiseConfigurations.isBackprop()) {
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
+                if (next.getFeatureMatrix() == null || next.getLabels() == null)
+                    break;
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
                 backprop();
@@ -1110,72 +1120,30 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void setListeners(IterationListener... listeners) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Run SGD based on the given labels
-     *
-     * @param iter fine tune based on the labels
-     */
-    public void finetune(DataSetIterator iter) {
-        log.info("Finetune phase ");
-        if(layerWiseConfigurations.isBackprop()) {
-            log.info("Will use backpropagation for finetune");
-            return;
-        }
-
-        iter.reset();
-
-        while (iter.hasNext()) {
-            DataSet data = iter.next();
-            if (data.getFeatureMatrix() == null || data.getLabels() == null)
-                break;
-
-            setInput(data.getFeatureMatrix());
-            setLabels(data.getLabels());
-            if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
-                feedForward();
-                if (getOutputLayer() instanceof OutputLayer) {
-                    OutputLayer o = (OutputLayer) getOutputLayer();
-                    o.setListeners(getListeners());
-                    o.fit(o.input(), getLabels());
-                }
-            } else {
-                throw new UnsupportedOperationException();
-            }
-
-        }
-
-
+        Collection<IterationListener> cListeners = new ArrayList<>();
+        for(IterationListener listener : listeners)
+            cListeners.add(listener);
+        setListeners(cListeners);
     }
 
 
     /**
      * Run SGD based on the given labels
      *
-     * @param labels the labels to use
      */
-    public void finetune(INDArray labels) {
-        if (labels != null)
-            this.labels = labels;
+    public void finetune() {
         if (!(getOutputLayer() instanceof OutputLayer)) {
             log.warn("Output layer not instance of output layer returning.");
             return;
         }
-
-        if(layerWiseConfigurations.isBackprop()) {
-            log.info("Will use backpropagation for finetune");
-            return;
-        }
-
+        if(labels == null)
+            throw new IllegalStateException("No labels found");
 
         log.info("Finetune phase");
-        OutputLayer o = (OutputLayer) getOutputLayer();
-        if (getOutputLayer().conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
-            List<INDArray> activations = feedForward();
-            o.setListeners(getListeners());
-            o.fit(activations.get(activations.size() - 2), labels);
+        OutputLayer output = (OutputLayer) getOutputLayer();
+        if (output.conf().getOptimizationAlgo() != OptimizationAlgorithm.HESSIAN_FREE) {
+            feedForward();
+            output.fit(output.input(), labels);
         } else {
             throw new UnsupportedOperationException();
         }
@@ -1223,15 +1191,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void fit(INDArray data, INDArray labels) {
         setInput(data.dup());
-
+        setLabels(labels.dup());
 
         if (layerWiseConfigurations.isPretrain()) {
-            pretrain(getInput());
-            finetune(labels);
+            pretrain(data);
+            finetune();
         }
 
         if(layerWiseConfigurations.isBackprop()){
-            setLabels(labels);
             backprop();
         }
     }
@@ -1244,6 +1211,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void fit(INDArray data) {
+        setInput(data.dup());
         pretrain(data);
     }
 
