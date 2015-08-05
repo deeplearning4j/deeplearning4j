@@ -754,7 +754,7 @@ public abstract class BaseNDArray implements INDArray {
             return ret2.slice(offset);
         if(length == NDArrayMath.lengthPerSlice(ret2)) {
             while(offset >= ret2.slices())
-                offset --;
+                offset -= ret2.slices();
 
             ret2 = ret2.slice(offset);
             return ret2;
