@@ -24,7 +24,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,12 +41,10 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
  * http://arxiv.org/pdf/1503.04069.pdf
  *
- *
  * @author Alex Black
  */
 public class GravesLSTM extends BaseLayer {
-	
-	
+	private static final long serialVersionUID = 4758465462791204559L;
 
 	public GravesLSTM(NeuralNetConfiguration conf) {
 		super(conf);
@@ -229,18 +226,11 @@ public class GravesLSTM extends BaseLayer {
 			INDArray dLdwOO = deltao.mul(currMemCellActivations).sum(0).transpose();	//Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
 			recurrentWeightGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize + 1)}, dLdwOO);	//dL/dw_{OOxy}
 
-			if( miniBatchSize == 1 ){
-				//Mini-batch size = 1 -> nRows = 1 -> special case for indexing...
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{interval(0,hiddenLayerSize)}, deltai);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{interval(hiddenLayerSize,2*hiddenLayerSize)}, deltaf);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{interval(2*hiddenLayerSize,3*hiddenLayerSize)}, deltao);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{interval(3*hiddenLayerSize,4*hiddenLayerSize)}, deltag);
-			} else {
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}, deltaf);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3 * hiddenLayerSize)}, deltao);
-				biasGradients.slice(t,2).put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)}, deltag);
-			}
+			INDArray bGradSlice = (is2dInput ? biasGradients : biasGradients.slice(t,2));
+			bGradSlice.put(new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai);
+			bGradSlice.put(new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}, deltaf);
+			bGradSlice.put(new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3 * hiddenLayerSize)}, deltao);
+			bGradSlice.put(new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)}, deltag);
 			
 			//Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
 			//But here, need to add 4 weights * deltas for the IFOG gates
@@ -303,22 +293,22 @@ public class GravesLSTM extends BaseLayer {
 		//Extract weights and biases:
 		INDArray wi = inputWeights.get(interval(0,nIn),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize
 		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
-		INDArray bi = biases.get(interval(0,hiddenLayerSize));
+		INDArray bi = biases.get(new NDArrayIndex(0),interval(0,hiddenLayerSize));
 
 		INDArray wf = inputWeights.get(interval(0,nIn),interval(hiddenLayerSize,2 * hiddenLayerSize));
 		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2 * hiddenLayerSize)); //previous
 		INDArray wFF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize,4 * hiddenLayerSize + 1)); //current
-		INDArray bf = biases.get(interval(hiddenLayerSize,2*hiddenLayerSize));
+		INDArray bf = biases.get(new NDArrayIndex(0),interval(hiddenLayerSize,2*hiddenLayerSize));
 
 		INDArray wo = inputWeights.get(interval(0,nIn),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
 		INDArray wO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)); //previous
 		INDArray wOO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4 * hiddenLayerSize + 1,4 * hiddenLayerSize + 2)); //current
-		INDArray bo = biases.get(interval(2*hiddenLayerSize,3 * hiddenLayerSize));
+		INDArray bo = biases.get(new NDArrayIndex(0),interval(2*hiddenLayerSize,3 * hiddenLayerSize));
 
 		INDArray wg = inputWeights.get(interval(0,nIn),interval(3 * hiddenLayerSize,4*hiddenLayerSize));
 		INDArray wG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(3*hiddenLayerSize,4 * hiddenLayerSize)); //previous
 		INDArray wGG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3)); //previous
-		INDArray bg = biases.get(interval(3*hiddenLayerSize,4 * hiddenLayerSize));
+		INDArray bg = biases.get(new NDArrayIndex(0),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
 
 		//Allocate arrays for activations:
 		INDArray outputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
@@ -336,9 +326,7 @@ public class GravesLSTM extends BaseLayer {
 			INDArray inputActivations = miniBatchData.mmul(wi)
 					.addi(prevOutputActivations.mmul(wI))
 					.addiRowVector(bi);
-			NDArrayIndex[] iIndexes = (miniBatchSize == 1 ?
-					new NDArrayIndex[]{interval(0,hiddenLayerSize)} :		//Indexing: special case for miniBatchSize=nRows=1. can't use "NDArrayIndex.all(),interval(0,hiddenLayerSize)"
-					new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)} );
+			NDArrayIndex[] iIndexes = new NDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)};
 			ifogZ.slice(t,2).put(iIndexes, inputActivations);
 			ifogA.slice(t,2).put(iIndexes, Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputActivations)));
 
@@ -347,8 +335,7 @@ public class GravesLSTM extends BaseLayer {
 					.addi(prevOutputActivations.mmul(wF))
 					.addi(prevMemCellActivations.mmul(Nd4j.diag(wFF)))
 					.addiRowVector(bf);
-			NDArrayIndex[] fIndexes = (miniBatchSize == 1 ? new NDArrayIndex[]{interval(hiddenLayerSize,2*hiddenLayerSize)} :
-					new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)});
+			NDArrayIndex[] fIndexes = new NDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)};
 			ifogZ.slice(t,2).put(fIndexes, forgetGateActivations);
 			ifogA.slice(t,2).put(fIndexes, Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations)));
 			//Reason for diag above: convert column vector -> diagonal matrix. Cell activations are only connected to the FOG gates in the same unit.
@@ -358,8 +345,7 @@ public class GravesLSTM extends BaseLayer {
 					.addi(prevOutputActivations.mmul(wG))
 					.addi(prevMemCellActivations.mmul(Nd4j.diag(wGG)))
 					.addiRowVector(bg);
-			NDArrayIndex[] gIndexes = (miniBatchSize == 1 ? new NDArrayIndex[]{interval(3*hiddenLayerSize,4*hiddenLayerSize)} :
-					new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize)});
+			NDArrayIndex[] gIndexes = new NDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize)};
 			ifogZ.slice(t,2).put(gIndexes, inputModGateActivations);
 			ifogA.slice(t,2).put(gIndexes,
 					Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations)));
@@ -373,8 +359,7 @@ public class GravesLSTM extends BaseLayer {
 					.addi(prevOutputActivations.mmul(wO))
 					.addi(currentMemoryCellActivations.mmul(Nd4j.diag(wOO)))
 					.addiRowVector(bo);
-			NDArrayIndex[] oIndexes = (miniBatchSize == 1 ? new NDArrayIndex[]{interval(2*hiddenLayerSize,3*hiddenLayerSize)} :
-					new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)});
+			NDArrayIndex[] oIndexes = new NDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)};
 			ifogZ.slice(t,2).put(oIndexes, outputGateActivations);
 			ifogA.slice(t,2).put(oIndexes,Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations)));
 
