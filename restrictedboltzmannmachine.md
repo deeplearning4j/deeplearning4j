@@ -113,17 +113,17 @@ To synthesize restricted Boltzmann machines in one diagram, here is a symmetrica
 
 For those interested in studying the structure of RBMs in greater depth, they are one type of [directional, acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 
-### Initiating an RBM on Iris
+### Initiating an RBM on Iris With Deeplearning4j
 
 Note how, below, an RBM is simply created as a layer in a `NeuralNetConfiguration`, a parameter fed into a more general class. Likewise, the RBM object is used to store properties like the transforms applied to the visible and hidden layers, Gaussian and Rectified Linear transforms, respectively. 
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/rbm/RBMIrisExample.java?slice=40:82"></script>
 
-This is an example of an [RBM processing the Iris dataset](../iris-flower-dataset-tutorial.html), which we cover in a separate tutorial. 
+This is an example of an [RBM processing the Iris flower dataset](../iris-flower-dataset-tutorial.html), which we cover in a separate tutorial. 
 
 ## Parameters & k
 
-The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov chain composing the restricted Boltzmann machine. A typical value is 1. 
+The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov Chain composing the restricted Boltzmann machine. A typical value is 1. 
 
 In the above example, you can see how RBMs can be created as layers with a more general `MultiLayerConfiguration`. After each dot you'll find an additional parameter that affects the structure and performance of a deep neural net. Most of those parameters are defined on this site. 
 
@@ -157,7 +157,7 @@ Gaussian transformations do not work well on RBMs' hidden layers. The rectified-
 
 ### Conclusions & Next Steps
 
-You can intrepret RBMs' output numbers as percentages. Every time the number in the reconstruct is *not zero*, that's a good indication the RBM learned the input. We'll have a better example later in the tutorials. To get another perspective on the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html).
+You can intrepret RBMs' output numbers as percentages. Every time the number in the reconstruction is *not zero*, that's a good indication the RBM learned the input. We'll have a better example later in the tutorials. To get another perspective on the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html). 
 
 Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many restricted Boltzmann machines stacked on top of one another.
 
