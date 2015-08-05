@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Restricted Boltzmann Machines
+# A Beginner's Guide to Restricted Boltzmann Machines
 
 Restricted Boltzmann machines are shallow, two-layer neural nets that constitute the building blocks of deep-belief networks. In the paragraphs below, we will attempt to describe in math, diagrams and plain language how RBMs work. 
 
