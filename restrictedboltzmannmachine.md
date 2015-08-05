@@ -63,7 +63,7 @@ Let's imagine that both the input data and the reconstructions are normal curves
 
 To measure the distance between its estimated probability distribution and the ground-truth distribution of the input, RBMs use [Kullback Leibler Divergence](https://www.quora.com/What-is-a-good-laymans-explanation-for-the-Kullback-Leibler-Divergence). A thorough explanation of the math can be found on [Wikipedia](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence). 
 
-KL-Divergence measures the non-overlapping, or diverging, areas under the two curves, and attempts to minimize those areas so that the activations of hidden layer one produce a close approximation of the original input. 
+KL-Divergence measures the non-overlapping, or diverging, areas under the two curves, and attempts to minimize those areas so that the activations of hidden layer one produce a close approximation of the original input. On the left is the probability distibution of a set of original input, *p*, juxtaposed with the reconstructed distribution *q*. On the right is the integration of their differences. 
 
 ![Alt text](../img/KL_divergence_RBM.png)
 
