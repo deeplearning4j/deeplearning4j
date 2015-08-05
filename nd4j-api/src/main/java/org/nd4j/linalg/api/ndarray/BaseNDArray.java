@@ -3792,8 +3792,9 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
-
+        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         INDArray ret =  subArray(resolution);
+
         return ret;
     }
 

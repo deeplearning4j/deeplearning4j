@@ -128,7 +128,10 @@ public class Indices {
      * @return the offsets for the given set of indices
      */
     public static int[] offsets(int[] shape,NDArrayIndex... indices) {
+        int numNewAxes = NDArrayIndex.numNewAxis(indices);
+        //offset of zero for every new axes
         int[] ret = new int[shape.length];
+
         if(indices.length == shape.length) {
             for (int i = 0; i < indices.length; i++) {
                 if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
@@ -158,6 +161,8 @@ public class Indices {
                 ret = new int[] {ret[0],0};
             }
         }
+
+
 
 
         return ret;
@@ -430,6 +435,12 @@ public class Indices {
                 }
             }
 
+            //ensure we account taking the slice of an element
+            if(indices[0].length() == 1 && indices[0].indices().length > 1) {
+                ret = ArrayUtil.removeIndex(ret,0);
+            }
+
+
             return ret;
 
         }
@@ -509,7 +520,7 @@ public class Indices {
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         if(shape.length == arr.stride().length || numNewAxes > 0) {
             //prepend zeros for new axis
-            retStride  =  Arrays.copyOf(arr.stride(),arr.stride().length);
+            retStride  =  Arrays.copyOf(arr.stride(), arr.stride().length);
             if(numNewAxes > 0)
                 retStride = Ints.concat(new int[numNewAxes],retStride);
         }

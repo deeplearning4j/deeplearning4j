@@ -34,6 +34,8 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
@@ -475,7 +477,7 @@ public class Nd4j {
     }
 
     /**
-     * Given a sequence of Iterators over a applyTransformToDestination of matrices, fill in all of
+     * Given a sequence of Iterators over a transform of matrices, fill in all of
      * the matrices with the entries in the theta vector.  Errors are
      * thrown if the theta vector does not exactly fill the matrices.
      */
@@ -508,6 +510,26 @@ public class Nd4j {
      */
     public static INDArray rollAxis(INDArray a,int axis) {
         return rollAxis(a,axis,0);
+
+    }
+
+
+    /**
+     *
+     * @param arr
+     * @param dimension
+     * @return
+     */
+    public static int[][]  argMax(INDArray arr,int...dimension) {
+        int[][] ret = new int[arr.tensorssAlongDimension(dimension)][arr.rank()];
+        for (int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
+            INDArray tensorAlongDimension = arr.tensorAlongDimension(i,dimension);
+            int max = Nd4j.getBlasWrapper().iamax(tensorAlongDimension);
+            int[] actualDimensionIndex = Shape.ind2sub(arr,max);
+            ret[i] = actualDimensionIndex;
+        }
+
+        return ret;
 
     }
 

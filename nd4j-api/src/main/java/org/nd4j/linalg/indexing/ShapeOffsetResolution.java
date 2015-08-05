@@ -1,5 +1,6 @@
 package org.nd4j.linalg.indexing;
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
@@ -32,7 +33,6 @@ public class ShapeOffsetResolution {
      */
     public void exec(NDArrayIndex...indexes) {
         indexes = NDArrayIndex.resolve(arr,indexes);
-        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         int[] shape = Indices.shape(arr.shape(), indexes);
         int[] offsets = Indices.offsets(shape,indexes);
         if(offsets.length < shape.length) {
@@ -47,7 +47,7 @@ public class ShapeOffsetResolution {
             System.arraycopy(stride,0,filledStrides,0,stride.length);
         }
 
-        if(shape[0] == 1 && shape.length > 2 && numNewAxes < 1) {
+        if(shape[0] == 1 && shape.length > 2) {
             boolean[] ones = new boolean[shape.length - 1];
             int[] newShape  = new int[shape.length - 1];
             boolean allOnes = true;
@@ -118,6 +118,11 @@ public class ShapeOffsetResolution {
                 }
             }
 
+        }
+
+        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
+        if(numNewAxes > 0) {
+            shape = Ints.concat(ArrayUtil.nTimes(numNewAxes,1),shape);
         }
 
         if(stride.length > offsets.length) {
