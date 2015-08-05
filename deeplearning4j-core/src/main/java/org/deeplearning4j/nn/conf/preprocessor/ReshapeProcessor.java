@@ -32,24 +32,31 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class ReshapeProcessor extends BaseInputPreProcessor {
     private int[] fromShape;	//Epsilons: To this shape in backward pass
     private int[] toShape;		//Activations: To this shape in forward pass
+    private boolean dynamic=true;
 
 	/**
 	 * @param fromShape May be null. If null: no change/op during backward pass.
 	 * @param toShape The shape that activations are reshaped to
+     * @param dynamic Infer the number of examples or not
      * Otherwise fromShape is the shape that epsilons (weights*deltas or equiv.)
 	 *  are reshaped to by backprop(...)
 	 */
-    public ReshapeProcessor(int[] fromShape, int[] toShape){
+    public ReshapeProcessor(int[] fromShape, int[] toShape, boolean dynamic){
         this.fromShape = fromShape;
     	this.toShape = toShape;
+        this.dynamic = dynamic;
     }
 
     public ReshapeProcessor(int... toShape) {
-        this(toShape,null);
+        this(null, toShape, true);
+    }
+    public ReshapeProcessor(int[] fromShape, int[] toShape) {
+        this(fromShape, toShape, true);
     }
 
     @Override
     public INDArray preProcess(INDArray input) {
+        if (dynamic) fromShape[0] = input.shape()[0];
         if (input.shape().length == toShape.length) return input;
         return input.reshape(toShape);
     }
