@@ -103,7 +103,9 @@ This process of creating sequential sets of activations by grouping features and
 
 With each new hidden layer, the weights are adjusted until that layer is able to approximate the input from the previous layer. This is greedy, layerwise and unsupervised pre-training. It requires no labels to improve the weights of the network. 
 
-Because those weights already approximate the features of the data, they are well positioned to learn better when, in a second step you try to classify images with the deep-belief network in a subsequent supervised learning stage.
+Because those weights already approximate the features of the data, they are well positioned to learn better when, in a second step you try to classify images with the deep-belief network in a subsequent supervised learning stage. 
+
+While RBMs have many uses, proper initialization of weights to facilitate later learning is one of their chief advantages. In a sense, they accomplish something similar to backpropagation: leading weights to model data well. In that sense, pre-training and backprop are substitutable means to the same end. 
 
 To synthesize restricted Boltzmann machines in one diagram, here is a symmetrical bipartite and bidirectional graph:
 
