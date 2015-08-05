@@ -5,17 +5,101 @@ layout: default
 
 # Restricted Boltzmann Machines
 
-A restricted Boltzmann machine consists of neuron-like units, or nodes, arranged in two layers, the visible layer and the hidden. These nodes can be imagined as places on a graph that communicate with each other. Arranged in two rows, each node of the visible layer communicates with each node of the hidden layer; i.e. they are symmetrically connected. But the nodes of the visible layer are not connected to each other, and the same goes for the nodes of the hidden layer. 
+Restricted Boltzmann machines are shallow, two-layer neural nets that constitute the building blocks of deep-belief networks. In the paragraphs below, we will attempt to describe in math, diagrams and plain language how RBMs work. 
 
-There is no intra layer communication -- this is the restriction in a restricted Boltzmann machine. Each node is a locus of computation that process input, and makes [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to transmit that input or not. (Stochastic means "randomly determined.")
+Invented by Geoff Hinton, [RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle.
 
-So, RBMs' nodes must form a symmetrical bipartite graph where data passes through the visible layer (v0-v3) at the bottom to the hidden layer (h0-h2) at the top, like so: 
+The first layer of the RBM is called the visible, or input, layer, and the second is the hidden layer. 
 
-![Alt text](../img/bipartite_graph.png)
+![Alt text](../img/two_layer_RBM.png)
 
-A trained restricted Boltzmann machine will learn the structure of the data fed into it via the visible layer; it does so through the act of reconstructing the data again and again, with its reconstructions increasing their similarity to the benchmark, original data. The ever-decreasing difference between the RBM's reconstruction and the benchmark is measured with a loss function. The restricted Boltzmann machine takes each step closer to the original using algorithms like stochastic gradient descent. 
+Each circle in the graph above represents a neuron-like unit called a *node*, and nodes are simply where calculations take place. The nodes are connected to each other across layers, but no two nodes of the same layer are linked.
 
-[RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle.
+That is, there is no intra-layer communication – this is the restriction in a restricted Boltzmann machine. Each node is a locus of computation that process input, and makes [stochastic](../glossary.html#stochasticgradientdescent) decisions about whether to transmit that input or not. (Stochastic means “randomly determined.”)
+
+Each visible node takes a low-level feature from an item in the dataset to be learned. For example, from a dataset of grayscale images, each visible node would receive one pixel-value for each pixel in one image. (MNIST images have 784 pixels, so neural nets processing them have 784 input nodes on the visible layer.)
+
+Let's follow that single pixel value, *x*, through the two-layer net. At node 1 of the hidden layer, x is multiplied by a weight and added to a so-called bias. The result of those two operations is fed into an activation function, which produces the node's activation, or the strength of the signal passing through it, given input x. 
+
+		activation f((weight w * input x) + bias b ) = output a
+
+![Alt text](../img/input_path_RBM.png)
+
+Next, it is useful to see how many inputs combine at one hidden node. Each is multiplied by a separate weight, the products are summed, added to a bias, and the result is passed through an activation function to produce the node's output. 
+
+![Alt text](../img/weighted_input_RBM.png)
+
+So, RBMs’ nodes form a *symmetrical bipartite graph* where data passes through the visible layer on the left to the hidden layer on the right.
+
+In the RBM below, the visible nodes receive several pixel values. Each visible node is connected with each hidden node, and at each hidden node, each input x is multiplied by its respective weight w. That is, a single input x would have three weights here, making 12 weights altogether. The weights between two layers will always form a matrix where the rows are equal to the input nodes, and the columns are equal to the output nodes. 
+
+Each hidden node receives the four inputs multiplied by different weights. The sum of those products is added to a bias (which forces at least some activations to happen), and the result is passed through the activation algorithm producing one output a for each hidden node.
+
+![Alt text](../img/multiple_inputs_RBM.png)
+
+If these two layers were part of a deeper neural network, the outputs of hidden layer no. 1 would be passed as inputs to hidden layer no. 2, and from there through as many hidden layers as you like to a final classifying layer. 
+
+![Alt text](../img/multiple_hidden_layers_RBM.png)
+
+But in this introduction to restricted Boltzmann machines, we'll focus on how they learn to reconstruct unlabeled data by themselves, making several forward and backward passes between the visible layer and hidden layer no. 1 without involving a deeper network.
+
+In the reconstruction phase, the activations of hidden layer no. 1 become the input in a backward pass. They are multiplied by the same weights, one per internode edge, just as x was on the forward pass. The sum of those products is added to a visible-layer bias at each visible node, and the output of those operations is a reconstruction; i.e. an approximation of the original input. This can be represented by the following diagram:
+
+![Alt text](../img/reconstruction_RBM.png)
+
+Because the weights of the RBM are randomly initialized, the difference between the reconstructions and the original input is often large. You can think of reconstruction error as the difference between the values of r and the input values, and that error is then backpropagated against the weights. 
+
+A more thorough explanation of backpropagation is [here](../neuralnet-overview.html#forward). 
+
+As you can see, on its forward pass, an RBM uses inputs to make predictions about node activations, or the probability of output a given weighted x: *p(a|x; w)*. 
+
+But on its backward pass, when activations are fed in and reconstructions, or guesses about the original data, are the output, an RBM is attempting to estimate the probability of inputs x given activations a, which are weighted with the same coefficients as those used on the forward pass. This second phase can be expressed as *p(x|a; w)*. 
+
+Together, those two estimates will lead you to the joint probability distribution of inputs *x* and activations *a*. 
+
+Reconstruction does something different from regression, which estimates a continous value based on many inputs, and unlike classification, which makes guesses about which discrete label to apply to inputs. Reconstruction is making guesses about the probability distribution of the original input; i.e. the values of many varied points at once. 
+
+Let's imagine that both the input data and the reconstructions are normal curves of different shapes, which only partially overlap. 
+
+To measure the distance between its estimated probability distribution and the ground-truth distribution of the input, RBMs use [Kullback Leibler Divergence](https://www.quora.com/What-is-a-good-laymans-explanation-for-the-Kullback-Leibler-Divergence). A thorough explanation of the math can be found on [Wikipedia](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence). 
+
+KL-Divergence measures the non-overlapping, or diverging, areas under the two curves, and attempts to minimize those areas so that the activations of hidden layer one produce a close approximation of the original input. 
+
+![Alt text](../img/KL_divergence_RBM.png)
+
+By iteratively adjusting the weights according to the error they produce, an RBM learns to approximate the data. You could say that the weights slowly come to reflect the structure of the input, which is encoded in the activations of the first hidden layer. The learning process looks like two probability distributions converging, step by step.
+
+![Alt text](../img/KLD_update_RBM.png)
+
+Let's talk about probability distributions for a moment. If you're rolling two dice, the probability distribution for all outcomes looks like this:
+
+![Alt text](https://upload.wikimedia.org/wikipedia/commons/1/12/Dice_Distribution_%28bar%29.svg)
+
+That is, 7s are the most likely, and any formula attempting to predict the outcome of dice rolls needs to take that into account. 
+
+Languages are specific in the probability distribution of letters, because each one uses certain letters more than others. In English, the letters *e*, *t* and *a* are the most common, while in Icelandic, the most common letters are *a*, *r* and *n*. Attempting to reconstruct Icelandic with a weight set based on English would lead to a large divergence. 
+
+In the same way, image datasets have unique probability distributions for their pixel values, depending on the kind of images in the set. Pixels values are distributed differently depending on whether the dataset includes MNIST's handwritten numerals:
+
+![Alt text](../img/mnist_render.png)
+
+or the headshots found in Labeled Faces in the Wild.
+
+![Alt text](../img/LFW_reconstruction.png)
+
+The process of learning reconstructions is, in a sense, learning which groups of pixels tend to co-occur for a given set of images. (Imagine for a second an RBM that was only fed images of elephants and dogs, and which had only two output nodes, one for each animal. The question the RBM is asking itself on the forward pass is: Given these pixels, should my weights send a stronger signal to the elephant node or the dog node? And the question the RBM asks on the backward pass is: Given an elephant, which distribution of pixels should I expect?)
+
+In the two images above, you see reconstructions learned by Deeplearning4j's implemention of an RBM. These reconstructions represent what the RBM's activations "think" the original data looks like. Geoff Hinton refers to this as a sort of machine "dreaming".
+
+One last point. You'll notice that RBMs have two biases. This is one aspect that distinquishes them from other autoencoders. The hidden bias helps the RBM produce the activations on the forward pass (since biases impose a floor so that at least some nodes fire no matter how sparse the data), while the visible layer's biases help the RBM learn the reconstructions on the backward pass. 
+
+Once this RBM learns the structure of the input data as it relates to the activations of the first hidden layer, then the data is passed one layer down the net. Your first hidden layer takes on the role of visible layer. The activations now effectively become your input, and they are multiplied by weights at the nodes of the second hidden layer, to produce another set of activations. 
+
+This process of creating sequential sets of activations by grouping features and then grouping groups of features is the basis of a feature hierarchy, by which neural networks learn more complex and abstract representations of data. 
+
+With each new hidden layer, the weights are adjusted until that layer is able to approximate the input from the previous layer. This is greedy, layerwise and unsupervised pre-training. It requires no labels to improve the weights of the network. 
+
+Because those weights already approximate the features of the data, they are well positioned to learn better when, in a second step you try to classify images with the deep-belief network in a subsequent supervised learning stage.
 
 ### Initiating an RBM on Iris
 
