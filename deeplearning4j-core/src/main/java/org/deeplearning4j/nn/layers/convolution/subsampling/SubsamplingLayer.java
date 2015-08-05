@@ -114,60 +114,9 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
-        INDArray z = preOutput(input, true);
-
-        INDArray error = Nd4j.create(Ints.concat(new int[]{conf.getNIn(),conf.getNOut()},conf.getKernelSize()));
-
-        if(layer.conf().getPoolingType() == PoolingType.AVG) {
-            //TODO tile - change code
-            int[] filterSize = conf.getKernelSize();
-            int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
-            int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
-            if (filterSize.length < 4)
-                throw new IllegalStateException("Illegal filter size found ");
-
-            //activation is the forward layers convolution
-            for (int i = 0; i < forwardLayerFeatureMaps; i++) {
-                for (int j = 0; j < currLayerFeatureMaps; j++) {
-                    INDArray featureMapError = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
-                    //rotated filter for convolution
-                    INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(), NDArrayIndex.all()).slice(i).slice(j));
-                    //forward error for the particular slice
-                    INDArray forwardError = z.slice(j);
-                    featureMapError.addi(Nd4j.getConvolution().convn(forwardError, rotatedFilter, Convolution.Type.FULL));
-                    error.putSlice(i, featureMapError);
-                }
-            }
-        }
-
-
-        else if(layer.conf().getPoolingType() == PoolingType.MAX){
-            //TODO rotation - change code
-            int[] filterSize = conf.getKernelSize();
-            int currLayerFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
-            int forwardLayerFeatureMaps = ConvolutionUtils.numFeatureMap(convLayer.conf());
-            if (filterSize.length < 4)
-                throw new IllegalStateException("Illegal filter size found ");
-
-            //activation is the forward layers convolution
-            for (int i = 0; i < forwardLayerFeatureMaps; i++) {
-                for (int j = 0; j < currLayerFeatureMaps; j++) {
-                    INDArray featureMapError = Nd4j.create(filterSize[0], 1, filterSize[filterSize.length - 2], filterSize[filterSize.length - 1]);
-                    //rotated filter for convolution
-                    INDArray rotatedFilter = Nd4j.rot(convLayer.getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS).get(NDArrayIndex.all(), NDArrayIndex.all()).slice(i).slice(j));
-                    //forward error for the particular slice
-                    INDArray forwardError = z.slice(j);
-                    featureMapError.addi(Nd4j.getConvolution().convn(forwardError, rotatedFilter, Convolution.Type.FULL));
-                    error.putSlice(i, featureMapError);
-                }
-            }
-
-        } else {
-            throw new IllegalArgumentException("Convolution type is not average and max");
-        }
 
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, error);
+        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, null);
         return new Pair<>(ret,z);
 
     }
@@ -209,16 +158,27 @@ public class SubsamplingLayer implements Layer {
             this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
 
-        INDArray ret = null;
-        int numFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
-        for(int i = 0; i < input.slices(); i++) {
-            INDArray downSampled = Transforms.downSample(input.slice(i),conf.getStride());
-            if(ret == null) {
-                ret = Nd4j.create(Ints.concat(new int[]{input.slices(),numFeatureMaps},downSampled.shape()));
-            }
-            ret.putSlice(i, downSampled);
+        INDArray pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
+        switch(conf.getPoolingType()) {
+            case AVG:
+                return pooled.mean(2,3);
+            case MAX:
+                //number of images
+                int n = pooled.size(0);
+                //number of channels (depth)
+                int c = pooled.size(1);
+                //image height
+                int kh = pooled.size(2);
+                //image width
+                int kw = pooled.size(3);
+                int outWidth = pooled.size(4);
+                int outHeight = pooled.size(5);
+                INDArray ret = pooled.reshape(n,c,kh * kw,outHeight,outWidth);
+
+                return ret.max(2);
+            default: throw new IllegalStateException("Pooling type not supported!");
+
         }
-        return ret;
     }
 
     @Override
@@ -228,16 +188,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
-        INDArray ret = null;
-        int numFeatureMaps = ConvolutionUtils.numFeatureMap(conf);
-        for(int i = 0; i < input.slices(); i++) {
-            INDArray downSampled = Transforms.downSample(input.slice(i),conf.getStride());
-            if(ret == null) {
-                ret = Nd4j.create(Ints.concat(new int[]{input.slices(),numFeatureMaps},downSampled.shape()));
-            }
-            ret.putSlice(i, downSampled);
-        }
-        return ret;
+        return activate(true);
     }
 
     @Override
@@ -252,7 +203,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Collection<IterationListener> getListeners() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -318,6 +269,8 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public void setParams(INDArray params) {
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -328,11 +281,13 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public void fit(INDArray data) {
+        throw new UnsupportedOperationException();
 
     }
 
     @Override
     public void iterate(INDArray input) {
+        throw new UnsupportedOperationException();
 
     }
 
@@ -373,7 +328,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
