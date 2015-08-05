@@ -211,6 +211,11 @@ public class ShapeTests extends BaseNd4jTest {
         INDArray newAxisGet = arr.get(new NDArrayIndex(0),NDArrayIndex.newAxis());
         assertEquals(newAxisAssertion,newAxisGet);
 
+        INDArray tensor = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray assertion = Nd4j.create(new double[][]{{1, 7}, {4, 10}}).reshape(1,2,2);
+        INDArray tensorGet = tensor.get(new NDArrayIndex(0), NDArrayIndex.newAxis());
+        assertEquals(assertion,tensorGet);
+
     }
 
 

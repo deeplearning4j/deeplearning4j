@@ -427,7 +427,7 @@ public class Shape {
      * but would need special cases since their strides do not matter.
      */
         for (oi = 0; oi < arr.rank(); oi++) {
-            if (arr.size(oi) != 1 && !isVector(arr.shape())) {
+            if (arr.size(oi) != 1) {
                 olddims[oldnd] = arr.size(oi);
                 oldstrides[oldnd] = arr.stride(oi);
                 oldnd++;
