@@ -1,7 +1,6 @@
 package org.nd4j.api
 
 import org.nd4j.api.Implicits._
-import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.FlatSpec
 
 class NDArrayExtractionTest extends FlatSpec{
@@ -20,13 +19,12 @@ class NDArrayExtractionTest extends FlatSpec{
   }
 
   it should "be able to extract a part of 2d matrix in C ordering" in {
-    Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray =
       Array(
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(NDOrdering.C)
 
     val extracted = ndArray(1 -> 3, 0 -> 2)
 
@@ -71,14 +69,13 @@ class NDArrayExtractionTest extends FlatSpec{
   }
 
   it should "be able to extract a part of vertically long matrix in C ordering" in {
-    Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray =
       Array(
         Array(1, 2),
         Array(3, 4),
         Array(5, 6),
         Array(7, 8)
-      ).toNDArray
+      ).mkNDArray(NDOrdering.C)
 
     assert(ndArray(0 -> 2, ->) ==
       Array(
@@ -94,12 +91,11 @@ class NDArrayExtractionTest extends FlatSpec{
   }
 
   it should "be able to extract a part of horizontally long matrix in C ordering" in {
-    Nd4j.factory().setOrder(NDOrdering.C.value)
     val ndArray =
       Array(
         Array(1, 2, 3, 4),
         Array(5, 6, 7, 8)
-      ).toNDArray
+      ).mkNDArray(NDOrdering.C)
 
     assert(ndArray(->, 0 -> 2) ==
       Array(
@@ -115,13 +111,12 @@ class NDArrayExtractionTest extends FlatSpec{
   }
 
   it should "be able to extract a part of 2d matrix in Fortran ordering" in {
-    Nd4j.factory().setOrder(NDOrdering.Fortran.value)
     val ndArray =
       Array(
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(NDOrdering.Fortran)
 
     val extracted = ndArray(1 -> 3, 0 -> 2)
 
@@ -134,8 +129,7 @@ class NDArrayExtractionTest extends FlatSpec{
   }
 
   it should "be able to extract a part of 3d matrix in C ordering" in {
-    Nd4j.factory().setOrder(NDOrdering.C.value)
-    val ndArray = (1 to 8).asNDArray(2, 2, 2)
+    val ndArray = (1 to 8).mkNDArray(Array(2, 2, 2),NDOrdering.C)
 
     val extracted = ndArray(0, ->, ->)
     val lv = extracted.linearView()

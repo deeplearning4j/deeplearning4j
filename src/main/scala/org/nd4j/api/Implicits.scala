@@ -80,26 +80,32 @@ object Implicits {
   }
 
   implicit class floatMtrix2INDArray(val underlying: Seq[Seq[Float]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering): INDArray = Nd4j.create(underlying.map(_.toArray).toArray, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
   }
 
   implicit class floatArrayMtrix2INDArray(val underlying: Array[Array[Float]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering): INDArray = Nd4j.create(underlying, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
 
   implicit class doubleMtrix2INDArray(val underlying: Seq[Seq[Double]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering): INDArray = Nd4j.create(underlying.map(_.toArray).toArray, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.toArray).toArray)
   }
 
   implicit class doubleArrayMtrix2INDArray(val underlying: Array[Array[Double]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering ): INDArray = Nd4j.create(underlying,ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
 
   implicit class intMtrix2INDArray(val underlying: Seq[Seq[Int]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering): INDArray = Nd4j.create(underlying.map(_.map(_.toFloat).toArray).toArray, ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat).toArray).toArray)
   }
 
   implicit class intArrayMtrix2INDArray(val underlying: Array[Array[Int]]) extends AnyVal {
+    def mkNDArray(ord: NDOrdering): INDArray = Nd4j.create(underlying.map(_.map(_.toFloat)), ord.value)
     def toNDArray: INDArray = Nd4j.create(underlying.map(_.map(_.toFloat)))
   }
 
