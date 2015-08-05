@@ -117,7 +117,7 @@ For those interested in studying the structure of RBMs in greater depth, they ar
 
 Note how, below, an RBM is simply created as a layer in a NeuralNetConfiguration, a parameter fed into a more general class. Likewise, the RBM object is used to store properties like the transforms applied to the visible and hidden layers, Gaussian and Rectified Linear transforms, respectively. 
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/rbm/RBMIrisExample.java?slice=40:76"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/rbm/RBMIrisExample.java?slice=40:82"></script>
 
 This is an example of an [RBM processing the Iris dataset](../iris-flower-dataset-tutorial.html), which we also cover in a tutorial. 
 
