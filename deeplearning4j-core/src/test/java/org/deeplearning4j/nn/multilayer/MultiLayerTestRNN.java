@@ -2,25 +2,19 @@ package org.deeplearning4j.nn.multilayer;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
 import java.util.Map;
 
-import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -35,8 +29,11 @@ public class MultiLayerTestRNN {
                 .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM())
                 .nIn(nIn).nOut(nOut)
                 .activationFunction("tanh")
-                .list(2).hiddenLayerSizes(nHiddenUnits)
-                .override(1, new ClassifierOverride())
+                .list(2)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+					.nIn(nIn).nOut(nHiddenUnits).weightInit(WeightInit.DISTRIBUTION).build())
+				.layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
+					.nIn(nHiddenUnits).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -69,11 +66,16 @@ public class MultiLayerTestRNN {
         int nOut = 25;
         int[] nHiddenUnits = {17,19,23};
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM())
-                .nIn(nIn).nOut(nOut)
                 .activationFunction("tanh")
-                .list(nHiddenUnits.length+1).hiddenLayerSizes(nHiddenUnits)
-                .override(nHiddenUnits.length, new ClassifierOverride())
+                .list(4)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+					.nIn(nIn).nOut(17).weightInit(WeightInit.DISTRIBUTION).build())
+				.layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+					.nIn(17).nOut(19).weightInit(WeightInit.DISTRIBUTION).build())
+				.layer(2, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+					.nIn(19).nOut(23).weightInit(WeightInit.DISTRIBUTION).build())
+				.layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
+						.nIn(23).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -104,46 +106,6 @@ public class MultiLayerTestRNN {
         }
     }
 
-    @Test
-    public void testNewMultiLayerApi() throws Exception  {
-
-        final int numRows = 28;
-        final int numColumns = 28;
-        int outputNum = 10;
-        int numSamples = 1000;
-        int batchSize = 10;
-        int iterations = 10;
-        int seed = 123;
-        int listenerFreq = iterations/5;
-
-        MnistDataFetcher fetcher = new MnistDataFetcher(true);
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(numRows * numColumns).nOut(numRows * numColumns)
-                .activationFunction("sigmoid")
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                .constrainGradientToUnitNorm(true)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .list(3)
-                .layer(0, new LSTM.Builder().nIn(numRows * numColumns).nOut(numRows * numColumns).build())
-                .layer(1, new LSTM.Builder().nIn(numRows * numColumns).nOut(numRows * numColumns).build())
-                .layer(2, new LSTM.Builder().nIn(numRows * numColumns).nOut(numRows * numColumns).build())
-                .build();
-
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
-
-        for(int i=0 ; i < (numSamples/batchSize); i++) {
-            fetcher.fetch(batchSize);
-            DataSet mnist = fetcher.next();
-            //? pass in matrix or data set?
-            model.fit(mnist);
-        }
-
-    }
-
-
 
     @Test
     public void testMultiLayerRnn() {
@@ -165,8 +127,6 @@ public class MultiLayerTestRNN {
                 .backprop(true)
                 .pretrain(false)
                 .build();
-
-
     }
 
 

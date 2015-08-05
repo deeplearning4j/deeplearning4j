@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -13,27 +15,22 @@ import org.nd4j.linalg.convolution.Convolution;
 @NoArgsConstructor
 public class ConvolutionLayer extends FeedForwardLayer {
 
-    private static final long serialVersionUID = 3073633667258683720L;
     protected int[] kernelSize; // Square filter
     protected Convolution.Type convolutionType; // FULL / VALID / SAME
 
     private ConvolutionLayer(Builder builder) {
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.kernelSize = builder.filterSize;
+    	super(builder);
+        this.kernelSize = builder.kernelSize;
         this.convolutionType = builder.convolutionType;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
     }
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private int[] filterSize; // Square filter
+        private int[] kernelSize; // Square filter
         private Convolution.Type convolutionType; // FULL / VALID / SAME
 
-        public Builder(int[] filterSize) {
-            this.filterSize = filterSize;
+        public Builder(int[] kernelSize) {
+            this.kernelSize = kernelSize;
         }
 
         @Override
@@ -60,7 +57,14 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
         @Override
         public Builder dropOut(double dropOut) {
-            throw new UnsupportedOperationException("ConvolutionLayer Layer does not accept dropout");
+            this.dropOut = dropOut;
+            return this;
+        }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
         }
 
         @Override
