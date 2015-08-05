@@ -109,7 +109,7 @@ While RBMs have many uses, proper initialization of weights to facilitate later 
 
 To synthesize restricted Boltzmann machines in one diagram, here is a symmetrical bipartite and bidirectional graph:
 
-![Alt text](../img/sym_bipartite_graph_RBM.jpg)
+![Alt text](../img/sym_bipartite_graph_RBM.png)
 
 For those interested in studying the structure of RBMs in greater depth, they are one type of [directional, acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 
