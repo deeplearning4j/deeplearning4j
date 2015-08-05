@@ -31,6 +31,8 @@ public class ShapeOffsetResolution {
      *
      */
     public void exec(NDArrayIndex...indexes) {
+        indexes = NDArrayIndex.resolve(arr,indexes);
+        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         int[] shape = Indices.shape(arr.shape(), indexes);
         int[] offsets = Indices.offsets(shape,indexes);
         if(offsets.length < shape.length) {
@@ -38,14 +40,14 @@ public class ShapeOffsetResolution {
             System.arraycopy(offsets,0,filledOffsets,0,offsets.length);
         }
 
-        int[] stride = Indices.stride(arr,shape);
+        int[] stride = Indices.stride(arr,indexes,shape);
         if(stride.length < shape.length) {
             int[] filledStrides = new int[shape.length];
             Arrays.fill(filledStrides,arr.elementStride());
             System.arraycopy(stride,0,filledStrides,0,stride.length);
         }
 
-        if(shape[0] == 1 && shape.length > 2) {
+        if(shape[0] == 1 && shape.length > 2 && numNewAxes < 1) {
             boolean[] ones = new boolean[shape.length - 1];
             int[] newShape  = new int[shape.length - 1];
             boolean allOnes = true;

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.indexing;
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -384,9 +385,11 @@ public class Indices {
      * @return the shape for the given indices
      */
     public static int[] shape(int[] shape, int[] offsets,NDArrayIndex... indices) {
-        if (indices.length > shape.length)
+        int numNewAxes = NDArrayIndex.numNewAxis(indices);
+        if (indices.length > shape.length && numNewAxes < 1)
             return shape;
 
+        int numNewIndexesToPrepend = 0;
         int[] ret = new int[indices.length];
         if(offsets.length < shape.length) {
             int[] dup = new int[shape.length];
@@ -394,22 +397,67 @@ public class Indices {
             offsets = dup;
         }
 
-        for (int i = 0; i < ret.length; i++) {
-            if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
-                ret[i] = shape[i];
+        if(numNewAxes > 0) {
+            for(int i = 0; i  < numNewAxes; i++) {
+                ret[i] = 1;
+                numNewIndexesToPrepend++;
             }
-            else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
-                ret[i] = 0;
-            }
-            else {
-                int[] currIndices = indices[i].indices();
-                if (currIndices.length < 1)
-                    continue;
-                ret[i] = indices[i].indices().length;
-                ret[i] -= offsets[i];
+            //handle the prepended 1s
+            Arrays.fill(ret,1);
+            //start where there weren't ones
+            int retIndex = numNewIndexesToPrepend;
+            int shapeIndex = 0;
+            for(int i = 0; i < indices.length; i++) {
+                if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
+                    ret[retIndex++] = shape[shapeIndex++];
+                }
+                else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
+                    ret[retIndex++] = 0;
+                }
+
+                else if(indices[i] instanceof NDArrayIndex.NewAxis) {
+                    numNewIndexesToPrepend++;
+                    retIndex++;
+                }
+
+                else {
+                    int[] currIndices = indices[i].indices();
+                    if (currIndices.length < 1)
+                        continue;
+                    ret[i] = indices[i].indices().length;
+                    shapeIndex++;
+                    ret[i] -= offsets[i];
+                }
             }
 
+            return ret;
+
         }
+        else {
+            for (int i = 0; i < ret.length; i++) {
+                if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll && i < shape.length) {
+                    ret[i] = shape[i];
+                }
+                else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
+                    ret[i] = 0;
+                }
+
+                else if(indices[i] instanceof NDArrayIndex.NewAxis) {
+                    numNewIndexesToPrepend++;
+                }
+
+                else {
+                    int[] currIndices = indices[i].indices();
+                    if (currIndices.length < 1)
+                        continue;
+                    ret[i] = indices[i].indices().length;
+                    ret[i] -= offsets[i];
+                }
+
+            }
+        }
+
+
 
         List<Integer> nonZeros = new ArrayList<>();
         for (int i = 0; i < ret.length; i++) {
@@ -426,7 +474,6 @@ public class Indices {
         if(ret2.length <= 1) {
             ret2 = new int[] {1,1};
         }
-
 
         return ret2;
     }
@@ -453,15 +500,27 @@ public class Indices {
     /**
      * Return the stride to be used for indexing
      * @param arr the array to get the strides for
-     * @param indices the shape of the output
+     * @param indexes the indexes to use for computing stride
+     * @param shape the shape of the output
      * @return the strides used for indexing
      */
-    public static int[] stride(INDArray arr, int... indices) {
-        if(indices.length == arr.stride().length)
-            return arr.stride();
-        else {
-            return Arrays.copyOfRange(arr.stride(),1,indices.length);
+    public static int[] stride(INDArray arr,NDArrayIndex[] indexes, int... shape) {
+        int[] retStride = null;
+        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
+        if(shape.length == arr.stride().length || numNewAxes > 0) {
+            //prepend zeros for new axis
+            retStride  =  Arrays.copyOf(arr.stride(),arr.stride().length);
+            if(numNewAxes > 0)
+                retStride = Ints.concat(new int[numNewAxes],retStride);
         }
+        else {
+            retStride = Arrays.copyOfRange(arr.stride(), 1, shape.length);
+        }
+
+
+
+        return retStride;
+
     }
 
 

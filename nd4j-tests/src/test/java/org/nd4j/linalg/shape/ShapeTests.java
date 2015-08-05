@@ -5,6 +5,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.Shape;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -179,12 +180,12 @@ public class ShapeTests extends BaseNd4jTest {
     public void testNoCopy() {
         INDArray threeTwoTwo = Nd4j.linspace(1, 12, 12);
         INDArray arr = Shape.newShapeNoCopy(threeTwoTwo,new int[]{3,2,2},true);
-        assertArrayEquals(arr.shape(),new int[]{3,2,2});
+        assertArrayEquals(arr.shape(), new int[]{3, 2, 2});
     }
 
     @Test
     public void testThreeTwoTwoTwo() {
-        INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray threeTwoTwo = Nd4j.linspace(1,12,12).reshape(3, 2, 2);
         INDArray[] assertions = new INDArray[] {
                 Nd4j.create(new double[]{1,7}),
                 Nd4j.create(new double[]{4,10}),
@@ -195,11 +196,20 @@ public class ShapeTests extends BaseNd4jTest {
 
         };
 
-        assertEquals(assertions.length,threeTwoTwo.tensorssAlongDimension(2));
+        assertEquals(assertions.length, threeTwoTwo.tensorssAlongDimension(2));
         for(int i = 0; i < assertions.length; i++) {
             INDArray test = threeTwoTwo.tensorAlongDimension(i, 2);
             assertEquals(assertions[i],test);
         }
+
+    }
+
+    @Test
+    public void testNewAxis() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray newAxisAssertion = Nd4j.create(new double[]{1, 3});
+        INDArray newAxisGet = arr.get(new NDArrayIndex(0),NDArrayIndex.newAxis());
+        assertEquals(newAxisAssertion,newAxisGet);
 
     }
 

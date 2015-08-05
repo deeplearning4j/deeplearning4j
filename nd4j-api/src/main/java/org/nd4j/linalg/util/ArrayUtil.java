@@ -32,11 +32,15 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Adam Gibson
  */
 public class ArrayUtil {
 
+
+    private ArrayUtil() {}
 
     /**
      * Repeat a value n times

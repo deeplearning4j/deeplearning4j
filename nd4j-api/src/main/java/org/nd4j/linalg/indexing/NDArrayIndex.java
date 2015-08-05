@@ -36,6 +36,7 @@ public class NDArrayIndex {
     private boolean isInterval = false;
     private static NDArrayIndexAll ALL = new NDArrayIndexAll();
     private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
+    private static NewAxis NEW_AXIS = new NewAxis();
 
     /**
      * Compute the offset given an array of offsets.
@@ -62,7 +63,7 @@ public class NDArrayIndex {
      * @return the offset that should be used for indexing
      */
     public static int offset(INDArray arr,NDArrayIndex...indices) {
-        return offset(arr.stride(),Indices.offsets(arr.shape(),indices));
+        return offset(arr.stride(),Indices.offsets(arr.shape(), indices));
     }
 
     /**
@@ -155,6 +156,83 @@ public class NDArrayIndex {
      */
     public static NDArrayIndex all() {
         return ALL;
+    }
+
+
+    /**
+     * Represents adding a new dimension
+     * @return the indexing for
+     * adding a new dimension
+     */
+    public static NDArrayIndex newAxis() {
+        return NEW_AXIS;
+    }
+    /**
+     * Given an all index and
+     * the intended indexes, return an
+     * index array containing a combination of all elements
+     * for slicing and overriding particular indexes where necessary
+     * @param arr the array to resolve indexes for
+     * @param intendedIndexes the indexes specified by the user
+     * @return the resolved indexes (containing all where nothing is specified, and the intended index
+     * for a particular dimension otherwise)
+     */
+    public static NDArrayIndex[] resolve(INDArray arr,NDArrayIndex[] intendedIndexes) {
+       return resolve(NDArrayIndex.allFor(arr),intendedIndexes);
+    }
+    /**
+     * Given an all index and
+     * the intended indexes, return an
+     * index array containing a combination of all elements
+     * for slicing and overriding particular indexes where necessary
+     * @param allIndex the index containing all elements
+     * @param intendedIndexes the indexes specified by the user
+     * @return the resolved indexes (containing all where nothing is specified, and the intended index
+     * for a particular dimension otherwise)
+     */
+    public static NDArrayIndex[] resolve(NDArrayIndex[] allIndex,NDArrayIndex[] intendedIndexes) {
+        int numNewAxes = numNewAxis(intendedIndexes);
+        NDArrayIndex[] all = new NDArrayIndex[allIndex.length + numNewAxes];
+        Arrays.fill(all,NDArrayIndex.all());
+        for(int i = 0; i < allIndex.length; i++) {
+            if(i < intendedIndexes.length)
+                all[i] =  intendedIndexes[i];
+
+        }
+
+        return all;
+    }
+
+    /**
+     * Given an array of indexes
+     * return the number of new axis elements
+     * in teh array
+     * @param axes the indexes to get the number
+     *             of new axes for
+     * @return the number of new axis elements in the given array
+     */
+    public static int numNewAxis(NDArrayIndex...axes) {
+        int ret = 0;
+        for(NDArrayIndex index : axes)
+            if(index instanceof NewAxis)
+                ret++;
+        return ret;
+    }
+
+
+    /**
+     * Generate an all index
+     * equal to the rank of the given array
+     * @param arr the array to generate the all index for
+     * @return an ndarray index array containing of length
+     * arr.rank() containing all elements
+     */
+    public static NDArrayIndex[] allFor(INDArray arr) {
+        NDArrayIndex[] ret = new NDArrayIndex[arr.rank()];
+        for(int i = 0; i < ret.length; i++)
+            ret[i] = NDArrayIndex.all();
+
+        return ret;
     }
 
     /**
@@ -357,6 +435,13 @@ public class NDArrayIndex {
     //static type checking used for checking if an index should be represented as all
     public static class NDArrayIndexAll  extends NDArrayIndex {
         public NDArrayIndexAll(int... indices) {
+            super(indices);
+        }
+    }
+
+    //static type checking used for checking if new dimensions should be added
+    public static class NewAxis extends NDArrayIndex {
+        public NewAxis(int...indices) {
             super(indices);
         }
     }
