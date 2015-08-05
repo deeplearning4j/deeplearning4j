@@ -29,9 +29,11 @@ Next, it is useful to see how many inputs combine at one hidden node. Each is mu
 
 ![Alt text](../img/weighted_input_RBM.png)
 
-So, RBMs’ nodes form a *symmetrical bipartite graph* where data passes through the visible layer on the left to the hidden layer on the right.
+So, RBMs’ nodes form a *symmetrical bipartite graph* where data passes through the visible layer on the left to the hidden layer on the right. 
 
-In the RBM below, the visible nodes receive several pixel values. Each visible node is connected with each hidden node, and at each hidden node, each input x is multiplied by its respective weight w. That is, a single input x would have three weights here, making 12 weights altogether. The weights between two layers will always form a matrix where the rows are equal to the input nodes, and the columns are equal to the output nodes. 
+Symmetrical means that visible node is connected with each hidden node. Bipartite means it has two parts, or layers, and the graph is a mathematical term for a structure made of nodes. 
+
+At each hidden node, each input x is multiplied by its respective weight w. That is, a single input x would have three weights here, making 12 weights altogether. The weights between two layers will always form a matrix where the rows are equal to the input nodes, and the columns are equal to the output nodes. 
 
 Each hidden node receives the four inputs multiplied by different weights. The sum of those products is added to a bias (which forces at least some activations to happen), and the result is passed through the activation algorithm producing one output a for each hidden node.
 
