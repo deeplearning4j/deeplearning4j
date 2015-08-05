@@ -1,5 +1,6 @@
 package org.deeplearning4j.caffe.translate;
 
+import org.deeplearning4j.caffe.CaffeTestUtil;
 import org.deeplearning4j.caffe.projo.Caffe;
 import org.deeplearning4j.caffe.common.NNCofigBuilderContainer;
 import org.deeplearning4j.caffe.common.SolverNetContainer;
@@ -17,7 +18,7 @@ public class CaffeSolverTranslatorTest {
     @Test
     public void testSolverTranslator() throws IOException, NoSuchFieldException, IllegalAccessException{
         // Get SolverParamter
-        SolverNetContainer container = CaffeTranslateTestUtil.getSolverNet();
+        SolverNetContainer container = CaffeTestUtil.getSolverNet();
         Caffe.SolverParameter solver = container.getSolver();
 
         // Instantiate new BuilderContainer

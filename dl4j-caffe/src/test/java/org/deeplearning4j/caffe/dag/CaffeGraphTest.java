@@ -1,9 +1,10 @@
 package org.deeplearning4j.caffe.dag;
-import org.deeplearning4j.caffe.dag.CaffeNode.*;
+import org.deeplearning4j.caffe.dag.CaffeNode.LayerSubType;
+import org.deeplearning4j.caffe.dag.CaffeNode.LayerType;
 import org.deeplearning4j.dag.Graph;
 import org.junit.Test;
 
-import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -35,7 +36,7 @@ public class CaffeGraphTest {
 
         System.out.print(graph);
         assertEquals(graph.graphSize(), 3);
-        assertEquals(graph.getNextNodes(connectorNode), Arrays.asList(lossNode));
+        assertEquals(graph.getNextNodes(connectorNode), Collections.singletonList(lossNode));
     }
 
 }

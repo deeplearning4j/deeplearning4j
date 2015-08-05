@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * @author jeffreytang
  */
-public class CaffeSolverTranslator implements CaffeTranslatorInterface {
+public class CaffeSolverTranslator implements CaffeSpecialTranslator {
 
     protected static Logger log = LoggerFactory.getLogger(CaffeSolverTranslator.class);
 

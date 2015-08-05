@@ -7,6 +7,8 @@ import org.deeplearning4j.caffe.dag.CaffeNode.LayerSubType;
 import org.deeplearning4j.caffe.dag.CaffeNode.LayerType;
 import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
 import org.deeplearning4j.dag.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -19,9 +21,11 @@ import java.util.Map;
 /**
  * @author jeffreytang
  */
-public class CaffeLayerConversion {
+public class CaffeLayerGraphConversion {
 
-    public CaffeLayerConversion() {}
+    public CaffeLayerGraphConversion() {}
+
+    protected static Logger log = LoggerFactory.getLogger(CaffeLayerGraphConversion.class);
 
     private static Map<String, String> subType2MethodMap = new HashMap<String, String>() {{
         put("CONVOLUTION", "getConvolutionParam");
@@ -39,11 +43,11 @@ public class CaffeLayerConversion {
         put("EUCLIDEANLOSS", "");
         put("SIGMOIDCROSSENTROPYLOSS", "");
         put("SPLIT", "");
-        put("DATA", "");
-        put("MEMORYDATA", "");
-        put("HDF5DATA", "");
-        put("HDF5OUTPUT", "");
-        put("ACCURACY", "");
+        put("DATA", null);
+        put("MEMORYDATA", null);
+        put("HDF5DATA", null);
+        put("HDF5OUTPUT", null);
+        put("ACCURACY", null);
     }};
 
     private static Map<LayerSubType, LayerType> subType2TypeMap = new HashMap<LayerSubType, LayerType>(){{
@@ -85,11 +89,26 @@ public class CaffeLayerConversion {
     }
 
     private static LayerSubType subTypify(String subType) {
-        try {
-            return LayerSubType.valueOf(subType);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(String.format("The LayerSubType %s is not " +
+        return LayerSubType.valueOf(subType);
+    }
+
+    private static boolean isSupported(String subType) {
+        return subType2MethodMap.containsKey(subType);
+    }
+
+    private static boolean isSubTypeAvaliable(String subType) {
+
+        if (!isSupported(subType)) {
+            throw new IllegalArgumentException(
+                    String.format("The LayerSubType %s is not " +
                     "supported or does not exist.", subType));
+        } else {
+            try {
+                LayerSubType.valueOf(subType);
+                return true;
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
         }
     }
 
@@ -117,7 +136,13 @@ public class CaffeLayerConversion {
 
         //// Current Node
         String layerName = (String) getNameMethod.invoke(layer);
-        String layerSubTypeString = (String) getTypeMethod.invoke(layer);
+        String layerSubTypeString = ((String) getTypeMethod.invoke(layer)).toUpperCase();
+
+        // Is the current layer supported. If not throw IllegalState
+        // Is the current layer subtype supported. If not, ignore layer and return null
+        if (!isSubTypeAvaliable(layerSubTypeString)) { return null; }
+        /////
+
         LayerSubType layerSubType = subTypify(layerSubTypeString);
         LayerType layerType = subType2TypeMap.get(layerSubType);
         String paramMethodString = subType2MethodMap.get(layerSubTypeString);
@@ -130,7 +155,11 @@ public class CaffeLayerConversion {
             List<Field> fieldList = FieldUtils.getAllFieldsList(layerClassParameter.getClass());
             for (Field field : fieldList) {
                 field.setAccessible(true);
-                field2valueMap.put(field.getName(), field.get(layer));
+                try {
+                    field2valueMap.put(field.getName(), field.get(layer));
+                } catch (IllegalArgumentException e) {
+                    log.info(String.format("Cannot parse field '%s'", field.getName()));
+                }
             }
         }
         CaffeNode currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap);
@@ -160,7 +189,9 @@ public class CaffeLayerConversion {
         List<Map<String, List<CaffeNode>>> nodeMapList = new ArrayList<>();
         for (GeneratedMessage layer : layerList) {
             Map<String, List<CaffeNode>> nodeMap = convertLayerToCaffeNodeMap(layer);
-            nodeMapList.add(nodeMap);
+            if (nodeMap != null) {
+                nodeMapList.add(nodeMap);
+            }
         }
 
         return nodeMapList;
@@ -188,7 +219,14 @@ public class CaffeLayerConversion {
         return graph;
     }
 
-    public static Graph convertNetToNodeGraph(NetParameter net)
+    private static Graph removeRootConnector(Graph graph) {
+
+        return null;
+    }
+
+
+    // Converts Net to Caffe Node Graph
+    public static Graph convert(NetParameter net)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
         List<Map<String, List<CaffeNode>>> nodeMapList = convertNetToNodeMapList(net);
         return convertNodeMapListToGraph(nodeMapList);

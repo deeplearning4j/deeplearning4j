@@ -1,5 +1,6 @@
 package org.deeplearning4j.caffe.translate;
 
+import org.deeplearning4j.caffe.CaffeTestUtil;
 import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
 import org.deeplearning4j.caffe.projo.Caffe.SolverParameter;
 import org.deeplearning4j.caffe.common.CaffeLoader;
@@ -14,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author jeffreytang
  */
-public class CaffeLoaderTranslateTest extends CaffeTranslateTestUtil {
+public class CaffeLoaderTest extends CaffeTestUtil {
 
     @Test
     public void testCaffeLoaderOne() throws IOException{

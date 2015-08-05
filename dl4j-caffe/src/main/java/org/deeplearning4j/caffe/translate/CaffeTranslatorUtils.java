@@ -66,7 +66,7 @@ public class CaffeTranslatorUtils {
 
     public static void translation2BuilderFieldBuilderValMap(List<List<Object>> caffeFieldBuilderFieldCaffeValIter,
                                                             Map<String, Object> builderParamMap,
-                                                            CaffeTranslatorInterface functionInterface) {
+                                                            CaffeSpecialTranslator functionInterface) {
 
         for (List<Object> iter : caffeFieldBuilderFieldCaffeValIter) {
             String caffeField = (String) iter.get(0);

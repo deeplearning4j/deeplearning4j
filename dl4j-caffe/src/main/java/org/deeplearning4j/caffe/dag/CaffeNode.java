@@ -28,10 +28,15 @@ public class CaffeNode implements Node {
     }
 
     public enum LayerSubType {
+        //HIDDEN
         CONVOLUTION, POOLING, RELU, SIGMOID, TANH,
         SOFTMAX, SOFTMAXWITHLOSS,
         EUCLIDEANLOSS, SIGMOIDCROSSENTROPYLOSS,
+        //PROCESSING
         FLATTEN, RESHAPE, CONCAT, SLICE, SPLIT,
+        //INNERPRODUCT
+        INNERPRODUCT,
+        //CONNECTOR
         CONNECTOR
     }
 

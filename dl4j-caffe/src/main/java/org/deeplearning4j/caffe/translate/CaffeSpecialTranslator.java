@@ -5,11 +5,10 @@ import java.util.Map;
 /**
  * @author jeffreytang
  */
-public interface CaffeTranslatorInterface {
+public interface CaffeSpecialTranslator {
 
     void specialTranslation(String caffeField,
                             Object caffeVal,
                             String builderField,
                             Map<String, Object> builderParamMap);
-
 }

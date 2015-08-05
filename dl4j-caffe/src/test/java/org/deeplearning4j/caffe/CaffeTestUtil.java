@@ -1,9 +1,10 @@
-package org.deeplearning4j.caffe.translate;
+package org.deeplearning4j.caffe;
 
 import lombok.Data;
 import org.deeplearning4j.caffe.common.CaffeLoader;
 import org.deeplearning4j.caffe.common.CaffeReader;
 import org.deeplearning4j.caffe.common.SolverNetContainer;
+import org.deeplearning4j.caffe.projo.Caffe.*;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -12,16 +13,26 @@ import java.io.IOException;
  * @author jeffreytang
  */
 @Data
-public class CaffeTranslateTestUtil {
+public class CaffeTestUtil {
+
+    public CaffeTestUtil() {}
 
     // Reader for testing CaffeReader
     public static final CaffeReader reader = new CaffeReader();
 
     // Get a working SolverNetContainer (given the CaffeLoader tests all run)
-    public static SolverNetContainer getSolverNet() throws IOException{
+    public static SolverNetContainer getSolverNet() throws IOException {
         return new CaffeLoader().binaryNet(getLogisticBinaryNetPath())
                 .textFormatSolver(getLogisticTextFormatSolverPath())
                 .load();
+    }
+
+    public static NetParameter getNet() throws IOException {
+        return getSolverNet().getNet();
+    }
+
+    public static SolverParameter getSolver() throws IOException {
+        return getSolverNet().getSolver();
     }
 
     // Define all the paths as String
