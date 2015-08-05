@@ -87,7 +87,7 @@ public interface Classifier extends Model {
      * @param examples the examples to classify (one example in each row)
      * @param labels the example labels(a binary outcome matrix)
      */
-    void fit(INDArray examples,INDArray labels);
+    void fit(INDArray examples, INDArray labels);
 
     /**
      * Fit the model
