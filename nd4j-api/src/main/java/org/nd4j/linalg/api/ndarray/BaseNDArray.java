@@ -2770,6 +2770,7 @@ public abstract class BaseNDArray implements INDArray {
         if (other.isScalar()) {
             return result.addi(other.getDouble(0), result);
         }
+
         if (isScalar()) {
             return other.addi(getDouble(0), result);
         }
@@ -4017,25 +4018,6 @@ public abstract class BaseNDArray implements INDArray {
 
         if (!compatible)
             throw new IllegalArgumentException("Incompatible broadcast from " + Arrays.toString(shape()) + " to " + Arrays.toString(shape));
-        //broadcast to shape
-        if (isScalar()) {
-            INDArray ret = Nd4j.valueArrayOf(shape, getDouble(0));
-            return ret;
-        } else if (isColumnVector() && Shape.isMatrix(shape)) {
-            INDArray ret = create(shape);
-            for (int i = 0; i < ret.columns(); i++)
-                ret.putColumn(i, this.dup());
-
-
-            return ret;
-        }
-
-        else if(isRowVector()) {
-            INDArray ret = create(shape);
-            for(int i = 0; i < ret.rows(); i++)
-                ret.putRow(i,this.dup());
-            return ret;
-        }
 
 
 

@@ -534,7 +534,7 @@ public class Nd4j {
         if(!(start >= 0 && axis < a.rank() + 1))
             throw new IllegalArgumentException("Axis must be >= 0 && < start");
 
-        List<Integer> range = Ints.asList(ArrayUtil.range(0, a.rank()));
+        List<Integer> range = new ArrayList<>(Ints.asList(ArrayUtil.range(0, a.rank())));
         range.remove(axis);
         range.add(start,axis);
         int[] newRange = Ints.toArray(range);
