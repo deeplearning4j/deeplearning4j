@@ -51,9 +51,9 @@ Because the weights of the RBM are randomly initialized, the difference between 
 
 A more thorough explanation of backpropagation is [here](../neuralnet-overview.html#forward). 
 
-As you can see, on its forward pass, an RBM uses inputs to make predictions about node activations, or the probability of output a given weighted x: *p(a|x; w)*. 
+As you can see, on its forward pass, an RBM uses inputs to make predictions about node activations, or the probability of output a given weighted x: `p(a|x; w)`. 
 
-But on its backward pass, when activations are fed in and reconstructions, or guesses about the original data, are the output, an RBM is attempting to estimate the probability of inputs x given activations a, which are weighted with the same coefficients as those used on the forward pass. This second phase can be expressed as *p(x|a; w)*. 
+But on its backward pass, when activations are fed in and reconstructions, or guesses about the original data, are the output, an RBM is attempting to estimate the probability of inputs x given activations a, which are weighted with the same coefficients as those used on the forward pass. This second phase can be expressed as `p(x|a; w)`. 
 
 Together, those two estimates will lead you to the joint probability distribution of inputs *x* and activations *a*. 
 
@@ -70,6 +70,8 @@ KL-Divergence measures the non-overlapping, or diverging, areas under the two cu
 By iteratively adjusting the weights according to the error they produce, an RBM learns to approximate the data. You could say that the weights slowly come to reflect the structure of the input, which is encoded in the activations of the first hidden layer. The learning process looks like two probability distributions converging, step by step.
 
 ![Alt text](../img/KLD_update_RBM.png)
+
+### Probability Distributions
 
 Let's talk about probability distributions for a moment. If you're rolling two dice, the probability distribution for all outcomes looks like this:
 
