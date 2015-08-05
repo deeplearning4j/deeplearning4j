@@ -55,7 +55,6 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  */
 public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
-    private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
     private INDArray labels;
 
@@ -244,14 +243,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     /**
      * Fit the model
      *
-     * @param examples the examples to classify (one example in each row)
+     * @param input the examples to classify (one example in each row)
      * @param labels   the example labels(a binary outcome matrix)
      */
     @Override
-    public void fit(INDArray examples, INDArray labels) {
-        this.input = examples;
-        applyDropOutIfNecessary(this.input,true);
-        this.labels = labels;
+    public void fit(INDArray input, INDArray labels) {
+        setInput(input);
+        setLabels(labels);
+        applyDropOutIfNecessary(this.input, true);
         Solver solver = new Solver.Builder()
                 .configure(conf())
                 .listeners(getListeners())
@@ -361,7 +360,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * Each row will be the likelihood of a label given that example
      * @return a probability distribution for each row
      */
-    public  INDArray output(INDArray x,boolean test) {
+    public  INDArray output(INDArray x, boolean test) {
         if(x == null)
             throw new IllegalArgumentException("No null input allowed");
 
