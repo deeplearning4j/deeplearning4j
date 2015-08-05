@@ -346,7 +346,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 Layer.Type type = LayerFactories.typeForFactory(conf);
 
-                if (i == 0 && type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
+                if (i == 0 && (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) ) {
                     inputSize = conf.getNIn();
                     if (input == null) {
                         input = Nd4j.ones(inputSize);
