@@ -53,7 +53,7 @@ public class MultiLayerTestRNN {
         assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits});	//Should be shape: [1,4*layerSize]
 
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-        INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits, 2*nHiddenUnits),new NDArrayIndex(0)});
+        INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nHiddenUnits, 2*nHiddenUnits)});
         assertTrue(forgetGateBiases.gt(0).sum(0).getDouble(0)==nHiddenUnits);
 
         int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
@@ -98,8 +98,8 @@ public class MultiLayerTestRNN {
             assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits[i]});	//Should be shape: [1,4*layerSize]
 
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-            INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits[i], 2*nHiddenUnits[i]),new NDArrayIndex(0)});
-            assertTrue(forgetGateBiases.gt(0).sum(0).getDouble(0)==nHiddenUnits[i]);
+            INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nHiddenUnits[i], 2*nHiddenUnits[i])});
+            assertTrue(forgetGateBiases.gt(0).sum(1).getDouble(0)==nHiddenUnits[i]);
 
             int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
             assertTrue(nParams == layer.numParams());

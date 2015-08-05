@@ -3,21 +3,16 @@ package org.deeplearning4j.models.classifiers.lstm;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
 public class GravesLSTMTest {
@@ -89,15 +84,10 @@ public class GravesLSTMTest {
 		//Set input, do a forward pass:
 		lstm.activate(inputData);
 		assertNotNull(lstm.input());
-		
-		//Create pseudo-gradient for input to LSTM layer (i.e., as if created by OutputLayer)
-		//This should have two elements: bias and weight gradients.
-		Gradient gradient = createPrevGradient(miniBatchSize, nOut, lstmNHiddenUnits, timeSeriesLength);
-		Layer prevLayer = createOutputLayer();
 
 		INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
-		Pair<Gradient,INDArray> out = lstm.backpropGradient(epsilon, gradient, prevLayer);
+		Pair<Gradient,INDArray> out = lstm.backpropGradient(epsilon, null, null);
 		Gradient outGradient = out.getFirst();
 		INDArray nextEpsilon = out.getSecond();
 
@@ -119,27 +109,5 @@ public class GravesLSTMTest {
 		for( String s : outGradient.gradientForVariable().keySet() ){
 			lstm.update(outGradient.getGradientFor(s), s);
 		}
-	}
-
-	private static Gradient createPrevGradient(int miniBatchSize, int nOut, int lstmNHiddenUnits, int timeSeriesLength) {
-		Gradient gradient = new DefaultGradient();
-		INDArray pseudoBiasGradients = Nd4j.ones(miniBatchSize,nOut,timeSeriesLength);
-		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY,pseudoBiasGradients);
-		INDArray pseudoWeightGradients = Nd4j.ones(miniBatchSize,lstmNHiddenUnits,nOut,timeSeriesLength);
-		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoWeightGradients);
-		return gradient;
-	}
-
-	private static Layer createOutputLayer() {
-		NeuralNetConfiguration outputConf = new NeuralNetConfiguration.Builder()
-				.activationFunction("softmax")
-				.layer(new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
-						.nIn(3)
-						.nOut(3)
-						.weightInit(WeightInit.DISTRIBUTION)
-						.build())
-				.build();
-
-		return LayerFactories.getFactory(outputConf.getLayer()).create(outputConf);
 	}
 }
