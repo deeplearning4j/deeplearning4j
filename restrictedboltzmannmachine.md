@@ -53,7 +53,7 @@ Because the weights of the RBM are randomly initialized, the difference between 
 
 A more thorough explanation of backpropagation is [here](../neuralnet-overview.html#forward). 
 
-As you can see, on its forward pass, an RBM uses inputs to make predictions about node activations, or the probability of output a given weighted x: `p(a|x; w)`. 
+As you can see, on its forward pass, an RBM uses inputs to make predictions about node activations, or the [probability of output given a weighted x](https://en.wikipedia.org/wiki/Bayes%27_theorem): `p(a|x; w)`. 
 
 But on its backward pass, when activations are fed in and reconstructions, or guesses about the original data, are the output, an RBM is attempting to estimate the probability of inputs x given activations a, which are weighted with the same coefficients as those used on the forward pass. This second phase can be expressed as `p(x|a; w)`. 
 
