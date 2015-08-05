@@ -27,7 +27,6 @@ public class ConvolutionDownSampleLayer extends ConvolutionLayer {
 
     private static final long serialVersionUID = 7524152911435120057L;
 
-
     @Override
     public int hashCode() {
         return 0;

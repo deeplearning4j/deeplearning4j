@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -28,13 +29,13 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -114,7 +115,7 @@ public class ConvolutionLayer implements Layer {
         INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
         gcol = Nd4j.rollAxis(gcol,3);
         INDArray z = preOutput(input());
-        INDArray weightGradient =  Convolution.conv2d(gcol,z, conf.getConvolutionType());// TODO: Use user specified type of convolution
+        INDArray weightGradient =  Convolution.conv2d(gcol, z, conf.getConvolutionType());// TODO: Use user specified type of convolution
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
@@ -125,7 +126,8 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException()
+                ;
 
     }
 
@@ -164,32 +166,25 @@ public class ConvolutionLayer implements Layer {
         if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect() && training) {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
-        //number of feature maps for the weights
-        int currentFeatureMaps = input.size(1);
-        if(currentFeatureMaps != conf.getKernelSize()[1]) {
-            throw new IllegalArgumentException("Input feature maps must be equal to number of feature maps for thwe kernel");
-        }
-        //number of channels of the input
-        int inputChannels = currentFeatureMaps;
-        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getKernelSize()));
+
+
+        // Activations
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
-        INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+
+        INDArray kernelWeights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+
+        kernelWeights = kernelWeights.reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
-            filters = filters.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(filters.shape()));
+            kernelWeights = kernelWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(kernelWeights.shape()));
         }
 
-        for(int i = 0; i < currentFeatureMaps; i++) {
-            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), conf.getKernelSize()[1]}, conf.getKernelSize()));
-            for(int j = 0; j <  inputChannels; j++) {
-                INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
-                featureMap.addi(convolved.broadcast(featureMap.shape()));
-            }
-
-            featureMap.addi(bias.getDouble(i));
-            INDArray activationForSlice = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), featureMap));
-            ret.put(new NDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),new NDArrayIndex(new int[]{i}),NDArrayIndex.all()},activationForSlice);
-        }
-        return ret;
+        // Creates number of feature maps wanted (depth) in the convolution layer = number kernels
+        INDArray convolved = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
+        INDArray activation = Nd4j.tensorMmul(convolved, kernelWeights, new int[][]{{1, 2, 3}, {1, 2, 3}});
+        activation = activation.reshape(activation.size(0),activation.size(1),activation.size(2),activation.size(3));
+        bias = bias.broadcast(activation.shape()).reshape(activation.shape());
+        activation.addi(bias);
+        return Nd4j.rollAxis(activation, 3, 1);
     }
 
     @Override
@@ -210,11 +205,6 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public Layer clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
         throw new UnsupportedOperationException();
     }
 
