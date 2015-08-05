@@ -251,9 +251,6 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) { return null;}
-
-    @Override
     public Collection<IterationListener> getListeners() {
         return null;
     }

@@ -127,23 +127,22 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, labelsSubOut.sum(0));
     	
     	switch (conf.getLossFunction()) {
-        case MCXENT:
-            gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
-            return new Pair<>(gradient,labelsSubOut);
-
-        case XENT:
+    	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
+    		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
+    		return new Pair<>(gradient,labelsSubOut);
+        case XENT: // cross-entropy (single binary output variable)
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.div(output.mul(output.rsub(1)))));
         	return new Pair<>(gradient,labelsSubOut);
-        	
-        case MSE:
+
+        case MSE: // mean squared error
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.neg()));
             return new Pair<>(gradient,labelsSubOut);
         	
-        case EXPLL:
+        case EXPLL: // exponential logarithmic
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
             return new Pair<>(gradient,labelsSubOut);
             
-        case RMSE_XENT:
+        case RMSE_XENT: // root mean squared error cross entropy
         	INDArray squaredrmseXentDiff = pow(labelsSubOut, 2.0);
         	INDArray sqrt = sqrt(squaredrmseXentDiff);
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
@@ -153,7 +152,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(labelsSubOut,2))));
             return new Pair<>(gradient,labelsSubOut);
             
-        case NEGATIVELOGLIKELIHOOD:
+        case NEGATIVELOGLIKELIHOOD: // mulit-class cross-entropy
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
             return new Pair<>(gradient,labelsSubOut);
         default:

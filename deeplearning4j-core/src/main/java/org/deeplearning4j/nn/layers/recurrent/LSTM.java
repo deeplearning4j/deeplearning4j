@@ -72,6 +72,16 @@ public class LSTM extends BaseLayer {
     /**
      * Forward propagation
      * @param xi the current example
+     * @return
+     */
+    public INDArray forward(INDArray xi) {
+        return activate(xi);
+    }
+
+
+    /**
+     * Forward propagation
+     * @param xi the current example
      * @param xs the tim series to predict based on
      * @return
      */
@@ -88,7 +98,7 @@ public class LSTM extends BaseLayer {
      * @param y
      * @return {@link org.deeplearning4j.nn.gradient.Gradient}
      */
-    public Gradient backward(INDArray y) {
+    public Gradient backprop(INDArray y) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
 
@@ -165,6 +175,8 @@ public class LSTM extends BaseLayer {
 
     }
 
+
+
     @Override
     public INDArray input() {
         return xi;
@@ -172,6 +184,8 @@ public class LSTM extends BaseLayer {
 
     @Override
     public INDArray activate(INDArray input) {
+        this.x = input;
+
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
         INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
@@ -476,7 +490,7 @@ public class LSTM extends BaseLayer {
     public void computeGradientAndScore() {
         INDArray forward = forward(xi, xs);
         INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
-        gradient = backward(probas);
+        gradient = backprop(probas);
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, forward);
             create.exec();
@@ -496,14 +510,10 @@ public class LSTM extends BaseLayer {
 
     @Override
     public INDArray transform(INDArray data) {
-        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", forward(xi, xs)).derivative(), 1);
+        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", activate(data)).derivative(), 1);
     }
 
 
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", input).derivative(), 1);
-    }
 
     @Override
     public void setParams(INDArray params) {

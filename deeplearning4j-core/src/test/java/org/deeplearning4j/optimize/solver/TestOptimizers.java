@@ -28,7 +28,6 @@ import org.deeplearning4j.optimize.solvers.ConjugateGradient;
 import org.deeplearning4j.optimize.solvers.LineGradientDescent;
 import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.solvers.LBFGS;
-import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.junit.Test;
 import org.nd4j.linalg.api.complex.IComplexNumber;
@@ -745,10 +744,6 @@ public class TestOptimizers {
 
 		@Override
 		public Layer clone() { throw new UnsupportedOperationException(); }
-
-		@Override
-		public Pair<Gradient, Gradient> backWard(Gradient errors,
-				Gradient deltas, INDArray activation, String previousActivation) { throw new UnsupportedOperationException(); }
 
 		@Override
 		public Collection<IterationListener> getListeners() { return null; }

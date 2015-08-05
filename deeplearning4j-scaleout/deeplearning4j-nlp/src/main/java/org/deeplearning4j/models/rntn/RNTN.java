@@ -1259,11 +1259,6 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        return null;
-    }
-
-    @Override
     public void computeGradientAndScore() {
 
     }

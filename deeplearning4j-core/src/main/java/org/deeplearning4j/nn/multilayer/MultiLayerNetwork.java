@@ -337,9 +337,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
-        int[] hiddenLayerSizes = layerWiseConfigurations.getHiddenLayerSizes();
-        int numHiddenLayersSizesUsed = 0;
-
         if (this.layers == null || this.layers[0] == null) {
             if (this.layers == null)
                 this.layers = new Layer[getnLayers()];
@@ -349,19 +346,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
                 Layer.Type type = LayerFactories.typeForFactory(conf);
 
-                if (i == 0) {
+                if (i == 0 && type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
                     inputSize = conf.getNIn();
                     if (input == null) {
                         input = Nd4j.ones(inputSize);
                         layerInput = input;
                     }
 
-                    if (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        if(hiddenLayerSizes != null)
-                            conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
-
-
-                    }
                 } else if (i < getLayers().length) {
                     if (input != null)
                         layerInput = activationFromPrevLayer(i - 1, layerInput,true);
@@ -383,13 +374,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                      */
                     if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
                         if(i != layers.length - 1) {
-                            numHiddenLayersSizesUsed++;
                             conf.setNIn(layerInput.size(1));
-                            if(hiddenLayerSizes != null)
-                                conf.setNOut(hiddenLayerSizes[numHiddenLayersSizesUsed]);
-                        } else {
-                            if(hiddenLayerSizes != null)
-                                conf.setNIn(hiddenLayerSizes[numHiddenLayersSizesUsed]);
                         }
                     }
                 }
@@ -472,10 +457,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
 
         INDArray ret = layers[curr].preOutput(input, training);
-        if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
-            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
-            return ret;
-        }
         return ret;
     }
 
@@ -490,10 +471,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
         INDArray ret = layers[curr].activate(input,training);
-        if (getLayerWiseConfigurations().getProcessors() != null && getLayerWiseConfigurations().getPreProcessor(curr) != null) {
-            ret = getLayerWiseConfigurations().getPreProcessor(curr).preProcess(ret);
-            return ret;
-        }
         return ret;
     }
 
@@ -1036,7 +1013,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iter.reset();
             finetune(iter);
         }
-        if (layerWiseConfigurations.isBackward()) {
+        if (layerWiseConfigurations.isBackprop()) {
             iter.reset();
             while (iter.hasNext()) {
                 DataSet next = iter.next();
@@ -1049,7 +1026,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     protected void backprop() {
-        setInput(input);
+        String multiGradientKey;
         gradient = new DefaultGradient();
         Layer currLayer, prevLayer;
 
@@ -1058,7 +1035,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
 
-        List<INDArray> activations = feedForward();
+        feedForward();	//Need to do this to calculate activations (which are stored in each layer, and later used in backprop)
 
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
         if(labels == null)
@@ -1068,7 +1045,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         outputLayer.setLabels(labels);
-        outputLayer.computeGradientAndScore();
 
         //calculate and apply the backward gradient for every layer
         /**
@@ -1081,28 +1057,37 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
          */
         int numLayers = getnLayers();
 
-//        Gradient layerGradient = outputLayer.backpropGradient(null,null, null);
-        Pair<Gradient,INDArray> currentPair = outputLayer.backpropGradient(null,null, null);
+        Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null,null, null);
 
-        for (String paramType: outputLayer.gradient().gradientForVariable().keySet()) {
-            String multiGradientKey = String.valueOf(numLayers)+ "_" + paramType;
-            gradient.setGradientFor(multiGradientKey, outputLayer.gradient().getGradientFor(paramType));
+        for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
+            multiGradientKey = String.valueOf(numLayers)+ "_" + entry.getKey();
+            gradient.setGradientFor(multiGradientKey, entry.getValue());
         }
+
+        if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
+            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
 
         prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
-            currLayer = getLayers()[j];
-            currentPair = currLayer.backpropGradient(currentPair.getSecond(), currentPair.getFirst(), prevLayer);
-            prevLayer = currLayer;
+            currLayer = getLayer(j);
+            currPair = currLayer.backpropGradient(currPair.getSecond(), currPair.getFirst(), prevLayer);
 
-            Gradient layerGradient = currentPair.getFirst();
-            for (String paramType: layerGradient.gradientForVariable().keySet()) {
-                String multiGradientKey = String.valueOf(j)+ "_" + paramType;
-                gradient.setGradientFor(multiGradientKey, layerGradient.getGradientFor(paramType));
+            for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
+                multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
+                gradient.setGradientFor(multiGradientKey, entry.getValue());
             }
+            
+            //Pass epsilon through input processor before passing to next layer (if applicable)
+            if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
+                currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
+            prevLayer = currLayer;
         }
-        score = outputLayer.score();
+
+        score = outputLayer.score();	//TODO need to do full forward pass to score...
+        
+        //TODO: Set up to call optimizers, and shift this gradient calculation elsewhere
+        // (so backprop gradient can be re-calculated by optimizers)
     }
 
 
@@ -1135,7 +1120,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void finetune(DataSetIterator iter) {
         log.info("Finetune phase ");
-        if(layerWiseConfigurations.isBackward()) {
+        if(layerWiseConfigurations.isBackprop()) {
             log.info("Will use backpropagation for finetune");
             return;
         }
@@ -1179,7 +1164,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
 
-        if(layerWiseConfigurations.isBackward()) {
+        if(layerWiseConfigurations.isBackprop()) {
             log.info("Will use backpropagation for finetune");
             return;
         }
@@ -1245,9 +1230,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             finetune(labels);
         }
 
-        if(layerWiseConfigurations.isBackward())
+        if(layerWiseConfigurations.isBackprop()){
             setLabels(labels);
             backprop();
+        }
     }
 
     /**
@@ -1520,15 +1506,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param input
      */
     public void setInput(INDArray input) {
-        if (getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            this.input = this.layerWiseConfigurations.getInputPreProcess(0).preProcess(input);
-        else
-            this.input = input;
+        this.input = input;
         if (this.layers == null)
             this.initializeLayers(getInput());
-        else if (this.input == null)
-            this.input = input;
-
     }
 
     private void initMask() {
@@ -1731,11 +1711,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException();
-    }
-    @Deprecated
-    @Override
-    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation,String previousActivation) {
         throw new UnsupportedOperationException();
     }
 
