@@ -51,7 +51,7 @@ public class TestConvolutionLayer {
         int inputHeight = 28;
         int kernelWidth = 9;
         int kernelHeight = 9;
-        int[] stride = new int[] {1,1};
+        int[] stride = new int[] {2,2};
         int[] padding = new int[] {0,0};
         int nIn = 1;
         int nOut = 10;
@@ -64,8 +64,7 @@ public class TestConvolutionLayer {
         INDArray input = next.getFeatureMatrix().reshape(next.numExamples(),1, inputWidth, inputHeight);
         INDArray conv = layer.activate(input);
 
-        //int featureMapWidth = (inputWidth - kernelWidth) + ( padding[0]) / stride[0] + 1;
-        int featureMapWidth = 10;
+        int featureMapWidth = (inputWidth - kernelWidth + 2 * padding[0]) / stride[0] + 1;
         assertEquals(featureMapWidth, conv.size(0));
         assertEquals(nOut, conv.size(0));
 
