@@ -1,5 +1,6 @@
 package org.deeplearning4j.caffe.dag;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -13,17 +14,30 @@ import java.util.Map;
  */
 @Data
 @NoArgsConstructor
-@ToString(of = {"name", "type"})
+@AllArgsConstructor
+@ToString(of = {"name", "layerSubType"})
 public class CaffeNode implements Node {
-    String name;
-    NodeType type;
-    public enum NodeType { LAYER, BLOB }
-    // Meta data about the node
+    private String name;
+    private LayerType layerType;
+    private LayerSubType layerSubType;
     Map<String, Object> data = new HashMap<>();
 
-    // Constructor
-    public CaffeNode(NodeType type, String name) {
-        this.type = type;
+    public enum LayerType {
+        HIDDEN, PROCESSING,
+        INNERPRODUCT, CONNECTOR
+    }
+
+    public enum LayerSubType {
+        CONVOLUTION, POOLING, RELU, SIGMOID, TANH,
+        SOFTMAX, SOFTMAXWITHLOSS,
+        EUCLIDEANLOSS, SIGMOIDCROSSENTROPYLOSS,
+        FLATTEN, RESHAPE, CONCAT, SLICE, SPLIT,
+        CONNECTOR
+    }
+
+    public CaffeNode(String name, LayerType layerType, LayerSubType layerSubType) {
         this.name = name;
+        this.layerType = layerType;
+        this.layerSubType = layerSubType;
     }
 }
