@@ -186,3 +186,4 @@ Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwo
 * [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf); Geoff Hinton
 * [Convolutional Networks](../convolutionalnetworks.html)
 * [Recurrent Networks/LSTMs](../recurrentnetwork.html)
+* [Neural Networks & Regression](../linear-regression.html)
