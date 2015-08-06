@@ -123,9 +123,17 @@ public class SubsamplingLayer implements Layer {
                 //compute backwards kernel based on rearranging the given error
                 INDArray ret2 = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
                 INDArray reverse = Nd4j.rollAxis(ret2.reshape(n,c,-1,outH,outW),2);
+                //took max along second dim
+                for(int i = 0; i < epsilon.tensorssAlongDimension(2); i++) {
+                    INDArray epsilonI = epsilon.tensorAlongDimension(i,2);
+                    ret2.slice(maxIndexes.getInt(i)).putSlice(maxIndexes.getInt(i),epsilonI);
+
+                }
                 reverse.assign(epsilon);
+
                 //compute gradient for weights
                 INDArray finalRet = Convolution.col2im(reverse,conf.getStride(),conf.getPadding(),width,height);
+
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
                 return new Pair<>(ret,finalRet);
             case AVG:
@@ -136,7 +144,7 @@ public class SubsamplingLayer implements Layer {
                 convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, convolution);
                 return new Pair<>(ret,convolution);
-             default: throw new IllegalStateException("Un supported pooling type");
+            default: throw new IllegalStateException("Un supported pooling type");
         }
 
     }
