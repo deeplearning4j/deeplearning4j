@@ -115,14 +115,12 @@ public class ConvolutionLayer implements Layer {
         INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
         gcol = Nd4j.rollAxis(gcol,3);
         INDArray z = preOutput(input());
-        INDArray weightGradient =  Convolution.conv2d(gcol, z, conf.getConvolutionType());// TODO: Use user specified type of convolution
+        INDArray weightGradient =  Convolution.conv2d(gcol, z, conf.getConvolutionType());
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
         return new Pair<>(retGradient,weightGradient);
     }
-
-
 
     @Override
     public void merge(Layer layer, int batchSize) {
