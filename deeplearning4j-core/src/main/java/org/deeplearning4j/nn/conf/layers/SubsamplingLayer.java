@@ -36,6 +36,10 @@ public class SubsamplingLayer extends Layer {
 
         public Builder() {}
 
+        public Builder(PoolingType poolingType) {
+            this.poolingType = poolingType;
+        }
+
         public Builder(PoolingType poolingType, int[] stride) {
             this.poolingType = poolingType;
             this.stride = stride;
