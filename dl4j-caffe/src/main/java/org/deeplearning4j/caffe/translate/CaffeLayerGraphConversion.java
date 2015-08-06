@@ -41,7 +41,7 @@ public class CaffeLayerGraphConversion {
     public CaffeLayerGraphConversion(NetParameter net) {
         this.net = net;
         this.layerParamMapping = initLayerParamMap();
-        this.includeBottomNodes = false;
+        this.includeBottomNodes = true;
     }
 
     public CaffeLayerGraphConversion(NetParameter net, Boolean includeBottomNodes) {
@@ -247,8 +247,13 @@ public class CaffeLayerGraphConversion {
         for (String topLayerName : topList) {
             Set<CaffeNode> bottomNodeSetTop = new HashSet<>();
             bottomNodeSetTop.add(currentNode);
-            CaffeNode topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR,
-                    bottomNodeSetTop);
+            CaffeNode topNode;
+            if (includeBottomNodes) {
+                topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR,
+                        bottomNodeSetTop);
+            } else {
+                topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR);
+            }
             caffeNodeMap.get("top").add(topNode);
         }
 

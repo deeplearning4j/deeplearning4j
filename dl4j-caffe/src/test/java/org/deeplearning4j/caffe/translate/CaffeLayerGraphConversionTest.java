@@ -19,7 +19,7 @@ public class CaffeLayerGraphConversionTest {
     public void convertTest() throws IOException, IllegalAccessException,
             NoSuchMethodException, InvocationTargetException {
         NetParameter net = CaffeTestUtil.getNet();
-        Graph graph = new CaffeLayerGraphConversion(net, true).convert();
+        Graph graph = new CaffeLayerGraphConversion(net).convert();
         System.out.println(graph);
         assertTrue(graph != null);
 
