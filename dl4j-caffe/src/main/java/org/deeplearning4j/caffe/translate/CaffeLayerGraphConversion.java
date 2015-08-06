@@ -11,7 +11,6 @@ import org.deeplearning4j.caffe.dag.CaffeNode.LayerType;
 import org.deeplearning4j.caffe.projo.Caffe.BlobProto;
 import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
 import org.deeplearning4j.dag.Graph;
-import org.deeplearning4j.dag.Node;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -26,6 +25,7 @@ import java.util.*;
  * @author jeffreytang
  */
 @Data
+@SuppressWarnings("unchecked")
 public class CaffeLayerGraphConversion {
 
     public CaffeLayerGraphConversion() {}
@@ -90,7 +90,6 @@ public class CaffeLayerGraphConversion {
         put(LayerSubType.SPLIT, LayerType.PROCESSING);
     }};
 
-    @SuppressWarnings("unchecked")
     private List<? extends GeneratedMessage> convertNetToLayerList() {
         int layerCount = net.getLayerCount();
         int layersCount = net.getLayersCount();
@@ -135,7 +134,6 @@ public class CaffeLayerGraphConversion {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private Method getMethodFromString(String methodString, Class c) throws NoSuchMethodException{
         return c.getDeclaredMethod(methodString);
     }
@@ -164,7 +162,6 @@ public class CaffeLayerGraphConversion {
         return blobDataList;
     }
 
-    @SuppressWarnings("unchecked")
     private Map<String, Set<CaffeNode>> convertLayerToCaffeNodeMap(GeneratedMessage layer)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
@@ -281,36 +278,74 @@ public class CaffeLayerGraphConversion {
     }
 
     private void addStartEndNodesToGraph(Graph graph) {
-        Map<Node, Set<Node>> adjacencyMap = graph.getAdjacencyListMap();
-        for (Node node : adjacencyMap.keySet()) {
-            CaffeNode castedNode = (CaffeNode) node;
-            if (castedNode.getBottomNodeSet() == null || castedNode.getBottomNodeSet().size() == 0) {
-                graph.addStartNode(castedNode);
+        Map<CaffeNode, Set<CaffeNode>> adjacencyMap = graph.getAdjacencyListMap();
+        for (CaffeNode node : adjacencyMap.keySet()) {
+            if (node.getBottomNodeSet() == null || node.getBottomNodeSet().size() == 0) {
+                graph.addStartNode(node);
             }
-            if (adjacencyMap.get(castedNode).size() == 0){
-                graph.addEndNode(castedNode);
+            if (adjacencyMap.get(node).size() == 0){
+                graph.addEndNode(node);
+            }
+        }
+        trimStartEndNodes(graph);
+    }
+
+    private Set<CaffeNode> forwardTrack(CaffeNode node, Graph graph) {
+        return graph.getNeighbors(node);
+    }
+
+    private Set<CaffeNode> backwardTrack(CaffeNode node) {
+        return node.getBottomNodeSet();
+    }
+
+
+    private void trimStartEndNodes(Graph graph) {
+        Set<CaffeNode> startNodeSet = graph.getStartNodeSet();
+        Set<CaffeNode> endNodeSet = graph.getEndNodeSet();
+
+        for (CaffeNode startNode : startNodeSet) {
+            if (startNode.getLayerSubType().equals(LayerSubType.CONNECTOR)) {
+                graph.removeStartNode(startNode);
+                Set<CaffeNode> topSet = forwardTrack(startNode, graph);
+                for (CaffeNode topNode : topSet) {
+                    graph.addStartNode(topNode);
+                }
+            }
+        }
+
+        for (CaffeNode endNode : endNodeSet) {
+            if (endNode.getLayerSubType().equals(LayerSubType.CONNECTOR)) {
+                graph.removeEndNode(endNode);
+                Set<CaffeNode> bottomSet = backwardTrack(endNode);
+                for (CaffeNode bottomNode : bottomSet) {
+                    graph.addEndNode(bottomNode);
+                    graph.removeStartNode(bottomNode);
+                }
             }
         }
     }
 
-    private Graph trimGraph(Graph graph) {
-        for (Node startNode : graph.getStartNodeSet()) {
-            CaffeNode castedNode = (CaffeNode) startNode;
-//            castedNode.get
+    public void trimGraph(Graph graph) {
+        Map<CaffeNode, Set<CaffeNode>> adjacencyMap = graph.getAdjacencyListMap();
+        for (CaffeNode node : adjacencyMap.keySet()) {
+            if (node.getBottomNodeSet() == null || node.getBottomNodeSet().size() == 0) {
+                graph.addStartNode(node);
+            }
+            if (adjacencyMap.get(node).size() == 0){
+                graph.addEndNode(node);
+            }
         }
 
-        return null;
-    }
 
-    private Set<CaffeNode> traceBackNode(CaffeNode currNode) {
-//        currNode
-        return null;
     }
 
     // Converts Net to Caffe Node Graph
     public Graph convert()
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
         List<Map<String, Set<CaffeNode>>> nodeMapList = convertNetToNodeMapList();
-        return convertNodeMapSetToGraph(nodeMapList);
+        Graph graph = convertNodeMapSetToGraph(nodeMapList);
+        addStartEndNodesToGraph(graph);
+        trimGraph(graph);
+        return graph;
     }
 }

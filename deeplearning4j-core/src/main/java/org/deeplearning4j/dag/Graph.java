@@ -1,5 +1,6 @@
 package org.deeplearning4j.dag;
 
+import io.netty.util.internal.ConcurrentSet;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,30 +11,30 @@ import java.util.*;
  */
 @NoArgsConstructor
 @Data
-public class Graph {
+public class Graph<T extends Node> {
     // Key of adjacency list points to nodes in the list (from bottom to top)
-    private Map<Node, Set<Node>> adjacencyListMap = new HashMap<>();
-    private Set<Node> startNodeSet = new HashSet<>();
-    private Set<Node> endNodeSet = new HashSet<>();
+    private Map<T, Set<T>> adjacencyListMap = new HashMap<>();
+    private Set<T> startNodeSet = new ConcurrentSet<>();
+    private Set<T> endNodeSet = new ConcurrentSet<>();
 
     public int graphSize() {
         return adjacencyListMap.size();
     }
 
-    public void addNode(Node node) {
+    public void addNode(T node) {
         if (!adjacencyListMap.containsKey(node)) {
-            adjacencyListMap.put(node, new HashSet<Node>());
+            adjacencyListMap.put(node, new HashSet<T>());
         }
     }
 
-    public void addEdge(Node nodeA, Node nodeB) {
+    public void addEdge(T nodeA, T nodeB) {
         addNode(nodeA);
         addNode(nodeB);
         adjacencyListMap.get(nodeA).add(nodeB);
     }
 
-    public void addEdges(Node nodeA, List<Node> nodeList) {
-        for (Node nodeB : nodeList) {
+    public void addEdges(T nodeA, List<T> nodeList) {
+        for (T nodeB : nodeList) {
             addEdge(nodeA, nodeB);
         }
     }
@@ -45,7 +46,7 @@ public class Graph {
      * @param nodeB The node being pointed to
      * @return Boolean
      */
-    public Boolean edgeBetween(Node nodeA, Node nodeB) {
+    public Boolean edgeBetween(T nodeA, T nodeB) {
         Boolean ret = false;
         if (adjacencyListMap.containsKey(nodeA)) {
             for (Node node : adjacencyListMap.get(nodeA)) {
@@ -56,13 +57,17 @@ public class Graph {
         return ret;
     }
 
+    public Set<T> getNeighbors(T node) {
+        return adjacencyListMap.get(node);
+    }
+
     /**
      * Return if the node is in the graph
      *
      * @param node The query node
      * @return Boolean
      */
-    public Boolean hasNode(Node node) {
+    public Boolean hasNode(T node) {
         Boolean ret = false;
         if (adjacencyListMap.containsKey(node)) {
             ret = true;
@@ -70,13 +75,13 @@ public class Graph {
         return ret;
     }
 
-    public void addStartNode(Node startNode) {
-        startNodeSet.add(startNode);
-    }
+    public void addStartNode(T node) { startNodeSet.add(node); }
 
-    public void addEndNode(Node endNode) {
-        endNodeSet.add(endNode);
-    }
+    public void addEndNode(T node) { endNodeSet.add(node); }
+
+    public void removeStartNode(T node) { startNodeSet.remove(node); }
+
+    public void removeEndNode(T node) { endNodeSet.remove(node); }
 
     /**
      * Return a list of nodes with the given name
@@ -99,7 +104,7 @@ public class Graph {
      * @param node The query node
      * @return List of neighbor Node Objects
      */
-    public Set<Node> getNextNodes(Node node) {
+    public Set<T> getNextNodes(T node) {
         return adjacencyListMap.get(node);
     }
 
@@ -112,7 +117,7 @@ public class Graph {
     public String toString() {
         String sizeString = String.format("\tSize: %s\n", graphSize());
         String adjacencyString = "";
-        for (Map.Entry<Node, Set<Node>> entry : adjacencyListMap.entrySet()) {
+        for (Map.Entry<T, Set<T>> entry : adjacencyListMap.entrySet()) {
             String curNode = entry.getKey().toString();
             String listNodes = Arrays.deepToString(entry.getValue().toArray());
             adjacencyString += String.format("\t%s -> %s\n", curNode, listNodes);

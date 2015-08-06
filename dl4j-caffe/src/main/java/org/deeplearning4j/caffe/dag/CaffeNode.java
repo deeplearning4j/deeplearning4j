@@ -69,5 +69,4 @@ public class CaffeNode implements Node {
         this.bottomNodeSet = bottomNodeSet;
     }
 
-
 }
