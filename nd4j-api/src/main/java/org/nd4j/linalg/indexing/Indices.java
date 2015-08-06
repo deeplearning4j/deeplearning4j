@@ -518,7 +518,7 @@ public class Indices {
      */
     public static int[] stride(INDArray arr,NDArrayIndex[] indexes, int... shape) {
         int[] retStride = null;
-        if(shape.length == arr.stride().length) {
+        if(indexes.length == arr.stride().length) {
             //prepend zeros for new axis
             retStride  =  Arrays.copyOf(arr.stride(), arr.stride().length);
         }

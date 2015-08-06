@@ -304,7 +304,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         
         if(op.isPassThrough()) {
-            op.exec();
+            op.exec(dimension);
             return op.z();
         }
           

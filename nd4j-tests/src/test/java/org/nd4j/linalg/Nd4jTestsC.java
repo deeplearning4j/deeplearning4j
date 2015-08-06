@@ -78,6 +78,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testArgMax() {
+        INDArray toArgMax = Nd4j.linspace(1,24,24).reshape(4, 3, 2);
+        INDArray  argMax = Nd4j.argMax(toArgMax, 1);
+        INDArray valueArray = Nd4j.valueArrayOf(new int[]{4,2},2.0);
+        assertEquals(valueArray,argMax);
+
+    }
+
+    @Test
     public void testScalarOps() throws Exception {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
         assertEquals(27d, n.length(), 1e-1);
@@ -181,13 +190,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(write, read);
 
     }
-
-
-
-
-
-
-
 
 
 
@@ -856,28 +858,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testDimensionWiseWithVector() {
-        INDArray ret = Nd4j.linspace(1,2,2).reshape(1, 2);
-        assertTrue(ret.sum(0).isRowVector());
-        assertTrue(ret.sum(1).isScalar());
-        INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2, 1);
-        assertTrue(retColumn.sum(1).isRowVector());
-        assertTrue(retColumn.sum(0).isScalar());
-
-        INDArray m2 = Nd4j.rand(1, 2);
-        Nd4j.sum(m2, 0);
-
-
-        Nd4j.sum(m2, 1);
-
-        INDArray m3 = Nd4j.rand(2, 1);
-
-        Nd4j.sum(m3, 0);
-        Nd4j.sum(m3, 1).toString();
-
-    }
-
 
 
     @Test
@@ -1314,6 +1294,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray n = Nd4j.linspace(1, 4, 4);
         INDArray broadCasted = n.broadcast(5, 4);
         for (int i = 0; i < broadCasted.rows(); i++) {
+            INDArray row = broadCasted.getRow(i);
             assertEquals(n, broadCasted.getRow(i));
         }
 

@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
+import org.nd4j.linalg.api.ops.impl.accum.IAMax;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.factory.DefaultDistributionFactory;
@@ -520,17 +521,8 @@ public class Nd4j {
      * @param dimension
      * @return
      */
-    public static int[][]  argMax(INDArray arr,int...dimension) {
-        int[][] ret = new int[arr.tensorssAlongDimension(dimension)][arr.rank()];
-        for (int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-            INDArray tensorAlongDimension = arr.tensorAlongDimension(i,dimension);
-            int max = Nd4j.getBlasWrapper().iamax(tensorAlongDimension);
-            int[] actualDimensionIndex = Shape.ind2sub(arr,max);
-            ret[i] = actualDimensionIndex;
-        }
-
-        return ret;
-
+    public static INDArray  argMax(INDArray arr,int...dimension) {
+        return Nd4j.getExecutioner().exec(new IAMax(arr),dimension);
     }
 
     /**
