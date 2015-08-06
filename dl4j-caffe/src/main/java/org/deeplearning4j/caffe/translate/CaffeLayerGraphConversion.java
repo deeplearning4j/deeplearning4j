@@ -35,19 +35,11 @@ public class CaffeLayerGraphConversion {
     NetParameter net;
     Map<LayerSubType, Map<String, String>> layerParamMapping;
     Nd4j nd4j = new Nd4j();
-    boolean includeBottomNodes;
 
 
     public CaffeLayerGraphConversion(NetParameter net) {
         this.net = net;
         this.layerParamMapping = initLayerParamMap();
-        this.includeBottomNodes = true;
-    }
-
-    public CaffeLayerGraphConversion(NetParameter net, Boolean includeBottomNodes) {
-        this.net = net;
-        this.layerParamMapping = initLayerParamMap();
-        this.includeBottomNodes = includeBottomNodes;
     }
 
     // Get map of layer param mapping
@@ -233,13 +225,8 @@ public class CaffeLayerGraphConversion {
         ////
 
         //// Assign Current node
-        CaffeNode currentNode;
-        if (includeBottomNodes) {
-            currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data,
-                    caffeNodeMap.get("bottom"));
-        } else {
-            currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data);
-        }
+        CaffeNode currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data,
+                caffeNodeMap.get("bottom"));
         caffeNodeMap.get("current").add(currentNode);
         ////
 
@@ -247,13 +234,7 @@ public class CaffeLayerGraphConversion {
         for (String topLayerName : topList) {
             Set<CaffeNode> bottomNodeSetTop = new HashSet<>();
             bottomNodeSetTop.add(currentNode);
-            CaffeNode topNode;
-            if (includeBottomNodes) {
-                topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR,
-                        bottomNodeSetTop);
-            } else {
-                topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR);
-            }
+            CaffeNode topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR, bottomNodeSetTop);
             caffeNodeMap.get("top").add(topNode);
         }
 
@@ -281,8 +262,6 @@ public class CaffeLayerGraphConversion {
         Set<CaffeNode> topNodeSet = nodeMap.get("top");
         Set<CaffeNode> bottomNodeSet = nodeMap.get("bottom");
 
-        addStartEndNodesToGraph(currNode, topNodeSet, bottomNodeSet, graph);
-
         for (CaffeNode topNode : topNodeSet) {
             graph.addEdge(currNode, topNode);
         }
@@ -292,21 +271,26 @@ public class CaffeLayerGraphConversion {
         }
     }
 
-    private void addStartEndNodesToGraph(CaffeNode currNode, Set<CaffeNode> topNodeSet,
-                                         Set<CaffeNode> bottomNodeSet, Graph graph) {
-        if (topNodeSet.size() == 0) {
-            graph.addStartNode(currNode);
-        } else if (bottomNodeSet.size() == 0) {
-            graph.addEndNode(currNode);
-        }
-    }
-
     private Graph convertNodeMapSetToGraph(List<Map<String, Set<CaffeNode>>> nodeMapList) {
         Graph graph = new Graph();
         for (Map<String, Set<CaffeNode>> nodeMap : nodeMapList) {
             addNodeMapToGraph(nodeMap, graph);
         }
+        addStartEndNodesToGraph(graph);
         return graph;
+    }
+
+    private void addStartEndNodesToGraph(Graph graph) {
+        Map<Node, Set<Node>> adjacencyMap = graph.getAdjacencyListMap();
+        for (Node node : adjacencyMap.keySet()) {
+            CaffeNode castedNode = (CaffeNode) node;
+            if (castedNode.getBottomNodeSet() == null || castedNode.getBottomNodeSet().size() == 0) {
+                graph.addStartNode(castedNode);
+            }
+            if (adjacencyMap.get(castedNode).size() == 0){
+                graph.addEndNode(castedNode);
+            }
+        }
     }
 
     private Graph trimGraph(Graph graph) {
