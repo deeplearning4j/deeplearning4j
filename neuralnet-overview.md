@@ -10,7 +10,7 @@ Contents
 * <a href="#define">Neural Network Definition</a>
 * <a href="#element">Neural Network Elements</a>
 * <a href="#concept">Key Concepts of Deep Neural Networks</a>
-* <a href="#forward">Example: Feedforward Networks</a>
+* <a href="#forward">Example: Feedforward Networks & Backprop</a>
 * <a href="#logistic">Logistic Regression & Classifiers</a>
 * <a href="#ai">Neural Networks & Artificial Intelligence</a>
 * <a href="#intro">Other Introductory Resources</a>
