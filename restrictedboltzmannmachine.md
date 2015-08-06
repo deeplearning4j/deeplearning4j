@@ -18,7 +18,9 @@ Contents
 
 ## <a name="define">Definition & Structure</a>
 
-Invented by Geoff Hinton, Restricted Boltzmann machines are useful for dimensionality reduction, classification, [regression](../linear-regression.html), collaborative filtering, feature learning and topic modeling. Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle. In the paragraphs below, we will describe in diagrams and plain language how they work. 
+Invented by Geoff Hinton, Restricted Boltzmann machines are useful for dimensionality reduction, classification, [regression](../linear-regression.html), collaborative filtering, feature learning and topic modeling. (For more concrete examples of how [neural networks](../neuralnet-overview.html) can be employed, please see our page on [use cases](../use_cases.html)).
+
+Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle. In the paragraphs below, we will describe in diagrams and plain language how they work. 
 
 RBMs are shallow, two-layer neural nets that constitute the building blocks of *deep-belief networks*. The first layer of the RBM is called the visible, or input, layer, and the second is the hidden layer. 
 
