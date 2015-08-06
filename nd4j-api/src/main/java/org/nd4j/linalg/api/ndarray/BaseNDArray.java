@@ -3794,7 +3794,12 @@ public abstract class BaseNDArray implements INDArray {
 
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         INDArray ret =  subArray(resolution);
-
+        if(numNewAxes > 0) {
+            int[] newShape = Ints.concat(ArrayUtil.nTimes(numNewAxes,1),ret.shape());
+            int[] newStrides = Ints.concat(new int[numNewAxes],ret.stride());
+            ret.setShape(newShape);
+            ret.setStride(newStrides);
+        }
         return ret;
     }
 
@@ -4253,9 +4258,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public boolean isVector() {
         ensureNotCleanedUp();
-        if(this.isVector == null)
-            isVector =  isRowVector() || isColumnVector();
-        return isVector;
+        boolean ret =   isRowVector() || isColumnVector();
+        return ret;
     }
 
     @Override
