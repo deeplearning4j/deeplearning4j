@@ -71,7 +71,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(input == null || labels == null)
             return;
 
-        INDArray output = output(true);
+        INDArray output = output(input);
         Pair<Gradient,INDArray> pair = getGradientsAndDelta(output);
         this.gradient = pair.getFirst();
         setScoreWithZ(output);
@@ -102,7 +102,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
-    	Pair<Gradient,INDArray> pair = getGradientsAndDelta(output(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+	Pair<Gradient,INDArray> pair = getGradientsAndDelta(output(input));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
     	INDArray delta = pair.getSecond();
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
@@ -179,6 +179,16 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public INDArray activate() {
+        return output(false);
+    }
+
+    public  INDArray output(INDArray input, boolean training) {
+        setInput(input, training);
+        return output(training);
+    }
+
+    public  INDArray output(INDArray input) {
+        setInput(input, false);
         return output(false);
     }
 
@@ -260,8 +270,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public int[] predict(INDArray input) {
-        setInput(input);
-        INDArray output = output(true);
+        INDArray output = output(input);
         int[] ret = new int[input.rows()];
         for(int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
@@ -277,8 +286,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public INDArray labelProbabilities(INDArray examples) {
-        setInput(examples);
-        return output(true);
+        return output(examples);
     }
 
     /**
