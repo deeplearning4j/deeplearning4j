@@ -1,5 +1,6 @@
 package org.deeplearning4j.dag;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.*;
@@ -8,9 +9,10 @@ import java.util.*;
  * @author jeffreytang
  */
 @NoArgsConstructor
+@Data
 public class Graph {
     // Key of adjacency list points to nodes in the list (from bottom to top)
-    private Map<Node, List<Node>> adjacencyListMap = new HashMap<>();
+    private Map<Node, Set<Node>> adjacencyListMap = new HashMap<>();
     private Set<Node> startNodeSet = new HashSet<>();
     private Set<Node> endNodeSet = new HashSet<>();
 
@@ -20,7 +22,7 @@ public class Graph {
 
     public void addNode(Node node) {
         if (!adjacencyListMap.containsKey(node)) {
-            adjacencyListMap.put(node, new ArrayList<Node>());
+            adjacencyListMap.put(node, new HashSet<Node>());
         }
     }
 
@@ -97,7 +99,7 @@ public class Graph {
      * @param node The query node
      * @return List of neighbor Node Objects
      */
-    public List<Node> getNextNodes(Node node) {
+    public Set<Node> getNextNodes(Node node) {
         return adjacencyListMap.get(node);
     }
 
@@ -110,7 +112,7 @@ public class Graph {
     public String toString() {
         String sizeString = String.format("\tSize: %s\n", graphSize());
         String adjacencyString = "";
-        for (Map.Entry<Node, List<Node>> entry : adjacencyListMap.entrySet()) {
+        for (Map.Entry<Node, Set<Node>> entry : adjacencyListMap.entrySet()) {
             String curNode = entry.getKey().toString();
             String listNodes = Arrays.deepToString(entry.getValue().toArray());
             adjacencyString += String.format("\t%s -> %s\n", curNode, listNodes);

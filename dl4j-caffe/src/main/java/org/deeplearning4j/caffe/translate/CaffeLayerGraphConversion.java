@@ -11,6 +11,7 @@ import org.deeplearning4j.caffe.dag.CaffeNode.LayerType;
 import org.deeplearning4j.caffe.projo.Caffe.BlobProto;
 import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
 import org.deeplearning4j.dag.Graph;
+import org.deeplearning4j.dag.Node;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,11 +35,19 @@ public class CaffeLayerGraphConversion {
     NetParameter net;
     Map<LayerSubType, Map<String, String>> layerParamMapping;
     Nd4j nd4j = new Nd4j();
+    boolean includeBottomNodes;
 
 
     public CaffeLayerGraphConversion(NetParameter net) {
         this.net = net;
         this.layerParamMapping = initLayerParamMap();
+        this.includeBottomNodes = false;
+    }
+
+    public CaffeLayerGraphConversion(NetParameter net, Boolean includeBottomNodes) {
+        this.net = net;
+        this.layerParamMapping = initLayerParamMap();
+        this.includeBottomNodes = includeBottomNodes;
     }
 
     // Get map of layer param mapping
@@ -164,7 +173,7 @@ public class CaffeLayerGraphConversion {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, List<CaffeNode>> convertLayerToCaffeNodeMap(GeneratedMessage layer)
+    private Map<String, Set<CaffeNode>> convertLayerToCaffeNodeMap(GeneratedMessage layer)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         //// Get methods
@@ -176,10 +185,10 @@ public class CaffeLayerGraphConversion {
 
 
         //// Map to hold all the node generated from the layer
-        Map<String, List<CaffeNode>> caffeNodeMap = new HashMap<>();
-        caffeNodeMap.put("current", new ArrayList<CaffeNode>());
-        caffeNodeMap.put("top", new ArrayList<CaffeNode>());
-        caffeNodeMap.put("bottom", new ArrayList<CaffeNode>());
+        Map<String, Set<CaffeNode>> caffeNodeMap = new HashMap<>();
+        caffeNodeMap.put("current", new HashSet<CaffeNode>());
+        caffeNodeMap.put("top", new HashSet<CaffeNode>());
+        caffeNodeMap.put("bottom", new HashSet<CaffeNode>());
 
         //// Current Node
         String layerName = (String) getNameMethod.invoke(layer);
@@ -211,8 +220,7 @@ public class CaffeLayerGraphConversion {
         }
         // Get the blob data in the layer
         List<INDArray> data = convertBlobToDataMap((List<BlobProto>) getBlobListMethod.invoke(layer));
-        CaffeNode currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data);
-        caffeNodeMap.get("current").add(currentNode);
+        ////
 
         //// Top and Bottom
         List<String> bottomList = (List<String>) getBottomListMethod.invoke(layer);
@@ -226,17 +234,28 @@ public class CaffeLayerGraphConversion {
             CaffeNode topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR);
             caffeNodeMap.get("top").add(topNode);
         }
+
+        //// Assign current node
+        CaffeNode currentNode;
+        if (includeBottomNodes) {
+            currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data,
+                    caffeNodeMap.get("bottom"));
+        } else {
+            currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data);
+        }
+        caffeNodeMap.get("current").add(currentNode);
+
         return caffeNodeMap;
     }
 
-    private List<Map<String, List<CaffeNode>>> convertNetToNodeMapList()
+    private List<Map<String, Set<CaffeNode>>> convertNetToNodeMapList()
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         List<? extends GeneratedMessage> layerList = convertNetToLayerList();
 
-        List<Map<String, List<CaffeNode>>> nodeMapList = new ArrayList<>();
+        List<Map<String, Set<CaffeNode>>> nodeMapList = new ArrayList<>();
         for (GeneratedMessage layer : layerList) {
-            Map<String, List<CaffeNode>> nodeMap = convertLayerToCaffeNodeMap(layer);
+            Map<String, Set<CaffeNode>> nodeMap = convertLayerToCaffeNodeMap(layer);
             if (nodeMap != null) {
                 nodeMapList.add(nodeMap);
             }
@@ -245,49 +264,57 @@ public class CaffeLayerGraphConversion {
         return nodeMapList;
     }
 
-    private void addNodeMapToGraph(Map<String, List<CaffeNode>> nodeMap, Graph graph) {
-        CaffeNode currNode = nodeMap.get("current").get(0);
-        List<CaffeNode> topNodeList = nodeMap.get("top");
-        List<CaffeNode> bottomNodeList = nodeMap.get("bottom");
+    private void addNodeMapToGraph(Map<String, Set<CaffeNode>> nodeMap, Graph graph) {
+        CaffeNode currNode = nodeMap.get("current").iterator().next();
+        Set<CaffeNode> topNodeSet = nodeMap.get("top");
+        Set<CaffeNode> bottomNodeSet = nodeMap.get("bottom");
 
-        addStartEndNodesToGraph(currNode, topNodeList, bottomNodeList, graph);
+        addStartEndNodesToGraph(currNode, topNodeSet, bottomNodeSet, graph);
 
-        for (CaffeNode topNode : topNodeList) {
+        for (CaffeNode topNode : topNodeSet) {
             graph.addEdge(currNode, topNode);
         }
 
-        for (CaffeNode bottomNode : bottomNodeList) {
+        for (CaffeNode bottomNode : bottomNodeSet) {
             graph.addEdge(bottomNode, currNode);
         }
     }
 
-    private void addStartEndNodesToGraph(CaffeNode currNode, List<CaffeNode> topNodeList,
-                                         List<CaffeNode> bottomNodeList, Graph graph) {
-        if (topNodeList.size() == 0) {
+    private void addStartEndNodesToGraph(CaffeNode currNode, Set<CaffeNode> topNodeSet,
+                                         Set<CaffeNode> bottomNodeSet, Graph graph) {
+        if (topNodeSet.size() == 0) {
             graph.addStartNode(currNode);
-        } else if (bottomNodeList.size() == 0) {
+        } else if (bottomNodeSet.size() == 0) {
             graph.addEndNode(currNode);
         }
     }
 
-    private Graph convertNodeMapListToGraph(List<Map<String, List<CaffeNode>>> nodeMapList) {
+    private Graph convertNodeMapSetToGraph(List<Map<String, Set<CaffeNode>>> nodeMapList) {
         Graph graph = new Graph();
-        for (Map<String, List<CaffeNode>> nodeMap : nodeMapList) {
+        for (Map<String, Set<CaffeNode>> nodeMap : nodeMapList) {
             addNodeMapToGraph(nodeMap, graph);
         }
         return graph;
     }
 
     private Graph trimGraph(Graph graph) {
+        for (Node startNode : graph.getStartNodeSet()) {
+            CaffeNode castedNode = (CaffeNode) startNode;
+//            castedNode.get
+        }
 
         return null;
     }
 
+    private Set<CaffeNode> traceBackNode(CaffeNode currNode) {
+//        currNode
+        return null;
+    }
 
     // Converts Net to Caffe Node Graph
     public Graph convert()
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
-        List<Map<String, List<CaffeNode>>> nodeMapList = convertNetToNodeMapList();
-        return convertNodeMapListToGraph(nodeMapList);
+        List<Map<String, Set<CaffeNode>>> nodeMapList = convertNetToNodeMapList();
+        return convertNodeMapSetToGraph(nodeMapList);
     }
 }

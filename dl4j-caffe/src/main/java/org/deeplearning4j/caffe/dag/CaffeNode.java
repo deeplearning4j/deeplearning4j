@@ -7,10 +7,7 @@ import lombok.ToString;
 import org.deeplearning4j.dag.Node;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author jeffreytang
@@ -23,8 +20,9 @@ public class CaffeNode implements Node {
     private String name;
     private LayerType layerType;
     private LayerSubType layerSubType;
-    Map<String, Object> metaData = new HashMap<>();
-    List<INDArray> data = new ArrayList<>();
+    private Map<String, Object> metaData = new HashMap<>();
+    private List<INDArray> data = new ArrayList<>();
+    private Set<CaffeNode> bottomNodeSet;
 
     public enum LayerType {
         HIDDEN, PROCESSING,
@@ -55,6 +53,15 @@ public class CaffeNode implements Node {
         this.layerType = layerType;
         this.layerSubType = layerSubType;
         this.metaData = metaData;
+    }
+
+    public CaffeNode(String name, LayerType layerType, LayerSubType layerSubType,
+                     Map<String, Object> metaData, List<INDArray> data) {
+        this.name = name;
+        this.layerType = layerType;
+        this.layerSubType = layerSubType;
+        this.metaData = metaData;
+        this.data = data;
     }
 
 }
