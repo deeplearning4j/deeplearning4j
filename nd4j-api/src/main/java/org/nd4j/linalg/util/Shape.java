@@ -426,13 +426,13 @@ public class Shape {
      * Remove axes with dimension 1 from the old array. They have no effect
      * but would need special cases since their strides do not matter.
      */
-        for (oi = 0; oi < arr.rank(); oi++) {
-            if (arr.size(oi) != 1 && !isVector(arr.shape())) {
-                olddims[oldnd] = arr.size(oi);
-                oldstrides[oldnd] = arr.stride(oi);
-                oldnd++;
-            }
-        }
+//        for (oi = 0; oi < arr.rank(); oi++) {
+//            if (arr.size(oi) != 1 && !isVector(arr.shape())) {
+//                olddims[oldnd] = arr.size(oi);
+//                oldstrides[oldnd] = arr.stride(oi);
+//                oldnd++;
+//            }
+//        }
 
         np = 1;
         for (ni = 0; ni < newShape.length; ni++) {
