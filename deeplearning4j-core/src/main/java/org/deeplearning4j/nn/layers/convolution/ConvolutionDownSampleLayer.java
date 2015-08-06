@@ -110,13 +110,6 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
     }
 
     @Override
-    public INDArray transform(INDArray data) {
-        return activate(data);
-    }
-
-
-
-    @Override
     public void iterate(INDArray input) {
 
     }

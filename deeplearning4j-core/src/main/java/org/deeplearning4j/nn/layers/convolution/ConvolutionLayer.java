@@ -19,56 +19,35 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import com.google.common.primitives.Ints;
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Convolution layer
  *
  * @author Adam Gibson
  */
-public class ConvolutionLayer implements Layer {
-
-    private NeuralNetConfiguration conf;
-    private Map<String,INDArray> params;
-    protected ParamInitializer paramInitializer;
-    private List<IterationListener> listeners = new ArrayList<>();
-    protected int index = 0;
-    private INDArray dropoutMask;
+public class ConvolutionLayer extends BaseLayer {
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
-        this.conf = conf;
+        super(conf);
     }
 
-
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
-    public void setIndex(int index) {
-        this.index = index;
+    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
     }
 
     @Override
@@ -136,12 +115,14 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void update(Gradient gradient) {
-
+        for(String paramType : gradient.gradientForVariable().keySet()) {
+            update(gradient.getGradientFor(paramType), paramType);
+        }
     }
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -154,17 +135,12 @@ public class ConvolutionLayer implements Layer {
         return null;
     }
 
-    @Override
-    public INDArray activate(boolean training) {
-        return null;
-    }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public INDArray activate(boolean training) {
         if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect() && training) {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
-
 
         // Activations
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
@@ -186,17 +162,6 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return activate(input,true);
-    }
-
-
-    @Override
     public Layer transpose() {
         throw new UnsupportedOperationException();
     }
@@ -207,46 +172,11 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Collection<IterationListener> getListeners() {
-        return null;
-    }
-
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        for(IterationListener l : listeners)
-            this.listeners.add(l);
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.listeners = new ArrayList<>(listeners);
-    }
-
-    @Override
-    public void fit() {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public double score() {
-        return 0;
-    }
-
-    @Override
     public void computeGradientAndScore() {
-
     }
 
     @Override
     public void accumulateScore(double accum) {
-
-    }
-
-    @Override
-    public INDArray transform(INDArray data) {
-        return activate(data);
     }
 
     /**
@@ -263,29 +193,8 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public int numParams() {
-        int ret = 0;
-        for(INDArray val : params.values())
-            ret += val.length();
-        return ret;
-    }
-
-    @Override
-    public void setParams(INDArray params) {
-
-    }
-
-
-
-
-    @Override
-    public void fit(INDArray data) {
-
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-
+    public double score() {
+        return 0;
     }
 
     @Override
@@ -296,11 +205,6 @@ public class ConvolutionLayer implements Layer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int batchSize() {
-        return 0;
     }
 
     @Override
@@ -318,43 +222,4 @@ public class ConvolutionLayer implements Layer {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void validateInput() {
-
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray getParam(String param) {
-        return params.get(param);
-    }
-
-    @Override
-    public void initParams() {
-        paramInitializer.init(paramTable(),conf());
-    }
-
-    @Override
-    public Map<String, INDArray> paramTable() {
-        return params;
-    }
-
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        this.params = paramTable;
-    }
-
-    @Override
-    public void setParam(String key, INDArray val) {
-        this.params.put(key,val);
-    }
-
-    @Override
-    public void clear() {
-
-    }
 }

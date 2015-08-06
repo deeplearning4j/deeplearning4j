@@ -278,18 +278,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     }
 
-    /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     *
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    @Override
-    public INDArray transform(INDArray data) {
-        return output(data);
-    }
-
 
     public MultiLayerConfiguration getLayerWiseConfigurations() {
         return layerWiseConfigurations;
@@ -517,7 +505,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the list of activations for each layer
      */
     public List<INDArray> feedForward(INDArray input, boolean test) {
-        this.input = input;
+        setInput(input);
         return feedForward(test);
     }
 
@@ -527,8 +515,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the list of activations for each layer
      */
     public List<INDArray> feedForward(boolean test) {
-        INDArray currInput = this.input;
-
+        INDArray currInput = input;
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
@@ -537,8 +524,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //applies drop connect to the activation
             activations.add(currInput);
         }
-
-
         return activations;
     }
 
@@ -559,7 +544,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return a pair of activations and corresponding derivatives
      */
     public Pair<List<INDArray>,List<INDArray>> feedForwardActivationsAndDerivatives(boolean training) {
-        INDArray currInput = this.input;
+        INDArray currInput = input;
 
         List<INDArray> activations = new ArrayList<>();
         List<INDArray> derivatives = new ArrayList<>();
@@ -1246,7 +1231,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     /**
      * Label the probabilities of the input
      *
-     * @param x    the input to label
+     * @param input    the input to label
      * @param test whether the output
      *             is test or train. This mainly
      *             affect hyper parameters such as
@@ -1258,8 +1243,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * This is typically of the form:
      * [0.5, 0.5] or some other probability distribution summing to one
      */
-    public INDArray output(INDArray x, boolean test) {
-        List<INDArray> activations = feedForward(x, test);
+    public INDArray output(INDArray input, boolean test) {
+        List<INDArray> activations = feedForward(input, test);
         //last activation is input
         return activations.get(activations.size() - 1);
     }
@@ -1267,15 +1252,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     /**
      * Label the probabilities of the input
      *
-     * @param x the input to label
+     * @param input the input to label
      * @return a vector of probabilities
      * given each label.
      * <p>
      * This is typically of the form:
      * [0.5, 0.5] or some other probability distribution summing to one
      */
-    public INDArray output(INDArray x) {
-        return output(x, false);
+    public INDArray output(INDArray input) {
+        return output(input, false);
     }
 
 

@@ -578,11 +578,6 @@ public class BarnesHutTsne extends Tsne implements Model {
     }
 
     @Override
-    public INDArray transform(INDArray data) {
-        return null;
-    }
-
-    @Override
     public INDArray params() {
         return null;
     }

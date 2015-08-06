@@ -44,15 +44,13 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * @author Alex Black
  */
 public class GravesLSTM extends BaseLayer {
-	private static final long serialVersionUID = 4758465462791204559L;
 
 	public GravesLSTM(NeuralNetConfiguration conf) {
 		super(conf);
 	}
 
-	@Override
-	public INDArray transform(INDArray data) {
-		return activate(data);
+	public GravesLSTM(NeuralNetConfiguration conf, INDArray input) {
+		super(conf, input);
 	}
 
 	@Override
@@ -68,7 +66,7 @@ public class GravesLSTM extends BaseLayer {
 	@Override
 	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
 		//First: Do forward pass to get gate activations etc.
-		INDArray[] activations = activateHelper(input(), true);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
+		INDArray[] activations = activateHelper(true);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
 		INDArray outputActivations = activations[0];
 		INDArray memCellActivations = activations[1];
 		INDArray ifogZs = activations[2];
@@ -262,14 +260,34 @@ public class GravesLSTM extends BaseLayer {
 
 	@Override
 	public INDArray activate(INDArray input, boolean training){
-		setInput(input,training);
-		return activateHelper(input, training)[0];
+		setInput(input, training);
+		return activateHelper(training)[0];
+	}
+
+	@Override
+	public INDArray activate(INDArray input){
+		setInput(input);
+		return activateHelper(true)[0];
+	}
+
+	@Override
+	public INDArray activate(boolean training){
+		return activateHelper(training)[0];
+	}
+
+	@Override
+	public INDArray activate(){
+		return activateHelper()[0];
+	}
+
+	private INDArray[] activateHelper() {
+		return activateHelper(false);
 	}
 
 	/**Returns 4 INDArrays: [outputActivations, memCellActivations, ifogZs, ifogAs] in that order.
 	 * Need all 4 to do backward pass, but only care about the first one for forward pass.
 	 */
-	private INDArray[] activateHelper(INDArray input, boolean training){
+	private INDArray[] activateHelper(boolean training){
 		//Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
 		//Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
 
