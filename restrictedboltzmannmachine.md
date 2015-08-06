@@ -42,7 +42,7 @@ Next, let's look at how several inputs would combine at one hidden node. Each x 
 
 ![Alt text](../img/weighted_input_RBM.png)
 
-When inputs from all visible nodes are being passed to all hidden nodes, RBM form a *symmetrical bipartite graph*.
+Because inputs from all visible nodes are being passed to all hidden nodes, an RBM can be defined as a *symmetrical bipartite graph*.
 
 *Symmetrical* means that each visible node is connected with each hidden node (see below). *Bipartite* means it has two parts, or layers, and the *graph* is a mathematical term for a web of nodes. 
 
