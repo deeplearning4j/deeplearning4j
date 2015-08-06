@@ -31,6 +31,8 @@ import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.util.ArrayUtil;
 
 
 import java.util.ArrayList;
@@ -109,20 +111,33 @@ public class SubsamplingLayer implements Layer {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
         Gradient ret = new DefaultGradient();
-        int n = epsilon.size(0);
-        int c = epsilon.size(1);
-        int outH = epsilon.size(2);
-        int outW = epsilon.size(3);
         int height = epsilon.size(-2);
         int width = epsilon.size(-1);
-        //compute backwards kernel based on rearranging the given error
-        INDArray ret2 = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
-        INDArray reverse = Nd4j.rollAxis(ret2.reshape(n,c,-1,outH,outW),2);
-        reverse.assign(epsilon);
-        //compute gradient for weights
-        INDArray finalRet = Convolution.col2im(reverse,conf.getStride(),conf.getPadding(),width,height);
-        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
-        return new Pair<>(ret,finalRet);
+
+        switch(conf.getPoolingType()) {
+            case MAX:
+                int n = epsilon.size(0);
+                int c = epsilon.size(1);
+                int outH = epsilon.size(2);
+                int outW = epsilon.size(3);
+                //compute backwards kernel based on rearranging the given error
+                INDArray ret2 = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
+                INDArray reverse = Nd4j.rollAxis(ret2.reshape(n,c,-1,outH,outW),2);
+                reverse.assign(epsilon);
+                //compute gradient for weights
+                INDArray finalRet = Convolution.col2im(reverse,conf.getStride(),conf.getPadding(),width,height);
+                ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
+                return new Pair<>(ret,finalRet);
+            case AVG:
+                //compute reverse average error
+                INDArray tiled = Nd4j.tile(epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.newAxis()),1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
+                //do convolution all at once
+                INDArray convolution = Convolution.col2im(tiled, conf.getStride(), conf.getPadding(), height, width);
+                convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
+                ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, convolution);
+                return new Pair<>(ret,convolution);
+
+        }
 
     }
 
