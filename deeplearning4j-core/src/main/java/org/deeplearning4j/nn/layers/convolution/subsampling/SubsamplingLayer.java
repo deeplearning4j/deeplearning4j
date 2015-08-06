@@ -216,6 +216,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
+        this.input = input;
         return activate(true);
     }
 
