@@ -1084,10 +1084,6 @@ public class RNTN implements Layer {
         return 0;
     }
 
-    @Override
-    public INDArray transform(INDArray data) {
-        return null;
-    }
 
     @Override
     public INDArray params() {
