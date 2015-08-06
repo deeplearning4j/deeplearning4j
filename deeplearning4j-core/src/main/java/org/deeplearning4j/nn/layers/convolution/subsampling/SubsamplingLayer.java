@@ -115,9 +115,29 @@ public class SubsamplingLayer implements Layer {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
 
+        int inHeight = (input.shape()[2] + conf.getKernelSize()[0]) * conf.getStride()[0] + 1;
+        int inWidth = (input.shape()[3] + conf.getKernelSize()[1]) * conf.getStride()[1] + 1;
+
+        INDArray scaled = null;
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, null);
-        return new Pair<>(ret,z);
+
+        switch(conf.getPoolingType()) {
+            case AVG:
+                scaled = Convolution.col2im(epsilon, conf.getStride(), conf.getPadding(), inHeight, inWidth);
+                return new Pair<>(ret,scaled);
+            case MAX:
+                // TODO pull argmax indicies and only put epsilon in that position in the new scale
+                return new Pair<>(ret, scaled);
+            case SUM:
+                // TODO get percentage of each cell on how to apply epsilon
+                return new Pair<>(ret, scaled);
+            case NONE:
+                return new Pair<>(ret,epsilon);
+
+            default:
+                throw new IllegalStateException("Pooling type not supported!");
+        }
 
     }
 
@@ -159,6 +179,7 @@ public class SubsamplingLayer implements Layer {
         }
 
         INDArray pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
+
         switch(conf.getPoolingType()) {
             case AVG:
                 return pooled.mean(2,3);
@@ -174,8 +195,11 @@ public class SubsamplingLayer implements Layer {
                 int outWidth = pooled.size(4);
                 int outHeight = pooled.size(5);
                 INDArray ret = pooled.reshape(n,c,kh * kw,outHeight,outWidth);
-
                 return ret.max(2);
+            case SUM:
+                return pooled.sum(2,3);
+            case NONE:
+                return input;
             default: throw new IllegalStateException("Pooling type not supported!");
 
         }
