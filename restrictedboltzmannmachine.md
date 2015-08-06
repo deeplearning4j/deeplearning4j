@@ -122,7 +122,7 @@ With each new hidden layer, the weights are adjusted until that layer is able to
 
 Because those weights already approximate the features of the data, they are well positioned to learn better when, in a second step, you try to classify images with the deep-belief network in a subsequent supervised learning stage. 
 
-While RBMs have many uses, proper initialization of weights to facilitate later learning is one of their chief advantages. In a sense, they accomplish something similar to backpropagation: leading weights to model data well. You could say that pre-training and backprop are substitutable means to the same end. 
+While RBMs have many uses, proper initialization of weights to facilitate later learning and classification is one of their chief advantages. In a sense, they accomplish something similar to backpropagation: they push weights to model data well. You could say that pre-training and backprop are substitutable means to the same end. 
 
 To synthesize restricted Boltzmann machines in one diagram, here is a symmetrical bipartite and bidirectional graph:
 
@@ -174,7 +174,7 @@ Gaussian transformations do not work well on RBMs' hidden layers. The rectified-
 
 ### <a name="next">Conclusions & Next Steps</a>
 
-You can intrepret RBMs' output numbers as percentages. Every time the number in the reconstruction is *not zero*, that's a good indication the RBM learned the input. We'll have a better example later in the tutorials. To get another perspective on the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html). 
+You can interpret RBMs' output numbers as percentages. Every time the number in the reconstruction is *not zero*, that's a good indication the RBM learned the input. To get another perspective on the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html). 
 
 Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many restricted Boltzmann machines stacked on top of one another.
 
