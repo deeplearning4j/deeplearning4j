@@ -16,3 +16,7 @@ There are a lot of knobs to turn when you're training a distributed deep-learnin
 Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind-deep-learning/), [GigaOM](http://gigaom.com/2014/06/02/a-startup-called-skymind-launches-pushing-open-source-deep-learning/), [Businessweek](http://www.businessweek.com/articles/2014-06-03/teaching-smaller-companies-how-to-probe-deep-learning-on-their-own), [Venturebeat](http://venturebeat.com/2014/06/02/skymind-launches-with-open-source-plug-and-play-deep-learning-features-for-your-app/) and [The Wall Street Journal](http://blogs.wsj.com/cio/2014/06/03/the-morning-download-apple-relies-on-ecosystem-for-innovation/). DL4J workshops are offered through [GalvanizeU](http://www.galvanizeu.com/) in San Francisco.
 
 [ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations. (See its [Github repo here](https://github.com/deeplearning4j/nd4j/).) [ND4S](https://github.com/deeplearning4j/nd4s) is its Scala wrapper; [Deeplearning4s](https://github.com/deeplearning4j/deeplearning4s) is a Scala wrapper on DL4J. 
+
+# Jobs @Skymind
+
+We hire from our open-source contributors. The best way to apply for a job building the future of deep learning with us is to join our community on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j), fork us on [Github](https://github.com/deeplearning4j), find a problem to work on with us, and we'll can see if there's a fit! Working together is more informative than interviews, and with a little luck it's be more fun.
