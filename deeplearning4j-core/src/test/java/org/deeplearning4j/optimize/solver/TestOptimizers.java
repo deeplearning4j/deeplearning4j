@@ -643,9 +643,6 @@ public class TestOptimizers {
 		public void accumulateScore(double accum) { throw new UnsupportedOperationException(); }
 
 		@Override
-		public INDArray transform(INDArray data) { throw new UnsupportedOperationException(); }
-
-		@Override
 		public INDArray params() {return parameters; }
 
 		@Override
