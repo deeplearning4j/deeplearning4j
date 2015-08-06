@@ -51,6 +51,9 @@ public class Convolution {
     private Convolution() {
     }
 
+    public static INDArray col2im(INDArray col, int[] stride, int[] padding, int height, int width) {
+        return col2im(col, stride[0], stride[1], padding[0], padding[1], height, width);
+    }
 
     /**
      * Rearrange matrix
