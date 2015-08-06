@@ -147,7 +147,9 @@ With this layer, we can set a decision threshold above which an example is label
 
 ##<a name="ai">Neural Networks & Artificial Intelligence</a>
 
-In some circles, neural networks are thought of as "brute force" AI, because they start with a blank slate and hammer their way through to an accurate model. They are effective, but to some eyes inefficient in their approach to modeling, which can't make assumptions about functional dependencies between output and input. That said, gradient descent is not recombining every weight with every other to find the best match -- it's method of pathfinding shrinks the relevant weight space therefore the number of updates by many orders of magnitude. 
+In some circles, neural networks are thought of as "brute force" AI, because they start with a blank slate and hammer their way through to an accurate model. They are effective, but to some eyes inefficient in their approach to modeling, which can't make assumptions about functional dependencies between output and input. 
+
+That said, gradient descent is not recombining every weight with every other to find the best match -- its method of pathfinding shrinks the relevant weight space, and therefore the number of updates and required computation, by many orders of magnitude. 
 
 ##<a name="intro">Other Introductory Resources</a>
 
