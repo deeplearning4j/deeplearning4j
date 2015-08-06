@@ -122,7 +122,7 @@ public class SubsamplingLayer implements Layer {
         //compute gradient for weights
         INDArray finalRet = Convolution.col2im(reverse,conf.getStride(),conf.getPadding(),width,height);
         ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
-        return new Pair<>(ret,null);
+        return new Pair<>(ret,finalRet);
 
     }
 
