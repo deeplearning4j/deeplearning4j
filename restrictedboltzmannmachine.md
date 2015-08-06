@@ -5,6 +5,19 @@ layout: default
 
 # A Beginner's Guide to Restricted Boltzmann Machines
 
+Contents
+
+* <a href="#define">Definition & Structure</a>
+* <a href="#reconstruct">Reconstructions</a>
+* <a href="#probability">Probability Distributions</a>
+* <a href="#code">Code Sample: Initiating an RBM on Iris With DL4J</a>
+* <a href="#params">Parameters & k</a>
+* <a href="#CRBM">Continuous RBMs</a>
+* <a href="#next">Next Steps</a>
+* <a href="#resource">Other Resources</a>
+
+## <a name="define">Definition & Structure</a>
+
 Restricted Boltzmann machines are shallow, two-layer neural nets that constitute the building blocks of deep-belief networks. In the paragraphs below, we will attempt to describe in diagrams and plain language how RBMs work. 
 
 Invented by Geoff Hinton, [RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle.
@@ -39,11 +52,13 @@ Each hidden node receives the four inputs multiplied by different weights. The s
 
 ![Alt text](../img/multiple_inputs_RBM.png)
 
-If these two layers were part of a deeper neural network, the outputs of hidden layer no. 1 would be passed as inputs to hidden layer no. 2, and from there through as many hidden layers as you like to a final classifying layer. 
+If these two layers were part of a deeper neural network, the outputs of hidden layer no. 1 would be passed as inputs to hidden layer no. 2, and from there through as many hidden layers as you like until they reach a final classifying layer. 
 
 ![Alt text](../img/multiple_hidden_layers_RBM.png)
 
-But in this introduction to restricted Boltzmann machines, we'll focus on how they learn to reconstruct unlabeled data by themselves, making several forward and backward passes between the visible layer and hidden layer no. 1 without involving a deeper network.
+## <a name="reconstructions">Reconstructions</a>
+
+But in this introduction to restricted Boltzmann machines, we'll focus on how they learn to reconstruct data by themselves in an unsupervised fashion (unsupervised means without labels), making several forward and backward passes between the visible layer and hidden layer no. 1 without involving a deeper network.
 
 In the reconstruction phase, the activations of hidden layer no. 1 become the input in a backward pass. They are multiplied by the same weights, one per internode edge, just as x was on the forward pass. The sum of those products is added to a visible-layer bias at each visible node, and the output of those operations is a reconstruction; i.e. an approximation of the original input. This can be represented by the following diagram:
 
@@ -73,7 +88,7 @@ By iteratively adjusting the weights according to the error they produce, an RBM
 
 ![Alt text](../img/KLD_update_RBM.png)
 
-### Probability Distributions
+### <a name="probability">Probability Distributions</a> 
 
 Let's talk about probability distributions for a moment. If you're rolling two dice, the probability distribution for all outcomes looks like this:
 
@@ -113,7 +128,7 @@ To synthesize restricted Boltzmann machines in one diagram, here is a symmetrica
 
 For those interested in studying the structure of RBMs in greater depth, they are one type of [directional, acyclic graph (DAG)](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 
-### Initiating an RBM on Iris With Deeplearning4j
+### <a name="code">Code Sample: Initiating an RBM on Iris With DL4J</a>
 
 Note how, below, an RBM is simply created as a layer in a `NeuralNetConfiguration`, a parameter fed into a more general class. Likewise, the RBM object is used to store properties like the transforms applied to the visible and hidden layers, Gaussian and Rectified Linear transforms, respectively. 
 
@@ -121,7 +136,7 @@ Note how, below, an RBM is simply created as a layer in a `NeuralNetConfiguratio
 
 This is an example of an [RBM processing the Iris flower dataset](../iris-flower-dataset-tutorial.html), which we cover in a separate tutorial. 
 
-## Parameters & k
+## <a name="params">Parameters & k</a>
 
 The variable k is the number of times you run [contrastive divergence](../glossary.html#contrastivedivergence). Each time contrastive divergence is run, it's a sample of the Markov Chain composing the restricted Boltzmann machine. A typical value is 1. 
 
@@ -141,7 +156,7 @@ In the above example, you can see how RBMs can be created as layers with a more 
 
 **learningRate**, like **momentum**, affects how much the neural net adjusts the coefficients on each iteration as it corrects for error. These two parameters help determine the size of the steps the net takes down the gradient towards a local optimum. A large learning rate will make the net learn fast, and maybe overshoot the optimum. A small learning rate will slow down the learning, which can be inefficient. 
 
-### Continuous RBMs
+### <a name="CRBM">Continuous RBMs</a>
 
 A continuous restricted Boltzmann machine is a form of RBM that accepts continuous input (i.e. numbers cut finer than integers) via a different type of contrastive divergence sampling. This allows the CRBM to handle things like image pixels or word-count vectors that are normalized to decimals between zero and one.
 
@@ -155,13 +170,13 @@ An effective continuous restricted Boltzmann machine employs a Gaussian transfor
 
 Gaussian transformations do not work well on RBMs' hidden layers. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).*
 
-### Conclusions & Next Steps
+### <a name="next">Conclusions & Next Steps</a>
 
 You can intrepret RBMs' output numbers as percentages. Every time the number in the reconstruction is *not zero*, that's a good indication the RBM learned the input. We'll have a better example later in the tutorials. To get another perspective on the mechanisms that make restricted Boltzmann machines tick, click [here](../understandingRBMs.html). 
 
 Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwork.html), which is simply many restricted Boltzmann machines stacked on top of one another.
 
-### Other Resources
+### <a name="resources">Other Resources</a>
 
 * **[Geoff Hinton on Boltzmann Machines](http://www.scholarpedia.org/article/Boltzmann_machine)**
 * **[Deeplearning.net's Restricted Boltzmann Machine Tutorial](http://deeplearning.net/tutorial/rbm.html)** (*Go here for the math*)
