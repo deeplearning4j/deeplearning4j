@@ -136,7 +136,7 @@ public class SubsamplingLayer implements Layer {
                 convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, convolution);
                 return new Pair<>(ret,convolution);
-
+             default: throw new IllegalStateException("Un supported pooling type");
         }
 
     }
