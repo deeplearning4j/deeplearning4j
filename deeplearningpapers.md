@@ -161,3 +161,6 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 ## Other Resources
 
 * [Machine Learning: Generative and Discriminative Models](http://www.cedar.buffalo.edu/~srihari/CSE574/Discriminative-Generative.pdf) (Power Point); Sargur N. Srihari
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
+* [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
