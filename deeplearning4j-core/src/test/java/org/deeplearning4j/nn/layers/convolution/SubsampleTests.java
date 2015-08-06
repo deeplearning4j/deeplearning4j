@@ -89,21 +89,31 @@ public class SubsampleTests {
     }
 
     @Test
-    public void testSubSampleLayerMaxBackpropShape() {
+    public void testSubSampleLayerMaxBackpropShape() throws Exception {
         Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
         Gradient gradient = createPrevGradient();
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples,nExamples);
+        DataSet mnist = mnistIter.next();
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
+
+        INDArray activations = model.activate(input);
 
         Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
-        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
+        assertEquals(nChannels, out.getSecond().shape()[1]); // depth retained
     }
 
     @Test
-    public void testSubSampleLayerAvgBackpropShape() {
+    public void testSubSampleLayerAvgBackpropShape() throws Exception{
         Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
         Gradient gradient = createPrevGradient();
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples,nExamples);
+        DataSet mnist = mnistIter.next();
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
+
+        INDArray activations = model.activate(input);
 
         Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
-        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
+        assertEquals(nChannels, out.getSecond().shape()[1]); // depth retained
     }
 
     @Test
@@ -112,7 +122,7 @@ public class SubsampleTests {
         Gradient gradient = createPrevGradient();
 
         Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
-        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
+        assertEquals(nChannels, out.getSecond().shape()[1]); // depth retained
     }
 
 
