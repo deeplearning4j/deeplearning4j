@@ -28,41 +28,110 @@ import java.util.Arrays;
  */
 public class SubsampleTests {
 
+    private int nExamples = 1;
+    private int nChannels = 20; //depth & nOut
+    private int inH = 28;
+    private int inW = 28;
+    private int outH = 10;
+    private int outW = 10;
+    private INDArray epsilon = Nd4j.ones(nExamples, nChannels, outH, outW);
+
+
     @Test
-    public void testSubSampleLayerActivateShape() throws Exception  {
-        DataSetIterator mnistIter = new MnistDataSetIterator(1,1);
+    public void testSubSampleMaxActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples,nExamples);
         DataSet mnist = mnistIter.next();
 
-        Layer model = getSubsamplingLayer();
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, inH, inW);
+
+        INDArray output = model.activate(input);
+        assertTrue(Arrays.equals(new int[]{nExamples, 1, 14, 14}, output.shape()));
+        assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
+        //TODO test max results...
+    }
+
+    @Test
+    public void testSubSampleAvgActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples,nExamples);
+        DataSet mnist = mnistIter.next();
+
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
         INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
 
         INDArray output = model.activate(input);
-        assertTrue(Arrays.equals(new int[]{mnist.numExamples(), 1, 14, 14}, output.shape()));
-        assertEquals(mnist.numExamples(), output.shape()[0], 1e-4); // depth retained
+        assertTrue(Arrays.equals(new int[]{nExamples, 1, 14, 14}, output.shape()));
+        assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
     }
 
     @Test
-    public void testSubSampleLayerBackpropShape() throws Exception  {
+    public void testSubSampleNoneActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples, nExamples);
+        DataSet mnist = mnistIter.next();
 
-        Layer model = getSubsamplingLayer();
-        Gradient gradient = createPrevGradient(1, 3, 20);
-        // TODO generate and pass epsilon
-        Pair<Gradient, INDArray> out= model.backpropGradient(null, gradient, null);
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, inH, inW);
 
-        // TODO check epsilon full shape will match expectations
-        assertEquals(out.getSecond().shape()[0], 3); // depth retained
+        INDArray output = model.activate(input);
+        assertTrue(Arrays.equals(new int[]{nExamples, 1, inH, inW}, output.shape()));
+        assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
+    }
+
+    @Test (expected=IllegalStateException.class)
+    public void testSubSampleSumActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples, nExamples);
+        DataSet mnist = mnistIter.next();
+
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
+
+        INDArray output = model.activate(input);
+    }
+
+    @Test
+    public void testSubSampleLayerMaxBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
+    }
+
+    @Test
+    public void testSubSampleLayerAvgBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
+    }
+
+    @Test
+    public void testSubSampleLayerNoneBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
     }
 
 
-    private static Layer getSubsamplingLayer(){
+    @Test (expected=IllegalStateException.class)
+    public void testSubSampleLayerSumBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+    }
+
+    private Layer getSubsamplingLayer(SubsamplingLayer.PoolingType pooling){
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu")
                 .constrainGradientToUnitNorm(true)
-                .poolingType(SubsamplingLayer.PoolingType.MAX)
                 .seed(123)
                 .nIn(1)
                 .nOut(20)
-                .layer(new SubsamplingLayer.Builder()
+                .layer(new SubsamplingLayer.Builder(pooling)
                         .build())
                 .build();
 
@@ -70,12 +139,12 @@ public class SubsampleTests {
 
     }
 
-    private static Gradient createPrevGradient(int miniBatchSize, int nOut, int nHiddenUnits) {
+    private Gradient createPrevGradient() {
         Gradient gradient = new DefaultGradient();
-        INDArray pseudoBiasGradients = Nd4j.ones(miniBatchSize, nOut);
-        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, pseudoBiasGradients);
-        INDArray pseudoWeightGradients = Nd4j.ones(miniBatchSize, nHiddenUnits,nOut);
-        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoWeightGradients);
+        INDArray pseudoGradients = Nd4j.ones(nExamples, nChannels, outH, outW);
+
+        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, pseudoGradients);
+        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoGradients);
         return gradient;
         }
 
