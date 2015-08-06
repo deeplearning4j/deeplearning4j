@@ -57,6 +57,8 @@ If you're using IntelliJ as your IDE, this should work already.
 
 ### <a name="windows">Windows</a>
 
+* While our Windows install is not always easy, Deeplearning4j is one of the few open-source deep learning projects that actually cares about trying to support the Windows community. Please see the [Windows section of our ND4J page](http://nd4j.org/getstarted.html#windows) for more instructions. 
+
 * Install [MinGW 32 bits](http://www.mingw.org/) even if you have a 64-bit computer (the download button is on the upper right), and then download the [Prebuilt dynamic libraries using Mingw](http://icl.cs.utk.edu/lapack-for-windows/lapack/#libraries_mingw). 
 
 * Install [Lapack](http://icl.cs.utk.edu/lapack-for-windows/lapack/). (Lapack will ask if you have Intel compilers. You do not.)
