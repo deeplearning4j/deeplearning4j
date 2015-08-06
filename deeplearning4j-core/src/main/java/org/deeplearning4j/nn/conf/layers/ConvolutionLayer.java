@@ -26,8 +26,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private int[] kernelSize; // Square filter
-        private Convolution.Type convolutionType; // FULL / VALID / SAME
+        private int[] kernelSize = new int[] {5, 5}; // Square filter
+        private Convolution.Type convolutionType = Convolution.Type.VALID; // FULL / VALID / SAME
+
+        public Builder() {}
 
         public Builder(int[] kernelSize) {
             this.kernelSize = kernelSize;
