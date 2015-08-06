@@ -74,7 +74,7 @@ But on its backward pass, when activations are fed in and reconstructions, or gu
 
 Together, those two estimates will lead you to the joint probability distribution of inputs *x* and activations *a*. 
 
-Reconstruction does something different from regression, which estimates a continous value based on many inputs, and unlike classification, which makes guesses about which discrete label to apply to inputs. Reconstruction is making guesses about the probability distribution of the original input; i.e. the values of many varied points at once. 
+Reconstruction does something different from regression, which estimates a continous value based on many inputs, and unlike classification, which makes guesses about which discrete label to apply to inputs. Reconstruction is making guesses about the probability distribution of the original input; i.e. the values of many varied points at once. This is known as [generative learning](http://cs229.stanford.edu/notes/cs229-notes2.pdf), which is to be distinguished from the so-called discriminative learning performed by classification, which maps inputs to labels.  
 
 Let's imagine that both the input data and the reconstructions are normal curves of different shapes, which only partially overlap. 
 
