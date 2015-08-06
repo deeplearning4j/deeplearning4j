@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -49,27 +50,17 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
-public class SubsamplingLayer implements Layer {
-    private NeuralNetConfiguration conf;
-    protected ParamInitializer paramInitializer;
-    private Map<String,INDArray> params;
-    protected int index = 0;
-    protected INDArray input;
-    private INDArray dropoutMask;
+public class SubsamplingLayer extends BaseLayer {
     private INDArray maxIndexes;
+
     public SubsamplingLayer(NeuralNetConfiguration conf) {
-        this.conf = conf;
+        super(conf);
     }
 
-    @Override
-    public int getIndex() {
-        return index;
+    public SubsamplingLayer(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
     }
 
-    @Override
-    public void setIndex(int index) {
-        this.index = index;
-    }
 
     @Override
     public double l2Magnitude() {
@@ -163,11 +154,6 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public void update(Gradient gradient) {
-
-    }
-
-    @Override
     public INDArray preOutput(INDArray x) {
         throw new UnsupportedOperationException();
     }
@@ -177,13 +163,9 @@ public class SubsamplingLayer implements Layer {
         return activate(x,training);
     }
 
-    @Override
-    public INDArray activate(boolean training) {
-        return activate(this.input,training);
-    }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public INDArray activate(boolean training) {
         if(training && conf.getDropOut() > 0) {
             this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
@@ -213,15 +195,6 @@ public class SubsamplingLayer implements Layer {
         }
     }
 
-    @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return activate(input, true);
-    }
 
     @Override
     public Layer transpose() {
@@ -240,12 +213,12 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public void setListeners(IterationListener... listeners) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -255,7 +228,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -274,40 +247,8 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public INDArray transform(INDArray data) {
-        return activate(data);
-    }
-
-    /**
-     * Returns the parameters of the neural network
-     *
-     * @return the parameters of the neural network
-     */
-    @Override
-    public INDArray params() {
-        List<INDArray> ret = new ArrayList<>();
-        for(String s : params.keySet())
-            ret.add(params.get(s));
-        return Nd4j.toFlattened(ret);
-    }
-
-    @Override
-    public int numParams() {
-        int ret = 0;
-        for(INDArray val : params.values())
-            ret += val.length();
-        return ret;
-    }
-
-    @Override
     public void setParams(INDArray params) {
         throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public void initParams() {
-        paramInitializer.init(paramTable(),conf());
     }
 
 
@@ -320,7 +261,6 @@ public class SubsamplingLayer implements Layer {
     @Override
     public void iterate(INDArray input) {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
@@ -334,59 +274,13 @@ public class SubsamplingLayer implements Layer {
     }
 
     @Override
-    public int batchSize() {
-        return input.size(0);
-    }
-
-    @Override
-    public NeuralNetConfiguration conf() {
-        return conf;
-    }
-
-    @Override
-    public void setConf(NeuralNetConfiguration conf) {
-        this.conf = conf;
-    }
-
-    @Override
-    public INDArray input() {
-        return input;
-    }
-
-    @Override
-    public void validateInput() {
-
-    }
+    public void validateInput() {}
 
     @Override
     public ConvexOptimizer getOptimizer() {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public INDArray getParam(String param) {
-        return params.get(param);
-    }
 
 
-
-    @Override
-    public Map<String, INDArray> paramTable() {
-        return params;
-    }
-
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        this.params = paramTable;
-    }
-
-    @Override
-    public void setParam(String key, INDArray val) {
-        this.params.put(key,val);
-    }
-
-    @Override
-    public void clear() {
-
-    }
 }

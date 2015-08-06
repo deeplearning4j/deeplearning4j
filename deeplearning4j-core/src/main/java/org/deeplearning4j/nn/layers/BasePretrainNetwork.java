@@ -37,21 +37,10 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public abstract class BasePretrainNetwork extends BaseLayer {
 
-    private static final long serialVersionUID = -7074102204433996574L;
-
-    /**
-     *
-     * @param conf
-     */
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    /**
-     *
-     * @param conf
-     * @param input
-     */
     public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
@@ -69,13 +58,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
         corrupted.muli(x);
         return corrupted;
     }
-
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-    	setParam(paramType, getParam(paramType).addi(gradient));
-    }
-
 
 
     protected Gradient createGradient(INDArray wGradient,INDArray vBiasGradient,INDArray hBiasGradient) {

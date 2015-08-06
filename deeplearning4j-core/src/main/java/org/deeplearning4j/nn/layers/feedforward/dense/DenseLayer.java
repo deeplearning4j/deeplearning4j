@@ -22,12 +22,5 @@ public class DenseLayer extends AutoEncoder {
         super(conf, input);
     }
 
-    @Override
-    public void update(INDArray gradient, String paramType) {
-        if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).subi(gradient.sum(0)));
-        else
-            setParam(paramType, getParam(paramType).subi(gradient));
-    }
 
 }
