@@ -19,23 +19,33 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Binomial sampling pre processor
+ * Zero mean and unit variance operation
+ *
  * @author Adam Gibson
  */
-public class BinomialSamplingProcessor extends BaseInputPreProcessor {
+public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
+
 
 	@Override
     public INDArray preProcess(INDArray input) {
-        return Nd4j.getDistributions().createBinomial(1, input).sample(input.shape());
+        INDArray columnMeans = input.mean(0);
+        INDArray columnStds = input.std(0);
+        input.subiRowVector(columnMeans);
+        columnStds.addi(Nd4j.EPS_THRESHOLD);
+        input.diviRowVector(columnStds);
+        return input;
     }
-
 
     @Override
     public INDArray backprop(INDArray output) {
-        return output;	//No op?
+        return output;	//no-op
     }
+
+
 }

@@ -18,18 +18,16 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**Reshape post processor.<br>
  * Used to reshape activations on forward pass.<br>
  * Also (optionally, if fromShape != null) used to reshape, weights*deltas
  * during backward pass. Otherwise, no changes are made during backward pass
- * 
+ *
  * @author Adam Gibson
  */
-public class ReshapeProcessor extends BaseInputPreProcessor {
+public class ReshapePreProcessor extends BaseInputPreProcessor {
     private int[] fromShape;	//Epsilons: To this shape in backward pass
     private int[] toShape;		//Activations: To this shape in forward pass
     private boolean dynamic=true;
@@ -41,16 +39,16 @@ public class ReshapeProcessor extends BaseInputPreProcessor {
      * Otherwise fromShape is the shape that epsilons (weights*deltas or equiv.)
 	 *  are reshaped to by backprop(...)
 	 */
-    public ReshapeProcessor(int[] fromShape, int[] toShape, boolean dynamic){
+    public ReshapePreProcessor(int[] fromShape, int[] toShape, boolean dynamic){
         this.fromShape = fromShape;
-    	this.toShape = toShape;
+	this.toShape = toShape;
         this.dynamic = dynamic;
     }
 
-    public ReshapeProcessor(int... toShape) {
+    public ReshapePreProcessor(int... toShape) {
         this(null, toShape, true);
     }
-    public ReshapeProcessor(int[] fromShape, int[] toShape) {
+    public ReshapePreProcessor(int[] fromShape, int[] toShape) {
         this(fromShape, toShape, true);
     }
 
