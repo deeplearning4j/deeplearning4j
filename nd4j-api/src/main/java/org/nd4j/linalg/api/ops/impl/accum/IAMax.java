@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Calculate the max over a vector
@@ -50,26 +51,14 @@ public class IAMax extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        if (result.doubleValue() > currentResult().doubleValue()) {
-            this.currentResult = result;
-            currIndexOfMax = numProcessed;
-        }
-        numProcessed++;
-        if(numProcessed() == n())  {
-            currentResult = currIndexOfMax;
-        }
+        currIndexOfMax = Nd4j.getBlasWrapper().iamax(x) / x.length();
+
     }
 
     @Override
     public void update(IComplexNumber result) {
-        if (result.absoluteValue().doubleValue() > currentResultComplex().absoluteValue().doubleValue()) {
-            this.currentComplexResult = result;
-            this.currIndexOfMax = numProcessed;
-        }
-        numProcessed++;
-        if(numProcessed() == n())  {
-            currentResult = currIndexOfMax;
-        }
+        IComplexNDArray complexX = (IComplexNDArray) x;
+        currentComplexResult = Nd4j.createComplexNumber(Nd4j.getBlasWrapper().iamax(x),0.0);
     }
 
 
@@ -81,14 +70,12 @@ public class IAMax extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        if (x instanceof IComplexNDArray) {
-            IComplexNDArray complexX = (IComplexNDArray) x;
-            currentComplexResult = complexX.getComplex(0);
-        } else {
-            currentResult = x.getDouble(0);
-            initial = x.getDouble(0);
-        }
+        exec();
+    }
 
+
+    @Override
+    public void exec(int... dimensions) {
 
     }
 
@@ -102,6 +89,25 @@ public class IAMax extends BaseAccumulation {
             return new IAMax(x.vectorAlongDimension(index, dimension));
 
     }
+
+
+
+    @Override
+    public void exec() {
+        int idx = 0;
+        double max = Double.MIN_VALUE;
+        for(int i = 0; i < x.length(); i++) {
+            double val = x.getDouble(i);
+            if(val > max) {
+                max = val;
+                idx = i;
+            }
+
+        }
+        currentResult = idx;
+    }
+
+
 
     @Override
     public Op opForDimension(int index, int... dimension) {

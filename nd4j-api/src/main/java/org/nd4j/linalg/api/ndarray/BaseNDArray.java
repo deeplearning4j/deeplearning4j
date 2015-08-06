@@ -3794,7 +3794,12 @@ public abstract class BaseNDArray implements INDArray {
 
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         INDArray ret =  subArray(resolution);
-
+        if(numNewAxes > 0) {
+            int[] newShape = Ints.concat(ArrayUtil.nTimes(numNewAxes,1),ret.shape());
+            int[] newStrides = Ints.concat(new int[numNewAxes],ret.stride());
+            ret.setShape(newShape);
+            ret.setStride(newStrides);
+        }
         return ret;
     }
 
@@ -4028,7 +4033,8 @@ public abstract class BaseNDArray implements INDArray {
 
 
         int[] retShape = new int[shape.length];
-
+        List<Integer> broadCastDimensions = new ArrayList<>();
+        List<Integer> nonBroadCastDimensions = new ArrayList<>();
         for (int i = 0; i < retShape.length; i++) {
             if(shape().length == 1) {
                 if(i == 0) {
@@ -4045,6 +4051,10 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
             else {
+                if(size(i) == 1)
+                    broadCastDimensions.add(i);
+                else
+                    nonBroadCastDimensions.add(i);
                 if (i < shape().length)
                     retShape[i] = Math.max(shape[i], shape()[i]);
                 else
@@ -4054,8 +4064,8 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray ret = create(retShape);
-        INDArray linear = ret.linearView();
-        INDArray thisLinear = linearView();
+        INDArray linear = ret.permute(Ints.concat(Ints.toArray(nonBroadCastDimensions),Ints.toArray(broadCastDimensions)));
+        INDArray thisLinear = this;
         int bufferIdx = 0;
         for (int i = 0; i < ret.length(); i++) {
             linear.putScalar(i, thisLinear.getDouble(bufferIdx));
@@ -4253,9 +4263,8 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public boolean isVector() {
         ensureNotCleanedUp();
-        if(this.isVector == null)
-            isVector =  isRowVector() || isColumnVector();
-        return isVector;
+        boolean ret =   isRowVector() || isColumnVector();
+        return ret;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package org.nd4j.linalg.indexing;
 
-import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.Shape;
@@ -120,10 +119,7 @@ public class ShapeOffsetResolution {
 
         }
 
-        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
-        if(numNewAxes > 0) {
-            shape = Ints.concat(ArrayUtil.nTimes(numNewAxes,1),shape);
-        }
+
 
         if(stride.length > offsets.length) {
             stride = Arrays.copyOfRange(stride, 1, stride.length);

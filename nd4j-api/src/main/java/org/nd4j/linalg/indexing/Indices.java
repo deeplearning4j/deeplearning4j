@@ -396,6 +396,8 @@ public class Indices {
 
         int numNewIndexesToPrepend = 0;
         int[] ret = new int[indices.length];
+        if(indices[0].length() == 1 && numNewAxes >= 1)
+            ret = new int[indices.length - 1];
         if(offsets.length < shape.length) {
             int[] dup = new int[shape.length];
             System.arraycopy(offsets,0,dup,0,offsets.length);
@@ -422,7 +424,6 @@ public class Indices {
 
                 else if(indices[i] instanceof NDArrayIndex.NewAxis) {
                     numNewIndexesToPrepend++;
-                    retIndex++;
                 }
 
                 else {
@@ -517,12 +518,9 @@ public class Indices {
      */
     public static int[] stride(INDArray arr,NDArrayIndex[] indexes, int... shape) {
         int[] retStride = null;
-        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
-        if(shape.length == arr.stride().length || numNewAxes > 0) {
+        if(indexes.length == arr.stride().length) {
             //prepend zeros for new axis
             retStride  =  Arrays.copyOf(arr.stride(), arr.stride().length);
-            if(numNewAxes > 0)
-                retStride = Ints.concat(new int[numNewAxes],retStride);
         }
         else {
             retStride = Arrays.copyOfRange(arr.stride(), 1, shape.length);
