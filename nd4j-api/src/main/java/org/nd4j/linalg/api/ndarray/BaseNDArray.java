@@ -3172,105 +3172,18 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray repmat(int[] shape) {
-
-        if(isVector())  {
-            if(isRowVector()) {
-                if(shape.length == 1) {
-                    int[] shape2 = Ints.concat(new int[]{1},new int[]{ArrayUtil.prod(Ints.concat(shape,shape()))});
-                    INDArray ret = create(shape2);
-                    int curr = 0;
-                    for(int i = 0; i < ret.length(); i++) {
-                        ret.putScalar(i,getDouble(curr));
-                        curr++;
-                        if(curr >= length()) {
-                            curr = 0;
-                        }
-                    }
-
-                    return ret;
-
-                }
-                else {
-                    INDArray ret = create(shape);
-                    INDArray retLinear = ret.linearView();
-                    int curr = 0;
-                    for(int i = 0; i < ret.length(); i++) {
-                        retLinear.putScalar(i, getDouble(curr));
-                        curr++;
-                        if(curr >= length()) {
-                            curr = 0;
-                        }
-                    }
-
-                    return ret;
-                }
-            }
-            else {
-                INDArray ret = create(shape);
-                INDArray retLinear = ret.linearView();
-
-                int curr = 0;
-                for(int i = 0; i < ret.length(); i++) {
-                    retLinear.putScalar(i,getDouble(curr));
-                    curr++;
-                    if(curr >= length()) {
-                        curr = 0;
-                    }
-                }
-
-                return ret;
-            }
+        INDArray ret = create(shape);
+        INDArray linear = ret;
+        INDArray thisLinear = this;
+        int bufferIdx = 0;
+        for (int i = 0; i < ret.length(); i++) {
+            linear.putScalar(i, thisLinear.getDouble(bufferIdx));
+            bufferIdx++;
+            if (bufferIdx >= length())
+                bufferIdx = 0;
         }
 
-
-        int[] newShape = new int[shape.length];
-        assert shape.length <= newShape.length : "Illegal shape: The passed in shape must be <= the current shape length";
-        int[] oldShape = isRowVector() ? new int[]{1, this.shape[0]} : Arrays.copyOf(this.shape, 2);
-        for (int i = 0; i < newShape.length; i++) {
-            if (i < this.shape.length)
-                newShape[i] = oldShape[i] * shape[i];
-            else
-                newShape[i] = oldShape[i];
-        }
-
-        INDArray result = create(newShape);
-        //nd copy
-        if (isScalar()) {
-            for (int i = 0; i < result.length(); i++) {
-                result.put(i, getScalar(0));
-
-            }
-        } else if (isRowVector()) {
-            if (Shape.isColumnVectorShape(newShape))
-                return transpose();
-            else if (Shape.isMatrix(newShape)) {
-                INDArray ret = create(newShape);
-                for (int i = 0; i < ret.rows(); i++) {
-                    ret.putRow(i, this);
-                }
-                return ret;
-            }
-        } else if (isMatrix()) {
-
-            for (int c = 0; c < shape()[1]; c++) {
-                for (int r = 0; r < shape()[0]; r++) {
-                    for (int i = 0; i < rows(); i++) {
-                        for (int j = 0; j < columns(); j++) {
-                            result.put(r * rows() + i, c * columns() + j, getScalar(i, j));
-                        }
-                    }
-                }
-            }
-
-        } else {
-            int[] sliceRepmat = ArrayUtil.removeIndex(shape, 0);
-            for (int i = 0; i < result.slices(); i++) {
-                result.putSlice(i, repmat(sliceRepmat));
-            }
-        }
-
-
-        return result;
+        return ret;
     }
 
     /**
@@ -3509,7 +3422,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray prod(int...dimension) {
-        return Nd4j.getExecutioner().exec(new Prod(this),dimension);
+        return Nd4j.getExecutioner().exec(new Prod(this), dimension);
     }
 
     /**
@@ -3520,7 +3433,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray mean(int...dimension) {
-        return Nd4j.getExecutioner().exec(new Mean(this),dimension);
+        return Nd4j.getExecutioner().exec(new Mean(this), dimension);
     }
 
     /**
@@ -3717,9 +3630,10 @@ public abstract class BaseNDArray implements INDArray {
             return this;
 
         ensureNotCleanedUp();
-        if (shape.length == 2)
-            return vectorAlongDimension(c,0);
-
+        if (shape.length == 2) {
+            INDArray ret = vectorAlongDimension(c, 0);
+            return ret.reshape(ret.length(),1);
+        }
         else if (isRowVector()) {
             return createScalarForIndex(c,true);
         } else if (isColumnVector() && c == 0)

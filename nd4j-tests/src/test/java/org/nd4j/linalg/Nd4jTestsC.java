@@ -1273,18 +1273,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testGetScalar() {
-        INDArray n = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{1,4});
-        assertTrue(n.isVector());
-        for (int i = 0; i < n.length(); i++) {
-            INDArray scalar = Nd4j.scalar((float) i + 1);
-            assertEquals(scalar, n.getScalar(i));
-        }
-
-
-    }
-
 
 
 
