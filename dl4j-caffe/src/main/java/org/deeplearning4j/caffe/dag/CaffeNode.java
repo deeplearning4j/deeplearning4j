@@ -1,9 +1,6 @@
 package org.deeplearning4j.caffe.dag;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.deeplearning4j.dag.Node;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -16,6 +13,7 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(of = {"name", "layerSubType"})
+@EqualsAndHashCode(exclude = {"bottomNodeSet"})
 public class CaffeNode implements Node {
     private String name;
     private LayerType layerType;
@@ -63,5 +61,13 @@ public class CaffeNode implements Node {
         this.metaData = metaData;
         this.data = data;
     }
+
+    public CaffeNode(String name, LayerType layerType, LayerSubType layerSubType, Set<CaffeNode> bottomNodeSet) {
+        this.name = name;
+        this.layerType = layerType;
+        this.layerSubType = layerSubType;
+        this.bottomNodeSet = bottomNodeSet;
+    }
+
 
 }

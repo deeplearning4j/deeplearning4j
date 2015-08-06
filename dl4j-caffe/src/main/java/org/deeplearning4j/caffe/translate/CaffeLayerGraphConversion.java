@@ -197,7 +197,7 @@ public class CaffeLayerGraphConversion {
         // Is the current layer supported. If not throw IllegalState
         // Is the current layer subtype supported. If not, ignore layer and return null
         if (!isSubTypeAvaliable(layerSubTypeString)) { return null; }
-        /////
+        //
 
         LayerSubType layerSubType = subTypify(layerSubTypeString);
         LayerType layerType = subType2TypeMap.get(layerSubType);
@@ -222,7 +222,7 @@ public class CaffeLayerGraphConversion {
         List<INDArray> data = convertBlobToDataMap((List<BlobProto>) getBlobListMethod.invoke(layer));
         ////
 
-        //// Top and Bottom
+        //// Assign Bottom Nodes
         List<String> bottomList = (List<String>) getBottomListMethod.invoke(layer);
         List<String> topList = (List<String>) getTopListMethod.invoke(layer);
 
@@ -230,12 +230,9 @@ public class CaffeLayerGraphConversion {
             CaffeNode bottomNode = new CaffeNode(bottomLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR);
             caffeNodeMap.get("bottom").add(bottomNode);
         }
-        for (String topLayerName : topList) {
-            CaffeNode topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR);
-            caffeNodeMap.get("top").add(topNode);
-        }
+        ////
 
-        //// Assign current node
+        //// Assign Current node
         CaffeNode currentNode;
         if (includeBottomNodes) {
             currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data,
@@ -244,6 +241,16 @@ public class CaffeLayerGraphConversion {
             currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data);
         }
         caffeNodeMap.get("current").add(currentNode);
+        ////
+
+        //// Assign Top nodes
+        for (String topLayerName : topList) {
+            Set<CaffeNode> bottomNodeSetTop = new HashSet<>();
+            bottomNodeSetTop.add(currentNode);
+            CaffeNode topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR,
+                    bottomNodeSetTop);
+            caffeNodeMap.get("top").add(topNode);
+        }
 
         return caffeNodeMap;
     }
