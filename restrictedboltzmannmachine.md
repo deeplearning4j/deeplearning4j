@@ -18,11 +18,9 @@ Contents
 
 ## <a name="define">Definition & Structure</a>
 
-Invented by Geoff Hinton, [RBMs](../glossary.html#restrictedboltzmannmachine) are useful for [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction), [classification](https://en.wikipedia.org/wiki/Statistical_classification), [regression](../linear-regression.html),  [collaborative filtering](https://en.wikipedia.org/wiki/Collaborative_filtering), [feature learning](https://en.wikipedia.org/wiki/Feature_learning) and [topic modeling](https://en.wikipedia.org/wiki/Topic_model). Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle.
+Invented by Geoff Hinton, Restricted Boltzmann machines are useful for dimensionality reduction, classification, [regression](../linear-regression.html), collaborative filtering, feature learning and topic modeling. Given their relative simplicity, restricted Boltzmann machines are the first neural network we'll tackle. In the paragraphs below, we will describe in diagrams and plain language how they work. 
 
-Restricted Boltzmann machines are shallow, two-layer neural nets that constitute the building blocks of deep-belief networks. In the paragraphs below, we will attempt to describe in diagrams and plain language how RBMs work. 
-
-The first layer of the RBM is called the visible, or input, layer, and the second is the hidden layer. 
+RBMs are shallow, two-layer neural nets that constitute the building blocks of *deep-belief networks*. The first layer of the RBM is called the visible, or input, layer, and the second is the hidden layer. 
 
 ![Alt text](../img/two_layer_RBM.png)
 
@@ -108,7 +106,9 @@ or the headshots found in Labeled Faces in the Wild:
 
 ![Alt text](../img/LFW_reconstruction.jpg)
 
-The process of learning reconstructions is, in a sense, learning which groups of pixels tend to co-occur for a given set of images. (Imagine for a second that an RBM that was only fed images of elephants and dogs, and which had only two output nodes, one for each animal. The question the RBM is asking itself on the forward pass is: Given these pixels, should my weights send a stronger signal to the elephant node or the dog node? And the question the RBM asks on the backward pass is: Given an elephant, which distribution of pixels should I expect?)
+The process of learning reconstructions is, in a sense, learning which groups of pixels tend to co-occur for a given set of images. You can think of the activations produced by nodes of hidden layers deep in the network as representing significant co-occurrences.
+
+(Imagine for a second that an RBM that was only fed images of elephants and dogs, and which had only two output nodes, one for each animal. The question the RBM is asking itself on the forward pass is: Given these pixels, should my weights send a stronger signal to the elephant node or the dog node? And the question the RBM asks on the backward pass is: Given an elephant, which distribution of pixels should I expect?)
 
 In the two images above, you see reconstructions learned by Deeplearning4j's implemention of an RBM. These reconstructions represent what the RBM's activations "think" the original data looks like. Geoff Hinton refers to this as a sort of machine "dreaming".
 
@@ -170,7 +170,7 @@ Those additional algorithms and their combinations can vary layer by layer.
 
 An effective continuous restricted Boltzmann machine employs a Gaussian transformation on the visible (or input) layer and a rectified-linear-unit tranformation on the hidden layer. That's particularly useful in [facial reconstruction](../facial-reconstruction-tutorial.html). For RBMs handling binary data, simply make both transformations binary ones. 
 
-Gaussian transformations do not work well on RBMs' hidden layers. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).*
+Gaussian transformations do not work well on RBMs' hidden layers. The rectified-linear-unit transformations used instead are capable of representing more features than binary transformations, which we employ on [deep-belief nets](../deepbeliefnetwork.html).
 
 ### <a name="next">Conclusions & Next Steps</a>
 
