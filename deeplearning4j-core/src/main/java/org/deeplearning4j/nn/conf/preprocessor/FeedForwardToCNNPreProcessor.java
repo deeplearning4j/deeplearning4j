@@ -41,7 +41,6 @@ import java.util.Arrays;
  * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
 
  */
-
 @EqualsAndHashCode
 public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     private int inputWidth;

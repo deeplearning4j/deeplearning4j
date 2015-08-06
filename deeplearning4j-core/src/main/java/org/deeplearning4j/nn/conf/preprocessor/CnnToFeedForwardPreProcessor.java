@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -37,7 +38,7 @@ import java.util.Arrays;
  * @author Adam Gibson
  * @see FeedForwardToCnnPreProcessor for opposite case (i.e., DenseLayer -> CNNetc)
 */
-
+ @EqualsAndHashCode
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
      private int inputWidth;
      private int inputHeight;
