@@ -144,6 +144,8 @@ public class SubsamplingLayer implements Layer {
                 convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, convolution);
                 return new Pair<>(ret,convolution);
+            case NONE:
+                return new Pair<>(gradient, epsilon);
             default: throw new IllegalStateException("Un supported pooling type");
         }
 
@@ -204,6 +206,8 @@ public class SubsamplingLayer implements Layer {
                 INDArray ret = pooled.reshape(n,c,kh * kw,outHeight,outWidth);
                 maxIndexes = Nd4j.argMax(ret,2);
                 return ret.max(2);
+            case NONE:
+                return input;
             default: throw new IllegalStateException("Pooling type not supported!");
 
         }
@@ -216,8 +220,7 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
-        this.input = input;
-        return activate(true);
+        return activate(input, true);
     }
 
     @Override
