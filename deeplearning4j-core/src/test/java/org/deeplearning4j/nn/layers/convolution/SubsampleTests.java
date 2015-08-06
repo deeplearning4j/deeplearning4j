@@ -2,16 +2,24 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 
@@ -20,33 +28,125 @@ import java.util.Arrays;
  */
 public class SubsampleTests {
 
+    private int nExamples = 1;
+    private int nChannels = 20; //depth & nOut
+    private int inH = 28;
+    private int inW = 28;
+    private int outH = 10;
+    private int outW = 10;
+    private INDArray epsilon = Nd4j.ones(nExamples, nChannels, outH, outW);
+
+
     @Test
-    public void testSubSampleLayer() throws Exception  {
-        DataSetIterator mnistIter = new MnistDataSetIterator(100,100);
+    public void testSubSampleMaxActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples,nExamples);
         DataSet mnist = mnistIter.next();
 
-        Layer model = getSubsamplingLayer();
-
-        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
-        input = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 20), NDArrayIndex.interval(0,20));
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, inH, inW);
 
         INDArray output = model.activate(input);
-        assertTrue(Arrays.equals(new int[]{mnist.numExamples(),1,10,21},output.shape()));
+        assertTrue(Arrays.equals(new int[]{nExamples, 1, 14, 14}, output.shape()));
+        assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
+        //TODO test max results...
+    }
+
+    @Test
+    public void testSubSampleAvgActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples,nExamples);
+        DataSet mnist = mnistIter.next();
+
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
+
+        INDArray output = model.activate(input);
+        assertTrue(Arrays.equals(new int[]{nExamples, 1, 14, 14}, output.shape()));
+        assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
+    }
+
+    @Test
+    public void testSubSampleNoneActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples, nExamples);
+        DataSet mnist = mnistIter.next();
+
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, inH, inW);
+
+        INDArray output = model.activate(input);
+        assertTrue(Arrays.equals(new int[]{nExamples, 1, inH, inW}, output.shape()));
+        assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
+    }
+
+    @Test (expected=IllegalStateException.class)
+    public void testSubSampleSumActivateShape() throws Exception  {
+        DataSetIterator mnistIter = new MnistDataSetIterator(nExamples, nExamples);
+        DataSet mnist = mnistIter.next();
+
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
+
+        INDArray output = model.activate(input);
+    }
+
+    @Test
+    public void testSubSampleLayerMaxBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
+    }
+
+    @Test
+    public void testSubSampleLayerAvgBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
+    }
+
+    @Test
+    public void testSubSampleLayerNoneBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        assertEquals(out.getSecond().shape()[1], nChannels); // depth retained
     }
 
 
-    private static Layer getSubsamplingLayer(){
+    @Test (expected=IllegalStateException.class)
+    public void testSubSampleLayerSumBackpropShape() {
+        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        Gradient gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+    }
+
+    private Layer getSubsamplingLayer(SubsamplingLayer.PoolingType pooling){
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("relu")
                 .constrainGradientToUnitNorm(true)
-                .poolingType(SubsamplingLayer.PoolingType.MAX)
+                .seed(123)
                 .nIn(1)
                 .nOut(20)
-                .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[]{2,2})
+                .layer(new SubsamplingLayer.Builder(pooling)
                         .build())
                 .build();
 
         return LayerFactories.getFactory(new SubsamplingLayer()).create(conf);
 
     }
+
+    private Gradient createPrevGradient() {
+        Gradient gradient = new DefaultGradient();
+        INDArray pseudoGradients = Nd4j.ones(nExamples, nChannels, outH, outW);
+
+        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, pseudoGradients);
+        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoGradients);
+        return gradient;
+        }
+
+
 }
