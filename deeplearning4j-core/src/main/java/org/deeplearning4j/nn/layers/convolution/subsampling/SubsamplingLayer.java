@@ -18,12 +18,10 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
-import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
@@ -33,16 +31,13 @@ import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.deeplearning4j.util.ConvolutionUtils;
+
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 
 
 /**
@@ -54,13 +49,12 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
  */
 public class SubsamplingLayer implements Layer {
     private NeuralNetConfiguration conf;
-    private Layer convLayer;
     protected ParamInitializer paramInitializer;
     private Map<String,INDArray> params;
     protected int index = 0;
     protected INDArray input;
     private INDArray dropoutMask;
-
+    private INDArray maxIndexes;
     public SubsamplingLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
     }
@@ -114,10 +108,21 @@ public class SubsamplingLayer implements Layer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
-
         Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, null);
-        return new Pair<>(ret,z);
+        int n = epsilon.size(0);
+        int c = epsilon.size(1);
+        int outH = epsilon.size(2);
+        int outW = epsilon.size(3);
+        int height = epsilon.size(-2);
+        int width = epsilon.size(-1);
+        //compute backwards kernel based on rearranging the given error
+        INDArray ret2 = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
+        INDArray reverse = Nd4j.rollAxis(ret2.reshape(n,c,-1,outH,outW),2);
+        reverse.assign(epsilon);
+        //compute gradient for weights
+        INDArray finalRet = Convolution.col2im(reverse,conf.getStride(),conf.getPadding(),width,height);
+        ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
+        return new Pair<>(ret,null);
 
     }
 
@@ -174,7 +179,7 @@ public class SubsamplingLayer implements Layer {
                 int outWidth = pooled.size(4);
                 int outHeight = pooled.size(5);
                 INDArray ret = pooled.reshape(n,c,kh * kw,outHeight,outWidth);
-
+                maxIndexes = Nd4j.argMax(ret,2);
                 return ret.max(2);
             default: throw new IllegalStateException("Pooling type not supported!");
 
