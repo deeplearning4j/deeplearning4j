@@ -1,32 +1,53 @@
 package org.deeplearning4j.caffe.translate;
 
+import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
 import com.google.protobuf.GeneratedMessage;
+import lombok.Data;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.deeplearning4j.caffe.dag.CaffeNode;
 import org.deeplearning4j.caffe.dag.CaffeNode.LayerSubType;
 import org.deeplearning4j.caffe.dag.CaffeNode.LayerType;
+import org.deeplearning4j.caffe.projo.Caffe.BlobProto;
 import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
 import org.deeplearning4j.dag.Graph;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author jeffreytang
  */
+@Data
 public class CaffeLayerGraphConversion {
 
     public CaffeLayerGraphConversion() {}
 
     protected static Logger log = LoggerFactory.getLogger(CaffeLayerGraphConversion.class);
 
+    NetParameter net;
+    Map<LayerSubType, Map<String, String>> layerParamMapping;
+    Nd4j nd4j = new Nd4j();
+
+
+    public CaffeLayerGraphConversion(NetParameter net) {
+        this.net = net;
+        this.layerParamMapping = initLayerParamMap();
+    }
+
+    // Get map of layer param mapping
+    public Map<LayerSubType, Map<String, String>> initLayerParamMap() {
+        CaffeNetTranslator netMap = new CaffeNetTranslator();
+        return netMap.getLayerParamMapping();
+    }
+
+    // Map of LayerSubType to method getting the layer params
     private static Map<String, String> subType2MethodMap = new HashMap<String, String>() {{
         put("CONVOLUTION", "getConvolutionParam");
         put("POOLING", "getPoolingParam");
@@ -50,6 +71,7 @@ public class CaffeLayerGraphConversion {
         put("ACCURACY", null);
     }};
 
+    // Map of the layerSubType to layerType
     private static Map<LayerSubType, LayerType> subType2TypeMap = new HashMap<LayerSubType, LayerType>(){{
         put(LayerSubType.CONVOLUTION, LayerType.HIDDEN);
         put(LayerSubType.POOLING, LayerType.HIDDEN);
@@ -68,7 +90,7 @@ public class CaffeLayerGraphConversion {
     }};
 
     @SuppressWarnings("unchecked")
-    private static List<? extends GeneratedMessage> convertNetToLayerList(NetParameter net) {
+    private List<? extends GeneratedMessage> convertNetToLayerList() {
         int layerCount = net.getLayerCount();
         int layersCount = net.getLayersCount();
 
@@ -88,15 +110,15 @@ public class CaffeLayerGraphConversion {
         return finalLayerList;
     }
 
-    private static LayerSubType subTypify(String subType) {
+    private LayerSubType subTypify(String subType) {
         return LayerSubType.valueOf(subType);
     }
 
-    private static boolean isSupported(String subType) {
+    private boolean isSupported(String subType) {
         return subType2MethodMap.containsKey(subType);
     }
 
-    private static boolean isSubTypeAvaliable(String subType) {
+    private boolean isSubTypeAvaliable(String subType) {
 
         if (!isSupported(subType)) {
             throw new IllegalArgumentException(
@@ -113,12 +135,36 @@ public class CaffeLayerGraphConversion {
     }
 
     @SuppressWarnings("unchecked")
-    private static Method getMethodFromString(String methodString, Class c) throws NoSuchMethodException{
+    private Method getMethodFromString(String methodString, Class c) throws NoSuchMethodException{
         return c.getDeclaredMethod(methodString);
     }
 
+    private List<INDArray> convertBlobToDataMap(List<BlobProto> blobProtList) {
+
+        List<INDArray> blobDataList = new ArrayList<>();
+        for (BlobProto blobProto : blobProtList) {
+            // Shape of the blob
+            int[] dims;
+            List<Long> shape = blobProto.getShape().getDimList();
+            int height = blobProto.getHeight();
+            int width = blobProto.getWidth();
+            int num = blobProto.getNum();
+            int channel = blobProto.getChannels();
+            if ((height > 0 || width > 0 || num > 0 || channel > 0) && shape.size() == 0) {
+                dims = Ints.toArray(Arrays.asList(num, channel, width, height));
+            } else {
+                dims = Ints.toArray(shape);
+            }
+            // Blob data
+            DataBuffer blobData = Nd4j.createBuffer(Doubles.toArray(blobProto.getDataList()));
+            // Create NDArray of blob data based on shape
+            blobDataList.add(Nd4j.create(blobData, dims));
+        }
+        return blobDataList;
+    }
+
     @SuppressWarnings("unchecked")
-    private static Map<String, List<CaffeNode>> convertLayerToCaffeNodeMap(GeneratedMessage layer)
+    private Map<String, List<CaffeNode>> convertLayerToCaffeNodeMap(GeneratedMessage layer)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         //// Get methods
@@ -126,6 +172,7 @@ public class CaffeLayerGraphConversion {
         Method getTypeMethod = getMethodFromString("getType", layer.getClass());
         Method getTopListMethod = getMethodFromString("getTopList", layer.getClass());
         Method getBottomListMethod = getMethodFromString("getBottomList", layer.getClass());
+        Method getBlobListMethod = getMethodFromString("getBlobsList", layer.getClass());
 
 
         //// Map to hold all the node generated from the layer
@@ -147,22 +194,24 @@ public class CaffeLayerGraphConversion {
         LayerType layerType = subType2TypeMap.get(layerSubType);
         String paramMethodString = subType2MethodMap.get(layerSubTypeString);
 
-        // Get the data in the layer
+        // Get the meta data in the layer
         Map<String, Object> field2valueMap = new HashMap<>();
         if (!paramMethodString.isEmpty()) {
             Method getParamMethod = getMethodFromString(subType2MethodMap.get(layerSubTypeString), layer.getClass());
             Object layerClassParameter = getParamMethod.invoke(layer);
-            List<Field> fieldList = FieldUtils.getAllFieldsList(layerClassParameter.getClass());
-            for (Field field : fieldList) {
-                field.setAccessible(true);
+            Set<String> layerStringFields = layerParamMapping.get(layerSubType).keySet();
+            for (String stringField : layerStringFields) {
                 try {
-                    field2valueMap.put(field.getName(), field.get(layer));
+                    Object val = FieldUtils.readField(layerClassParameter, stringField, true);
+                    field2valueMap.put(stringField, val);
                 } catch (IllegalArgumentException e) {
-                    log.info(String.format("Cannot parse field '%s'", field.getName()));
+                    log.info(String.format("Cannot parse field '%s'", stringField));
                 }
             }
         }
-        CaffeNode currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap);
+        // Get the blob data in the layer
+        List<INDArray> data = convertBlobToDataMap((List<BlobProto>) getBlobListMethod.invoke(layer));
+        CaffeNode currentNode = new CaffeNode(layerName, layerType, layerSubType, field2valueMap, data);
         caffeNodeMap.get("current").add(currentNode);
 
         //// Top and Bottom
@@ -177,14 +226,13 @@ public class CaffeLayerGraphConversion {
             CaffeNode topNode = new CaffeNode(topLayerName, LayerType.CONNECTOR, LayerSubType.CONNECTOR);
             caffeNodeMap.get("top").add(topNode);
         }
-
         return caffeNodeMap;
     }
 
-    private static List<Map<String, List<CaffeNode>>> convertNetToNodeMapList(NetParameter net)
+    private List<Map<String, List<CaffeNode>>> convertNetToNodeMapList()
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
-        List<? extends GeneratedMessage> layerList = convertNetToLayerList(net);
+        List<? extends GeneratedMessage> layerList = convertNetToLayerList();
 
         List<Map<String, List<CaffeNode>>> nodeMapList = new ArrayList<>();
         for (GeneratedMessage layer : layerList) {
@@ -197,10 +245,12 @@ public class CaffeLayerGraphConversion {
         return nodeMapList;
     }
 
-    private static void addNodeMapToGraph(Map<String, List<CaffeNode>> nodeMap, Graph graph) {
+    private void addNodeMapToGraph(Map<String, List<CaffeNode>> nodeMap, Graph graph) {
         CaffeNode currNode = nodeMap.get("current").get(0);
         List<CaffeNode> topNodeList = nodeMap.get("top");
         List<CaffeNode> bottomNodeList = nodeMap.get("bottom");
+
+        addStartEndNodesToGraph(currNode, topNodeList, bottomNodeList, graph);
 
         for (CaffeNode topNode : topNodeList) {
             graph.addEdge(currNode, topNode);
@@ -211,7 +261,16 @@ public class CaffeLayerGraphConversion {
         }
     }
 
-    private static Graph convertNodeMapListToGraph(List<Map<String, List<CaffeNode>>> nodeMapList) {
+    private void addStartEndNodesToGraph(CaffeNode currNode, List<CaffeNode> topNodeList,
+                                         List<CaffeNode> bottomNodeList, Graph graph) {
+        if (topNodeList.size() == 0) {
+            graph.addStartNode(currNode);
+        } else if (bottomNodeList.size() == 0) {
+            graph.addEndNode(currNode);
+        }
+    }
+
+    private Graph convertNodeMapListToGraph(List<Map<String, List<CaffeNode>>> nodeMapList) {
         Graph graph = new Graph();
         for (Map<String, List<CaffeNode>> nodeMap : nodeMapList) {
             addNodeMapToGraph(nodeMap, graph);
@@ -219,16 +278,16 @@ public class CaffeLayerGraphConversion {
         return graph;
     }
 
-    private static Graph removeRootConnector(Graph graph) {
+    private Graph trimGraph(Graph graph) {
 
         return null;
     }
 
 
     // Converts Net to Caffe Node Graph
-    public static Graph convert(NetParameter net)
+    public Graph convert()
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException{
-        List<Map<String, List<CaffeNode>>> nodeMapList = convertNetToNodeMapList(net);
+        List<Map<String, List<CaffeNode>>> nodeMapList = convertNetToNodeMapList();
         return convertNodeMapListToGraph(nodeMapList);
     }
 }

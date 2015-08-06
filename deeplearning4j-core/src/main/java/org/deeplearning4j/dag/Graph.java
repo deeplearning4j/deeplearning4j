@@ -11,7 +11,8 @@ import java.util.*;
 public class Graph {
     // Key of adjacency list points to nodes in the list (from bottom to top)
     private Map<Node, List<Node>> adjacencyListMap = new HashMap<>();
-    private Set<Node> rootNodeSet = new HashSet<>();
+    private Set<Node> startNodeSet = new HashSet<>();
+    private Set<Node> endNodeSet = new HashSet<>();
 
     public int graphSize() {
         return adjacencyListMap.size();
@@ -67,16 +68,13 @@ public class Graph {
         return ret;
     }
 
-    /**
-     * Add root nodes to the graph. Depends on context of the graph toy are dealing with
-     * Root nodes are nodes without any nodes pointing to it (the most bottom nodes)
-     *
-     * @param rootNode A root Node Object
-     */
-    public void addRootNode(Node rootNode) {
-        rootNodeSet.add(rootNode);
+    public void addStartNode(Node startNode) {
+        startNodeSet.add(startNode);
     }
 
+    public void addEndNode(Node endNode) {
+        endNodeSet.add(endNode);
+    }
 
     /**
      * Return a list of nodes with the given name
