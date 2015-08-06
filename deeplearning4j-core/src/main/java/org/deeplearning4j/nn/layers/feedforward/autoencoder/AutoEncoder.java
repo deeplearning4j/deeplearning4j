@@ -53,7 +53,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
     @Override
     public Pair<INDArray, INDArray> sampleHiddenGivenVisible(
             INDArray v) {
-        INDArray ret = encode(v, true);
+        setInput(v);
+        INDArray ret = encode(true);
         return new Pair<>(ret,ret);
     }
 
@@ -65,16 +66,15 @@ public class AutoEncoder extends BasePretrainNetwork  {
     }
 
     // Encode
-    public INDArray encode(INDArray x,boolean training) {
+    public INDArray encode(boolean training) {
         if(conf.getDropOut() > 0 && training) {
-            dropoutMask = Dropout.applyDropout(x,conf.getDropOut(),dropoutMask);
+            dropoutMask = Dropout.applyDropout(input, conf.getDropOut(),dropoutMask);
         }
-
 
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
-        INDArray preAct = x.mmul(W).addiRowVector(hBias);
+        INDArray preAct = input.mmul(W).addiRowVector(hBias);
 
         INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
 
@@ -93,15 +93,24 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-    	setInput(input,training);
-        INDArray y = encode(input,training);
-        return y;
+        setInput(input);
+        return decode(encode(training));
     }
 
+    @Override
+    public INDArray activate(INDArray input) {
+        setInput(input);
+        return decode(encode(true));
+    }
 
     @Override
-    public INDArray transform(INDArray data) {
-        return decode(encode(data,true));
+    public INDArray activate(boolean training) {
+        return decode(encode(training));
+    }
+
+    @Override
+    public INDArray activate() {
+        return decode(encode(false));
     }
 
     @Override
@@ -111,7 +120,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
         double corruptionLevel = conf.getCorruptionLevel();
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
-        INDArray y = encode(corruptedX, true);
+        setInput(corruptedX);
+        INDArray y = encode(true);
 
         INDArray z = decode(y);
         INDArray visibleLoss =  input.sub(z);

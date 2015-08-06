@@ -170,7 +170,7 @@ public abstract class BaseLayer implements Layer {
         if (this.input == null)
             return;
 
-        INDArray output = transform(input);
+        INDArray output = activate(true);
         setScoreWithZ(output);
 
     }
@@ -355,10 +355,22 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input,training);
-        return activate(training);
+    public  INDArray activate(INDArray input) {
+        setInput(input);
+        return activate(true);
     }
+
+    @Override
+    public INDArray activate(INDArray input, boolean training) {
+        setInput(input);
+        return activate(true);
+    }
+
+    @Override
+    public  INDArray activate() {
+        return activate(false);
+    }
+
 
     /**
      * Classify input
@@ -388,16 +400,6 @@ public abstract class BaseLayer implements Layer {
         return input.size(0);
     }
 
-    @Override
-    public  INDArray activate() {
-        return activate(true);
-    }
-
-    @Override
-    public  INDArray activate(INDArray input) {
-        return activate(input,true);
-    }
-
 
     @Override
     public INDArray activationMean() {
@@ -410,7 +412,6 @@ public abstract class BaseLayer implements Layer {
     public NeuralNetConfiguration conf() {
         return conf;
     }
-
 
 
     @Override

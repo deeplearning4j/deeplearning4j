@@ -71,7 +71,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(input == null || labels == null)
             return;
 
-        INDArray output = output(input);
+        INDArray output = output(true);
         Pair<Gradient,INDArray> pair = getGradientsAndDelta(output);
         this.gradient = pair.getFirst();
         setScoreWithZ(output);
@@ -102,7 +102,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
-    	Pair<Gradient,INDArray> pair = getGradientsAndDelta(output(input));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+    	Pair<Gradient,INDArray> pair = getGradientsAndDelta(output(true));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
     	INDArray delta = pair.getSecond();
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
@@ -161,14 +161,53 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
 
     @Override
+    public INDArray activate(INDArray input, boolean training) {
+        setInput(input, training);
+        return output(training);
+    }
+
+    @Override
     public INDArray activate(INDArray input) {
-        return output(input);
+        setInput(input, true);
+        return output(true);
+    }
+
+    @Override
+    public INDArray activate(boolean training) {
+        return output(training);
     }
 
     @Override
     public INDArray activate() {
-        return output(input);
+        return output(false);
     }
+
+    /**
+     * Classify input
+     * @param training determines if its training
+     * the input (can either be a matrix or vector)
+     * If it's a matrix, each row is considered an example
+     * and associated rows are classified accordingly.
+     * Each row will be the likelihood of a label given that example
+     * @return a probability distribution for each row
+     */
+    public  INDArray output(boolean training) {
+        if(input == null)
+            throw new IllegalArgumentException("No null input allowed");
+
+        INDArray preOutput = preOutput(input, training);
+        if(conf.getActivationFunction().equals("softmax")) {
+            SoftMax softMax = new SoftMax(preOutput);
+            softMax.exec(1);
+            return softMax.z();
+        }
+
+        if(training)
+            applyDropOutIfNecessary(input(),training);
+
+        return super.activate();
+    }
+
 
     /**
      * Sets the input and labels and returns a score for the prediction
@@ -216,13 +255,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     /**
      * Returns the predictions for each example in the dataset
-     * @param d the matrix to predict
+     * @param input the matrix to predict
      * @return the prediction for the dataset
      */
     @Override
-    public int[] predict(INDArray d) {
-        INDArray output = output(d);
-        int[] ret = new int[d.rows()];
+    public int[] predict(INDArray input) {
+        setInput(input);
+        INDArray output = output(true);
+        int[] ret = new int[input.rows()];
         for(int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
         return ret;
@@ -237,7 +277,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public INDArray labelProbabilities(INDArray examples) {
-        return output(examples);
+        setInput(examples);
+        return output(true);
     }
 
     /**
@@ -290,19 +331,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         }
     }
 
-    /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     *
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    @Override
-    public INDArray transform(INDArray data) {
-        return preOutput(data);
-    }
-
-
 
     /**
      * Set the parameters for this model.
@@ -338,45 +366,6 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         throw new UnsupportedOperationException();
     }
 
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    public  INDArray output(INDArray x) {
-        return output(x,false);
-
-    }
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    public  INDArray output(INDArray x, boolean test) {
-        if(x == null)
-            throw new IllegalArgumentException("No null input allowed");
-
-        INDArray preOutput = preOutput(x,!test);
-        if(conf.getActivationFunction().equals("softmax")) {
-            SoftMax softMax = new SoftMax(preOutput);
-            softMax.exec(1);
-            return softMax.z();
-        }
-
-        if(!test)
-            applyDropOutIfNecessary(input(),!test);
-
-        return super.activate();
-
-    }
 
     public  INDArray getLabels() {
         return labels;
