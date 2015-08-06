@@ -18,8 +18,18 @@
 
 package org.deeplearning4j.models.word2vec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.compress.compressors.gzip.GzipUtils;
+import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
+import org.deeplearning4j.plot.BarnesHutTsne;
+import org.junit.Before;
+import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.*;
 import java.net.URL;
@@ -27,20 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.compress.compressors.gzip.GzipUtils;
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.plot.BarnesHutTsne;
-import org.junit.Before;
-import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.springframework.core.io.ClassPathResource;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by agibsonccc on 9/21/14.
@@ -68,11 +66,26 @@ public class WordVectorSerializerTest {
         assertTrue(vec.vocab().numWords() > 0);
     }
 
+
+    @Test
+    public void testWriteWordVectors() throws IOException {
+        String pathToFile = "test_writing_word_vector.txt";
+
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile, false);
+        InMemoryLookupTable lookupTable = (InMemoryLookupTable) vec.lookupTable();
+        InMemoryLookupCache lookupCache = (InMemoryLookupCache) vec.vocab();
+        WordVectorSerializer.writeWordVectors(lookupTable, lookupCache, pathToFile);
+
+        WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File(pathToFile));
+        assertTrue(wordVectors.getWordVector("<s>").length == 1000);
+        assertTrue(wordVectors.getWordVector("Adam").length == 1000);
+        assertTrue(wordVectors.getWordVector("awesome").length == 1000);
+    }
+
     @Test
     public void testLoaderBinary() throws  IOException {
         Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         assertEquals(2, vec.vocab().numWords());
-
     }
 
 
@@ -118,9 +131,6 @@ public class WordVectorSerializerTest {
             assertEquals(3000000,wordsLoaded);
 
         }
-
-
-
     }
 
 

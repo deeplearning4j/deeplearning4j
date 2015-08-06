@@ -327,7 +327,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             variables.add(variable);
     }
 
-    private static <T> T overRideFields(T configInst, Layer layer) {
+    private static <T> T overrideFields(T configInst, Layer layer) {
         // overwrite builder with fields with layer fields
         Class<?> layerClazz = layer.getClass();
         Field[] neuralNetConfFields = Dl4jReflection.getAllFields(configInst.getClass());
@@ -933,7 +933,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.updater = updater;
 
             //override the properties from the layer
-            ret = overRideFields(ret, layer);
+            ret = overrideFields(ret, layer);
             return ret;
         }
     }
