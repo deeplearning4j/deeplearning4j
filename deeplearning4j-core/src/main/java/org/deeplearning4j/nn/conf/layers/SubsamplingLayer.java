@@ -13,7 +13,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 @Data @NoArgsConstructor
 public class SubsamplingLayer extends Layer {
 
-    private static final long serialVersionUID = -7095644470333017030L;
     protected PoolingType poolingType;
     protected int[] kernelSize; // Same as filter size from the last conv layer
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
@@ -31,9 +30,9 @@ public class SubsamplingLayer extends Layer {
 
     @AllArgsConstructor
     public static class Builder extends Layer.Builder {
-        private PoolingType poolingType;
-        private int[] stride; // Default is 2. Down-sample by a factor of 2
-        private int[] kernelSize; // Same as filter size from the last conv layer
+        private PoolingType poolingType = PoolingType.MAX;;
+        private int[] kernelSize = new int[] {2, 2}; // Same as filter size from the last conv layer
+        private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
 
         public Builder(PoolingType poolingType, int[] stride) {
             this.poolingType = poolingType;

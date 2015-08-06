@@ -25,13 +25,7 @@ public class SubsampleTests {
         DataSetIterator mnistIter = new MnistDataSetIterator(100,100);
         DataSet mnist = mnistIter.next();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activationFunction("relu").constrainGradientToUnitNorm(true)
-                .poolingType(SubsamplingLayer.PoolingType.MAX)
-                .layer(new SubsamplingLayer())
-                .nIn(784).nOut(1).build();
-
-        Layer model = LayerFactories.getFactory(new SubsamplingLayer()).create(conf);
+        Layer model = getSubsamplingLayer();
 
         INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
         input = input.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 20), NDArrayIndex.interval(0,20));
@@ -40,4 +34,19 @@ public class SubsampleTests {
         assertTrue(Arrays.equals(new int[]{mnist.numExamples(),1,10,21},output.shape()));
     }
 
+
+    private static Layer getSubsamplingLayer(){
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activationFunction("relu")
+                .constrainGradientToUnitNorm(true)
+                .poolingType(SubsamplingLayer.PoolingType.MAX)
+                .nIn(1)
+                .nOut(20)
+                .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG, new int[]{2,2})
+                        .build())
+                .build();
+
+        return LayerFactories.getFactory(new SubsamplingLayer()).create(conf);
+
+    }
 }
