@@ -922,7 +922,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray x = Nd4j.linspace(1,4,4).reshape(2, 2);
         INDArray repeated = x.repeat(new int[]{2});
         assertEquals(8,repeated.length());
-        INDArray repeatAlongDimension = x.repeat(0,new int[]{2});
+        INDArray repeatAlongDimension = x.repeat(1,new int[]{2});
         INDArray assertionRepeat = Nd4j.create(new double[][]{
                 {1,1,2,2},
                 {3,3,4,4}

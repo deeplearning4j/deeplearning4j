@@ -3209,11 +3209,11 @@ public abstract class BaseNDArray implements INDArray {
         //number of times to repeat each value
         int repeatDelta = ArrayUtil.prod(newShape) / length();
         int retIdx = 0;
-        for (int k = 0; k < repeatDelta; k++) {
-            for(int i = 0 ; i < length(); i++)
+        for(int i = 0 ; i < length(); i++)
+            for (int k = 0; k < repeatDelta; k++)
                 ret.putScalar(retIdx++,getDouble(i));
 
-        }
+
         return ret;
     }
 
@@ -4019,7 +4019,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray ret = create(retShape);
-        INDArray linear = ret.permute(Ints.concat(Ints.toArray(nonBroadCastDimensions),Ints.toArray(broadCastDimensions)));
+        INDArray linear = ret;
         INDArray thisLinear = this;
         int bufferIdx = 0;
         for (int i = 0; i < ret.length(); i++) {
