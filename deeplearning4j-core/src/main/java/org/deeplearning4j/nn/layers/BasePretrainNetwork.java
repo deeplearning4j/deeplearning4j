@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
 
@@ -38,21 +37,10 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  */
 public abstract class BasePretrainNetwork extends BaseLayer {
 
-    private static final long serialVersionUID = -7074102204433996574L;
-
-    /**
-     *
-     * @param conf
-     */
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    /**
-     *
-     * @param conf
-     * @param input
-     */
     public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
@@ -70,16 +58,6 @@ public abstract class BasePretrainNetwork extends BaseLayer {
         corrupted.muli(x);
         return corrupted;
     }
-
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-        if (paramType.contains("b"))
-            setParam(paramType, getParam(paramType).addi(gradient.sum(0)));
-        else
-            setParam(paramType, getParam(paramType).addi(gradient));
-    }
-
 
 
     protected Gradient createGradient(INDArray wGradient,INDArray vBiasGradient,INDArray hBiasGradient) {
