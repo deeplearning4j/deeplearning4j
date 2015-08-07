@@ -1040,7 +1040,7 @@ public abstract class BaseNDArray implements INDArray {
         int offset  = this.offset + Shape.offsetFor(this, i);
         if(offset >= data().length())
             throw new IllegalArgumentException("Illegal index " + i);
-        data.put(offset,value);
+        data.put(offset, value);
         return this;
 
     }
@@ -1726,6 +1726,7 @@ public abstract class BaseNDArray implements INDArray {
         ensureNotCleanedUp();
         if (shape.length < 1)
             return 0;
+
         return shape[0];
     }
 
@@ -3208,11 +3209,16 @@ public abstract class BaseNDArray implements INDArray {
 
         //number of times to repeat each value
         int repeatDelta = ArrayUtil.prod(newShape) / length();
-        int retIdx = 0;
-        for(int i = 0 ; i < length(); i++)
-            for (int k = 0; k < repeatDelta; k++)
-                ret.putScalar(retIdx++,getDouble(i));
-
+        for(int i = 0; i < tensorssAlongDimension(dimension); i++) {
+            INDArray thisTensor = tensorAlongDimension(i,dimension);
+            INDArray retTensor = ret.tensorAlongDimension(i,dimension);
+            int retIdx = 0;
+            for(int k = 0; k < thisTensor.length(); k++) {
+                for(int j = 0; j < repeatDelta; j++) {
+                    retTensor.putScalar(retIdx++,thisTensor.getDouble(k));
+                }
+            }
+        }
 
         return ret;
     }
@@ -3244,10 +3250,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
-        assert toPut.isVector() && toPut.length() == columns : "Illegal length for row " + toPut.length() + " should have been " + columns;
-        INDArray r = getRow(row);
-        r.assign(toPut);
-        return this;
+        return put(new NDArrayIndex[]{new NDArrayIndex(row),NDArrayIndex.all()},toPut);
     }
 
     /**
@@ -3261,10 +3264,8 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-        assert toPut.isVector() && toPut.length() == rows() : "Illegal length for row " + toPut.length() + " should have been " + rows();
-        INDArray r = getColumn(column);
-        r.assign(toPut);
-        return this;
+        return put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(column)},toPut);
+
     }
 
 
@@ -3391,7 +3392,7 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public INDArray reshape(char order, int... newShape) {
         int numberNegativesOnes = 0;
-        int[] shape = newShape;
+        int[] shape = ArrayUtil.copy(newShape);
         for(int i = 0; i < shape.length; i++) {
             if(shape[i] < 0) {
                 if(numberNegativesOnes >= 1)
@@ -3420,7 +3421,7 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, Nd4j.order() == 'f');
+        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape), ordering == 'f');
         if(reshapeAttempt != null)
             return reshapeAttempt;
 
@@ -3449,7 +3450,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray reshape(int...shape) {
-        return reshape(ordering(),shape);
+        return reshape(ordering(), shape);
     }
 
     @Override
@@ -3754,7 +3755,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray ret =  subArray(resolution);
-        NDArrayIndex.updateForNewAxes(ret,indexes);
+        NDArrayIndex.updateForNewAxes(ret, indexes);
         return ret;
     }
 
@@ -4018,19 +4019,35 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        INDArray ret = create(retShape);
-        INDArray linear = ret;
-        INDArray thisLinear = this;
-        int bufferIdx = 0;
-        for (int i = 0; i < ret.length(); i++) {
-            linear.putScalar(i, thisLinear.getDouble(bufferIdx));
-            bufferIdx++;
-            if (bufferIdx >= length())
-                bufferIdx = 0;
+
+        if(isRowVector()) {
+            INDArray ret = create(retShape);
+            //number of times to repeat each value
+            for(int i = 0; i < ret.slices(); i++) {
+                ret.putSlice(i,this);
+            }
+
+            return ret;
+
         }
+        else {
+            INDArray ret = create(retShape);
+            //number of times to repeat each value
+            int repeatDelta = ArrayUtil.prod(retShape) / length();
+            for(int i = 0; i < slices(); i++) {
+                INDArray thisTensor = slice(i);
+                INDArray retTensor = ret.slice(i);
+                int retIdx = 0;
+                for(int k = 0; k < thisTensor.length(); k++) {
+                    for(int j = 0; j < repeatDelta; j++) {
+                        retTensor.putScalar(retIdx++,thisTensor.getDouble(k));
+                    }
+                }
+            }
 
-        return ret;
+            return ret;
 
+        }
 
     }
 

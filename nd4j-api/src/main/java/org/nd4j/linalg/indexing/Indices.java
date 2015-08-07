@@ -402,9 +402,14 @@ public class Indices {
             offsets = dup;
         }
 
-        for (int i = 0; i < ret.length; i++) {
+        int shapeIndex = 0;
+        for (int i = 0; i < indices.length; i++) {
             if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
-                ret[i] = shape[i];
+                if(shapeIndex < ret.length) {
+                    ret[shapeIndex] = shape[shapeIndex];
+                    shapeIndex++;
+                }
+
             }
             else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
                 ret[i] = 0;
@@ -419,12 +424,11 @@ public class Indices {
                 if (currIndices.length < 1)
                     continue;
                 ret[i] = indices[i].indices().length;
+                shapeIndex++;
                 ret[i] -= offsets[i];
             }
 
         }
-
-
 
 
         List<Integer> nonZeros = new ArrayList<>();
@@ -474,7 +478,7 @@ public class Indices {
      */
     public static int[] stride(INDArray arr,NDArrayIndex[] indexes, int... shape) {
         int[] retStride = null;
-        if(indexes.length == arr.stride().length) {
+        if(indexes.length >= arr.stride().length) {
             //prepend zeros for new axis
             retStride  =  Arrays.copyOf(arr.stride(), arr.stride().length);
         }

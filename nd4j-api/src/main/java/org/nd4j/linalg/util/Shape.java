@@ -416,8 +416,8 @@ public class Shape {
      */
     public static  INDArray newShapeNoCopy(INDArray arr, int[] newShape, boolean isFOrder) {
         int oldnd;
-        int[] olddims = arr.shape();
-        int[] oldstrides = arr.stride();
+        int[] olddims = ArrayUtil.copy(arr.shape());
+        int[] oldstrides = ArrayUtil.copy(arr.stride());
         int np, op, last_stride;
         int oi, oj, ok, ni, nj, nk;
         int[] newStrides = new int[newShape.length];
@@ -473,7 +473,7 @@ public class Shape {
         /* Check whether the original axes can be combined */
             for (ok = oi; ok < oj - 1; ok++) {
                 if (isFOrder) {
-                    if (oldstrides[ok + 1] != olddims[ok]*oldstrides[ok]) {
+                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
                      /* not contiguous enough */
                         return null;
                     }

@@ -295,16 +295,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1, 17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(getFailureMessage(),Nd4j.create(new double[]{1, 2, 5, 6}),linearViewNDArray);
-
-    }
-
 
     @Test
     public void testRowVectorGemm() {
@@ -382,18 +372,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testSortWithIndices() {
-        INDArray toSort = Nd4j.linspace(1, 4, 4).reshape(2, 2);
-        //indices,data
-        INDArray[] sorted = Nd4j.sortWithIndices(toSort.dup(), 1, true);
-        INDArray sorted2 = Nd4j.sort(toSort.dup(), 1, true);
-        assertEquals(sorted[1], sorted2);
-        INDArray shouldIndex = Nd4j.create(new float[]{0, 1, 0, 1}, new int[]{2, 2});
-        assertEquals(shouldIndex, sorted[0]);
-
-
-    }
 
     @Test
     public void testDimShuffle() {
@@ -932,7 +910,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         System.out.println(repeatAlongDimension);
         INDArray ret = Nd4j.create(new double[]{0, 1, 2});
         INDArray tile = Nd4j.tile(ret, 2, 2);
-        INDArray assertion = Nd4j.create(new double[]{0,1,2,0,1,2});
+        INDArray assertion = Nd4j.create(new double[][]{
+                {0, 1, 2, 0, 1, 2}
+                ,{0, 1, 2, 0, 1, 2}
+        });
         assertEquals(assertion,tile);
     }
 
@@ -940,7 +921,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testNegativeOneReshape() {
         INDArray arr = Nd4j.create(new double[]{0,1,2});
         INDArray newShape = arr.reshape(-1,3);
-        assertEquals(arr,newShape);
+        assertEquals(newShape,arr);
     }
 
 
@@ -1115,13 +1096,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testAppendBias() {
-        INDArray rand = Nd4j.linspace(1, 25, 25).transpose();
-        INDArray test = Nd4j.appendBias(rand);
-        INDArray assertion = Nd4j.toFlattened(rand, Nd4j.scalar(1));
-        assertEquals(assertion, test);
-    }
+
 
 
 
@@ -1328,7 +1303,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray columnBroadcast = n.transpose().broadcast(4, 5);
         for (int i = 0; i < columnBroadcast.columns(); i++) {
-            assertEquals(columnBroadcast.getColumn(i), n.transpose());
+            INDArray column = columnBroadcast.getColumn(i);
+            assertEquals(column, n.transpose());
         }
 
         INDArray fourD = Nd4j.create(1, 2, 1, 1);

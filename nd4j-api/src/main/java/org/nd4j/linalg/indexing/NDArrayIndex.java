@@ -77,7 +77,7 @@ public class NDArrayIndex {
      */
     public static void updateForNewAxes(INDArray arr,NDArrayIndex...indexes) {
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);
-        if(indexes[0].length() > 1 || indexes[0] instanceof NDArrayIndexAll) {
+        if( numNewAxes >= 1 && (indexes[0].length() > 1 || indexes[0] instanceof NDArrayIndexAll)) {
             List<Integer> newShape = new ArrayList<>();
             List<Integer> newStrides = new ArrayList<>();
             int currDimension = 0;
@@ -92,11 +92,18 @@ public class NDArrayIndex {
                     currDimension++;
                 }
             }
+
             while(currDimension < arr.rank()) {
                 newShape.add(currDimension);
                 newStrides.add(currDimension);
                 currDimension++;
             }
+
+            int[] newShapeArr = Ints.toArray(newShape);
+            int[] newStrideArr = Ints.toArray(newStrides);
+            arr.setShape(newShapeArr);
+            arr.setStride(newStrideArr);
+
 
         }
         else {
