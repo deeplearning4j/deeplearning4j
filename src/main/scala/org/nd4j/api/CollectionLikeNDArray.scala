@@ -8,7 +8,7 @@ import org.nd4j.linalg.factory.Nd4j
 
 trait CollectionLikeNDArray {
   val underlying: INDArray
-
+  
   def filteri(f: Double => Boolean): INDArray = notCleanedUp { array =>
     Nd4j.getExecutioner.exec(FilterOps(underlying.linearView(), f)).z().reshape()reshape(underlying.shape():_*)
   }
