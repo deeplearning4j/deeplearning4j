@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.nn.conf.preprocessor.output;
 
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.OutputPostProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -26,23 +28,26 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public class ComposableOutputPostProcessor implements OutputPreProcessor {
-    private OutputPreProcessor[] outputPreProcessors;
+@Deprecated
+public class ComposableOutputPostProcessor implements OutputPostProcessor {
+	private static final long serialVersionUID = 4406818294012989149L;
+	private OutputPostProcessor[] outputPostProcessors;
 
-    public ComposableOutputPostProcessor(OutputPreProcessor...outputPreProcessors) {
-        this.outputPreProcessors = outputPreProcessors;
+    public ComposableOutputPostProcessor(OutputPostProcessor[] outputPostProcessors) {
+        this.outputPostProcessors = outputPostProcessors;
     }
+
     @Override
-    public INDArray preProcess(INDArray output) {
-        for(OutputPreProcessor outputPreProcessor : outputPreProcessors)
-          output = outputPreProcessor.preProcess(output);
+    public INDArray process(INDArray output) {
+        for(OutputPostProcessor outputPostProcessor : outputPostProcessors)
+          output = outputPostProcessor.process(output);
         return output;
     }
 
     @Override
-    public INDArray backward(INDArray toReverse) {
-        for(OutputPreProcessor outputPreProcessor : outputPreProcessors)
-            toReverse = outputPreProcessor.backward(toReverse);
-        return toReverse;
+    public INDArray backprop(INDArray input) {
+        for (OutputPostProcessor preProcessor : outputPostProcessors)
+            input = preProcessor.backprop(input);
+        return input;
     }
 }

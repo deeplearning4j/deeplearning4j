@@ -33,7 +33,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
  */
 @Data @NoArgsConstructor
 public class AutoEncoder extends BasePretrainNetwork {
-    private static final long serialVersionUID = -7624965662728637504L;
     protected double corruptionLevel;
     protected double sparsity;
 

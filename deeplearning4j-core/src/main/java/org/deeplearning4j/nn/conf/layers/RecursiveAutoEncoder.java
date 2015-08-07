@@ -32,7 +32,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 */
 @Data @NoArgsConstructor
 public class RecursiveAutoEncoder extends FeedForwardLayer {
-    private static final long serialVersionUID = -2963611662325083203L;
 
     private RecursiveAutoEncoder(Builder builder) {
     	super(builder);

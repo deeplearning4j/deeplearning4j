@@ -59,9 +59,6 @@ public abstract class BaseUpdater implements Updater {
     }
 
 
-
-
-
     public abstract void init();
 
     public abstract GradientUpdater init(String variable, INDArray gradient, Layer layer);

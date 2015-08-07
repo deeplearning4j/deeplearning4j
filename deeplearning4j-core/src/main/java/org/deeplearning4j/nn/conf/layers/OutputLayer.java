@@ -35,15 +35,14 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
  */
 @Data @NoArgsConstructor
 public class OutputLayer extends FeedForwardLayer {
-    private static final long serialVersionUID = 8554480736972510788L;
-    protected LossFunction lossFunction;
+    private LossFunction lossFunction;
 
     private OutputLayer(Builder builder) {
     	super(builder);
         this.lossFunction = builder.lossFunction;
     }
 
-    @AllArgsConstructor @NoArgsConstructor
+    @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
         private LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
 
