@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -37,11 +38,15 @@ import org.nd4j.linalg.api.ops.impl.transforms.Cos;
 import org.nd4j.linalg.api.ops.impl.transforms.Sin;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 public class TestOptimizers {
+	
+	//For debugging.
+	private static final boolean PRINT_OPT_RESULTS = true;
 	
 	@Test
 	public void testOptimizersBasicMLPBackprop(){
@@ -57,7 +62,7 @@ public class TestOptimizers {
 				};
 		
 		for( OptimizationAlgorithm oa : toTest ){
-			MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
+			MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa,1));
 			network.init();
 			
 			iter.reset();
@@ -65,14 +70,59 @@ public class TestOptimizers {
 		}
 	}
 	
-	private static MultiLayerConfiguration getMLPConfigIris( OptimizationAlgorithm oa ){
+	@Test
+	public void testOptimizersMLP(){
+		//Check that the score actually decreases over time
+		
+		DataSetIterator iter = new IrisDataSetIterator(150,150);
+		
+		OptimizationAlgorithm[] toTest = {
+				OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,
+				OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
+				OptimizationAlgorithm.CONJUGATE_GRADIENT,
+				OptimizationAlgorithm.LBFGS
+				//OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
+				};
+		
+		DataSet ds = iter.next();
+		
+		for( OptimizationAlgorithm oa : toTest ){
+			MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa,4));
+			network.init();
+			
+			double score = network.score(ds);
+			assertTrue(score!=0.0 && !Double.isNaN(score));
+			
+			if( PRINT_OPT_RESULTS ){
+				System.out.println("testOptimizersMLP() - " + oa );
+				System.out.println(score);
+			}
+			int nCallsToOptimizer = 5;
+			double[] scores = new double[nCallsToOptimizer+1];
+			scores[0] = score;
+			for( int i=0; i<nCallsToOptimizer; i++ ){
+				iter.reset();
+				network.fit(iter);
+				double scoreAfter = network.score(ds);
+				scores[i+1] = scoreAfter;
+				if( PRINT_OPT_RESULTS) System.out.println(scoreAfter);
+				assertTrue("Score is NaN after optimization", !Double.isNaN(scoreAfter));
+				assertTrue("OA="+oa+", before="+score+", after="+scoreAfter,scoreAfter < score);
+				score = scoreAfter;
+			}
+			if( PRINT_OPT_RESULTS ) System.out.println(oa + " - " + Arrays.toString(scores));
+		}
+	}
+	
+	private static MultiLayerConfiguration getMLPConfigIris( OptimizationAlgorithm oa, int nIterations ){
 		MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
 		.nIn(4).nOut(3)
 		.weightInit(WeightInit.DISTRIBUTION)
 		.dist(new NormalDistribution(0, 0.1))
 		.activationFunction("sigmoid")
 		.optimizationAlgo(oa)
-		.iterations(1)
+		.updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.ADAGRAD))
+		.iterations(nIterations)
 		.batchSize(5)
 		.constrainGradientToUnitNorm(false)
 		.corruptionLevel(0.0)
@@ -147,8 +197,6 @@ public class TestOptimizers {
 			testSphereFnOptHelper(OptimizationAlgorithm.LBFGS,n,100);
 	}
 	
-	//For debugging.
-	private static final boolean PRINT_OPT_RESULTS = true;
 	public void testSphereFnOptHelper( OptimizationAlgorithm oa, int numLineSearchIter, int nDimensions ){
 		
 		if( PRINT_OPT_RESULTS ) System.out.println("---------\n Alg=" + oa

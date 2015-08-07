@@ -65,6 +65,15 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
+    
+    /** Compute score after labels and input have been set.
+     */
+    public double computeScore(){
+    	if( input == null || labels == null )
+    		throw new IllegalStateException("Cannot calculate score without input and labels");
+    	setScoreWithZ(output(input));
+    	return score;
+    }
 
     @Override
     public void computeGradientAndScore() {
