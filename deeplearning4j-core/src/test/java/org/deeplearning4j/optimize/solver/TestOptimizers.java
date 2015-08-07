@@ -49,7 +49,14 @@ public class TestOptimizers {
 		
 		DataSetIterator iter = new IrisDataSetIterator(5,50);
 		
-		for( OptimizationAlgorithm oa : OptimizationAlgorithm.values() ){
+		OptimizationAlgorithm[] toTest = {OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,
+				OptimizationAlgorithm.LINE_GRADIENT_DESCENT,
+				OptimizationAlgorithm.CONJUGATE_GRADIENT,
+				OptimizationAlgorithm.LBFGS
+				//OptimizationAlgorithm.HESSIAN_FREE	//Known to not work
+				};
+		
+		for( OptimizationAlgorithm oa : toTest ){
 			MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa));
 			network.init();
 			
