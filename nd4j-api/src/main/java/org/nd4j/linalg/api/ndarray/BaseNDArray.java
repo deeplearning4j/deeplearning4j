@@ -3250,6 +3250,8 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray putRow(int row, INDArray toPut) {
+        if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape()))
+            return assign(toPut);
         return put(new NDArrayIndex[]{new NDArrayIndex(row),NDArrayIndex.all()},toPut);
     }
 
@@ -3264,6 +3266,8 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
+        if(isColumnVector() && Shape.shapeEquals(shape(),toPut.shape()))
+            return assign(toPut);
         return put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(column)},toPut);
 
     }
