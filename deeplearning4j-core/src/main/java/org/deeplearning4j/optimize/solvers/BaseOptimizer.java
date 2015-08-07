@@ -113,7 +113,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public Pair<Gradient,Double> gradientAndScore() {
         model.computeGradientAndScore();
         Pair<Gradient,Double> pair = model.gradientAndScore();
-        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize(), iteration);
+        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
         return pair;
     }
 
@@ -121,6 +121,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * Optimize call. This runs the optimizer.
      * @return whether it converged or not
      */
+    // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
     public  boolean optimize() {
         //validate the input before training
@@ -212,7 +213,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     /**
-     * Pre process to setup initial searchDirection approximation
+     * Pre preProcess to setup initial searchDirection approximation
      */
     @Override
     public  void preProcessLine() {
@@ -228,7 +229,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
     @Override
-    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, int iteration) {
+    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
         if(updater == null)
             updater = UpdaterCreator.getUpdater(model.conf());
         Layer layer = (Layer) model;

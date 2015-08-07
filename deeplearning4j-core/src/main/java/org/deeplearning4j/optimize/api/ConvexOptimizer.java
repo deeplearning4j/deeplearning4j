@@ -69,7 +69,7 @@ public interface ConvexOptimizer extends Serializable {
     void setBatchSize(int batchSize);
 
     /**
-     * Pre process a line before an iteration
+     * Pre preProcess a line before an iteration
      */
     void preProcessLine();
 
@@ -96,10 +96,9 @@ public interface ConvexOptimizer extends Serializable {
      * @param gradient the gradient to modify
      * @param model the model with the parameters to update
      * @param batchSize batchSize for update
-     * @param iteration
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, int iteration);
+    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize);
 
 
 }

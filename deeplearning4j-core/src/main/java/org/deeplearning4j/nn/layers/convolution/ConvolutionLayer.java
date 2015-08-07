@@ -21,53 +21,33 @@ package org.deeplearning4j.nn.layers.convolution;
 import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Convolution layer
  *
  * @author Adam Gibson
  */
-public class ConvolutionLayer implements Layer {
-
-    private NeuralNetConfiguration conf;
-    private Map<String,INDArray> params;
-    protected ParamInitializer paramInitializer;
-    private List<IterationListener> listeners = new ArrayList<>();
-    protected int index = 0;
-    private INDArray dropoutMask;
+public class ConvolutionLayer extends BaseLayer {
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {
-        this.conf = conf;
+        super(conf);
     }
 
-
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
-    public void setIndex(int index) {
-        this.index = index;
+    public ConvolutionLayer(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
     }
 
     @Override
@@ -107,22 +87,24 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation) {
-        INDArray gy = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
-        INDArray biasGradient = nextGradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+        INDArray gy = gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        INDArray biasGradient = gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
         getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
         INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
         gcol = Nd4j.rollAxis(gcol,3);
-        INDArray weightGradient =  Convolution.conv2d(gcol,z, Convolution.Type.VALID);// TODO: Use user specified type of convolution
+        INDArray z = preOutput(input());
+        INDArray weightGradient =  Convolution.conv2d(gcol, z, conf.getConvolutionType());
         Gradient retGradient = new DefaultGradient();
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
         retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
-        return retGradient;
+        return new Pair<>(retGradient,weightGradient);
     }
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException()
+                ;
 
     }
 
@@ -133,12 +115,14 @@ public class ConvolutionLayer implements Layer {
 
     @Override
     public void update(Gradient gradient) {
-
+        for(String paramType : gradient.gradientForVariable().keySet()) {
+            update(gradient.getGradientFor(paramType), paramType);
+        }
     }
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -151,51 +135,31 @@ public class ConvolutionLayer implements Layer {
         return null;
     }
 
-    @Override
-    public INDArray activate(boolean training) {
-        return null;
-    }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public INDArray activate(boolean training) {
         if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect() && training) {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
-        //number of feature maps for the weights
-        int currentFeatureMaps = ConvolutionUtils.numFeatureMap(conf); // This returns the kernelSize as an int
-        //number of channels of the input
-        int inputChannels = ConvolutionUtils.numChannels(input.shape());
-        INDArray ret = Nd4j.create(Ints.concat(new int[]{input.slices(),currentFeatureMaps},conf.getFeatureMapSize()));
+
+        // Activations
         INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
-        INDArray filters = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+
+        INDArray kernelWeights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+
+        kernelWeights = kernelWeights.dup().reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
-            filters = filters.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(filters.shape()));
+            kernelWeights = kernelWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(kernelWeights.shape()));
         }
 
-        for(int i = 0; i < currentFeatureMaps; i++) {
-            INDArray featureMap = Nd4j.create(Ints.concat(new int[]{input.slices(), conf.getKernelSize()[1]}, conf.getFeatureMapSize()));
-            for(int j = 0; j <  inputChannels; j++) {
-                INDArray convolved = Nd4j.getConvolution().convn(input, filters.slice(i).slice(j), Convolution.Type.VALID);
-                featureMap.addi(convolved.broadcast(featureMap.shape()));
-            }
-
-            featureMap.addi(bias.getDouble(i));
-            INDArray activationForSlice = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), featureMap));
-            ret.put(new NDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.all(),new NDArrayIndex(new int[]{i}),NDArrayIndex.all()},activationForSlice);
-        }
-        return ret;
+        // Creates number of feature maps wanted (depth) in the convolution layer = number kernels
+        INDArray convolved = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
+        INDArray activation = Nd4j.tensorMmul(convolved, kernelWeights, new int[][]{{1, 2, 3}, {1, 2, 3}});
+        activation = activation.reshape(activation.size(0),activation.size(1),activation.size(2),activation.size(3));
+        bias = bias.broadcast(activation.shape()).reshape(activation.shape());
+        activation.addi(bias);
+        return Nd4j.rollAxis(activation, 3, 1);
     }
-
-    @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return activate(input,true);
-    }
-
 
     @Override
     public Layer transpose() {
@@ -208,50 +172,11 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation, String previousActivation) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Collection<IterationListener> getIterationListeners() {
-        return listeners;
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        for(IterationListener l : listeners)
-            this.listeners.add(l);
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.listeners = new ArrayList<>(listeners);
-    }
-
-    @Override
-    public void fit() {
-        throw new UnsupportedOperationException();
-
-    }
-
-    @Override
-    public double score() {
-        return 0;
-    }
-
-    @Override
     public void computeGradientAndScore() {
-
     }
 
     @Override
     public void accumulateScore(double accum) {
-
-    }
-
-    @Override
-    public INDArray transform(INDArray data) {
-        return activate(data);
     }
 
     /**
@@ -268,29 +193,8 @@ public class ConvolutionLayer implements Layer {
     }
 
     @Override
-    public int numParams() {
-        int ret = 0;
-        for(INDArray val : params.values())
-            ret += val.length();
-        return ret;
-    }
-
-    @Override
-    public void setParams(INDArray params) {
-
-    }
-
-
-
-
-    @Override
-    public void fit(INDArray data) {
-
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-
+    public double score() {
+        return 0;
     }
 
     @Override
@@ -301,11 +205,6 @@ public class ConvolutionLayer implements Layer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int batchSize() {
-        return 0;
     }
 
     @Override
@@ -323,43 +222,4 @@ public class ConvolutionLayer implements Layer {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public void validateInput() {
-
-    }
-
-    @Override
-    public ConvexOptimizer getOptimizer() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray getParam(String param) {
-        return params.get(param);
-    }
-
-    @Override
-    public void initParams() {
-        paramInitializer.init(paramTable(),conf());
-    }
-
-    @Override
-    public Map<String, INDArray> paramTable() {
-        return params;
-    }
-
-    @Override
-    public void setParamTable(Map<String, INDArray> paramTable) {
-        this.params = paramTable;
-    }
-
-    @Override
-    public void setParam(String key, INDArray val) {
-        this.params.put(key,val);
-    }
-
-    @Override
-    public void clear() {
-
-    }
 }

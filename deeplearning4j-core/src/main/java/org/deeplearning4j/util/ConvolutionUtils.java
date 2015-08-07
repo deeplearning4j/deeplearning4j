@@ -41,14 +41,12 @@ public class ConvolutionUtils {
 
 
     /**
-     * Retrieve the number of feature maps from the configuration
      * @param conf the configuration to get
-     *             the feature maps from
-     * @return the number of feature maps from
-     * the filter size of the configuration
+     *             the number of kernels from
+     * @return the number of kernels/filters to apply
      */
     public static int numFeatureMap(NeuralNetConfiguration conf) {
-        return numFeatureMap(conf.getKernelSize());
+        return conf.getNOut();
     }
 
     /**
@@ -77,18 +75,6 @@ public class ConvolutionUtils {
         return shape[1];
     }
 
-    /**
-     * Returns the number of
-     * feature maps for a given shape (must be at least 3 dimensions
-     * @param shape the shape to get the
-     *              number of feature maps for
-     * @return the number of feature maps
-     * for a particular shape
-     */
-    public static int numFeatureMap(int[] shape) {
-        if(shape.length < 4)
-            return 1;
-        return shape[1];
-    }
+
 
 }

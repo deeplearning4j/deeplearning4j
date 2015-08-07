@@ -10,10 +10,10 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.plot.iterationlistener.LossPlotterIterationListener;
@@ -55,7 +55,6 @@ public class BackPropMLPTest {
     @Test
     public void testMLP2(){
         //Simple mini-batch test with multiple hidden layers
-//		MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{15,25,10},"tanh");
         MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[]{5,15,3},"tanh");
         System.out.println(conf);
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -96,7 +95,6 @@ public class BackPropMLPTest {
             float[] l1WeightsFloat = asFloat(l1Weights);
             float[] l2WeightsFloat = asFloat(l2Weights);
             float l1BiasFloat = l1Bias.getFloat(0);
-            float l2BiasFloat = l2Bias.getFloat(0);
             float[] l2BiasFloatArray = asFloat(l2Bias);
 
             float hiddenUnitPreSigmoid = dotProduct(l1WeightsFloat,xFloat)+l1BiasFloat;	//z=w*x+b
@@ -251,7 +249,7 @@ public class BackPropMLPTest {
             INDArray[] dLdb = new INDArray[nLayers];
             for( int i = 0; i<nLayers; i++ ){
                 INDArray prevActivations = (i == 0 ? x : layerActivations[i-1]);
-                dLdw[i] = deltas[i].transpose().mmul(prevActivations).div(miniBatchSize).transpose();	//Shape: [nIn, nOut]
+                dLdw[i] = deltas[i].transpose().mmul(prevActivations).divi(miniBatchSize).transpose();	//Shape: [nIn, nOut]
                 dLdb[i] = deltas[i].mean(0); //Shape: [1,nOut]
 
                 int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
@@ -281,9 +279,10 @@ public class BackPropMLPTest {
                 layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
             }
 
+            float eps = 0.01f;
             for( int i = 0; i < nLayers; i++ ){
-                assertEquals(expectedWeights[i], layerWeightsAfter[i]);
-                assertEquals(expectedBiases[i], layerBiasesAfter[i]);
+                assertArrayEquals(asFloat(expectedWeights[i]), asFloat(layerWeightsAfter[i]),eps);
+                assertArrayEquals(asFloat(expectedBiases[i]), asFloat(layerBiasesAfter[i]),eps);
             }
         }
     }
@@ -294,23 +293,17 @@ public class BackPropMLPTest {
      * No regularization, no Adagrad, no momentum etc. One iteration.
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction ) {
-        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3)
+    	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
-
                 .activationFunction(activationFunction)
-                .lossFunction(LossFunction.XENT)
-                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-
                 .iterations(1)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
-
-                .layer(new RBM())
-                .learningRate(0.1).useAdaGrad(false)
-
+                .learningRate(0.1)
+                .updater(Updater.SGD)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
@@ -318,22 +311,17 @@ public class BackPropMLPTest {
                 .momentum(0.0)
                 .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
-
-                .list(hiddenLayerSizes.length + 1).hiddenLayerSizes(hiddenLayerSizes)
-                .backward(true).pretrain(false)
-                .useDropConnect(false)
-
-                .override(hiddenLayerSizes.length, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.weightInit(WeightInit.DISTRIBUTION);
-                        builder.dist(new NormalDistribution(0, 0.1));
-                    }
-                }).build();
-
-        return c;
+                .list(hiddenLayerSizes.length + 1);
+    	
+    	for( int i=0; i<hiddenLayerSizes.length; i++ ){
+    		int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
+    		lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).build());
+    	}
+    	lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
+    			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3).activation("softmax").build());
+    	lb.pretrain(false).backprop(true);
+    	
+        return lb.build();
     }
 
     public static float[] asFloat( INDArray arr ){
