@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -30,12 +31,12 @@ import org.deeplearning4j.nn.weights.WeightInit;
  */
 @Data @NoArgsConstructor
 public class GravesLSTM extends FeedForwardLayer {
-	private static final long serialVersionUID = -8006953482655433335L;
 
-	private GravesLSTM(Builder builder) {
+    private GravesLSTM(Builder builder) {
     	super(builder);
     }
 
+    @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
 
         @Override

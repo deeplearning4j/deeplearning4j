@@ -51,7 +51,7 @@ public class ListenerTest {
 
         network.setListeners(Collections.singletonList(listener));
         network.fit(data.getFeatureMatrix(), data.getLabels());
-        assertNotNull(network.getListeners().get(0));
+        assertNotNull(network.getListeners());
         assertEquals(listener.invoked(), true);
     }
 
@@ -75,16 +75,17 @@ public class ListenerTest {
         assertEquals(listener.invoked(), true);
     }
 
+    // TODO fix so it tracks epochs...
     @Test
     public void testAccuracyGraphCaptured() {
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10}, "sigmoid", 10));
         network.init();
         DataSet data = irisIter.next();
-        IterationListener listener = new AccuracyPlotterIterationListener(9, network, data);
+        IterationListener listener = new AccuracyPlotterIterationListener(1, network, data);
 
         network.setListeners(Collections.singletonList(listener));
         network.fit(data.getFeatureMatrix(), data.getLabels());
-        assertNotNull(network.getListeners().get(0).toString());
+        assertNotNull(network.getListeners());
         assertEquals(listener.invoked(), true);
     }
 
@@ -93,11 +94,11 @@ public class ListenerTest {
         // Tests Gradient Plotter and Loss Plotter
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10, 5}, "sigmoid", 5));
         network.init();
-        IterationListener listener = new GradientPlotterIterationListener(4);
-        IterationListener listener2 = new LossPlotterIterationListener(4);
+        IterationListener listener = new GradientPlotterIterationListener(2);
+        IterationListener listener2 = new LossPlotterIterationListener(2);
         network.setListeners(Arrays.asList(listener, listener2));
         while( irisIter.hasNext() ) network.fit(irisIter.next());
-        assertNotNull(network.getListeners().get(1).toString());
+        assertNotNull(network.getListeners().remove(1));
         assertEquals(listener2.invoked(), true);
     }
 
@@ -172,7 +173,7 @@ public class ListenerTest {
 
                 .list(hiddenLayerSizes.length + 1)
                 .hiddenLayerSizes(hiddenLayerSizes)
-                .backward(true).pretrain(false)
+                .backprop(true).pretrain(false)
                 .useDropConnect(false)
 
                 .override(hiddenLayerSizes.length, new ConfOverride() {

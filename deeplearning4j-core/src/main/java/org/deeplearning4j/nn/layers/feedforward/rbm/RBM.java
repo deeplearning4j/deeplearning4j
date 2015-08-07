@@ -77,12 +77,9 @@ public  class RBM extends BasePretrainNetwork {
         this.rng = Nd4j.getRandom();
     }
 
-
-
     /**
      *
      */
-    private static final long serialVersionUID = 6189188205731511957L;
     //variance matrices for gaussian visible/hidden units
     protected INDArray sigma,hiddenSigma;
 
@@ -372,13 +369,13 @@ public  class RBM extends BasePretrainNetwork {
     /**
      * Reconstructs the visible input.
      * A reconstruction is a propdown of the reconstructed hidden input.
-     * @param v the visible input
+     * @param  training true or false
      * @return the reconstruction of the visible input
      */
     @Override
-    public INDArray transform(INDArray v) {
+    public INDArray activate(boolean training) {
         //reconstructed: propUp ----> hidden propDown to transform
-        INDArray propUp = propUp(v);
+        INDArray propUp = propUp(input);
         return propDown(propUp);
     }
 
