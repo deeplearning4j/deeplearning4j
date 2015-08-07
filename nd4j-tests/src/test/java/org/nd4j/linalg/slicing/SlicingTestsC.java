@@ -90,7 +90,7 @@ public class SlicingTestsC extends BaseNd4jTest  {
 
     @Test
     public void testGetRow() {
-        INDArray arr = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray arr = Nd4j.linspace(1,6,6).reshape(2, 3);
         INDArray get = arr.getRow(1);
         INDArray get2 = arr.get(new NDArrayIndex(1), NDArrayIndex.all());
         INDArray assertion = Nd4j.create(new double[]{4,5,6});
@@ -102,11 +102,18 @@ public class SlicingTestsC extends BaseNd4jTest  {
         INDArray threeByThree = Nd4j.linspace(1,9,9).reshape(3, 3);
         INDArray offsetTest = threeByThree.get(new NDArrayIndex(1, 2), NDArrayIndex.all());
         INDArray threeByThreeAssertion = Nd4j.create(new double[][]{
-                {4,5,6},
-                {7,8,9}
+                {4, 5, 6},
+                {7, 8, 9}
         });
 
         assertEquals(threeByThreeAssertion,offsetTest);
+    }
+
+    @Test
+    public void testVectorIndexing() {
+        INDArray zeros = Nd4j.create(1,400000);
+        INDArray get = zeros.get(NDArrayIndex.interval(0,300000));
+        assertArrayEquals(new int[]{1,300000},get.shape());
     }
 
 

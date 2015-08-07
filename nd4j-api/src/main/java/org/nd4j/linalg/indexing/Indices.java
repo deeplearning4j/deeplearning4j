@@ -393,6 +393,11 @@ public class Indices {
         int numNewAxes = NDArrayIndex.numNewAxis(indices);
         if (indices.length > shape.length && numNewAxes < 1)
             return shape;
+
+        if(Shape.isRowVectorShape(shape) && numNewAxes < 1 && indices.length <= 2) {
+            return new int[] {1,indices[0].indices().length};
+        }
+
         int[] ret = new int[offsets.length];
         if(indices[0].length() == 1 && numNewAxes >= 1)
             ret = new int[indices.length - 1];
