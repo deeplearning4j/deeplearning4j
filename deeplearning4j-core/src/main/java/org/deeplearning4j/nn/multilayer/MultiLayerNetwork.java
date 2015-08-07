@@ -253,8 +253,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public INDArray getParam(String param) {
-        throw new UnsupportedOperationException();
-
+    	//Get params for MultiLayerNetwork sub layers.
+    	//Parameter keys here: same as MultiLayerNetwork.backprop().
+    	int idx = param.indexOf("_");
+		if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+param+"\"");
+		int layerIdx = Integer.parseInt(param.substring(0, idx));
+		String newKey = param.substring(idx+1);
+    	
+		return layers[layerIdx].getParam(newKey);
     }
 
     @Override
@@ -275,8 +281,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void setParam(String key, INDArray val) {
-        throw new UnsupportedOperationException();
-
+    	//Set params for MultiLayerNetwork sub layers.
+    	//Parameter keys here: same as MultiLayerNetwork.backprop().
+    	int idx = key.indexOf("_");
+		if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+		int layerIdx = Integer.parseInt(key.substring(0, idx));
+		String newKey = key.substring(idx+1);
+		
+		layers[layerIdx].setParam(newKey,val);
     }
 
 
@@ -1060,7 +1072,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null,null, null);
 
         for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
-            multiGradientKey = String.valueOf(numLayers)+ "_" + entry.getKey();
+            multiGradientKey = String.valueOf(numLayers-1)+ "_" + entry.getKey();
             gradient.setGradientFor(multiGradientKey, entry.getValue());
         }
 
