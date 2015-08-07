@@ -33,7 +33,7 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 | ------------- |:-------------:| :-----:| :-----:|-----:|
 | Alex Black  |  AlexDBlack |  NA | GMT +10 |
 | Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
-| Taisuke Oe  |  taisukeoe | NA  | GMT +10 |
+| Taisuke Oe  |  taisukeoe | NA  | GMT +9 |
 | Kai Sasake  |  Lewuathe | Yahoo! Japan | GMT +9 |
 | Jeffrey Tang | jyt109 | [Skymind](http://skymind.io) | GMT -8 |
 | Melanie Warrick | nyghtowl  | [Skymind](http://skymind.io) | GMT -8 |
