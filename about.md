@@ -21,11 +21,11 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 
 ## DL4J Co-founders
 
-| Id            | Name           | Email  | Organization |  Org URL | Time Zone
-| ------------- |:-------------:| :-----:| :-----:| :-----:|-----:|
-| agibsonccc      | Adam Gibson | adam at skymind dot io | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
-| chrisvnicholson | Chris Nicholson | chris at skymind dot io | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
-| jpatanooga | Josh Patterson  |  josh at skymind dot io | Skymind | [skymind.io](http://skymind.io) | GMT -5 |
+| [Gitter](gitter.im/deeplearning4j/deeplearning4j) Id     | Name          | Org |  Org URL | Time Zone
+| ------------- |:-------------:| :-----:| :-----:|-----:|
+| agibsonccc      | Adam Gibson | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
+| chrisvnicholson | Chris Nicholson | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
+| jpatanooga | Josh Patterson  |  Skymind | [skymind.io](http://skymind.io) | GMT -5 |
 
 
 
