@@ -20,6 +20,8 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -28,18 +30,11 @@ import org.deeplearning4j.nn.weights.WeightInit;
 * Uses back propagation through structure.
 *
 */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class RecursiveAutoEncoder extends FeedForwardLayer {
 
-    private static final long serialVersionUID = -2963611662325083203L;
-
     private RecursiveAutoEncoder(Builder builder) {
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
+    	super(builder);
     }
 
     public static class Builder extends FeedForwardLayer.Builder {
@@ -64,6 +59,13 @@ public class RecursiveAutoEncoder extends FeedForwardLayer {
             this.weightInit = weightInit;
             return this;
         }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
+        }
+        
         @Override
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;

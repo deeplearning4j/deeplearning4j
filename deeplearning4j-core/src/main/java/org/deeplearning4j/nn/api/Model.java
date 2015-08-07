@@ -67,14 +67,6 @@ public interface Model {
 
 
     /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    INDArray transform(INDArray data);
-
-    /**
      * Parameters of the model (if any)
      * @return the parameters of the model
      */

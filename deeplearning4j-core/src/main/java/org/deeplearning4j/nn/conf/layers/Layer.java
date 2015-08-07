@@ -19,15 +19,17 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import lombok.AllArgsConstructor;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -38,22 +40,32 @@ import org.deeplearning4j.nn.weights.WeightInit;
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
         @JsonSubTypes.Type(value = ConvolutionDownSampleLayer.class, name = "convolutionDownSample"),
         @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
+        @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
+        @JsonSubTypes.Type(value = DenseLayer.class, name = "denseLayer"),
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         })
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable {
-    private static final long serialVersionUID = 492217000569721428L;
     protected String activationFunction;
     protected WeightInit weightInit;
+    protected Distribution dist;
     protected double dropOut;
+    
+    public Layer(Builder builder){
+    	this.activationFunction = builder.activationFunction;
+    	this.weightInit = builder.weightInit;
+    	this.dist = builder.dist;
+    	this.dropOut = builder.dropOut;
+    }
 
     public abstract static class Builder {
         protected String activationFunction;
         protected WeightInit weightInit;
-        protected double dropOut;
+        protected Distribution dist;
+        protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
 
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
@@ -63,6 +75,14 @@ public abstract class Layer implements Serializable {
         public Builder weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
             return this;
+        }
+        
+        /** Distribution to sample initial weights from. Used in conjunction with
+         * .weightInit(WeightInit.DISTRIBUTION)
+         */
+        public Builder dist(Distribution dist){
+        	this.dist = dist;
+        	return this;
         }
 
         public Builder dropOut(double dropOut) {

@@ -21,27 +21,20 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
-/**
- * Output layer with different objective co-occurrences for different objectives.
- * This includes classification as well as prediction
- *
+/**Dense layer: fully connected feed forward layer trainable by backprop.
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class DenseLayer extends FeedForwardLayer {
 
-    private static final long serialVersionUID = 8554480736972510788L;
-
     private DenseLayer(Builder builder) {
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
+    	super(builder);
     }
 
+    @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
 
         @Override
@@ -64,6 +57,13 @@ public class DenseLayer extends FeedForwardLayer {
             this.weightInit = weightInit;
             return this;
         }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
+        }
+        
         @Override
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;

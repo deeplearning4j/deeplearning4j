@@ -18,32 +18,36 @@
 
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
 /**
- * Output pre processor's handle layer to layer interactions
+ * Output post processor's handle layer to layer interactions
  * to ensure things like proper shape for input among other things.
  *
  * @author Adam Gibson
  */
-public interface OutputPreProcessor  extends Serializable {
+@Deprecated
+public interface OutputPostProcessor extends Serializable {
     /**
      * Used for handling pre processing of layer output.
      * The typical use case is for handling reshaping of output
      * in to shapes proper for the next layer of input.
-     * @param output the output to pre process
-     * @return the pre processed output
+     * @param output the layer output to post preProcess
+     * @return the processed output
      */
-    INDArray preProcess(INDArray output);
+    INDArray process(INDArray output);
 
 
-    /**
-     * Reverse the process for backward
-     * @param toReverse the reverse process
+    /**Reverse the preProcess for backprop. Process Gradient/epsilon
+     * (from layer above) before using them to calculate the backprop
+     * gradient for this layer.
+     * @param input the reverse preProcess
      * @return the reverse of the pre preprocessing on the output
      */
-    INDArray backward(INDArray toReverse);
+    INDArray backprop(INDArray input);
 
 }
