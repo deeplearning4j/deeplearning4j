@@ -93,6 +93,8 @@ which will import the source and set everything up.
 
 After many years using Eclipse, we recommend IntelliJ, which has a similar interface. Eclipse's monolithic architecture has a tendency to cause strange errors in our code and others'. 
 
+If you use Eclipse, you will need to install the [Lombok plugin](https://projectlombok.org/). 
+
 ### <a name="trouble">Troubleshooting</a>
 
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
