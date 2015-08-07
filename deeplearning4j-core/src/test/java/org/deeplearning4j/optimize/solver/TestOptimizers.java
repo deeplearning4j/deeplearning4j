@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import org.deeplearning4j.berkeley.Pair;
@@ -15,9 +16,9 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -62,33 +63,27 @@ public class TestOptimizers {
 		.nIn(4).nOut(3)
 		.weightInit(WeightInit.DISTRIBUTION)
 		.dist(new NormalDistribution(0, 0.1))
-
 		.activationFunction("sigmoid")
-		.lossFunction(LossFunction.MCXENT)
 		.optimizationAlgo(oa)
 		.iterations(1)
 		.batchSize(5)
 		.constrainGradientToUnitNorm(false)
 		.corruptionLevel(0.0)
 		.layer(new RBM())
-		.learningRate(0.1).useAdaGrad(false)
+		.learningRate(0.1)
 		.regularization(true)
 		.l2(0.01)
 		.applySparsity(false).sparsity(0.0)
 		.seed(12345L)
-		.list(4).hiddenLayerSizes(8,10,5)
+		.list(4)
+		.layer(0, new DenseLayer.Builder().nIn(4).nOut(8).build())
+		.layer(1, new DenseLayer.Builder().nIn(8).nOut(10).build())
+		.layer(2, new DenseLayer.Builder().nIn(10).nOut(5).build())
+//		.layer(3, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).nIn(5).nOut(3).build())	//TODO
+		.layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(5).nOut(3).build())
 		.backprop(true).pretrain(false)
 		.useDropConnect(false)
-
-		.override(3, new ConfOverride() {
-			@Override
-			public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-				builder.activationFunction("softmax");
-				builder.layer(new OutputLayer());
-				builder.weightInit(WeightInit.DISTRIBUTION);
-				builder.dist(new NormalDistribution(0, 0.1));
-			}
-		}).build();
+		.build();
 
 		return c;
 	}
@@ -264,7 +259,7 @@ public class TestOptimizers {
 			System.out.println(Arrays.toString(scores));
 		}
 		for( int i=1; i<scores.length; i++ ){
-			assertTrue( scores[i] < scores[i-1] || (scores[i] == 0.0 && scores[i-1] == 0.0) );
+			assertTrue( scores[i] <= scores[i-1] );
 		}
 		assertTrue(scores[scores.length-1]<1.0);	//Very easy function, expect score ~= 0 with any reasonable number of steps/numLineSearchIter
 	}
@@ -355,7 +350,7 @@ public class TestOptimizers {
 			System.out.println(Arrays.toString(scores));
 		}
 		for( int i=1; i<scores.length; i++ ){
-			assertTrue( scores[i] < scores[i-1] || (scores[i] == 0.0 && scores[i-1] == 0.0) );
+			assertTrue( scores[i] <= scores[i-1] );
 		}
 	}
 	
@@ -481,7 +476,7 @@ public class TestOptimizers {
 			System.out.println(Arrays.toString(scores));
 		}
 		for( int i=1; i<scores.length; i++ ){
-			assertTrue( scores[i] < scores[i-1] || (scores[i] == 0.0 && scores[i-1] == 0.0) );
+			assertTrue( scores[i] <= scores[i-1] );
 		}
 	}
 	
@@ -691,7 +686,9 @@ public class TestOptimizers {
 		public void initParams() { throw new UnsupportedOperationException(); }
 
 		@Override
-		public Map<String, INDArray> paramTable() { throw new UnsupportedOperationException(); }
+		public Map<String, INDArray> paramTable() {
+			return Collections.singletonMap("x", getParam("x"));
+		}
 
 		@Override
 		public void setParamTable(Map<String, INDArray> paramTable) { throw new UnsupportedOperationException(); }
