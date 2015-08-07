@@ -91,6 +91,8 @@ After running a *git clone*, enter this command
   
 which will import the source and set everything up. 
 
+After many years using Eclipse, we recommend IntelliJ, which has a similar interface. Eclipse's monolithic architecture has a tendency to cause strange errors in our code and others'. 
+
 ### <a name="trouble">Troubleshooting</a>
 
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
@@ -127,6 +129,6 @@ Neural net weights are initialized randomly, which means the model begins learni
 
 In order to get started building neural nets, checkout the [Neural Nets Overview](http://deeplearning4j.org/neuralnet-overview.html) for more information.
 
-Take a look at the [IRIS tutorial](../iris-flower-dataset-tutorial.html) to get running quickly and checkout [custom datasets](../customdatasets.html) for other datasets to explore.
+Take a look at the [IRIS tutorial](../iris-flower-dataset-tutorial.html) to get running quickly, and check out our guide for [restricted Boltzmann machines](../restrictedboltzmannmachine.html) to understand the basic mechanics of *deep-belief networks*.
 
 Follow the [ND4J Getting Started](http://nd4j.org/getstarted.html) instructions to start a new project and include necessary [POM dependencies](http://nd4j.org/dependencies.html). 
