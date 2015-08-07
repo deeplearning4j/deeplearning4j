@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public abstract class FeedForwardLayer extends Layer {
-    private static final long serialVersionUID = 492217000569721428L;
     protected int nIn;
     protected int nOut;
     

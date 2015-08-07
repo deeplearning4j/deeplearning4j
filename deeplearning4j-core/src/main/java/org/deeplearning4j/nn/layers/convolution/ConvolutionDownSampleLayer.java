@@ -58,11 +58,6 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
 
     @Override
-    public Pair<Gradient, Gradient> backWard(Gradient ixes, Gradient deltas, INDArray activation, String previousActivation) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public INDArray activate() {
         INDArray W = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
         if(W.shape()[1] != input.shape()[1])
@@ -113,13 +108,6 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
     public double score() {
         return 0;
     }
-
-    @Override
-    public INDArray transform(INDArray data) {
-        return activate(data);
-    }
-
-
 
     @Override
     public void iterate(INDArray input) {

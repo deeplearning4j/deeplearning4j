@@ -16,23 +16,36 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor.output;
+package org.deeplearning4j.nn.conf.preprocessor;
 
+
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Reshape post processor
+ * Zero mean and unit variance operation
+ *
  * @author Adam Gibson
  */
-public class ReshapePreProcessor extends BaseOutputPreProcessor {
-    private int[] shape;
+public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
 
-    public ReshapePreProcessor(int...shape) {
-        this.shape = shape;
+
+	@Override
+    public INDArray preProcess(INDArray input) {
+        INDArray columnMeans = input.mean(0);
+        INDArray columnStds = input.std(0);
+        input.subiRowVector(columnMeans);
+        columnStds.addi(Nd4j.EPS_THRESHOLD);
+        input.diviRowVector(columnStds);
+        return input;
     }
 
     @Override
-    public INDArray preProcess(INDArray output) {
-        return output.reshape(shape);
+    public INDArray backprop(INDArray output) {
+        return output;	//no-op
     }
+
+
 }

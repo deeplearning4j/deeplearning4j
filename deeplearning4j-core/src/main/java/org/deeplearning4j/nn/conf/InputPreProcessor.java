@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -33,17 +35,17 @@ public interface InputPreProcessor extends Serializable {
 
 
     /**
-     * Pre process input for a multi layer network
-     * @param input the input to pre process
-     * @return the input to pre process
+     * Pre preProcess input/activations for a multi layer network
+     * @param input the input to pre preProcess
+     * @return the processed input
      */
     INDArray preProcess(INDArray input);
 
-    /**
-     * Reverse the process during backprop
-     * @param input the input to reverse
-     * @return the reverse of the pre process step (if any)
+    /**Reverse the preProcess during backprop. Process Gradient/epsilons before
+     * passing them to the layer below.
+     * @param output which is a pair of the gradient and epsilon 
+     * @return the reverse of the pre preProcess step (if any)
      */
-    INDArray backwardPreProcess(INDArray input);
+    INDArray backprop(INDArray output);
 
 }

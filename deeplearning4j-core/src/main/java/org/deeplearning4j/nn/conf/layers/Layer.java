@@ -40,14 +40,15 @@ import org.deeplearning4j.nn.weights.WeightInit;
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
         @JsonSubTypes.Type(value = ConvolutionDownSampleLayer.class, name = "convolutionDownSample"),
         @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
+        @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
+        @JsonSubTypes.Type(value = DenseLayer.class, name = "denseLayer"),
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
         })
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable {
-    private static final long serialVersionUID = 492217000569721428L;
     protected String activationFunction;
     protected WeightInit weightInit;
     protected Distribution dist;
