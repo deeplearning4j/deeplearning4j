@@ -42,7 +42,7 @@ public class NeuralNetworkReconstructionRender {
     public void draw() throws InterruptedException {
         while(iter.hasNext()) {
             DataSet first = iter.next();
-            INDArray reconstruct =  network.transform(first.getFeatureMatrix());
+            INDArray reconstruct =  network.activate(first.getFeatureMatrix());
             for(int j = 0; j < first.numExamples(); j++) {
 
                 INDArray draw1 = first.get(j).getFeatureMatrix().mul(255);

@@ -41,7 +41,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     public final static String BIAS = DefaultParamInitializer.BIAS_KEY;
     /** Weights for previous layer -> this layer (current time step).
      * Specifically set to same value af DefaultParamInitializer, as other layers will
-     * want to use these during back-prop. For example, in BaseLayer.backwardGradient(...)
+     * want to use these during back-prop. For example, in BaseLayer.backpropGradient(...)
      * */
     public final static String INPUT_WEIGHTS = DefaultParamInitializer.WEIGHT_KEY;
 
