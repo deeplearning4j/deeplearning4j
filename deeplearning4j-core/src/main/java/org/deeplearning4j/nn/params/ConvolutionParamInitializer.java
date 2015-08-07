@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.params;
 
 
+import com.google.common.primitives.Ints;
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -58,15 +59,15 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf) {
         //the bias is a 1D tensor -- one bias per output feature map
-        return Nd4j.zeros(conf.getKernelSize()[0]);
+        return Nd4j.zeros(conf.getNOut());
     }
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
         /**
          * Create a 4d weight matrix of:
-         *   (number of filters, num input feature maps,
-         filter height, filter width)
+         *   (number of kernels, num input channels,
+         kernel height, kernel width)
          Inputs to the convolution layer are:
          (batch size, num input feature maps,
          image height, image width)
@@ -74,7 +75,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          */
 
         Distribution dist = Distributions.createDistribution(conf.getDist());
-        return WeightInitUtil.initWeights(conf.getKernelSize(),conf.getWeightInit(), dist);
+        return WeightInitUtil.initWeights(Ints.concat(new int[]{conf.getNOut(), conf.getNIn()}, conf.getKernelSize()), conf.getWeightInit(), dist);
     }
 
 }

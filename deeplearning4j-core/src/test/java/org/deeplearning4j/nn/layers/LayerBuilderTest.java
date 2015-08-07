@@ -3,7 +3,7 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.poolingType;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -19,21 +19,22 @@ public class LayerBuilderTest {
     int numOut = 5;
     double drop = 0.3;
     String act = "softmax";
-    poolingType poolType = poolingType.MAX;
-    int[] filterSize = new int[]{2, 2};
-    int filterDepth = 6;
+    PoolingType poolType = PoolingType.MAX;
+    int[] kernelSize = new int[]{2, 2};
     int[] stride = new int[]{2, 2};
     HiddenUnit hidden = HiddenUnit.RECTIFIED;
     VisibleUnit visible = VisibleUnit.GAUSSIAN;
     int k  = 1;
     Convolution.Type convType = Convolution.Type.FULL;
     LossFunction loss = LossFunction.MCXENT;
-
+    WeightInit weight = WeightInit.XAVIER;
+    double corrupt = 0.4;
+    double sparsity = 0.3;
 
     @Test
     public void testLayerBuilderAPI() {
         // Make new Convolutional layer
-        ConvolutionLayer conv = new ConvolutionLayer.Builder(filterSize, convType).activation(act).build();
+        ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize,convType).activation(act).build();
         // Make new Subsampling layer
         SubsamplingLayer sample = new SubsamplingLayer.Builder(poolType, stride).build();
         // Make new RBM layer
@@ -48,8 +49,7 @@ public class LayerBuilderTest {
         assertTrue(out.getActivationFunction().equals(act));
         // Test Convolution layer API
         assertTrue(conv.getConvolutionType() == convType);
-        assertTrue(conv.getKernelSize() == filterSize);
-        // Test Subsampling layer API
+         // Test Subsampling layer API
         assertTrue(sample.getPoolingType() == poolType);
         assertTrue(sample.getStride() == stride);
         // Test RBM layer API

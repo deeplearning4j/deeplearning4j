@@ -18,29 +18,25 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
  * LSTM recurrent net.
- *
  * Based on karpathy et. al's work on generation of image descriptions.
- *
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class LSTM extends FeedForwardLayer {
     
-    private static final long serialVersionUID = 8056539856799747130L;
     private LSTM(Builder builder) {
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
+    	super(builder);
     }
 
+    @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
 
         @Override
@@ -63,6 +59,13 @@ public class LSTM extends FeedForwardLayer {
             this.weightInit = weightInit;
             return this;
         }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
+        }
+        
         @Override
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
@@ -74,6 +77,4 @@ public class LSTM extends FeedForwardLayer {
             return new LSTM(this);
         }
     }
-
-
 }

@@ -69,13 +69,13 @@ public class RecursiveAutoEncoder extends BaseLayer {
         score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);;
     }
 
-    @Override
-    public INDArray transform(INDArray data) {
-        INDArray w = getParam(RecursiveParamInitializer.W);
-        INDArray c = getParam(RecursiveParamInitializer.C);
-        INDArray inputTimesW = data.mmul(w);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
-    }
+//    @Override
+//    public INDArray transform(INDArray data) {
+//        INDArray w = getParam(RecursiveParamInitializer.W);
+//        INDArray c = getParam(RecursiveParamInitializer.C);
+//        INDArray inputTimesW = data.mmul(w);
+//        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
+//    }
 
 
     public INDArray decode(INDArray input) {
@@ -109,7 +109,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
 
             currInput = combined;
             allInput = combined;
-            INDArray encoded = transform(combined);
+            INDArray encoded = activate(combined);
             y = decode(encoded);
 
             INDArray currVisibleLoss = currInput.sub(y);

@@ -3,6 +3,8 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.convolution.Convolution;
 
@@ -12,29 +14,56 @@ import org.nd4j.linalg.convolution.Convolution;
 @Data
 @NoArgsConstructor
 public class ConvolutionLayer extends FeedForwardLayer {
-
-    private static final long serialVersionUID = 3073633667258683720L;
+    protected Convolution.Type convolutionType;
     protected int[] kernelSize; // Square filter
-    protected Convolution.Type convolutionType; // FULL / VALID / SAME
+    protected int[] stride; // Default is 2. Down-sample by a factor of 2
+    protected int[] padding;
 
     private ConvolutionLayer(Builder builder) {
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.kernelSize = builder.filterSize;
+    	super(builder);
         this.convolutionType = builder.convolutionType;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
+        this.kernelSize = builder.kernelSize;
+        this.stride = builder.stride;
+        this.padding = builder.padding;
+    }
+
+    public enum PoolingType {
+        FULL, VALID, SAME
     }
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private int[] filterSize; // Square filter
-        private Convolution.Type convolutionType; // FULL / VALID / SAME
+        private Convolution.Type convolutionType = Convolution.Type.VALID;
+        private int[] kernelSize = new int[] {5, 5};
+        private int[] stride = new int[] {2, 2};
+        private int[] padding = new int[] {0, 0};
 
-        public Builder(int[] filterSize) {
-            this.filterSize = filterSize;
+
+        public Builder(int[] kernelSize, int[] stride, int[] padding) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
         }
+
+        public Builder(int[] kernelSize, int[] stride) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+        }
+
+        public Builder(Convolution.Type convolutionType) {
+            this.convolutionType = convolutionType;
+        }
+
+        public Builder(int[] kernelSize, Convolution.Type convolutionType) {
+            this.kernelSize = kernelSize;
+            this.convolutionType = convolutionType;
+        }
+
+        public Builder(int[] kernelSize) {
+            this.kernelSize = kernelSize;
+        }
+
+        public Builder() {}
 
         @Override
         public Builder nIn(int nIn) {
@@ -60,7 +89,14 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
         @Override
         public Builder dropOut(double dropOut) {
-            throw new UnsupportedOperationException("ConvolutionLayer Layer does not accept dropout");
+            this.dropOut = dropOut;
+            return this;
+        }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
         }
 
         @Override

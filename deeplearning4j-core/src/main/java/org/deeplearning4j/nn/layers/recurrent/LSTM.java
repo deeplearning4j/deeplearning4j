@@ -67,6 +67,9 @@ public class LSTM extends BaseLayer {
         super(conf);
     }
 
+    public LSTM(NeuralNetConfiguration conf, INDArray input) {
+        super(conf, input);
+    }
 
 
     /**
@@ -75,7 +78,8 @@ public class LSTM extends BaseLayer {
      * @return
      */
     public INDArray forward(INDArray xi) {
-        return activate(xi);
+        setInput(xi);
+        return activate();
     }
 
 
@@ -89,7 +93,8 @@ public class LSTM extends BaseLayer {
         this.xs = xs;
         this.xi = xi;
         x = Nd4j.vstack(xi,xs);
-        return activate(x);
+        setInput(x);
+        return activate();
     }
 
 
@@ -98,7 +103,7 @@ public class LSTM extends BaseLayer {
      * @param y
      * @return {@link org.deeplearning4j.nn.gradient.Gradient}
      */
-    public Gradient backward(INDArray y) {
+    public Gradient backprop(INDArray y) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
 
@@ -176,14 +181,8 @@ public class LSTM extends BaseLayer {
     }
 
 
-
     @Override
-    public INDArray input() {
-        return xi;
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
+    public INDArray activate(boolean training) {
         this.x = input;
 
         INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
@@ -236,9 +235,6 @@ public class LSTM extends BaseLayer {
 
             else
                 hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(c.getRow(t)));
-
-
-
 
         }
 
@@ -460,7 +456,7 @@ public class LSTM extends BaseLayer {
     @Override
     public void fit() {
         Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(getIterationListeners())
+                .model(this).configure(conf()).listeners(getListeners())
                 .build();
         solver.optimize();
     }
@@ -490,7 +486,7 @@ public class LSTM extends BaseLayer {
     public void computeGradientAndScore() {
         INDArray forward = forward(xi, xs);
         INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
-        gradient = backward(probas);
+        gradient = backprop(probas);
         if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, forward);
             create.exec();
@@ -508,10 +504,10 @@ public class LSTM extends BaseLayer {
     }
 
 
-    @Override
-    public INDArray transform(INDArray data) {
-        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", activate(data)).derivative(), 1);
-    }
+//    @Override
+//    public INDArray transform(INDArray data) {
+//        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", activate(data)).derivative(), 1);
+//    }
 
 
 
@@ -556,7 +552,7 @@ public class LSTM extends BaseLayer {
         };
         xs = data.get(everythingElse);
         Solver solver = new Solver.Builder()
-                .configure(conf).model(this).listeners(getIterationListeners())
+                .configure(conf).model(this).listeners(getListeners())
                 .build();
         solver.optimize();
     }
