@@ -168,13 +168,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input, true);
+        setInput(input);
         return output(true);
-    }
-
-    @Override
-    public INDArray activate(boolean training) {
-        return output(training);
     }
 
     @Override
@@ -215,7 +210,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(training)
             applyDropOutIfNecessary(input(),training);
 
-        return super.activate();
+        return super.activate(true);
     }
 
 
