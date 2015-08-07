@@ -32,7 +32,19 @@ object Implicits {
     def <=(d: Double): Boolean = forall(_ <= d)
 
     def apply(target: IndexRange*): INDArray = subMatrix(target: _*)
+
+    def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
+
+    def rowP:RowProjectedNDArray = new RowProjectedNDArray(underlying)
+
+    def sliceP:SliceProjectedNDArray = new SliceProjectedNDArray(underlying)
   }
+
+  implicit def rowProjection2NDArray(row:RowProjectedNDArray):INDArray = row.array
+
+  implicit def columnProjection2NDArray(column:ColumnProjectedNDArray):INDArray = column.array
+
+  implicit def sliceProjection2NDArray(sliced:SliceProjectedNDArray):INDArray = sliced.array
 
   /*
    Avoid using Numeric[T].toDouble(t:T) for sequence transformation in XXColl2INDArray to minimize memory consumption.
