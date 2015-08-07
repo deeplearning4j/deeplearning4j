@@ -1,13 +1,16 @@
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
@@ -62,4 +65,34 @@ public class MultiNeuralNetConfLayerBuilderTest {
 
         assertFalse(firstLayer.equals(secondLayer));
     }
+
+    @Test
+    public void testRbmSetup() {
+        MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .seed(123)
+                .iterations(5)
+                .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
+                .activationFunction("relu")
+                .k(1) // Annoying dl4j bug that is yet to be fixed.
+                .weightInit(WeightInit.XAVIER)
+                .constrainGradientToUnitNorm(true)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .regularization(true)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .list(4)
+                .layer(0, new RBM.Builder().nIn(784).nOut(1000).build())
+                .layer(1, new RBM.Builder().nIn(1000).nOut(500).build())
+                .layer(2, new RBM.Builder().nIn(500).nOut(250).build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                        .nIn(250).nOut(numOut).build())
+                        // Pretrain is unsupervised pretraining and finetuning on output layer
+                        // Backward is full propagation on ALL layers.
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork network = new MultiLayerNetwork(multiLayerConfiguration);
+        network.init();
+
+    }
+
 }

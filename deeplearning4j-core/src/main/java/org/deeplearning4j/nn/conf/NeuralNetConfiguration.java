@@ -158,7 +158,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   boolean useRegularization,
                                   Map<Integer, Double> momentumAfter,
                                   int resetAdaGradIterations,
-                             4     double dropOut,
+                                 double dropOut,
                                   boolean applySparsity,
                                   WeightInit weightInit,
                                   OptimizationAlgorithm optimizationAlgo,
