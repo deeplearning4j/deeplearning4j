@@ -27,7 +27,7 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 | Chris Nicholson | chrisvnicholson | [Skymind](http://skymind.io) | GMT -8 |
 | Josh Patterson  |  jpatanooga | [Skymind](http://skymind.io) | GMT -5 |
 
-## DL4J Contributors 
+## Major DL4J Committers 
 
 | Name    | [Gitter Id](gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
