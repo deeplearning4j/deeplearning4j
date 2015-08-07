@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import com.google.common.primitives.Doubles;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -71,15 +72,48 @@ public class WordVectorSerializerTest {
     public void testWriteWordVectors() throws IOException {
         String pathToFile = "test_writing_word_vector.txt";
 
-        Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile, false);
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) vec.lookupTable();
         InMemoryLookupCache lookupCache = (InMemoryLookupCache) vec.vocab();
         WordVectorSerializer.writeWordVectors(lookupTable, lookupCache, pathToFile);
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File(pathToFile));
-        assertTrue(wordVectors.getWordVector("<s>").length == 1000);
-        assertTrue(wordVectors.getWordVector("Adam").length == 1000);
-        assertTrue(wordVectors.getWordVector("awesome").length == 1000);
+        double[] wordVector1 = wordVectors.getWordVector("<s>");
+        double[] wordVector2 = wordVectors.getWordVector("Adam");
+        double[] wordVector3 = wordVectors.getWordVector("awesome");
+
+        assertTrue(wordVector1.length == 100);
+        assertEquals(Doubles.asList(wordVector1).get(0), 0.004003, 1e-3);
+        assertTrue(wordVector2.length == 100);
+        assertEquals(Doubles.asList(wordVector2).get(0), 0.002280, 1e-3);
+        assertTrue(wordVector3.length == 100);
+        assertEquals(Doubles.asList(wordVector3).get(0), -0.004731, 1e-3);
+    }
+
+    @Test
+    public void testWriteWordVectorsFromWord2Vec() throws IOException {
+        String pathToFile = "test_writing_word_vector2.txt";
+
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile, false);
+        WordVectorSerializer.writeWordVectors(vec, pathToFile);
+
+        WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File(pathToFile));
+        assertTrue(wordVectors.getWordVector("<s>").length == 100);
+        assertTrue(wordVectors.getWordVector("Adam").length == 100);
+        assertTrue(wordVectors.getWordVector("awesome").length == 100);
+    }
+
+    @Test
+    public void testFromTableAndVocab() throws IOException{
+
+        Word2Vec vec = WordVectorSerializer.loadGoogleModel(textFile, false);
+        InMemoryLookupTable lookupTable = (InMemoryLookupTable) vec.lookupTable();
+        InMemoryLookupCache lookupCache = (InMemoryLookupCache) vec.vocab();
+
+        WordVectors wordVectors = WordVectorSerializer.fromTableAndVocab(lookupTable, lookupCache);
+        assertTrue(wordVectors.getWordVector("<s>").length == 100);
+        assertTrue(wordVectors.getWordVector("Adam").length == 100);
+        assertTrue(wordVectors.getWordVector("awesome").length == 100);
     }
 
     @Test
