@@ -66,8 +66,6 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         this.numChannels = 1;
     }
 
-    public FeedForwardToCnnPreProcessor(){}
-
     @Override
     public INDArray preProcess(INDArray input) {
         this.shape = input.shape();
