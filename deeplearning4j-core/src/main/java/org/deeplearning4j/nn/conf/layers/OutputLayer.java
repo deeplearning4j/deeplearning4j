@@ -21,7 +21,11 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import lombok.RequiredArgsConstructor;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
@@ -29,25 +33,18 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
  * This includes classification as well as prediction
  *
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
 public class OutputLayer extends FeedForwardLayer {
-
-    private static final long serialVersionUID = 8554480736972510788L;
-    protected LossFunction lossFunction;
+    private LossFunction lossFunction;
 
     private OutputLayer(Builder builder) {
+    	super(builder);
         this.lossFunction = builder.lossFunction;
-        this.nIn = builder.nIn;
-        this.nOut = builder.nOut;
-        this.activationFunction = builder.activationFunction;
-        this.weightInit = builder.weightInit;
-        this.dropOut = builder.dropOut;
     }
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private LossFunction lossFunction;
+        private LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
 
         @Override
         public Builder nIn(int nIn) {
@@ -69,6 +66,13 @@ public class OutputLayer extends FeedForwardLayer {
             this.weightInit = weightInit;
             return this;
         }
+        
+        @Override
+        public Builder dist(Distribution dist){
+        	super.dist(dist);
+        	return this;
+        }
+        
         @Override
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
@@ -79,6 +83,7 @@ public class OutputLayer extends FeedForwardLayer {
         public OutputLayer build() {
             return new OutputLayer(this);
         }
+
     }
 }
 

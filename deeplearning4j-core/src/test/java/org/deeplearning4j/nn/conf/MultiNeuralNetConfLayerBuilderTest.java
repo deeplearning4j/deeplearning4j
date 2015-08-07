@@ -1,11 +1,8 @@
 package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.poolingType;
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -21,7 +18,7 @@ public class MultiNeuralNetConfLayerBuilderTest {
     int numOut = 5;
     double drop = 0.3;
     String act = "softmax";
-    poolingType poolType = poolingType.MAX;
+    PoolingType poolType = PoolingType.MAX;
     int[] filterSize = new int[]{2, 2};
     int filterDepth = 6;
     int[] stride = new int[]{2, 2};
@@ -46,7 +43,7 @@ public class MultiNeuralNetConfLayerBuilderTest {
         int newFD = 7;
         int[] newStride = new int[]{3, 3};
         Convolution.Type newConvType = Convolution.Type.SAME;
-        SubsamplingLayer.poolingType newPoolType = poolingType.AVG;
+        PoolingType newPoolType = PoolingType.AVG;
         double newCorrupt = 0.5;
         double newSparsity = 0.5;
         HiddenUnit newHidden = HiddenUnit.BINARY;

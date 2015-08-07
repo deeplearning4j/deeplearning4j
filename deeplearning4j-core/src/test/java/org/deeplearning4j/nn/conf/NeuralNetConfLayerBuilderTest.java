@@ -3,7 +3,7 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.poolingType;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -22,9 +22,8 @@ public class NeuralNetConfLayerBuilderTest {
     int numOut = 5;
     double drop = 0.3;
     String act = "softmax";
-    poolingType poolType = poolingType.MAX;
-    int[] filterSize = new int[]{2, 2};
-    int filterDepth = 6;
+    PoolingType poolType = PoolingType.MAX;
+    int[] kernelSize = new int[]{2, 2};
     int[] stride = new int[]{2, 2};
     HiddenUnit hidden = HiddenUnit.RECTIFIED;
     VisibleUnit visible = VisibleUnit.GAUSSIAN;
@@ -47,7 +46,7 @@ public class NeuralNetConfLayerBuilderTest {
         int newFD = 7;
         int[] newStride = new int[]{3, 3};
         Convolution.Type newConvType = Convolution.Type.SAME;
-        SubsamplingLayer.poolingType newPoolType = poolingType.AVG;
+        PoolingType newPoolType = PoolingType.AVG;
         double newCorrupt = 0.5;
         double newSparsity = 0.5;
         HiddenUnit newHidden = HiddenUnit.BINARY;
@@ -87,9 +86,8 @@ public class NeuralNetConfLayerBuilderTest {
         // Convolutional layer
         NeuralNetConfiguration convConf = new NeuralNetConfiguration.Builder()
                 .activationFunction(act)
-                .filterSize(filterSize)
-                .filterDepth(filterDepth)
-                .layer(new ConvolutionLayer.Builder(newFS,newConvType).activation(newAct).build())
+                .kernelSize(kernelSize)
+                .layer(new ConvolutionLayer.Builder(newFS, newConvType).activation(newAct).build())
                 .build();
 
         Layer conv = LayerFactories.getFactory(convConf.getLayer()).create(convConf);

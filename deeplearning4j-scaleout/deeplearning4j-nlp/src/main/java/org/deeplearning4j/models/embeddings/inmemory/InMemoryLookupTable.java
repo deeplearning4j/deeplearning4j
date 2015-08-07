@@ -133,7 +133,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             for(String s : vocab.words()) {
                 plot.add(s);
             }
-            tsne.plot(syn0,2,plot);
+            tsne.plot(syn0, 2, plot);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -291,12 +291,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
         else
             Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
-
-
-
-
-
-
     }
 
     public boolean isUseAdaGrad() {
@@ -396,8 +390,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
         this.rng = Nd4j.getRandom();
 
         syn0  = Nd4j.rand(new int[]{vocab.numWords() + 1,vectorLength},rng).subi(0.5).divi(vectorLength);
-        INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
-        putVector(Word2Vec.UNK,randUnk);
+//        INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
+//        putVector(Word2Vec.UNK,randUnk);
 
         syn1 = Nd4j.create(syn0.shape());
         initNegative();
@@ -413,22 +407,26 @@ public class InMemoryLookupTable implements WeightLookupTable {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);
         }
 
-        int wordIdx = 0;
-        double d1 = Math.pow(vocab.wordFrequency(vocab.wordAtIndex(wordIdx)),power) / trainWordsPow;
-        for(int i = 0; i < tableSize; i++) {
-            table.putScalar(i,wordIdx);
-            double mul = i * 1.0 / (double) tableSize;
-            if(mul > d1) {
-                wordIdx++;
-                String wordAtIndex = vocab.wordAtIndex(wordIdx);
-                if(wordAtIndex == null)
+
+        for(String word : vocab.words()) {
+            double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
+            for(int i = 0; i < tableSize; i++) {
+                int wordIdx = vocab.indexOf(word);
+                if(wordIdx < 0)
                     continue;
-                d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
+
+                table.putScalar(i,wordIdx);
+                double mul = i * 1.0 / (double) tableSize;
+                if(mul > d1) {
+                    wordIdx++;
+                    String wordAtIndex = vocab.wordAtIndex(wordIdx);
+                    if(wordAtIndex == null)
+                        continue;
+                    d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
+
+                }
 
             }
-
-            if(wordIdx >= vocabSize)
-                wordIdx = vocabSize - 1;
 
         }
 
