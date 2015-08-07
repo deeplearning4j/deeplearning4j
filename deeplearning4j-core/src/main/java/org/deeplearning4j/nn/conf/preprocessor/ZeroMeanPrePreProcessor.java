@@ -16,23 +16,28 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor.input;
+package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Unit variance operation
+ * Zero mean and unit variance operation
  *
- * @author Adma Gibson
+ * @author Adam Gibson
  */
-public class UnitVariancePrePreProcessor extends BaseInputPreProcessor {
-    @Override
-    public INDArray preProcess(INDArray input) {
-        INDArray columnStds = input.std(0);
-        columnStds.addi(Nd4j.EPS_THRESHOLD);
-        input.diviRowVector(columnStds);
-        return input;
+public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
 
+	@Override
+    public INDArray preProcess(INDArray input) {
+        INDArray columnMeans = input.mean(0);
+        input.subiRowVector(columnMeans);
+        return input;
+    }
+
+    @Override
+    public INDArray backprop(INDArray output) {
+        return output;
     }
 }

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -26,15 +27,14 @@ import org.deeplearning4j.nn.weights.WeightInit;
 
 /**Dense layer: fully connected feed forward layer trainable by backprop.
  */
-@Data
+@Data @NoArgsConstructor
 public class DenseLayer extends FeedForwardLayer {
-    private static final long serialVersionUID = 8554480736972510788L;
 
     private DenseLayer(Builder builder) {
     	super(builder);
     }
 
-    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
 
         @Override

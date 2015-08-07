@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -30,13 +31,14 @@ import org.deeplearning4j.nn.weights.WeightInit;
  */
 @Data @NoArgsConstructor
 public class LSTM extends FeedForwardLayer {
-    private static final long serialVersionUID = 8056539856799747130L;
     
     private LSTM(Builder builder) {
     	super(builder);
     }
 
+    @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
+
         @Override
         public Builder nIn(int nIn) {
             this.nIn = nIn;

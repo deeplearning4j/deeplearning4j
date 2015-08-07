@@ -22,7 +22,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.deeplearning4j.nn.conf.OutputPreProcessor;
+import org.deeplearning4j.nn.conf.OutputPostProcessor;
 import org.deeplearning4j.util.Dl4jReflection;
 
 import java.io.IOException;
@@ -32,16 +32,16 @@ import java.util.Properties;
 /**
  * Created by agibsonccc on 2/11/15.
  */
-public class PreProcessorDeSerializer extends JsonDeserializer<OutputPreProcessor> {
+public class PreProcessorDeSerializer extends JsonDeserializer<OutputPostProcessor> {
     @Override
-    public OutputPreProcessor deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+    public OutputPostProcessor deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
         JsonNode node = jp.getCodec().readTree(jp);
         String val = node.asText();
         String[] split = val.split("\t");
         if(split.length >= 2) {
             try {
-                Class<? extends OutputPreProcessor> clazz2 = (Class<? extends OutputPreProcessor>) Class.forName(split[0]);
-                OutputPreProcessor ret =  clazz2.newInstance();
+                Class<? extends OutputPostProcessor> clazz2 = (Class<? extends OutputPostProcessor>) Class.forName(split[0]);
+                OutputPostProcessor ret =  clazz2.newInstance();
                 Properties props = new Properties();
                 props.load(new StringReader(split[1]));
                 Dl4jReflection.setProperties(ret, props);

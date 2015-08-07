@@ -14,51 +14,56 @@ import org.nd4j.linalg.convolution.Convolution;
 @Data
 @NoArgsConstructor
 public class ConvolutionLayer extends FeedForwardLayer {
-
-    private static final long serialVersionUID = 3073633667258683720L;
+    protected Convolution.Type convolutionType;
     protected int[] kernelSize; // Square filter
-    protected Convolution.Type convolutionType; // FULL / VALID / SAME
-    protected int[] stride;
+    protected int[] stride; // Default is 2. Down-sample by a factor of 2
+    protected int[] padding;
 
     private ConvolutionLayer(Builder builder) {
-        super(builder);
-        this.kernelSize = builder.filterSize;
+    	super(builder);
         this.convolutionType = builder.convolutionType;
+        this.kernelSize = builder.kernelSize;
         this.stride = builder.stride;
+        this.padding = builder.padding;
+    }
+
+    public enum PoolingType {
+        FULL, VALID, SAME
     }
 
     @AllArgsConstructor
-    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private int[] filterSize; // Square filter
-        private Convolution.Type convolutionType; // FULL / VALID / SAME
-        private int[] stride;
+        private Convolution.Type convolutionType = Convolution.Type.VALID;
+        private int[] kernelSize = new int[] {5, 5};
+        private int[] stride = new int[] {2, 2};
+        private int[] padding = new int[] {0, 0};
 
-        //Constructors
-        public Builder(int[] filterSize) {
-            this.filterSize = filterSize;
-        }
 
-        public Builder(int[] filterSize, Convolution.Type convolutionType) {
-            this.filterSize = filterSize;
-            this.convolutionType = convolutionType;
-        }
-        //////
-
-        public Builder filterSize(int[] filterSize) {
-            this.filterSize = filterSize;
-            return this;
-        }
-
-        public Builder convolutionType(Convolution.Type convolutionType) {
-            this.convolutionType = convolutionType;
-            return this;
-        }
-
-        public Builder stride(int[] stride) {
+        public Builder(int[] kernelSize, int[] stride, int[] padding) {
+            this.kernelSize = kernelSize;
             this.stride = stride;
-            return this;
+            this.padding = padding;
         }
+
+        public Builder(int[] kernelSize, int[] stride) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+        }
+
+        public Builder(Convolution.Type convolutionType) {
+            this.convolutionType = convolutionType;
+        }
+
+        public Builder(int[] kernelSize, Convolution.Type convolutionType) {
+            this.kernelSize = kernelSize;
+            this.convolutionType = convolutionType;
+        }
+
+        public Builder(int[] kernelSize) {
+            this.kernelSize = kernelSize;
+        }
+
+        public Builder() {}
 
         @Override
         public Builder nIn(int nIn) {

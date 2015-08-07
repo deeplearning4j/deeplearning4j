@@ -178,7 +178,7 @@ class NeuralNetworkClassificationModel private[ml] (
       networkHolder = new ThreadLocal[MultiLayerNetwork] {
         override def initialValue(): MultiLayerNetwork = {
           val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson($(conf)))
-          network.setListeners(JavaConversions.seqAsJavaList(List(new ScoreIterationListener(1))))
+          network.setListeners(new ScoreIterationListener(1))
           network.init()
           network.setParameters(networkParams.value)
           network
