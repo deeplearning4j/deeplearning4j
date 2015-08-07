@@ -298,13 +298,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (input == null)
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
-        int[] hiddenLayerSizes = getLayerWiseConfigurations().getHiddenLayerSizes();
-        if (input.shape().length == 2)
-            for (int i = 0; i < hiddenLayerSizes.length; i++)
-                if (hiddenLayerSizes[i] < 1)
-                    throw new IllegalArgumentException("All hidden layer sizes must be >= 1");
-
-
         this.input = input;
 
         if (!initCalled)
@@ -1460,7 +1453,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if (get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
-            layer.computeGradientAndScore();
+            if(layer.input() != null)
+                layer.computeGradientAndScore();
             idx += range - 1;
         }
 
