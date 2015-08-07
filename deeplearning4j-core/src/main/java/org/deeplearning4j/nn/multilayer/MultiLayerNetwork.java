@@ -88,7 +88,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
-        this.defaultConfiguration = conf.getConf(0);
+        this.defaultConfiguration = conf.getConf(0).clone();
     }
 
     /**
@@ -383,6 +383,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
             initCalled = true;
             initMask();
+        }
+        
+        //Set parameters in MultiLayerNetwork.defaultConfiguration for later use in BaseOptimizer.setupSearchState() etc
+        //Keyed as per backprop()
+        defaultConfiguration.clearVariables();
+        for( int i=0; i<layers.length; i++ ){
+        	for( String s : layers[i].conf().variables() ){
+        		defaultConfiguration.addVariable(i+"_"+s);
+        	}
         }
     }
 
@@ -1514,14 +1523,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             Layer layer = getLayers()[i];
 
             int range = layer.numParams();
-            INDArray get = params.get(NDArrayIndex.interval(idx, range + idx));
+            INDArray get = params.get(new NDArrayIndex(0),NDArrayIndex.interval(idx, range + idx));
             if (get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
-            layer.computeGradientAndScore();
             idx += range - 1;
         }
-
     }
 
 
