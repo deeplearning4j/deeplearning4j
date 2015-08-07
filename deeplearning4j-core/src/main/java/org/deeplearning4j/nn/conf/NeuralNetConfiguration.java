@@ -396,6 +396,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+            @Deprecated
         public ListBuilder hiddenLayerSizes(int...hiddenLayerSizes) {
             this.hiddenLayerSizes = hiddenLayerSizes;
             return this;
@@ -732,6 +733,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
 
+        @Deprecated
         public Builder weightShape(int[] weightShape) {
             this.weightShape = weightShape;
             return this;
@@ -827,6 +829,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        @Deprecated
         public Builder resetAdaGradIterations(int resetAdaGradIterations) {
             this.resetAdaGradIterations = resetAdaGradIterations;
             return this;
