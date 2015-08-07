@@ -149,6 +149,8 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Notes on Contrastive Divergence]**(http://www.robots.ox.ac.uk/~ojw/files/NotesOnCD.pdf)
 
+**[Transition-Based Dependency Parsing with Stack Long Short-Term Memory](http://arxiv.org/pdf/1505.08075v1.pdf)**; Chris Dyer, Miguel Ballesteros, Wang Ling, Austin Matthews, Noah A. Smith
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
