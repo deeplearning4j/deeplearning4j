@@ -63,7 +63,7 @@ public class ShapeOffsetResolution {
                 int[] newStrides = new int[newOffsets.length];
                 for(int i = 0; i < newShape.length; i++) {
                     if(ones[i]) {
-                        if(i > 0) {
+                        if(i > 0 && i < offsets.length - 1 && i < stride.length - 1) {
                             int offsetPlaceHolder = offsets[i + 1];
                             int stridePlaceHolder = stride[i + 1];
 
@@ -80,7 +80,7 @@ public class ShapeOffsetResolution {
                                 newStrides[i] = stride[i];
 
                             }
-                            else {
+                            else if(i < offsets.length - 1 && i < stride.length - 1) {
                                 newOffsets[i] = offsets[i + 1];
                                 newStrides[i] = stride[i + 1];
 
@@ -88,7 +88,7 @@ public class ShapeOffsetResolution {
                         }
 
                     }
-                    else {
+                    else if(i < offsets.length - 1 && i < stride.length - 1){
                         newOffsets[i] = offsets[i + 1];
                         newStrides[i] = stride[i + 1];
                     }

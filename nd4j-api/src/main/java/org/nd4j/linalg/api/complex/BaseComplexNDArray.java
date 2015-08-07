@@ -1420,15 +1420,14 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray putReal(int i, float v) {
-        int idx = linearIndex(i);
-        data.put(idx, v);
+        super.putScalar(i,v);
         return this;
     }
 
     @Override
     public IComplexNDArray putImag(int i, float v) {
-        int idx = linearIndex(i);
-        data.put(idx * 2 + 1, v);
+        int offset  = this.offset + Shape.offsetFor(this, i) + 1;
+        data.put(offset,v);
         return this;
     }
 
@@ -1800,7 +1799,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     /**
      * Get the vector along a particular dimension
      *
-     * @param index     the index of the vector to getScalar
+     * @param index     the index of the vector to get
      * @param dimension the dimension to getScalar the vector from
      * @return the vector along a particular dimension
      */
@@ -2095,8 +2094,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray getScalar(int i) {
-        int idx = linearIndex(i);
-        return Nd4j.scalar(Nd4j.createDouble(data.getDouble(idx), data.getDouble(idx + 1)));
+        return Nd4j.scalar(getComplex(i));
     }
 
     /**

@@ -416,8 +416,8 @@ public class Shape {
      */
     public static  INDArray newShapeNoCopy(INDArray arr, int[] newShape, boolean isFOrder) {
         int oldnd;
-        int[] olddims = arr.shape();
-        int[] oldstrides = arr.stride();
+        int[] olddims = ArrayUtil.copy(arr.shape());
+        int[] oldstrides = ArrayUtil.copy(arr.stride());
         int np, op, last_stride;
         int oi, oj, ok, ni, nj, nk;
         int[] newStrides = new int[newShape.length];
@@ -473,7 +473,7 @@ public class Shape {
         /* Check whether the original axes can be combined */
             for (ok = oi; ok < oj - 1; ok++) {
                 if (isFOrder) {
-                    if (oldstrides[ok + 1] != olddims[ok]*oldstrides[ok]) {
+                    if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
                      /* not contiguous enough */
                         return null;
                     }
@@ -594,6 +594,56 @@ public class Shape {
         return ind2sub(arr.shape(), index, ArrayUtil.prod(arr.shape()));
     }
 
+
+
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @param numIndices the number of total indices (typically prod of shape(
+     * @return the mapped indexes along each dimension
+     */
+    public static int[] ind2subC(int[] shape,int index,int numIndices) {
+        int denom = numIndices;
+        int[] ret = new int[shape.length];
+        for(int i = 0; i < shape.length; i++) {
+            denom /= shape[i];
+            ret[i] = index / denom;
+            index %= denom;
+
+        }
+        return ret;
+    }
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param shape the shape of the dimensions
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+    public static int[] ind2subC(int[] shape,int index) {
+        return ind2subC(shape, index, ArrayUtil.prod(shape));
+    }
+
+    /**
+     * Convert a linear index to
+     * the equivalent nd index based on the shape of the specified ndarray.
+     * Infers the number of indices from the specified shape.
+     *
+     * @param arr the array to compute the indexes
+     *            based on
+     * @param index the index to map
+     * @return the mapped indexes along each dimension
+     */
+    public static int[] ind2subC(INDArray arr,int index) {
+        return ind2subC(arr.shape(), index, ArrayUtil.prod(arr.shape()));
+    }
+
     /**
      * Compute the offset for the given array
      * given the indices
@@ -614,7 +664,7 @@ public class Shape {
      * @return the offset for the given linear index
      */
     public static int offsetFor(INDArray arr,int index) {
-        int[] indexes = Shape.ind2sub(arr, index);
+        int[] indexes = arr.ordering() == 'c' ? Shape.ind2subC(arr,index) : Shape.ind2sub(arr, index);
         return offsetFor(arr, indexes);
     }
 

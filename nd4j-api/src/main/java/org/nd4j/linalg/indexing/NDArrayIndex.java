@@ -23,7 +23,9 @@ import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * NDArray indexing
@@ -67,18 +69,54 @@ public class NDArrayIndex {
     }
 
     /**
-     * Compute the offset given an array of offsets.
-     * The offset is computed(for both fortran an d c ordering) as:
-     * sum from i to n - 1 o[i] * s[i]
-     * where i is the index o is the offset and s is the stride
-     * Notice the -1 at the end.
-     * @param strides the strides to compute the offset for
-     * @param indices the offsets for each dimension
-     * @return the offset that should be used for indexing
+     * Set the shape and stride for
+     * new axes based dimensions
+     * @param arr the array to update
+     *            the shape/strides for
+     * @param indexes the indexes to update based on
      */
-    public static int offset(int[] strides,NDArrayIndex...indices) {
-        throw new UnsupportedOperationException("Please specify a shape");
+    public static void updateForNewAxes(INDArray arr,NDArrayIndex...indexes) {
+        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
+        if( numNewAxes >= 1 && (indexes[0].length() > 1 || indexes[0] instanceof NDArrayIndexAll)) {
+            List<Integer> newShape = new ArrayList<>();
+            List<Integer> newStrides = new ArrayList<>();
+            int currDimension = 0;
+            for(int i = 0; i < indexes.length; i++) {
+                if(indexes[i] instanceof NewAxis) {
+                    newShape.add(1);
+                    newStrides.add(0);
+                }
+                else {
+                    newShape.add(arr.size(currDimension));
+                    newStrides.add(arr.size(currDimension));
+                    currDimension++;
+                }
+            }
+
+            while(currDimension < arr.rank()) {
+                newShape.add(currDimension);
+                newStrides.add(currDimension);
+                currDimension++;
+            }
+
+            int[] newShapeArr = Ints.toArray(newShape);
+            int[] newStrideArr = Ints.toArray(newStrides);
+            arr.setShape(newShapeArr);
+            arr.setStride(newStrideArr);
+
+
+        }
+        else {
+            if(numNewAxes > 0) {
+                int[] newShape = Ints.concat(ArrayUtil.nTimes(numNewAxes,1),arr.shape());
+                int[] newStrides = Ints.concat(new int[numNewAxes],arr.stride());
+                arr.setShape(newShape);
+                arr.setStride(newStrides);
+            }
+        }
+
     }
+
 
 
     /**
@@ -178,7 +216,7 @@ public class NDArrayIndex {
      * for a particular dimension otherwise)
      */
     public static NDArrayIndex[] resolve(INDArray arr,NDArrayIndex[] intendedIndexes) {
-       return resolve(NDArrayIndex.allFor(arr),intendedIndexes);
+        return resolve(NDArrayIndex.allFor(arr),intendedIndexes);
     }
     /**
      * Given an all index and

@@ -5,6 +5,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.*;
 
@@ -85,6 +86,29 @@ public class SlicingTestsC extends BaseNd4jTest  {
         INDArray raveled3 = firstSlice3.reshape(5, 1);
         assertEquals(raveled2, raveled3);
     }
+
+
+    @Test
+    public void testGetRow() {
+        INDArray arr = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray get = arr.getRow(1);
+        INDArray get2 = arr.get(new NDArrayIndex(1), NDArrayIndex.all());
+        INDArray assertion = Nd4j.create(new double[]{4,5,6});
+        assertEquals(assertion,get);
+        assertEquals(get,get2);
+        get2.assign(Nd4j.linspace(1, 3, 3));
+        assertEquals(Nd4j.linspace(1,3,3),get2);
+
+        INDArray threeByThree = Nd4j.linspace(1,9,9).reshape(3, 3);
+        INDArray offsetTest = threeByThree.get(new NDArrayIndex(1, 2), NDArrayIndex.all());
+        INDArray threeByThreeAssertion = Nd4j.create(new double[][]{
+                {4,5,6},
+                {7,8,9}
+        });
+
+        assertEquals(threeByThreeAssertion,offsetTest);
+    }
+
 
 
     @Override

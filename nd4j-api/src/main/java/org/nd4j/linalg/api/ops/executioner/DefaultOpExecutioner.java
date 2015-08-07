@@ -352,9 +352,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             }
 
-            if(ret.ordering() == 'c')
-                ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
-
             return ret;
         }
 

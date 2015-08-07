@@ -1525,7 +1525,7 @@ public class Nd4j {
         char op = split[1].charAt(0);
         //grab all but the i
         double imag = Double.valueOf(split[2].substring(0,split[2].length() - 1));
-        return Nd4j.createComplexNumber(real,op == '-' ? -imag : imag);
+        return Nd4j.createComplexNumber(real, op == '-' ? -imag : imag);
     }
 
 
@@ -2156,7 +2156,7 @@ public class Nd4j {
     }
 
     public static INDArray create(float[][] data, char ordering) {
-        return INSTANCE.create(data,ordering);
+        return INSTANCE.create(data, ordering);
     }
 
 
@@ -2623,7 +2623,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
-        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape,ordering), offset,ordering);
+        INDArray ret = INSTANCE.create(data, shape, Nd4j.getStrides(shape, ordering), offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -3293,7 +3293,7 @@ public class Nd4j {
             shape = new int[]{1,1};
         }
 
-        INDArray ret = INSTANCE.create(Nd4j.createBuffer(data), shape, stride, offset,ordering);
+        INDArray ret = INSTANCE.create(Nd4j.createBuffer(data), shape, stride, offset, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4183,7 +4183,25 @@ public class Nd4j {
      * @return the tiled ndarray
      */
     public static INDArray tile(INDArray tile, int...repeat) {
-        return tile.repmat(repeat);
+        int d = repeat.length;
+        int[] shape = ArrayUtil.copy(tile.shape());
+        int n = Math.max(tile.length(),1);
+        if(d < tile.rank()) {
+            repeat = Ints.concat(ArrayUtil.nTimes(tile.rank() - d,1),repeat);
+        }
+        for(int i = 0; i < repeat.length; i++) {
+            if(repeat[i] != 1) {
+                tile = tile.reshape(-1, n).repeat(0,new int[]{repeat[i]});
+            }
+
+            int in = shape[i];
+            int nOut  = in * repeat[i];
+            shape[i] = nOut;
+            n /= Math.max(in, 1);
+
+        }
+
+        return tile.reshape(shape);
     }
 
     /**
