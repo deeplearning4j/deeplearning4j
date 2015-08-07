@@ -21,13 +21,23 @@ Without the engagement of Skymind customers and the generous backing of [Tencent
 
 ## DL4J Co-founders
 
-| Name    | [Gitter Id](gitter.im/deeplearning4j/deeplearning4j) | Org |  Org URL | Time Zone
+| Name    | [Gitter Id](gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
 | ------------- |:-------------:| :-----:| :-----:|-----:|
-| Adam Gibson | agibsonccc      | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
-| Chris Nicholson | chrisvnicholson | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
-| Josh Patterson  |  jpatanooga | Skymind | [skymind.io](http://skymind.io) | GMT -5 |
+| Adam Gibson | agibsonccc      | [Skymind](http://skymind.io) | GMT -8 |
+| Chris Nicholson | chrisvnicholson | [Skymind](http://skymind.io) | GMT -8 |
+| Josh Patterson  |  jpatanooga | [Skymind](http://skymind.io) | GMT -5 |
 
+## DL4J Contributors 
 
+| Name    | [Gitter Id](gitter.im/deeplearning4j/deeplearning4j) | Org | Time Zone
+| ------------- |:-------------:| :-----:| :-----:|-----:|
+| Alex Black  |  AlexDBlack |  NA | GMT +10 |
+| Suneel Marthi  |  smarthi | Red Hat  | GMT -5 |
+| Taisuke Oe  |  taisukeoe | NA  | GMT +10 |
+| Kai Sasake  |  Lewuathe | Yahoo! Japan | GMT +9 |
+| Jeffrey Tang | jyt109 | [Skymind](http://skymind.io) | GMT -8 |
+| Melanie Warrick | nyghtowl  | [Skymind](http://skymind.io) | GMT -8 |
+| Eron Wright  |  EronWright | EMC  | GMT -8 |
 
 # Jobs @Skymind
 
