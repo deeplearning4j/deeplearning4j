@@ -1,7 +1,9 @@
 package org.deeplearning4j.nn.updater;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 
 /**
  *
@@ -15,7 +17,7 @@ public class UpdaterCreator {
      * @param conf the configuration to get the updater for
      * @return the updater for the configuration
      */
-    public static org.deeplearning4j.nn.api.Updater getUpdater(NeuralNetConfiguration conf) {
+    private static org.deeplearning4j.nn.api.Updater getUpdater(NeuralNetConfiguration conf) {
         Updater updater = conf.getUpdater();
 
         switch(updater) {
@@ -32,6 +34,12 @@ public class UpdaterCreator {
         return null;
     }
 
-
+    public static org.deeplearning4j.nn.api.Updater getUpdater(Model layer) {
+    	if( layer instanceof MultiLayerNetwork ){
+    		return new MultiLayerUpdater((MultiLayerNetwork)layer);
+    	} else {
+    		return getUpdater(layer.conf());
+    	}
+    }
 
 }

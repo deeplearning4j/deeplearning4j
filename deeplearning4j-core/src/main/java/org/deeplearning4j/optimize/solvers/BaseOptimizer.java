@@ -231,7 +231,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
         if(updater == null)
-            updater = UpdaterCreator.getUpdater(model.conf());
+            updater = UpdaterCreator.getUpdater(model);
         Layer layer = (Layer) model;
         updater.update(layer, gradient, iteration);
     }
