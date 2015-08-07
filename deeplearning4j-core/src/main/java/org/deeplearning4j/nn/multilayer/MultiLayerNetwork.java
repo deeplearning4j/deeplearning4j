@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.MultiLayerUtil;
@@ -227,7 +228,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public NeuralNetConfiguration conf() {
-        throw new UnsupportedOperationException();
+        return defaultConfiguration;
     }
 
     @Override
@@ -1014,8 +1015,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
-                backprop();
-
+//                backprop();	//Calculates gradient only; doesn't call optimizers or anything
+                Solver solver = new Solver.Builder()
+                	.configure(conf())
+                	.listeners(getListeners())
+                	.model(this).build();
+                solver.optimize();
             }
         }
     }
@@ -1184,7 +1189,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()){
-            backprop();
+//            backprop();
+        	Solver solver = new Solver.Builder()
+            	.configure(conf())
+            	.listeners(getListeners())
+            	.model(this).build();
+        	solver.optimize();
         }
     }
 
