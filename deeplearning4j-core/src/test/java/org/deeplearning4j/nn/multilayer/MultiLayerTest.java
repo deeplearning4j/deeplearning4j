@@ -105,7 +105,7 @@ public class MultiLayerTest {
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .layer(new RBM())
                 .list(4).hiddenLayerSizes(600,250,100).override(3,new ClassifierOverride()).build();
-        
+
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(4),new NeuralNetPlotterIterationListener(4)));
@@ -169,20 +169,17 @@ public class MultiLayerTest {
                 .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0,1))
                 .activationFunction("tanh").momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                .constrainGradientToUnitNorm(true).k(1).regularization(true).l2(2e-4)
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
+                .constrainGradientToUnitNorm(true)
+                .k(1)
+                .regularization(true)
+                .l2(2e-4)
+                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(4).nOut(3).list(2)
                 .hiddenLayerSizes(3)
                 .override(1, new ClassifierOverride(1)).build();
 
-            NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                    .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                    .nIn(784).nOut(600).applySparsity(true).sparsity(0.1)
-                    .build();
-
-        Layer l = LayerFactories.getFactory(conf2).create(conf2,
-                Arrays.<IterationListener>asList(new ScoreIterationListener(2)),0);
 
         MultiLayerNetwork d = new MultiLayerNetwork(conf);
 
@@ -207,74 +204,40 @@ public class MultiLayerTest {
         log.info("Score " + eval.stats());
 
     }
-    
-    @Test
-    public void testMultiLayerNinNout(){
-    	//[Nin,Nout]: [4,13], [13,3]
-    	int[] hiddenLayerSizes1 = {13};
-    	int[] expNin1 =  {4,13};
-    	int[] expNout1 = {13,3};
-    	MultiLayerConfiguration conf1 = getNinNoutIrisConfig(hiddenLayerSizes1);
-    	MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
-    	net1.init();
-    	checkNinNoutForEachLayer( expNin1, expNout1, conf1, net1 );
-    	
-    	int[] hiddenLayerSizes2 = {5,7};
-    	int[] expNin2 =  {4,5,7};
-    	int[] expNout2 = {5,7,3};
-    	MultiLayerConfiguration conf2 = getNinNoutIrisConfig(hiddenLayerSizes2);
-    	MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-    	net2.init();
-    	checkNinNoutForEachLayer( expNin2, expNout2, conf2, net2 );
-    	
-    	int[] hiddenLayerSizes3 = {5,7,9};
-    	int[] expNin3 =  {4,5,7,9};
-    	int[] expNout3 = {5,7,9,3};
-    	MultiLayerConfiguration conf3 = getNinNoutIrisConfig(hiddenLayerSizes3);
-    	MultiLayerNetwork net3 = new MultiLayerNetwork(conf3);
-    	net3.init();
-    	checkNinNoutForEachLayer( expNin3, expNout3, conf3, net3 );
-    	
-    	int[] hiddenLayerSizes4 = {5,7,9,11,13,15,17};
-    	int[] expNin4 =  {4,5,7,9,11,13,15,17};
-    	int[] expNout4 = {5,7,9,11,13,15,17,3};
-    	MultiLayerConfiguration conf4 = getNinNoutIrisConfig(hiddenLayerSizes4);
-    	MultiLayerNetwork net4 = new MultiLayerNetwork(conf4);
-    	net4.init();
-    	checkNinNoutForEachLayer( expNin4, expNout4, conf4, net4 );
-    }
-    
+
+
+
     private static MultiLayerConfiguration getNinNoutIrisConfig( int[] hiddenLayerSizes ){
-    	MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-		.nIn(4).nOut(3)
-		.layer(new RBM())
-		.list(hiddenLayerSizes.length+1).hiddenLayerSizes(hiddenLayerSizes)
-		.override(hiddenLayerSizes.length, new ClassifierOverride())
-		.build();
-		return c;
+        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
+                .nIn(4).nOut(3)
+                .layer(new RBM())
+                .list(hiddenLayerSizes.length+1).hiddenLayerSizes(hiddenLayerSizes)
+                .override(hiddenLayerSizes.length, new ClassifierOverride())
+                .build();
+        return c;
     }
-    
+
     private static void checkNinNoutForEachLayer( int[] expNin, int[] expNout, MultiLayerConfiguration conf,
-    		MultiLayerNetwork network ){
-    	
-    	//Check configuration
-    	for( int i=0; i<expNin.length; i++ ){
-    		NeuralNetConfiguration layerConf = conf.getConf(i);
-    		assertTrue(layerConf.getNIn() == expNin[i]);
-    		assertTrue(layerConf.getNOut() == expNout[i]);
-    	}
-    	
-    	//Check Layer
-    	for( int i=0; i<expNin.length; i++ ){
-    		Layer layer = network.getLayers()[i];
-    		assertTrue(layer.conf().getNIn() == expNin[i]);
-    		assertTrue(layer.conf().getNOut() == expNout[i]);
-    		int[] weightShape = layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape();
-    		assertTrue(weightShape[0]==expNin[i]);
-    		assertTrue(weightShape[1]==expNout[i]);
-    	}
+                                                  MultiLayerNetwork network ){
+
+        //Check configuration
+        for( int i=0; i<expNin.length; i++ ){
+            NeuralNetConfiguration layerConf = conf.getConf(i);
+            assertTrue(layerConf.getNIn() == expNin[i]);
+            assertTrue(layerConf.getNOut() == expNout[i]);
+        }
+
+        //Check Layer
+        for( int i=0; i<expNin.length; i++ ){
+            Layer layer = network.getLayers()[i];
+            assertTrue(layer.conf().getNIn() == expNin[i]);
+            assertTrue(layer.conf().getNOut() == expNout[i]);
+            int[] weightShape = layer.getParam(DefaultParamInitializer.WEIGHT_KEY).shape();
+            assertTrue(weightShape[0]==expNin[i]);
+            assertTrue(weightShape[1]==expNout[i]);
+        }
     }
-    
+
 
 
     @Test
