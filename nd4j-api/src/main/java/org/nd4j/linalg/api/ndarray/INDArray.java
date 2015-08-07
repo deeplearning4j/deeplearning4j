@@ -801,6 +801,24 @@ public interface INDArray extends Serializable  {
      */
     INDArray repmat(int...shape);
 
+
+    /**
+     * Repeat elements along a specified dimension.
+     *
+     * @param dimension the dimension to repeat
+     * @param repeats the number of elements to repeat on each element
+     * @return
+     */
+    INDArray repeat(int dimension,int...repeats);
+
+    /**
+     * Returns a flat array
+     * with the elements repeated k times along each given dimension
+     * @param repeats
+     * @return
+     */
+    INDArray repeat(int...repeats);
+
     /**
      * Insert a row in to this array
      * Will throw an exception if this

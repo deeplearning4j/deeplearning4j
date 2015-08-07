@@ -1896,13 +1896,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray getScalar(int i) {
-        ensureNotCleanedUp();
-        if (!isVector() && !isScalar())
-            throw new IllegalArgumentException("Unable to do linear indexing with dimensions greater than 1");
-        int idx = linearIndex(i);
-        if (idx >= data.length())
-            throw new IllegalArgumentException("Illegal indices " + i);
-        return createScalarForIndex(idx, false);
+        return Nd4j.scalar(getDouble(i));
     }
 
     protected void assertColumnVector(INDArray column) {
@@ -2947,8 +2941,13 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        if(isVector())
+        if(isVector()) {
+            if(this instanceof IComplexNDArray) {
+                IComplexNDArray arrComplex = (IComplexNDArray) this;
+                return Nd4j.scalar(arrComplex.getComplex(slice));
+            }
             return Nd4j.scalar(getDouble(slice));
+        }
 
         if(slice < 0)
             slice += shape.length;
@@ -3186,6 +3185,54 @@ public abstract class BaseNDArray implements INDArray {
         return ret;
     }
 
+    @Override
+    public INDArray repeat(int dimension, int... repeats) {
+        if (dimension < 0)
+            dimension += rank();
+
+        if (repeats.length < rank()) {
+            if (dimension > 0)
+                repeats = Ints.concat(ArrayUtil.nTimes(rank() - repeats.length, 1), repeats);
+                //append rather than prepend for dimension == 0
+            else
+                repeats = Ints.concat(repeats, ArrayUtil.nTimes(rank() - repeats.length, 1));
+
+        }
+
+        int[] newShape = new int[rank()];
+
+        for (int i = 0; i < newShape.length; i++)
+            newShape[i] = size(i) * repeats[i];
+
+        INDArray ret = create(newShape);
+
+        //number of times to repeat each value
+        int repeatDelta = ArrayUtil.prod(newShape) / length();
+        int retIdx = 0;
+        for (int k = 0; k < repeatDelta; k++) {
+            for(int i = 0 ; i < length(); i++)
+                ret.putScalar(retIdx++,getDouble(i));
+
+        }
+        return ret;
+    }
+
+    @Override
+    public INDArray repeat(int... repeats) {
+        if(repeats.length == 1) {
+            INDArray ret = create(1,length() * repeats[0]);
+            int idx = 0;
+            for(int i = 0; i < length(); i++) {
+                for(int j = 0; j < repeats[0]; j++) {
+                    ret.putScalar(idx++,getDouble(i));
+                }
+            }
+            return ret;
+        }
+
+        throw new IllegalStateException("Illegal length");
+    }
+
     /**
      * Insert a row in to this array
      * Will throw an exception if this
@@ -3229,7 +3276,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
 
-        int[] dimensions = Shape.ind2sub(this, i);
+        int[] dimensions = ordering == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         return getDouble(dimensions);
 
     }
@@ -3706,14 +3753,8 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
-        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         INDArray ret =  subArray(resolution);
-        if(numNewAxes > 0) {
-            int[] newShape = Ints.concat(ArrayUtil.nTimes(numNewAxes,1),ret.shape());
-            int[] newStrides = Ints.concat(new int[numNewAxes],ret.stride());
-            ret.setShape(newShape);
-            ret.setStride(newStrides);
-        }
+        NDArrayIndex.updateForNewAxes(ret,indexes);
         return ret;
     }
 

@@ -102,6 +102,9 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
 
 
+
+
+
     @Test
     public void testColumnMmul() {
         DataBuffer data = Nd4j.linspace(1, 10, 18).data();

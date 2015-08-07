@@ -393,9 +393,7 @@ public class Indices {
         int numNewAxes = NDArrayIndex.numNewAxis(indices);
         if (indices.length > shape.length && numNewAxes < 1)
             return shape;
-
-        int numNewIndexesToPrepend = 0;
-        int[] ret = new int[indices.length];
+        int[] ret = new int[offsets.length];
         if(indices[0].length() == 1 && numNewAxes >= 1)
             ret = new int[indices.length - 1];
         if(offsets.length < shape.length) {
@@ -404,70 +402,28 @@ public class Indices {
             offsets = dup;
         }
 
-        if(numNewAxes > 0) {
-            for(int i = 0; i  < numNewAxes; i++) {
-                ret[i] = 1;
-                numNewIndexesToPrepend++;
+        for (int i = 0; i < ret.length; i++) {
+            if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
+                ret[i] = shape[i];
             }
-            //handle the prepended 1s
-            Arrays.fill(ret,1);
-            //start where there weren't ones
-            int retIndex = numNewIndexesToPrepend;
-            int shapeIndex = 0;
-            for(int i = 0; i < indices.length; i++) {
-                if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
-                    ret[retIndex++] = shape[shapeIndex++];
-                }
-                else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
-                    ret[retIndex++] = 0;
-                }
-
-                else if(indices[i] instanceof NDArrayIndex.NewAxis) {
-                    numNewIndexesToPrepend++;
-                }
-
-                else {
-                    int[] currIndices = indices[i].indices();
-                    if (currIndices.length < 1)
-                        continue;
-                    ret[i] = indices[i].indices().length;
-                    shapeIndex++;
-                    ret[i] -= offsets[i];
-                }
+            else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
+                ret[i] = 0;
             }
 
-            //ensure we account taking the slice of an element
-            if(indices[0].length() == 1 && indices[0].indices().length > 1) {
-                ret = ArrayUtil.removeIndex(ret,0);
+            else if(indices[i] instanceof NDArrayIndex.NewAxis) {
+               continue;
             }
 
-
-            return ret;
+            else {
+                int[] currIndices = indices[i].indices();
+                if (currIndices.length < 1)
+                    continue;
+                ret[i] = indices[i].indices().length;
+                ret[i] -= offsets[i];
+            }
 
         }
-        else {
-            for (int i = 0; i < ret.length; i++) {
-                if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll && i < shape.length) {
-                    ret[i] = shape[i];
-                }
-                else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
-                    ret[i] = 0;
-                }
 
-                else if(indices[i] instanceof NDArrayIndex.NewAxis) {
-                    numNewIndexesToPrepend++;
-                }
-
-                else {
-                    int[] currIndices = indices[i].indices();
-                    if (currIndices.length < 1)
-                        continue;
-                    ret[i] = indices[i].indices().length;
-                    ret[i] -= offsets[i];
-                }
-
-            }
-        }
 
 
 

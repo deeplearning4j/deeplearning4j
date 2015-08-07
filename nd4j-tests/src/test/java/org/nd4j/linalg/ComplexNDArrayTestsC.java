@@ -596,18 +596,6 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     }
 
 
-    @Test
-    public void testLinearIndex() {
-        IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1,8}));
-        for (int i = 0; i < n.length(); i++) {
-            int linearIndex = n.linearIndex(i);
-            assertEquals(i * 2, linearIndex);
-            IComplexDouble d = (IComplexDouble) n.getScalar(i).element();
-            double curr = d.realComponent();
-            assertEquals(i + 1, curr, 1e-1);
-        }
-    }
-
 
 
 
@@ -742,17 +730,17 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
     @Test
     public void testBasicOperations() {
         IComplexNDArray arr = Nd4j.createComplex(new double[]{0, 1, 2, 1, 1, 2, 3, 4}, new int[]{2, 2});
-        IComplexDouble scalar = (IComplexDouble) arr.sumComplex();
-        double sum = scalar.realComponent();
+        IComplexNumber scalar =  arr.sumComplex();
+        double sum = scalar.realComponent().doubleValue();
         assertEquals(6, sum, 1e-1);
         arr.addi(1);
-        scalar = (IComplexDouble) arr.sumComplex();
-        sum = scalar.realComponent();
+        scalar = arr.sumComplex();
+        sum = scalar.realComponent().doubleValue();
         assertEquals(10, sum, 1e-1);
         arr.subi(Nd4j.createDouble(1, 0));
-        scalar = (IComplexDouble) arr.sumComplex();
+        scalar = arr.sumComplex().asDouble();
 
-        sum = scalar.realComponent();
+        sum = scalar.realComponent().doubleValue();
         assertEquals(6, sum, 1e-1);
     }
 
@@ -778,10 +766,10 @@ public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
 
         IComplexNDArray multiDimensionElementWise = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2}));
-        IComplexDouble sum2 = (IComplexDouble) multiDimensionElementWise.sumComplex();
+        IComplexNumber sum2 = multiDimensionElementWise.sumComplex();
         assertEquals(sum2, Nd4j.createDouble(300, 0));
         IComplexNDArray added = multiDimensionElementWise.add(Nd4j.complexScalar(1));
-        IComplexDouble sum3 = (IComplexDouble) added.sumComplex();
+        IComplexNumber sum3 =  added.sumComplex();
         assertEquals(sum3, Nd4j.createDouble(324, 0));
 
 

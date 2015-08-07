@@ -201,7 +201,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
     @Test
     public void testVectorGet() {
-        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{8}));
+        IComplexNDArray arr = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1,8}));
         for (int i = 0; i < arr.length(); i++) {
             IComplexNumber curr = arr.getComplex(i);
             assertEquals(Nd4j.createDouble(i + 1, 0), curr);
@@ -211,7 +211,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         IComplexNDArray row = matrix.getRow(1);
         IComplexNDArray column = matrix.getColumn(1);
 
-        IComplexNDArray validate = Nd4j.createComplex(Nd4j.create(new double[]{2,4,6,8}, new int[]{4}));
+        IComplexNDArray validate = Nd4j.createComplex(Nd4j.create(new double[]{2,4,6,8}, new int[]{1,4}));
         IComplexNumber d = row.getComplex(3);
         assertEquals(Nd4j.createDouble(8, 0), d);
         assertEquals(row, validate);
@@ -321,7 +321,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
             testList.add(Nd4j.complexScalar(i + 1));
 
         IComplexNDArray test = Nd4j.createComplex(testList, new int[]{testList.size()});
-        IComplexNDArray expected = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4, 5}, new int[]{5}));
+        IComplexNDArray expected = Nd4j.createComplex(Nd4j.create(new double[]{1, 2, 3, 4, 5}, new int[]{1,5}));
         assertEquals(expected, test);
     }
 
@@ -363,8 +363,8 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
     @Test
     public void testConjugate() {
-        IComplexNDArray negative = Nd4j.createComplex(new double[]{1, -1, 2, -1}, new int[]{2});
-        IComplexNDArray positive = Nd4j.createComplex(new double[]{1, 1, 2, 1}, new int[]{2});
+        IComplexNDArray negative = Nd4j.createComplex(new double[]{1, -1, 2, -1}, new int[]{1,2});
+        IComplexNDArray positive = Nd4j.createComplex(new double[]{1, 1, 2, 1}, new int[]{1,2});
         assertEquals(getFailureMessage(),negative, positive.conj());
 
     }
@@ -374,11 +374,8 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     @Test
     public void testMultiDimensionalCreation() {
         INDArray fourTwoTwo = Nd4j.linspace(1, 16, 16).reshape(4, 2, 2);
-
         IComplexNDArray multiRow = Nd4j.createComplex(fourTwoTwo);
         assertEquals(fourTwoTwo, multiRow.getReal());
-
-
     }
 
     @Test
@@ -440,17 +437,6 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
 
 
-    @Test
-    public void testLinearIndex() {
-        IComplexNDArray n = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 8, 8).data(), new int[]{1, 8}));
-        for (int i = 0; i < n.length(); i++) {
-            int linearIndex = n.linearIndex(i);
-            assertEquals(i * 2, linearIndex);
-            IComplexDouble d = (IComplexDouble) n.getScalar(i).element();
-            double curr = d.realComponent();
-            assertEquals(getFailureMessage(),i + 1, curr, 1e-1);
-        }
-    }
 
     @Test
     public void testPermute() {
@@ -528,17 +514,17 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
     @Test
     public void testBasicOperations() {
         IComplexNDArray arr = Nd4j.createComplex(new double[]{0, 1, 2, 1, 1, 2, 3, 4}, new int[]{2, 2});
-        IComplexDouble scalar = (IComplexDouble) arr.sumComplex();
-        double sum = scalar.realComponent();
+        IComplexNumber scalar =  arr.sumComplex();
+        double sum = scalar.realComponent().doubleValue();
         assertEquals(6, sum, 1e-1);
         arr.addi(1);
-        scalar = (IComplexDouble) arr.sumComplex();
-        sum = scalar.realComponent();
+        scalar =  arr.sumComplex();
+        sum = scalar.realComponent().doubleValue();
         assertEquals(10, sum, 1e-1);
         arr.subi(Nd4j.createDouble(1, 0));
-        scalar = (IComplexDouble) arr.sumComplex();
+        scalar = arr.sumComplex();
 
-        sum = scalar.realComponent();
+        sum = scalar.realComponent().doubleValue();
         assertEquals(6, sum, 1e-1);
     }
 
@@ -564,7 +550,7 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
 
 
         IComplexNDArray multiDimensionElementWise = Nd4j.createComplex(Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2}));
-        IComplexDouble sum2 = (IComplexDouble) multiDimensionElementWise.sumComplex();
+        IComplexNumber sum2 = multiDimensionElementWise.sumComplex();
         assertEquals(sum2, Nd4j.createDouble(300, 0));
         IComplexNDArray added = multiDimensionElementWise.add(Nd4j.complexScalar(1));
         IComplexDouble sum3 = (IComplexDouble) added.sumComplex();
