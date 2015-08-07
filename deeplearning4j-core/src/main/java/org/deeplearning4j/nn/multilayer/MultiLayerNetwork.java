@@ -1381,6 +1381,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public double score(DataSet data) {
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
+        if( getOutputLayer() instanceof OutputLayer ){
+        	OutputLayer ol = (OutputLayer)getOutputLayer();
+        	ol.setLabels(data.getLabels());
+        	ol.computeScore();
+        	this.score = ol.score();
+        } else {
+        	log.warn("Cannot calculate score wrt labels without an OutputLayer");
+        	return 0.0;
+        }
         return score();
     }
 
