@@ -50,7 +50,11 @@ public class MultiLayerUpdater implements Updater {
 
 	@Override
 	public void applyUpdate(Layer layer, Gradient gradient) {
-		throw new UnsupportedOperationException("Not yet implemented");
+		//Update, as per BaseUpdater.applyUpdate(). Only used by StochasticGradientDescent optimizer
+		Map<String,INDArray> gMap = gradient.gradientForVariable();
+		for( Map.Entry<String, INDArray> entry : gMap.entrySet() ){
+			layer.getParam(entry.getKey()).addi(entry.getValue());
+		}
 	}
 
 }
