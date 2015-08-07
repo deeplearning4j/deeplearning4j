@@ -356,19 +356,19 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public  INDArray activate(INDArray input) {
-        setInput(input);
+        setInput(input, true);
         return activate(true);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activate(true);
+        setInput(input, training);
+        return activate(training);
     }
 
     @Override
     public  INDArray activate() {
-        return activate(false);
+        return activate();
     }
 
 
