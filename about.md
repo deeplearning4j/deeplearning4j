@@ -19,6 +19,16 @@ Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind
 
 Without the engagement of Skymind customers and the generous backing of [Tencent](http://www.tencent.com/en-us/at/managementteam.shtml)'s investment team, led by David Wallerstein, Deeplearning4j would not exist in its present form.
 
+## DL4J Co-founders
+
+| Id            | Name           | Email  | Organization |  Org URL | Time Zone
+| ------------- |:-------------:| :-----:| :-----:| :-----:|-----:|
+| agibsonccc      | Adam Gibson | adam at skymind dot io | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
+| chrisvnicholson | Chris Nicholson | chris at skymind dot io | Skymind | [skymind.io](http://skymind.io) | GMT -8 |
+| jpatanooga | Josh Patterson  |  josh at skymind dot io | Skymind | [skymind.io](http://skymind.io) | GMT -5 |
+
+
+
 # Jobs @Skymind
 
 We hire from our open-source contributors. The best way to apply for a job building the future of deep learning with us is to join our community on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j), fork us on [Github](https://github.com/deeplearning4j), find a problem to work on with us, and we'll can see if there's a fit! Working together is more informative than interviews, and with a little luck it's be more fun.
