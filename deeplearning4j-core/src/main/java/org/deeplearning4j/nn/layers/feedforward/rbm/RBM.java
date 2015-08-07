@@ -367,7 +367,7 @@ public  class RBM extends BasePretrainNetwork {
 
 
     /**
-     * Reconstructs the visible input.
+     * Reconstructs the visible INPUT.
      * A reconstruction is a propdown of the reconstructed hidden input.
      * @param  training true or false
      * @return the reconstruction of the visible input
@@ -376,7 +376,7 @@ public  class RBM extends BasePretrainNetwork {
     public INDArray activate(boolean training) {
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input);
-        return propDown(propUp);
+        return propUp;
     }
 
     /**
