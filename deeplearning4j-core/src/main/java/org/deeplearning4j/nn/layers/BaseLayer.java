@@ -289,9 +289,9 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setParams(INDArray params) {
-        List<String> gradientList = conf.variables();
+        List<String> parameterList = conf.variables();
         int length = 0;
-        for(String s : gradientList)
+        for(String s : parameterList)
             length += getParam(s).length();
         if(params.length() != length)
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
@@ -299,7 +299,7 @@ public abstract class BaseLayer implements Layer {
         Set<String> paramKeySet = this.params.keySet();
         for(String s : paramKeySet ){
             INDArray param = getParam(s);
-            INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
+            INDArray get = params.get(new NDArrayIndex(0),NDArrayIndex.interval(idx,idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
             param.linearView().assign(get);

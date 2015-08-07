@@ -39,7 +39,6 @@ import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.rng.DefaultRandom;
 import org.deeplearning4j.util.Dl4jReflection;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -233,7 +232,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         for(Field f : fields) {
             try {
                 f.setAccessible(true);
-                f.set(this,f.get(neuralNetConfiguration));
+                
+                //Copy lists, maps etc. to avoid same object being in 
+                Object o = f.get(neuralNetConfiguration);
+                if( o instanceof List ){
+                	f.set(this, new ArrayList<>((List<?>)o));
+                } else if( o instanceof Map ){
+                	f.set(this, new HashMap<>((Map<?,?>)o));
+                } else {
+                	f.set(this,o);
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -317,6 +325,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public void addVariable(String variable) {
         if(!variables.contains(variable))
             variables.add(variable);
+    }
+    
+    public void clearVariables(){
+    	variables.clear();
     }
 
     private static <T> T overRideFields(T configInst, Layer layer) {

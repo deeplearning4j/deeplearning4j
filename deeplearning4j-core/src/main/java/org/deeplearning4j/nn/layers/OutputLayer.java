@@ -344,13 +344,13 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void setParams(INDArray params) {
-        INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
+        INDArray wParams = params.get(new NDArrayIndex(0),NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
         int biasBegin = params.length() - bias.length();
         int biasEnd = params.length();
-        INDArray biasAssign = params.get(NDArrayIndex.interval(biasBegin, biasEnd));
+        INDArray biasAssign = params.get(new NDArrayIndex(0),NDArrayIndex.interval(biasBegin, biasEnd));
         bias.assign(biasAssign);
     }
     /**
