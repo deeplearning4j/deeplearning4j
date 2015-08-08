@@ -3,9 +3,7 @@ package org.nd4j.linalg.api.iter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.Shape;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * @author Adam Gibson
