@@ -299,7 +299,7 @@ public abstract class BaseLayer implements Layer {
         Set<String> paramKeySet = this.params.keySet();
         for(String s : paramKeySet ){
             INDArray param = getParam(s);
-            INDArray get = params.get(new NDArrayIndex(0),NDArrayIndex.interval(idx,idx + param.length()));
+            INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
             param.linearView().assign(get);

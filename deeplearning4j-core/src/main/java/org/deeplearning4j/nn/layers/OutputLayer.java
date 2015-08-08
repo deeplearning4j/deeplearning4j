@@ -130,39 +130,39 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
     
     private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray output){
-    	INDArray labelsSubOut = labels.sub(output);
+    	INDArray outSubLabels = output.sub(labels);
     	Gradient gradient = new DefaultGradient();
-    	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, labelsSubOut.sum(0));
+    	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
     	
     	switch (conf.getLossFunction()) {
     	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
-    		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
-    		return new Pair<>(gradient,labelsSubOut);
+    		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+    		return new Pair<>(gradient,outSubLabels);
         case XENT: // cross-entropy (single binary output variable)
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.div(output.mul(output.rsub(1)))));
-        	return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
+        	return new Pair<>(gradient,outSubLabels);
 
         case MSE: // mean squared error
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.neg()));
-            return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.neg()));
+            return new Pair<>(gradient,outSubLabels);
         	
         case EXPLL: // exponential logarithmic
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
-            return new Pair<>(gradient,labelsSubOut);
+            return new Pair<>(gradient,outSubLabels);
             
         case RMSE_XENT: // root mean squared error cross entropy
-        	INDArray squaredrmseXentDiff = pow(labelsSubOut, 2.0);
+        	INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
         	INDArray sqrt = sqrt(squaredrmseXentDiff);
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
-            return new Pair<>(gradient,labelsSubOut);
+            return new Pair<>(gradient,outSubLabels);
         	
         case SQUARED_LOSS:
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(labelsSubOut,2))));
-            return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(outSubLabels,2))));
+            return new Pair<>(gradient,outSubLabels);
             
         case NEGATIVELOGLIKELIHOOD: // mulit-class cross-entropy
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
-            return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+            return new Pair<>(gradient,outSubLabels);
         default:
         	throw new IllegalStateException("Invalid loss function: " + conf.getLossFunction());
     	}
@@ -353,13 +353,13 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void setParams(INDArray params) {
-        INDArray wParams = params.get(new NDArrayIndex(0),NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
+        INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
         int biasBegin = params.length() - bias.length();
         int biasEnd = params.length();
-        INDArray biasAssign = params.get(new NDArrayIndex(0),NDArrayIndex.interval(biasBegin, biasEnd));
+        INDArray biasAssign = params.get(NDArrayIndex.interval(biasBegin, biasEnd));
         bias.assign(biasAssign);
     }
     /**

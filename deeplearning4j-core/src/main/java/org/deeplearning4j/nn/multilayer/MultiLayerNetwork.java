@@ -270,7 +270,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Map<String, INDArray> paramTable() {
-        throw new UnsupportedOperationException();
+        //Get all parameters from all layers
+    	Map<String,INDArray> allParams = new HashMap<>();
+    	for( int i=0; i<layers.length; i++ ){
+    		Map<String,INDArray> paramMap = layers[i].paramTable();
+        	for( Map.Entry<String, INDArray> entry : paramMap.entrySet() ){
+        		String newKey = i + "_" + entry.getKey();
+        		allParams.put(newKey, entry.getValue());
+        	}
+        }
+    	return allParams;
     }
 
     @Override
@@ -577,7 +586,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), getOutputLayer().score());
+        return new Pair<>(gradient(), score());
     }
 
     /**
@@ -1374,6 +1383,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void computeGradientAndScore() {
         backprop();
+        this.score = ((OutputLayer)getOutputLayer()).computeScore();
     }
 
     @Override
@@ -1489,7 +1499,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             Layer layer = getLayers()[i];
 
             int range = layer.numParams();
-            INDArray get = params.get(new NDArrayIndex(0),NDArrayIndex.interval(idx, range + idx));
+            INDArray get = params.get(NDArrayIndex.interval(idx, range + idx));
             if (get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
