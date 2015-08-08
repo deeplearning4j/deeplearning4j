@@ -41,14 +41,18 @@ import java.util.*;
 @NoArgsConstructor
 public class MultiLayerConfiguration implements Serializable {
 
+    @Deprecated
     protected int[] hiddenLayerSizes;
     protected List<NeuralNetConfiguration> confs;
     @Deprecated
     protected boolean useDropConnect = false;
+    @Deprecated
     protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
     /* Sample if true, otherwise use the straight activation function */
+    @Deprecated
     protected boolean useRBMPropUpAsActivations = true;
+    @Deprecated
     protected double dampingFactor = 100;
     @Deprecated
     protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
@@ -159,16 +163,19 @@ public class MultiLayerConfiguration implements Serializable {
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
+        @Deprecated
         protected int[] hiddenLayerSizes;
+        @Deprecated
         protected boolean useDropConnect = false;
         protected boolean pretrain = true;
+        @Deprecated
         protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
         protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backward = false;
         protected boolean backprop = false;
-//        @Deprecated To be deprecated
+        @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
 
@@ -211,11 +218,13 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
+        @Deprecated
         public Builder dampingFactor(double dampingFactor) {
             this.dampingFactor = dampingFactor;
             return this;
         }
 
+        @Deprecated
         public Builder useRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
             this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             return this;
@@ -238,6 +247,7 @@ public class MultiLayerConfiguration implements Serializable {
          *                       should applied or not
          * @return builder pattern
          */
+        @Deprecated
         public Builder useDropConnect(boolean useDropConnect) {
             this.useDropConnect = useDropConnect;
             return this;
@@ -257,6 +267,7 @@ public class MultiLayerConfiguration implements Serializable {
          * @param hiddenLayerSizes the hidden layer sizes to use
          * @return
          */
+        @Deprecated
         public Builder hiddenLayerSizes(int...hiddenLayerSizes) {
             this.hiddenLayerSizes = hiddenLayerSizes;
             return this;
@@ -265,8 +276,6 @@ public class MultiLayerConfiguration implements Serializable {
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-//            if(hiddenLayerSizes == null)
-//                throw new IllegalStateException("Please specify hidden layer sizes");
             conf.hiddenLayerSizes = this.hiddenLayerSizes;
             conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
@@ -324,12 +333,13 @@ public class MultiLayerConfiguration implements Serializable {
             return result;
         }
 
-//        @Deprecated To be Deprecated
+        @Deprecated
         public Builder override(ConfOverride override) {
             confOverrides.put(confOverrides.size(),override);
             return this;
         }
-//        @Deprecated To be Deprecated
+
+        @Deprecated
         public Builder override(int layer,ConfOverride override) {
             confOverrides.put(layer,override);
             return this;
