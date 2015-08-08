@@ -236,9 +236,8 @@ The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/Google
 
 If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit) or Gensimm, this line will import the model.
 
-    Word2Vec vec = WordVectorSerializer.loadGoogleModel(toDl, true);
-
-There are two modes: True is for binary; false is for text. 
+    File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
+    Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
