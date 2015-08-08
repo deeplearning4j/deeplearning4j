@@ -151,6 +151,9 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Transition-Based Dependency Parsing with Stack Long Short-Term Memory](http://arxiv.org/pdf/1505.08075v1.pdf)**; Chris Dyer, Miguel Ballesteros, Wang Ling, Austin Matthews, Noah A. Smith
 
+** [How transferable are features in deep neural
+networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, Yoshua Bengio and Hod Lipson
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
