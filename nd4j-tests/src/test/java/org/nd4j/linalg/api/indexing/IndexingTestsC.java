@@ -33,6 +33,15 @@ public class IndexingTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testIndexFor() {
+        int[] shape = {1,2};
+        NDArrayIndex[] indexes = NDArrayIndex.indexesFor(shape);
+        for(int i = 0; i < indexes.length; i++) {
+            assertEquals(shape[i],indexes[i].offset());
+        }
+    }
+
+    @Test
     public void testGetScalar() {
         INDArray arr = Nd4j.linspace(1,5,5);
         INDArray d = arr.get(new NDArrayIndex(1));

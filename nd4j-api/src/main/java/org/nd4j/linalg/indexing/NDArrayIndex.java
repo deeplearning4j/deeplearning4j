@@ -40,6 +40,21 @@ public class NDArrayIndex {
     private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
     private static NewAxis NEW_AXIS = new NewAxis();
 
+
+    /**
+     * Add indexes for the given shape
+     * @param shape the shape ot convert to indexes
+     * @return the indexes for the given shape
+     */
+    public static NDArrayIndex[] indexesFor(int...shape) {
+        NDArrayIndex[] ret = new NDArrayIndex[shape.length];
+        for(int i = 0; i < shape.length; i++) {
+            ret[i] = new NDArrayIndex(shape[i]);
+        }
+
+        return ret;
+    }
+
     /**
      * Compute the offset given an array of offsets.
      * The offset is computed(for both fortran an d c ordering) as:

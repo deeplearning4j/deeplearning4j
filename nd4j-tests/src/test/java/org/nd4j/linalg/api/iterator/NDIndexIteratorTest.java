@@ -27,6 +27,7 @@ public class NDIndexIteratorTest extends BaseNd4jTest {
             assertArrayEquals(possibleSolutions[i],shapeIter.next());
         }
 
+
     }
 
     @Override
