@@ -82,7 +82,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
       Binary drop connect mask
      */
     protected INDArray mask;
-    
+
     private int layerIndex;	//For Layer.get/setIndex()
 
 
@@ -311,13 +311,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (input == null)
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
-        int[] hiddenLayerSizes = getLayerWiseConfigurations().getHiddenLayerSizes();
-        if (input.shape().length == 2)
-            for (int i = 0; i < hiddenLayerSizes.length; i++)
-                if (hiddenLayerSizes[i] < 1)
-                    throw new IllegalArgumentException("All hidden layer sizes must be >= 1");
-
-
         this.input = input;
 
         if (!initCalled)
@@ -333,8 +326,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (initCalled)
             return;
 
-        INDArray layerInput = input();
-        int inputSize;
         if (getnLayers() < 1)
             throw new IllegalStateException("Unable to createComplex network neuralNets; number specified is less than 1");
 
@@ -345,40 +336,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             // construct multi-layer
             for (int i = 0; i < getnLayers(); i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                Layer.Type type = LayerFactories.typeForFactory(conf);
-
-                if (i == 0 && (type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) ) {
-                    inputSize = conf.getNIn();
-                    if (input == null) {
-                        input = Nd4j.ones(inputSize);
-                        layerInput = input;
-                    }
-
-                } else if (i < getLayers().length) {
-                    if (input != null)
-                        layerInput = activationFromPrevLayer(i - 1, layerInput,true);
-                    /**
-                     * Count the number of hidden layers used.
-                     * Only use the input size when the hidden layer
-                     * size output ends up being the same as the number of columns
-                     * of the output.
-                     *
-                     * An example scenario is when we have a convolution layer
-                     * before, we aren't going to be using the hidden layer sizes then.
-                     *
-                     * Exploiting the fact we know the columns of the output
-                     * we can transparently set this for the next layer.
-                     *
-                     * This will also allow us to specify the hidden layers in contiguous
-                     * order in the array without having to create an override
-                     * for every layer.
-                     */
-                    if(type == Layer.Type.FEED_FORWARD || type == Layer.Type.RECURRENT) {
-                        if(i != layers.length - 1) {
-                            conf.setNIn(layerInput.size(1));
-                        }
-                    }
-                }
                 layers[i] = LayerFactories.getFactory(conf).create(conf, listeners, i);
             }
             initCalled = true;
@@ -1098,7 +1055,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
                 gradient.setGradientFor(multiGradientKey, entry.getValue());
             }
-            
+
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
                 currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
@@ -1106,7 +1063,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         score = outputLayer.score();	//TODO need to do full forward pass to score...
-        
+
         //TODO: Set up to call optimizers, and shift this gradient calculation elsewhere
         // (so backprop gradient can be re-calculated by optimizers)
     }
@@ -1423,7 +1380,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void accumulateScore(double accum) {
 
     }
-    
+
     /**
      * Clear the inputs
      */
@@ -1663,7 +1620,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void setMask(INDArray mask) {
         this.mask = mask;
     }
-    
+
     //==========
     //Layer methods
 
@@ -1676,7 +1633,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         throw new UnsupportedOperationException();
     }
 
-        @Override
+    @Override
     public Type type() {
         return Type.MULTILAYER;
     }
@@ -1695,7 +1652,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray preOutput(INDArray x) {
         INDArray lastLayerActivation = x;
         for( int i=0; i<layers.length-2; i++ ){
-        	lastLayerActivation = layers[i].activate(lastLayerActivation);
+            lastLayerActivation = layers[i].activate(lastLayerActivation);
         }
         return layers[layers.length-1].preOutput(x);
     }
@@ -1720,15 +1677,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return layerIndex;
     }
 
-	@Override
-	public double l2Magnitude() {
-		throw new UnsupportedOperationException();
-	}
+    @Override
+    public double l2Magnitude() {
+        throw new UnsupportedOperationException();
+    }
 
-	@Override
-	public double l1Magnitude() {
-		throw new UnsupportedOperationException();
-	}
+    @Override
+    public double l1Magnitude() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void update(Gradient gradient) {

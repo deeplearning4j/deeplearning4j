@@ -77,7 +77,7 @@ public class SubsampleTests {
         assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
     }
 
-    @Test (expected=IllegalStateException.class)
+    @Test (expected=IllegalArgumentException.class)
     public void testSubSampleSumActivateShape() throws Exception  {
         DataSetIterator mnistIter = new MnistDataSetIterator(nExamples, nExamples);
         DataSet mnist = mnistIter.next();
