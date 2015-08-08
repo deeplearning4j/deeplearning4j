@@ -99,7 +99,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected long seed;
     //weight initialization
     protected Distribution dist;
-    protected StepFunction stepFunction = new GradientStepFunction();
+    protected StepFunction stepFunction;
     protected Layer layer;
 
 
@@ -578,7 +578,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         // convolution & subsampling layers
         private int[] stride = {2,2};
         private int[] padding = {0,0};
-        private StepFunction stepFunction = new NegativeDefaultStepFunction();
+        private StepFunction stepFunction = null;
         private Layer layer;
         private int batchSize = 100;
         @Deprecated
