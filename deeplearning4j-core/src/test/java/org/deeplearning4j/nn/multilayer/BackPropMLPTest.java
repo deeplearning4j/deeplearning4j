@@ -147,19 +147,13 @@ public class BackPropMLPTest {
             float[] expectedL2BiasAfter = new float[3];
 
             for( int i=0; i<4; i++ )
-                expectedL1WeightsAfter[i] = l1WeightsFloat[i] + 0.1f * dLdwHidden[i];
+                expectedL1WeightsAfter[i] = l1WeightsFloat[i] - 0.1f * dLdwHidden[i];
             for( int i=0; i<3; i++ )
-                expectedL2WeightsAfter[i] = l2WeightsFloat[i] + 0.1f * dLdwOut[i];
+                expectedL2WeightsAfter[i] = l2WeightsFloat[i] - 0.1f * dLdwOut[i];
             for( int i = 0; i < 3; i++ )
-                expectedL2BiasAfter[i] = l2BiasFloatArray[i] + 0.1f * dLdbOut[i];
+                expectedL2BiasAfter[i] = l2BiasFloatArray[i] - 0.1f * dLdbOut[i];
 
-            if( printCalculations ){
-                System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
-                System.out.println("Expected L2 weights = " + Arrays.toString(expectedL2WeightsAfter));
-                System.out.println("Expected L1 bias = " + expectedL1BiasAfter);
-                System.out.println("Expected L2 bias = " + Arrays.toString(expectedL2BiasAfter));
-            }
-
+            
             //Finally, do back-prop on network, and compare parameters vs. expected parameters
             network.fit(data);
 
@@ -171,13 +165,26 @@ public class BackPropMLPTest {
             float[] l2WeightsFloatAfter = asFloat(l2WeightsAfter);
             float l1BiasFloatAfter = l1BiasAfter.getFloat(0);
             float[] l2BiasFloatAfter = asFloat(l2BiasAfter);
+            
+            if( printCalculations ){
+                System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
+                System.out.println("Actual L1 weights = " + Arrays.toString(asFloat(l1WeightsAfter)));
+                System.out.println("Expected L2 weights = " + Arrays.toString(expectedL2WeightsAfter));
+                System.out.println("Actual L2 weights = " + Arrays.toString(asFloat(l2WeightsAfter)));
+                System.out.println("Expected L1 bias = " + expectedL1BiasAfter);
+                System.out.println("Actual L1 bias = " + Arrays.toString(asFloat(l1BiasAfter)));
+                System.out.println("Expected L2 bias = " + Arrays.toString(expectedL2BiasAfter));
+                System.out.println("Actual L2 bias = " + Arrays.toString(asFloat(l2BiasAfter)));
+            }
 
 
-            float eps = 0.1f;
+            float eps = 0.01f;
             assertArrayEquals(l1WeightsFloatAfter,expectedL1WeightsAfter,eps);
             assertArrayEquals(l2WeightsFloatAfter,expectedL2WeightsAfter,eps);
             assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);
             assertArrayEquals(l2BiasFloatAfter,expectedL2BiasAfter,eps);
+            
+            System.out.println("\n\n--------------");
         }
     }
 
