@@ -239,6 +239,8 @@ If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDY
     File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
     Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
 
+With large models, you may run into trouble with your heap space. If you do, please see our [trouble-shooting guide](../gettingstarted.html#trouble).
+
 ### <a name="grams">N-grams & Skip-grams</a>
 
 Words are read into the vector one at a time, *and scanned back and forth within a certain range*. The range is an n-gram, and an n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram. A skip-gram simply drops items from the n-gram. 
