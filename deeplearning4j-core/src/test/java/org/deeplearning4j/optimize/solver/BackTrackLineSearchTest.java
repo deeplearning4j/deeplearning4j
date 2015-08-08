@@ -61,7 +61,7 @@ public class BackTrackLineSearchTest {
         DataSetIterator irisIter = new IrisDataSetIterator(1,1);
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 1, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 1, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -77,7 +77,7 @@ public class BackTrackLineSearchTest {
 
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 10, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 10, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -93,7 +93,7 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.LBFGS;
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 2, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 2, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -109,73 +109,68 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.HESSIAN_FREE;
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(new int[]{5}, "sigmoid", 1, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 1, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
-
     }
 
 
     private static OutputLayer getIrisLogisticLayerConfig(String activationFunction, int iterations){
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
-                .nIn(4)
-                .nOut(3)
-                .activationFunction(activationFunction)
-                .lossFunction(LossFunctions.LossFunction.MCXENT)
-                .iterations(iterations)
-                .weightInit(WeightInit.XAVIER)
-                .learningRate(1e-1)
                 .seed(12345L)
+                .iterations(iterations)
+                .learningRate(1e-1)
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(4)
+                        .nOut(3)
+                        .activation(activationFunction)
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
                 .build();
 
         return LayerFactories.getFactory(conf.getLayer()).create(conf);
     }
 
 
-    private static MultiLayerConfiguration getIrisMultiLayerConfig( int[] hiddenLayerSizes, String activationFunction, int iterations,  OptimizationAlgorithm optimizer) {
+    private static MultiLayerConfiguration getIrisMultiLayerConfig( String activationFunction, int iterations,  OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3)
+
                 .weightInit(WeightInit.XAVIER)
                 .dist(new NormalDistribution(0, 0.1))
-
                 .activationFunction(activationFunction)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(optimizer)
                 .activationFunction("softmax")
-
                 .iterations(iterations)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
-
-                .layer(new RBM())
                 .learningRate(0.1)
-                .useAdaGrad(false)
                 .maxNumLineSearchIterations(5)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
                 .dropOut(0.0)
                 .momentum(0.0)
-                .applySparsity(false).sparsity(0.0)
+                .applySparsity(false)
+                .sparsity(0.0)
                 .seed(12345L)
+                .list(2)
+                .layer(0, new RBM.Builder()
+                        .nIn(4)
+                        .nOut(5)
+                        .build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RMSE_XENT)
+                        .nIn(5)
+                        .nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .build())
 
-                .list(hiddenLayerSizes.length + 1).hiddenLayerSizes(hiddenLayerSizes)
                 .useDropConnect(false)
-
-                .override(hiddenLayerSizes.length, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                        builder.weightInit(WeightInit.DISTRIBUTION);
-                        builder.dist(new NormalDistribution(0, 0.1));
-                    }
-                }).build();
+                .build();
 
 
         return conf;

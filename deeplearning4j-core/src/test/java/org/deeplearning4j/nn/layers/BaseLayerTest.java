@@ -31,9 +31,9 @@ public class BaseLayerTest {
         DataSet data = irisIter.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM())
+                .layer(new RBM.Builder()
                 .nIn(4)
-                .nOut(3)
+                .nOut(3).build())
                 .activationFunction("tanh")
                 .iterations(1)
                 .seed(123)
@@ -57,9 +57,9 @@ public class BaseLayerTest {
         DataSet data = irisIter.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RecursiveAutoEncoder())
-                .nIn(4)
-                .nOut(3)
+                .layer(new RecursiveAutoEncoder.Builder()
+                        .nIn(4)
+                        .nOut(3).build())
                 .activationFunction("sigmoid")
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .iterations(1)
@@ -81,9 +81,10 @@ public class BaseLayerTest {
         DataSet data = irisIter.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new LSTM())
-                .nIn(4)
-                .nOut(3)
+                .layer(new LSTM.Builder()
+                        .nIn(4)
+                        .nOut(3)
+                        .build())
                 .activationFunction("sigmoid")
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .iterations(1)
@@ -106,22 +107,18 @@ public class BaseLayerTest {
     public void testOutputParamsAndScores() {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM())
-                .nIn(4)
-                .nOut(3)
                 .iterations(1)
                 .activationFunction("sigmoid")
                 .seed(123)
                 .list(2)
-                .hiddenLayerSizes(10)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-                    }
-                })
+                .layer(0, new RBM.Builder()
+                        .nIn(4)
+                        .nOut(10)
+                        .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nIn(10)
+                        .nOut(3)
+                        .build())
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
