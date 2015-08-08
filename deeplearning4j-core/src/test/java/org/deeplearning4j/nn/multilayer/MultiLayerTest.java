@@ -260,11 +260,11 @@ public class MultiLayerTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .layer(new RBM())
                 .nIn(4).nOut(3)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                 .seed(12345L)
-                .list(2)
-                .hiddenLayerSizes(5)
-                .override(1, new ClassifierOverride())
+                .list(2).layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                        .nIn(3).nOut(3).build())
                 .build();
         return conf;
     }
