@@ -3721,11 +3721,11 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray get(NDArrayIndex... indexes) {
-        if(isRowVector()) {
+        if(isRowVector() && indexes.length > 1) {
             if(indexes[0].offset() == 0)
                 return get(Arrays.copyOfRange(indexes,1,indexes.length));
         }
-        
+
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
         int[] shape = resolution.getShapes();
