@@ -129,7 +129,11 @@ public class SubsamplingLayer extends BaseLayer {
                 return new Pair<>(ret,finalRet);
             case AVG:
                 //compute reverse average error
-                INDArray tiled = Nd4j.tile(epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.newAxis()),1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
+                INDArray tiled = Nd4j.tile(epsilon.get(
+                        NDArrayIndex.all()
+                        , NDArrayIndex.all()
+                        , NDArrayIndex.newAxis()
+                        , NDArrayIndex.newAxis()),1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 //do convolution all at once
                 INDArray convolution = Convolution.col2im(tiled, conf.getStride(), conf.getPadding(), height, width);
                 convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
@@ -206,20 +210,6 @@ public class SubsamplingLayer extends BaseLayer {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Collection<IterationListener> getListeners() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public void fit() {

@@ -18,8 +18,7 @@
 
 package org.deeplearning4j.nn.conf;
 
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.gradient.Gradient;
+
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -31,6 +30,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public interface InputPreProcessor extends Serializable {
 
 
