@@ -59,36 +59,38 @@ public class TestOptimizers {
 	
 	private static MultiLayerConfiguration getMLPConfigIris( OptimizationAlgorithm oa ){
 		MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-		.nIn(4).nOut(3)
-		.weightInit(WeightInit.DISTRIBUTION)
-		.dist(new NormalDistribution(0, 0.1))
-
-		.activationFunction("sigmoid")
-		.lossFunction(LossFunction.MCXENT)
-		.optimizationAlgo(oa)
-		.iterations(1)
-		.batchSize(5)
-		.constrainGradientToUnitNorm(false)
-		.corruptionLevel(0.0)
-		.layer(new RBM())
-		.learningRate(0.1).useAdaGrad(false)
-		.regularization(true)
-		.l2(0.01)
-		.applySparsity(false).sparsity(0.0)
-		.seed(12345L)
-		.list(4).hiddenLayerSizes(8,10,5)
-		.backprop(true).pretrain(false)
-		.useDropConnect(false)
-
-		.override(3, new ConfOverride() {
-			@Override
-			public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-				builder.activationFunction("softmax");
-				builder.layer(new OutputLayer());
-				builder.weightInit(WeightInit.DISTRIBUTION);
-				builder.dist(new NormalDistribution(0, 0.1));
-			}
-		}).build();
+				.weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0, 0.1))
+				.activationFunction("sigmoid")
+				.lossFunction(LossFunction.MCXENT)
+				.optimizationAlgo(oa)
+				.iterations(1)
+				.batchSize(5)
+				.constrainGradientToUnitNorm(false)
+				.corruptionLevel(0.0)
+				.learningRate(0.1)
+				.regularization(true)
+				.l2(0.01)
+				.applySparsity(false)
+				.sparsity(0.0)
+				.seed(12345L)
+				.list(4)
+				.layer(0, new RBM.Builder()
+						.nIn(4).nOut(8)
+						.build())
+				.layer(1, new RBM.Builder()
+						.nIn(8).nOut(10)
+						.build())
+				.layer(2, new RBM.Builder()
+						.nIn(10).nOut(5)
+						.build())
+				.layer(3, new OutputLayer.Builder(LossFunction.MCXENT)
+						.nIn(5).nOut(3)
+						.weightInit(WeightInit.DISTRIBUTION)
+						.build())
+				.backprop(true)
+				.pretrain(false)
+				.build();
 
 		return c;
 	}
@@ -153,10 +155,15 @@ public class TestOptimizers {
 				+ ", nIter=" + numLineSearchIter + ", nDimensions=" + nDimensions );
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-		.maxNumLineSearchIterations(numLineSearchIter)
-		.iterations(1)
-		.learningRate(0.01)
-		.layer(new RBM()).batchSize(1).build();
+				.maxNumLineSearchIterations(numLineSearchIter)
+				.iterations(1)
+				.learningRate(0.01)
+				.layer(new RBM.Builder()
+						.nIn(1)
+						.nOut(1)
+						.build())
+				.batchSize(1)
+				.build();
 		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
 		
 		Random rng = new DefaultRandom(12345L);
@@ -242,10 +249,13 @@ public class TestOptimizers {
 			org.nd4j.linalg.api.rng.distribution.Distribution dist
 			= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
 			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-			.maxNumLineSearchIterations(maxNumLineSearchIter)
-			.iterations(i)
-			.learningRate(0.01)
-			.layer(new RBM()).batchSize(1).build();
+					.maxNumLineSearchIterations(maxNumLineSearchIter)
+					.iterations(i)
+					.learningRate(0.01)
+					.layer(new RBM.Builder()
+							.nIn(1).nOut(1)
+							.build())
+					.batchSize(1).build();
 			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 			
 			Model m = new SphereFunctionModel(100,dist,conf);
@@ -333,10 +343,13 @@ public class TestOptimizers {
 		
 		for( int i=0; i<=nOptIter; i++ ){
 			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-			.maxNumLineSearchIterations(maxNumLineSearchIter)
-			.iterations(i)
-			.learningRate(0.01)
-			.layer(new RBM()).batchSize(1).build();
+					.maxNumLineSearchIterations(maxNumLineSearchIter)
+					.iterations(i)
+					.learningRate(0.01)
+					.layer(new RBM.Builder()
+							.nIn(1).nOut(1)
+							.build())
+					.batchSize(1).build();
 			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 			
 			Model m = new RastriginFunctionModel(100,conf);
@@ -459,10 +472,13 @@ public class TestOptimizers {
 		
 		for( int i=0; i<=nOptIter; i++ ){
 			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-			.maxNumLineSearchIterations(maxNumLineSearchIter)
-			.iterations(i)
-			.learningRate(0.01)
-			.layer(new RBM()).batchSize(1).build();
+					.maxNumLineSearchIterations(maxNumLineSearchIter)
+					.iterations(i)
+					.learningRate(0.01)
+					.layer(new RBM.Builder()
+							.nIn(1).nOut(1)
+							.build())
+					.batchSize(1).build();
 			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 			
 			Model m = new RosenbrockFunctionModel(100,conf);
