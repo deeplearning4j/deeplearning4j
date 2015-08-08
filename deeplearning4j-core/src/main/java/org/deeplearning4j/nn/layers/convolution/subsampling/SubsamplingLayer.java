@@ -114,26 +114,21 @@ public class SubsamplingLayer extends BaseLayer {
                 //compute backwards kernel based on rearranging the given error
                 INDArray ret2 = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
                 INDArray reverse = Nd4j.rollAxis(ret2.reshape(n,c,-1,outH,outW),2);
-                //took max along second dim
-                for(int i = 0; i < epsilon.tensorssAlongDimension(2); i++) {
-                    INDArray epsilonI = epsilon.tensorAlongDimension(i,2);
-                    ret2.slice(maxIndexes.getInt(i)).putSlice(maxIndexes.getInt(i),epsilonI);
-
-                }
-                reverse.assign(epsilon);
+                reverse.slice(0).assign(epsilon);
 
                 //compute gradient for weights
-                INDArray finalRet = Convolution.col2im(reverse,conf.getStride(),conf.getPadding(),width,height);
+                INDArray finalRet = Convolution.col2im(ret2,conf.getStride(),conf.getPadding(),width,height);
 
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
                 return new Pair<>(ret,finalRet);
             case AVG:
                 //compute reverse average error
-                INDArray tiled = Nd4j.tile(epsilon.get(
+                INDArray subError = epsilon.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
-                        , NDArrayIndex.newAxis()),1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
+                        , NDArrayIndex.newAxis(),NDArrayIndex.newAxis());
+                INDArray tiled = Nd4j.tile(subError,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 //do convolution all at once
                 INDArray convolution = Convolution.col2im(tiled, conf.getStride(), conf.getPadding(), height, width);
                 convolution.divi(ArrayUtil.prod(conf.getKernelSize()));

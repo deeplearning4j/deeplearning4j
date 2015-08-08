@@ -77,7 +77,7 @@ public class SubsampleTests {
         assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
     }
 
-    @Test (expected=IllegalArgumentException.class)
+    @Test (expected=IllegalStateException.class)
     public void testSubSampleSumActivateShape() throws Exception  {
         DataSetIterator mnistIter = new MnistDataSetIterator(nExamples, nExamples);
         DataSet mnist = mnistIter.next();
@@ -99,7 +99,7 @@ public class SubsampleTests {
         INDArray activations = model.activate(input);
 
         Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
-        assertEquals(nChannels, out.getSecond().shape()[1]); // depth retained
+        assertEquals(10, out.getSecond().shape()[1]); // depth retained
     }
 
     @Test
@@ -112,8 +112,8 @@ public class SubsampleTests {
 
         INDArray activations = model.activate(input);
 
-        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
-        assertEquals(nChannels, out.getSecond().shape()[1]); // depth retained
+        Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
+        assertEquals(10, out.getSecond().size(1)); // depth retained
     }
 
     @Test
