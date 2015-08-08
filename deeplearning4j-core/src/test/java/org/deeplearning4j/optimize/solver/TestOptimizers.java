@@ -136,10 +136,9 @@ public class TestOptimizers {
 		.layer(0, new DenseLayer.Builder().nIn(4).nOut(8).build())
 		.layer(1, new DenseLayer.Builder().nIn(8).nOut(10).build())
 		.layer(2, new DenseLayer.Builder().nIn(10).nOut(5).build())
-//		.layer(3, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD).nIn(5).nOut(3).build())	//TODO
-		.layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(5).nOut(3).build())
+		.layer(3, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
+			.activation("softmax").nIn(5).nOut(3).build())
 		.backprop(true).pretrain(false)
-		.useDropConnect(false)
 		.build();
 
 		return c;
@@ -203,10 +202,15 @@ public class TestOptimizers {
 				+ ", nIter=" + numLineSearchIter + ", nDimensions=" + nDimensions );
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-		.maxNumLineSearchIterations(numLineSearchIter)
-		.iterations(1)
-		.learningRate(0.01)
-		.layer(new RBM()).batchSize(1).build();
+				.maxNumLineSearchIterations(numLineSearchIter)
+				.iterations(1)
+				.learningRate(0.01)
+				.layer(new RBM.Builder()
+						.nIn(1)
+						.nOut(1)
+						.build())
+				.batchSize(1)
+				.build();
 		conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here 
 		
 		Random rng = new DefaultRandom(12345L);
@@ -292,10 +296,13 @@ public class TestOptimizers {
 			org.nd4j.linalg.api.rng.distribution.Distribution dist
 			= new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
 			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-			.maxNumLineSearchIterations(maxNumLineSearchIter)
-			.iterations(i)
-			.learningRate(0.01)
-			.layer(new RBM()).batchSize(1).build();
+					.maxNumLineSearchIterations(maxNumLineSearchIter)
+					.iterations(i)
+					.learningRate(0.01)
+					.layer(new RBM.Builder()
+							.nIn(1).nOut(1)
+							.build())
+					.batchSize(1).build();
 			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 			
 			Model m = new SphereFunctionModel(100,dist,conf);
@@ -383,10 +390,13 @@ public class TestOptimizers {
 		
 		for( int i=0; i<=nOptIter; i++ ){
 			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-			.maxNumLineSearchIterations(maxNumLineSearchIter)
-			.iterations(i)
-			.learningRate(0.01)
-			.layer(new RBM()).batchSize(1).build();
+					.maxNumLineSearchIterations(maxNumLineSearchIter)
+					.iterations(i)
+					.learningRate(0.01)
+					.layer(new RBM.Builder()
+							.nIn(1).nOut(1)
+							.build())
+					.batchSize(1).build();
 			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 			
 			Model m = new RastriginFunctionModel(100,conf);
@@ -509,10 +519,13 @@ public class TestOptimizers {
 		
 		for( int i=0; i<=nOptIter; i++ ){
 			NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-			.maxNumLineSearchIterations(maxNumLineSearchIter)
-			.iterations(i)
-			.learningRate(0.01)
-			.layer(new RBM()).batchSize(1).build();
+					.maxNumLineSearchIterations(maxNumLineSearchIter)
+					.iterations(i)
+					.learningRate(0.01)
+					.layer(new RBM.Builder()
+							.nIn(1).nOut(1)
+							.build())
+					.batchSize(1).build();
 			conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 			
 			Model m = new RosenbrockFunctionModel(100,conf);
