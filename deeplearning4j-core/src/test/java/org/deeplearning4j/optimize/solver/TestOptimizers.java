@@ -213,7 +213,7 @@ public class TestOptimizers {
         org.nd4j.linalg.api.rng.distribution.Distribution dist
                 = new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
         Model m = new SphereFunctionModel(nDimensions,dist,conf);
-
+        m.computeGradientAndScore();
         double scoreBefore = m.score();
         assertTrue(!Double.isNaN(scoreBefore) && !Double.isInfinite(scoreBefore));
         if( PRINT_OPT_RESULTS ){
@@ -226,8 +226,9 @@ public class TestOptimizers {
 
         opt.setupSearchState(m.gradientAndScore());
         opt.optimize();
-
+        m.computeGradientAndScore();
         double scoreAfter = m.score();
+
         assertTrue(!Double.isNaN(scoreAfter) && !Double.isInfinite(scoreAfter));
         if( PRINT_OPT_RESULTS ){
             System.out.println("After:");
@@ -238,7 +239,7 @@ public class TestOptimizers {
         //Expected behaviour after optimization:
         //(a) score is better (lower) after optimization.
         //(b) Parameters are closer to minimum after optimization (TODO)
-        assertTrue("Score did not improve after optimization (b="+scoreBefore+",a="+scoreAfter+")",scoreAfter < scoreBefore);
+        assertTrue("Score did not improve after optimization (b=" + scoreBefore+",a=" + scoreAfter+")",scoreAfter < scoreBefore);
     }
 
     private static ConvexOptimizer getOptimizer( OptimizationAlgorithm oa, NeuralNetConfiguration conf, Model m ){
@@ -285,9 +286,9 @@ public class TestOptimizers {
 
 
     private static void testSphereFnMultipleStepsHelper( OptimizationAlgorithm oa, int nOptIter, int maxNumLineSearchIter ){
-        double[] scores = new double[nOptIter+1];
+        double[] scores = new double[nOptIter + 1];
 
-        for( int i=0; i<=nOptIter; i++ ){
+        for( int i = 0; i <= nOptIter; i++ ){
             Random rng = new DefaultRandom(12345L);
             org.nd4j.linalg.api.rng.distribution.Distribution dist
                     = new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng,-10, 10);
@@ -304,23 +305,26 @@ public class TestOptimizers {
 
             Model m = new SphereFunctionModel(100,dist,conf);
             if( i == 0 ){
+                m.computeGradientAndScore();
                 scores[0] = m.score();	//Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa,conf,m);
                 opt.optimize();
+                m.computeGradientAndScore();
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
         }
 
-        if( PRINT_OPT_RESULTS ){
+        if(PRINT_OPT_RESULTS) {
             System.out.println("Multiple optimization iterations ("+nOptIter+" opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
             System.out.println(Arrays.toString(scores));
         }
-        for( int i=1; i<scores.length; i++ ){
-            assertTrue( scores[i] <= scores[i-1] );
+
+        for( int i = 1; i<scores.length; i++ ){
+            assertTrue( scores[i] <= scores[i - 1]);
         }
-        assertTrue(scores[scores.length-1]<1.0);	//Very easy function, expect score ~= 0 with any reasonable number of steps/numLineSearchIter
+        assertTrue(scores[scores.length-1] < 1.0);	//Very easy function, expect score ~= 0 with any reasonable number of steps/numLineSearchIter
     }
 
 
@@ -382,7 +386,7 @@ public class TestOptimizers {
     private static void testRastriginFnMultipleStepsHelper( OptimizationAlgorithm oa, int nOptIter, int maxNumLineSearchIter ){
         double[] scores = new double[nOptIter+1];
 
-        for( int i=0; i <= nOptIter; i++ ){
+        for( int i = 0; i <= nOptIter; i++ ){
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                     .maxNumLineSearchIterations(maxNumLineSearchIter)
                     .iterations(i)
@@ -395,22 +399,24 @@ public class TestOptimizers {
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RastriginFunctionModel(100,conf);
-            if( i == 0 ){
+            if(i == 0) {
+                m.computeGradientAndScore();
                 scores[0] = m.score();	//Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa,conf,m);
                 opt.optimize();
+                m.computeGradientAndScore();
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
         }
 
-        if( PRINT_OPT_RESULTS ){
+        if(PRINT_OPT_RESULTS) {
             System.out.println("Rastrigin: Multiple optimization iterations ("+nOptIter+" opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
             System.out.println(Arrays.toString(scores));
         }
-        for( int i=1; i<scores.length; i++ ){
-            if( i == 1 ){
+        for( int i = 1; i < scores.length; i++) {
+            if(i == 1) {
                 assertTrue( scores[i] < scores[i - 1]);	//Require at least one step of improvement
             } else {
                 assertTrue( scores[i] <= scores[i - 1]);
@@ -513,9 +519,9 @@ public class TestOptimizers {
 
 
     private static void testRosenbrockFnMultipleStepsHelper( OptimizationAlgorithm oa, int nOptIter, int maxNumLineSearchIter ){
-        double[] scores = new double[nOptIter+1];
+        double[] scores = new double[nOptIter + 1];
 
-        for( int i=0; i<=nOptIter; i++ ){
+        for( int i=0; i <= nOptIter; i++ ){
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                     .maxNumLineSearchIterations(maxNumLineSearchIter)
                     .iterations(i)
@@ -527,25 +533,27 @@ public class TestOptimizers {
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
 
             Model m = new RosenbrockFunctionModel(100,conf);
-            if( i == 0 ){
+            if(i == 0) {
+                m.computeGradientAndScore();
                 scores[0] = m.score();	//Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa,conf,m);
                 opt.optimize();
+                m.computeGradientAndScore();
                 scores[i] = m.score();
                 assertTrue("NaN or infinite score: " + scores[i], !Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
         }
 
-        if( PRINT_OPT_RESULTS ){
-            System.out.println("Rosenbrock: Multiple optimization iterations ("+nOptIter+" opt. iter.) score vs iteration, maxNumLineSearchIter=" + maxNumLineSearchIter +": " + oa );
+        if(PRINT_OPT_RESULTS) {
+            System.out.println("Rosenbrock: Multiple optimization iterations ( " + nOptIter + " opt. iter.) score vs iteration, maxNumLineSearchIter= " + maxNumLineSearchIter +": " + oa );
             System.out.println(Arrays.toString(scores));
         }
-        for( int i=1; i<scores.length; i++ ){
+        for( int i = 1; i < scores.length; i++) {
             if( i == 1 ){
-                assertTrue( scores[i] < scores[i-1] );	//Require at least one step of improvement
+                assertTrue( scores[i] < scores[i - 1]);	//Require at least one step of improvement
             } else {
-                assertTrue( scores[i] <= scores[i-1] );
+                assertTrue( scores[i] <= scores[i - 1]);
             }
         }
     }
@@ -581,12 +589,12 @@ public class TestOptimizers {
             INDArray gradient = Nd4j.zeros(nDims);
             double x0 = parameters.getDouble(0);
             double x1 = parameters.getDouble(1);
-            double g0 = -400 * x0* (x1 - x0 * x0) + 2 * (x0 - 1);
+            double g0 = -400 * x0 * (x1 - x0 * x0) + 2 * (x0 - 1);
             gradient.put(0, 0, g0);
-            for( int i=1; i<nDims-1; i++ ){
-                double xim1 = parameters.getDouble(i-1);
+            for( int i=1; i < nDims-1; i++ ){
+                double xim1 = parameters.getDouble(i - 1);
                 double xi = parameters.getDouble(i);
-                double xip1 = parameters.getDouble(i+1);
+                double xip1 = parameters.getDouble(i + 1);
                 double g = 200 * (xi - xim1 * xim1) - 400 * xi *(xip1 - xi * xi) + 2 * (xi - 1);
                 gradient.put(0, i,g);
             }
@@ -609,7 +617,7 @@ public class TestOptimizers {
             });
 
             int nExceeds5 = paramExceeds5.sum(Integer.MAX_VALUE).getInt(0);
-            if( nExceeds5 > 0 ) this.score =  Double.POSITIVE_INFINITY;
+            if(nExceeds5 > 0) this.score =  Double.POSITIVE_INFINITY;
 
             double score = 0.0;
             for( int i = 0; i < nDims - 1; i++ ){
