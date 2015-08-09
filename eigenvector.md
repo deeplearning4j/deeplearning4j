@@ -35,34 +35,34 @@ Put them together to get output vector b
 
 So A turned v into b. In a two-dimensional plane, the coordinates of the vector changed.
 
-IMAGE two_vectors
+![Alt text](../img/two_vectors.png)
 
 You could feed one vector after another into matrix A, and each would be projected onto a new space that stretches higher and father to the right. 
 
 Imagine that all the input vectors live in a normal grid, like this:
 
-IMAGE space_1
+![Alt text](../img/space_1.png)
 
 And all the matrix projects them into a new space like this
 
-IMAGE space_2
+![Alt text](../img/space_2.png)
 
 Here are the two spaces juxtaposed:
 
-IMAGE two_spaces
+![Alt text](../img/two_spaces.png)
 
 And here’s an animation:
 
-IMAGE Wikipedia.gif
+![Alt text](../img/Eigenvector.gif)
 
 You can almost imagine a matrix like a gust of wind, an invisible force that produce a  visible result. And a gust of wind blows in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
-IMAGE Mona_Lisa_eigenvector
+![Alt text](../img/mona_lisa_eigenvector.png)
 
 So out of all the vectors affected by a matrix blowing through one space, which one is the eigenvector? It’s the one that doesn’t change direction; that is, the eigenvector is already pointing in the same direction that the matrix is pushing all vectors toward. An eigenvector is a like a weathervane, pointing in the direction of the wind. 
 
-IMAGE weathervane.jpg
+![Alt text](../img/weathervane.jpg)
 
 You could also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
 
-Notice we’re using the plural – axes, lines – because square matrices have as many eigenvectors as they have dimensions; i.e. a 2 x 2 matrix has two eigenvectors, a 3 x 3 matrix has three, and an n x n has n eigenvectors, each one representing its line of action in one dimension. 
+Notice we’re using the plural – axes and lines – because square matrices have as many eigenvectors as they have dimensions; i.e. a 2 x 2 matrix has two eigenvectors, a 3 x 3 matrix has three, and an n x n has n eigenvectors, each one representing its line of action in one dimension. 
