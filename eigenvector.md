@@ -41,6 +41,8 @@ Here are the two spaces juxtaposed:
 
 ![Alt text](../img/two_spaces.png)
 
+(*Credit: William Gould, Stata Blog*)
+
 And here’s an animation:
 
 <iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="300px;" style="border:none;"></iframe>
