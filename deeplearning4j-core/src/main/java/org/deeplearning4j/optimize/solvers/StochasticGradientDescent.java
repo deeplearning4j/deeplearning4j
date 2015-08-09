@@ -52,16 +52,13 @@ public class StochasticGradientDescent extends BaseOptimizer {
     @Override
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
-        	
+
             Pair<Gradient,Double> pair = gradientAndScore();
             Gradient gradient = pair.getFirst();
-//            getUpdater().applyUpdate((Layer) model,pair.getFirst());	//Does params += updatedGradient
-            //Generate new parameters using step function:
             for(Map.Entry<String,INDArray> variables : model.paramTable().entrySet()) {
-//                layer.getParam(variables.getKey()).addi(gradient.getGradientFor(variables.getKey()));
-            	stepFunction.step(variables.getValue(), gradient.getGradientFor(variables.getKey()));
+                stepFunction.step(variables.getValue(), gradient.getGradientFor(variables.getKey()));
             }
-            model.computeGradientAndScore();
+
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model, i);
         }
