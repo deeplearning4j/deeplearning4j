@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.multilayer;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -201,10 +202,10 @@ public class BackPropMLPTest {
         testIrisMiniBatchWeightUpdates(1, new int[]{5}, "sigmoid");
         testIrisMiniBatchWeightUpdates(12,new int[]{15,25,10},"sigmoid");
         testIrisMiniBatchWeightUpdates(50,new int[]{10,50,200,50,10},"tanh");
+        testIrisMiniBatchWeightUpdates(150,new int[]{30,50,20},"tanh");
     }
 
     private static void testIrisMiniBatchWeightUpdates( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction) {
-
         int totalExamples = 10 * miniBatchSize;
         if( totalExamples > 150) {
             totalExamples = miniBatchSize * (150/miniBatchSize);
@@ -252,7 +253,8 @@ public class BackPropMLPTest {
                 INDArray sigmaPrimeOfZ;
                 if(sigmoid) sigmaPrimeOfZ = doSigmoidDerivative(layerZs[i]);
                 else sigmaPrimeOfZ = doTanhDerivative(layerZs[i]);
-                deltas[i] = deltas[i + 1].mmul(layerWeights[i+1].transpose()).mul(sigmaPrimeOfZ);
+                INDArray epsilon = layerWeights[i+1].mmul(deltas[i + 1].transpose()).transpose();
+                deltas[i] = epsilon.mul(sigmaPrimeOfZ);
                 assertArrayEquals(deltas[i].shape(),new int[]{miniBatchSize,hiddenLayerSizes[i]});
             }
 
@@ -290,7 +292,7 @@ public class BackPropMLPTest {
                 layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
             }
 
-            float eps = 0.1f;
+            float eps = 1e-6f;
             for( int i = 0; i < nLayers; i++) {
                 assertArrayEquals(asFloat(expectedWeights[i]), asFloat(layerWeightsAfter[i]),eps);
                 assertArrayEquals(asFloat(expectedBiases[i]), asFloat(layerBiasesAfter[i]),eps);
@@ -300,9 +302,20 @@ public class BackPropMLPTest {
     
     @Test
     public void testMLPGradientCalculation(){
-    	int miniBatchSize = 15;
-    	int[] hiddenLayerSizes = {5,7,9};
-    	DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,150);
+    	testIrisMiniBatchGradients(1,new int[]{1}, "sigmoid");
+        testIrisMiniBatchGradients(1, new int[]{5}, "sigmoid");
+        testIrisMiniBatchGradients(12,new int[]{15,25,10},"sigmoid");
+        testIrisMiniBatchGradients(50,new int[]{10,50,200,50,10},"tanh");
+        testIrisMiniBatchGradients(150,new int[]{30,50,20},"tanh");
+    }
+
+    private static void testIrisMiniBatchGradients( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction) {
+    	int totalExamples = 10 * miniBatchSize;
+        if( totalExamples > 150) {
+            totalExamples = miniBatchSize * (150/miniBatchSize);
+        }
+        if( miniBatchSize > 150 ) fail();
+        DataSetIterator iris = new IrisDataSetIterator(miniBatchSize,totalExamples);
         
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(hiddenLayerSizes,"sigmoid"));
         network.init();
@@ -310,10 +323,7 @@ public class BackPropMLPTest {
         Layer[] layers = network.getLayers();
         int nLayers = layers.length;
 
-        final float learningRate = 0.1f;
-        int count = 0;
         while(iris.hasNext()){
-        	System.out.println("Mini batch number: " + count++ );
             DataSet data = iris.next();
             INDArray x = data.getFeatureMatrix();
             INDArray y = data.getLabels();
@@ -341,7 +351,8 @@ public class BackPropMLPTest {
             for( int i = nLayers - 2; i >= 0; i--){
                 INDArray sigmaPrimeOfZ;
                 sigmaPrimeOfZ = doSigmoidDerivative(layerZs[i]);
-                deltas[i] = deltas[i + 1].mmul(layerWeights[i+1].transpose()).mul(sigmaPrimeOfZ);
+                INDArray epsilon = layerWeights[i+1].mmul(deltas[i + 1].transpose()).transpose();
+                deltas[i] = epsilon.mul(sigmaPrimeOfZ);
                 assertArrayEquals(deltas[i].shape(),new int[]{miniBatchSize,hiddenLayerSizes[i]});
             }
 
@@ -365,7 +376,7 @@ public class BackPropMLPTest {
             network.computeGradientAndScore();
             Gradient gradient = network.gradientAndScore().getFirst();
             
-            float eps = 0.001f;
+            float eps = 1e-6f;
             for( int i=0; i<hiddenLayerSizes.length; i++ ){
             	String wKey = i + "_" + DefaultParamInitializer.WEIGHT_KEY;
             	String bKey = i + "_" + DefaultParamInitializer.BIAS_KEY;
