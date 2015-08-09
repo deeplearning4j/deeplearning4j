@@ -1022,6 +1022,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         feedForward();	//Need to do this to calculate activations (which are stored in each layer, and later used in backprop)
+        int miniBatchSize = input.size(0);
 
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
         if(labels == null)
@@ -1047,7 +1048,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
             multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
-            gradient.setGradientFor(multiGradientKey, entry.getValue());
+            //=============
+            //Temporarily divide gradients by mini-batch size here. Better design possible?
+            INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
+            //=============
+            gradient.setGradientFor(multiGradientKey, g);
         }
 
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
@@ -1061,7 +1066,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
-                gradient.setGradientFor(multiGradientKey, entry.getValue());
+                //=============
+                //Temporarily divide gradients by mini-batch size here. Better design possible?
+                INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
+                //=============
+                gradient.setGradientFor(multiGradientKey, g);
             }
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
