@@ -19,7 +19,7 @@ Matrices are useful because you can do things with them like add and multiply. I
 
 *Av = b* 
 
-It map one set of numbers v to another, b.  We’ll illustrate with a concrete example. 
+It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers v to another, b.  We’ll illustrate with a concrete example. 
 
 ![Alt text](../img/eigen_matrices.png)
 
