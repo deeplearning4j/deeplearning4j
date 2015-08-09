@@ -57,6 +57,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     //current input and label matrices
     private INDArray labels;
+    
+    private transient Solver solver;
 
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -305,10 +307,12 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         setInput(input);
         setLabels(labels);
         applyDropOutIfNecessary(this.input, true);
-        Solver solver = new Solver.Builder()
+        if( solver == null ){
+        	solver = new Solver.Builder()
                 .configure(conf())
                 .listeners(getListeners())
                 .model(this).build();
+        }
         solver.optimize();
     }
 
@@ -342,6 +346,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             labels.data().destroy();
             labels = null;
         }
+        solver = null;
     }
 
 
