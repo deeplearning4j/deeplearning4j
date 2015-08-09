@@ -98,9 +98,9 @@ public class SubsampleTests {
 
         INDArray activations = model.activate(input);
 
-        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
         assertEquals(4, out.getSecond().shape().length);
-        assertEquals(20, out.getSecond().shape()[1]); // depth retained
+        assertEquals(20, out.getSecond().size(1)); // depth retained
     }
 
     @Test
@@ -115,7 +115,7 @@ public class SubsampleTests {
 
         Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
         assertEquals(4, out.getSecond().shape().length);
-        assertEquals(20, out.getSecond().size(1)); // depth retained
+        assertEquals(20, out.getSecond().size(0)); // depth retained
     }
 
     @Test
@@ -124,7 +124,7 @@ public class SubsampleTests {
         Gradient gradient = createPrevGradient();
 
         Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
-        assertEquals(nChannels, out.getSecond().shape()[1]); // depth retained
+        assertEquals(nChannels, out.getSecond().size(1)); // depth retained
     }
 
 
@@ -133,7 +133,7 @@ public class SubsampleTests {
         Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
         Gradient gradient = createPrevGradient();
 
-        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
     }
 
     private Layer getSubsamplingLayer(SubsamplingLayer.PoolingType pooling){
@@ -158,7 +158,7 @@ public class SubsampleTests {
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, pseudoGradients);
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoGradients);
         return gradient;
-        }
+    }
 
 
 }
