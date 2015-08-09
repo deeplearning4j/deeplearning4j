@@ -22,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
@@ -90,6 +91,12 @@ public class AutoEncoder extends BasePretrainNetwork {
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
             return this;
+        }
+        
+        @Override
+        public Builder updater(Updater updater){
+        	this.updater = updater;
+        	return this;
         }
 
         @Override
