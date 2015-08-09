@@ -175,3 +175,4 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 * [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
 * [CMU's Linear Algebra Review](http://www.cs.cmu.edu/~zkolter/course/linalg/outline.html)
 * [The Matrix Cookbook](https://ia801002.us.archive.org/13/items/K_B_Petersen_and_M_S_Peders__The_Matrix_Cookbook/matrixcookbook.pdf)
+* [Old and New Matrix Algebra Useful for Statistics](http://research.microsoft.com/en-us/um/people/minka/papers/matrix/minka-matrix.pdf)
