@@ -163,6 +163,16 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 -  [Andrew Y. Ng](http://cs.stanford.edu/people/ang/)
 -  [Juergen Schmidhuber](http://people.idsia.ch/~juergen/)
 
+
+## Linear Algebra Resources
+
+* [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
+* [Linear Algebra for Machine Learning](https://www.youtube.com/watch?v=ZumgfOei0Ak); Patrick van der Smagt
+* [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
+* [CMU's Linear Algebra Review](http://www.cs.cmu.edu/~zkolter/course/linalg/outline.html)
+* [The Matrix Cookbook](https://ia801002.us.archive.org/13/items/K_B_Petersen_and_M_S_Peders__The_Matrix_Cookbook/matrixcookbook.pdf)
+* [Old and New Matrix Algebra Useful for Statistics](http://research.microsoft.com/en-us/um/people/minka/papers/matrix/minka-matrix.pdf)
+
 ## Other Resources
 
 * [Machine Learning: Generative and Discriminative Models](http://www.cedar.buffalo.edu/~srihari/CSE574/Discriminative-Generative.pdf) (Power Point); Sargur N. Srihari
@@ -170,9 +180,3 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
 * [Generative Learning algorithms](http://cs229.stanford.edu/notes/cs229-notes2.pdf); Notes by Andrew Ng
-* [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
-* [Linear Algebra for Machine Learning](https://www.youtube.com/watch?v=ZumgfOei0Ak); Patrick van der Smagt
-* [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
-* [CMU's Linear Algebra Review](http://www.cs.cmu.edu/~zkolter/course/linalg/outline.html)
-* [The Matrix Cookbook](https://ia801002.us.archive.org/13/items/K_B_Petersen_and_M_S_Peders__The_Matrix_Cookbook/matrixcookbook.pdf)
-* [Old and New Matrix Algebra Useful for Statistics](http://research.microsoft.com/en-us/um/people/minka/papers/matrix/minka-matrix.pdf)
