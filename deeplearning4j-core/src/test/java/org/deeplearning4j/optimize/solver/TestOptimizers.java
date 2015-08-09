@@ -413,7 +413,11 @@ public class TestOptimizers {
 			System.out.println(Arrays.toString(scores));
 		}
 		for( int i=1; i<scores.length; i++ ){
-			assertTrue( scores[i] <= scores[i-1] );
+			if( i == 1 ){
+				assertTrue( scores[i] < scores[i-1] );	//Require at least one step of improvement
+			} else {
+				assertTrue( scores[i] <= scores[i-1] );
+			}
 		}
 	}
 	
@@ -542,7 +546,11 @@ public class TestOptimizers {
 			System.out.println(Arrays.toString(scores));
 		}
 		for( int i=1; i<scores.length; i++ ){
-			assertTrue( scores[i] <= scores[i-1] );
+			if( i == 1 ){
+				assertTrue( scores[i] < scores[i-1] );	//Require at least one step of improvement
+			} else {
+				assertTrue( scores[i] <= scores[i-1] );
+			}
 		}
 	}
 	
