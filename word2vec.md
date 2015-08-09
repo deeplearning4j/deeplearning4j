@@ -46,7 +46,7 @@ A neural word embedding is a representation, and representations are strange. Yo
 
 How can words represent sounds, and gestures represent arrangements of stone, glass and wood? You're mapping one set to another seemingly dissimilar set. 
 
-A neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. 
+A neural word embedding represents a word with numbers. Word2vec is an autoencoder, and it encodes each word in a vector. It's a simple, yet unlikely, translation. 
 
 Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so a 500 numbers arranged in a vector can represent a word, or a group of words. 
 
