@@ -85,9 +85,10 @@ public class TestOptimizers {
 				};
 		
 		DataSet ds = iter.next();
+		ds.normalizeZeroMeanZeroUnitVariance();
 		
 		for( OptimizationAlgorithm oa : toTest ){
-			int nIter = (oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? 1 : 5);
+			int nIter = 5;
 			MultiLayerNetwork network = new MultiLayerNetwork(getMLPConfigIris(oa,nIter));
 			network.init();
 			
@@ -98,17 +99,16 @@ public class TestOptimizers {
 				System.out.println("testOptimizersMLP() - " + oa );
 				System.out.println(score);
 			}
-			int nCallsToOptimizer = 5;
+			int nCallsToOptimizer = 30;
 			double[] scores = new double[nCallsToOptimizer+1];
 			scores[0] = score;
 			for( int i=0; i<nCallsToOptimizer; i++ ){
-				iter.reset();
-				network.fit(iter);
+				network.fit(ds);
 				double scoreAfter = network.score(ds);
 				scores[i+1] = scoreAfter;
 				if( PRINT_OPT_RESULTS ) System.out.println(scoreAfter);
 				assertTrue("Score is NaN after optimization", !Double.isNaN(scoreAfter));
-//				assertTrue("OA="+oa+", before="+score+", after="+scoreAfter,scoreAfter < score);	//TODO
+				assertTrue("OA="+oa+", before="+score+", after="+scoreAfter,scoreAfter < score);
 				score = scoreAfter;
 			}
 			if( PRINT_OPT_RESULTS ) System.out.println(oa + " - " + Arrays.toString(scores));
@@ -117,25 +117,22 @@ public class TestOptimizers {
 	
 	private static MultiLayerConfiguration getMLPConfigIris( OptimizationAlgorithm oa, int nIterations ){
 		MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-		.nIn(4).nOut(3)
 		.weightInit(WeightInit.DISTRIBUTION)
 		.dist(new NormalDistribution(0, 0.1))
 		.activationFunction("sigmoid")
 		.optimizationAlgo(oa)
 		.updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
 		.iterations(nIterations)
-		.batchSize(5)
 		.constrainGradientToUnitNorm(false)
+		.regularization(false)
 		.corruptionLevel(0.0)
-		.learningRate(0.01)
+		.learningRate(0.2)
 		.applySparsity(false).sparsity(0.0)
 		.seed(12345L)
-		.list(4)
+		.list(2)
 		.layer(0, new DenseLayer.Builder().nIn(4).nOut(8).build())
-		.layer(1, new DenseLayer.Builder().nIn(8).nOut(10).build())
-		.layer(2, new DenseLayer.Builder().nIn(10).nOut(5).build())
-		.layer(3, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
-			.activation("softmax").nIn(5).nOut(3).build())
+		.layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
+			.activation("softmax").nIn(8).nOut(3).build())
 		.backprop(true).pretrain(false)
 		.build();
 
