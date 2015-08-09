@@ -75,7 +75,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* L2 Regularization constant */
     protected double l2 = 0;
     protected boolean useRegularization = false;
-    protected Updater updater = Updater.ADAGRAD;
+    protected Updater updater = Updater.NONE;
     private String customLossFunction;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
@@ -590,7 +590,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
-        private Updater updater = Updater.ADAGRAD;
+        private Updater updater = Updater.NONE;
         private boolean miniBatch = false;
 
 
