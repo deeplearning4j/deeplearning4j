@@ -128,8 +128,6 @@ public class TestOptimizers {
 		.constrainGradientToUnitNorm(false)
 		.corruptionLevel(0.0)
 		.learningRate(0.01)
-		.regularization(true)
-		.l2(0.01)
 		.applySparsity(false).sparsity(0.0)
 		.seed(12345L)
 		.list(4)
