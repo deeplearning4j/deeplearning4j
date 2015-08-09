@@ -50,7 +50,7 @@ public class BackTrackLineSearchTest {
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
 
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient().dup().negi());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
         assertEquals(0.0,step,1e-1);
     }
 
@@ -68,7 +68,7 @@ public class BackTrackLineSearchTest {
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
         double score = network.getLayer(1).score();
-        assertEquals(1.3201764822006226, score, 1e-4);
+        assertEquals(0.9893960952758789, score, 1e-4);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class BackTrackLineSearchTest {
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
         double score = network.getLayer(1).score();
-        assertEquals(1.2918350219726562, score, 1e-4);
+        assertEquals(0.13084018230438232, score, 1e-4);
 
     }
 
@@ -100,7 +100,7 @@ public class BackTrackLineSearchTest {
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
         double score = network.getLayer(1).score();
-        assertEquals(0.7544230461120606, score, 1e-4);
+        assertEquals(0.8187665939331055, score, 1e-4);
 
     }
 
