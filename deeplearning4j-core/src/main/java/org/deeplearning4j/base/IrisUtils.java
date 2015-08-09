@@ -51,9 +51,10 @@ public class IrisUtils {
             outcomes[i] = rowOutcome;
         }
 
-        for(int i = 0; i < ret.rows(); i++)
-            list.add(new DataSet(ret.getRow(i), Nd4j.create(outcomes[from+i])));
-
+        for(int i = 0; i < ret.rows(); i++) {
+            DataSet add = new DataSet(ret.getRow(i), Nd4j.create(outcomes[from+ i]));
+            list.add(add);
+        }
         return list;
     }
 

@@ -1002,7 +1002,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
-//                backprop();	//Calculates gradient only; doesn't call optimizers or anything
                 Solver solver = new Solver.Builder()
                 	.configure(conf())
                 	.listeners(getListeners())
@@ -1046,13 +1045,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null,null, null);
 
-        for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
-            multiGradientKey = String.valueOf(numLayers-1)+ "_" + entry.getKey();
+        for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+            multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
             gradient.setGradientFor(multiGradientKey, entry.getValue());
         }
 
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
-            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
+            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond()));
 
         prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
@@ -1071,6 +1070,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             prevLayer = currLayer;
         }
 
+        feedForward();
         score = outputLayer.score();	//TODO need to do full forward pass to score...
 
         //TODO: Set up to call optimizers, and shift this gradient calculation elsewhere
@@ -1078,6 +1078,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
 
+    /**
+     *
+     * @return
+     */
     public Collection<IterationListener> getListeners() {
         return listeners;
     }
@@ -1176,7 +1180,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()){
-//            backprop();
         	Solver solver = new Solver.Builder()
             	.configure(conf())
             	.listeners(getListeners())

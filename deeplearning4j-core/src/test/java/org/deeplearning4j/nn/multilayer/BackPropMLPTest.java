@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.plot.iterationlistener.LossPlotterIterationListener;
 import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
@@ -31,11 +32,13 @@ public class BackPropMLPTest {
     public void testMLPTrivial(){
         //Simplest possible case: 1 hidden layer, 1 hidden neuron, batch size of 1.
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{1},"sigmoid"));
+        network.setListeners(new ScoreIterationListener(1));
         network.init();
 
         DataSetIterator iter = new IrisDataSetIterator(1,10);
 
-        while( iter.hasNext() ) network.fit(iter.next());
+        while( iter.hasNext() )
+            network.fit(iter.next());
     }
 
     @Test
@@ -167,7 +170,7 @@ public class BackPropMLPTest {
             float l1BiasFloatAfter = l1BiasAfter.getFloat(0);
             float[] l2BiasFloatAfter = asFloat(l2BiasAfter);
             
-            if( printCalculations ){
+            if( printCalculations) {
                 System.out.println("Expected L1 weights = " + Arrays.toString(expectedL1WeightsAfter));
                 System.out.println("Actual L1 weights = " + Arrays.toString(asFloat(l1WeightsAfter)));
                 System.out.println("Expected L2 weights = " + Arrays.toString(expectedL2WeightsAfter));
@@ -200,10 +203,10 @@ public class BackPropMLPTest {
         testIrisMiniBatchWeightUpdates(50,new int[]{10,50,200,50,10},"tanh");
     }
 
-    private static void testIrisMiniBatchWeightUpdates( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction ){
+    private static void testIrisMiniBatchWeightUpdates( int miniBatchSize, int[] hiddenLayerSizes, String activationFunction) {
 
         int totalExamples = 10 * miniBatchSize;
-        if( totalExamples > 150 ){
+        if( totalExamples > 150) {
             totalExamples = miniBatchSize * (150/miniBatchSize);
         }
         if( miniBatchSize > 150 ) fail();
@@ -227,14 +230,14 @@ public class BackPropMLPTest {
             //Do forward pass:
             INDArray[] layerWeights = new INDArray[nLayers];
             INDArray[] layerBiases = new INDArray[nLayers];
-            for( int i=0; i < nLayers; i++ ){
+            for( int i=0; i < nLayers; i++) {
                 layerWeights[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
                 layerBiases[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
             }
 
             INDArray[] layerZs = new INDArray[nLayers];
             INDArray[] layerActivations = new INDArray[nLayers];
-            for( int  i= 0; i < nLayers; i++ ){
+            for( int  i= 0; i < nLayers; i++) {
                 INDArray layerInput = (i == 0 ? x : layerActivations[i-1]);
                 layerZs[i] = layerInput.mmul(layerWeights[i]).addiRowVector(layerBiases[i]);
                 if(sigmoid) layerActivations[i] = (i==nLayers-1 ? doSoftmax(layerZs[i].dup(),1) : doSigmoid(layerZs[i].dup()) );
@@ -255,7 +258,7 @@ public class BackPropMLPTest {
 
             INDArray[] dLdw = new INDArray[nLayers];
             INDArray[] dLdb = new INDArray[nLayers];
-            for( int i = 0; i<nLayers; i++ ){
+            for( int i = 0; i<nLayers; i++) {
                 INDArray prevActivations = (i == 0 ? x : layerActivations[i-1]);
                 dLdw[i] = deltas[i].transpose().mmul(prevActivations).divi(miniBatchSize).transpose();	//Shape: [nIn, nOut]
                 dLdb[i] = deltas[i].mean(0); //Shape: [1,nOut]
@@ -268,7 +271,7 @@ public class BackPropMLPTest {
 
             INDArray[] expectedWeights = new INDArray[nLayers];
             INDArray[] expectedBiases = new INDArray[nLayers];
-            for( int i = 0; i < nLayers; i++ ){
+            for( int i = 0; i < nLayers; i++) {
                 expectedWeights[i] = layerWeights[i].sub(dLdw[i].mul(learningRate));
                 expectedBiases[i] = layerBiases[i].sub(dLdb[i].mul(learningRate));
 
@@ -282,13 +285,13 @@ public class BackPropMLPTest {
             network.fit(data);
             INDArray[] layerWeightsAfter = new INDArray[nLayers];
             INDArray[] layerBiasesAfter = new INDArray[nLayers];
-            for( int i=0; i<nLayers; i++ ){
+            for( int i=0; i<nLayers; i++) {
                 layerWeightsAfter[i] = layers[i].getParam(DefaultParamInitializer.WEIGHT_KEY).dup();
                 layerBiasesAfter[i] = layers[i].getParam(DefaultParamInitializer.BIAS_KEY).dup();
             }
 
             float eps = 0.1f;
-            for( int i = 0; i < nLayers; i++ ){
+            for( int i = 0; i < nLayers; i++) {
                 assertArrayEquals(asFloat(expectedWeights[i]), asFloat(layerWeightsAfter[i]),eps);
                 assertArrayEquals(asFloat(expectedBiases[i]), asFloat(layerBiasesAfter[i]),eps);
             }
@@ -383,7 +386,7 @@ public class BackPropMLPTest {
      * Learning Rate = 0.1
      * No regularization, no Adagrad, no momentum etc. One iteration.
      */
-    private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction ) {
+    private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, String activationFunction) {
     	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
@@ -404,7 +407,7 @@ public class BackPropMLPTest {
                 .seed(12345L)
                 .list(hiddenLayerSizes.length + 1);
     	
-    	for( int i=0; i<hiddenLayerSizes.length; i++ ){
+    	for( int i=0; i<hiddenLayerSizes.length; i++) {
     		int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
     		lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).build());
     	}
@@ -415,7 +418,7 @@ public class BackPropMLPTest {
         return lb.build();
     }
 
-    public static float[] asFloat( INDArray arr ){
+    public static float[] asFloat( INDArray arr) {
         int len = arr.length();
         float[] f = new float[len];
         for( int i = 0; i < len; i++ )
@@ -423,14 +426,14 @@ public class BackPropMLPTest {
         return f;
     }
 
-    public static float dotProduct( float[] x, float[] y ){
+    public static float dotProduct( float[] x, float[] y) {
         float sum = 0.0f;
         for( int i = 0; i < x.length; i++ )
             sum += x[i]*y[i];
         return sum;
     }
 
-    public static float sigmoid( float in ){
+    public static float sigmoid( float in) {
         return (float)(1.0 / (1.0 + Math.exp(-in)));
     }
 
@@ -440,19 +443,19 @@ public class BackPropMLPTest {
         return out;
     }
 
-    public static float derivOfSigmoid( float in ){
+    public static float derivOfSigmoid( float in) {
 //		float v = (float)( Math.exp(in) / Math.pow(1+Math.exp(in),2.0) );
         float v = in * (1-in);
         return v;
     }
 
-    public static float[] derivOfSigmoid( float[] in ){
+    public static float[] derivOfSigmoid( float[] in) {
         float[] out = new float[in.length];
         for( int i=0; i<in.length; i++ ) out[i] = derivOfSigmoid(in[i]);
         return out;
     }
 
-    public static float[] softmax( float[] in ){
+    public static float[] softmax( float[] in) {
         float[] out = new float[in.length];
         float sumExp = 0.0f;
         for( int i=0; i<in.length; i++ ) sumExp += Math.exp(in[i]);
