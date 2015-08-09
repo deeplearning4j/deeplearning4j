@@ -100,6 +100,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                     .l1(conf.getL1()).l2(conf.getL2())
                     .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
                     .labels(labels).z(z).lossFunction(conf.getLossFunction())
+                    .miniBatch(true)
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
     }
