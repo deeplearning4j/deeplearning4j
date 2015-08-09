@@ -128,23 +128,6 @@ class NeuralNetworkClassification(override val uid: String)
 }
 
 /**
- * Companion object for running of classification process.
- */
-object NeuralNetworkClassification {
-  def apply(uid: String) = new NeuralNetworkClassification(uid)
-
-  def apply() = new NeuralNetworkClassification()
-
-  def train(dataset: DataFrame): NeuralNetworkClassificationModel = {
-    NeuralNetworkClassification().train(dataset)
-  }
-
-  def train(uid: String, dataset: DataFrame): NeuralNetworkClassificationModel = {
-    NeuralNetworkClassification(uid).train(dataset)
-  }
-}
-
-/**
  * Neural network-based classification model.
  *
  * @author Eron Wright

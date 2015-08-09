@@ -123,23 +123,6 @@ class NeuralNetworkReconstruction(override val uid: String)
 }
 
 /**
- * Companion object for reconstruction process.
- */
-object NeuralNetworkReconstruction {
-  def apply(uid: String) = new NeuralNetworkReconstruction(uid)
-
-  def apply() = new NeuralNetworkReconstruction()
-
-  def learn(dataset: DataFrame): NeuralNetworkReconstructionModel = {
-    NeuralNetworkReconstruction().learn(dataset)
-  }
-
-  def learn(uid: String, dataset: DataFrame): NeuralNetworkReconstructionModel = {
-    NeuralNetworkReconstruction(uid).learn(dataset)
-  }
-}
-
-/**
  * Neural network-based reconstruction model.
  *
  * @author Eron Wright
