@@ -99,7 +99,8 @@ public class SubsampleTests {
         INDArray activations = model.activate(input);
 
         Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
-        assertEquals(10, out.getSecond().shape()[1]); // depth retained
+        assertEquals(4, out.getSecond().shape().length);
+        assertEquals(20, out.getSecond().shape()[1]); // depth retained
     }
 
     @Test
@@ -113,7 +114,8 @@ public class SubsampleTests {
         INDArray activations = model.activate(input);
 
         Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
-        assertEquals(10, out.getSecond().size(1)); // depth retained
+        assertEquals(4, out.getSecond().shape().length);
+        assertEquals(20, out.getSecond().size(1)); // depth retained
     }
 
     @Test
