@@ -11,7 +11,7 @@ layout: default
 * [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info)
 * [Ng's Lecture Notes for Stanford's CS229 Machine Learning](http://cs229.stanford.edu/materials.html)
 * [Nando de Freitas's Deep Learning Class at Oxford](https://www.youtube.com/playlist?list=PLE6Wd9FR--EfW8dtjAuPoTuPcqmOV53Fu)  (2015)
-* [Andrej Karphathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
+* [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
 * [Machine Learning & Computer Vision Talks](http://www.machinelearningtalks.com)
 * [Machine Learning and Probabilistic Graphical Models](http://www.cedar.buffalo.edu/~srihari/CSE574/index.html)
@@ -170,3 +170,6 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
 * [Generative Learning algorithms](http://cs229.stanford.edu/notes/cs229-notes2.pdf); Notes by Andrew Ng
+* [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
+* [Linear Algebra for Machine Learning](https://www.youtube.com/watch?v=ZumgfOei0Ak); Patrick van der Smagt
+* [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
