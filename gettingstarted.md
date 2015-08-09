@@ -19,11 +19,12 @@ After those installs, please read the following:
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-7. <a href="#source">Working With Source</a>
-8. <a href="#eclipse">Eclipse</a>
-9. <a href="#trouble">Troubleshooting</a>
-10. <a href="#results">Reproducible Results</a>
-11. <a href="#next">Next Steps</a>
+7. <a href="#one">Magical One-Line Install</a>
+8. <a href="#source">Working With Source</a>
+9. <a href="#eclipse">Eclipse</a>
+10. <a href="#trouble">Troubleshooting</a>
+11. <a href="#results">Reproducible Results</a>
+12. <a href="#next">Next Steps</a>
 
 ### <a name="linux">Linux</a>
 
@@ -68,6 +69,12 @@ If you're using IntelliJ as your IDE, this should work already.
 * Alternatively, you can bypass MinGW and copy the Blas dll files to a folder in your PATH. For example, the path to the MinGW bin folder is: /usr/x86_64-w64-mingw32/sys-root/mingw/bin. To read more about the PATH variable in Windows, please read the [top answer on this StackOverflow page](https://stackoverflow.com/questions/3402214/windows-7-maven-2-install). 
 
 * Cygwin is not supported. You must install DL4J from **DOS Windows**.  
+
+### <a name="one">Magical One-Line Install</a>
+
+For users who have never `git cloned` Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
+
+      git clone https://github.com/deeplearning4j/deeplearning4j/ setup.sh
 
 ### <a name="source">Working With Source</a>
 
