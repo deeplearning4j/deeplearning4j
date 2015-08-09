@@ -173,3 +173,4 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 * [Andrew Ng's 6-Part Review of Linear Algebra](https://www.youtube.com/playlist?list=PLnnr1O8OWc6boN4WHeuisJWmeQHH9D_Vg)
 * [Linear Algebra for Machine Learning](https://www.youtube.com/watch?v=ZumgfOei0Ak); Patrick van der Smagt
 * [Khan Academy's Linear Algebra Course](https://www.khanacademy.org/math/linear-algebra)
+* [CMU's Linear Algebra Review](http://www.cs.cmu.edu/~zkolter/course/linalg/outline.html)
