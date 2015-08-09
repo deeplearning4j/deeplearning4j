@@ -113,7 +113,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testPutRow() {
-        INDArray matrix = Nd4j.create(new double[][]{{1,2},{3,4}});
+        INDArray matrix = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
         for(int i = 0; i < matrix.rows(); i++) {
             INDArray row = matrix.getRow(i);
             System.out.println(matrix.getRow(i));
@@ -343,17 +343,38 @@ public class ShapeTestsC extends BaseNd4jTest {
         assertArrayEquals(sum0.shape(),new int[]{1,10});
 
         INDArray sum1 = arr.sum(1);
-        assertArrayEquals(sum1.shape(),new int[]{10,1});
+        assertArrayEquals(sum1.shape(), new int[]{10, 1});
     }
 
     @Test
     public void testSum2dv2(){
-        INDArray arr = Nd4j.ones(10,10);
+        INDArray arr = Nd4j.ones(10, 10);
         INDArray sumBoth = arr.sum(0,1);
         assertArrayEquals(sumBoth.shape(),new int[]{1,1});
-        assertTrue(sumBoth.getDouble(0) == 100 );
+        assertTrue(sumBoth.getDouble(0) == 100);
     }
 
+    @Test
+    public void testPermuteReshape() {
+        INDArray arrTest = Nd4j.arange(60).reshape(3,4,5);
+        INDArray permute = arrTest.permute(2,1,0);
+        assertArrayEquals(new int[]{5,4,3},permute.shape());
+        assertArrayEquals(new int[]{1,5,20},permute.stride());
+        INDArray reshapedPermute = permute.reshape(-1,12);
+        assertArrayEquals(new int[]{5,12},reshapedPermute.shape());
+        assertArrayEquals(new int[]{12,1},reshapedPermute.stride());
+
+
+    }
+
+    @Test
+    public void testRavel() {
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray asseriton = Nd4j.linspace(1,4,4);
+        INDArray raveled = linspace.ravel();
+        assertEquals(asseriton,raveled);
+
+    }
 
     @Override
     public char ordering() {

@@ -902,8 +902,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(8,repeated.length());
         INDArray repeatAlongDimension = x.repeat(1,new int[]{2});
         INDArray assertionRepeat = Nd4j.create(new double[][]{
-                {1,1,2,2},
-                {3,3,4,4}
+                {1, 1, 2, 2},
+                {3, 3, 4, 4}
         });
         assertArrayEquals(new int[]{2,4},assertionRepeat.shape());
         assertEquals(assertionRepeat,repeatAlongDimension);
@@ -919,8 +919,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNegativeOneReshape() {
-        INDArray arr = Nd4j.create(new double[]{0,1,2});
-        INDArray newShape = arr.reshape(-1,3);
+        INDArray arr = Nd4j.create(new double[]{0, 1, 2});
+        INDArray newShape = arr.reshape(-1, 3);
         assertEquals(newShape,arr);
     }
 
@@ -960,6 +960,24 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             assertTrue(Arrays.equals(slice.shape(), new int[]{5, 1}));
         }
     }
+
+    @Test
+    public void testTensorDot() {
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
+        INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
+        INDArray result = Nd4j.tensorMmul(oneThroughSixty,oneThroughTwentyFour,new int[][]{{1,0},{0,1}});
+        assertArrayEquals(new int[]{5,2},result.shape());
+        INDArray assertion = Nd4j.create(new double[][]{
+                {   4400 ,  4730},
+                {  4532 ,  4874},
+                {  4664  , 5018},
+                {  4796 ,  5162},
+                {  4928 , 5306}
+        });
+        assertEquals(assertion,result);
+
+    }
+
 
     @Test
     public void test3DArraySlice(){

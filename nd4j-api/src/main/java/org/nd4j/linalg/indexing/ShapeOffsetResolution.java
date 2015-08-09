@@ -46,7 +46,12 @@ public class ShapeOffsetResolution {
             System.arraycopy(stride,0,filledStrides,0,stride.length);
         }
 
-        if(shape[0] == 1 && shape.length > 2) {
+        /**
+         * Appears to be problems with coordinates like
+         * 1,1,0
+         * when calculating offsets
+         */
+        if(shape[0] == 1 && shape.length > 2 && !Indices.isScalar(arr,indexes)) {
             boolean[] ones = new boolean[shape.length - 1];
             int[] newShape  = new int[shape.length - 1];
             boolean allOnes = true;

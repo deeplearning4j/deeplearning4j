@@ -501,5 +501,30 @@ public class Indices {
     }
 
 
+    /**
+     * Check if the given indexes
+     * over the specified array
+     * are searching for a scalar
+     * @param indexOver the array to index over
+     * @param indexes the index query
+     * @return true if the given indexes are searching
+     * for a scalar false otherwise
+     */
+    public static boolean isScalar(INDArray indexOver,NDArrayIndex...indexes) {
+        boolean allOneLength = true;
+        for(int i = 0; i < indexes.length; i++) {
+            allOneLength = allOneLength && indexes[i].indices().length == 1;
+        }
+
+        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
+        if(allOneLength && numNewAxes == 0 && indexes.length == indexOver.rank())
+            return true;
+        else if(allOneLength && indexes.length == indexOver.rank() - numNewAxes) {
+            return allOneLength;
+        }
+
+        return allOneLength;
+    }
+
 
 }

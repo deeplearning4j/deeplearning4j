@@ -3631,12 +3631,31 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray ravel() {
-
         ensureNotCleanedUp();
         INDArray ret = create(new int[]{1,length}, ordering);
         INDArray linear = linearView();
+        /**
+         * Oddities with ravel.
+         *
+         * Suspect getDouble is returning
+         * the same indexes twice.
+         *
+         * Need to write unit tests and
+         * assert that all indexes returned
+         * by 2 index c are
+         * unique.
+         *
+         * Put scalar appears to be ok here,
+         * it's only get double putting up
+         * some weirdness.
+         *
+         *
+         * I suspect the errors are likely
+         * related to rounding if at all.
+         */
         for(int i = 0; i < length(); i++) {
-            ret.putScalar(i,linear.getDouble(i));
+            double val = linear.getDouble(i);
+            ret.putScalar(i,val);
         }
 
         return ret;
