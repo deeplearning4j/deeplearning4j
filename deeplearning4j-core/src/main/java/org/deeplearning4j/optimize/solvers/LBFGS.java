@@ -39,8 +39,8 @@ import java.util.LinkedList;
  * @author Adam Gibson
  */
 public class LBFGS extends BaseOptimizer {
-	private static final long serialVersionUID = 9148732140255034888L;
-	private int m = 4;
+    private static final long serialVersionUID = 9148732140255034888L;
+    private int m = 4;
 
     public LBFGS(NeuralNetConfiguration conf, StepFunction stepFunction, Collection<IterationListener> iterationListeners, Model model) {
         super(conf, stepFunction, iterationListeners, model);
@@ -66,10 +66,10 @@ public class LBFGS extends BaseOptimizer {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
         //initial direction should be normal
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
-        if(searchDir == null ){
-        	searchState.put(SEARCH_DIR, gradient.div(Nd4j.norm2(gradient).getDouble(0)));	//Normalized gradient
+        if(searchDir == null){
+            searchState.put(SEARCH_DIR, gradient);	//Normalized gradient
         } else {
-        	searchDir.assign(gradient).divi(Nd4j.norm2(gradient).getDouble(0));
+            searchDir.assign(gradient);
         }
     }
 

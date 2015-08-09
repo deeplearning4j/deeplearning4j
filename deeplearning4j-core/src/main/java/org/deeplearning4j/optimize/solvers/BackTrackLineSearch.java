@@ -25,6 +25,7 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
@@ -61,7 +62,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     private Model layer;
-    private StepFunction stepFunction = new NegativeDefaultStepFunction();
+    private StepFunction stepFunction = new DefaultStepFunction();
     private ConvexOptimizer optimizer;
     private int maxIterations = 5;
     double stepMax = 100;
