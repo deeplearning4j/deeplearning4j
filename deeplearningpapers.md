@@ -147,11 +147,11 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 *The restricted Boltzmann machine is a graphical model for binary random variables. Based on a complete bipartite graph separating hidden and observed variables, it is the binary analog to the factor analysis model. We study this graphical model from the perspectives of algebraic statistics and tropical geometry, starting with the observation that its Zariski closure is a Hadamard power of the first secant variety of the Segre variety of projective lines. We derive a dimension formula for the tropicalized model, and we use it to show that the restricted Boltzmann machine is identifiable in many cases. Our methods include coding theory and geometry of linear threshold functions.*
 
-**[Notes on Contrastive Divergence]**(http://www.robots.ox.ac.uk/~ojw/files/NotesOnCD.pdf)
+**[Notes on Contrastive Divergence](http://www.robots.ox.ac.uk/~ojw/files/NotesOnCD.pdf)**
 
 **[Transition-Based Dependency Parsing with Stack Long Short-Term Memory](http://arxiv.org/pdf/1505.08075v1.pdf)**; Chris Dyer, Miguel Ballesteros, Wang Ling, Austin Matthews, Noah A. Smith
 
-** [How transferable are features in deep neural
+**[How transferable are features in deep neural
 networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, Yoshua Bengio and Hod Lipson
 
 ## Researchers' Personal Websites
