@@ -17,7 +17,7 @@ We’ll define that relationship after a brief detour into what matrices do, and
 
 Matrices are useful because you can do things with them like add and multiply. If you multiply a vector v by a matrix A, you get another vector b, and you could say that the matrix performed a linear transformation on the input vector. 
 
-"Av = b" 
+*Av = b* 
 
 It map one set of numbers v to another, b.  We’ll illustrate with a concrete example. 
 
@@ -43,7 +43,7 @@ Here are the two spaces juxtaposed:
 
 And here’s an animation:
 
-<iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="450px;" style="border:none;"></iframe>
+<iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="430px;" style="border:none;"></iframe>
 
 You can almost imagine a matrix like a gust of wind, an invisible force that produce a  visible result. And a gust of wind blows in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
