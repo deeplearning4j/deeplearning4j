@@ -27,8 +27,8 @@ public class UpdaterCreator {
             case NESTEROVS: return new NesterovsUpdater();
             case RMSPROP: return new RmsPropUpdater();
             case SGD: return new SgdUpdater();
+            case NONE: return new NoOpUpdater();
             case CUSTOM: throw new UnsupportedOperationException("Not implemented yet.");
-
         }
 
         return null;
