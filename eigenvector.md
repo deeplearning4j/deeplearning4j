@@ -3,9 +3,9 @@ title:
 layout: default
 ---
 
-# Introduction to Eigenvectors & Eigenvalues
+# Introduction to Eigenvectors
 
-This post introduces eigenvectors and their relationship to matrices.
+This post introduces eigenvectors and their relationship to matrices. Its purpose is to give you an intuition of what eigenvectors mean. 
 
 The *eigen* in eigenvector comes from German, and it means something like “very own.” For example, in German, “mein eigenes Auto” means “my very own car.” So eigen denotes a special relationship between two things. Something particular, characteristic and definitive. This car, or this vector, is mine and not someone else’s.
 
@@ -21,17 +21,7 @@ Matrices are useful because you can do things with them like add and multiply. I
 
 It map one set of numbers v to another, b.  We’ll illustrate with a concrete example. 
 
-Let the matrix A be 
-
-[■(2&1@1.5&2)]
-
-and let the input vector v be 
-
-■(0.75@0.25)
-
-Put them together to get output vector b
-
-[■(2&1@1.5&2)]* ■(0.75@0.25)= ■(1.75@1.625)
+![Alt text](../img/eigen_matrices.png)
 
 So A turned v into b. In a two-dimensional plane, the coordinates of the vector changed.
 
@@ -53,7 +43,7 @@ Here are the two spaces juxtaposed:
 
 And here’s an animation:
 
-![Alt text](../img/Eigenvector.gif)
+<iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="250px;" style="border:none;"></iframe>
 
 You can almost imagine a matrix like a gust of wind, an invisible force that produce a  visible result. And a gust of wind blows in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
