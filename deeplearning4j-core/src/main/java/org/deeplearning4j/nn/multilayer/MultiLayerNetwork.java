@@ -83,7 +83,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     protected INDArray mask;
 
-    private int layerIndex;	//For Layer.get/setIndex()
+    protected int layerIndex;	//For Layer.get/setIndex()
+    
+    protected transient Solver solver;	//Used to call optimizers during backprop
 
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
@@ -1002,10 +1004,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
-                Solver solver = new Solver.Builder()
-                	.configure(conf())
-                	.listeners(getListeners())
-                	.model(this).build();
+                if( solver == null ){
+                	solver = new Solver.Builder()
+                		.configure(conf())
+                		.listeners(getListeners())
+                		.model(this).build();
+                }
                 solver.optimize();
             }
         }
@@ -1189,10 +1193,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()){
-        	Solver solver = new Solver.Builder()
-            	.configure(conf())
-            	.listeners(getListeners())
-            	.model(this).build();
+        	if( solver == null ){
+        		solver = new Solver.Builder()
+        			.configure(conf())
+        			.listeners(getListeners())
+        			.model(this).build();
+        	}
         	solver.optimize();
         }
     }
@@ -1404,14 +1410,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
-     * Clear the inputs
+     * Clear the inputs. Clears optimizer state.
      */
     public void clear() {
         for (Layer layer : layers)
             layer.clear();
 
-
         input = null;
+        labels = null;
+        solver = null;
     }
 
     /**
