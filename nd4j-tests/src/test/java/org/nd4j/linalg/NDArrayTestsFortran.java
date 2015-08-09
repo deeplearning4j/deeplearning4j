@@ -674,27 +674,6 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testDimensionWiseWithVector() {
-        INDArray ret = Nd4j.linspace(1, 2, 2).reshape(1, 2);
-        assertTrue(ret.sum(0).isRowVector());
-        assertTrue(ret.sum(1).isScalar());
-        INDArray retColumn = Nd4j.linspace(1,2,2).reshape(2, 1);
-        assertTrue(getFailureMessage(),retColumn.sum(1).isRowVector());
-        assertTrue(getFailureMessage(),retColumn.sum(0).isScalar());
-
-        INDArray m2 = Nd4j.rand(1, 2);
-        Nd4j.sum(m2, 0);
-
-
-        Nd4j.sum(m2, 1);
-
-        INDArray m3 = Nd4j.rand(2, 1);
-
-        Nd4j.sum(m3, 0);
-        Nd4j.sum(m3, 1).toString();
-
-    }
 
 
     @Test

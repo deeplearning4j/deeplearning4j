@@ -739,7 +739,6 @@ public abstract class BaseNDArray implements INDArray {
 
 
         int[] tensorShape = ArrayUtil.keep(shape(),dimension);
-
         int[] reverseDimensions = ArrayUtil.reverseCopy(dimension);
         int[] remove = ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension);
         int[] newPermuteDims = Ints.concat(remove, reverseDimensions);
@@ -751,6 +750,7 @@ public abstract class BaseNDArray implements INDArray {
         INDArray ret2 = permuted.slice(sliceIdx);
         if(dimension.length == tensorShape.length && ArrayUtil.prod(tensorShape) == ret2.length())
             return ret2;
+
         int length = ArrayUtil.prod(tensorShape);
         int tensorLength = ArrayUtil.prod(tensorShape);
         int offset = index * tensorLength / NDArrayMath.lengthPerSlice(ret2);
@@ -1060,7 +1060,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray putScalar(int[] indexes, double value) {
         int ix = Shape.offsetFor(this,indexes);
         if(ix >= data().length())
-            throw new IllegalArgumentException("Illelgal indices " + Arrays.toString(indexes));
+            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
         data.put(ix, value);
         return this;
     }
@@ -3721,11 +3721,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray get(NDArrayIndex... indexes) {
-        if(isRowVector() && indexes.length > 1) {
-            if(indexes[0].offset() == 0)
-                return get(Arrays.copyOfRange(indexes,1,indexes.length));
-        }
-
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
         int[] shape = resolution.getShapes();

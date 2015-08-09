@@ -23,12 +23,14 @@ import junit.framework.TestCase;
 import junit.framework.TestResult;
 import org.junit.After;
 import org.junit.Before;
+import org.nd4j.linalg.cpu.CpuBackend;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
+
 
 
 /**
@@ -38,7 +40,7 @@ import java.util.UUID;
 public abstract class BaseNd4jTest  extends TestCase {
     private static Logger log = LoggerFactory.getLogger(BaseNd4jTest.class);
     protected Nd4jBackend backend;
-    public final static String DEFAULT_BACKED = "org.nd4j.linalg.defaultbackend";
+    public final static String DEFAULT_BACKEND = "org.nd4j.linalg.defaultbackend";
 
     public BaseNd4jTest() {
         this("",getDefaultBackend());
@@ -71,7 +73,7 @@ public abstract class BaseNd4jTest  extends TestCase {
      * given command line arguments
      */
     public static Nd4jBackend getDefaultBackend() {
-        String clazz = System.getProperty(DEFAULT_BACKED,"org.nd4j.linalg.jblas.JblasBackend");
+        String clazz = System.getProperty(DEFAULT_BACKEND, CpuBackend.class.getName());
         try {
             return (Nd4jBackend) Class.forName(clazz).newInstance();
         } catch (Exception e) {

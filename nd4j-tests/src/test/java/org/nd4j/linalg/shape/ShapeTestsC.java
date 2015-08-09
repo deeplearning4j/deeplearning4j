@@ -111,6 +111,18 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testPutRow() {
+        INDArray matrix = Nd4j.create(new double[][]{{1,2},{3,4}});
+        for(int i = 0; i < matrix.rows(); i++) {
+            INDArray row = matrix.getRow(i);
+            System.out.println(matrix.getRow(i));
+        }
+        matrix.putRow(1,Nd4j.create(new double[]{1,2}));
+        assertEquals(matrix.getRow(0),matrix.getRow(1));
+    }
+
+
 
     @Test
     public void testSixteenFirstDim() {
@@ -158,7 +170,7 @@ public class ShapeTestsC extends BaseNd4jTest {
 
         INDArray vector = slice.reshape(1, 2);
         for(int i = 0; i < vector.length(); i++) {
-          System.out.println(vector.getDouble(i));
+            System.out.println(vector.getDouble(i));
         }
         assertEquals(Nd4j.create(new double[]{2, 5}),vector);
     }

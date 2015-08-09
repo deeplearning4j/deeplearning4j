@@ -16,6 +16,17 @@ public class IndexingTestsC extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public IndexingTestsC(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public IndexingTestsC() {
+    }
+
+    public IndexingTestsC(String name) {
+        super(name);
+    }
+
     @Test
     public void testOffsetsC() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
@@ -25,8 +36,8 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray arr2 = Nd4j.linspace(1,6,6).reshape(3,2);
         assertEquals(3, NDArrayIndex.offset(arr2,1,1));
         assertEquals(3, NDArrayIndex.offset(arr2, new NDArrayIndex(1), new NDArrayIndex(1)));
-        assertEquals(4, NDArrayIndex.offset(arr2,2,2));
-        assertEquals(4, NDArrayIndex.offset(arr2, new NDArrayIndex(2), new NDArrayIndex(2)));
+        assertEquals(6, NDArrayIndex.offset(arr2,2,2));
+        assertEquals(6, NDArrayIndex.offset(arr2, new NDArrayIndex(2), new NDArrayIndex(2)));
 
 
 
@@ -77,7 +88,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray input1 = Nd4j.zeros(2, 1);
         INDArray input2 = Nd4j.ones(2, 1);
         INDArray concat = Nd4j.concat(1, input1, input2);
-        INDArray assertion = Nd4j.create(new double[][]{{0, 1}, {0, 1}});
+        INDArray assertion = Nd4j.create(new double[][]{{1,0}, {1,0}});
         assertEquals(assertion,concat);
     }
 

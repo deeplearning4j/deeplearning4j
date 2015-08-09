@@ -17,6 +17,17 @@ public class IndexingTests extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public IndexingTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public IndexingTests() {
+    }
+
+    public IndexingTests(String name) {
+        super(name);
+    }
+
     @Test
     public void testGetScalar() {
         INDArray arr = Nd4j.linspace(1,5,5);

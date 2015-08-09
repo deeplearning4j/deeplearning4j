@@ -108,6 +108,9 @@ public class ShapeOffsetResolution {
 
             else {
                 if(newShape.length < arr.shape().length || newShape.length < arr.stride().length) {
+                    if(stride.length < offsets.length) {
+                        offsets = Arrays.copyOfRange(offsets,0,offsets.length - 1);
+                    }
                     int[] newOffsets = Shape.squeezeOffsets(shape,offsets);
                     int[] newStrides = ArrayUtil.removeIndex(arr.stride(),0);
                     offset = ArrayUtil.dotProduct(offsets,stride);

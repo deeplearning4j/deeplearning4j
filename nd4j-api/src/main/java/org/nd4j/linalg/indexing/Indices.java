@@ -395,7 +395,10 @@ public class Indices {
             return shape;
 
         if(Shape.isRowVectorShape(shape) && numNewAxes < 1 && indices.length <= 2) {
-            return new int[] {1,indices[0].indices().length};
+            if(indices.length == 2)
+                return new int[] {1,Math.max(indices[0].indices().length,indices[1].indices().length)};
+            else
+                return new int[]{1,indices[0].indices().length};
         }
 
         int[] ret = new int[offsets.length];
@@ -421,7 +424,7 @@ public class Indices {
             }
 
             else if(indices[i] instanceof NDArrayIndex.NewAxis) {
-               continue;
+                continue;
             }
 
             else {
