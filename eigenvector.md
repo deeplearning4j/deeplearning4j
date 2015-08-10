@@ -97,7 +97,7 @@ PCA draws straight, explanatory lines through data, like linear regression.
 
 Each straight line represents a "principal component," or a relationship between an independent and dependent variable. While there are as many principal components as there are dimensions in the data, PCA's role is to prioritize them. 
 
-The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. In the graph above, it would slice down the length of the baguette.
+The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. (This happens to coincide with the least error, as expressed by the red lines...) In the graph below, it slices down the length of the "baguette."
 
 ![Alt text](../img/scatterplot_line.png)
 
@@ -132,10 +132,6 @@ The main difference between covariance and *correlation* is that correlation als
 To sum up, the covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
 
 While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
-
-## Entropy and Information Gain
-
-[Shannon entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory)) is a measure of the predictability of the data: the higher the entropy, the more pure, understood and predictable a dataset is. By modeling data well with tools like PCA, we get [information gain](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees) and come to a state of higher entropy.
 
 (*to be continued...*)
 
