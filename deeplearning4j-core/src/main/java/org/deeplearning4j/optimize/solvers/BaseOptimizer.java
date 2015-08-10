@@ -167,9 +167,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             if(step != 0.0) {
                 stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
                 model.setParams(parameters);
-            }
-
-            else {
+            }else {
                 log.debug("Step size returned by line search is 0.0.");
             }
 

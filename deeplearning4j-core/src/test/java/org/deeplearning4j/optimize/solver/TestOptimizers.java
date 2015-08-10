@@ -16,7 +16,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
@@ -109,7 +108,7 @@ public class TestOptimizers {
                 scores[i + 1] = scoreAfter;
                 if(PRINT_OPT_RESULTS) System.out.println(scoreAfter);
                 assertTrue("Score is NaN after optimization", !Double.isNaN(scoreAfter));
-                //assertTrue("OA= " + oa+", before= " + score + ", after= " + scoreAfter,scoreAfter < score);
+                assertTrue("OA= " + oa+", before= " + score + ", after= " + scoreAfter,scoreAfter < score);
                 score = scoreAfter;
             }
             if(PRINT_OPT_RESULTS)
@@ -122,7 +121,7 @@ public class TestOptimizers {
                 .weightInit(WeightInit.XAVIER)
                 .activationFunction("relu")
                 .optimizationAlgo(oa)
-                .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NESTEROVS))
+                .updater(Updater.SGD)
                 .iterations(nIterations)
                 .constrainGradientToUnitNorm(false)
                 .regularization(false)
@@ -152,7 +151,7 @@ public class TestOptimizers {
     @Test
     public void testSphereFnOptLineGradDescent(){
         //Test a single line search with calculated search direction (with multiple line search iterations)
-        int[] numLineSearchIter = {1,2,5,10};
+        int[] numLineSearchIter = {5,10};
         for( int n : numLineSearchIter )
             testSphereFnOptHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,n,2);
 
@@ -166,7 +165,7 @@ public class TestOptimizers {
     @Test
     public void testSphereFnOptCG(){
         //Test a single line search with calculated search direction (with multiple line search iterations)
-        int[] numLineSearchIter = {1,2,5,10};
+        int[] numLineSearchIter = {5,10};
         for( int n : numLineSearchIter )
             testSphereFnOptHelper(OptimizationAlgorithm.CONJUGATE_GRADIENT,n,2);
 
@@ -199,7 +198,7 @@ public class TestOptimizers {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .maxNumLineSearchIterations(numLineSearchIter)
                 .iterations(100)
-                .learningRate(1e-6)
+                .learningRate(1e-2)
                 .updater(Updater.SGD)
                 .layer(new RBM.Builder()
                         .nIn(1)
@@ -391,7 +390,7 @@ public class TestOptimizers {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                     .maxNumLineSearchIterations(maxNumLineSearchIter)
                     .iterations(i)
-                    .learningRate(1e-6)
+                    .learningRate(1e-2)
                     .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
                     .layer(new RBM.Builder()
                             .nIn(1).nOut(1)
@@ -500,7 +499,7 @@ public class TestOptimizers {
 
     @Test
     public void testRosenbrockFnOptStochGradDescentMultipleSteps(){
-        testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,5,20);
+        testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,20,20);
     }
 
     @Test
@@ -526,7 +525,7 @@ public class TestOptimizers {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                     .maxNumLineSearchIterations(maxNumLineSearchIter)
                     .iterations(i).stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
-                    .learningRate(1e-6).updater(Updater.SGD)
+                    .learningRate(1e-1).updater(Updater.SGD)
                     .layer(new RBM.Builder()
                             .nIn(1).nOut(1)
                             .build())
