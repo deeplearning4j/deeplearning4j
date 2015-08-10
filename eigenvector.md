@@ -91,7 +91,11 @@ PCA draws straight, explanatory lines through data, like linear regression. Each
 
 The first principal component bisects a scatterplot with a straight line in a way that explains the most variance in the dependent variable; that is, it follows the longest dimension of the data. The second cuts through the data perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
 
-Finding the eigenvalues and eigenvectors of the *covariance matrix* is the equivalent of fitting those straight lines. The covariance matrix defines both the variance of the data, and the orientation, or covariance, which is a measure of how variables change together (if two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance). 
+Finding the eigenvalues and eigenvectors of the *covariance matrix* is the equivalent of fitting those straight lines. 
+
+The covariance matrix defines both the variance of the data, and the orientation, or covariance, which is a measure of how variables change together (if two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance). 
+
+By drawing lines along the axes of greatest spread, you explain the most entropy, and obtain the most information gain; that is, you explain most of the variation in your data. 
 
 (*to be continued...*)
 
@@ -100,4 +104,4 @@ Finding the eigenvalues and eigenvectors of the *covariance matrix* is the equiv
 * [A Tutorial on Principal Components Analysis](http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf)
 * [What is the importance of eigenvalues/eigenvectors?](http://math.stackexchange.com/a/23325)
 * [Making Sense of PCA, Eigenvectors and Eigenvalues](http://stats.stackexchange.com/a/140579/85518)
-* [A geometric interpretation of the covariance matrix](http://www.visiondummy.com/2014/04/geometric-interpretation-covariance-matrix/)
+* [A Geometric Interpretation of the Covariance matrix](http://www.visiondummy.com/2014/04/geometric-interpretation-covariance-matrix/)
