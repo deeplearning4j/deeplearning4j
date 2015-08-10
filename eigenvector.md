@@ -109,7 +109,7 @@ The numbers on the upper left and lower right represent the variance of the x an
 
 By drawing lines along the axes of greatest variance, you explain the most informational entropy in the data; that is, you account for the greatest possible share of the spread in your data with the minimum number of factors. 
 
-It may help to think of each component as a cause, where the first principal component might be height; the second gender; the third nationality (implying nations' differing healthcare systems), each occupying its own dimension in relation to height. 
+It may help to think of each component as a cause in the Dutch basketball player example above, with the first principal component being age; the second gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
 
 (*to be continued...*)
 
