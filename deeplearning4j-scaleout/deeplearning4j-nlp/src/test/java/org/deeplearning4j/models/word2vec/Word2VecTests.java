@@ -55,34 +55,33 @@ public class Word2VecTests {
 
     @Test
     public void testWord2VecRunThroughVectors() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
+        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
         File file = resource.getFile().getParentFile();
         SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
         new File("cache.ser").delete();
         InMemoryLookupCache cache = new InMemoryLookupCache();
 
-
         TokenizerFactory t = new UimaTokenizerFactory();
 
         WeightLookupTable table = new InMemoryLookupTable
                 .Builder()
-                .vectorLength(100).useAdaGrad(false).cache(cache)
+                .vectorLength(100)
+                .useAdaGrad(false)
+                .cache(cache)
                 .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(1).iterations(5)
+                .minWordFrequency(1).iterations(1)
                 .layerSize(100).lookupTable(table)
                 .stopWords(new ArrayList<String>())
-                .vocabCache(cache)
+                .vocabCache(cache).seed(42)
                 .windowSize(5).iterate(iter).tokenizerFactory(t).build();
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
-
-
         vec.fit();
+        System.out.println(vec.similarity("day", "night"));
+        System.out.println(vec.similarity("day","percent"));
 
-
-        double sim = vec.similarity("Adam","deeplearning4j");
         new File("cache.ser").delete();
 
 
