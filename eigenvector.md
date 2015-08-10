@@ -93,11 +93,11 @@ The first principal component bisects a scatterplot with a straight line in a wa
 
 Finding the eigenvectors and eigenvalues of the *covariance matrix* is the equivalent of fitting those straight lines. Eigenvalues are simply the coefficients attached to eigenvectors, which give them magnitude. They represent the data's variance along eigenvector axes.
 
-The covariance matrix defines both the variance of the data, and the orientation, or covariance, which is a measure of how variables change together. 
-
 (If two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance. (The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.)) 
 
-By drawing lines along the axes of greatest spread, you explain the most entropy in the data, and obtain the most information gain; that is, you account for the greatest possible share of variation in your data with the minimum number of factors. 
+The covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is captured by the covariance, while x-and-y-axis-aligned spread is captured by the variance. 
+
+By drawing lines along the axes of greatest spread, you informational entropy explain the most entropy in the data; that is, you account for the greatest possible share of variation in your data with the minimum number of factors. 
 
 It may help to think of each component as a cause, where the first principal component might be height; the second gender; the third nationality (implying nations' differing healthcare systems), each occupying its own dimension in relation to height. 
 
