@@ -103,6 +103,12 @@ Finding the eigenvectors and eigenvalues of the covariance matrix is the equival
 
 *Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. 
 
+For a 2 x 2 matrix, a covariance matrix might look like this:
+
+![Alt text](../img/covariance_matrix.png)
+
+The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of the PCA section points up and two the right. 
+
 If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). 
 
 ![Alt text](../img/covariances.png)
@@ -114,14 +120,6 @@ Notice that when one variable or the other doesn't move at all, and the graph sh
 The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
 
 So the covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
-
-For a 2 x 2 matrix, a covariance matrix might look like this:
-
-![Alt text](../img/covariance_matrix.png)
-
-The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of the PCA section points up and two the right. 
-
-By drawing lines along the axes of greatest variance, you explain the most entropy in the data; that is, you account for the greatest possible share of the spread in your data with the minimum number of factors. 
 
 While not entirely accurate, it may help to think of each component as a cause in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
 
