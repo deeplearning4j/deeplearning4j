@@ -89,3 +89,4 @@ But if I throw in a classroom of psychotic kindergartners as well as a few CIA s
 
 * [A Tutorial on Principal Components Analysis](http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf)
 * [What is the importance of eigenvalues/eigenvectors?](http://math.stackexchange.com/a/23325)
+* [Making Sense of PCA, Eigenvectors and Eigenvalues](http://stats.stackexchange.com/a/140579/85518)
