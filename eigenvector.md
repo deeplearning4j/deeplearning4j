@@ -135,6 +135,22 @@ To sum up, the covariance matrix defines the shape of the data. Diagonal spread 
 
 While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
 
+## Entropy & Information Gain
+
+In information theory, the term entropy refers to information we don't have (which happens to be the opposite of how people normally define "information," or what they know). The information we don't have about a system, its entropy, is related to its unpredictability: how much it can surprise us.
+
+If you know that a certain coin has a head embossed on both sides, then flipping the coin gives you absolutely no information, because it will be heads every time. A balanced, two-sided coin does contain an element of surprise with each coin toss. And a six-sided die, by the same argument, contains even more surprise with each roll, which could produce any one of six results with equal frequency.
+
+Now let's imagine the die is loaded, it comes up "six" on four out of six rolls, and we figure out what's going on. Suddenly the amount of surprise produced with each roll by this die is greatly reduced. We understand a trend in the die's behavior that gives us greater predictive capacity. 
+
+The transfer of that information, as what we don't know becomes what we know, represents a change in entropy. Insight decreases the entropy of the system. Get information, reduce entropy. This is information gain. 
+
+(And yes, informational entropy is subjective, in that it depends on what we know about the system at hand.) 
+
+So each principal component cutting through the scatterplot represents a decrease in the system's entropy, in its unpredictability. Explaining the shape of the data with one principal component at a time, beginning with the component that accounts for the most variance, is similar to walking data through a decision tree. 
+
+The first component of PCA, like the first split in a decision tree, should be along the dimension that reduces unpredictability the most. 
+
 (*to be continued...*)
 
 ## Other Resources
