@@ -89,6 +89,8 @@ Variance is a property of data. If I take a team of Dutch basketball players and
 
 But if I throw in a classroom of psychotic kindergartners as well as a few CIA spies that have been carefully selected for appearing average in every way, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
 
+*Standard deviation*, a term related to variance that you're probably familiar with, is "the average distance from the mean of the data set to a point." As variance increases, standard deviation tends to increase. 
+
 Let's assume you plotted the age (x axis) and height (y axis) of those indivuals and came up with an oblong scatterplot:
 
 ![Alt text](../img/scatterplot.png)
