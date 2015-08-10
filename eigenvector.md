@@ -95,11 +95,19 @@ The first principal component bisects a scatterplot with a straight line in a wa
 
 Finding the eigenvectors and eigenvalues of the *covariance matrix* is the equivalent of fitting those straight lines. Eigenvalues are simply the coefficients attached to eigenvectors, which give them magnitude. They represent the data's variance along eigenvector axes.
 
-If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
+If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). 
 
-The covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is captured by the covariance, while x-and-y-axis-aligned spread is captured by the variance. 
+The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
 
-By drawing lines along the axes of greatest spread, you informational entropy explain the most entropy in the data; that is, you account for the greatest possible share of variation in your data with the minimum number of factors. 
+The covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
+
+For a 2 x 2 matrix, a covariance matrix might look like this:
+
+![Alt text](../img/covariance_matrix.png)
+
+The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. As you can see, it's positive, since the graph above points up and two the right. 
+
+By drawing lines along the axes of greatest variance, you explain the most informational entropy in the data; that is, you account for the greatest possible share of the spread in your data with the minimum number of factors. 
 
 It may help to think of each component as a cause, where the first principal component might be height; the second gender; the third nationality (implying nations' differing healthcare systems), each occupying its own dimension in relation to height. 
 
