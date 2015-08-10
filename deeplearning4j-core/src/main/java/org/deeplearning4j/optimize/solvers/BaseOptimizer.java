@@ -30,6 +30,9 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -86,11 +89,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Collection<TerminationCondition> terminationConditions,Model model) {
         this.conf = conf;
-        this.stepFunction = stepFunction;
+        this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
         this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
-        lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);
+        lineMaximizer = new BackTrackLineSearch(model,this.stepFunction,this);
         lineMaximizer.setStepMax(stepMax);
         lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
 
@@ -164,9 +167,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             if(step != 0.0) {
                 stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
                 model.setParams(parameters);
-            }
-
-            else {
+            }else {
                 log.debug("Step size returned by line search is 0.0.");
             }
 
@@ -231,7 +232,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
         if(updater == null)
-            updater = UpdaterCreator.getUpdater(model.conf());
+            updater = UpdaterCreator.getUpdater(model);
         Layer layer = (Layer) model;
         updater.update(layer, gradient, iteration);
     }
@@ -251,5 +252,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
 
 
+    public static StepFunction getDefaultStepFunctionForOptimizer( Class<? extends ConvexOptimizer> optimizerClass ){
+    	if( optimizerClass == StochasticGradientDescent.class ){
+    		return new NegativeGradientStepFunction();
+    	} else {
+    		return new NegativeDefaultStepFunction();
+    	}
+    }
 
 }

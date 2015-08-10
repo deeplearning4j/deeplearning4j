@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.MultiLayerUtil;
@@ -82,12 +83,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     protected INDArray mask;
 
-    private int layerIndex;	//For Layer.get/setIndex()
+    protected int layerIndex;	//For Layer.get/setIndex()
+    
+    protected transient Solver solver;	//Used to call optimizers during backprop
 
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
-        this.defaultConfiguration = conf.getConf(0);
+        this.defaultConfiguration = conf.getConf(0).clone();
     }
 
     /**
@@ -227,7 +230,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public NeuralNetConfiguration conf() {
-        throw new UnsupportedOperationException();
+        return defaultConfiguration;
     }
 
     @Override
@@ -252,8 +255,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public INDArray getParam(String param) {
-        throw new UnsupportedOperationException();
-
+    	//Get params for MultiLayerNetwork sub layers.
+    	//Parameter keys here: same as MultiLayerNetwork.backprop().
+    	int idx = param.indexOf("_");
+		if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+param+"\"");
+		int layerIdx = Integer.parseInt(param.substring(0, idx));
+		String newKey = param.substring(idx+1);
+    	
+		return layers[layerIdx].getParam(newKey);
     }
 
     @Override
@@ -263,7 +272,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Map<String, INDArray> paramTable() {
-        throw new UnsupportedOperationException();
+        //Get all parameters from all layers
+    	Map<String,INDArray> allParams = new HashMap<>();
+    	for( int i=0; i<layers.length; i++ ){
+    		Map<String,INDArray> paramMap = layers[i].paramTable();
+        	for( Map.Entry<String, INDArray> entry : paramMap.entrySet() ){
+        		String newKey = i + "_" + entry.getKey();
+        		allParams.put(newKey, entry.getValue());
+        	}
+        }
+    	return allParams;
     }
 
     @Override
@@ -274,8 +292,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void setParam(String key, INDArray val) {
-        throw new UnsupportedOperationException();
-
+    	//Set params for MultiLayerNetwork sub layers.
+    	//Parameter keys here: same as MultiLayerNetwork.backprop().
+    	int idx = key.indexOf("_");
+		if( idx == -1 ) throw new IllegalStateException("Invalid param key: not have layer separator: \""+key+"\"");
+		int layerIdx = Integer.parseInt(key.substring(0, idx));
+		String newKey = key.substring(idx+1);
+		
+		layers[layerIdx].setParam(newKey,val);
     }
 
 
@@ -327,6 +351,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
             initCalled = true;
             initMask();
+        }
+        
+        //Set parameters in MultiLayerNetwork.defaultConfiguration for later use in BaseOptimizer.setupSearchState() etc
+        //Keyed as per backprop()
+        defaultConfiguration.clearVariables();
+        for( int i=0; i<layers.length; i++ ){
+        	for( String s : layers[i].conf().variables() ){
+        		defaultConfiguration.addVariable(i+"_"+s);
+        	}
         }
     }
 
@@ -555,7 +588,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), getOutputLayer().score());
+        return new Pair<>(gradient(), score());
     }
 
     /**
@@ -971,8 +1004,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
                 setInput(next.getFeatureMatrix());
                 setLabels(next.getLabels());
-                backprop();
-
+                if( solver == null ){
+                	solver = new Solver.Builder()
+                		.configure(conf())
+                		.listeners(getListeners())
+                		.model(this).build();
+                }
+                solver.optimize();
             }
         }
     }
@@ -988,6 +1026,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         feedForward();	//Need to do this to calculate activations (which are stored in each layer, and later used in backprop)
+        int miniBatchSize = input.size(0);
 
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
         if(labels == null)
@@ -1011,13 +1050,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null,null, null);
 
-        for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
-            multiGradientKey = String.valueOf(numLayers)+ "_" + entry.getKey();
-            gradient.setGradientFor(multiGradientKey, entry.getValue());
+        for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+            multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
+            //=============
+            //Temporarily divide gradients by mini-batch size here. Better design possible?
+            INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
+            //=============
+            gradient.setGradientFor(multiGradientKey, g);
         }
 
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
-            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
+            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond()));
 
         prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
@@ -1027,7 +1070,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
-                gradient.setGradientFor(multiGradientKey, entry.getValue());
+                //=============
+                //Temporarily divide gradients by mini-batch size here. Better design possible?
+                INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
+                //=============
+                gradient.setGradientFor(multiGradientKey, g);
             }
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
@@ -1036,6 +1083,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             prevLayer = currLayer;
         }
 
+        feedForward();
         score = outputLayer.score();	//TODO need to do full forward pass to score...
 
         //TODO: Set up to call optimizers, and shift this gradient calculation elsewhere
@@ -1043,6 +1091,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
 
+    /**
+     *
+     * @return
+     */
     public Collection<IterationListener> getListeners() {
         return listeners;
     }
@@ -1141,7 +1193,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()){
-            backprop();
+        	if( solver == null ){
+        		solver = new Solver.Builder()
+        			.configure(conf())
+        			.listeners(getListeners())
+        			.model(this).build();
+        	}
+        	solver.optimize();
         }
     }
 
@@ -1307,6 +1365,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public double score(DataSet data) {
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
+        if( getOutputLayer() instanceof OutputLayer ){
+        	OutputLayer ol = (OutputLayer)getOutputLayer();
+        	ol.setLabels(data.getLabels());
+        	ol.computeScore();
+        	this.score = ol.score();
+        } else {
+        	log.warn("Cannot calculate score wrt labels without an OutputLayer");
+        	return 0.0;
+        }
         return score();
     }
 
@@ -1334,6 +1401,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void computeGradientAndScore() {
         backprop();
+        this.score = ((OutputLayer)getOutputLayer()).computeScore();
     }
 
     @Override
@@ -1342,14 +1410,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     /**
-     * Clear the inputs
+     * Clear the inputs. Clears optimizer state.
      */
     public void clear() {
         for (Layer layer : layers)
             layer.clear();
 
-
         input = null;
+        labels = null;
+        solver = null;
     }
 
     /**
@@ -1446,18 +1515,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void setParameters(INDArray params) {
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
-            Layer layer = getLayers()[i];
+            Layer layer = getLayer(i);
 
             int range = layer.numParams();
             INDArray get = params.get(NDArrayIndex.interval(idx, range + idx));
             if (get.length() < 1)
                 throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
-            if(layer.input() != null)
-                layer.computeGradientAndScore();
-            idx += range - 1;
+            idx += range;
         }
-
     }
 
 
