@@ -99,7 +99,7 @@ The second principal component cuts through the data nearly perpendicular to the
 
 Now imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. Like many many other matrices, it has its very own eigenvectors. 
 
-Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-componant lines to the variance of the data. 
+Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principle-component lines to the variance of the data. 
 
 *Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. 
 
