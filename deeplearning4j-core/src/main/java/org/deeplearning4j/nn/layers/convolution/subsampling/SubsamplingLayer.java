@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -120,7 +121,8 @@ public class SubsamplingLayer extends BaseLayer {
 
                 //compute gradient for weights
                 INDArray finalRet = Convolution.col2im(ret2,conf.getStride(),conf.getPadding(),width,height);
-
+                if(finalRet.rank() < 4)
+                    finalRet = finalRet.reshape(Ints.concat(new int[]{1},finalRet.shape()));
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
                 return new Pair<>(ret,finalRet);
             case AVG:
@@ -134,6 +136,9 @@ public class SubsamplingLayer extends BaseLayer {
                 //do convolution all at once
                 INDArray convolution = Convolution.col2im(tiled, conf.getStride(), conf.getPadding(), height, width);
                 convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
+                if(convolution.rank() < 4)
+                    convolution = convolution.reshape(Ints.concat(new int[]{1},convolution.shape()));
+
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, convolution);
                 return new Pair<>(ret,convolution);
             case NONE:

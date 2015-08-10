@@ -39,7 +39,6 @@ import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.rng.DefaultRandom;
 import org.deeplearning4j.util.Dl4jReflection;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -76,7 +75,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* L2 Regularization constant */
     protected double l2 = 0;
     protected boolean useRegularization = false;
-    protected Updater updater = Updater.ADAGRAD;
+    protected Updater updater = Updater.NONE;
     private String customLossFunction;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
@@ -100,7 +99,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected long seed;
     //weight initialization
     protected Distribution dist;
-    protected StepFunction stepFunction = new GradientStepFunction();
+    protected StepFunction stepFunction;
     protected Layer layer;
 
 
@@ -233,7 +232,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         for(Field f : fields) {
             try {
                 f.setAccessible(true);
-                f.set(this,f.get(neuralNetConfiguration));
+                
+                //Copy lists, maps etc. to avoid same object being in 
+                Object o = f.get(neuralNetConfiguration);
+                if( o instanceof List ){
+                	f.set(this, new ArrayList<>((List<?>)o));
+                } else if( o instanceof Map ){
+                	f.set(this, new HashMap<>((Map<?,?>)o));
+                } else {
+                	f.set(this,o);
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -317,6 +325,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public void addVariable(String variable) {
         if(!variables.contains(variable))
             variables.add(variable);
+    }
+    
+    public void clearVariables(){
+    	variables.clear();
     }
 
     private static <T> T overRideFields(T configInst, Layer layer) {
@@ -566,7 +578,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         // convolution & subsampling layers
         private int[] stride = {2,2};
         private int[] padding = {0,0};
-        private StepFunction stepFunction = new NegativeDefaultStepFunction();
+        private StepFunction stepFunction = null;
         private Layer layer;
         private int batchSize = 100;
         @Deprecated
@@ -578,7 +590,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
-        private Updater updater = Updater.ADAGRAD;
+        private Updater updater = Updater.NONE;
         private boolean miniBatch = false;
 
 
