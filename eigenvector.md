@@ -61,6 +61,18 @@ Notice we’re using the plural – axes and lines – because square matrices h
 
 Because eigenvectors distill the axes of principal force that a matrix moves along, they are useful in matrix decomposition, or matrix vectorization; i.e. the representation of a matrix by a vector. In that sense, they perform the same task as autoencoders. 
 
+To quote Yoshua Bengio:
+
+    Many mathematical objects can be understood better by breaking them into constituent parts, or ﬁnding some properties of them that are universal, not caused by the way we choose to represent them.
+    
+    For example, integers can be decomposed into prime factors. The way we represent the number 12 will change depending on whether we write it in base ten or in binary, but it will always be true that 12 = 2 × 2 × 3. 
+    
+    From this representation we can conclude useful properties, such as that 12 is not divisible by 5, or that any integer multiple of 12 will be divisible by 3.
+    
+    Much as we can discover something about the true nature of an integer by decomposing it into prime factors, we can also decompose matrices in ways that show us information about their functional properties that is not obvious from the representation of the matrix as an array of elements.
+    
+    One of the most widely used kinds of matrix decomposition is called eigen-decomposition, in which we decompose a matrix into a set of eigenvectors and eigenvalues.
+
 ## Principle Component Analysis (PCA)
 
 PCA is a tool for finding patterns in high-dimensional data such as images. 
@@ -70,6 +82,8 @@ To get to PCA, we’re going to quickly gloss some basic statistical ideas so we
 If I take a team of Dutch basketball players and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
 
 But if I throw in a classroom of psychotic kindergartners as well as a few CIA spies that have been selected for appearing utterly normal in every way, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
+
+
 
 ## Other Resources
 
