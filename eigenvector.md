@@ -105,7 +105,7 @@ The second principal component cuts through the data nearly perpendicular to the
 
 ## Covariance Matrix
 
-While introduced matrices as something that transformed one set of vectors into another, another way to think about them is as a description of data that captures the the forces at work upon it.
+While we introduced matrices as something that transformed one set of vectors into another, another way to think about them is as a description of data that captures the the forces at work upon it, the forces by which two variables might relate to each other.
 
 Imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. Like many many other matrices, it has its very own eigenvectors. 
 
