@@ -634,7 +634,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray linearViewColumnOrder() {
-        ensureNotCleanedUp();
+
         return create(data, new int[]{length, 1}, offset());
     }
 
@@ -645,10 +645,7 @@ public abstract class BaseNDArray implements INDArray {
             return Nd4j.create(data, shape, offset);
     }
 
-    protected void ensureNotCleanedUp() {
-        if(cleanedUp)
-            throw new IllegalStateException("Invalid operation: already collected");
-    }
+
 
     /**
      * Returns a linear view reference of shape
@@ -658,7 +655,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray linearView() {
-        ensureNotCleanedUp();
+
         return this;
     }
 
@@ -676,7 +673,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int majorStride() {
-        ensureNotCleanedUp();
+
         if(stride.length == 0) {
             majorStride = elementStride();
             return elementStride();
@@ -711,7 +708,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int secondaryStride() {
-        ensureNotCleanedUp();
+
         if(stride.length == 0)
             return 1;
         if (stride.length >= 2) {
@@ -789,7 +786,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int vectorsAlongDimension(int dimension) {
-        ensureNotCleanedUp();
+
         if(dimension == 0 && isVector() || isRowVector())
             return 1;
         if(size(dimension) == 1 && !isVector()) {
@@ -865,7 +862,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray cumsumi(int dimension) {
-        ensureNotCleanedUp();
+
         if (isVector()) {
             double s = 0.0;
             for (int i = 0; i < length; i++) {
@@ -1004,7 +1001,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray cumsum(int dimension) {
-        ensureNotCleanedUp();
+
         return dup().cumsumi(dimension);
     }
 
@@ -1017,7 +1014,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray assign(INDArray arr) {
-        ensureNotCleanedUp();
+
         if (!arr.isVector() && !isVector())
             LinAlgExceptions.assertSameShape(this, arr);
         else if (isVector() && arr.isVector() && length() != arr.length())
@@ -1031,17 +1028,17 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray putScalar(int i, double value) {
-        ensureNotCleanedUp();
+
         if(isScalar()) {
             data.put(offset + i,value);
             return this;
         }
-
-        int offset  = this.offset + Shape.offsetFor(this, i);
-        if(offset >= data().length())
-            throw new IllegalArgumentException("Illegal index " + i);
-        data.put(offset, value);
-        return this;
+        if(isRowVector())
+            return putScalar(new int[]{0,i},value);
+        else if(isColumnVector())
+            return putScalar(new int[]{i,0},value);
+        int[] indexes = ordering() == 'c' ? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
+        return putScalar(indexes,value);
 
     }
 
@@ -1058,22 +1055,25 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray putScalar(int[] indexes, double value) {
-        int ix = Shape.offsetFor(this,indexes);
-        if(ix >= data().length())
-            throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indexes));
-        data.put(ix, value);
+        int offset = 0;
+        for(int j = 0; j < indexes.length; j++) {
+            offset += indexes[j] * stride(j);
+        }
+        if(offset >= data().length())
+            throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
+        data.put(offset + this.offset, value);
         return this;
     }
 
     @Override
     public INDArray putScalar(int[] indexes, float value) {
-        ensureNotCleanedUp();
+
         return putScalar(indexes, (double) value);
     }
 
     @Override
     public INDArray putScalar(int[] indexes, int value) {
-        ensureNotCleanedUp();
+
         return putScalar(indexes, (double) value);
     }
 
@@ -1124,7 +1124,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray epsi(INDArray other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new Eps(linearView(), other.linearView(), this, length()));
         return this;
     }
@@ -1136,7 +1136,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray lti(Number other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new ScalarLessThan(linearView(), other));
         return this;
     }
@@ -1148,7 +1148,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(Number other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new ScalarEquals(linearView(), other));
         return this;
     }
@@ -1160,7 +1160,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(Number other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new ScalarGreaterThan(linearView(), other));
         return this;
     }
@@ -1172,7 +1172,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray lti(INDArray other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new LessThan(linearView(), other, linearView(), length()));
         return this;
     }
@@ -1184,7 +1184,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(Number other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new ScalarNotEquals(linearView(), other));
         return this;
     }
@@ -1196,7 +1196,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(INDArray other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new NotEqualTo(linearView(), other.linearView(), linearView(), length()));
         return this;
     }
@@ -1208,7 +1208,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(INDArray other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new EqualTo(linearView(), other.linearView(), linearView(), length()));
         return this;
     }
@@ -1220,7 +1220,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(INDArray other) {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new GreaterThan(linearView(), other.linearView(), linearView(), length()));
         return this;
     }
@@ -1238,7 +1238,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray negi() {
-        ensureNotCleanedUp();
+
         Nd4j.getExecutioner().exec(new Negative(linearView()));
         return this;
     }
@@ -1250,7 +1250,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray rdivi(Number n, INDArray result) {
-        ensureNotCleanedUp();
+
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarReverseDivision(linearView(), null, result.linearView(), result.length(), n));
@@ -1266,7 +1266,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray rsubi(Number n, INDArray result) {
-        ensureNotCleanedUp();
+
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
@@ -1284,7 +1284,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray divi(Number n, INDArray result) {
-        ensureNotCleanedUp();
+
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarDivision(linearView(), null, result.linearView(), result.length(), n));
@@ -1303,7 +1303,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray muli(Number n, INDArray result) {
-        ensureNotCleanedUp();
+
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarMultiplication(linearView(), null, result.linearView(), result.length(), n));
@@ -1321,7 +1321,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray subi(Number n, INDArray result) {
-        ensureNotCleanedUp();
+
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
 
@@ -1339,7 +1339,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray addi(Number n, INDArray result) {
-        ensureNotCleanedUp();
+
         if (Double.isNaN(n.doubleValue()))
             n = Nd4j.EPS_THRESHOLD;
         Nd4j.getExecutioner().exec(new ScalarAdd(linearView(), null, result.linearView(), result.length(), n));
@@ -1363,7 +1363,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray dup() {
-        ensureNotCleanedUp();
+
         INDArray ret = Shape.toOffsetZeroCopy(this);
         return ret;
     }
@@ -1376,7 +1376,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int getInt(int... indices) {
-        ensureNotCleanedUp();
+
         int ix = offset;
         for (int i = 0; i < indices.length; i++)
             ix += indices[i] * stride[i];
@@ -1393,8 +1393,11 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public double getDouble(int... indices) {
-        INDArray val =  get(Shape.toIndexes(indices));
-        return val.data().getDouble(val.offset());
+        int offset = 0;
+        for(int i = 0; i < indices.length; i++) {
+            offset += indices[i] * stride(i);
+        }
+        return data.getDouble(offset + this.offset);
     }
 
     /**
@@ -1405,7 +1408,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public float getFloat(int... indices) {
-        ensureNotCleanedUp();
+
         return (float) getDouble(indices);
     }
 
@@ -1416,7 +1419,7 @@ public abstract class BaseNDArray implements INDArray {
     public boolean isScalar() {
         if(isScalar != null)
             return isScalar;
-        ensureNotCleanedUp();
+
         if (shape.length == 0) {
             isScalar = true;
             return true;
@@ -1440,7 +1443,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray put(int[] indices, INDArray element) {
-        ensureNotCleanedUp();
+
         if (!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
         if(isRowVector() && indices[0] == 0 && indices.length == 2) {
@@ -1488,7 +1491,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray put(int i, int j, Number element) {
-        ensureNotCleanedUp();
+
         return putScalar(new int[]{i, j}, element.doubleValue());
     }
 
@@ -1501,7 +1504,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray putSlice(int slice, INDArray put) {
-        ensureNotCleanedUp();
+
         if (isScalar()) {
             assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
             put(0, put.getScalar(0));
@@ -1545,7 +1548,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected void assertSlice(INDArray put, int slice) {
-        ensureNotCleanedUp();
+
         assert slice <= slices() : "Invalid slice specified " + slice;
         int[] sliceShape = put.shape();
         if(Shape.isRowVectorShape(sliceShape)) {
@@ -1578,7 +1581,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return true if the element is a matrix, false otherwise
      */
     public boolean isMatrix() {
-        ensureNotCleanedUp();
+
         return (shape().length == 2
                 && (shape[0] != 1 && shape[1] != 1));
     }
@@ -1586,7 +1589,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int index(int row, int column) {
-        ensureNotCleanedUp();
+
         if (!isMatrix()) {
             if (isColumnVector()) {
                 int idx = linearIndex(row);
@@ -1604,7 +1607,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected INDArray newShape(int[] newShape, char ordering) {
-        ensureNotCleanedUp();
+
         return create(data(), newShape, stride(), offset);
     }
 
@@ -1646,7 +1649,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public double squaredDistance(INDArray other) {
-        ensureNotCleanedUp();
+
         double sd = 0.0;
         for (int i = 0; i < length; i++) {
             double d = getDouble(i) - other.getDouble(i);
@@ -1660,7 +1663,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public double distance2(INDArray other) {
-        ensureNotCleanedUp();
+
         return Math.sqrt(squaredDistance(other));
     }
 
@@ -1669,7 +1672,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public double distance1(INDArray other) {
-        ensureNotCleanedUp();
+
         return other.sub(this).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -1694,7 +1697,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray swapAxes(int dimension, int with) {
-        ensureNotCleanedUp();
+
         int[] shape = ArrayUtil.range(0, shape().length);
         shape[dimension] = with;
         shape[with] = dimension;
@@ -1705,13 +1708,13 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public DataBuffer data() {
-        ensureNotCleanedUp();
+
         return data;
     }
 
     @Override
     public void setData(DataBuffer data) {
-        ensureNotCleanedUp();
+
         this.data = data;
     }
 
@@ -1723,7 +1726,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int slices() {
-        ensureNotCleanedUp();
+
         if (shape.length < 1)
             return 0;
 
@@ -1737,7 +1740,7 @@ public abstract class BaseNDArray implements INDArray {
         int[] stride = resolution.getStrides();
 
         int offset = this.offset + resolution.getOffset();
-        ensureNotCleanedUp();
+
         int n = shape.length;
         if (shape.length < 1)
             return create(Nd4j.createBuffer(shape));
@@ -1783,7 +1786,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
-        ensureNotCleanedUp();
+
         int n = shape.length;
         if (shape.length < 1)
             return create(Nd4j.createBuffer(shape));
@@ -1842,7 +1845,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray condi(Condition condition) {
-        ensureNotCleanedUp();
+
         INDArray linear = linearView();
         for (int i = 0; i < length(); i++) {
             boolean met = condition.apply(linear.getDouble(i));
@@ -1855,12 +1858,12 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public void setStride(int[] stride) {
-        ensureNotCleanedUp();
+
         this.stride = stride;
     }
 
     protected void init(int[] shape) {
-        ensureNotCleanedUp();
+
         this.shape = shape;
 
         if (this.shape.length == 1) {
@@ -1920,7 +1923,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
-        ensureNotCleanedUp();
+
         if (rows() == 1 && columnVector.isScalar()) {
             applyScalarOp(columnVector, operation);
         }
@@ -1947,7 +1950,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected void assertRowVector(INDArray rowVector) {
-        ensureNotCleanedUp();
+
         assert rowVector.isRowVector() || rowVector.rows() == rows() && rowVector.columns() == 1 : "Must only add a row vector";
         assert rowVector.length() == columns() || rowVector.rows() == rows() && rowVector.columns() == 1 : "Illegal row vector must have the same length as the number of rows in this ndarray";
 
@@ -1967,14 +1970,13 @@ public abstract class BaseNDArray implements INDArray {
      * @return
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
-        ensureNotCleanedUp();
+
         if (columns() == 1 && rowVector.isScalar()) {
             if (this instanceof IComplexNDArray) {
                 applyScalarOp(rowVector, operation);
             }
         }
         else {
-
             assertRowVector(rowVector);
             applyVectorOp(rowVector, operation);
 
@@ -2097,8 +2099,6 @@ public abstract class BaseNDArray implements INDArray {
                 }
 
             }
-
-
         }
     }
 
@@ -2212,7 +2212,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray put(int i, INDArray element) {
-        ensureNotCleanedUp();
+
         if (element == null)
             throw new IllegalArgumentException("Unable to insert null element");
         assert element.isScalar() : "Unable to insert non scalar element";
@@ -2408,7 +2408,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray mmul(INDArray other) {
-        ensureNotCleanedUp();
+
         int[] shape = {rows(), other.columns()};
         INDArray result = create(shape,ordering());
         return mmuli(other, result);
@@ -2545,7 +2545,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray mmuli(INDArray other, INDArray result) {
-        ensureNotCleanedUp();
+
         INDArray otherArray = other;
         INDArray resultArray = result;
 
@@ -2658,7 +2658,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray divi(INDArray other, INDArray result) {
-        ensureNotCleanedUp();
+
         if (other.isScalar()) {
             return divi(other.getDouble(0), result);
         }
@@ -2694,7 +2694,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray muli(INDArray other, INDArray result) {
-        ensureNotCleanedUp();
+
         if (other.isScalar()) {
             return muli(other.getDouble(0), result);
         }
@@ -2730,7 +2730,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray subi(INDArray other, INDArray result) {
-        ensureNotCleanedUp();
+
         if (other.isScalar()) {
             return subi(other.getDouble(0), result);
         }
@@ -2766,7 +2766,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray addi(INDArray other, INDArray result) {
-        ensureNotCleanedUp();
+
         if (other.isScalar()) {
             return result.addi(other.getDouble(0), result);
         }
@@ -3578,7 +3578,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int columns() {
-        ensureNotCleanedUp();
+
         if (isMatrix()) {
             if (shape().length > 2)
                 return Shape.squeeze(shape)[1];
@@ -3605,7 +3605,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int rows() {
-        ensureNotCleanedUp();
+
         if (isMatrix()) {
             if (shape().length > 2)
                 return Shape.squeeze(shape)[0];
@@ -3631,7 +3631,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray ravel() {
-        ensureNotCleanedUp();
+
         INDArray ret = create(new int[]{1,length}, ordering);
         INDArray linear = linearView();
         /**
@@ -3669,7 +3669,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public void sliceVectors(List<INDArray> list) {
-        ensureNotCleanedUp();
+
         if (isVector())
             list.add(this);
         else {
@@ -3700,7 +3700,7 @@ public abstract class BaseNDArray implements INDArray {
         if(isColumnVector() && c == 0)
             return this;
 
-        ensureNotCleanedUp();
+
         if (shape.length == 2) {
             INDArray ret = vectorAlongDimension(c, 0);
             return ret.reshape(ret.length(),1);
@@ -3723,7 +3723,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray getRows(int[] rindices) {
-        ensureNotCleanedUp();
+
         INDArray rows = create(new int[]{rindices.length, columns()});
         for (int i = 0; i < rindices.length; i++) {
             rows.putRow(i, getRow(rindices[i]));
@@ -3791,7 +3791,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray getColumns(int...cindices) {
-        ensureNotCleanedUp();
+
         INDArray rows = create(rows(), cindices.length);
         for (int i = 0; i < cindices.length; i++) {
             rows.putColumn(i, getColumn(cindices[i]));
@@ -3813,7 +3813,7 @@ public abstract class BaseNDArray implements INDArray {
         if(isRowVector() && r == 0)
             return this;
 
-        ensureNotCleanedUp();
+
         if (shape.length == 2) {
             if (isColumnVector())
                 return createScalarForIndex(r,true);
@@ -3845,7 +3845,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public boolean equals(Object o) {
-        ensureNotCleanedUp();
+
         INDArray n = null;
 
         if (!(o instanceof INDArray))
@@ -3912,7 +3912,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the shape of this matrix
      */
     public int[] shape() {
-        ensureNotCleanedUp();
+
         return shape;
     }
 
@@ -3923,20 +3923,20 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int[] stride() {
-        ensureNotCleanedUp();
+
         return stride;
     }
 
 
     @Override
     public int offset() {
-        ensureNotCleanedUp();
+
         return offset;
     }
 
     @Override
     public char ordering() {
-        ensureNotCleanedUp();
+
         return ordering;
     }
 
@@ -3949,7 +3949,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int size(int dimension) {
-        ensureNotCleanedUp();
+
         if (isScalar()) {
             if (dimension == 0 || dimension == 1 || dimension < 0)
                 return length;
@@ -3988,7 +3988,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray broadcast(int[] shape) {
-        ensureNotCleanedUp();
+
         if (Shape.shapeEquals(shape, shape()))
             return this;
         boolean compatible = true;
@@ -4089,7 +4089,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable) {
-        ensureNotCleanedUp();
+
         assert broadCastable.length == shape.length : "The broadcastable dimensions must be the same length as the current shape";
 
         boolean broadcast = false;
@@ -4188,7 +4188,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray permute(int...rearrange) {
-        ensureNotCleanedUp();
+
         if (rearrange.length != shape.length)
             return dup();
 
@@ -4212,7 +4212,7 @@ public abstract class BaseNDArray implements INDArray {
 
 
     protected void copyRealTo(INDArray arr) {
-        ensureNotCleanedUp();
+
         INDArray flattened = linearView();
         INDArray arrLinear = arr.linearView();
         for (int i = 0; i < flattened.length(); i++) {
@@ -4222,7 +4222,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     protected int[] doPermuteSwap(int[] shape, int[] rearrange) {
-        ensureNotCleanedUp();
+
         int[] ret = new int[shape.length];
         for (int i = 0; i < shape.length; i++) {
             ret[i] = shape[rearrange[i]];
@@ -4232,7 +4232,7 @@ public abstract class BaseNDArray implements INDArray {
 
 
     protected void checkArrangeArray(int[] arr) {
-        ensureNotCleanedUp();
+
         assert arr.length == shape.length : "Invalid rearrangement: number of arrangement != shape";
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] >= arr.length)
@@ -4257,14 +4257,14 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public boolean isVector() {
-        ensureNotCleanedUp();
+
         boolean ret =   isRowVector() || isColumnVector();
         return ret;
     }
 
     @Override
     public boolean isSquare() {
-        ensureNotCleanedUp();
+
         return isMatrix() && rows() == columns();
     }
 
@@ -4273,7 +4273,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public boolean isRowVector() {
-        ensureNotCleanedUp();
+
         if (shape().length == 1 || shape().length == 2 && shape[0] == 1)
             return true;
 
@@ -4285,7 +4285,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public boolean isColumnVector() {
-        ensureNotCleanedUp();
+
         if (shape().length == 1)
             return false;
 
@@ -4301,7 +4301,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public String toString() {
-        ensureNotCleanedUp();
+
         return new NDArrayStrings().format(this);
     }
 
@@ -4315,7 +4315,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public Object element() {
-        ensureNotCleanedUp();
+
         if (!isScalar())
             throw new IllegalStateException("Unable to retrieve element from non scalar matrix");
         if (data.dataType() == DataBuffer.Type.FLOAT)
@@ -4353,7 +4353,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray divi(IComplexNumber n) {
-        ensureNotCleanedUp();
+
         return divi(n, Nd4j.createComplex(shape()));
 
     }
@@ -4365,7 +4365,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray muli(IComplexNumber n) {
-        ensureNotCleanedUp();
+
         return muli(n, Nd4j.createComplex(shape()));
 
     }
@@ -4387,7 +4387,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray addi(IComplexNumber n) {
-        ensureNotCleanedUp();
+
         return addi(n, Nd4j.createComplex(shape()));
 
     }
@@ -4410,7 +4410,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
-        ensureNotCleanedUp();
+
         return Nd4j.createComplex(this).rsubi(n, result);
     }
 
@@ -4421,7 +4421,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
-        ensureNotCleanedUp();
+
         return Nd4j.createComplex(this).divi(n, result);
 
     }
@@ -4433,7 +4433,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
-        ensureNotCleanedUp();
+
         return Nd4j.createComplex(this).muli(n, result);
 
     }
@@ -4445,7 +4445,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
-        ensureNotCleanedUp();
+
         return Nd4j.createComplex(this).subi(n, result);
 
     }
@@ -4457,7 +4457,7 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public IComplexNDArray addi(IComplexNumber n, IComplexNDArray result) {
-        ensureNotCleanedUp();
+
         return Nd4j.createComplex(this).addi(n, result);
 
     }

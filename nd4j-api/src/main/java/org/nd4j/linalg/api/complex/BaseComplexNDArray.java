@@ -603,7 +603,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public void resetLinearView() {
-        ensureNotCleanedUp();
+       
         if(isVector() || isScalar() || length() == 1)
             linearView = this;
         else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
@@ -1447,7 +1447,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNumber getComplex(int... indices) {
-        ensureNotCleanedUp();
+       
         int ix = offset;
         for (int i = 0; i < indices.length; i++)
             ix += indices[i] * stride[i];
@@ -3363,7 +3363,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray ravel() {
-        ensureNotCleanedUp();
+       
         IComplexNDArray ret = Nd4j.createComplex(length, ordering);
         IComplexNDArray linear = linearView();
         for(int i = 0; i < length(); i++) {
