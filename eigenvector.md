@@ -119,7 +119,7 @@ Notice that when one variable or the other doesn't move at all, and the graph sh
 
 The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
 
-So the covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
+To sum up, the covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
 
 While not entirely accurate, it may help to think of each component as a cause in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
 
