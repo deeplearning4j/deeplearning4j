@@ -91,9 +91,11 @@ PCA draws straight, explanatory lines through data, like linear regression. Each
 
 The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. The second cuts through the data perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
 
-Finding the eigenvalues and eigenvectors of the *covariance matrix* is the equivalent of fitting those straight lines. 
+Finding the eigenvectors and eigenvalues of the *covariance matrix* is the equivalent of fitting those straight lines. Eigenvalues are simply the coefficients attached to eigenvectors, which give them magnitude. 
 
-The covariance matrix defines both the variance of the data, and the orientation, or covariance, which is a measure of how variables change together (If two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance. (The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.)) 
+The covariance matrix defines both the variance of the data, and the orientation, or covariance, which is a measure of how variables change together. 
+
+(If two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance. (The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.)) 
 
 By drawing lines along the axes of greatest spread, you explain the most entropy, and obtain the most information gain; that is, you explain most of the variation in your data. 
 
