@@ -42,7 +42,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.Indices;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -1677,12 +1677,12 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     @Override
-    public INDArray put(NDArrayIndex[] indices, INDArray element) {
+    public INDArray put(INDArrayIndex[] indices, INDArray element) {
         return get(indices).assign(element);
     }
 
     @Override
-    public INDArray put(NDArrayIndex[] indices, Number element) {
+    public INDArray put(INDArrayIndex[] indices, Number element) {
         return put(indices, createScalar(element.doubleValue()));
     }
 
@@ -2952,12 +2952,12 @@ public abstract class BaseNDArray implements INDArray {
 
         if(slice < 0)
             slice += shape.length;
-        List<NDArrayIndex> indices = new ArrayList<>();
+        List<INDArrayIndex> indices = new ArrayList<>();
         indices.add(new NDArrayIndex(slice));
         for(int i = 1; i < rank(); i++) {
             indices.add(NDArrayIndex.all());
         }
-        return get(indices.toArray(new NDArrayIndex[indices.size()]));
+        return get(indices.toArray(new INDArrayIndex[indices.size()]));
     }
 
 
@@ -3252,7 +3252,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray putRow(int row, INDArray toPut) {
         if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape()))
             return assign(toPut);
-        return put(new NDArrayIndex[]{new NDArrayIndex(row),NDArrayIndex.all()},toPut);
+        return put(new INDArrayIndex[]{new NDArrayIndex(row),NDArrayIndex.all()},toPut);
     }
 
     /**
@@ -3268,7 +3268,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray putColumn(int column, INDArray toPut) {
         if(isColumnVector() && Shape.shapeEquals(shape(),toPut.shape()))
             return assign(toPut);
-        return put(new NDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(column)},toPut);
+        return put(new INDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(column)},toPut);
 
     }
 
@@ -3739,7 +3739,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return a view of the array with the specified indices
      */
     @Override
-    public INDArray get(NDArrayIndex... indexes) {
+    public INDArray get(INDArrayIndex... indexes) {
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
         int[] shape = resolution.getShapes();
@@ -3747,10 +3747,10 @@ public abstract class BaseNDArray implements INDArray {
         //This means upsampling.
         if (ArrayUtil.prod(shape) > length()) {
             INDArray ret = create(shape);
-            NDArrayIndex slices = indexes[0];
+            INDArrayIndex slices = indexes[0];
             int[] indices = slices.indices();
             if(indexes.length == 1) {
-                NDArrayIndex subRange = indexes[0];
+                INDArrayIndex subRange = indexes[0];
                 int count = 0;
                 for(int i = 0; i < indices.length; i++) {
                     if(count >= ret.length())
@@ -3763,8 +3763,8 @@ public abstract class BaseNDArray implements INDArray {
             }
 
             else {
-                NDArrayIndex[] subRange = Arrays.copyOfRange(indexes,1,indexes.length);
-                NDArrayIndex[] putRange = NDArrayIndex.rangeOfLength(subRange);
+                INDArrayIndex[] subRange = Arrays.copyOfRange(indexes, 1, indexes.length);
+                INDArrayIndex[] putRange = NDArrayIndex.rangeOfLength(subRange);
                 for(int i = 0; i < indices.length; i++) {
                     INDArray sliceI = ret.slice(i);
                     INDArray thisSlice = slice(indices[i]);

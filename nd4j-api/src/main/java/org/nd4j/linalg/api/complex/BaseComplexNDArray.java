@@ -27,8 +27,7 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.Indices;
-import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -1097,7 +1096,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
-    public IComplexNDArray put(NDArrayIndex[] indices, INDArray element) {
+    public IComplexNDArray put(INDArrayIndex[] indices, INDArray element) {
         if (isVector()) {
             assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
             assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
@@ -1745,12 +1744,12 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     @Override
-    public IComplexNDArray put(NDArrayIndex[] indices, IComplexNumber element) {
+    public IComplexNDArray put(INDArrayIndex[] indices, IComplexNumber element) {
         return put(indices, Nd4j.scalar(element));
     }
 
     @Override
-    public IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element) {
+    public IComplexNDArray put(INDArrayIndex[] indices, IComplexNDArray element) {
         super.put(indices,element);
         return this;
     }
@@ -1762,7 +1761,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     @Override
-    public IComplexNDArray put(NDArrayIndex[] indices, Number element) {
+    public IComplexNDArray put(INDArrayIndex[] indices, Number element) {
         return put(indices, Nd4j.scalar(element));
 
     }
@@ -1998,7 +1997,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      * @return a view of the array with the specified indices
      */
     @Override
-    public IComplexNDArray get(NDArrayIndex... indexes) {
+    public IComplexNDArray get(INDArrayIndex... indexes) {
         return (IComplexNDArray) super.get(indexes);
     }
 

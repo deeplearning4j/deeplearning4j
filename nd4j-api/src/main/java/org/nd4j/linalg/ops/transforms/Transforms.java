@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -120,7 +121,7 @@ public class Transforms {
         }
 
         INDArray ret = Convolution.convn(d1, d, Convolution.Type.VALID);
-        NDArrayIndex[] indices = new NDArrayIndex[d1.shape().length];
+        INDArrayIndex[] indices = new INDArrayIndex[d1.shape().length];
         for(int i = 0; i < indices.length; i++) {
             if(i < stride.length) {
                 indices[i] = NDArrayIndex.interval(0,stride[i],d1.size(i) ,true);

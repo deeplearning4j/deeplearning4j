@@ -23,6 +23,7 @@ package org.nd4j.linalg.convolution;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +91,7 @@ public class Convolution {
             for(int j = 0; j < kw; j++) {
                 //iterate over the kernel columns
                 int  jLim = j + sx * outW;
-                NDArrayIndex[] indices = new NDArrayIndex[]{
+                INDArrayIndex[]indices = new INDArrayIndex[]{
                         NDArrayIndex.all(),
                         NDArrayIndex.all(),
                         NDArrayIndex.interval(i, sy, iLim),
@@ -161,7 +162,7 @@ public class Convolution {
                         , NDArrayIndex.all()
                         , NDArrayIndex.interval(i, sx, iLim)
                         , NDArrayIndex.interval(j, sy, jLim));
-                ret.put(new NDArrayIndex[]{
+                ret.put(new INDArrayIndex[]{
                         NDArrayIndex.all()
                         ,NDArrayIndex.all()
                         ,new NDArrayIndex(i)

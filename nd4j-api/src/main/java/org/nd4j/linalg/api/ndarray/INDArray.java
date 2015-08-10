@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ndarray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -638,7 +639,7 @@ public interface INDArray extends Serializable  {
      * @param indexes the indexes in to the array
      * @return a view of the array with the specified indices
      */
-    INDArray get(NDArrayIndex... indexes);
+    INDArray get(INDArrayIndex... indexes);
 
 
 
@@ -893,7 +894,7 @@ public interface INDArray extends Serializable  {
      * @param element the ndarray to put
      * @return this ndarray
      */
-    INDArray put(NDArrayIndex[] indices, INDArray element);
+    INDArray put(INDArrayIndex[] indices, INDArray element);
 
     /**
      * Put the elements of the ndarray
@@ -903,7 +904,7 @@ public interface INDArray extends Serializable  {
      * @param element the ndarray to put
      * @return this ndarray
      */
-    INDArray put(NDArrayIndex[] indices, Number element);
+    INDArray put(INDArrayIndex[] indices, Number element);
 
     /**
      * Inserts the element at the specified index

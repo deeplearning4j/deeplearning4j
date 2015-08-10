@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -78,7 +79,7 @@ public class ComplexNDArrayUtil {
 
         INDArray startIndex = Transforms.floor(currShape.sub(shapeMatrix).divi(Nd4j.scalar(2)));
         INDArray endIndex = startIndex.add(shapeMatrix);
-        NDArrayIndex[] indexes = Indices.createFromStartAndEnd(startIndex,endIndex);
+        INDArrayIndex[] indexes = Indices.createFromStartAndEnd(startIndex, endIndex);
 
         if (shapeMatrix.length() > 1)
             return arr.get(indexes);
@@ -151,7 +152,7 @@ public class ComplexNDArrayUtil {
             return nd;
 
         IComplexNDArray ret = Nd4j.createComplex(targetShape);
-        NDArrayIndex[] targetShapeIndex = NDArrayIndex.createCoveringShape(nd.shape());
+        INDArrayIndex[] targetShapeIndex = NDArrayIndex.createCoveringShape(nd.shape());
         ret.put(targetShapeIndex,nd);
         return ret;
 

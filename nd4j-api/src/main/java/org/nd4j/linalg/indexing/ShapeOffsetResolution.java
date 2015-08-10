@@ -30,7 +30,7 @@ public class ShapeOffsetResolution {
      *                to compute this based on
      *
      */
-    public void exec(NDArrayIndex...indexes) {
+    public void exec(INDArrayIndex... indexes) {
         indexes = NDArrayIndex.resolve(arr,indexes);
         int[] shape = Indices.shape(arr.shape(), indexes);
         int[] offsets = Indices.offsets(shape,indexes);

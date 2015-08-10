@@ -32,7 +32,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class NDArrayIndex {
+public class NDArrayIndex implements INDArrayIndex {
 
     private int[] indices = new int[1];
     private boolean isInterval = false;
@@ -79,7 +79,7 @@ public class NDArrayIndex {
      * @param indices the offsets for each dimension
      * @return the offset that should be used for indexing
      */
-    public static int offset(INDArray arr,NDArrayIndex...indices) {
+    public static int offset(INDArray arr,INDArrayIndex...indices) {
         return offset(arr.stride(),Indices.offsets(arr.shape(), indices));
     }
 
@@ -90,7 +90,7 @@ public class NDArrayIndex {
      *            the shape/strides for
      * @param indexes the indexes to update based on
      */
-    public static void updateForNewAxes(INDArray arr,NDArrayIndex...indexes) {
+    public static void updateForNewAxes(INDArray arr,INDArrayIndex... indexes) {
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);
         if( numNewAxes >= 1 && (indexes[0].length() > 1 || indexes[0] instanceof NDArrayIndexAll)) {
             List<Integer> newShape = new ArrayList<>();
@@ -172,8 +172,8 @@ public class NDArrayIndex {
      * @return an array of length n containing copies of
      * the given ndarray index
      */
-    public static NDArrayIndex[] nTimes(NDArrayIndex copy,int n) {
-        NDArrayIndex[] ret = new NDArrayIndex[n];
+    public static INDArrayIndex[] nTimes(INDArrayIndex copy,int n) {
+        INDArrayIndex[] ret = new INDArrayIndex[n];
         for(int i = 0; i < n; i++) {
             ret[i] = copy;
         }
@@ -197,7 +197,7 @@ public class NDArrayIndex {
      * meaning collect
      * no elements
      */
-    public static NDArrayIndex empty() {
+    public static INDArrayIndex empty() {
         return EMPTY;
     }
     /**
@@ -207,7 +207,7 @@ public class NDArrayIndex {
      * meaning collect
      * all elements
      */
-    public static NDArrayIndex all() {
+    public static INDArrayIndex all() {
         return ALL;
     }
 
@@ -217,7 +217,7 @@ public class NDArrayIndex {
      * @return the indexing for
      * adding a new dimension
      */
-    public static NDArrayIndex newAxis() {
+    public static INDArrayIndex newAxis() {
         return NEW_AXIS;
     }
     /**
@@ -230,7 +230,7 @@ public class NDArrayIndex {
      * @return the resolved indexes (containing all where nothing is specified, and the intended index
      * for a particular dimension otherwise)
      */
-    public static NDArrayIndex[] resolve(INDArray arr,NDArrayIndex[] intendedIndexes) {
+    public static INDArrayIndex[] resolve(INDArray arr, INDArrayIndex... intendedIndexes) {
         return resolve(NDArrayIndex.allFor(arr),intendedIndexes);
     }
     /**
@@ -243,9 +243,9 @@ public class NDArrayIndex {
      * @return the resolved indexes (containing all where nothing is specified, and the intended index
      * for a particular dimension otherwise)
      */
-    public static NDArrayIndex[] resolve(NDArrayIndex[] allIndex,NDArrayIndex[] intendedIndexes) {
+    public static INDArrayIndex[] resolve(INDArrayIndex[] allIndex, INDArrayIndex...intendedIndexes) {
         int numNewAxes = numNewAxis(intendedIndexes);
-        NDArrayIndex[] all = new NDArrayIndex[allIndex.length + numNewAxes];
+        INDArrayIndex[] all = new INDArrayIndex[allIndex.length + numNewAxes];
         Arrays.fill(all,NDArrayIndex.all());
         for(int i = 0; i < allIndex.length; i++) {
             if(i < intendedIndexes.length)
@@ -264,9 +264,9 @@ public class NDArrayIndex {
      *             of new axes for
      * @return the number of new axis elements in the given array
      */
-    public static int numNewAxis(NDArrayIndex...axes) {
+    public static int numNewAxis(INDArrayIndex...axes) {
         int ret = 0;
-        for(NDArrayIndex index : axes)
+        for(INDArrayIndex index : axes)
             if(index instanceof NewAxis)
                 ret++;
         return ret;
@@ -280,8 +280,8 @@ public class NDArrayIndex {
      * @return an ndarray index array containing of length
      * arr.rank() containing all elements
      */
-    public static NDArrayIndex[] allFor(INDArray arr) {
-        NDArrayIndex[] ret = new NDArrayIndex[arr.rank()];
+    public static INDArrayIndex[] allFor(INDArray arr) {
+        INDArrayIndex[] ret = new INDArrayIndex[arr.rank()];
         for(int i = 0; i < ret.length; i++)
             ret[i] = NDArrayIndex.all();
 
@@ -294,8 +294,8 @@ public class NDArrayIndex {
      * @param shape the shape to cover
      * @return the ndarray indexes to cover
      */
-    public static NDArrayIndex[] createCoveringShape(int[] shape) {
-        NDArrayIndex[] ret = new NDArrayIndex[shape.length];
+    public static INDArrayIndex[] createCoveringShape(int[] shape) {
+        INDArrayIndex[] ret = new INDArrayIndex[shape.length];
         for(int i = 0; i < ret.length; i++) {
             ret[i] = NDArrayIndex.interval(0,shape[i]);
         }
@@ -312,10 +312,10 @@ public class NDArrayIndex {
      * @param indexes the indexes to create the range for
      * @return the index ranges.
      */
-    public static NDArrayIndex[] rangeOfLength(NDArrayIndex...indexes) {
-        NDArrayIndex[] indexesRet = new NDArrayIndex[indexes.length];
+    public static INDArrayIndex[] rangeOfLength(INDArrayIndex[] indexes) {
+        INDArrayIndex[] indexesRet = new NDArrayIndex[indexes.length];
         for(int i = 0; i < indexes.length; i++)
-            indexesRet[i] = NDArrayIndex.interval(0,indexes[i].indices.length);
+            indexesRet[i] = NDArrayIndex.interval(0,indexes[i].length());
         return indexesRet;
     }
 
@@ -364,7 +364,7 @@ public class NDArrayIndex {
      * @param indexes the indexes to concatneate
      * @return the merged indices
      */
-    public static NDArrayIndex concat(NDArrayIndex... indexes) {
+    public static INDArrayIndex concat(NDArrayIndex... indexes) {
         int[][] indices = new int[indexes.length][];
         for (int i = 0; i < indexes.length; i++)
             indices[i] = indexes[i].indices();
@@ -429,12 +429,14 @@ public class NDArrayIndex {
         return interval(begin,1,end,inclusive);
     }
 
+    @Override
     public int end() {
         if (indices != null && indices.length > 0)
             return indices[indices.length - 1];
         return 0;
     }
 
+    @Override
     public int offset() {
         if (indices.length < 1)
             return 0;
@@ -446,14 +448,17 @@ public class NDArrayIndex {
      *
      * @return the length of the range
      */
+    @Override
     public int length() {
         return indices.length;
     }
 
+    @Override
     public int[] indices() {
         return indices;
     }
 
+    @Override
     public void reverse() {
         ArrayUtil.reverse(indices);
     }
@@ -468,7 +473,7 @@ public class NDArrayIndex {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof NDArrayIndex)) return false;
+        if (!(o instanceof INDArrayIndex)) return false;
 
         NDArrayIndex that = (NDArrayIndex) o;
 
@@ -477,37 +482,17 @@ public class NDArrayIndex {
     }
 
 
-    //static type checking used for checking if an index should be represented as all
-    public static class  NDArrayIndexEmpty  extends NDArrayIndex {
-        public NDArrayIndexEmpty(int... indices) {
-            super(indices);
-        }
-    }
-
-
-    //static type checking used for checking if an index should be represented as all
-    public static class NDArrayIndexAll  extends NDArrayIndex {
-        public NDArrayIndexAll(int... indices) {
-            super(indices);
-        }
-    }
-
-    //static type checking used for checking if new dimensions should be added
-    public static class NewAxis extends NDArrayIndex {
-        public NewAxis(int...indices) {
-            super(indices);
-        }
-    }
-
     @Override
     public int hashCode() {
         return Arrays.hashCode(indices);
     }
 
+    @Override
     public boolean isInterval() {
         return isInterval;
     }
 
+    @Override
     public void setInterval(boolean isInterval) {
         this.isInterval = isInterval;
     }
