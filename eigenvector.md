@@ -89,9 +89,9 @@ Let's assume you plotted the age (x axis) and height (y axis) of those indivuals
 
 PCA draws straight, explanatory lines through data, like linear regression. Each straight line represents a "principal component," or a relationship between a given and the dependent variable. While there are as many principle components as there are variables, or dimensions, in the data, PCA's role is to prioritize them. 
 
-The first principal component bisects a scatterplot in a way that explains the most variance in the dependent variable; that is, it follows the longest dimension of the data. The second cuts through the data perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
+The first principal component bisects a scatterplot with a straight line in a way that explains the most variance in the dependent variable; that is, it follows the longest dimension of the data. The second cuts through the data perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
 
-Finding the eigenvalues and eigenvectors of the covariance matrix is the equivalent of fitting those straight lines. 
+Finding the eigenvalues and eigenvectors of the *covariance matrix* is the equivalent of fitting those straight lines. The covariance matrix defines both the variance of the data, and the orientation, or covariance, which is a measure of how variables change together (if two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance). 
 
 (*to be continued...*)
 
