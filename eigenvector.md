@@ -21,7 +21,7 @@ Matrices are useful because you can do things with them like add and multiply. I
 
 It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers *v* to another, *b*.  We’ll illustrate with a concrete example. 
 
-![Alt text](../img/eigen_matrices.png)
+![Alt text](../img/eigen_matrix.png)
 
 So *A* turned *v* into *b*. In a two-dimensional plane, the coordinates of the vector changed.
 
