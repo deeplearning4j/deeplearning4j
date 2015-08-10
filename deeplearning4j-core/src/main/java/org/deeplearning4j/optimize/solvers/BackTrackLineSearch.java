@@ -25,6 +25,7 @@ import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
@@ -61,7 +62,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
     private static final Logger logger = LoggerFactory.getLogger(BackTrackLineSearch.class.getName());
 
     private Model layer;
-    private StepFunction stepFunction = new NegativeDefaultStepFunction();
+    private StepFunction stepFunction = new DefaultStepFunction();
     private ConvexOptimizer optimizer;
     private int maxIterations = 5;
     double stepMax = 100;
@@ -165,11 +166,12 @@ public class BackTrackLineSearch implements LineOptimizer  {
         oldStep = 0.0;
         step2 = 0.0;
 
-        score2 = oldScore = layer.score();
+        score = score2 = oldScore = layer.score();
+        double scoreAtStart = score2;	//Before any line search etc.
 
         if(logger.isTraceEnabled()) {
             logger.trace ("ENTERING BACKTRACK\n");
-            logger.trace("Entering BackTrackLinnSearch, value = " + oldScore + ",\ndirection.oneNorm:"
+            logger.trace("Entering BackTrackLineSearch, value = " + oldScore + ",\ndirection.oneNorm:"
                     +	searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:"+
                     FastMath.max(Float.NEGATIVE_INFINITY, abs(searchDirection.dup()).max(Integer.MAX_VALUE).getDouble(0)));
         }
@@ -214,7 +216,7 @@ public class BackTrackLineSearch implements LineOptimizer  {
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(parameters, candidateParameters,
                     candidateParameters.dup(), candidateParameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
                 score = setScoreFor(parameters);
-                logger.trace("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using xold. Value = {}", stepMin, score);
+                logger.trace("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Value = {}", stepMin, score);
                 return 0.0;
             }
 
@@ -277,8 +279,16 @@ public class BackTrackLineSearch implements LineOptimizer  {
             step = Math.max(tmpStep, .1f * step);  // lambda >= .1*Lambda_1
         }
 
-        logger.debug("Exited line search after maxIterations termination condition");
-        return 0.0;
+        
+        if( score < scoreAtStart ){
+        	//Return best step size
+        	logger.debug("Exited line search after maxIterations termination condition; best step={}, score={}, scoreAtStart={}",step,score,scoreAtStart);
+        	return step;
+        } else {
+        	logger.debug("Exited line search after maxIterations termination condition; score did not improve. Resetting parameters");
+        	setScoreFor(parameters);
+        	return 0.0;
+        }
     }
 
 

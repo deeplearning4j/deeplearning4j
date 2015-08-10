@@ -90,7 +90,7 @@ public class EvalTest {
                 .seed(42)
                 .learningRate(1e-1)
                 .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer()).build();
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(4).nOut(3).activation("softmax").build()).build();
 
         // Instantiate model
         OutputLayer l = LayerFactories.getFactory(conf.getLayer())
