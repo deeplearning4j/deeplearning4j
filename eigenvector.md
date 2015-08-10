@@ -8,7 +8,10 @@ layout: default
 Content: 
 
 * [Linear Transformations](#linear)
-* [Principal Com]()
+* [Principal Component Analysis (PCA)](#principal)
+* [Covariance Matrix](#covariance)
+* [Entropy & Information Gain](#entropy)
+* [Resources](#resources)
 
 This post introduces eigenvectors and their relationship to matrices in plain language and without a great deal of math. 
 
