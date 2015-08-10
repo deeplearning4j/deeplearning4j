@@ -103,9 +103,11 @@ Finding the eigenvectors and eigenvalues of the covariance matrix is the equival
 
 If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). 
 
+![Alt text](../img/covariances.png)
+
 The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
 
-The covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
+So the covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
 
 For a 2 x 2 matrix, a covariance matrix might look like this:
 
