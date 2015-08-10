@@ -64,10 +64,9 @@ public class LBFGS extends BaseOptimizer {
     @Override
     public void preProcessLine() {
         INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        //initial direction should be normal
         INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
         if(searchDir == null){
-            searchState.put(SEARCH_DIR, gradient);	//Normalized gradient
+            searchState.put(SEARCH_DIR, gradient);
         } else {
             searchDir.assign(gradient);
         }

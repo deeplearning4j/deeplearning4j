@@ -93,7 +93,7 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.LBFGS;
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 2, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 1, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -149,7 +149,7 @@ public class BackTrackLineSearchTest {
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
                 .learningRate(0.1)
-                .maxNumLineSearchIterations(5)
+                .maxNumLineSearchIterations(2)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
@@ -168,8 +168,8 @@ public class BackTrackLineSearchTest {
                         .nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION)
                         .build())
+                .backprop(true)
 
-                .useDropConnect(false)
                 .build();
 
 
