@@ -91,13 +91,9 @@ PCA draws straight, explanatory lines through data, like linear regression. Each
 
 The first principal component bisects a scatterplot in a way that explains the most variance in the dependent variable. 
 
-<iframe src="http://i.stack.imgur.com/lNHqt.gif" width="150%" height="400px;" style="position:absolute; border:none; clip:rect(190px,1100px,800px,250px);"></iframe>
+<iframe src="http://i.stack.imgur.com/lNHqt.gif" width="150%" height="400px;" style="position:absolute; border:none; clip:rect(190px,100px,800px,250px);"></iframe>
 
-The next principal component does the same thing for the errors produced by the first. 
-
-![Alt text](../img/pca_second.png)
-
-The third fits the errors from the first and second principal components and so forth. 
+The next principal component does the same thing for the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
 
 Finding the eigenvalues and eigenvectors of the covariance matrix is the equivalent of fitting those straight lines. 
 
