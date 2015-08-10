@@ -87,7 +87,7 @@ Let's assume you plotted the height and age of those indivuals and came up with 
 
 ![Alt text](../img/scatterplot.png)
 
-
+(*to be continued...*)
 
 ## Other Resources
 
