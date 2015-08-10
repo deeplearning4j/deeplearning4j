@@ -83,6 +83,10 @@ If I take a team of Dutch basketball players and measure their height, those mea
 
 But if I throw in a classroom of psychotic kindergartners as well as a few CIA spies that have been selected for appearing utterly normal in every way, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
 
+Let's assume you plotted the height and age of those indivuals and came up with an oblong scatterplot:
+
+![Alt text](../img/scatterplot.png)
+
 
 
 ## Other Resources
