@@ -289,9 +289,9 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public void setParams(INDArray params) {
-        List<String> gradientList = conf.variables();
+        List<String> parameterList = conf.variables();
         int length = 0;
-        for(String s : gradientList)
+        for(String s : parameterList)
             length += getParam(s).length();
         if(params.length() != length)
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
