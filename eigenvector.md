@@ -97,9 +97,9 @@ The covariance matrix defines both the variance of the data, and the orientation
 
 (If two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance. (The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.)) 
 
-By drawing lines along the axes of greatest spread, you explain the most entropy, and obtain the most information gain; that is, you explain most of the variation in your data. 
+By drawing lines along the axes of greatest spread, you explain the most entropy in the data, and obtain the most information gain; that is, you account for the greatest possible share of variation in your data with the minimum number of factors. 
 
-It may help to think of each component as a cause, where the first principal component might be height; the second gender; the third nationality (and its concomitant healthcare system), each occupying its own dimension in relation to height. 
+It may help to think of each component as a cause, where the first principal component might be height; the second gender; the third nationality (implying nations' differing healthcare systems), each occupying its own dimension in relation to height. 
 
 (*to be continued...*)
 
