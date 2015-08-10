@@ -5,6 +5,11 @@ layout: default
 
 # A Beginner's Guide to Eigenvectors, PCA and Covariance
 
+Content: 
+
+* [Linear Transformations](#linear)
+* [Principal Com]()
+
 This post introduces eigenvectors and their relationship to matrices in plain language and without a great deal of math. 
 
 The *eigen* in eigenvector comes from German, and it means something like “very own.” For example, in German, “mein eigenes Auto” means “my very own car.” So eigen denotes a special relationship between two things. Something particular, characteristic and definitive. This car, or this vector, is mine and not someone else’s.
@@ -71,7 +76,7 @@ To quote Yoshua Bengio:
     
     One of the most widely used kinds of matrix decomposition is called eigen-decomposition, in which we decompose a matrix into a set of eigenvectors and eigenvalues.
 
-## Principle Component Analysis (PCA)
+## Principal Component Analysis (PCA)
 
 PCA is a tool for finding patterns in high-dimensional data such as images. 
 
@@ -87,7 +92,7 @@ Let's assume you plotted the age (x axis) and height (y axis) of those indivuals
 
 PCA draws straight, explanatory lines through data, like linear regression. 
 
-Each straight line represents a "principal component," or a relationship between an independent and dependent variable. While there are as many principle components as there are dimensions in the data, PCA's role is to prioritize them. 
+Each straight line represents a "principal component," or a relationship between an independent and dependent variable. While there are as many principal components as there are dimensions in the data, PCA's role is to prioritize them. 
 
 The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. In the graph above, it would slice down the length of the baguette.
 
@@ -97,9 +102,11 @@ The second principal component cuts through the data nearly perpendicular to the
 
 ## Covariance Matrix
 
-Now imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. Like many many other matrices, it has its very own eigenvectors. 
+While introduced matrices as something that transformed one set of vectors into another, another way to think about them is as a description of data that captures the the forces at work upon it.
 
-Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principle-component lines to the variance of the data. 
+Imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. Like many many other matrices, it has its very own eigenvectors. 
+
+Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-component lines to the variance of the data. 
 
 *Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. 
 
