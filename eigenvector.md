@@ -47,7 +47,7 @@ And here’s an animation that shows the matrix's work transforming one space to
 
 <iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="300px;" style="border:none;"></iframe>
 
-You can imagine a matrix like a gust of wind, an invisible force that produce a visible result. And a gust of wind must blow in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
+You can imagine a matrix like a gust of wind, an invisible force that produces a visible result. And a gust of wind must blow in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
 ![Alt text](../img/mona_lisa_eigenvector.png)
 
