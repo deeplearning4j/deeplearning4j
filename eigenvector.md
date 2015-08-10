@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Introduction to Eigenvectors
+# A Beginner's Guide to Eigenvectors, PCA and Covariance
 
 This post introduces eigenvectors and their relationship to matrices in plain language and without a great deal of math. 
 
