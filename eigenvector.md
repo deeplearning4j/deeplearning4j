@@ -91,9 +91,11 @@ PCA draws straight, explanatory lines through data, like linear regression. Each
 
 The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. The second cuts through the data perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
 
+## Covariance Matrix
+
 Finding the eigenvectors and eigenvalues of the *covariance matrix* is the equivalent of fitting those straight lines. Eigenvalues are simply the coefficients attached to eigenvectors, which give them magnitude. They represent the data's variance along eigenvector axes.
 
-(If two variables increase and decrease together, they have a positive covariance, and if one decreases while the other increases, they have a negative covariance. (The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.)) 
+If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
 
 The covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is captured by the covariance, while x-and-y-axis-aligned spread is captured by the variance. 
 
