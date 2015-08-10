@@ -15,15 +15,15 @@ Matrices, in linear algebra, are simply rectangular arrays of numbers, a collect
 
 We’ll define that relationship after a brief detour into what matrices do, and how they relate to other numbers.
 
-Matrices are useful because you can do things with them like add and multiply. If you multiply a vector v by a matrix A, you get another vector b, and you could say that the matrix performed a linear transformation on the input vector. 
+Matrices are useful because you can do things with them like add and multiply. If you multiply a vector *v* by a matrix *A*, you get another vector *b*, and you could say that the matrix performed a linear transformation on the input vector. 
 
 *Av = b* 
 
-It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers v to another, b.  We’ll illustrate with a concrete example. 
+It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers *v* to another, *b*.  We’ll illustrate with a concrete example. 
 
 ![Alt text](../img/eigen_matrices.png)
 
-So A turned v into b. In a two-dimensional plane, the coordinates of the vector changed.
+So *A* turned *v* into *b*. In a two-dimensional plane, the coordinates of the vector changed.
 
 ![Alt text](../img/two_vectors.png)
 
