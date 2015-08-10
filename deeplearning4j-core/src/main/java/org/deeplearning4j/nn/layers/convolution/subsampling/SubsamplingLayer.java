@@ -121,8 +121,8 @@ public class SubsamplingLayer extends BaseLayer {
 
                 //compute gradient for weights
                 INDArray finalRet = Convolution.col2im(ret2,conf.getStride(),conf.getPadding(),width,height);
-                if(finalRet.rank() < 4)
-                    finalRet = finalRet.reshape(Ints.concat(new int[]{1},finalRet.shape()));
+//                if(finalRet.rank() < 4)
+//                    finalRet = finalRet.reshape(Ints.concat(new int[]{1},finalRet.shape()));
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
                 return new Pair<>(ret,finalRet);
             case AVG:
