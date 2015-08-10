@@ -29,11 +29,11 @@ So A turned v into b. In a two-dimensional plane, the coordinates of the vector 
 
 You could feed one vector after another into matrix A, and each would be projected onto a new space that stretches higher and father to the right. 
 
-Imagine that all the input vectors live in a normal grid, like this:
+Imagine that all the input vectors *v* live in a normal grid, like this:
 
 ![Alt text](../img/space_1.png)
 
-And all the matrix projects them into a new space like this
+And all the matrix projects them into a new space like this holding output vectors *b*:
 
 ![Alt text](../img/space_2.png)
 
@@ -43,11 +43,11 @@ Here are the two spaces juxtaposed:
 
 (*Credit: William Gould, Stata Blog*)
 
-And here’s an animation that shows the transformation from one space to another:
+And here’s an animation that shows the matrix's work transforming one space to another:
 
 <iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="300px;" style="border:none;"></iframe>
 
-You can almost imagine a matrix like a gust of wind, an invisible force that produce a  visible result. And a gust of wind blows in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
+You can imagine a matrix like a gust of wind, an invisible force that produce a  visible result. And a gust of wind blows in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
 ![Alt text](../img/mona_lisa_eigenvector.png)
 
