@@ -19,7 +19,7 @@ Matrices are useful because you can do things with them like add and multiply. I
 
 *Av = b* 
 
-It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers *v* to another, *b*.  We’ll illustrate with a concrete example. 
+It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers *v* to another, *b*.  We’ll illustrate with a concrete example. In the graph below, the short, low line is *v*, and the long, high one is *b*.
 
 ![Alt text](../img/eigen_matrix.png)
 
@@ -27,17 +27,17 @@ So *A* turned *v* into *b*. In a two-dimensional plane, the coordinates of the v
 
 ![Alt text](../img/two_vectors.png)
 
-You could feed one vector after another into matrix A, and each would be projected onto a new space that stretches higher and father to the right. 
+You could feed one vector after another into matrix A, and each would be projected onto a new space that stretches higher and farther to the right. 
 
 Imagine that all the input vectors *v* live in a normal grid, like this:
 
 ![Alt text](../img/space_1.png)
 
-And all the matrix projects them into a new space like this holding output vectors *b*:
+And all the matrix projects them into a new space like the one below, which holds the output vectors *b*:
 
 ![Alt text](../img/space_2.png)
 
-Here are the two spaces juxtaposed:
+Here you can see the two spaces juxtaposed:
 
 ![Alt text](../img/two_spaces.png)
 
@@ -47,13 +47,11 @@ And here’s an animation that shows the matrix's work transforming one space to
 
 <iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="300px;" style="border:none;"></iframe>
 
-You can imagine a matrix like a gust of wind, an invisible force that produce a  visible result. And a gust of wind blows in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
+You can imagine a matrix like a gust of wind, an invisible force that produce a visible result. And a gust of wind must blow in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
 ![Alt text](../img/mona_lisa_eigenvector.png)
 
 So out of all the vectors affected by a matrix blowing through one space, which one is the eigenvector? It’s the one that doesn’t change direction; that is, the eigenvector is already pointing in the same direction that the matrix is pushing all vectors toward. An eigenvector is a like a weathervane, pointing in the direction of the wind. 
-
-![Alt text](../img/weathervane.jpg)
 
 You could also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
 
@@ -77,23 +75,31 @@ To quote Yoshua Bengio:
 
 PCA is a tool for finding patterns in high-dimensional data such as images. 
 
-To get to PCA, we’re going to quickly gloss some basic statistical ideas so we can weave them together later. The first is *variance*, and variance is a property of data. 
+To get to PCA, we’re going to quickly gloss some basic statistical ideas so we can weave them together later. The first is *variance*. 
 
-If I take a team of Dutch basketball players and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
+Variance is a property of data. If I take a team of Dutch basketball players and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
 
-But if I throw in a classroom of psychotic kindergartners as well as a few CIA spies that have been selected for appearing utterly normal in every way, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
+But if I throw in a classroom of psychotic kindergartners as well as a few CIA spies that have been carefully selected for appearing average in every way, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
 
 Let's assume you plotted the age (x axis) and height (y axis) of those indivuals and came up with an oblong scatterplot:
 
 ![Alt text](../img/scatterplot.png)
 
-PCA draws straight, explanatory lines through data, like linear regression. Each straight line represents a "principal component," or a relationship between a given and the dependent variable. While there are as many principle components as there are dimensions in the data, PCA's role is to prioritize them. 
+PCA draws straight, explanatory lines through data, like linear regression. 
 
-The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. The second cuts through the data perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
+Each straight line represents a "principal component," or a relationship between an independent and dependent variable. While there are as many principle components as there are dimensions in the data, PCA's role is to prioritize them. 
+
+The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. In the graph above, it would slice down the length of the baguette.
+
+The second principal component cuts through the data nearly perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
 
 ## Covariance Matrix
 
-Finding the eigenvectors and eigenvalues of the *covariance matrix* is the equivalent of fitting those straight lines. Eigenvalues are simply the coefficients attached to eigenvectors, which give them magnitude. They represent the data's variance along eigenvector axes.
+Now imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. Like many many other matrices, it has its very own eigenvectors. 
+
+Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-componant lines to the variance of the data. 
+
+*Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's variance. 
 
 If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). 
 
