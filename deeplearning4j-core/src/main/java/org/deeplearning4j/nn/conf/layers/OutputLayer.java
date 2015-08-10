@@ -22,7 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import lombok.RequiredArgsConstructor;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -78,6 +78,13 @@ public class OutputLayer extends FeedForwardLayer {
             this.dropOut = dropOut;
             return this;
         }
+        
+        @Override
+        public Builder updater(Updater updater){
+        	this.updater = updater;
+        	return this;
+        }
+        
         @Override
         @SuppressWarnings("unchecked")
         public OutputLayer build() {

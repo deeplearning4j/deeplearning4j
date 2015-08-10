@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
  * builder configurations at a particular layer
  *
  */
+@Deprecated
 public interface ConfOverride {
     /**
      * Override the builder configuration for a particular layer

@@ -57,6 +57,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     //current input and label matrices
     private INDArray labels;
+    
+    private transient Solver solver;
 
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -64,6 +66,15 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+    }
+    
+    /** Compute score after labels and input have been set.
+     */
+    public double computeScore(){
+    	if( input == null || labels == null )
+    		throw new IllegalStateException("Cannot calculate score without input and labels");
+    	setScoreWithZ(output(input));
+    	return score;
     }
 
     @Override
@@ -91,6 +102,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
                     .l1(conf.getL1()).l2(conf.getL2())
                     .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
                     .labels(labels).z(z).lossFunction(conf.getLossFunction())
+                    .miniBatch(true)
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
     }
@@ -121,39 +133,39 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
     
     private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray output){
-    	INDArray labelsSubOut = labels.sub(output);
+    	INDArray outSubLabels = output.sub(labels);
     	Gradient gradient = new DefaultGradient();
-    	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, labelsSubOut.sum(0));
+    	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
     	
     	switch (conf.getLossFunction()) {
     	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
-    		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
-    		return new Pair<>(gradient,labelsSubOut);
+    		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+    		return new Pair<>(gradient,outSubLabels);
         case XENT: // cross-entropy (single binary output variable)
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.div(output.mul(output.rsub(1)))));
-        	return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
+        	return new Pair<>(gradient,outSubLabels);
 
         case MSE: // mean squared error
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut.neg()));
-            return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.neg()));
+            return new Pair<>(gradient,outSubLabels);
         	
         case EXPLL: // exponential logarithmic
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
-            return new Pair<>(gradient,labelsSubOut);
+            return new Pair<>(gradient,outSubLabels);
             
         case RMSE_XENT: // root mean squared error cross entropy
-        	INDArray squaredrmseXentDiff = pow(labelsSubOut, 2.0);
+        	INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
         	INDArray sqrt = sqrt(squaredrmseXentDiff);
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
-            return new Pair<>(gradient,labelsSubOut);
+            return new Pair<>(gradient,outSubLabels);
         	
         case SQUARED_LOSS:
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(labelsSubOut,2))));
-            return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(outSubLabels,2))));
+            return new Pair<>(gradient,outSubLabels);
             
         case NEGATIVELOGLIKELIHOOD: // mulit-class cross-entropy
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labelsSubOut));
-            return new Pair<>(gradient,labelsSubOut);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+            return new Pair<>(gradient,outSubLabels);
         default:
         	throw new IllegalStateException("Invalid loss function: " + conf.getLossFunction());
     	}
@@ -295,10 +307,12 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         setInput(input);
         setLabels(labels);
         applyDropOutIfNecessary(this.input, true);
-        Solver solver = new Solver.Builder()
+        if( solver == null ){
+        	solver = new Solver.Builder()
                 .configure(conf())
                 .listeners(getListeners())
                 .model(this).build();
+        }
         solver.optimize();
     }
 
@@ -332,6 +346,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             labels.data().destroy();
             labels = null;
         }
+        solver = null;
     }
 
 
