@@ -27,6 +27,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * Classifier over ride
  * @author Adam Gibson
  */
+@Deprecated
 public class ClassifierOverride implements ConfOverride {
     private int finalLayer = -1;
 

@@ -29,6 +29,7 @@ import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Stochastic Gradient Descent
@@ -51,9 +52,13 @@ public class StochasticGradientDescent extends BaseOptimizer {
     @Override
     public boolean optimize() {
         for(int i = 0; i < conf.getNumIterations(); i++) {
+
             Pair<Gradient,Double> pair = gradientAndScore();
-            getUpdater().applyUpdate((Layer) model,pair.getFirst());
-            model.computeGradientAndScore();
+            Gradient gradient = pair.getFirst();
+            for(Map.Entry<String,INDArray> variables : model.paramTable().entrySet()) {
+                stepFunction.step(variables.getValue(), gradient.getGradientFor(variables.getKey()));
+            }
+
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model, i);
         }

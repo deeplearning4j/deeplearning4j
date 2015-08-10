@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -29,6 +30,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,11 +38,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
+import java.util.*;
 
 
 /**
@@ -114,25 +112,33 @@ public class SubsamplingLayer extends BaseLayer {
                 //compute backwards kernel based on rearranging the given error
                 INDArray ret2 = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
                 INDArray reverse = Nd4j.rollAxis(ret2.reshape(n,c,-1,outH,outW),2);
-                //took max along second dim
-                for(int i = 0; i < epsilon.tensorssAlongDimension(2); i++) {
-                    INDArray epsilonI = epsilon.tensorAlongDimension(i,2);
-                    ret2.slice(maxIndexes.getInt(i)).putSlice(maxIndexes.getInt(i),epsilonI);
-
+                Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
+                while(iter.hasNext()) {
+                    int[] next = iter.next();
+                    NDArrayIndex[] indexes = NDArrayIndex.indexesFor(next);
+                    reverse.get(indexes).put(indexes,epsilon.get(indexes));
                 }
-                reverse.assign(epsilon);
 
                 //compute gradient for weights
-                INDArray finalRet = Convolution.col2im(reverse,conf.getStride(),conf.getPadding(),width,height);
-
+                INDArray finalRet = Convolution.col2im(ret2,conf.getStride(),conf.getPadding(),width,height);
+                if(finalRet.rank() < 4)
+                    finalRet = finalRet.reshape(Ints.concat(new int[]{1},finalRet.shape()));
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, finalRet);
                 return new Pair<>(ret,finalRet);
             case AVG:
                 //compute reverse average error
-                INDArray tiled = Nd4j.tile(epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.newAxis()),1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
+                INDArray subError = epsilon.get(
+                        NDArrayIndex.all()
+                        , NDArrayIndex.all()
+                        , NDArrayIndex.newAxis()
+                        , NDArrayIndex.newAxis(),NDArrayIndex.newAxis());
+                INDArray tiled = Nd4j.tile(subError,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 //do convolution all at once
                 INDArray convolution = Convolution.col2im(tiled, conf.getStride(), conf.getPadding(), height, width);
                 convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
+                if(convolution.rank() < 4)
+                    convolution = convolution.reshape(Ints.concat(new int[]{1},convolution.shape()));
+
                 ret.gradientForVariable().put(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, convolution);
                 return new Pair<>(ret,convolution);
             case NONE:
@@ -206,20 +212,6 @@ public class SubsamplingLayer extends BaseLayer {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Collection<IterationListener> getListeners() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public void fit() {
