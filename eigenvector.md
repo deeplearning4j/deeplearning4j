@@ -121,7 +121,7 @@ For a 2 x 2 matrix, a covariance matrix might look like this:
 
 The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of the PCA section points up and two the right. 
 
-By drawing lines along the axes of greatest variance, you explain the most informational entropy in the data; that is, you account for the greatest possible share of the spread in your data with the minimum number of factors. 
+By drawing lines along the axes of greatest variance, you explain the most entropy in the data; that is, you account for the greatest possible share of the spread in your data with the minimum number of factors. 
 
 While not entirely accurate, it may help to think of each component as a cause in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
 
