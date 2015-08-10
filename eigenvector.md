@@ -161,3 +161,4 @@ The first component of PCA, like the first split in a decision tree, should be a
 * [A Geometric Interpretation of the Covariance matrix](http://www.visiondummy.com/2014/04/geometric-interpretation-covariance-matrix/)
 * [Introduction to Eigenvectors & Eigenvalues Part 1](https://www.youtube.com/watch?v=G4N8vJpf7hM) (Video)
 * [(Another) Introduction to Eigenvectors & Eigenvalues](https://www.youtube.com/watch?v=8UX82qVJzYI) (Video)
+* [Information & Entropy, Unit 1, Lecture 2](https://www.youtube.com/watch?v=phxsQrZQupo) (MIT OpenCourseWare)
