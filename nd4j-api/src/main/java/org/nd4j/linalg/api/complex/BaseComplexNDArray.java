@@ -602,7 +602,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public void resetLinearView() {
-       
+
         if(isVector() || isScalar() || length() == 1)
             linearView = this;
         else if(ordering() == NDArrayFactory.C && offset == 0 && length() == data().length()) {
@@ -1097,34 +1097,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray put(INDArrayIndex[] indices, INDArray element) {
-        if (isVector()) {
-            assert element.isScalar() || element.isVector() : "Unable to assign elements. Element is not a vector.";
-            assert indices[0].length() == element.length() : "Number of specified elements in index does not match length of element.";
-            int[] assign = indices[0].indices();
-            IComplexNDArray imag = element instanceof IComplexNDArray ? (IComplexNDArray) element : Nd4j.createComplex(element);
-            IComplexNDArray elementLinear = imag.linearView();
-
-            for (int i = 0; i < element.length(); i++) {
-                putScalar(assign[i], elementLinear.getComplex(i));
-            }
-
-            return this;
-
-        }
-
-        if (element.isVector())
-            slice(indices[0].indices()[0]).put(Arrays.copyOfRange(indices, 1, indices.length), element);
-
-
-        else {
-            for (int i = 0; i < element.slices(); i++) {
-                INDArray slice = slice(indices[0].indices()[i]);
-                slice.put(Arrays.copyOfRange(indices, 1, indices.length), element.slice(i));
-            }
-        }
-
-
-
+        super.put(indices,element);
         return this;
     }
 
@@ -1446,7 +1419,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNumber getComplex(int... indices) {
-       
+
         int ix = offset;
         for (int i = 0; i < indices.length; i++)
             ix += indices[i] * stride[i];
@@ -3362,7 +3335,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray ravel() {
-       
+
         IComplexNDArray ret = Nd4j.createComplex(length, ordering);
         IComplexNDArray linear = linearView();
         for(int i = 0; i < length(); i++) {

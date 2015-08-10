@@ -70,10 +70,10 @@ public class PCA {
 
         INDArray indices = sorted[0];
 
-        NDArrayIndex[] indices2 = NDArrayIndex.create(indices.get(
+        INDArrayIndex[] indices2 = NDArrayIndex.create(indices.get(
                 NDArrayIndex.interval(0, nDims)));
 
-        INDArrayIndex[] rowsAndColumnIndices = new NDArrayIndex[]{
+        INDArrayIndex[] rowsAndColumnIndices = new INDArrayIndex[]{
                 NDArrayIndex.interval(0, M.rows()), indices2[0]
         };
 

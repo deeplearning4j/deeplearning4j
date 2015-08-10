@@ -1,5 +1,7 @@
 package org.nd4j.linalg.indexing;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 /**
  * @author Adam Gibson
  */ //static type checking used for checking if an index should be represented as all
@@ -20,9 +22,20 @@ public class NDArrayIndexEmpty  implements INDArrayIndex {
     }
 
     @Override
-    public int[] indices() {
-        return new int[0];
+    public int current() {
+        return 0;
     }
+
+    @Override
+    public boolean hasNext() {
+        return false;
+    }
+
+    @Override
+    public int next() {
+        return 0;
+    }
+
 
     @Override
     public void reverse() {
@@ -36,6 +49,21 @@ public class NDArrayIndexEmpty  implements INDArrayIndex {
 
     @Override
     public void setInterval(boolean isInterval) {
+
+    }
+
+    @Override
+    public void init(INDArray arr, int begin, int dimension) {
+
+    }
+
+    @Override
+    public void init(INDArray arr, int dimension) {
+
+    }
+
+    @Override
+    public void init(int begin, int end) {
 
     }
 }

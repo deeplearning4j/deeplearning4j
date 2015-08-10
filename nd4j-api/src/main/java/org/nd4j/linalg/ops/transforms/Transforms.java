@@ -152,12 +152,12 @@ public class Transforms {
         int yStride = stride[0], xStride = stride[1];
         INDArray blocks = Nd4j.create(toPool.shape());
         for (int iR = 0; iR < Math.ceil(nRows / yStride); iR++) {
-            NDArrayIndex rows = NDArrayIndex.interval(iR * yStride, iR * yStride, true);
+            INDArrayIndex rows = NDArrayIndex.interval(iR * yStride, iR * yStride, true);
             for (int jC = 0; jC < Math.ceil(nCols / xStride); jC++) {
-                NDArrayIndex cols = NDArrayIndex.interval(jC * xStride, (jC * xStride) + 1, true);
+                INDArrayIndex cols = NDArrayIndex.interval(jC * xStride, (jC * xStride) + 1, true);
                 INDArray blockVal = toPool.get(rows, cols).sum(toPool.shape().length - 1).mean(toPool.shape().length - 1);
                 blocks.put(
-                        new NDArrayIndex[]{rows, cols},
+                        new INDArrayIndex[]{rows, cols},
                         blockVal.permute(new int[]{1, 2, 0}))
                         .repmat(new int[]{rows.length(), cols.length()});
             }
@@ -181,12 +181,12 @@ public class Transforms {
         int yStride = stride[0], xStride = stride[1];
         INDArray blocks = Nd4j.create(toPool.shape());
         for (int iR = 0; iR < Math.ceil(nRows / yStride); iR++) {
-            NDArrayIndex rows = NDArrayIndex.interval(iR * yStride, iR * yStride, true);
+            INDArrayIndex rows = NDArrayIndex.interval(iR * yStride, iR * yStride, true);
             for (int jC = 0; jC < Math.ceil(nCols / xStride); jC++) {
-                NDArrayIndex cols = NDArrayIndex.interval(jC * xStride, (jC * xStride) + 1, true);
+                INDArrayIndex cols = NDArrayIndex.interval(jC * xStride, (jC * xStride) + 1, true);
                 INDArray blockVal = toPool.get(rows, cols).sum(toPool.shape().length - 1).sum(toPool.shape().length - 1);
                 blocks.put(
-                        new NDArrayIndex[]{rows, cols},
+                        new INDArrayIndex[]{rows, cols},
                         blockVal.permute(new int[]{1, 2, 0}))
                         .repmat(new int[]{rows.length(), cols.length()});
             }

@@ -3,41 +3,49 @@ package org.nd4j.linalg.indexing;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * New axis index.
- * Specified for wanting a new dimension
- * in an ndarray
- *
  * @author Adam Gibson
  */
-public class NewAxis implements INDArrayIndex {
+public class PointIndex implements INDArrayIndex {
+    private int point;
+    private boolean notUsed = true;
+    /**
+     *
+     * @param point
+     */
+    public PointIndex(int point) {
+        this.point = point;
+    }
+
     @Override
     public int end() {
-        return 0;
+        return point;
     }
 
     @Override
     public int offset() {
-        return 0;
+        return point;
     }
 
     @Override
     public int length() {
-        return 0;
+        return 1;
     }
 
     @Override
     public int current() {
-        return 0;
+        return point;
     }
 
     @Override
     public boolean hasNext() {
-        return false;
+        return notUsed;
     }
 
     @Override
     public int next() {
-        return 0;
+        int ret =  point;
+        notUsed = false;
+        return ret;
     }
 
 

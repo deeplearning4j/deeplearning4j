@@ -1,41 +1,25 @@
 package org.nd4j.linalg.indexing;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 /**
  * @author Adam Gibson
- */ //static type checking used for checking if an index should be represented as all
-public class NDArrayIndexAll implements INDArrayIndex {
-    @Override
-    public int end() {
-        return 0;
+ */
+public class NDArrayIndexAll extends IntervalIndex {
+
+    /**
+     * @param inclusive whether to include the last number
+     */
+    public NDArrayIndexAll(boolean inclusive) {
+        super(inclusive, 1);
     }
 
-    @Override
-    public int offset() {
-        return 0;
-    }
 
     @Override
-    public int length() {
-        return 0;
+    public void init(INDArray arr, int begin, int dimension) {
+        this.begin = 0;
+        this.end = arr.size(dimension);
     }
 
-    @Override
-    public int[] indices() {
-        return new int[0];
-    }
 
-    @Override
-    public void reverse() {
-
-    }
-
-    @Override
-    public boolean isInterval() {
-        return false;
-    }
-
-    @Override
-    public void setInterval(boolean isInterval) {
-
-    }
 }

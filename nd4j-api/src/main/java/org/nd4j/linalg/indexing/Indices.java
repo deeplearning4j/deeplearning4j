@@ -253,11 +253,7 @@ public class Indices {
     public static int[] shape(INDArrayIndex... indices) {
         int[] ret = new int[indices.length];
         for (int i = 0; i < ret.length; i++) {
-            int[] currIndices = indices[i].indices();
-
-            int end = currIndices[currIndices.length - 1] + 1;
-            int begin = currIndices[0];
-            ret[i] = Math.abs(end - begin);
+            ret[i] = indices[i].length();
         }
 
         List<Integer> nonZeros = new ArrayList<>();
@@ -269,43 +265,7 @@ public class Indices {
         return ArrayUtil.toArray(nonZeros);
     }
 
-    /**
-     * Returns whether the indices are contiguous by one or not
-     *
-     * @param indexes the indices to test
-     * @return whether the indices are contiguous by one or not
-     */
-    public static boolean isContiguous(NDArrayIndex... indexes) {
-        return isContiguous(1, indexes);
-    }
 
-    /**
-     * Returns whether indices are contiguous
-     * by a certain amount or not
-     *
-     * @param indexes the indices to test
-     * @param diff    the difference considered to be contiguous
-     * @return whether the given indices are contiguous or not
-     */
-    public static boolean isContiguous(int diff, NDArrayIndex... indexes) {
-        if (indexes.length < 1)
-            return true;
-        boolean contiguous = isContiguous(indexes[0].indices(), diff);
-        for (int i = 1; i < indexes.length; i++)
-            contiguous = contiguous && isContiguous(indexes[i].indices(), diff);
-
-        return contiguous;
-    }
-
-    /**
-     * Returns whether the indices are contiguous by one or not
-     *
-     * @param indices the indices to test
-     * @return whether the indices are contiguous by one or not
-     */
-    public static boolean isContiguous(int[] indices) {
-        return isContiguous(indices, 1);
-    }
 
     /**
      * Returns whether indices are contiguous
@@ -364,7 +324,7 @@ public class Indices {
         if(start.length() != end.length())
             throw new IllegalArgumentException("Start length must be equal to end length");
         else {
-            NDArrayIndex[] indexes = new NDArrayIndex[start.length()];
+            INDArrayIndex[] indexes = new INDArrayIndex[start.length()];
             for(int i = 0; i < indexes.length; i++) {
                 indexes[i] = NDArrayIndex.interval(start.getInt(i),end.getInt(i),inclusive);
             }
@@ -395,9 +355,9 @@ public class Indices {
 
         if(Shape.isRowVectorShape(shape) && numNewAxes < 1 && indices.length <= 2) {
             if(indices.length == 2)
-                return new int[] {1,Math.max(indices[0].indices().length,indices[1].indices().length)};
+                return new int[] {1,Math.max(indices[0].length(),indices[1].length())};
             else
-                return new int[]{1,indices[0].indices().length};
+                return new int[]{1,indices[0].length()};
         }
 
         int[] ret = new int[offsets.length];
@@ -427,10 +387,7 @@ public class Indices {
             }
 
             else {
-                int[] currIndices = indices[i].indices();
-                if (currIndices.length < 1)
-                    continue;
-                ret[i] = indices[i].indices().length;
+                ret[i] = indices[i].length();
                 shapeIndex++;
                 ret[i] -= offsets[i];
             }
@@ -512,7 +469,7 @@ public class Indices {
     public static boolean isScalar(INDArray indexOver,INDArrayIndex...indexes) {
         boolean allOneLength = true;
         for(int i = 0; i < indexes.length; i++) {
-            allOneLength = allOneLength && indexes[i].indices().length == 1;
+            allOneLength = allOneLength && indexes[i].length() == 1;
         }
 
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);

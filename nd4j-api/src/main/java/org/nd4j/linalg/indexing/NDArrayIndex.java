@@ -36,7 +36,6 @@ public class NDArrayIndex implements INDArrayIndex {
 
     private int[] indices = new int[1];
     private boolean isInterval = false;
-    private static NDArrayIndexAll ALL = new NDArrayIndexAll();
     private static NDArrayIndexEmpty EMPTY = new NDArrayIndexEmpty();
     private static NewAxis NEW_AXIS = new NewAxis();
 
@@ -46,8 +45,8 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param shape the shape ot convert to indexes
      * @return the indexes for the given shape
      */
-    public static NDArrayIndex[] indexesFor(int...shape) {
-        NDArrayIndex[] ret = new NDArrayIndex[shape.length];
+    public static INDArrayIndex[] indexesFor(int...shape) {
+        INDArrayIndex[] ret = new INDArrayIndex[shape.length];
         for(int i = 0; i < shape.length; i++) {
             ret[i] = new NDArrayIndex(shape[i]);
         }
@@ -208,7 +207,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * all elements
      */
     public static INDArrayIndex all() {
-        return ALL;
+        return new NDArrayIndexAll(true);
     }
 
 
@@ -328,7 +327,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param index the matrix to getFloat indices from
      * @return the indices to getFloat
      */
-    public static NDArrayIndex[] create(INDArray index) {
+    public static INDArrayIndex[] create(INDArray index) {
 
         if (index.isMatrix()) {
 
@@ -359,20 +358,6 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Concatneate all of the given indices in to one
-     *
-     * @param indexes the indexes to concatneate
-     * @return the merged indices
-     */
-    public static INDArrayIndex concat(NDArrayIndex... indexes) {
-        int[][] indices = new int[indexes.length][];
-        for (int i = 0; i < indexes.length; i++)
-            indices[i] = indexes[i].indices();
-        return new NDArrayIndex(Ints.concat(indices));
-    }
-
-
-    /**
      * Generates an interval from begin (inclusive) to end (exclusive)
      *
      * @param begin the begin
@@ -380,7 +365,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param end   the end index
      * @return the interval
      */
-    public static NDArrayIndex interval(int begin, int stride,int end) {
+    public static INDArrayIndex interval(int begin, int stride,int end) {
         if(Math.abs(begin - end) < 1)
             end++;
         if(stride > 1 && Math.abs(begin - end) == 1) {
@@ -398,11 +383,11 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param inclusive whether the end should be inclusive or not
      * @return the interval
      */
-    public static NDArrayIndex interval(int begin,int stride, int end, boolean inclusive) {
+    public static INDArrayIndex interval(int begin,int stride, int end, boolean inclusive) {
         assert begin <= end : "Beginning index in range must be less than end";
-        NDArrayIndex ret = new NDArrayIndex(ArrayUtil.range(begin, inclusive ? end + 1 : end,stride));
-        ret.isInterval = stride == 1;
-        return ret;
+        INDArrayIndex index = new IntervalIndex(inclusive,stride);
+        index.init(begin,end);
+        return index;
     }
 
 
@@ -413,7 +398,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param end   the end index
      * @return the interval
      */
-    public static NDArrayIndex interval(int begin, int end) {
+    public static INDArrayIndex interval(int begin, int end) {
         return interval(begin,1, end, false);
     }
 
@@ -425,7 +410,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @param inclusive whether the end should be inclusive or not
      * @return the interval
      */
-    public static NDArrayIndex interval(int begin, int end, boolean inclusive) {
+    public static INDArrayIndex interval(int begin, int end, boolean inclusive) {
         return interval(begin,1,end,inclusive);
     }
 
@@ -454,8 +439,18 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     @Override
-    public int[] indices() {
-        return indices;
+    public int current() {
+        return 0;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return false;
+    }
+
+    @Override
+    public int next() {
+        return 0;
     }
 
     @Override
@@ -495,6 +490,21 @@ public class NDArrayIndex implements INDArrayIndex {
     @Override
     public void setInterval(boolean isInterval) {
         this.isInterval = isInterval;
+    }
+
+    @Override
+    public void init(INDArray arr, int begin, int dimension) {
+
+    }
+
+    @Override
+    public void init(INDArray arr, int dimension) {
+
+    }
+
+    @Override
+    public void init(int begin, int end) {
+
     }
 
 
