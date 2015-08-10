@@ -91,6 +91,8 @@ Each straight line represents a "principal component," or a relationship between
 
 The first principal component bisects a scatterplot with a straight line in a way that explains the most variance; that is, it follows the longest dimension of the data. In the graph above, it would slice down the length of the baguette.
 
+![Alt text](../img/scatterplot_line.png)
+
 The second principal component cuts through the data nearly perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
 
 ## Covariance Matrix
@@ -117,7 +119,7 @@ For a 2 x 2 matrix, a covariance matrix might look like this:
 
 ![Alt text](../img/covariance_matrix.png)
 
-The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of this section points up and two the right. 
+The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of the PCA section points up and two the right. 
 
 By drawing lines along the axes of greatest variance, you explain the most informational entropy in the data; that is, you account for the greatest possible share of the spread in your data with the minimum number of factors. 
 
