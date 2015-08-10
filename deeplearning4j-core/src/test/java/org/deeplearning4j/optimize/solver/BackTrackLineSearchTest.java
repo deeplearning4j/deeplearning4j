@@ -61,14 +61,14 @@ public class BackTrackLineSearchTest {
         DataSetIterator irisIter = new IrisDataSetIterator(1,1);
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 1, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 11, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
 
         network.fit(data.getFeatureMatrix(), data.getLabels());
         double score = network.getLayer(1).score();
-        assertEquals(0.9893960952758789, score, 1e-4);
+        assertEquals(1.086543, score, 1e-4);
     }
 
     @Test
@@ -93,7 +93,7 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.LBFGS;
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 1, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig("sigmoid", 5, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -141,7 +141,7 @@ public class BackTrackLineSearchTest {
                 .weightInit(WeightInit.XAVIER)
                 .dist(new NormalDistribution(0, 0.1))
                 .activationFunction(activationFunction)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .lossFunction(LossFunctions.LossFunction.MCXENT)
                 .optimizationAlgo(optimizer)
                 .activationFunction("softmax")
                 .iterations(iterations)
@@ -168,7 +168,6 @@ public class BackTrackLineSearchTest {
                         .nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION)
                         .build())
-                .backprop(true)
 
                 .build();
 
