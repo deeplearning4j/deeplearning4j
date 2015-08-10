@@ -100,3 +100,4 @@ Finding the eigenvalues and eigenvectors of the *covariance matrix* is the equiv
 * [A Tutorial on Principal Components Analysis](http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf)
 * [What is the importance of eigenvalues/eigenvectors?](http://math.stackexchange.com/a/23325)
 * [Making Sense of PCA, Eigenvectors and Eigenvalues](http://stats.stackexchange.com/a/140579/85518)
+* [A geometric interpretation of the covariance matrix](http://www.visiondummy.com/2014/04/geometric-interpretation-covariance-matrix/)
