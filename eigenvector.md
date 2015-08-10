@@ -99,7 +99,7 @@ Now imagine that we compose a square matrix of numbers that describe the varianc
 
 Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-componant lines to the variance of the data. 
 
-*Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's variance. 
+*Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. 
 
 If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). 
 
