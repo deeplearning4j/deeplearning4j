@@ -63,7 +63,7 @@ So out of all the vectors affected by a matrix blowing through one space, which 
 
 You could also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
 
-Notice we’re using the plural – axes and lines – because square matrices have as many eigenvectors as they have dimensions; i.e. a 2 x 2 matrix has two eigenvectors, a 3 x 3 matrix has three, and an n x n has n eigenvectors, each one representing its line of action in one dimension. 
+Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides, square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix would have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix would have n eigenvectors, each one representing its line of action in one dimension. 
 
 Because eigenvectors distill the axes of principal force that a matrix moves along, they are useful in matrix decomposition, or matrix vectorization; i.e. the representation of a matrix by a vector. In that sense, they perform the same task as autoencoders. 
 
