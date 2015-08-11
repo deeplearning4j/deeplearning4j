@@ -2151,8 +2151,8 @@ public class Nd4j {
      * @param doubles
      * @return
      */
-    public static INDArray create(float[][] doubles) {
-        return INSTANCE.create(doubles);
+    public static INDArray create(float[][] data) {
+        return INSTANCE.create(data);
     }
 
     public static INDArray create(float[][] data, char ordering) {
