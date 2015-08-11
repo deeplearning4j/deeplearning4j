@@ -22,19 +22,15 @@ package org.nd4j.linalg.jcublas;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
-import org.nd4j.linalg.util.LinearUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 

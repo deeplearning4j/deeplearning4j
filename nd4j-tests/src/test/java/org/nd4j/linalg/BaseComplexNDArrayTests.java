@@ -8,7 +8,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 

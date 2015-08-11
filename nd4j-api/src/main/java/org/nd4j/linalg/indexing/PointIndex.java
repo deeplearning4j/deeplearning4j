@@ -32,6 +32,11 @@ public class PointIndex implements INDArrayIndex {
     }
 
     @Override
+    public int stride() {
+        return 1;
+    }
+
+    @Override
     public int current() {
         return point;
     }

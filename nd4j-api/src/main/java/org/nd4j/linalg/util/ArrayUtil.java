@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.DataInputStream;
@@ -31,8 +32,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.*;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Adam Gibson

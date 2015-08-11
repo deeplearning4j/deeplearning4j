@@ -4,10 +4,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndexEmpty;
-import org.nd4j.linalg.indexing.PointIndex;
+import org.nd4j.linalg.indexing.*;
 
 
 import static org.junit.Assert.*;
@@ -31,9 +28,9 @@ public class IndexingIterationTests extends BaseNd4jTest {
 
     @Test
     public void testInterval() {
-        INDArrayIndex interval = NDArrayIndex.interval(0,2);
+        INDArrayIndex interval = NDArrayIndex.interval(0, 2);
         assertTrue(interval.hasNext());
-        assertEquals(2,interval.length());
+        assertEquals(2, interval.length());
         assertEquals(0, interval.next());
         assertEquals(1,interval.next());
         assertFalse(interval.hasNext());
@@ -51,7 +48,7 @@ public class IndexingIterationTests extends BaseNd4jTest {
 
     @Test
     public void testIntervalStrideGreaterThan1() {
-        INDArrayIndex interval = NDArrayIndex.interval(0,2,2);
+        INDArrayIndex interval = NDArrayIndex.interval(0, 2, 2);
         assertTrue(interval.hasNext());
         assertEquals(1,interval.length());
         assertEquals(0, interval.next());
@@ -72,8 +69,20 @@ public class IndexingIterationTests extends BaseNd4jTest {
     public void testEmpty() {
         INDArrayIndex empty = new NDArrayIndexEmpty();
         assertFalse(empty.hasNext());
-        assertEquals(0,empty.length());
+        assertEquals(0, empty.length());
     }
+
+    @Test
+    public void testSpecifiedIndex() {
+        INDArrayIndex indArrayIndex = new SpecifiedIndex(2);
+        assertEquals(1,indArrayIndex.length());
+        assertTrue(indArrayIndex.hasNext());
+        assertEquals(2,indArrayIndex.next());
+        assertEquals(2,indArrayIndex.current());
+        assertEquals(2,indArrayIndex.end());
+        assertEquals(indArrayIndex.offset(),indArrayIndex.end());
+    }
+
 
     @Override
     public char ordering() {

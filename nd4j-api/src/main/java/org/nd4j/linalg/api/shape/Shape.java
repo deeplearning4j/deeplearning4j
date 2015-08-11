@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.util;
+package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -26,6 +26,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;

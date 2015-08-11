@@ -38,7 +38,6 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
 
 /**
  * Base NDArrayFactory class.

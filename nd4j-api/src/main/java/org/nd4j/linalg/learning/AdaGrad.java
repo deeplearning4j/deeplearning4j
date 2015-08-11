@@ -22,7 +22,7 @@ package org.nd4j.linalg.learning;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.io.Serializable;
 

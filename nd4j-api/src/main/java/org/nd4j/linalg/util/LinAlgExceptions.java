@@ -20,6 +20,7 @@
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * Linear algebra exceptions

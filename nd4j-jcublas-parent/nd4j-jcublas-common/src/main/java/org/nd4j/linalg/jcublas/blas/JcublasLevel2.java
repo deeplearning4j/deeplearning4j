@@ -5,7 +5,6 @@ import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasOperation;
-import lombok.Cleanup;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -18,7 +17,7 @@ import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.util.OpUtil;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * @author Adam Gibson

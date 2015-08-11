@@ -22,8 +22,6 @@ package org.nd4j.linalg.factory;
 import com.google.common.base.Function;
 import com.google.common.primitives.Ints;
 
-import io.netty.buffer.ByteBuf;
-import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
@@ -34,8 +32,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
@@ -54,7 +50,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 import org.springframework.core.io.Resource;
 
 import java.io.*;

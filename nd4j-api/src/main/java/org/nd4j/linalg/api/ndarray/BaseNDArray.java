@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -50,7 +51,7 @@ import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.NDArrayMath;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1408,7 +1409,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public float getFloat(int... indices) {
-
         return (float) getDouble(indices);
     }
 
@@ -1990,115 +1990,70 @@ public abstract class BaseNDArray implements INDArray {
         int count = 0;
         if(this instanceof IComplexNDArray) {
             IComplexNDArray complexThis = (IComplexNDArray) this;
-            IComplexNDArray complexLinear = (IComplexNDArray) linearView();
             IComplexNDArray row = (IComplexNDArray) vector;
-            if(Shape.isColumnVectorShape(vector.shape())) {
-                for(int i = 0; i < vector.rows(); i++) {
-                    IComplexNumber curr = row.getComplex(i);
-                    switch (operation) {
-                        case 'a':
-                            complexThis.getRow(i).addi(curr);
-                            break;
-                        case 's':
-                            complexThis.getRow(i).subi(curr);
-                            break;
-                        case 'm':
-                            complexThis.getRow(i).muli(curr);
-                            break;
-                        case 'd':
-                            complexThis.getRow(i).divi(curr);
-                            break;
-                        case 'h':
-                            complexThis.getRow(i).rsubi(curr);
-                            break;
-                        case 't':
-                            complexThis.getRow(i).rdivi(curr);
-                            break;
-                    }
+            //a column vector iterates row wise a row vector iterates column wise
+            Iterator<int[]> shapes = Shape.isRowVectorShape(vector.shape()) ? new NdIndexIterator('c',shape()) : new NdIndexIterator('f',shape());
+            int currVectorPosition = 0;
+            while(shapes.hasNext()) {
+                int[] position = shapes.next();
+                switch (operation) {
+                    case 'a':
+                        complexThis.putScalar(position, complexThis.getComplex(position).addi(row.getComplex(currVectorPosition++)));
+                        break;
+                    case 's':
+                        complexThis.putScalar(position, complexThis.getComplex(position).subi(row.getComplex(currVectorPosition++)));
+                        break;
+                    case 'm':
+                        complexThis.putScalar(position, complexThis.getComplex(position).muli(row.getComplex(currVectorPosition++)));
+                        break;
+                    case 'd':
+                        complexThis.putScalar(position, complexThis.getComplex(position).divi(row.getComplex(currVectorPosition++)));
+                        break;
+                    case 'h':
+                        complexThis.putScalar(position, complexThis.getComplex(position).rsubi(row.getComplex(currVectorPosition++)));
+                        break;
+                    case 't':
+                        complexThis.putScalar(position, complexThis.getComplex(position).rdivi(row.getComplex(currVectorPosition++)));
+                        break;
                 }
-            }
-            else {
-                for(int i = 0; i < complexLinear.length(); i++,count++) {
-                    switch (operation) {
-                        case 'a':
-                            complexLinear.putScalar(i, row.getComplex(count).add(complexLinear.getComplex(i)));
-                            break;
-                        case 's':
-                            complexLinear.putScalar(i, complexLinear.getComplex(i).sub(row.getComplex(count)));
-                            break;
-                        case 'm':
-                            complexLinear.putScalar(i, complexLinear.getComplex(i).mul(row.getComplex(count)));
-                            break;
-                        case 'd':
-                            complexLinear.putScalar(i, complexLinear.getComplex(i).div(row.getComplex(count)));
-                            break;
-                        case 'h':
-                            complexLinear.putScalar(i, row.getComplex(count).sub(complexLinear.getComplex(i)));
-                            break;
-                        case 't':
-                            complexLinear.putScalar(i, row.getComplex(count).div(complexLinear.getComplex(i)));
-                            break;
-                    }
 
-                    if(count >= vector.length() - 1)
-                        count = 0;
+                if(currVectorPosition >= vector.length())
+                    currVectorPosition = 0;
 
-                }
             }
 
         }
         else {
-            if (Shape.isColumnVectorShape(vector.shape())) {
-                for(int i = 0; i < vector.rows(); i++) {
-                    switch (operation) {
-                        case 'a':
-                            getRow(i).addi(vector.getDouble(i));
-                            break;
-                        case 's':
-                            getRow(i).subi(vector.getDouble(i));
-                            break;
-                        case 'm':
-                            getRow(i).muli(vector.getDouble(i));
-                            break;
-                        case 'd':
-                            getRow(i).divi(vector.getDouble(i));
-                            break;
-                        case 'h':
-                            getRow(i).rsubi(vector.getDouble(i));
-                            break;
-                        case 't':
-                            getRow(i).rdivi(vector.getDouble(i));
-                            break;
-                    }
-                }
-            }
-            else {
-                for (int i = 0; i < rows(); i++) {
-                    switch (operation) {
-                        case 'a':
-                            getRow(i).addi(vector);
-                            break;
-                        case 's':
-                            getRow(i).subi(vector);
-                            break;
-                        case 'm':
-                            getRow(i).muli(vector);
-                            break;
-                        case 'd':
-                            getRow(i).divi(vector);
-                            break;
-                        case 'h':
-                            getRow(i).rsubi(vector);
-                            break;
-                        case 't':
-                            getRow(i).rdivi(vector);
-                            break;
-                    }
-
-
+            //a column vector iterates row wise a row vector iterates column wise
+            Iterator<int[]> shapes = Shape.isRowVectorShape(vector.shape()) ? new NdIndexIterator('c',shape()) : new NdIndexIterator('f',shape());
+            int currVectorPosition = 0;
+            while(shapes.hasNext()) {
+                int[] position = shapes.next();
+                switch (operation) {
+                    case 'a':
+                        putScalar(position, getDouble(position) + vector.getDouble(currVectorPosition++));
+                        break;
+                    case 's':
+                        putScalar(position, getDouble(position) - vector.getDouble(currVectorPosition++));
+                        break;
+                    case 'm':
+                        putScalar(position, getDouble(position) * vector.getDouble(currVectorPosition++));
+                        break;
+                    case 'd':
+                        putScalar(position, getDouble(position) / vector.getDouble(currVectorPosition++));
+                        break;
+                    case 'h':
+                        putScalar(position, vector.getDouble(currVectorPosition++) - getDouble(position));
+                        break;
+                    case 't':
+                        putScalar(position, vector.getDouble(currVectorPosition++) / getDouble(position));
+                        break;
                 }
 
+                if(currVectorPosition >= vector.length())
+                    currVectorPosition = 0;
             }
+
         }
     }
 

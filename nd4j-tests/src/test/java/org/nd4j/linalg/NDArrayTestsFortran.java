@@ -23,9 +23,7 @@ package org.nd4j.linalg;
 
 import java.io.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,14 +34,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 //import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

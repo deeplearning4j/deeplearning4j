@@ -32,7 +32,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.*;
 

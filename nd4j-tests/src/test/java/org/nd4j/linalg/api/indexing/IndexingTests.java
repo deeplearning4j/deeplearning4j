@@ -82,6 +82,7 @@ public class IndexingTests extends BaseNd4jTest {
     }
 
 
+
     @Override
     public char ordering() {
         return 'f';

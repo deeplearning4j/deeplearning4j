@@ -24,7 +24,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -444,7 +444,10 @@ public class Indices {
         int[] retStride = null;
         if(indexes.length >= arr.stride().length) {
             //prepend zeros for new axis
-            retStride  =  Arrays.copyOf(arr.stride(), arr.stride().length);
+            retStride = new int[arr.stride().length];
+            for(int i = 0; i < retStride.length; i++) {
+                retStride[i] = arr.stride(i) * indexes[i].stride();
+            }
         }
         else {
             retStride = Arrays.copyOfRange(arr.stride(), 1, shape.length);

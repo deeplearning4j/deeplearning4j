@@ -21,11 +21,9 @@ package org.nd4j.linalg.api.complex;
 
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.List;

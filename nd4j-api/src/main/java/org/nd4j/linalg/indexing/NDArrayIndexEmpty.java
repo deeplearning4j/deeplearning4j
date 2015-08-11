@@ -22,6 +22,11 @@ public class NDArrayIndexEmpty  implements INDArrayIndex {
     }
 
     @Override
+    public int stride() {
+        return 1;
+    }
+
+    @Override
     public int current() {
         return 0;
     }

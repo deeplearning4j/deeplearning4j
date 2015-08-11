@@ -40,6 +40,11 @@ public class IntervalIndex implements INDArrayIndex {
     }
 
     @Override
+    public int stride() {
+        return stride;
+    }
+
+    @Override
     public int current() {
         return index;
     }

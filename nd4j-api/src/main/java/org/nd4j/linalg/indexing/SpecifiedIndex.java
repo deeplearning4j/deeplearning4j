@@ -3,26 +3,29 @@ package org.nd4j.linalg.indexing;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * New axis index.
- * Specified for wanting a new dimension
- * in an ndarray
- *
  * @author Adam Gibson
  */
-public class NewAxis implements INDArrayIndex {
+public class SpecifiedIndex implements INDArrayIndex {
+    private int[] indexes;
+    private int counter = 0;
+
+    public SpecifiedIndex(int...indexes) {
+        this.indexes = indexes;
+    }
+
     @Override
     public int end() {
-        return 0;
+        return indexes[indexes.length - 1];
     }
 
     @Override
     public int offset() {
-        return 0;
+        return indexes[0];
     }
 
     @Override
     public int length() {
-        return 0;
+        return indexes.length;
     }
 
     @Override
@@ -32,19 +35,18 @@ public class NewAxis implements INDArrayIndex {
 
     @Override
     public int current() {
-        return 0;
+        return indexes[counter - 1];
     }
 
     @Override
     public boolean hasNext() {
-        return false;
+        return counter < indexes.length;
     }
 
     @Override
     public int next() {
-        return 0;
+        return indexes[counter++];
     }
-
 
     @Override
     public void reverse() {

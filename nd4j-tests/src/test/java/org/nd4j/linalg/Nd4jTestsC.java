@@ -27,13 +27,12 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

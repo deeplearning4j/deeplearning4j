@@ -24,6 +24,12 @@ public interface INDArrayIndex {
      */
     int length();
 
+    /**
+     * The stride for the index (most of the time will be 1)
+     * @return
+     */
+    int stride();
+
 
     /**
      * Return the current index
