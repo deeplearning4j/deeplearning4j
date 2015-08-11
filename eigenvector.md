@@ -153,6 +153,8 @@ To sum up, the covariance matrix defines the shape of the data. Diagonal spread 
 
 While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
 
+Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. 
+
 ## Entropy & Information Gain
 
 In information theory, the term *entropy* refers to information we don't have (normally people define "information" as what they know, and jargon has triumphed once again in turning plain language on its head to the detriment of the uninitiated). The information we don't have about a system, its entropy, is related to its unpredictability: how much it can surprise us.
