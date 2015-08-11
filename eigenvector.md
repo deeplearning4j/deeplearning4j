@@ -83,13 +83,23 @@ To quote Yoshua Bengio:
 
 PCA is a tool for finding patterns in high-dimensional data such as images. 
 
-To get to PCA, we’re going to quickly gloss some basic statistical ideas so we can weave them together later. The first is *variance*. 
+To get to PCA, we’re going to quickly gloss some basic statistical ideas -- mean, standard deviation, variance and covariance -- so we can weave them together later. Their equations are closely related.
 
-Variance is a property of data. If I take a team of Dutch basketball players and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
+*Mean* is simply the average value of *x* in the set X, which is found by dividing the sum of all data points by the number of data points, *n*.
+
+![Alt text](../img/mean.png)
+
+*Standard deviation* is "the average distance from the mean of the data set to a point." In the equation below, we have the sum of the differences between each datapoint and the mean in the numerator, and number of data points (minus one) in the denominator, producing the average.
+
+![Alt text](../img/standard_deviation.png)
+
+Variance is the measure of the data's spread. If I take a team of Dutch basketball players and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
 
 But if I throw in a classroom of psychotic kindergartners as well as a few CIA spies that have been carefully selected for appearing average in every way, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
 
-*Standard deviation*, a term related to variance that you're probably familiar with, is "the average distance from the mean of the data set to a point." Variance is simply the square of standard deviation, and is often represented as *s^2*.
+Variance is simply standard deviation squared, and is often expressed as *s^2*.
+
+![Alt text](../img/variance.png)
 
 Let's assume you plotted the age (x axis) and height (y axis) of those indivuals and came up with an oblong scatterplot:
 
@@ -127,7 +137,11 @@ If two variables increase and decrease together (a line going up and to the righ
 
 (*Credit: Vincent Spruyt*)
 
-Notice that when one variable or the other doesn't move at all, and the graph shows no diagonal motion, there is no covariance whatsoever.
+Notice that when one variable or the other doesn't move at all, and the graph shows no diagonal motion, there is no covariance whatsoever. Also, in the equation below, you'll notice that there is only a small difference between covariance and variance.
+
+![Alt text](../img/covariance.png)
+
+The great thing about being able to calculate covariance is that, in a high dimensional space where you can't eyeball intervariable relationships, you will know by the positive, negative or null character of covariance how two variables move together. 
 
 The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
 
