@@ -7,7 +7,9 @@ layout: default
 
 A deep autoencoder is composed of two, symmetrical [deep-belief networks](../deepbeliefnetwork.html) that typically have four or five shallow layers representing the encoding half of the net, and second set of four or five layers that make up the decoding half.
 
-The layers are [restricted Boltzmann machines](../restrictedboltzmannmachine.html), the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. 
+The layers are [restricted Boltzmann machines](../restrictedboltzmannmachine.html), the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. Here's a schema of a deep autoencoder's structure, which we'll explain below.
+
+![Alt text](../img/deepautoencoder.png) 
 
 Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
 
