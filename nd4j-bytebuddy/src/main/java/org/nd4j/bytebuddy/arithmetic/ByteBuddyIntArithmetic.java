@@ -26,7 +26,12 @@ public class ByteBuddyIntArithmetic implements Implementation {
     }
 
 
-
+    /**
+     * Returns the proper stack manipulation
+     * for the given operation
+     * @param operation the arithmetic operation to do
+     * @return the stack manipulation for the given operation
+     */
     public static StackManipulation opFor(Operation operation) {
         switch(operation) {
             case ADD: return IntegerAddition.INSTANCE;
