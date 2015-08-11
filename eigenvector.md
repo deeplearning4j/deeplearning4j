@@ -169,7 +169,7 @@ A balanced, two-sided coin does contain an element of surprise with each coin to
 
 Now let's imagine the die is loaded, it comes up "three" on five out of six rolls, and we figure out the game is rigged. Suddenly the amount of surprise produced with each roll by this die is greatly reduced. We understand a trend in the die's behavior that gives us greater predictive capacity. 
 
-Understanding the die is loaded is analogous to finding a principal component in a dataset. 
+Understanding the die is loaded is analogous to finding a principal component in a dataset. You simply identify an underlying pattern.
 
 That transfer of information, from *what we don't know* about the system to *what we know*, represents a change in entropy. Insight decreases the entropy of the system. Get information, reduce entropy. This is information gain. And yes, this type of entropy is subjective, in that it depends on what we know about the system at hand. (Fwiw, [information gain](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees) is synonymous with Kullback-Leibler divergence, which we explored briefly in this tutorial on [restricted Boltzmann machines](../restrictedboltzmannmachine.html).) 
 
