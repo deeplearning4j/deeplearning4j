@@ -103,6 +103,8 @@ Variance is simply standard deviation squared, and is often expressed as *s^2*.
 
 ![Alt text](../img/variance.png)
 
+Squaring the differences between data points and the mean makes them positive, so that values above and below the mean don't cancel each other out. 
+
 Let's assume you plotted the age (x axis) and height (y axis) of those indivuals and came up with an oblong scatterplot:
 
 ![Alt text](../img/scatterplot.png)
