@@ -3,9 +3,9 @@ title:
 layout: default
 ---
 
-# Deep autoencoders
+# Deep Autoencoders
 
-A deep autoencoder are a sort of compound deep-belief network that typically has four or five layers to represent the encoder itself, which is just one half of the net, and second set of four or five layers that make up the decoding half. 
+A deep autoencoder are a sort of compound [deep-belief network](../deepbeliefnetwork.html) that typically has four or five layers to represent the encoder itself, which is just one half of the net, and second set of four or five layers that make up the decoding half. 
 
 The layers are [restricted Boltzmann machines], the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. 
 
@@ -35,23 +35,23 @@ The decoding half of a deep autoencoder is a feed-forward net with layers 100, 2
 
 The decoding half of a deep autoencoder is the part that learns to reconstruct the image. It does so with a second feed-forward net which also conducts back propagation. The back propagation happens through reconstruction entropy.
 
-### Training nuances
+### Training Nuances
 
 At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower: somewhere between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
 
 ### Image Search
 
-As we mentioned above, deep autoencoders are capable of compressing images into 30-number vectors. So searching for images is as simple as uploading an image, which the search engine will then compress to 30 numbers, and compare that vector to all the others in its index. 
+As we mentioned above, deep autoencoders are capable of compressing images into 30-number vectors. 
 
-Vectors containing similar numbers will be returned for the search query, and translated into their appropriate image. 
+Image search, therefore, becomes a matter of uploading an image, which the search engine will then compress to 30 numbers, and compare that vector to all the others in its index. 
 
-### Topic modeling & information retrieval (ir)
+Vectors containing similar numbers will be returned for the search query, and translated into their matching image. 
 
-Deep autoencoders are highly useful in topic modeling, or statistically modeling abstract topics that are distributed across a collection of documents. 
+### Topic Modeling & Information Retrieval (IR)
 
-This, in turn, is an important step in cognitive computing, since question answering computing systems such as Watson match questions to answers when they share a topic. 
+Deep autoencoders are useful in topic modeling, or statistically modeling abstract topics that are distributed across a collection of documents. 
 
-That is, autoencoders can be used for topic modeling, and employed for classification and prediction to advance cognitive computing. 
+This, in turn, is an important step in question-answer systems like Watson.
 
 In brief, each document in a collection is converted to a Bag-of-Words (i.e. a set of word counts) and those word counts are scaled to decimals between 0 and 1, which may be thought of as the probability of a word occurring in the doc. 
 
@@ -63,4 +63,4 @@ For example, one document could be the “question” and others could be the �
 
 A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwork class](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java).
 
-For questions about Deep Autoencoders, contact us on the Gitter live chat. 
+For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 
