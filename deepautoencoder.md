@@ -100,6 +100,7 @@ The code would look something like this:
                 .layer(8, new RBM.Builder().nIn(500).nOut(1000).build())
                 .layer(9, new OutputLayer.Builder(LossFunction.RMSE_XENT).
                 	.nIn(1000).nOut(numRows*numColumns).build())
+                .pretrain(true).backprop(false)
                 .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
