@@ -134,7 +134,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
         score = pair.getSecond();
-        setupSearchState(pair);		//Currently: Resets search state every mini-batch
+        if(searchState.isEmpty()){
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient(conf.getVariables()));
+        	setupSearchState(pair);		//Only do this once
+        } else {
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient(conf.getVariables()));
+        }
 
         //pre existing termination conditions
         /*

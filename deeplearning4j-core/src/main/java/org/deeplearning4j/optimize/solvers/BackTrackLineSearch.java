@@ -216,9 +216,9 @@ public class BackTrackLineSearch implements LineOptimizer {
             stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
 
-            if (log.isDebugEnabled()) {
+            if (log.isTraceEnabled()) {
                 double norm1 = candidateParameters.norm1(Integer.MAX_VALUE).getDouble(0);
-                log.debug("after step, x.1norm: " + norm1);
+                log.trace("after step, x.1norm: " + norm1);
             }
 
             // check for convergence on delta x
@@ -333,7 +333,7 @@ public class BackTrackLineSearch implements LineOptimizer {
             log.debug("Exited line search after maxIterations termination condition; best step={}, score={}, scoreAtStart={}", step, score, scoreAtStart);
             return step;
         } else {
-            log.debug("Exited line search after maxIterations termination condition; score did not improve. Resetting parameters");
+            log.debug("Exited line search after maxIterations termination condition; score did not improve (scoreAtStart={}). Resetting parameters",scoreAtStart);
             setScoreFor(parameters);
             return 0.0;
         }
