@@ -7,7 +7,7 @@ layout: default
 
 A deep autoencoder are a sort of double [deep-belief network](../deepbeliefnetwork.html) that typically has four or five layers to represent the encoder itself, which is just one half of the net, and second set of four or five layers that make up the decoding half. 
 
-The layers are [restricted Boltzmann machines], the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. 
+The layers are [restricted Boltzmann machines](../restrictedboltzmannmachine.html), the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. 
 
 Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
 
@@ -49,7 +49,7 @@ Vectors containing similar numbers will be returned for the search query, and tr
 
 ### Data compression
 
-A more general case of image compression is data compression. Deep autoencoders are useful for [semantic hashing](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf), for example.
+A more general case of image compression is data compression. Deep autoencoders are useful for [semantic hashing](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf), as discussed in this paper by Geoff Hinton.
 
 ### Topic Modeling & Information Retrieval (IR)
 
