@@ -123,7 +123,7 @@ Imagine that we compose a square matrix of numbers that describe the variance of
 
 Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-component lines to the variance of the data. 
 
-*Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. 
+*Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. By ordering your eigenvectors by eigenvalue, highest to lowest, you get the principal components in order of significance.
 
 For a 2 x 2 matrix, a covariance matrix might look like this:
 
