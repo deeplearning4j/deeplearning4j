@@ -498,11 +498,6 @@ public class TestOptimizers {
     // Rosenbrock Function Optimizer Tests
 
     @Test
-    public void testRosenbrockFnOptStochGradDescentMultipleSteps(){
-        testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,20,20);
-    }
-
-    @Test
     public void testRosenbrockFnOptLineGradDescentMultipleSteps(){
         testRosenbrockFnMultipleStepsHelper(OptimizationAlgorithm.LINE_GRADIENT_DESCENT,20,20);
     }
