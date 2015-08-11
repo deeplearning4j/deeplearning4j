@@ -186,3 +186,4 @@ The first component of PCA, like the first split in a properly formed decision t
 * [Introduction to Eigenvectors & Eigenvalues Part 1](https://www.youtube.com/watch?v=G4N8vJpf7hM) (Video)
 * [(Another) Introduction to Eigenvectors & Eigenvalues](https://www.youtube.com/watch?v=8UX82qVJzYI) (Video)
 * [Information & Entropy, Unit 1, Lecture 2](https://www.youtube.com/watch?v=phxsQrZQupo) (MIT OpenCourseWare)
+* [Regression & Neural Networks](../linear-regression.html)
