@@ -155,8 +155,8 @@ public class LBFGS extends BaseOptimizer {
             //r = r + s_i * (alpha_i - beta)
             Nd4j.getBlasWrapper().level1().axpy(gradient.length(), alpha[i] - beta, si, searchDir);
         }
-        
-        searchDir.negi();
+
+//        searchDir.negi(); // makes search direction positive since calculations above make it negative if min
 
         oldParameters.assign(params);
         oldGradient.assign(gradient);	//Update gradient. Still in searchState map keyed by GRADIENT_KEY
