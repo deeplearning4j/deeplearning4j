@@ -19,9 +19,6 @@
 package org.deeplearning4j.models.embeddings.inmemory;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import it.unimi.dsi.util.XorShift64StarRandomGenerator;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -226,8 +223,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
 
             if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
-                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
 
             }
 
