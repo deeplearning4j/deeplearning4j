@@ -2892,7 +2892,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray add(IComplexNumber n) {
-        return addi(n, this);
+        return dup().addi(n);
     }
 
     @Override
