@@ -87,7 +87,7 @@ PCA is a tool for finding patterns in high-dimensional data such as images. Old-
 
 To get to PCA, we’re going to quickly gloss some basic statistical ideas -- mean, standard deviation, variance and covariance -- so we can weave them together later. Their equations are closely related.
 
-*Mean* is simply the average value of *x* in the set X, which is found by dividing the sum of all data points by the number of data points, *n*.
+*Mean* is simply the average value of all *x*'s in the set X, which is found by dividing the sum of all data points by the number of data points, *n*.
 
 ![Alt text](../img/mean.png)
 
