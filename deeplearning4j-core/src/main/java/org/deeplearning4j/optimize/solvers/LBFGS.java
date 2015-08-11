@@ -63,13 +63,8 @@ public class LBFGS extends BaseOptimizer {
 
     @Override
     public void preProcessLine() {
-        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
-        if(searchDir == null){
-            searchState.put(SEARCH_DIR, gradient);
-        } else {
-            searchDir.assign(gradient);
-        }
+    	if(!searchState.containsKey(SEARCH_DIR))
+    		searchState.put(SEARCH_DIR, ((INDArray)searchState.get(GRADIENT_KEY)).dup());
     }
 
     // Numerical Optimization (Nocedal & Wright) section 7.2
@@ -160,7 +155,8 @@ public class LBFGS extends BaseOptimizer {
             //r = r + s_i * (alpha_i - beta)
             Nd4j.getBlasWrapper().level1().axpy(gradient.length(), alpha[i] - beta, si, searchDir);
         }
-
+        
+        searchDir.negi();
 
         oldParameters.assign(params);
         oldGradient.assign(gradient);	//Update gradient. Still in searchState map keyed by GRADIENT_KEY
