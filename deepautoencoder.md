@@ -5,27 +5,31 @@ layout: default
 
 # Deep autoencoders
 
-Deep autoencoders are a special form of deep-belief net that typically have four or five layers to represent the encoder itself, which is just one half of the net. The layers are a series of RBMs, with several particularities that we'll discuss below. 
+A deep autoencoder are a sort of compound deep-belief network that typically has four or five layers to represent the encoder itself, which is just one half of the net, and second set of four or five layers that make up the decoding half. 
 
-Processing Mnist, a deep autoencoder will use binary transformations after each layer. They can also be used for other types of datasets, with real-valued data which you would use Gaussian rectified RBMs. 
+The layers are [restricted Boltzmann machines], the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. 
 
-Let’s define an example encoder:
+Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
+
+Let’s sketch out an example encoder:
     
-     784 (input) ----> 1000 ----> 500 ----> 250 ----> 30
+     784 (input) ----> 1000 ----> 500 ----> 250 ----> 100 -----> 30
 
-If, say, the input fed to the network is 784 pixels (the square of the 28x28 pixel images in the Mnist dataset), then the first layer of the deep autoencoder should have 1000 parameters -- slightly larger. 
+If, say, the input fed to the network is 784 pixels (the square of the 28x28 pixel images in the MNIST dataset), then the first layer of the deep autoencoder should have 1000 parameters; i.e. slightly larger. 
 
-This may seem counterintuitive, because having more parameters than input is a good way to overfit a network. In this case, expanding the parameters, and in a sense expanding the features of the input itself, will make the eventual decoding of the autoencoded data possible. 
+This may seem counterintuitive, because having more parameters than input is a good way to overfit a neural network. 
 
-This is due to the representational capacity of sigmoid-belief units, a form of transformation used with each layer. Sigmoid belief units can’t represent as much as information and variance as real-valued data. The expanded first layer is a way of compensating for that.
+In this case, expanding the parameters, and in a sense expanding the features of the input itself, will make the eventual decoding of the autoencoded data possible. 
 
-The layers will be 1000, 500, 250, 100 nodes wide, respectively, until at the end, the net produces a vector 30 numbers long. This 30-number vector is the last layer of the first, pretraining, half of the deep autoencoder, and it is the product of a normal RBM, rather than an output layer such as Softmax or logistic regression. 
+This is due to the representational capacity of sigmoid-belief units, a form of transformation used with each layer. Sigmoid belief units can’t represent as much as information and variance as real-valued data. The expanded first layer is a way of compensating for that. 
 
-### The decoding half
+The layers will be 1000, 500, 250, 100 nodes wide, respectively, until the end, where the net produces a vector 30 numbers long. This 30-number vector is the last layer of the first half of the deep autoencoder, the pretraining half, and it is the product of a normal RBM, rather than an classification output layer such as Softmax or logistic regression, as you would normally see at the end of a deep-belief network. 
 
-Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the vector, which becomes the input.
+### The Decoding Half
 
-The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. Those layers initially have the same weights as their counterparts in the pretraining net, except that the weights are transposed. (They are not initialized randomly.) 
+Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the condensed vector, which becomes the input as it makes its way back.
+
+The decoding half of a deep autoencoder is a feed-forward net with layers 100, 250, 500 and 1000 nodes wide, respectively. Those layers initially have the same weights as their counterparts in the pretraining net, except that the weights are transposed; i.e. they are not initialized randomly.) 
 
 		784 (output) <---- 1000 <---- 500 <---- 250 <---- 30
 
@@ -33,9 +37,9 @@ The decoding half of a deep autoencoder is the part that learns to reconstruct t
 
 ### Training nuances
 
-At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower. It should be some where between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
+At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower: somewhere between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
 
-### image search
+### Image Search
 
 As we mentioned above, deep autoencoders are capable of compressing images into 30-number vectors. So searching for images is as simple as uploading an image, which the search engine will then compress to 30 numbers, and compare that vector to all the others in its index. 
 
