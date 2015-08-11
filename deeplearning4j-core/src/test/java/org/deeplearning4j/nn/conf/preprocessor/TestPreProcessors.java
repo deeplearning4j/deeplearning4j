@@ -51,7 +51,6 @@ public class TestPreProcessors {
 	@Test
 	public void testFeedForwardToRnnPreProcessor(){
 		Nd4j.getRandom().setSeed(12345L);
-		
 		int miniBatchSize = 5;
 		int hiddenLayerSize = 7;
 		int timeSeriesLength = 9;
