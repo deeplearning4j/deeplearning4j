@@ -1083,9 +1083,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             prevLayer = currLayer;
         }
 
-        feedForward();
-        score = outputLayer.score();	//TODO need to do full forward pass to score...
-
         //TODO: Set up to call optimizers, and shift this gradient calculation elsewhere
         // (so backprop gradient can be re-calculated by optimizers)
     }
@@ -1401,7 +1398,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void computeGradientAndScore() {
         backprop();
-        this.score = ((OutputLayer)getOutputLayer()).computeScore();
+        // Updating activations based on new gradients
+        feedForward(); //TODO need to do full forward pass to score... ??
+        score = ((OutputLayer)getOutputLayer()).computeScore();
     }
 
     @Override

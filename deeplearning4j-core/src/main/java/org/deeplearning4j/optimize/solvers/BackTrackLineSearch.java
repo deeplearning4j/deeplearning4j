@@ -157,7 +157,7 @@ public class BackTrackLineSearch implements LineOptimizer {
     @Override
     public double optimize(INDArray parameters, INDArray gradients, INDArray searchDirection) throws InvalidStepException {
         double test, stepMin, step, step2, oldStep, tmpStep;
-        double rhs1, rhs2, a, b, disc, score, oldScore, score2;
+        double rhs1, rhs2, a, b, disc, score, scoreAtStart, score2;
         minObjectiveFunction = (stepFunction instanceof NegativeDefaultStepFunction || stepFunction instanceof NegativeGradientStepFunction);
 
         double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
@@ -175,14 +175,13 @@ public class BackTrackLineSearch implements LineOptimizer {
         oldStep = 0.0;
         step2 = 0.0;
 
-        score = score2 = oldScore = layer.score();
-        double scoreAtStart = score2;    //Before any line search etc.
+        score = score2 = scoreAtStart = layer.score();
         double bestScore = score;
         double bestStepSize = 1.0;
 
         if (log.isTraceEnabled()) {
             log.trace("ENTERING BACKTRACK\n");
-            log.trace("Entering BackTrackLineSearch, value = " + oldScore + ",\ndirection.oneNorm:"
+            log.trace("Entering BackTrackLineSearch, value = " + scoreAtStart + ",\ndirection.oneNorm:"
                     + searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:" +
                     FastMath.max(Float.NEGATIVE_INFINITY, abs(searchDirection.dup()).max(Integer.MAX_VALUE).getDouble(0)));
         }
@@ -191,10 +190,8 @@ public class BackTrackLineSearch implements LineOptimizer {
             searchDirection.muli(stepMax / sum);
         }
 
-        if (minObjectiveFunction && slope >= 0.0){
-        	throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0 when minimizing objective function");
-        } else if(!minObjectiveFunction && slope <= 0.0){
-        	throw new InvalidStepException("Slope " + slope + " is <= 0.0. Expect slope > 0.0 when maximizing objective function");
+        if (slope >= 0.0) {
+            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0 when minimizing objective function");
         }
 
         // find maximum lambda
@@ -246,20 +243,20 @@ public class BackTrackLineSearch implements LineOptimizer {
             }
             
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
-            if (minObjectiveFunction && score <= oldScore + ALF * step * slope) {
-                log.debug("Sufficient decrease (Wolfe cond.), exiting backtrack on iter {}: score={}, oldScore={}", iteration, score, oldScore);
-                if (score > oldScore)
+            if (minObjectiveFunction && score <= scoreAtStart + ALF * step * slope) {
+                log.debug("Sufficient decrease (Wolfe cond.), exiting backtrack on iter {}: score={}, scoreAtStart={}", iteration, score, scoreAtStart);
+                if (score > scoreAtStart)
                     throw new IllegalStateException
-                            ("Function did not decrease: score = " + score + " > " + oldScore + " = oldScore");
+                            ("Function did not decrease: score = " + score + " > " + scoreAtStart + " = oldScore");
                 return step;
             }
 
             //Sufficient increase in cost/loss function (Wolfe condition / Armijo condition)
-            if (!minObjectiveFunction && score >= oldScore + ALF * step * slope) {
-                log.debug("Sufficient increase (Wolfe cond.), exiting backtrack on iter {}: score={}, oldScore={}", iteration, score, oldScore);
-                if (score < oldScore)
+            if (!minObjectiveFunction && score >= scoreAtStart + ALF * step * slope) {
+                log.debug("Sufficient increase (Wolfe cond.), exiting backtrack on iter {}: score={}, bestScore={}", iteration, score, scoreAtStart);
+                if (score < scoreAtStart)
                     throw new IllegalStateException
-                            ("Function did not increase: score = " + score + " < " + oldScore + " = oldScore");
+                            ("Function did not increase: score = " + score + " < " + scoreAtStart + " = scoreAtStart");
                 return step;
             }
 
@@ -277,10 +274,10 @@ public class BackTrackLineSearch implements LineOptimizer {
             // backtrack
             else if (minObjectiveFunction){
                 if (step == 1.0) // first time through
-                    tmpStep = -slope / (2.0 * (score - oldScore - slope));
+                    tmpStep = -slope / (2.0 * (score - scoreAtStart - slope));
                 else {
-                    rhs1 = score - oldScore - step * slope;
-                    rhs2 = score2 - oldScore - step2 * slope;
+                    rhs1 = score - scoreAtStart - step * slope;
+                    rhs2 = score2 - scoreAtStart - step2 * slope;
                     if (step == step2)
                         throw new IllegalStateException("FAILURE: dividing by step-step2 which equals 0. step=" + step);
                     double stepSquared = step * step;
@@ -303,10 +300,10 @@ public class BackTrackLineSearch implements LineOptimizer {
                 }
             } else {
                 if (step == 1.0) // first time through
-                    tmpStep = -slope / (2.0 * ( oldScore - score  - slope));
+                    tmpStep = -slope / (2.0 * ( scoreAtStart - score  - slope));
                 else {
-                    rhs1 = oldScore - score - step * slope;
-                    rhs2 = oldScore - score2 - step2 * slope;
+                    rhs1 = scoreAtStart - score - step * slope;
+                    rhs2 = scoreAtStart - score2 - step2 * slope;
                     if (step == step2)
                         throw new IllegalStateException("FAILURE: dividing by step-step2 which equals 0. step=" + step);
                     double stepSquared = step * step;
