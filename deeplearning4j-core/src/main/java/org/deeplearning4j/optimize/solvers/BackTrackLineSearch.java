@@ -161,7 +161,6 @@ public class BackTrackLineSearch implements LineOptimizer {
         minObjectiveFunction = (stepFunction instanceof NegativeDefaultStepFunction || stepFunction instanceof NegativeGradientStepFunction);
 
         double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
-//        double slope = (minObjectiveFunction) ? -1f * Nd4j.getBlasWrapper().dot(searchDirection, gradients) : Nd4j.getBlasWrapper().dot(searchDirection, gradients) ;
         double slope = -1f * Nd4j.getBlasWrapper().dot(searchDirection, gradients);
 
         log.debug("slope = {}", slope);
@@ -178,6 +177,8 @@ public class BackTrackLineSearch implements LineOptimizer {
 
         score = score2 = oldScore = layer.score();
         double scoreAtStart = score2;    //Before any line search etc.
+        double bestScore = score;
+        double bestStepSize = 1.0;
 
         if (log.isTraceEnabled()) {
             log.trace("ENTERING BACKTRACK\n");
@@ -190,8 +191,11 @@ public class BackTrackLineSearch implements LineOptimizer {
             searchDirection.muli(stepMax / sum);
         }
 
-        if (slope >= 0.0)
-            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
+        if (minObjectiveFunction && slope >= 0.0){
+        	throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0 when minimizing objective function");
+        } else if(!minObjectiveFunction && slope <= 0.0){
+        	throw new InvalidStepException("Slope " + slope + " is <= 0.0. Expect slope > 0.0 when maximizing objective function");
+        }
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
@@ -225,13 +229,22 @@ public class BackTrackLineSearch implements LineOptimizer {
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(parameters, candidateParameters,
                     candidateParameters.dup(), candidateParameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
                 score = setScoreFor(parameters);
-                log.trace("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Value = {}", stepMin, score);
+                log.debug("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Score = {}", stepMin, score);
                 return 0.0;
             }
 
             score = setScoreFor(candidateParameters);
             log.debug("Model score after step = {}", score);
 
+            //Score best step size for use if we terminate on maxIterations
+            if( minObjectiveFunction && score < bestScore ){
+            	bestScore = score;
+            	bestStepSize = step;
+            } else if( !minObjectiveFunction && score > bestScore ){
+            	bestScore = score;
+            	bestStepSize = step;
+            }
+            
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
             if (minObjectiveFunction && score <= oldScore + ALF * step * slope) {
                 log.debug("Sufficient decrease (Wolfe cond.), exiting backtrack on iter {}: score={}, oldScore={}", iteration, score, oldScore);
@@ -324,16 +337,16 @@ public class BackTrackLineSearch implements LineOptimizer {
         }
 
 
-        if (minObjectiveFunction && score < scoreAtStart) {
+        if (minObjectiveFunction && bestScore < scoreAtStart) {
             //Return best step size
-            log.debug("Exited line search after maxIterations termination condition; best step={}, score={}, scoreAtStart={}", step, score, scoreAtStart);
-            return step;
-        } else if (!minObjectiveFunction && score > scoreAtStart) {
+            log.debug("Exited line search after maxIterations termination condition; bestStepSize={}, bestScore={}, scoreAtStart={}", bestStepSize, bestScore, scoreAtStart);
+            return bestStepSize;
+        } else if (!minObjectiveFunction && bestScore > scoreAtStart) {
             //Return best step size
-            log.debug("Exited line search after maxIterations termination condition; best step={}, score={}, scoreAtStart={}", step, score, scoreAtStart);
-            return step;
+        	log.debug("Exited line search after maxIterations termination condition; bestStepSize={}, bestScore={}, scoreAtStart={}", bestStepSize, bestScore, scoreAtStart);
+            return bestStepSize;
         } else {
-            log.debug("Exited line search after maxIterations termination condition; score did not improve (scoreAtStart={}). Resetting parameters",scoreAtStart);
+            log.debug("Exited line search after maxIterations termination condition; score did not improve (bestScore={}, scoreAtStart={}). Resetting parameters",bestScore,scoreAtStart);
             setScoreFor(parameters);
             return 0.0;
         }

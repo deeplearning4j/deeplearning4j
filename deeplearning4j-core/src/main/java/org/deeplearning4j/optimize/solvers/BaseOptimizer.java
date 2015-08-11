@@ -181,18 +181,17 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             pair = gradientAndScore();
 
             //updates searchDirection
-            postStep(pair.getFirst().gradient());
+            postStep(pair.getFirst().gradient(conf.getVariables()));
             score = pair.getSecond();
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
-
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions){
                 if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
-                    log.debug("Hit termination condition: score={}, oldScore={}, condition={}",score,oldScore,condition);
+                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}",i,score,oldScore,condition);
                     return true;
                 }
             }
