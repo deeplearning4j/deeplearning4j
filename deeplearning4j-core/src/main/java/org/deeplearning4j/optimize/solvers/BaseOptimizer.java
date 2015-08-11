@@ -251,8 +251,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
 
-
     public static StepFunction getDefaultStepFunctionForOptimizer( Class<? extends ConvexOptimizer> optimizerClass ){
+        log.warn("Objective function automatically set to minimize. Set stepFunction in neural net configuration to change default settings.");
     	if( optimizerClass == StochasticGradientDescent.class ){
     		return new NegativeGradientStepFunction();
     	} else {
