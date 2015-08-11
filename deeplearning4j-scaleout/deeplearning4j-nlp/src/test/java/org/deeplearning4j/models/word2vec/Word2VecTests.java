@@ -18,26 +18,37 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import com.google.common.primitives.Doubles;
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.plot.Tsne;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -47,31 +58,79 @@ public class Word2VecTests {
 
     private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 
+    private File binaryFile, textFile, inputFile;
+    private String pathToWriteto;
+    private Word2Vec googleModel;
 
     @Before
-    public void before() {
-        new File("word2vec-index").delete();
+    public void before() throws Exception {
+        File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
+        googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
+        inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
+        binaryFile = new ClassPathResource("word2vecserialization/raw_sentence_word2vec.bin.gz").getFile();
+        textFile = new ClassPathResource("word2vecserialization/raw_sentence_word2vec.txt").getFile();
+        pathToWriteto = "testing_word2vec_serialization.txt";
+        FileUtils.deleteDirectory(new File("word2vec-index"));
     }
 
     @Test
-    public void testWord2VecRunThroughVectors() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/big/raw_sentences.txt");
-        File file = resource.getFile().getParentFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
-        new File("cache.ser").delete();
+    public void testGoogleModelLoaded() throws Exception {
+        assertEquals(googleModel.vocab().numWords(), 30);
+        assertTrue(googleModel.hasWord("Morgan_Freeman"));
+        double[] wordVector = googleModel.getWordVector("Morgan_Freeman");
+        assertTrue(wordVector.length == 300);
+        assertEquals(Doubles.asList(wordVector).get(0), 0.044423, 1e-3);
+    }
+
+    @Test
+    public void testSimilarity() throws Exception {
+        testGoogleModelLoaded();
+        assertEquals(googleModel.similarity("Benkovic", "Boeremag_trialists"), 0.1204, 1e-2);
+        assertEquals(googleModel.similarity("Benkovic", "Gopie"), 0.3350, 1e-2);
+        assertEquals(googleModel.similarity("Benkovic", "Youku.com"), 0.0116, 1e-2);
+    }
+
+    @Test
+    public void testWordsNearest() throws Exception {
+        testGoogleModelLoaded();
+        List<Object> lst = Arrays.asList(googleModel.wordsNearest("Benkovic", 10).toArray());
+        assertEquals(lst.get(0), "Gopie");
+        assertEquals(lst.get(1), "JIM_HOOK_Senior");
+    }
+
+    @Test
+    public void testIND() {
+        INDArray arr = Nd4j.arange(1, 5);
+        System.out.println(Arrays.toString(arr.shape()));
+        System.out.println(Transforms.unitVec(arr));
+        INDArray arr2 = Nd4j.concat(0, arr, arr);
+        System.out.println(Transforms.unitVec(arr2));
+    }
+
+    @Test
+    public void testUIMAIterator() throws Exception {
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        assertEquals(iter.nextSentence(), "No ,  he says now .");
+    }
+
+
+    @Test
+    public void testRunWord2Vec() throws Exception {
+        // Strip white space before and after for each line
+        SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
+        // Split on white spaces in the line to get words
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
         InMemoryLookupCache cache = new InMemoryLookupCache();
-
-        TokenizerFactory t = new UimaTokenizerFactory();
-
-        WeightLookupTable table = new InMemoryLookupTable
-                .Builder()
+        WeightLookupTable table = new InMemoryLookupTable.Builder()
                 .vectorLength(100)
                 .useAdaGrad(false)
                 .cache(cache)
                 .lr(0.025f).build();
 
         Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(1).iterations(1)
+                .minWordFrequency(5).iterations(1)
                 .layerSize(100).lookupTable(table)
                 .stopWords(new ArrayList<String>())
                 .vocabCache(cache).seed(42)
@@ -79,13 +138,26 @@ public class Word2VecTests {
 
         assertEquals(new ArrayList<String>(), vec.getStopWords());
         vec.fit();
+        WordVectorSerializer.writeWordVectors(vec, pathToWriteto);
+        Collection<String> lst = vec.wordsNearest("day", 10);
+        System.out.println(Arrays.toString(lst.toArray()));
         System.out.println(vec.similarity("day", "night"));
-        System.out.println(vec.similarity("day","percent"));
-
         new File("cache.ser").delete();
-
-
     }
+
+    @Test
+    public void testLoadingWordVectors() throws Exception {
+        File modelFile = new File(pathToWriteto);
+        if (!modelFile.exists()) {
+            testRunWord2Vec();
+        }
+        WordVectors wordVectors = WordVectorSerializer.loadGoogleModel(modelFile, false);
+//        [CHILDREN, ALSO, YEAR, you, used, DOWN, WAR, Did, going, more]
+//        0.8146713972091675
+        Collection<String> lst = wordVectors.wordsNearest("day", 10);
+        System.out.println(Arrays.toString(lst.toArray()));
+    }
+
 
 
 
