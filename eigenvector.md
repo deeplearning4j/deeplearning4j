@@ -65,6 +65,10 @@ You can imagine a matrix like a gust of wind, an invisible force that produces a
 
 So out of all the vectors affected by a matrix blowing through one space, which one is the eigenvector? It’s the one that doesn’t change direction; that is, the eigenvector is already pointing in the same direction that the matrix is pushing all vectors toward. An eigenvector is a like a weathervane. An eigenvane, as it were. 
 
+The definition of an eigenvector, therefore, is a vector that responds to a matrix as though that matrix were a scalar coefficient. In this equation, A is the matrix, x the vector, and lambda the scalar coefficient, a simple number like 5 or 37.
+
+![Alt text](../img/lambda_eigen.png)
+
 You might also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
 
 Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides (each serving a distinct purpose), square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix would have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix would have n eigenvectors, each one representing its line of action in one dimension. 
