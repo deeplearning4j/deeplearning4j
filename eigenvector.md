@@ -129,7 +129,7 @@ For a 2 x 2 matrix, a covariance matrix might look like this:
 
 ![Alt text](../img/covariance_matrix.png)
 
-The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of the PCA section points up and two the right. 
+The numbers on the upper left and lower right represent the variance of the x and y variables, respectively, while the identical numbers on the lower left and upper right represent the covariance between x and y. Because of that identity, such matrices are known as symmetrical. As you can see, the covariance is positive, since the graph near the top of the PCA section points up and to the right. 
 
 If two variables increase and decrease together (a line going up and to the right), they have a positive covariance, and if one decreases while the other increases, they have a negative covariance (a line going down and to the right). 
 
@@ -141,7 +141,11 @@ Notice that when one variable or the other doesn't move at all, and the graph sh
 
 ![Alt text](../img/covariance.png)
 
-The great thing about being able to calculate covariance is that, in a high dimensional space where you can't eyeball intervariable relationships, you will know by the positive, negative or null character of covariance how two variables move together. 
+vs.
+
+![Alt text](../img/variance.png)
+
+The great thing about being able to calculate covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you will know by the positive, negative or non-existent character of covariance how two variables move together. 
 
 The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
 
@@ -155,7 +159,7 @@ In information theory, the term *entropy* refers to information we don't have (n
 
 If you know that a certain coin has heads embossed on both sides, then flipping the coin gives you absolutely no information, because it will be heads every time. You don't have to flip it to know. 
 
-A balanced, two-sided coin does contain an element of surprise with each coin toss. And a six-sided die, by the same argument, contains even more surprise with each roll, which could produce any one of six results with equal frequency. 
+A balanced, two-sided coin does contain an element of surprise with each coin toss. And a six-sided die, by the same argument, contains even more surprise with each roll, which could produce any one of six results with equal frequency. Both those objects contain *information* in the technical sense.
 
 Now let's imagine the die is loaded, it comes up "three" on five out of six rolls, and we figure out the game is rigged. Suddenly the amount of surprise produced with each roll by this die is greatly reduced. We understand a trend in the die's behavior that gives us greater predictive capacity. 
 
