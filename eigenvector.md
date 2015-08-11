@@ -81,7 +81,7 @@ To quote Yoshua Bengio:
 
 ## Principal Component Analysis (PCA)
 
-PCA is a tool for finding patterns in high-dimensional data such as images. 
+PCA is a tool for finding patterns in high-dimensional data such as images. Old-school machine-learning aficionados occasionally use PCA to preprocess data for their neural networks. By centering,  rotating and scaling data, PCA reduces its dimensionality and can improve the neural network's convergence speed and the overall quality of results. 
 
 To get to PCA, we’re going to quickly gloss some basic statistical ideas -- mean, standard deviation, variance and covariance -- so we can weave them together later. Their equations are closely related.
 
@@ -168,8 +168,6 @@ That transfer of information, from *what we don't know* about the system to *wha
 So each principal component cutting through the scatterplot represents a decrease in the system's entropy, in its unpredictability. It so happens that explaining the shape of the data one principal component at a time, beginning with the component that accounts for the most variance, is similar to walking data through a decision tree. 
 
 The first component of PCA, like the first split in a decision tree, should be along the dimension that reduces unpredictability the most. 
-
-Old-school machine-learning aficionados occasionally use PCA to preprocess data for their neural networks. By centering,  rotating and scaling data, PCA reduces its dimensionality and can improve the neural network's convergence speed and the overall quality of results. 
 
 ## Other Resources
 
