@@ -51,9 +51,11 @@ Here you can see the two spaces juxtaposed:
 
 (*Credit: William Gould, Stata Blog*)
 
-And here’s an animation that shows the matrix's work transforming one space to another (the blue lines are eigenvectors):
+And here’s an animation that shows the matrix's work transforming one space to another:
 
 <iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="300px;" style="border:none;"></iframe>
+
+ The blue lines are eigenvectors.
 
 You can imagine a matrix like a gust of wind, an invisible force that produces a visible result. And a gust of wind must blow in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
