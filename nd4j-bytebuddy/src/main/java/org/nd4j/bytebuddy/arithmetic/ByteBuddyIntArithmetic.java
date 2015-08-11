@@ -11,6 +11,14 @@ import net.bytebuddy.jar.asm.Opcodes;
 
 
 /**
+ * Handles actual arithmetic
+ * between 2 numbers:
+ * add
+ * sub
+ * mul
+ * div
+ * mod
+ *
  * @author Adam Gibson
  */
 public class ByteBuddyIntArithmetic implements Implementation {

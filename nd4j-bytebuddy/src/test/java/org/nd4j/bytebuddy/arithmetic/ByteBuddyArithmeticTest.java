@@ -16,7 +16,7 @@ public class ByteBuddyArithmeticTest {
         Class<?> dynamicType = new ByteBuddy()
                 .subclass(Addition.class).method(ElementMatchers.isDeclaredBy(Addition.class))
                 .intercept(new ByteBuddyIntArithmetic(3, 2, ByteBuddyIntArithmetic.Operation.ADD)).make()
-                .load(Addition.class.getClassLoader(), ClassLoadingStrategy.Default.INJECTION)
+                .load(Addition.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
         Addition addition = (Addition) dynamicType.newInstance();
         assertEquals(5,addition.add());
