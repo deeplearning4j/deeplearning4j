@@ -10,12 +10,14 @@ trait CollectionLikeNDArray {
   val underlying: INDArray
   
   def filteri(f: Double => Boolean): INDArray = notCleanedUp { array =>
-    Nd4j.getExecutioner.exec(FilterOps(underlying.linearView(), f)).z().reshape()reshape(underlying.shape():_*)
+    val shape = underlying.shape()
+    Nd4j.getExecutioner.exec(FilterOps(underlying.linearView(), f)).z().reshape(shape:_*)
   }
   def filter(f: Double => Boolean): INDArray = underlying.dup().filteri(f)
 
   def filterBiti(f: Double => Boolean): INDArray = notCleanedUp { array =>
-    Nd4j.getExecutioner.exec(BitFilterOps(underlying.linearView(), f)).z().reshape()reshape(underlying.shape():_*)
+    val shape = underlying.shape()
+    Nd4j.getExecutioner.exec(BitFilterOps(underlying.linearView(), f)).z().reshape(shape:_*)
   }
 
   def filterBit(f: Double => Boolean): INDArray = underlying.dup().filterBiti(f)
