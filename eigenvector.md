@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# A Beginner's Guide to Eigenvectors, PCA and Covariance
+# A Beginner's Guide to Eigenvectors, PCA, Covariance and Entropy
 
 Content: 
 
