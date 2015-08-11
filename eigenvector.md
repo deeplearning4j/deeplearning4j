@@ -13,7 +13,7 @@ Content:
 * [Entropy & Information Gain](#entropy)
 * [Resources](#resources)
 
-This post introduces eigenvectors and their relationship to matrices in plain language and without a great deal of math. 
+This post introduces eigenvectors and their relationship to matrices in plain language and without a great deal of math. It builds on those ideas to explain covariance, principal component analysis, and information entropy. 
 
 The *eigen* in eigenvector comes from German, and it means something like “very own.” For example, in German, “mein eigenes Auto” means “my very own car.” So eigen denotes a special relationship between two things. Something particular, characteristic and definitive. This car, or this vector, is mine and not someone else’s.
 
