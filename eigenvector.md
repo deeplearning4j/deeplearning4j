@@ -165,8 +165,6 @@ So each principal component cutting through the scatterplot represents a decreas
 
 The first component of PCA, like the first split in a decision tree, should be along the dimension that reduces unpredictability the most. 
 
-(*to be continued...*)
-
 ## Other Resources
 
 * [A Tutorial on Principal Components Analysis](http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf)
