@@ -93,10 +93,7 @@ public class TestOptimizers {
             double score = network.score(ds);
             assertTrue(score != 0.0 && !Double.isNaN(score));
 
-            if(PRINT_OPT_RESULTS) {
-                System.out.println("testOptimizersMLP() - " + oa );
-                System.out.println(score);
-            }
+            if(PRINT_OPT_RESULTS) System.out.println("testOptimizersMLP() - " + oa );
 
             int nCallsToOptimizer = 30;
             double[] scores = new double[nCallsToOptimizer + 1];
@@ -106,7 +103,6 @@ public class TestOptimizers {
                 network.computeGradientAndScore();
                 double scoreAfter = network.score();
                 scores[i + 1] = scoreAfter;
-                if(PRINT_OPT_RESULTS) System.out.println(scoreAfter);
                 assertTrue("Score is NaN after optimization", !Double.isNaN(scoreAfter));
                 assertTrue("OA= " + oa+", before= " + score + ", after= " + scoreAfter,scoreAfter < score);
                 score = scoreAfter;
