@@ -5,9 +5,9 @@ layout: default
 
 # Deep-Belief Networks
 
-For our purposes, a deep-belief network can be defined as a stack of restricted Boltzmann machines in which each layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. 
+A deep-belief network can be defined as a stack of [restricted Boltzmann machines](../restrictedboltzmannmachine.html) in which each layer communicates with both the previous and subsequent layers. The nodes of any single layer don't communicate with each other laterally. This stack of RBMs typically ends with a classification unit such as Softmax. 
 
-With the exception of the first and final layers, each hidden layer has a double role: it serves as the hidden layer to the higher nodes that come before it, and as the input (or visible) layer to the lower nodes that come after. It is a network of single-layer networks. 
+With the exception of the first and final layers, each hidden layer has a double role: it serves as the hidden layer to the nodes that come before it, and as the input (or visible) layer to the nodes that come after. It is a network of single-layer networks. 
 
 Deep-belief networks are used to recognize and generate images, video sequences and motion-capture data. A continuous deep-belief network is simply an extension of a deep-belief network that accepts a continuum of decimals, rather than binary data. 
 
@@ -35,4 +35,4 @@ Note that the *eval* class combines [confusion matrices](../glossary.html#confus
 
 F1 scores are expressed as percentages. They are basically the probability that your net's guesses are correct. To improve the performance of nets, you can tune them by modifying the number and size of the hidden layers, and tweaking other parameters such as learning rate, momentum, weight distribution and various types of regularization.
 
-Next, we'll show you how to use [distributed and multithreaded computing](../iterativereduce.html) to train your networks more quickly. To read about another type of deep net, the deep autoencoder, [click here](../deepautoencoder.html). 
+Next, we'll show you how to use [distributed and multithreaded computing](../iterativereduce.html) to train your networks more quickly. To read about another type of deep network, the deep autoencoder, [click here](../deepautoencoder.html). 
