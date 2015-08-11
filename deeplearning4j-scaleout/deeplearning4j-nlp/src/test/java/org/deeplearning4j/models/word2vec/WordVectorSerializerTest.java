@@ -24,16 +24,12 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.plot.BarnesHutTsne;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.linalg.factory.Nd4j;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -43,7 +39,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class WordVectorSerializerTest {
 
-    private File textFile, binaryFile;
+    private File textFile, binaryFile, textFile2;
     String pathToWriteto;
 
     @Before
@@ -68,11 +64,18 @@ public class WordVectorSerializerTest {
     }
 
     @Test
-    public void testLoaderBinary() throws  IOException {
+    public void testLoaderBinary() throws IOException {
         Word2Vec vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
         assertEquals(vec.vocab().numWords(), 30);
         assertTrue(vec.vocab().hasToken("Morgan_Freeman"));
-        assertTrue(vec.vocab().hasToken("JA_Montalbano"));    }
+        assertTrue(vec.vocab().hasToken("JA_Montalbano"));
+        double[] wordVector1 = vec.getWordVector("Morgan_Freeman");
+        double[] wordVector2 = vec.getWordVector("JA_Montalbano");
+        assertTrue(wordVector1.length == 300);
+        assertTrue(wordVector2.length == 300);
+        assertEquals(Doubles.asList(wordVector1).get(0), 0.044423, 1e-3);
+        assertEquals(Doubles.asList(wordVector2).get(0), 0.051964, 1e-3);
+    }
 
     @Test
     public void testWriteWordVectors() throws IOException {
@@ -120,17 +123,17 @@ public class WordVectorSerializerTest {
         assertEquals(Doubles.asList(wordVector2).get(0), 0.051964, 1e-3);
     }
 
-    @Test
-    public void testTsne() throws Exception {
-        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-        ClassPathResource resource = new ClassPathResource("words.txt");
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
-                .theta(0.5).learningRate(500).setMaxIter(2).build();
-        WordVectors vec = WordVectorSerializer.loadTxtVectors(resource.getFile());
-        InMemoryLookupTable table = (InMemoryLookupTable) vec.lookupTable();
-        List<String> labels = new ArrayList<>(vec.vocab().words());
-        tsne.plot(table.getSyn0().divRowVector(table.getSyn0().norm2(0)), 2, labels);
-    }
+//    @Test
+//    public void testTsne() throws Exception {
+//        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+//        ClassPathResource resource = new ClassPathResource("words.txt");
+//        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
+//                .theta(0.5).learningRate(500).setMaxIter(2).build();
+//        WordVectors vec = WordVectorSerializer.loadTxtVectors(resource.getFile());
+//        InMemoryLookupTable table = (InMemoryLookupTable) vec.lookupTable();
+//        List<String> labels = new ArrayList<>(vec.vocab().words());
+//        tsne.plot(table.getSyn0().divRowVector(table.getSyn0().norm2(0)), 2, labels);
+//    }
 
 //    public static float readFloat(InputStream is) throws IOException {
 //        byte[] bytes = new byte[4];
