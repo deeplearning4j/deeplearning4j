@@ -28,7 +28,7 @@ Word2vec's applications extend beyond parsing natural-language sentences occurri
 
 Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
 
-Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, sentiment analysis and recommendations. 
+Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, sentiment analysis and recommendations in diverse fields such as scientific research, legal discovery, e-commerce and customer relationship management. 
 
 The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net. 
 
