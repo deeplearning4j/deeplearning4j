@@ -69,6 +69,10 @@ A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwor
 
 The code would look something like this:
 
+        final int numRows = 28;
+        final int numColumns = 28;
+        int outputNum = 10;
+        
         log.info("Load data....");
         DataSetIterator iter = new MnistDataSetIterator(batchSize,numSamples,true);
 
@@ -94,9 +98,8 @@ The code would look something like this:
                 .layer(6, new RBM.Builder().nIn(100).nOut(250).build())
                 .layer(7, new RBM.Builder().nIn(250).nOut(500).build())
                 .layer(8, new RBM.Builder().nIn(500).nOut(1000).build())
-                .layer(9, new OutputLayer.Builder(LossFunction.RMSE_XENT).activation("softmax")
-                	.nIn(1000).nOut(outputNum).build())
-		.pretrain(true).backprop(true)
+                .layer(9, new OutputLayer.Builder(LossFunction.RMSE_XENT).
+                	.nIn(1000).nOut(numRows*numColumns).build())
                 .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
