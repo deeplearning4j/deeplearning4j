@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -16,6 +17,11 @@ import static org.junit.Assume.*;
  * @author Adam Gibson
  */
 public class ShapeResolutionTestsC extends BaseNd4jTest {
+
+    public ShapeResolutionTestsC(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     @Test
     public void testRowVectorShapeOneZeroOffset() {
         INDArray arr = Nd4j.create(2, 2);
