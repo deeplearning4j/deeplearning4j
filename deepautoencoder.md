@@ -13,6 +13,8 @@ The layers are [restricted Boltzmann machines](../restrictedboltzmannmachine.htm
 
 Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
 
+### Encoding
+
 Let’s sketch out an example encoder:
     
      784 (input) ----> 1000 ----> 500 ----> 250 ----> 100 -----> 30
@@ -27,7 +29,7 @@ This is due to the representational capacity of sigmoid-belief units, a form of 
 
 The layers will be 1000, 500, 250, 100 nodes wide, respectively, until the end, where the net produces a vector 30 numbers long. This 30-number vector is the last layer of the first half of the deep autoencoder, the pretraining half, and it is the product of a normal RBM, rather than an classification output layer such as Softmax or logistic regression, as you would normally see at the end of a deep-belief network. 
 
-### The Decoding Half
+### Decoding
 
 Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the condensed vector, which becomes the input as it makes its way back.
 
@@ -41,6 +43,8 @@ The decoding half of a deep autoencoder is the part that learns to reconstruct t
 
 At the stage of the decoder’s backpropagation, the learning rate should be lowered, or made slower: somewhere between 1e-3 and 1e-6, depending on whether you’re handling binary or continuous data, respectively.
 
+## Use Cases
+
 ### Image Search
 
 As we mentioned above, deep autoencoders are capable of compressing images into 30-number vectors. 
@@ -49,7 +53,7 @@ Image search, therefore, becomes a matter of uploading an image, which the searc
 
 Vectors containing similar numbers will be returned for the search query, and translated into their matching image. 
 
-### Data compression
+### Data Compression
 
 A more general case of image compression is data compression. Deep autoencoders are useful for [semantic hashing](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf), as discussed in this paper by Geoff Hinton.
 
@@ -66,6 +70,8 @@ The scaled word counts are then fed into a deep-belief network, a stack of restr
 Each document’s number set, or vector, is then introduced to the same vector space, and its distance from every other document-vector measured. Roughly speaking, nearby document-vectors fall under the same topic. 
 
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
+
+## Code Sample
 
 A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwork class](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java).
 
