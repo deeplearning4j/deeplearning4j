@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.iterator;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Iterator;
 
@@ -12,6 +13,10 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class NDIndexIteratorTest extends BaseNd4jTest {
+
+    public NDIndexIteratorTest(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
     @Test
     public void testIterate() {
