@@ -95,6 +95,22 @@ public class Ind2SubGeneration {
             return manipulations.toArray(new StackManipulation[manipulations.size()]);
         }
 
+
+        private StackManipulation[] mod(int val1,int val2) {
+            return new StackManipulation[] {IntegerConstant.forValue(val1),
+                    IntegerConstant.forValue(val2),
+                    IntegerMod.INSTANCE,
+                    MethodReturn.INTEGER};
+        }
+
+        private StackManipulation[] div(int val1,int val2) {
+            return new StackManipulation[] {IntegerConstant.forValue(val1),
+                    IntegerConstant.forValue(val2),
+                    IntegerDivision.INSTANCE,
+                    MethodReturn.INTEGER};
+        }
+
+
         private StackManipulation[] times(int val1,int val2) {
             return new StackManipulation[] {IntegerConstant.forValue(val1),
                     IntegerConstant.forValue(val2),
