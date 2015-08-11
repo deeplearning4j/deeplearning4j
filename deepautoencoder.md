@@ -5,7 +5,7 @@ layout: default
 
 # Deep Autoencoders
 
-A deep autoencoder are a sort of double [deep-belief network](../deepbeliefnetwork.html) that typically has four or five layers to represent the encoder itself, which is just one half of the net, and second set of four or five layers that make up the decoding half. 
+A deep autoencoder is composed of two, symmetrical [deep-belief networks](../deepbeliefnetwork.html) that typically have four or five shallow layers representing the encoding half of the net, and second set of four or five layers that make up the decoding half.
 
 The layers are [restricted Boltzmann machines](../restrictedboltzmannmachine.html), the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. 
 
