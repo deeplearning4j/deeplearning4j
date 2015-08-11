@@ -27,7 +27,9 @@ Matrices are useful because you can do things with them like add and multiply. I
 
 *Av = b* 
 
-It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers *v* to another, *b*.  We’ll illustrate with a concrete example. 
+It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers *v* to another, *b*.  
+
+We’ll illustrate with a concrete example. 
 
 ![Alt text](../img/eigen_matrix.png)
 
@@ -41,7 +43,7 @@ Imagine that all the input vectors *v* live in a normal grid, like this:
 
 ![Alt text](../img/space_1.png)
 
-And all the matrix projects them into a new space like the one below, which holds the output vectors *b*:
+And the matrix projects them all into a new space like the one below, which holds the output vectors *b*:
 
 ![Alt text](../img/space_2.png)
 
@@ -55,19 +57,19 @@ And here’s an animation that shows the matrix's work transforming one space to
 
 <iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="300px;" style="border:none;"></iframe>
 
- The blue lines are eigenvectors.
+The blue lines are eigenvectors.
 
 You can imagine a matrix like a gust of wind, an invisible force that produces a visible result. And a gust of wind must blow in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
 ![Alt text](../img/mona_lisa_eigenvector.png)
 
-So out of all the vectors affected by a matrix blowing through one space, which one is the eigenvector? It’s the one that doesn’t change direction; that is, the eigenvector is already pointing in the same direction that the matrix is pushing all vectors toward. An eigenvector is a like a weathervane, pointing in the direction of the wind. 
+So out of all the vectors affected by a matrix blowing through one space, which one is the eigenvector? It’s the one that doesn’t change direction; that is, the eigenvector is already pointing in the same direction that the matrix is pushing all vectors toward. An eigenvector is a like a weathervane. An eigenvane, as it were. 
 
-You could also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
+You might also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
 
-Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides, square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix would have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix would have n eigenvectors, each one representing its line of action in one dimension. 
+Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides (each serving a distinct purpose), square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix would have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix would have n eigenvectors, each one representing its line of action in one dimension. 
 
-Because eigenvectors distill the axes of principal force that a matrix moves along, they are useful in matrix decomposition, or matrix vectorization; i.e. the representation of a matrix by a vector. In that sense, they perform the same task as autoencoders. 
+Because eigenvectors distill the axes of principal force that a matrix moves along, they are useful in matrix decomposition, or matrix vectorization; i.e. the representation of a matrix by a vector. In that sense, they perform the same task as the autoencoders employed by deep neural networks. 
 
 To quote Yoshua Bengio:
 
@@ -83,15 +85,15 @@ To quote Yoshua Bengio:
 
 ## Principal Component Analysis (PCA)
 
-PCA is a tool for finding patterns in high-dimensional data such as images. Old-school machine-learning aficionados occasionally use PCA to preprocess data for their neural networks. By centering,  rotating and scaling data, PCA reduces its dimensionality and can improve the neural network's convergence speed and the overall quality of results. 
+PCA is a tool for finding patterns in high-dimensional data such as images. Old-school machine-learning practitioners occasionally use PCA to preprocess data for their neural networks. By centering, rotating and scaling data, PCA reduces its dimensionality and can improve the neural network's convergence speed and the overall quality of results. 
 
-To get to PCA, we’re going to quickly gloss some basic statistical ideas -- mean, standard deviation, variance and covariance -- so we can weave them together later. Their equations are closely related.
+To get to PCA, we’re going to quickly define some basic statistical ideas -- *mean, standard deviation, variance* and *covariance* -- so we can weave them together later. Their equations are closely related.
 
 *Mean* is simply the average value of all *x*'s in the set X, which is found by dividing the sum of all data points by the number of data points, *n*.
 
 ![Alt text](../img/mean.png)
 
-*Standard deviation* is "the average distance from the mean of the data set to a point." In the equation below, we have the sum of the differences between each datapoint and the mean in the numerator, and number of data points (minus one) in the denominator, producing the average.
+*Standard deviation* is "the average distance from the mean of the data set to a point." In the equation below, in the numerator, we have the sum of the differences between each datapoint and the mean, and in the denominator, we have the number of data points (minus one), producing the average distance.
 
 ![Alt text](../img/standard_deviation.png)
 
@@ -103,13 +105,13 @@ Variance is simply standard deviation squared, and is often expressed as *s^2*.
 
 ![Alt text](../img/variance.png)
 
-Squaring the differences between data points and the mean makes them positive, so that values above and below the mean don't cancel each other out. 
+For both variance and standard deviation, squaring the differences between data points and the mean makes them positive, so that values above and below the mean don't cancel each other out. 
 
 Let's assume you plotted the age (x axis) and height (y axis) of those indivuals and came up with an oblong scatterplot:
 
 ![Alt text](../img/scatterplot.png)
 
-PCA draws straight, explanatory lines through data, like linear regression. 
+PCA attempts to draw straight, explanatory lines through data, like linear regression. 
 
 Each straight line represents a "principal component," or a relationship between an independent and dependent variable. While there are as many principal components as there are dimensions in the data, PCA's role is to prioritize them. 
 
@@ -121,13 +123,13 @@ The second principal component cuts through the data nearly perpendicular to the
 
 ## Covariance Matrix
 
-While we introduced matrices as something that transformed one set of vectors into another, another way to think about them is as a description of data that captures the the forces at work upon it, the forces by which two variables might relate to each other as expressed by their variance and covariance.
+While we introduced matrices as something that transformed one set of vectors into another, another way to think about them is as a description of data that captures the the forces at work upon it, the forces by which two variables might relate to each other as expressed by their variance and covariance. 
 
 Imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. Like many many other matrices, it has its very own eigenvectors. 
 
 Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-component lines to the variance of the data. 
 
-*Eigenvalues*, another term you will encounter, are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. By ordering your eigenvectors by eigenvalue, highest to lowest, you get the principal components in order of significance.
+*Eigenvalues* are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. By ranking your eigenvectors in order of their eigenvalues, highest to lowest, you get the principal components in order of significance.
 
 For a 2 x 2 matrix, a covariance matrix might look like this:
 
@@ -149,15 +151,15 @@ vs.
 
 ![Alt text](../img/variance.png)
 
-The great thing about being able to calculate covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you will know by the positive, negative or non-existent character of covariance how two variables move together. 
+The great thing about calculating covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you can know  how two variables move together by the positive, negative or non-existent character of their covariance.
 
-The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the same distance in the same direction.
+The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the *same distance* in the same direction.
 
 To sum up, the covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
 
-While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
+Causality has a bad name in statistics, so take this with a grain of salt: While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
 
-Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. 
+Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. You rebase the coordinate system for the dataset in a new space defined by its principal components.
 
 ## Entropy & Information Gain
 
