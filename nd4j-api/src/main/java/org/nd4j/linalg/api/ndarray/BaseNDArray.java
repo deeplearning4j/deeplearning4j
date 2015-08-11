@@ -577,14 +577,13 @@ public abstract class BaseNDArray implements INDArray {
      * @param ordering
      */
     public BaseNDArray(float[][] data,char ordering) {
-        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length, data[0].length},ordering);
+        this(Nd4j.createBuffer(ArrayUtil.flatten(data)), new int[]{data.length, data[0].length},Nd4j.getStrides(new int[]{data.length, data[0].length},ordering),0,ordering);
 
         for (int r = 0; r < rows; r++) {
             assert (data[r].length == columns);
         }
 
         this.data = Nd4j.createBuffer(length);
-
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < columns; c++) {
