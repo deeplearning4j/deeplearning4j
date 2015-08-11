@@ -25,18 +25,13 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.plot.Tsne;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -52,13 +47,13 @@ import static org.junit.Assert.assertTrue;
 
 
 /**
- * Created by agibsonccc on 8/31/14.
+ * @author jeffreytang
  */
 public class Word2VecTests {
 
     private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
 
-    private File binaryFile, textFile, inputFile;
+    private File inputFile;
     private String pathToWriteto;
     private Word2Vec googleModel;
 
@@ -67,8 +62,6 @@ public class Word2VecTests {
         File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
-        binaryFile = new ClassPathResource("word2vecserialization/raw_sentence_word2vec.bin.gz").getFile();
-        textFile = new ClassPathResource("word2vecserialization/raw_sentence_word2vec.txt").getFile();
         pathToWriteto = "testing_word2vec_serialization.txt";
         FileUtils.deleteDirectory(new File("word2vec-index"));
     }
@@ -96,15 +89,6 @@ public class Word2VecTests {
         List<Object> lst = Arrays.asList(googleModel.wordsNearest("Benkovic", 10).toArray());
         assertEquals(lst.get(0), "Gopie");
         assertEquals(lst.get(1), "JIM_HOOK_Senior");
-    }
-
-    @Test
-    public void testIND() {
-        INDArray arr = Nd4j.arange(1, 5);
-        System.out.println(Arrays.toString(arr.shape()));
-        System.out.println(Transforms.unitVec(arr));
-        INDArray arr2 = Nd4j.concat(0, arr, arr);
-        System.out.println(Transforms.unitVec(arr2));
     }
 
     @Test
@@ -151,48 +135,40 @@ public class Word2VecTests {
         if (!modelFile.exists()) {
             testRunWord2Vec();
         }
-        WordVectors wordVectors = WordVectorSerializer.loadGoogleModel(modelFile, false);
-//        [CHILDREN, ALSO, YEAR, you, used, DOWN, WAR, Did, going, more]
-//        0.8146713972091675
+        WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(modelFile);
         Collection<String> lst = wordVectors.wordsNearest("day", 10);
         System.out.println(Arrays.toString(lst.toArray()));
     }
 
-
-
-
-    @Test
-    public void testWord2VecRunThroughVectorsTsne() throws Exception {
-        ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
-        File file = resource.getFile().getParentFile();
-        SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
-        new File("cache.ser").delete();
-
-
-        TokenizerFactory t = new UimaTokenizerFactory();
-
-
-        Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(1).iterations(5)
-                .layerSize(100)
-                .stopWords(new ArrayList<String>())
-                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
-
-        assertEquals(new ArrayList<String>(), vec.getStopWords());
-
-
-        vec.fit();
-        Tsne calculation = new Tsne.Builder().setMaxIter(1).usePca(false).setSwitchMomentumIteration(20)
-                .normalize(true).useAdaGrad(true).learningRate(500f).perplexity(20f).minGain(1e-1f)
-                .build();
-
-        vec.lookupTable().plotVocab(calculation);
-        WordVectorSerializer.writeTsneFormat(vec,calculation.getY(),new File("test.csv"));
-        double sim = vec.similarity("Adam","deeplearning4j");
-        new File("cache.ser").delete();
-
-
-
-    }
+//    @Test
+//    public void testWord2VecRunThroughVectorsTsne() throws Exception {
+//        ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
+//        File file = resource.getFile().getParentFile();
+//        SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
+//        new File("cache.ser").delete();
+//
+//        TokenizerFactory t = new UimaTokenizerFactory();
+//
+//        Word2Vec vec = new Word2Vec.Builder()
+//                .minWordFrequency(1).iterations(5)
+//                .layerSize(100)
+//                .stopWords(new ArrayList<String>())
+//                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
+//
+//        assertEquals(new ArrayList<String>(), vec.getStopWords());
+//
+//        vec.fit();
+//        Tsne calculation = new Tsne.Builder().setMaxIter(1).usePca(false).setSwitchMomentumIteration(20)
+//                .normalize(true).useAdaGrad(true).learningRate(500f).perplexity(20f).minGain(1e-1f)
+//                .build();
+//
+//        vec.lookupTable().plotVocab(calculation);
+//        WordVectorSerializer.writeTsneFormat(vec,calculation.getY(),new File("test.csv"));
+//        double sim = vec.similarity("Adam","deeplearning4j");
+//        new File("cache.ser").delete();
+//
+//
+//
+//    }
 
 }
