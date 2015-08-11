@@ -111,6 +111,10 @@ Or, run the following command to execute TestSuite with only specified backend e
 - nd4j-netlib-blas
 - nd4j-x86
 
+Or, run the following command to execute only specified tests in TestSuite with only specified backend.
+
+     mvn test -pl nd4j-XXX -Dorg.nd4j.linalg.tests.classestorun=org.nd4j.linalg.YYY -Dorg.nd4j.linalg.tests.methods=ZZZ
+
 ---
 ## Contribute
 

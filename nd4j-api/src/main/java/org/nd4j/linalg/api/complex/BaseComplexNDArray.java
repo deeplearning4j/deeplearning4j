@@ -1329,7 +1329,43 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray putSlice(int slice, IComplexNDArray put) {
-        return (IComplexNDArray) super.putSlice(slice,put);
+        ensureNotCleanedUp();
+        if (isScalar()) {
+            assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
+            put(0, put.getScalar(0));
+            return this;
+        } else if (isVector()) {
+            assert put.isScalar() || put.isVector() &&
+                    put.length() == length() : "Invalid dimension on insertion. Can only insert scalars input vectors";
+            if (put.isScalar())
+                putScalar(slice, put.getComplex(0));
+            else
+                for (int i = 0; i < length(); i++)
+                    putScalar(i, put.getComplex(i));
+
+            return this;
+        }
+
+        assertSlice(put, slice);
+
+        IComplexNDArray view = slice(slice);
+
+        if (put.length() == 1)
+            putScalar(slice, put.getComplex(0));
+        else if (put.isVector())
+            for (int i = 0; i < put.length(); i++)
+                view.putScalar(i, put.getComplex(i));
+        else {
+
+            assert Shape.shapeEquals(view.shape(),put.shape());
+            IComplexNDArray linear = (IComplexNDArray)view.linearView();
+            IComplexNDArray putLinearView = put.linearView();
+            for(int i = 0; i < linear.length(); i++) {
+                linear.putScalar(i,putLinearView.getComplex(i));
+            }
+        }
+
+        return this;
     }
 
 
@@ -2856,7 +2892,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
     @Override
     public IComplexNDArray add(IComplexNumber n) {
-        return addi(n, this);
+        return dup().addi(n);
     }
 
     @Override
