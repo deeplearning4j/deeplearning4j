@@ -5,7 +5,7 @@ layout: default
 
 # Deep Autoencoders
 
-A deep autoencoder are a sort of compound [deep-belief network](../deepbeliefnetwork.html) that typically has four or five layers to represent the encoder itself, which is just one half of the net, and second set of four or five layers that make up the decoding half. 
+A deep autoencoder are a sort of double [deep-belief network](../deepbeliefnetwork.html) that typically has four or five layers to represent the encoder itself, which is just one half of the net, and second set of four or five layers that make up the decoding half. 
 
 The layers are [restricted Boltzmann machines], the building blocks of deep-belief networks, with several peculiarities that we'll discuss below. 
 
@@ -47,6 +47,10 @@ Image search, therefore, becomes a matter of uploading an image, which the searc
 
 Vectors containing similar numbers will be returned for the search query, and translated into their matching image. 
 
+### Data compression
+
+A more general case of image compression is data compression. Deep autoencoders are useful for [semantic hashing](https://www.cs.utoronto.ca/~rsalakhu/papers/semantic_final.pdf), for example.
+
 ### Topic Modeling & Information Retrieval (IR)
 
 Deep autoencoders are useful in topic modeling, or statistically modeling abstract topics that are distributed across a collection of documents. 
@@ -62,5 +66,40 @@ Each document’s number set, or vector, is then introduced to the same vector s
 For example, one document could be the “question” and others could be the “answers,” a match the software would make using vector-space measurements. 
 
 A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwork class](https://github.com/deeplearning4j/deeplearning4j/blob/3e934e0128e443a0e187f5aea7a3b8677d9a6568/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java).
+
+The code would look something like this:
+
+        log.info("Load data....");
+        DataSetIterator iter = new MnistDataSetIterator(batchSize,numSamples,true);
+
+        log.info("Build model....");
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.01))
+                .seed(seed)
+                .constrainGradientToUnitNorm(true)
+                .iterations(iterations)
+                .updater(Updater.ADAGRAD)
+                .momentum(0.5)
+                .momentumAfter(Collections.singletonMap(3, 0.9))
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .visibleUnit(RBM.VisibleUnit.BINARY)
+                .hiddenUnit(RBM.HiddenUnit.BINARY)
+                .list(9)
+                .layer(0, new RBM.Builder().nIn(numRows*numColumns).nOut(1000).build())
+                .layer(1, new RBM.Builder().nIn(1000).nOut(500).build())
+                .layer(2, new RBM.Builder().nIn(500).nOut(250).build())
+                .layer(3, new RBM.Builder().nIn(250).nOut(100).build())
+                .layer(4, new RBM.Builder().nIn(100).nOut(30).build()) //encoding stops
+                .layer(5, new RBM.Builder().nIn(30).nOut(100).build()) //decoding starts
+                .layer(6, new RBM.Builder().nIn(100).nOut(250).build())
+                .layer(7, new RBM.Builder().nIn(250).nOut(500).build())
+                .layer(8, new RBM.Builder().nIn(500).nOut(1000).build())
+                .layer(9, new OutputLayer.Builder(LossFunction.RMSE_XENT).activation("softmax")
+                	.nIn(1000).nOut(outputNum).build())
+		.pretrain(true).backprop(true)
+                .build();
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
 
 For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 
