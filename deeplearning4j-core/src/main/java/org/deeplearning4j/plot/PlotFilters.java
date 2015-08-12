@@ -2,6 +2,7 @@ package org.deeplearning4j.plot;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
@@ -117,9 +118,9 @@ public class PlotFilters {
                     int rowEnd = tileRow * (h + hs) + h;
                     int colBegin = tileCol * (w + ws);
                     int colEnd = tileCol * (w + ws) + w;
-                    NDArrayIndex rowIndex = NDArrayIndex.interval(rowBegin,rowEnd);
-                    NDArrayIndex colIndex = NDArrayIndex.interval(colBegin,colEnd);
-                    ret.put(new NDArrayIndex[]{rowIndex,colIndex},image);
+                    INDArrayIndex rowIndex = NDArrayIndex.interval(rowBegin,rowEnd);
+                    INDArrayIndex colIndex = NDArrayIndex.interval(colBegin,colEnd);
+                    ret.put(new INDArrayIndex[]{rowIndex,colIndex},image);
 
 
                 }
