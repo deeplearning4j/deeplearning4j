@@ -55,10 +55,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.convolutionType = convolutionType;
         }
 
-        public Builder(int[] kernelSize, Convolution.Type convolutionType) {
-            this.kernelSize = kernelSize;
-            this.convolutionType = convolutionType;
-        }
+
 
         public Builder(int[] kernelSize) {
             this.kernelSize = kernelSize;
