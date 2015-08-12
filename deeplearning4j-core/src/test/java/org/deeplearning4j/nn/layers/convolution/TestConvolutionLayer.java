@@ -74,7 +74,7 @@ public class TestConvolutionLayer {
 
 
     private static Layer getCNNConfig(int nIn, int nOut, int kernelWidth, int kernelHeight, int[] stride, int[] padding){
-       ConvolutionLayer layer = new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight}, Convolution.Type.SAME)
+       ConvolutionLayer layer = new ConvolutionLayer.Builder(new int[]{kernelWidth, kernelHeight},stride,padding)
                .nIn(nIn)
                .nOut(nOut)
                .build();

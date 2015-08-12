@@ -903,6 +903,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
                     l1,customLossFunction);
 
+            ret.padding = this.padding;
+            ret.stride = this.stride;
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
