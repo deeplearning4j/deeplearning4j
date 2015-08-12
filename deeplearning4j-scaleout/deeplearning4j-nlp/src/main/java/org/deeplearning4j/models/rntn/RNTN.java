@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -345,9 +346,9 @@ public class RNTN implements Layer {
         INDArray binary = Nd4j.create(numHidden, numHidden * 2 + 1);
         // bias column values are initialized zero
         INDArray block = randomTransformBlock();
-        NDArrayIndex[] indices = new INDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())};
+        INDArrayIndex[] indices = new INDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())};
         binary.put(indices,block);
-        NDArrayIndex[] indices2 = new INDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
+        INDArrayIndex[] indices2 = new INDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
         binary.put(indices2,randomTransformBlock());
         Nd4j.getBlasWrapper().level1().scal(binary.length(),scalingForInit,binary);
         return binary;
