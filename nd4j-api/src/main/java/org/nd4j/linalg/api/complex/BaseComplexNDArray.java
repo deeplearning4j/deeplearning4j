@@ -1301,7 +1301,6 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
      */
     @Override
     public IComplexNDArray putSlice(int slice, IComplexNDArray put) {
-        ensureNotCleanedUp();
         if (isScalar()) {
             assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
             put(0, put.getScalar(0));
