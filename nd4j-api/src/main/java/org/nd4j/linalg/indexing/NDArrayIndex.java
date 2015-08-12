@@ -312,7 +312,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the index ranges.
      */
     public static INDArrayIndex[] rangeOfLength(INDArrayIndex[] indexes) {
-        INDArrayIndex[] indexesRet = new NDArrayIndex[indexes.length];
+        INDArrayIndex[] indexesRet = new INDArrayIndex[indexes.length];
         for(int i = 0; i < indexes.length; i++)
             indexesRet[i] = NDArrayIndex.interval(0,indexes[i].length());
         return indexesRet;
