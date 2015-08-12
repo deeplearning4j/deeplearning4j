@@ -4,6 +4,8 @@ layout: default
 
 # Movie Review Sentiment Analysis With Word2Vec and DBNs
 
+(*The code in this tutorial is out of date, so we'll be updating it soon. The [Word2vec page](../word2vec.html), however, is current.*)
+
 In this post, we're going to walk through a sentiment analysis of movie reviews using the Rotten Tomatoes dataset. 
 
 You'll need to download the dataset from Kaggle (registration required):
