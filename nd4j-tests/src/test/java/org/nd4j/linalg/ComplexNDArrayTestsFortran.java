@@ -526,6 +526,31 @@ public  class ComplexNDArrayTestsFortran extends BaseComplexNDArrayTests  {
         assertEquals(6, sum, 1e-1);
     }
 
+    @Test
+    public void testComplexCalculation() {
+        IComplexNDArray arr = Nd4j.createComplex(
+                new IComplexNumber[][]{{Nd4j.createComplexNumber(1, 1), Nd4j.createComplexNumber(2, 1)},
+                        {Nd4j.createComplexNumber(3, 2), Nd4j.createComplexNumber(4, 2)}});
+
+        IComplexNumber scalar =  arr.sumComplex();
+        double sum = scalar.realComponent().doubleValue();
+        assertEquals(10, sum, 1e-1);
+
+        double sumImag = scalar.imaginaryComponent().doubleValue();
+        assertEquals(6, sumImag, 1e-1);
+
+        IComplexNDArray res = arr.add(Nd4j.createComplexNumber(1, 1));
+        scalar = res.sumComplex();
+        sum = scalar.realComponent().doubleValue();
+        assertEquals(14, sum, 1e-1);
+        sumImag = scalar.imaginaryComponent().doubleValue();
+        assertEquals(10, sumImag, 1e-1);
+
+        //original array should keep as it is
+        sum = arr.sumComplex().realComponent().doubleValue();
+        assertEquals(10, sum, 1e-1);
+    }
+
 
     @Test
     public void testElementWiseOps() {
