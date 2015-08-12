@@ -96,7 +96,7 @@ public class SubsampleTests {
         DataSet mnist = mnistIter.next();
         INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
 
-        INDArray activations = model.activate(input);
+        model.activate(input);
 
         Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
         assertEquals(4, out.getSecond().shape().length);
@@ -111,7 +111,7 @@ public class SubsampleTests {
         DataSet mnist = mnistIter.next();
         INDArray input = mnist.getFeatureMatrix().reshape(mnist.numExamples(), 1, 28, 28);
 
-        INDArray activations = model.activate(input);
+        model.activate(input);
 
         Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
         assertEquals(4, out.getSecond().shape().length);
