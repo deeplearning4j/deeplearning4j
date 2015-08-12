@@ -74,7 +74,7 @@ If you're using IntelliJ as your IDE, this should work already.
 
 For users who have never `git cloned` Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
 
-      git clone https://github.com/deeplearning4j/deeplearning4j/ setup.sh
+      git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh
 
 ### <a name="source">Working With Source</a>
 
