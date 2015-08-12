@@ -12,19 +12,30 @@ import static org.junit.Assert.*;
  */
 public class ByteBuddyArithmeticTest {
     @Test
-    public void testAddition() throws Exception {
-        Class<?> dynamicType = new ByteBuddy()
-                .subclass(Addition.class).method(ElementMatchers.isDeclaredBy(Addition.class))
-                .intercept(new ByteBuddyIntArithmetic(3, 2, ByteBuddyIntArithmetic.Operation.ADD)).make()
-                .load(Addition.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded();
-        Addition addition = (Addition) dynamicType.newInstance();
-        assertEquals(5,addition.add());
+    public void testOperations() throws Exception {
+        int[] results = new int[]{
+                5,1,6,1,1
+        };
+        //ADD,SUB,MUL,DIV,MOD
+        ByteBuddyIntArithmetic.Operation[] ops = ByteBuddyIntArithmetic.Operation.values();
+
+
+        for(int i = 0; i < results.length; i++) {
+            Class<?> dynamicType = new ByteBuddy()
+                    .subclass(Arithmetic.class).method(ElementMatchers.isDeclaredBy(Arithmetic.class))
+                    .intercept(new ByteBuddyIntArithmetic(3, 2, ops[i])).make()
+                    .load(Arithmetic.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                    .getLoaded();
+            Arithmetic addition = (Arithmetic) dynamicType.newInstance();
+            assertEquals("Failed on " + i, results[i], addition.calc());
+        }
+
     }
 
 
-    public interface Addition {
-        int add();
+
+    public interface Arithmetic {
+        int calc();
     }
 
 }
