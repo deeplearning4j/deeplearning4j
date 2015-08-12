@@ -44,7 +44,7 @@ public class NeuralNetConfLayerBuilderTest {
         double newDrop = 0.5;
         int[] newFS = new int[]{3, 3};
         int newFD = 7;
-        int[] newStride = new int[]{3, 3};
+        int[] newStride = new int[]{2, 2};
         Convolution.Type newConvType = Convolution.Type.SAME;
         PoolingType newPoolType = PoolingType.AVG;
         double newCorrupt = 0.5;
@@ -105,7 +105,7 @@ public class NeuralNetConfLayerBuilderTest {
         Layer pool = LayerFactories.getFactory(poolConf.getLayer()).create(poolConf);
 
         assertTrue(pool.conf().getPoolingType() == newPoolType);
-        assertTrue(pool.conf().getStride() == newStride);
+        assertArrayEquals(pool.conf().getStride(), newStride);
 
         // AutoEncoder layer
         NeuralNetConfiguration autoConf = new NeuralNetConfiguration.Builder()
