@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -115,7 +116,7 @@ public class SubsamplingLayer extends BaseLayer {
                 Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
                 while(iter.hasNext()) {
                     int[] next = iter.next();
-                    NDArrayIndex[] indexes = NDArrayIndex.indexesFor(next);
+                    INDArrayIndex[] indexes = NDArrayIndex.indexesFor(next);
                     reverse.get(indexes).put(indexes,epsilon.get(indexes));
                 }
 
