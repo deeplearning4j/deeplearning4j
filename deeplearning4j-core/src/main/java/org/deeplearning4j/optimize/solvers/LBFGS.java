@@ -63,13 +63,8 @@ public class LBFGS extends BaseOptimizer {
 
     @Override
     public void preProcessLine() {
-        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
-        INDArray searchDir = (INDArray) searchState.get(SEARCH_DIR);
-        if(searchDir == null){
-            searchState.put(SEARCH_DIR, gradient);
-        } else {
-            searchDir.assign(gradient);
-        }
+    	if(!searchState.containsKey(SEARCH_DIR))
+    		searchState.put(SEARCH_DIR, ((INDArray)searchState.get(GRADIENT_KEY)).dup());
     }
 
     // Numerical Optimization (Nocedal & Wright) section 7.2
@@ -79,16 +74,16 @@ public class LBFGS extends BaseOptimizer {
     // rho = scalar. rho_i = 1/(y_i \dot s_i)
     @Override
     public void postStep(INDArray gradient) {
-        INDArray oldParameters = (INDArray) searchState.get("oldparams");
-        INDArray params = model.params();
-        INDArray oldGradient = (INDArray) searchState.get(GRADIENT_KEY);
+        INDArray previousParameters = (INDArray) searchState.get("oldparams");
+        INDArray parameters = model.params();
+        INDArray previousGradient = (INDArray) searchState.get(GRADIENT_KEY);
 
         LinkedList<Double> rho = (LinkedList<Double>) searchState.get("rho");
         LinkedList<INDArray> s = (LinkedList<INDArray>) searchState.get("s");
         LinkedList<INDArray> y = (LinkedList<INDArray>) searchState.get("y");
 
-        double sy = Nd4j.getBlasWrapper().dot(oldParameters,oldGradient) + Nd4j.EPS_THRESHOLD;
-        double yy = Nd4j.getBlasWrapper().dot(oldGradient, oldGradient) + Nd4j.EPS_THRESHOLD;
+        double sy = Nd4j.getBlasWrapper().dot(previousParameters, previousGradient) + Nd4j.EPS_THRESHOLD;
+        double yy = Nd4j.getBlasWrapper().dot(previousGradient, previousGradient) + Nd4j.EPS_THRESHOLD;
 
         INDArray sCurrent;
         INDArray yCurrent;
@@ -98,13 +93,14 @@ public class LBFGS extends BaseOptimizer {
             sCurrent = s.removeLast();
             yCurrent = y.removeLast();
             rho.removeLast();
-            sCurrent.assign(params).subi(oldParameters);
-            yCurrent.assign(gradient).subi(oldGradient);
+            sCurrent.assign(parameters).subi(previousParameters);
+            yCurrent.assign(gradient).subi(previousGradient);
         } else {
             //First few iterations. Need to allocate new INDArrays for storage (via copy operation sub)
-            sCurrent = params.sub(oldParameters);
-            yCurrent = gradient.sub(oldGradient);
+            sCurrent = parameters.sub(previousParameters);
+            yCurrent = gradient.sub(previousGradient);
         }
+
         rho.addFirst(1.0 / sy);	//Most recent first
         s.addFirst(sCurrent);	//Most recent first. si = currParams - oldParams
         y.addFirst(yCurrent);	//Most recent first. yi = currGradient - oldGradient
@@ -161,8 +157,7 @@ public class LBFGS extends BaseOptimizer {
             Nd4j.getBlasWrapper().level1().axpy(gradient.length(), alpha[i] - beta, si, searchDir);
         }
 
-
-        oldParameters.assign(params);
-        oldGradient.assign(gradient);	//Update gradient. Still in searchState map keyed by GRADIENT_KEY
+        previousParameters.assign(parameters);
+        previousGradient.assign(gradient);	//Update gradient. Still in searchState map keyed by GRADIENT_KEY
     }
 }
