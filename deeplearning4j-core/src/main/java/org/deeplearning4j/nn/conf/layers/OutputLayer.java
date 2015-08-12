@@ -44,7 +44,9 @@ public class OutputLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        private LossFunction lossFunction = LossFunction.RMSE_XENT;
+
+        public Builder() {}
 
         @Override
         public Builder nIn(int nIn) {
