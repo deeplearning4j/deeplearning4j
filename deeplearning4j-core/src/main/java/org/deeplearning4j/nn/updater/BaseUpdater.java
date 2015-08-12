@@ -29,13 +29,6 @@ public abstract class BaseUpdater implements Updater {
         }
     }
 
-    @Override
-    public void applyUpdate(Layer layer, Gradient gradient) {
-        for(Map.Entry<String,INDArray> variables : layer.paramTable().entrySet()) {
-            layer.getParam(variables.getKey()).addi(gradient.getGradientFor(variables.getKey()));
-        }
-    }
-
     /**
      * Apply the regularization
      * @param layer
@@ -57,7 +50,6 @@ public abstract class BaseUpdater implements Updater {
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
     }
-
 
     public abstract void init();
 

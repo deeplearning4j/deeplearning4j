@@ -83,17 +83,17 @@ public class GravesLSTM extends BaseLayer {
 		boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
 		int timeSeriesLength = (is2dInput? 1: epsilon.size(2));
 		
-		INDArray wi = inputWeights.get(interval(0,prevLayerSize),interval(0,hiddenLayerSize));
-		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
-		INDArray wf = inputWeights.get(interval(0,prevLayerSize),interval(hiddenLayerSize,2*hiddenLayerSize));
-		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2*hiddenLayerSize));
-		INDArray wFF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize,4*hiddenLayerSize+1));
-		INDArray wo = inputWeights.get(interval(0,prevLayerSize),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-		INDArray wO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-		INDArray wOO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize+1,4*hiddenLayerSize+2));
-		INDArray wg = inputWeights.get(interval(0,prevLayerSize),interval(3*hiddenLayerSize,4*hiddenLayerSize));
-		INDArray wG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(3*hiddenLayerSize,4*hiddenLayerSize));
-		INDArray wGG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize+2,4*hiddenLayerSize+3));
+		INDArray wi = inputWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize
+		INDArray wI = recurrentWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));
+		INDArray wf = inputWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));
+		INDArray wF = recurrentWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)); //previous
+		INDArray wFF = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize,4 * hiddenLayerSize + 1)); //current
+		INDArray wo = inputWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
+		INDArray wO = recurrentWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)); //previous
+		INDArray wOO = recurrentWeights.get(NDArrayIndex.all(),interval(4 * hiddenLayerSize + 1,4 * hiddenLayerSize + 2)); //current
+		INDArray wg = inputWeights.get(NDArrayIndex.all(),interval(3 * hiddenLayerSize,4*hiddenLayerSize));
+		INDArray wG = recurrentWeights.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)); //previous
+		INDArray wGG = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3)); //previous
 
 
 		INDArray biasGradients = Nd4j.zeros(new int[]{miniBatchSize,4*hiddenLayerSize,timeSeriesLength});	//Shape in keeping with what BaseLayer.update() expects for bias
@@ -304,28 +304,28 @@ public class GravesLSTM extends BaseLayer {
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
 			if (conf.getDropOut() > 0) {
-				inputWeights = Dropout.applyDropConnect(this,GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+				inputWeights = Dropout.applyDropConnect(this,GravesLSTMParamInitializer.INPUT_WEIGHTS);
 			}
 		}
 
 		//Extract weights and biases:
-		INDArray wi = inputWeights.get(interval(0,nIn),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize
-		INDArray wI = recurrentWeights.get(interval(0,hiddenLayerSize),interval(0,hiddenLayerSize));
+		INDArray wi = inputWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize
+		INDArray wI = recurrentWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));
 		INDArray bi = biases.get(new NDArrayIndex(0),interval(0,hiddenLayerSize));
 
-		INDArray wf = inputWeights.get(interval(0,nIn),interval(hiddenLayerSize,2 * hiddenLayerSize));
-		INDArray wF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(hiddenLayerSize,2 * hiddenLayerSize)); //previous
-		INDArray wFF = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize,4 * hiddenLayerSize + 1)); //current
+		INDArray wf = inputWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));
+		INDArray wF = recurrentWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)); //previous
+		INDArray wFF = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize,4 * hiddenLayerSize + 1)); //current
 		INDArray bf = biases.get(new NDArrayIndex(0),interval(hiddenLayerSize,2*hiddenLayerSize));
 
-		INDArray wo = inputWeights.get(interval(0,nIn),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
-		INDArray wO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)); //previous
-		INDArray wOO = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4 * hiddenLayerSize + 1,4 * hiddenLayerSize + 2)); //current
+		INDArray wo = inputWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
+		INDArray wO = recurrentWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)); //previous
+		INDArray wOO = recurrentWeights.get(NDArrayIndex.all(),interval(4 * hiddenLayerSize + 1,4 * hiddenLayerSize + 2)); //current
 		INDArray bo = biases.get(new NDArrayIndex(0),interval(2*hiddenLayerSize,3 * hiddenLayerSize));
 
-		INDArray wg = inputWeights.get(interval(0,nIn),interval(3 * hiddenLayerSize,4*hiddenLayerSize));
-		INDArray wG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(3*hiddenLayerSize,4 * hiddenLayerSize)); //previous
-		INDArray wGG = recurrentWeights.get(interval(0,hiddenLayerSize),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3)); //previous
+		INDArray wg = inputWeights.get(NDArrayIndex.all(),interval(3 * hiddenLayerSize,4*hiddenLayerSize));
+		INDArray wG = recurrentWeights.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)); //previous
+		INDArray wGG = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3)); //previous
 		INDArray bg = biases.get(new NDArrayIndex(0),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
 
 		//Allocate arrays for activations:
