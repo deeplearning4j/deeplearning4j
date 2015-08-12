@@ -367,7 +367,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public  INDArray activate() {
-        return activate();
+        return activate(false);
     }
 
 
