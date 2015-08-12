@@ -115,11 +115,10 @@ public class LossFunctions {
                 ret = pow(labels.sub(z), 2).sum(1).sumNumber().doubleValue();
                 break;
             case NEGATIVELOGLIKELIHOOD:
-                ret = -Nd4j.sum(
-                        labels.mul(log(z.addi(Nd4j.EPS_THRESHOLD)))
-                                .addi(labels.rsub(1).muli(log(z.rsub(1).addi(Nd4j.EPS_THRESHOLD))))
-                        , 1).getDouble(0);
-
+                INDArray sums = log(z);
+                INDArray columnSums = labels.mul(log(sums));
+                ret = -columnSums.sumNumber().doubleValue();
+                break;
 
 
         }
