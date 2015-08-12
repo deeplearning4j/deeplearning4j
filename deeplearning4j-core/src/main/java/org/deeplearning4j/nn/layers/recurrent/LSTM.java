@@ -35,6 +35,7 @@ import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -132,25 +133,25 @@ public class LSTM extends BaseLayer {
         for(int t = n -1; t > 0; t--) {
             if(conf.getActivationFunction().equals("tanh")) {
                 INDArray tanhCt = tanh(c.slice(t));
-                dIFogF.slice(t).put(new NDArrayIndex[]{interval(2 * d,3 * d)},tanhCt.mul(dHout.slice(t)));
+                dIFogF.slice(t).put(new INDArrayIndex[]{interval(2 * d,3 * d)},tanhCt.mul(dHout.slice(t)));
                 dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogF.slice(t).get(interval(2 * d, 3 * d)).mul(dHout.slice(t))));
             }
             else {
-                dIFogF.slice(t).put(new NDArrayIndex[]{interval(2 * d,3 * d)},c.slice(t).mul(dHout.slice(t)));
+                dIFogF.slice(t).put(new INDArrayIndex[]{interval(2 * d,3 * d)},c.slice(t).mul(dHout.slice(t)));
                 dC.slice(t).addi(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(dHout.slice(t)));
             }
 
             if(t > 0) {
-                dIFogF.slice(t).put(new NDArrayIndex[]{interval(d, 2 * d)},c.slice(t - 1).mul(dC.slice(t)));
+                dIFogF.slice(t).put(new INDArrayIndex[]{interval(d, 2 * d)},c.slice(t - 1).mul(dC.slice(t)));
                 dC.slice(t - 1).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(dC.slice(t)));
             }
 
-            dIFogF.slice(t).put(new NDArrayIndex[]{interval(0, d)}, iFogF.slice(t).get(interval(3 * d, iFogF.columns())).mul(dC.slice(t)));
-            dIFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d, dIFogF.columns())},iFogF.slice(t).get(interval(0,d)).mul(dC.slice(t)));
+            dIFogF.slice(t).put(new INDArrayIndex[]{interval(0, d)}, iFogF.slice(t).get(interval(3 * d, iFogF.columns())).mul(dC.slice(t)));
+            dIFogF.slice(t).put(new INDArrayIndex[]{interval(3 * d, dIFogF.columns())},iFogF.slice(t).get(interval(0,d)).mul(dC.slice(t)));
 
-            dIFog.slice(t).put(new NDArrayIndex[]{interval(3 * d,dIFog.columns())},pow(iFogF.slice(t).get(interval(3 * d,iFogF.columns())),2).rsubi(1).mul(dIFogF.slice(t).get(interval(3 * d,dIFogF.columns()))));
+            dIFog.slice(t).put(new INDArrayIndex[]{interval(3 * d,dIFog.columns())},pow(iFogF.slice(t).get(interval(3 * d,iFogF.columns())),2).rsubi(1).mul(dIFogF.slice(t).get(interval(3 * d,dIFogF.columns()))));
             y = iFogF.slice(t).get(interval(0,3 * d));
-            dIFogF.slice(t).put(new NDArrayIndex[]{interval(0, 3 * d)}, y.mul(y.rsub(1)).mul(dIFogF.slice(t).get(interval(0, 3 * d))));
+            dIFogF.slice(t).put(new INDArrayIndex[]{interval(0, 3 * d)}, y.mul(y.rsub(1)).mul(dIFogF.slice(t).get(interval(0, 3 * d))));
 
             dRecurrentWeights.addi(hIn.slice(t).transpose().mmul(dIFog.slice(t)));
             dHin.slice(t).assign(dIFog.slice(t).mmul(recurrentWeights.transpose()));
@@ -211,15 +212,15 @@ public class LSTM extends BaseLayer {
         for(int t = 0; t < n ; t++) {
             prev = t == 0 ? Nd4j.zeros(d) : hOut.getRow(t - 1);
             hIn.put(t, 0, 1.0);
-            hIn.slice(t).put(new NDArrayIndex[]{interval(1,1 + d)},x.slice(t));
-            hIn.slice(t).put(new NDArrayIndex[]{interval(1 + d,hIn.columns())},prev);
+            hIn.slice(t).put(new INDArrayIndex[]{interval(1,1 + d)},x.slice(t));
+            hIn.slice(t).put(new INDArrayIndex[]{interval(1 + d,hIn.columns())},prev);
 
             //compute all gate activations. dots:
             iFog.putRow(t,hIn.slice(t).mmul(recurrentWeights));
 
             //non linearity
-            iFogF.slice(t).put(new NDArrayIndex[]{interval(0,3 * d)}, sigmoid(iFog.slice(t).get(interval(0, 3 * d))));
-            iFogF.slice(t).put(new NDArrayIndex[]{interval(3 * d,iFogF.columns() - 1)}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns() - 1))));
+            iFogF.slice(t).put(new INDArrayIndex[]{interval(0,3 * d)}, sigmoid(iFog.slice(t).get(interval(0, 3 * d))));
+            iFogF.slice(t).put(new INDArrayIndex[]{interval(3 * d,iFogF.columns() - 1)}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns() - 1))));
 
             //cell activations
             INDArray cPut = iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d, iFogF.columns())));
@@ -428,17 +429,17 @@ public class LSTM extends BaseLayer {
         int d = decoderWeights.rows();
         INDArray hIn = Nd4j.zeros(1,recurrentWeights.rows());
         hIn.putRow(0,Nd4j.ones(hIn.columns()));
-        hIn.slice(t).put(new NDArrayIndex[]{interval(1,1 + d)},x);
-        hIn.slice(t).put(new NDArrayIndex[]{interval(1 + d,hIn.columns())},hPrev);
+        hIn.slice(t).put(new INDArrayIndex[]{interval(1,1 + d)},x);
+        hIn.slice(t).put(new INDArrayIndex[]{interval(1 + d,hIn.columns())},hPrev);
 
 
         INDArray iFog = Nd4j.zeros(1, d * 4);
         INDArray iFogf = Nd4j.zeros(iFog.shape());
         INDArray c = Nd4j.zeros(d);
         iFog.putScalar(t,hIn.slice(t).mmul(recurrentWeights).getDouble(0));
-        NDArrayIndex[] indices = new NDArrayIndex[]{interval(0,3 * d)};
+        INDArrayIndex[] indices = new INDArrayIndex[]{interval(0,3 * d)};
         iFogf.slice(t).put(indices,sigmoid(iFogF.slice(t).get(indices)));
-        NDArrayIndex[] after = new NDArrayIndex[]{interval(3 * d,iFogf.columns())};
+        INDArrayIndex[] after = new INDArrayIndex[]{interval(3 * d,iFogf.columns())};
         iFogf.slice(t).put(after,tanh(iFogf.slice(t).get(after)));
         c.slice(t).assign(iFogf.slice(t).get(interval(0,d)).mul(iFogf.slice(t).get(interval(3 * d,iFogf.columns()))).addi(iFogf.slice(t).get(interval(d, 2 * d))).muli(cPrev));
 
@@ -547,7 +548,7 @@ public class LSTM extends BaseLayer {
     @Override
     public void fit(INDArray data) {
         xi = data.slice(0);
-        NDArrayIndex[] everythingElse = {
+        INDArrayIndex[] everythingElse = {
                 NDArrayIndex.interval(1,data.rows()),NDArrayIndex.interval(0,data.columns())
         };
         xs = data.get(everythingElse);

@@ -44,7 +44,7 @@ public abstract class BaseUpdater implements Updater {
             gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
         if(conf.isMiniBatch())
-            gradient.divi((double) layer.input().size(0));
+            gradient.divi((double) layer.input().size(0) * conf.getTimeSeriesLength());
 
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));

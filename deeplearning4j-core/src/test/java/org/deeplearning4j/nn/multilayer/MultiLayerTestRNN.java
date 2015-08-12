@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -53,7 +54,7 @@ public class MultiLayerTestRNN {
         assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits});	//Should be shape: [1,4*layerSize]
 
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-        INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits)});
+        INDArray forgetGateBiases = biases.get(new INDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits)});
         assertTrue(forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0) == nHiddenUnits);
 
         int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
@@ -98,7 +99,7 @@ public class MultiLayerTestRNN {
             assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits[i]});	//Should be shape: [1,4*layerSize]
 
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-            INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i])});
+            INDArray forgetGateBiases = biases.get(new INDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i])});
             assertTrue(forgetGateBiases.gt(0).sum(1).getDouble(0) == nHiddenUnits[i]);
 
             int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
