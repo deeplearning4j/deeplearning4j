@@ -1,19 +1,19 @@
-package org.nd4j.bytebuddy.arrays;
+package org.nd4j.bytebuddy.arrays.create;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.collection.ArrayFactory;
-import net.bytebuddy.implementation.bytecode.collection.CollectionFactory;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.pool.TypePool;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
+ * Creates int arrays
+ *
  * @author Adam Gibson
  */
 public class IntArrayCreation implements Implementation {

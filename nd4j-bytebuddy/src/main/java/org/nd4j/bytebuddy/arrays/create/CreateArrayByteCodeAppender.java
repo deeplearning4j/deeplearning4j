@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arrays;
+package org.nd4j.bytebuddy.arrays.create;
 
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.implementation.Implementation;

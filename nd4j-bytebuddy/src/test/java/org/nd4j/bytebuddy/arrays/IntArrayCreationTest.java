@@ -5,6 +5,8 @@ import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.junit.Test;
+import org.nd4j.bytebuddy.arrays.create.CreateArrayByteCodeAppender;
+import org.nd4j.bytebuddy.arrays.create.IntArrayCreation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
