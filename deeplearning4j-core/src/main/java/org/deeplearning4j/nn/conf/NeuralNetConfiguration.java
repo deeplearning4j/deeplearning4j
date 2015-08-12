@@ -131,6 +131,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //l1 regularization
     protected double l1 = 0.0;
 
+    protected int timeSeriesLength = 1;
 
     protected double rmsDecay = 0.0;
 
@@ -579,6 +580,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double rho;
         private Updater updater = Updater.ADAGRAD;
         private boolean miniBatch = false;
+        private int timeSeriesLength = 1;
 
 
         /**
@@ -874,6 +876,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Builder timeSeriesLength(int timeSeriesLength) {
+            this.timeSeriesLength = timeSeriesLength;
+            return this;
+        }
+
         /**
          * Return a configuration based on this builder
          *
@@ -898,7 +905,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.miniBatch = miniBatch;
             ret.rho = rho;
             ret.updater = updater;
-
+            ret.timeSeriesLength = timeSeriesLength;
 
             //override the properties from the layer
             ret = overRideFields(ret, layer);

@@ -65,7 +65,7 @@ public class WindowConverter {
         for(int i = 0; i < words.size(); i++) {
             String word = words.get(i);
             INDArray n = normalize ? vec.getWordVectorMatrixNormalized(word) :  vec.getWordVectorMatrix(word);
-            ret.put(new NDArrayIndex[]{NDArrayIndex.interval(i * vec.lookupTable().layerSize(),i * vec.lookupTable().layerSize() + vec.lookupTable().layerSize())},n);
+            ret.put(new INDArrayIndex[]{NDArrayIndex.interval(i * vec.lookupTable().layerSize(),i * vec.lookupTable().layerSize() + vec.lookupTable().layerSize())},n);
         }
 
         return ret;

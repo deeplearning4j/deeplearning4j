@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Map;
@@ -56,7 +57,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getWeightInit(), dist));
         params.put(INPUT_WEIGHTS,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getWeightInit(), dist));
         INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
-        biases.put(new NDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
+        biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
         /*The above line initializes the forget gate biases to 5.
          * See Sutskever PhD thesis, pg19:
          * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
