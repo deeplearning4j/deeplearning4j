@@ -345,9 +345,9 @@ public class RNTN implements Layer {
         INDArray binary = Nd4j.create(numHidden, numHidden * 2 + 1);
         // bias column values are initialized zero
         INDArray block = randomTransformBlock();
-        NDArrayIndex[] indices = new NDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())};
+        NDArrayIndex[] indices = new INDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())};
         binary.put(indices,block);
-        NDArrayIndex[] indices2 = new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
+        NDArrayIndex[] indices2 = new INDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
         binary.put(indices2,randomTransformBlock());
         Nd4j.getBlasWrapper().level1().scal(binary.length(),scalingForInit,binary);
         return binary;
@@ -367,7 +367,7 @@ public class RNTN implements Layer {
         double range = 1.0 / (Math.sqrt((double) numHidden));
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
         INDArray insert = Nd4j.rand(numOuts, numHidden, -range, range, rng);
-        ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
+        ret.put(new INDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
         Nd4j.getBlasWrapper().level1().scal(ret.length(), scalingForInit, ret);
         return ret;
     }
