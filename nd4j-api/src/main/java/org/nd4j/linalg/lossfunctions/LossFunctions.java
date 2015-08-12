@@ -115,9 +115,9 @@ public class LossFunctions {
                 ret = pow(labels.sub(z), 2).sum(1).sumNumber().doubleValue();
                 break;
             case NEGATIVELOGLIKELIHOOD:
-                INDArray sums = log(z);
-                INDArray columnSums = labels.mul(log(sums));
-                ret = -columnSums.sumNumber().doubleValue();
+                INDArray sums2 = log(z);
+                INDArray columnSums2 = labels.mul(log(sums2));
+                ret = -columnSums2.sumNumber().doubleValue();
                 break;
 
 
