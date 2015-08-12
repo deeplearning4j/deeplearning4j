@@ -59,10 +59,10 @@ public class ConvolutionDownSampleLayer extends BaseLayer {
 
     @Override
     public INDArray activate() {
-        INDArray W = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        INDArray W = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         if(W.shape()[1] != input.shape()[1])
             throw new IllegalStateException("Input size at dimension 1 must be same as the filter size");
-        final INDArray b = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
+        final INDArray b = getParam(ConvolutionParamInitializer.BIAS_KEY);
 
         INDArray convolution = Convolution.conv2d(input,W, Convolution.Type.FULL);
         if(convolution.shape().length < 4) {

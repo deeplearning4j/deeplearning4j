@@ -26,12 +26,14 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,12 +54,12 @@ public class ConvolutionLayer extends BaseLayer {
 
     @Override
     public double l2Magnitude() {
-        return Transforms.pow(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+        return Transforms.pow(getParam(ConvolutionParamInitializer.WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
     public double l1Magnitude() {
-        return Transforms.abs(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
+        return Transforms.abs(getParam(ConvolutionParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -65,76 +67,21 @@ public class ConvolutionLayer extends BaseLayer {
         return Type.CONVOLUTIONAL;
     }
 
-    @Override
-    public Gradient error(INDArray input) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray derivativeActivation(INDArray input) {
-        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), activate(input)).derivative());
-        return deriv;
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Gradient errorSignal(Gradient error, INDArray input) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
-        INDArray gy = gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
-        INDArray biasGradient = gradient.getGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS);
-        getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS).addi(gy.sum(0,2,3));
-        INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS), gy.slice(0), new int[][]{{0, 1}});
+        INDArray gy = gradient.getGradientFor(ConvolutionParamInitializer.WEIGHT_KEY);
+        INDArray biasGradient = gradient.getGradientFor(ConvolutionParamInitializer.BIAS_KEY);
+        getParam(ConvolutionParamInitializer.BIAS_KEY).addi(gy.sum(0,2,3));
+        INDArray gcol = Nd4j.tensorMmul(getParam(ConvolutionParamInitializer.WEIGHT_KEY), gy.slice(0), new int[][]{{0, 1}});
         gcol = Nd4j.rollAxis(gcol,3);
         INDArray z = preOutput(input());
         INDArray weightGradient =  Convolution.conv2d(gcol, z, conf.getConvolutionType());
         Gradient retGradient = new DefaultGradient();
-        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS, weightGradient);
-        retGradient.setGradientFor(ConvolutionParamInitializer.CONVOLUTION_BIAS,biasGradient);
+        retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradient);
+        retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradient);
         return new Pair<>(retGradient,weightGradient);
     }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException()
-                ;
-
-    }
-
-    @Override
-    public INDArray activationMean() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void update(Gradient gradient) {
-        for(String paramType : gradient.gradientForVariable().keySet()) {
-            update(gradient.getGradientFor(paramType), paramType);
-        }
-    }
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return null;
-    }
-
 
     @Override
     public INDArray activate(boolean training) {
@@ -143,9 +90,9 @@ public class ConvolutionLayer extends BaseLayer {
         }
 
         // Activations
-        INDArray bias = getParam(ConvolutionParamInitializer.CONVOLUTION_BIAS);
+        INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
 
-        INDArray kernelWeights = getParam(ConvolutionParamInitializer.CONVOLUTION_WEIGHTS);
+        INDArray kernelWeights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
 
         kernelWeights = kernelWeights.dup().reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
@@ -162,64 +109,40 @@ public class ConvolutionLayer extends BaseLayer {
     }
 
     @Override
-    public Layer transpose() {
+    public INDArray preOutput(INDArray x, boolean training) {
+        if(x == null)
+            throw new IllegalArgumentException("No null input allowed");
+
+        setInput(x,training);
+        applyDropOutIfNecessary(x,training);
+        INDArray b = getParam(ConvolutionParamInitializer.BIAS_KEY);
+        INDArray W = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
+        if(conf.isUseDropConnect() && training) {
+            if (conf.getDropOut() > 0) {
+                W = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
+            }
+        }
+
+        INDArray ret = x.mmul(W).addiRowVector(b);
+        return ret;
+
+    }
+
+    @Override
+    public Layer transpose(){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+
+    @Override
+    public void merge(Layer layer, int batchSize) {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Layer clone() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void computeGradientAndScore() {
-    }
-
-    @Override
-    public void accumulateScore(double accum) {
-    }
-
-    /**
-     * Returns the parameters of the neural network
-     *
-     * @return the parameters of the neural network
-     */
-    @Override
-    public INDArray params() {
-        List<INDArray> ret = new ArrayList<>();
-        for(String s : params.keySet())
-            ret.add(params.get(s));
-        return Nd4j.toFlattened(ret);
-    }
-
-    @Override
-    public double score() {
-        return 0;
-    }
-
-    @Override
-    public Gradient gradient() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public NeuralNetConfiguration conf() {
-        return conf;
-    }
-
-    @Override
-    public void setConf(NeuralNetConfiguration conf) {
-        this.conf = conf;
-    }
-
-    @Override
-    public INDArray input() {
-        throw new UnsupportedOperationException();
-    }
 
 }

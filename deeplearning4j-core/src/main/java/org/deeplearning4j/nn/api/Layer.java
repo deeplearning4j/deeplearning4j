@@ -94,23 +94,6 @@ public interface Layer extends Serializable,Cloneable,Model {
     Gradient calcGradient(Gradient layerError, INDArray indArray);
 
 
-    /**
-     * Error signal for this layer
-     *
-     * Using the amount of error
-     * caused by this layer
-     * calculate the error signal used
-     * as input in to the next layer.
-     * This is used for actually calculating the
-     * gradient of the layer
-     *
-     * @param error
-     * @param input
-     * @return
-     */
-    @Deprecated
-    Gradient errorSignal(Gradient error, INDArray input);
-
     /**Calculate the gradient relative to the error in the next layer
      * @param epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)/(dz/da) = dC/da, where C 
      * 	is cost function a=sigma(z) is activation.
