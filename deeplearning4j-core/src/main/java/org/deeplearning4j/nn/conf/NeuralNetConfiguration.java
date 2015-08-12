@@ -80,8 +80,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //reset adagrad historical gradient after n iterations
     protected int resetAdaGradIterations = -1;
     //number of line search iterations
-    @Deprecated
-    protected int numLineSearchIterations = 5;
     protected int maxNumLineSearchIterations = 5;
     protected double dropOut = 0;
     //use only when binary hidden neuralNets are active
@@ -99,8 +97,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected Distribution dist;
     protected StepFunction stepFunction;
     protected Layer layer;
-
-
 
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
@@ -120,6 +116,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private int[] weightShape;
 
+    //Graves LSTM & RNN
+    private int timeSeriesLength = 1;
     //convolutional nets: this is the height and width of the kernel
     private int[] kernelSize = {2,2};
     //aka pool size for subsampling
@@ -169,11 +167,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   RBM.VisibleUnit visibleUnit,
                                   RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
+                                  int timeSeriesLength,
                                   int[] kernelSize,
                                   int[] stride,
                                   int[] padding,
                                   int batchSize,
-                                  int numLineSearchIterations,
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
                                   Layer layer, Convolution.Type convolutionType,
@@ -183,7 +181,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.customLossFunction = customLossFunction;
         this.convolutionType = convolutionType;
         this.poolingType = poolingType;
-        this.numLineSearchIterations = numLineSearchIterations;
         this.maxNumLineSearchIterations = maxNumLineSearchIterations;
         this.l1 = l1;
         this.batchSize = batchSize;
@@ -216,6 +213,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.weightShape = weightShape;
         else
             this.weightShape = new int[]{nIn,nOut};
+        this.timeSeriesLength = timeSeriesLength;
         this.kernelSize = kernelSize;
         this.stride = stride;
         this.padding = padding;
@@ -406,12 +404,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public ListBuilder hiddenLayerSizes(int...hiddenLayerSizes) {
-            this.hiddenLayerSizes = hiddenLayerSizes;
-            return this;
-        }
-
         public ListBuilder layer(int ind, Layer layer) {
             if (layerwise.get(0) == null && ind != 0) {
                 throw new IllegalArgumentException("LayerZeroIndexError: Layer index must start from 0");
@@ -437,9 +429,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
-                    .useDropConnect(useDropConnect).pretrain(pretrain).outputPostProcessors(outputPostProcessors)
-                    .hiddenLayerSizes(hiddenLayerSizes)
-                    .confs(list).build();
+                    .pretrain(pretrain).confs(list).build();
         }
 
     }
@@ -572,6 +562,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 5;
         private int[] weightShape;
+        private int timeSeriesLength = 1;
         private int[] kernelSize = {2,2};
         // convolution & subsampling layers
         private int[] stride = {2,2};
@@ -579,8 +570,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private StepFunction stepFunction = null;
         private Layer layer;
         private int batchSize = 100;
-        @Deprecated
-        private int numLineSearchIterations = 5;
         private int maxNumLineSearchIterations = 5;
         private boolean minimize = false;
         private Convolution.Type convolutionType = Convolution.Type.VALID;
@@ -590,6 +579,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double rho;
         private Updater updater = Updater.ADAGRAD;
         private boolean miniBatch = false;
+
+
+        /**
+         * Time series length
+         * @param timeSeriesLength
+         * @return
+         */
+
+        public Builder timeSeriesLength(int timeSeriesLength) {
+            this.timeSeriesLength = timeSeriesLength;
+            return this;
+        }
 
 
         /**
@@ -672,12 +673,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder minimize(boolean minimize) {
             this.minimize = minimize;
-            return this;
-        }
-
-        @Deprecated
-        public Builder numLineSearchIterations(int numLineSearchIterations) {
-            this.numLineSearchIterations = numLineSearchIterations;
             return this;
         }
 
@@ -892,8 +887,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape, kernelSize, stride,padding
-                    ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
+                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape, timeSeriesLength, kernelSize, stride,padding
+                    ,batchSize,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
                     l1,customLossFunction);
 
             ret.useAdaGrad = this.useAdaGrad;
