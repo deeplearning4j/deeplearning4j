@@ -190,9 +190,9 @@ public class BackTrackLineSearch implements LineOptimizer {
             searchDirection.muli(stepMax / sum);
         }
 
-        if (slope >= 0.0) {
-            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0 when minimizing objective function");
-        }
+//        if (slope >= 0.0) {
+//            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0 when minimizing objective function");
+//        }
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
@@ -272,6 +272,7 @@ public class BackTrackLineSearch implements LineOptimizer {
             }
 
             // backtrack
+
             else if (minObjectiveFunction){
                 if (step == 1.0) // first time through
                     tmpStep = -slope / (2.0 * (score - scoreAtStart - slope));

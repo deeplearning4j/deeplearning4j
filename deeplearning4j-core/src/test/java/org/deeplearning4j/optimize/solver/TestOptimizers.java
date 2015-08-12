@@ -117,7 +117,7 @@ public class TestOptimizers {
                 .weightInit(WeightInit.XAVIER)
                 .activationFunction("relu")
                 .optimizationAlgo(oa)
-                .updater( (oa==OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE) )
+                .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
                 .iterations(nIterations)
                 .constrainGradientToUnitNorm(false)
                 .regularization(false)
