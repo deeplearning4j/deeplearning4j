@@ -90,6 +90,24 @@ If you want to run Deeplearning4j examples after installing from trunk, you shou
 
 Following these steps, you should be able to run the 0.0.3.3 examples. 
 
+If you have an existing project, you can build Deeplearning4j's source files yourself and then add dependencies as JAR files to your project. Each dependency used with Deeplearning4j and [ND4J](http://nd4j.org/dependencies.html) can be included in your project's POM.xml as a jar like this, specifying the most recent version of ND4J or Deeplearning4j between the `properties` tags. 
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-nlp</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+
 ###<a name="eclipse">Eclipse</a> 
 
 After running a *git clone*, enter this command
