@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.eigen.Eigen;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
@@ -69,10 +70,10 @@ public class PCA {
 
         INDArray indices = sorted[0];
 
-        NDArrayIndex[] indices2 = NDArrayIndex.create(indices.get(
+        INDArrayIndex[] indices2 = NDArrayIndex.create(indices.get(
                 NDArrayIndex.interval(0, nDims)));
 
-        NDArrayIndex[] rowsAndColumnIndices = new NDArrayIndex[]{
+        INDArrayIndex[] rowsAndColumnIndices = new INDArrayIndex[]{
                 NDArrayIndex.interval(0, M.rows()), indices2[0]
         };
 

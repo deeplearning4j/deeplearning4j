@@ -1,11 +1,12 @@
-package org.nd4j.linalg.api.indexing;
+package org.nd4j.linalg.ops.broadcast.column;
 
 import org.nd4j.linalg.BaseNd4jTest;
 
 /**
  * @author Adam Gibson
  */
-public class ShapeResolutionTests extends BaseNd4jTest {
+public class ColumnVectorOps extends BaseNd4jTest {
+
     @Override
     public char ordering() {
         return 'f';

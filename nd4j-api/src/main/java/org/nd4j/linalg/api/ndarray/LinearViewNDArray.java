@@ -23,9 +23,7 @@ package org.nd4j.linalg.api.ndarray;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.Indices;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.List;

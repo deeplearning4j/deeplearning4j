@@ -1,7 +1,7 @@
 package org.nd4j.linalg.api.iter;
 
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Iterator;
 
@@ -19,15 +19,31 @@ public class NdIndexIterator implements Iterator<int[]> {
     private int length = -1;
     private int i = 0;
     private int[] shape;
+    private char order = 'c';
+
+    public NdIndexIterator(char order) {
+        this.order = order;
+    }
+
+
+    /**
+     *  Pass in the shape to iterate over.
+     *  Defaults to c ordering
+     * @param shape the shape to iterate over
+     */
+    public NdIndexIterator(int...shape) {
+        this('c',shape);
+    }
 
 
     /**
      *  Pass in the shape to iterate over
      * @param shape the shape to iterate over
      */
-    public NdIndexIterator(int...shape) {
+    public NdIndexIterator(char order,int...shape) {
         this.shape = ArrayUtil.copy(shape);
         this.length = ArrayUtil.prod(shape);
+        this.order = order;
     }
 
     @Override
@@ -39,7 +55,12 @@ public class NdIndexIterator implements Iterator<int[]> {
 
     @Override
     public int[] next() {
-        return Shape.ind2subC(shape,i++);
+        switch(order) {
+            case 'c':  return Shape.ind2subC(shape,i++);
+            case 'f':  return Shape.ind2sub(shape, i++);
+            default: throw new IllegalArgumentException("Illegal ordering " + order);
+        }
+
     }
 
     @Override

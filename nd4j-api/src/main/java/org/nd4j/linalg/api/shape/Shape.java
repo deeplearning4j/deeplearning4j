@@ -17,15 +17,16 @@
  *
  */
 
-package org.nd4j.linalg.util;
+package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.Indices;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -695,15 +696,15 @@ public class Shape {
      * @param indices the indices to convert
      * @return the converted indexes
      */
-    public static NDArrayIndex[] toIndexes(int[] indices) {
-        NDArrayIndex[] ret = new NDArrayIndex[indices.length];
+    public static INDArrayIndex[] toIndexes(int[] indices) {
+        INDArrayIndex[] ret = new INDArrayIndex[indices.length];
         for(int i = 0; i < ret.length; i++)
             ret[i] = new NDArrayIndex(indices[i]);
         return ret;
     }
 
 
-    public static int[] newStrides(int[] strides,int newLength,NDArrayIndex[] indexes) {
+    public static int[] newStrides(int[] strides,int newLength,INDArrayIndex[] indexes) {
         if(strides.length > newLength) {
             int[] newStrides = new int[strides.length - 1];
             for(int i = 0; i < newStrides.length; i++) {
@@ -715,7 +716,7 @@ public class Shape {
         return strides;
     }
 
-    public static int[] newOffsets(int[] offsets,int newLength,NDArrayIndex[] indexes) {
+    public static int[] newOffsets(int[] offsets,int newLength,INDArrayIndex[] indexes) {
         if(offsets.length > newLength) {
             int[] newOffsets = new int[offsets.length - 1];
             for(int i = 0; i < newOffsets.length; i++) {

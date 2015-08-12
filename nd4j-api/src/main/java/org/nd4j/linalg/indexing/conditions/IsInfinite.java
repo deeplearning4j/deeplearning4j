@@ -20,20 +20,20 @@
 package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.indexing.conditions.Condition;
 
 /**
- * Returns true when the given number is infinite
- *
- * @author Adam Gibson
+ * Created by agibsonccc on 10/8/14.
  */
 public class IsInfinite implements Condition {
+
     @Override
     public Boolean apply(Number input) {
-        return Double.isInfinite(input.doubleValue());
+        return Float.isInfinite(input.floatValue());
     }
 
     @Override
     public Boolean apply(IComplexNumber input) {
-        return Double.isInfinite(input.absoluteValue().doubleValue());
+        return Float.isInfinite(input.absoluteValue().floatValue());
     }
 }

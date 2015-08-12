@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
@@ -41,7 +42,7 @@ public class IndexingTests extends BaseNd4jTest {
     @Test
     public void testNewLinearView() {
         INDArray arange = Nd4j.arange(1, 17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
+        INDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
         assertEquals(Nd4j.create(new double[]{1, 5,2, 6}),linearViewNDArray);
@@ -60,7 +61,7 @@ public class IndexingTests extends BaseNd4jTest {
     @Test
     public void testArangeMul() {
         INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
+        INDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         INDArray zeroPointTwoFive = Nd4j.ones(2,2).mul(0.25);
         INDArray mul = get.mul(zeroPointTwoFive);
@@ -79,6 +80,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray result = line.get(new NDArrayIndex(0), NDArrayIndex.interval(1, 3));
         assertEquals(test, result);
     }
+
 
 
     @Override

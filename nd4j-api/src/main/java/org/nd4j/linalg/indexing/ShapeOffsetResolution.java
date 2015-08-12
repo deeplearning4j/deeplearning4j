@@ -2,8 +2,9 @@ package org.nd4j.linalg.indexing;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
@@ -13,11 +14,16 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
-public class ShapeOffsetResolution {
+public class ShapeOffsetResolution implements Serializable {
     private INDArray arr;
     private int[] offsets,shapes,strides;
     private int offset = -1;
 
+    /**
+     * Specify the array to use for resolution
+     * @param arr the array to use
+     *            for resolution
+     */
     public ShapeOffsetResolution(INDArray arr) {
         this.arr = arr;
     }
@@ -30,7 +36,7 @@ public class ShapeOffsetResolution {
      *                to compute this based on
      *
      */
-    public void exec(NDArrayIndex...indexes) {
+    public void exec(INDArrayIndex... indexes) {
         indexes = NDArrayIndex.resolve(arr,indexes);
         int[] shape = Indices.shape(arr.shape(), indexes);
         int[] offsets = Indices.offsets(shape,indexes);

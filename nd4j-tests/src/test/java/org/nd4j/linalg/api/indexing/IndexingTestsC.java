@@ -5,6 +5,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
@@ -46,7 +47,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testIndexFor() {
         int[] shape = {1,2};
-        NDArrayIndex[] indexes = NDArrayIndex.indexesFor(shape);
+        INDArrayIndex[] indexes = NDArrayIndex.indexesFor(shape);
         for(int i = 0; i < indexes.length; i++) {
             assertEquals(shape[i],indexes[i].offset());
         }
@@ -103,7 +104,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testArangeMul() {
         INDArray arange = Nd4j.arange(1,17).reshape(4, 4);
-        NDArrayIndex index = NDArrayIndex.interval(0, 2);
+        INDArrayIndex index = NDArrayIndex.interval(0, 2);
         INDArray get = arange.get(index, index);
         INDArray ones = Nd4j.ones(2,2).mul(0.25);
         INDArray mul = get.mul(ones);

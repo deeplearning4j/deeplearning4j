@@ -12,9 +12,19 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  * @author Adam Gibson
  */
 public class IndexingTestsC extends BaseNd4jTest {
+    public IndexingTestsC() {
+    }
+
+    public IndexingTestsC(String name) {
+        super(name);
+    }
 
     public IndexingTestsC(String name, Nd4jBackend backend) {
         super(name, backend);
+    }
+
+    public IndexingTestsC(Nd4jBackend backend) {
+        super(backend);
     }
 
     @Test

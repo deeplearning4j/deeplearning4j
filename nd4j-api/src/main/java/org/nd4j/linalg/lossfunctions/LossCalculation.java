@@ -46,7 +46,7 @@ class LossCalculation {
                 INDArray rmseXentDiff = delta == null ? labels.sub(z) : delta;
                 INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
-                ret = sqrt.sum(1).sumNumber().doubleValue();
+                ret = sqrt.sumNumber().doubleValue();
                 break;
             case MSE:
                 INDArray mseDelta = delta == null ? labels.sub(z) : delta;
@@ -60,11 +60,9 @@ class LossCalculation {
                 ret = pow(delta == null ? labels.sub(z) : delta, 2).sumNumber().doubleValue();
                 break;
             case NEGATIVELOGLIKELIHOOD:
-                INDArray sums2 = Nd4j.sum(
-                        labels.mul(log(z))
-                                .addi(labels.rsub(1).muli(log(z.rsub(1))))
-                        , 1);
-                ret = -Nd4j.mean(sums2).meanNumber().doubleValue();
+                INDArray sums2 = labels.mul(log(z));
+                ret = -sums2.sumNumber().doubleValue();
+                break;
 
 
 
@@ -76,7 +74,7 @@ class LossCalculation {
         }
 
         if(miniBatch)
-            ret /= (double) labels.rows();
+            ret /= (double) labels.size(0);
         return ret;
     }
 

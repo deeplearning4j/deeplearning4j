@@ -26,8 +26,7 @@ import org.nd4j.linalg.fft.FFT;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.ComplexNDArrayUtil;
-import org.nd4j.linalg.util.MathUtils;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 

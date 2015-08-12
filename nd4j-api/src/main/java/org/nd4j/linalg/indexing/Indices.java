@@ -19,13 +19,12 @@
 
 package org.nd4j.linalg.indexing;
 
-import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.Shape;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -127,14 +126,14 @@ public class Indices {
      * @param indices the indices
      * @return the offsets for the given set of indices
      */
-    public static int[] offsets(int[] shape,NDArrayIndex... indices) {
+    public static int[] offsets(int[] shape,INDArrayIndex...indices) {
         int numNewAxes = NDArrayIndex.numNewAxis(indices);
         //offset of zero for every new axes
         int[] ret = new int[shape.length];
 
         if(indices.length == shape.length) {
             for (int i = 0; i < indices.length; i++) {
-                if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
+                if(indices[i] instanceof NDArrayIndexEmpty)
                     ret[i] = 0;
                 else {
                     ret[i] = indices[i].offset();
@@ -149,7 +148,7 @@ public class Indices {
 
         else {
             for (int i = 0; i < shape.length; i++) {
-                if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty)
+                if(indices[i] instanceof NDArrayIndexEmpty)
                     ret[i] = 0;
                 else {
                     ret[i] = indices[i].offset();
@@ -185,11 +184,11 @@ public class Indices {
      * @param indexes the indexes to start from
      * @return the filled in indices
      */
-    public static NDArrayIndex[] fillIn(int[] shape, NDArrayIndex... indexes) {
+    public static INDArrayIndex[] fillIn(int[] shape, INDArrayIndex... indexes) {
         if (shape.length == indexes.length)
             return indexes;
 
-        NDArrayIndex[] newIndexes = new NDArrayIndex[shape.length];
+        INDArrayIndex[] newIndexes = new INDArrayIndex[shape.length];
         System.arraycopy(indexes, 0, newIndexes, 0, indexes.length);
 
         for (int i = indexes.length; i < shape.length; i++) {
@@ -207,14 +206,14 @@ public class Indices {
      * @param indexes       the indexes to adjust
      * @return the  adjusted indices
      */
-    public static NDArrayIndex[] adjustIndices(int[] originalShape, NDArrayIndex... indexes) {
+    public static INDArrayIndex[] adjustIndices(int[] originalShape, INDArrayIndex...indexes) {
         if(Shape.isVector(originalShape) && indexes.length == 1)
             return indexes;
 
         if (indexes.length < originalShape.length)
             indexes = fillIn(originalShape, indexes);
         if (indexes.length > originalShape.length) {
-            NDArrayIndex[] ret = new NDArrayIndex[originalShape.length];
+            INDArrayIndex[] ret = new INDArrayIndex[originalShape.length];
             System.arraycopy(indexes, 0, ret, 0, originalShape.length);
             return ret;
         }
@@ -222,7 +221,7 @@ public class Indices {
         if (indexes.length == originalShape.length)
             return indexes;
         for (int i = 0; i < indexes.length; i++) {
-            if (indexes[i].end() >= originalShape[i] || indexes[i] instanceof NDArrayIndex.NDArrayIndexAll)
+            if (indexes[i].end() >= originalShape[i] || indexes[i] instanceof NDArrayIndexAll)
                 indexes[i] = NDArrayIndex.interval(0, originalShape[i] - 1);
         }
 
@@ -251,14 +250,10 @@ public class Indices {
      * @param indices the indices to calculate the shape for
      * @return the shape for the given indices
      */
-    public static int[] shape(NDArrayIndex... indices) {
+    public static int[] shape(INDArrayIndex... indices) {
         int[] ret = new int[indices.length];
         for (int i = 0; i < ret.length; i++) {
-            int[] currIndices = indices[i].indices();
-
-            int end = currIndices[currIndices.length - 1] + 1;
-            int begin = currIndices[0];
-            ret[i] = Math.abs(end - begin);
+            ret[i] = indices[i].length();
         }
 
         List<Integer> nonZeros = new ArrayList<>();
@@ -270,43 +265,7 @@ public class Indices {
         return ArrayUtil.toArray(nonZeros);
     }
 
-    /**
-     * Returns whether the indices are contiguous by one or not
-     *
-     * @param indexes the indices to test
-     * @return whether the indices are contiguous by one or not
-     */
-    public static boolean isContiguous(NDArrayIndex... indexes) {
-        return isContiguous(1, indexes);
-    }
 
-    /**
-     * Returns whether indices are contiguous
-     * by a certain amount or not
-     *
-     * @param indexes the indices to test
-     * @param diff    the difference considered to be contiguous
-     * @return whether the given indices are contiguous or not
-     */
-    public static boolean isContiguous(int diff, NDArrayIndex... indexes) {
-        if (indexes.length < 1)
-            return true;
-        boolean contiguous = isContiguous(indexes[0].indices(), diff);
-        for (int i = 1; i < indexes.length; i++)
-            contiguous = contiguous && isContiguous(indexes[i].indices(), diff);
-
-        return contiguous;
-    }
-
-    /**
-     * Returns whether the indices are contiguous by one or not
-     *
-     * @param indices the indices to test
-     * @return whether the indices are contiguous by one or not
-     */
-    public static boolean isContiguous(int[] indices) {
-        return isContiguous(indices, 1);
-    }
 
     /**
      * Returns whether indices are contiguous
@@ -338,11 +297,11 @@ public class Indices {
      * @return the interval index relative to the given
      * start and end indices
      */
-    public static NDArrayIndex[] createFromStartAndEnd(INDArray start,INDArray end) {
+    public static INDArrayIndex[] createFromStartAndEnd(INDArray start, INDArray end) {
         if(start.length() != end.length())
             throw new IllegalArgumentException("Start length must be equal to end length");
         else {
-            NDArrayIndex[] indexes = new NDArrayIndex[start.length()];
+            INDArrayIndex[] indexes = new INDArrayIndex[start.length()];
             for(int i = 0; i < indexes.length; i++) {
                 indexes[i] = NDArrayIndex.interval(start.getInt(i),end.getInt(i));
             }
@@ -361,11 +320,11 @@ public class Indices {
      * @return the ndarray indexes covering
      * each dimension
      */
-    public static NDArrayIndex[] createFromStartAndEnd(INDArray start, INDArray end, boolean inclusive) {
+    public static INDArrayIndex[] createFromStartAndEnd(INDArray start, INDArray end, boolean inclusive) {
         if(start.length() != end.length())
             throw new IllegalArgumentException("Start length must be equal to end length");
         else {
-            NDArrayIndex[] indexes = new NDArrayIndex[start.length()];
+            INDArrayIndex[] indexes = new INDArrayIndex[start.length()];
             for(int i = 0; i < indexes.length; i++) {
                 indexes[i] = NDArrayIndex.interval(start.getInt(i),end.getInt(i),inclusive);
             }
@@ -389,16 +348,16 @@ public class Indices {
      * @param indices the indices to calculate the shape for
      * @return the shape for the given indices
      */
-    public static int[] shape(int[] shape, int[] offsets,NDArrayIndex... indices) {
+    public static int[] shape(int[] shape, int[] offsets,INDArrayIndex...indices) {
         int numNewAxes = NDArrayIndex.numNewAxis(indices);
         if (indices.length > shape.length && numNewAxes < 1)
             return shape;
 
         if(Shape.isRowVectorShape(shape) && numNewAxes < 1 && indices.length <= 2) {
             if(indices.length == 2)
-                return new int[] {1,Math.max(indices[0].indices().length,indices[1].indices().length)};
+                return new int[] {1,Math.max(indices[0].length(),indices[1].length())};
             else
-                return new int[]{1,indices[0].indices().length};
+                return new int[]{1,indices[0].length()};
         }
 
         int[] ret = new int[offsets.length];
@@ -412,26 +371,23 @@ public class Indices {
 
         int shapeIndex = 0;
         for (int i = 0; i < indices.length; i++) {
-            if(indices[i] instanceof NDArrayIndex.NDArrayIndexAll) {
+            if(indices[i] instanceof NDArrayIndexAll) {
                 if(shapeIndex < ret.length) {
                     ret[shapeIndex] = shape[shapeIndex];
                     shapeIndex++;
                 }
 
             }
-            else if(indices[i] instanceof NDArrayIndex.NDArrayIndexEmpty) {
+            else if(indices[i] instanceof NDArrayIndexEmpty) {
                 ret[i] = 0;
             }
 
-            else if(indices[i] instanceof NDArrayIndex.NewAxis) {
+            else if(indices[i] instanceof NewAxis) {
                 continue;
             }
 
             else {
-                int[] currIndices = indices[i].indices();
-                if (currIndices.length < 1)
-                    continue;
-                ret[i] = indices[i].indices().length;
+                ret[i] = indices[i].length();
                 shapeIndex++;
                 ret[i] -= offsets[i];
             }
@@ -472,7 +428,7 @@ public class Indices {
      * @param indices the indices to calculate the shape for
      * @return the shape for the given indices
      */
-    public static int[] shape(int[] shape, NDArrayIndex... indices) {
+    public static int[] shape(int[] shape, INDArrayIndex...indices) {
         return shape(shape, new int[shape.length], indices);
     }
 
@@ -484,11 +440,14 @@ public class Indices {
      * @param shape the shape of the output
      * @return the strides used for indexing
      */
-    public static int[] stride(INDArray arr,NDArrayIndex[] indexes, int... shape) {
+    public static int[] stride(INDArray arr,INDArrayIndex[] indexes, int... shape) {
         int[] retStride = null;
         if(indexes.length >= arr.stride().length) {
             //prepend zeros for new axis
-            retStride  =  Arrays.copyOf(arr.stride(), arr.stride().length);
+            retStride = new int[arr.stride().length];
+            for(int i = 0; i < retStride.length; i++) {
+                retStride[i] = arr.stride(i) * indexes[i].stride();
+            }
         }
         else {
             retStride = Arrays.copyOfRange(arr.stride(), 1, shape.length);
@@ -510,10 +469,10 @@ public class Indices {
      * @return true if the given indexes are searching
      * for a scalar false otherwise
      */
-    public static boolean isScalar(INDArray indexOver,NDArrayIndex...indexes) {
+    public static boolean isScalar(INDArray indexOver,INDArrayIndex...indexes) {
         boolean allOneLength = true;
         for(int i = 0; i < indexes.length; i++) {
-            allOneLength = allOneLength && indexes[i].indices().length == 1;
+            allOneLength = allOneLength && indexes[i].length() == 1;
         }
 
         int numNewAxes = NDArrayIndex.numNewAxis(indexes);

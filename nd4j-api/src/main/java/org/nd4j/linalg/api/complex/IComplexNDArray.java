@@ -20,7 +20,7 @@
 package org.nd4j.linalg.api.complex;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 /**
@@ -141,7 +141,7 @@ public interface IComplexNDArray extends INDArray {
      * @param element
      * @return
      */
-    IComplexNDArray put(NDArrayIndex[] indices, IComplexNumber element);
+    IComplexNDArray put(INDArrayIndex[] indices, IComplexNumber element);
 
     /**
      *
@@ -149,7 +149,7 @@ public interface IComplexNDArray extends INDArray {
      * @param element
      * @return
      */
-    IComplexNDArray put(NDArrayIndex[] indices, IComplexNDArray element);
+    IComplexNDArray put(INDArrayIndex[] indices, IComplexNDArray element);
 
     /**
      *
@@ -157,7 +157,7 @@ public interface IComplexNDArray extends INDArray {
      * @param element the ndarray to put
      * @return
      */
-    IComplexNDArray put(NDArrayIndex[] indices, Number element);
+    IComplexNDArray put(INDArrayIndex[] indices, Number element);
 
 
     /**
@@ -504,7 +504,7 @@ public interface IComplexNDArray extends INDArray {
      * @return a view of the array with the specified indices
      */
     @Override
-    IComplexNDArray get(NDArrayIndex... indexes);
+    IComplexNDArray get(INDArrayIndex... indexes);
 
     @Override
     IComplexNDArray getColumns(int[] columns);

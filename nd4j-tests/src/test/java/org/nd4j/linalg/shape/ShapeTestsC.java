@@ -356,23 +356,28 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     @Test
     public void testPermuteReshape() {
-        INDArray arrTest = Nd4j.arange(60).reshape(3,4,5);
+        INDArray arrTest = Nd4j.arange(60).reshape(3, 4, 5);
         INDArray permute = arrTest.permute(2,1,0);
         assertArrayEquals(new int[]{5,4,3},permute.shape());
         assertArrayEquals(new int[]{1,5,20},permute.stride());
-        INDArray reshapedPermute = permute.reshape(-1,12);
+        INDArray reshapedPermute = permute.reshape(-1, 12);
         assertArrayEquals(new int[]{5,12},reshapedPermute.shape());
-        assertArrayEquals(new int[]{12,1},reshapedPermute.stride());
+        assertArrayEquals(new int[]{12, 1}, reshapedPermute.stride());
 
 
     }
 
     @Test
     public void testRavel() {
-        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray asseriton = Nd4j.linspace(1,4,4);
+        INDArray linspace = Nd4j.linspace(1,4,4).reshape(2, 2);
+        INDArray asseriton = Nd4j.linspace(1, 4, 4);
         INDArray raveled = linspace.ravel();
         assertEquals(asseriton,raveled);
+
+        INDArray tensorLinSpace = Nd4j.linspace(1,16,16).reshape(2,2,2,2);
+        INDArray linspaced = Nd4j.linspace(1, 16, 16);
+        INDArray tensorLinspaceRaveled = tensorLinSpace.ravel();
+        assertEquals(linspaced,tensorLinspaceRaveled);
 
     }
 
