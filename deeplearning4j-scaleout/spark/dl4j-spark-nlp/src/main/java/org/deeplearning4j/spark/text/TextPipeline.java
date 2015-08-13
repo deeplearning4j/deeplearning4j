@@ -19,22 +19,23 @@
 package org.deeplearning4j.spark.text;
 
 import org.apache.spark.Accumulator;
-import org.apache.spark.AccumulatorParam;
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecPerformer;
 import org.deeplearning4j.text.stopwords.StopWords;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A spark based text pipeline
@@ -42,128 +43,198 @@ import java.util.Map.Entry;
  *
  * @author Adam Gibson
  */
+@SuppressWarnings("unchecked")
 public class TextPipeline {
-    private JavaRDD<String> corpus;
-    private List<String> stopWords;
-    private int minWordFrequency;
-    public final static String MIN_WORDS = "org.deeplearning4j.spark.text.minwords";
+    //params
+    private JavaRDD<String> corpusRDD;
+    private int numWords;
+    private int nGrams;
+    private String tokenizer;
+    private String tokenizerPreprocessor;
+    private List<String> stopWords = new ArrayList<>();
+    //Setup
+    private JavaSparkContext sc;
+    private Accumulator<Counter<String>> wordFreqAcc;
+    private Broadcast<List<String>> stopWordBroadCast;
+    // Return values
+    private JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD;
+    private VocabCache vocabCache = new InMemoryLookupCache();
+    private Broadcast<VocabCache> vocabCacheBroadcast;
+    private JavaRDD<List<VocabWord>> vocabWordListRDD;
+    private JavaRDD<AtomicLong> sentenceCountRDD;
+    private long totalWordCount;
 
-    /**
-     *
-     * @param corpus the corpus of text
-     * @param stopWords the stop words to use
-     * @param minWordFrequency the minimum word frequency for the vocab
-     */
-    public TextPipeline(JavaRDD<String> corpus, List<String> stopWords, int minWordFrequency) {
-        this.corpus = corpus;
-        this.stopWords = stopWords;
-        this.minWordFrequency = minWordFrequency;
-        SparkConf conf = corpus.context().conf();
-        int val = conf.getInt(MIN_WORDS,minWordFrequency);
-        this.minWordFrequency = val;
-
+    // Getters
+    public Broadcast<VocabCache> getBroadCastVocabCache() throws IllegalStateException {
+        if (vocabCache.numWords() > 0) {
+            return vocabCacheBroadcast;
+        } else {
+            throw new IllegalStateException("IllegalStateException: VocabCache not set at TextPipline.");
+        }
     }
 
-    /**
-     * Create a text pipeline with the given corpus,
-     * StopWords.getStopWords() and a minimum word frequency of 5
-     * @param corpus the corpus to use
-     */
-    public TextPipeline(JavaRDD<String> corpus) {
-        this(corpus, StopWords.getStopWords(),5);
+    public VocabCache getVocabCache() throws IllegalStateException {
+        if (vocabCache.numWords() > 0) {
+            return vocabCache;
+        } else {
+            throw new IllegalStateException("IllegalStateException: VocabCache not set at TextPipline.");
+        }
     }
 
-    /**
-     * Create a text pipeline with the specified corpus
-     * @param corpus the corpus to use
-     * @param minWordFrequency the minimum word frequency to use
-     */
-    public TextPipeline(JavaRDD<String> corpus, int minWordFrequency) {
-        this(corpus,StopWords.getStopWords(),minWordFrequency);
+    public JavaRDD<List<VocabWord>> getvocabWordListRDD() throws IllegalStateException {
+        if (vocabWordListRDD != null) {
+            return vocabWordListRDD;
+        } else {
+            throw new IllegalStateException("IllegalStateException: vocabWordListRDD not set at TextPipline.");
+        }
     }
 
-    public Pair<VocabCache, Long> filterMinWordAddVocab(Counter<String> wordFreq, Long wordCount) {
-        InMemoryLookupCache lookupCacheObject = new InMemoryLookupCache();
+    public JavaRDD<AtomicLong> getSentenceCountRDD() throws IllegalStateException {
+        if (sentenceCountRDD != null) {
+            return sentenceCountRDD;
+        } else {
+            throw new IllegalStateException("IllegalStateException: sentenceCountRDD not set at TextPipline.");
+        }
+    }
+
+    public Long getTotalWordCount() {
+        if (totalWordCount != 0L) {
+            return totalWordCount;
+        } else {
+            throw new IllegalStateException("IllegalStateException: totalWordCount not set at TextPipline.");
+        }
+    }
+
+    // Constructor
+    public TextPipeline(JavaRDD<String> corpusRDD, int numWords, int nGrams, String tokenizer,
+                        String tokenPreprocessor, boolean removeStopWords) throws Exception {
+        this.corpusRDD = corpusRDD;
+        this.numWords = numWords;
+        // TokenizerFunction Settings
+        this.nGrams = nGrams;
+        this.tokenizer = tokenizer;
+        this.tokenizerPreprocessor = tokenPreprocessor;
+        // Remove Stop words
+        if (removeStopWords) {
+            stopWords = StopWords.getStopWords();
+        }
+        // Setup all Spark variables
+        setup();
+    }
+
+    public void setup() {
+        // Set up accumulators and broadcast stopwords
+        this.sc = new JavaSparkContext(corpusRDD.context());
+        this.wordFreqAcc = sc.accumulator(new Counter<String>(), new WordFreqAccumulator());
+        this.stopWordBroadCast = sc.broadcast(stopWords);
+    }
+
+    public JavaRDD<Pair<List<String>, AtomicLong>> updateAndReturnAccumulatorVal(JavaRDD<List<String>> tokenizedRDD) {
+        // Update the 2 accumulators
+        UpdateAccumulatorFunction accumulatorClassFunction = new UpdateAccumulatorFunction(stopWordBroadCast, wordFreqAcc);
+        JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = tokenizedRDD.map(accumulatorClassFunction);
+
+        // Loop through each element to update accumulator
+        tokenizedRDD.foreach(new VoidFunction<List<String>>() {
+            public void call(List<String> lst) {
+            }
+        });
+
+        return sentenceWordsCountRDD;
+    }
+
+    public String filterMinWord(String stringToken, double tokenCount) {
+        return (tokenCount < numWords) ? org.deeplearning4j.models.word2vec.Word2Vec.UNK : stringToken;
+    }
+
+    public void addTokenToVocabCache(String stringToken, Double tokenCount) {
+        // Making string token into actual token if not already an actual token (vocabWord)
+        VocabWord actualToken;
+        if (vocabCache.hasToken(stringToken)) {
+            actualToken = vocabCache.tokenFor(stringToken);
+            actualToken.increment(tokenCount.intValue());
+        } else {
+            actualToken = new VocabWord(tokenCount, stringToken);
+        }
+
+        // Set the index of the actual token (vocabWord)
+        // Put vocabWord into vocabs in InMemoryVocabCache
+        boolean vocabContainsWord = vocabCache.containsWord(stringToken);
+        if (!vocabContainsWord) {
+            vocabCache.addToken(actualToken);
+            int idx = vocabCache.numWords();
+            actualToken.setIndex(idx);
+            vocabCache.putVocabWord(stringToken);
+        }
+    }
+
+    public void filterMinWordAddVocab(Counter<String> wordFreq) {
 
         for (Entry<String, Double> entry : wordFreq.entrySet()) {
             String stringToken = entry.getKey();
             Double tokenCount = entry.getValue();
-            if (tokenCount < minWordFrequency) {
-                // If word frequency below min word count, it will be UNK (unknown)
-                stringToken = org.deeplearning4j.models.word2vec.Word2Vec.UNK;
-            }
-            // Making string token into actual token if not already an actual token (vocabWord)
-            VocabWord actualToken;
-            if(lookupCacheObject.hasToken(stringToken))
-                actualToken = lookupCacheObject.tokenFor(stringToken);
-            else {
-                actualToken = new VocabWord(1.0, stringToken);
-            }
 
-            // Set the index of the actual token (vocabWord)
-            // Put vocabWord into vocabs in InMemoryVocabCache
-            boolean vocabContainsWord = lookupCacheObject.containsWord(stringToken);
-            if(!vocabContainsWord) {
-                lookupCacheObject.addToken(actualToken);
-                int idx = lookupCacheObject.numWords();
-                actualToken.setIndex(idx);
-                lookupCacheObject.putVocabWord(stringToken);
-            }
-            // Set the word freq to the output from the accumulator
-            lookupCacheObject.setWordFrequencies(wordFreq);
+            // Turn words below min count to UNK
+            stringToken = filterMinWord(stringToken, tokenCount);
+
+            // Turn tokens to vocab and add to vocab cache
+            addTokenToVocabCache(stringToken, tokenCount);
         }
-        return new Pair<>((VocabCache)lookupCacheObject, wordCount);
     }
 
-    /**
-     * Get a vocab cache with all of the vocab based on the
-     * specified stop words and minimum word frequency
-     * @param tokenizer the fully qualified class name to use for instantiating tokenizers
-     * @return the vocab cache and associated total number of words
-     */
-    public Pair<VocabCache,Long> process(String tokenizer) {
-        JavaSparkContext sc = new JavaSparkContext(corpus.context());
-        // This keeps track of the word frequency of each of the vocab words
-        Accumulator<Counter<String>> wordFreqAcc = sc.accumulator(new Counter<String>(), new WordFreqAccumulator());
-        // This keep track of the total number of words
-        Accumulator<Double> wordCountAcc = sc.accumulator(0L);
-        // Broadcast stopwords to all the partitions
-        final Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
-        // Getting the number of n-grams
-        int nGrams = corpus.context().conf().getInt(Word2VecPerformer.N_GRAMS, 1);
-        // Just getting the tokens by splitting on space, doesn't take care of punctuations
-        JavaRDD<Pair<List<String>, Long>> tokenizedRDD = corpus.map(new TokenizerFunction(tokenizer, nGrams));
-        // Update the 2 accumulators
-        VocabCacheFunction accClass = new VocabCacheFunction(broadcast, wordFreqAcc, wordCountAcc);
-        tokenizedRDD.foreach(accClass);
-        // Get the values of the accumulators
-        Long totalWordCount = accClass.getWordCountAcc().value().longValue();
-        Counter<String> wordFreq = accClass.getWordFreqAcc().value();
-        return filterMinWordAddVocab(wordFreq, totalWordCount);
+    public void buildVocabCache() {
+
+        // Tokenize
+        JavaRDD<List<String>> tokenizedRDD = corpusRDD.map(new TokenizerFunction(tokenizer, tokenizerPreprocessor, nGrams));
+
+        // Update accumulator values and map to an RDD of sentence counts
+        sentenceWordsCountRDD = updateAndReturnAccumulatorVal(tokenizedRDD).cache();
+
+        // Get value from accumulator
+        Counter<String> wordFreqCounter = wordFreqAcc.value();
+
+        // Filter out low count words and add to vocab cache object and feed into LookupCache
+        filterMinWordAddVocab(wordFreqCounter);
+
+        // At this point the vocab cache is built. Broadcast vocab cache
+        vocabCacheBroadcast = sc.broadcast(vocabCache);
+
     }
 
-    /**
-     * Get a vocab cache with all of the vocab based on the
-     * specified stop words and minimum word frequency
-     * @return the vocab cache and associated total number of words
-     */
-    public Pair<VocabCache,Long> process() {
-        JavaSparkContext sc = new JavaSparkContext(corpus.context());
-        // This keeps track of the word frequency of each of the vocab words
-        Accumulator<Counter<String>> wordFreqAcc = sc.accumulator(new Counter<String>(), new WordFreqAccumulator());
-        // This keep track of the total number of words
-        Accumulator<Double> wordCountAcc = sc.accumulator(0L);
-        // Broadcast stopwords to all the partitions
-        final Broadcast<List<String>> broadcast = sc.broadcast(stopWords);
-        // Just getting the tokens by splitting on space, doesn't take care of punctuations
-        JavaRDD<Pair<List<String>, Long>> tokenizedRDD = corpus.map(new TokenizerFunction(DefaultTokenizerFactory.class.getName()));
-        // Update the 2 accumulators
-        VocabCacheFunction accClass = new VocabCacheFunction(broadcast, wordFreqAcc, wordCountAcc);
-        tokenizedRDD.foreach(accClass);
-        // Get the values of the accumulators
-        Long totalWordCount = accClass.getWordCountAcc().value().longValue();
-        Counter<String> wordFreq = accClass.getWordFreqAcc().value();
-        Pair<VocabCache, Long> pair = filterMinWordAddVocab(wordFreq, totalWordCount);
-        return pair;
+    public void buildVocabWordListRDD() {
+
+        if (sentenceWordsCountRDD == null)
+            throw new IllegalStateException("SentenceWordCountRDD must be defined first. Run buildLookupCache first.");
+
+        Function wordsListToVocabWords = new Function<Pair<List<String>, AtomicLong>, List<VocabWord>>() {
+            @Override
+            public List<VocabWord> call(Pair<List<String>, AtomicLong> pair) throws Exception {
+                List<String> wordsList = pair.getFirst();
+                List<VocabWord> vocabWordsList = new ArrayList<>();
+                for (String s : wordsList)
+                    vocabWordsList.add(vocabCacheBroadcast.getValue().wordFor(s));
+                return vocabWordsList;
+            }
+        };
+
+        Function getSentenceCount = new Function<Pair<List<String>, AtomicLong>, AtomicLong>() {
+            @Override
+            public AtomicLong call(Pair<List<String>, AtomicLong> pair) throws Exception {
+                return pair.getSecond();
+            }
+        };
+        vocabWordListRDD = sentenceWordsCountRDD.map(wordsListToVocabWords).setName("vocabWordListRDD").cache();
+        sentenceCountRDD = sentenceWordsCountRDD.map(getSentenceCount).setName("sentenceCountRDD").cache();
+        // Actions to fill vocabWordListRDD and sentenceCountRDD
+        vocabWordListRDD.count();
+        totalWordCount = sentenceCountRDD.reduce(new Function2<AtomicLong, AtomicLong, AtomicLong>() {
+            @Override
+            public AtomicLong call(AtomicLong a, AtomicLong b) {
+                return new AtomicLong(a.get() + b.get());
+            }
+        }).get();
+
+        // Release sentenceWordsCountRDD from cache
+        sentenceWordsCountRDD.unpersist();
     }
 }

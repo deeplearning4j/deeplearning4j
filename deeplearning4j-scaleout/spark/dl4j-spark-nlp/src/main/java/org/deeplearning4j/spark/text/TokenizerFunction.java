@@ -19,8 +19,7 @@
 package org.deeplearning4j.spark.text;
 
 import org.apache.spark.api.java.function.Function;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
@@ -31,44 +30,37 @@ import java.util.List;
  * Tokenizer function
  * @author Adam Gibson
  */
-public class TokenizerFunction implements Function<String,Pair<List<String>,Long>> {
+@SuppressWarnings("unchecked")
+public class TokenizerFunction implements Function<String,List<String>> {
     private  String tokenizerFactoryClazz;
+    private String tokenizerPreprocessorClazz;
     private transient TokenizerFactory tokenizerFactory;
     private int nGrams = 1;
     public TokenizerFunction(String clazz) {
         tokenizerFactoryClazz = clazz;
 
     }
-    public TokenizerFunction(int nGrams) {
-        this(DefaultTokenizerFactory.class.getName());
-        this.nGrams = nGrams;
-    }
-
-    public TokenizerFunction() {
-        this(DefaultTokenizerFactory.class.getName());
-    }
-
-    /**
-     * Allow for customization of ngrams being returned
-     * @param tokenizer
-     * @param nGrams
-     */
-    public TokenizerFunction(String tokenizer, int nGrams) {
+    public TokenizerFunction(String tokenizer, String tokenizerPreprocessor, int nGrams) {
         this.tokenizerFactoryClazz = tokenizer;
+        this.tokenizerPreprocessorClazz = tokenizerPreprocessor;
         this.nGrams = nGrams;
     }
 
     @Override
-    public Pair<List<String>,Long> call(String v1) throws Exception {
+    public List<String> call(String v1) throws Exception {
         if(tokenizerFactory == null)
             tokenizerFactory = getTokenizerFactory();
         if(v1.isEmpty())
-            return new Pair<>(Arrays.asList(""),1L);
-        List<String> tokens = tokenizerFactory.create(v1).getTokens();
-        return new Pair<>(tokens, (long) tokens.size());
+            return Arrays.asList("");
+        return tokenizerFactory.create(v1).getTokens();
     }
+
     private TokenizerFactory getTokenizerFactory() {
         try {
+            tokenizerFactory = ((Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz)).newInstance();
+            TokenPreProcess tokenPreProcess = ((Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz))
+                                               .newInstance();
+            tokenizerFactory.setTokenPreProcessor(tokenPreProcess);
             Class<? extends TokenizerFactory> clazz = (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
             tokenizerFactory = clazz.newInstance();
             if(nGrams > 1) {
