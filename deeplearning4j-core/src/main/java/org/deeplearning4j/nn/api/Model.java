@@ -140,6 +140,7 @@ public interface Model {
      */
     INDArray input();
 
+
     /**
      * Validate the input
      */

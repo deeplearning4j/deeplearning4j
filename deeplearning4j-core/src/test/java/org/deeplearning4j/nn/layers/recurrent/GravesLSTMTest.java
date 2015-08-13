@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.classifiers.lstm;
+package org.deeplearning4j.nn.layers.recurrent;
 
 import static org.junit.Assert.*;
 
