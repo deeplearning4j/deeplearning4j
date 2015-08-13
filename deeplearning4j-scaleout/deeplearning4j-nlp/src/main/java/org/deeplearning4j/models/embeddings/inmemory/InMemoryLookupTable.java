@@ -60,7 +60,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
     protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
 
-
     public InMemoryLookupTable(VocabCache vocab,int vectorLength,boolean useAdaGrad,double lr,Random gen,double negative) {
         this.vocab = vocab;
         this.vectorLength = vectorLength;
