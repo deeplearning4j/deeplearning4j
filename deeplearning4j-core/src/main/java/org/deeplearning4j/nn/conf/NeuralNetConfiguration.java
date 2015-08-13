@@ -405,6 +405,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public ListBuilder pretrain(boolean pretrain) {
+            this.pretrain = pretrain;
+            return this;
+        }
+
         public ListBuilder layer(int ind, Layer layer) {
             if (layerwise.get(0) == null && ind != 0) {
                 throw new IllegalArgumentException("LayerZeroIndexError: Layer index must start from 0");
