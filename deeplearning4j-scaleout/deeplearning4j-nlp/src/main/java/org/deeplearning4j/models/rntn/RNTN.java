@@ -1155,11 +1155,6 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public Gradient errorSignal(Gradient error, INDArray input) {
-        return null;
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
         return null;
     }

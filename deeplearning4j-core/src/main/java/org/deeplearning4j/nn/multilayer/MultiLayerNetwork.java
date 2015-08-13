@@ -1653,10 +1653,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public Gradient error(INDArray errorSignal) {
         throw new UnsupportedOperationException();
     }
-    @Override
-    public Gradient errorSignal(Gradient error, INDArray input) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public Type type() {
