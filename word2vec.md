@@ -20,7 +20,7 @@ Contents
 
 ##<a name="intro">Introduction to Word2Vec</a>
 
-[Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java, which works with GPUs. 
+[Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and Scala, which works with GPUs. 
 
 Word2vec is a two-layer neural net that processes text before that text is handled by deep-learning algorithms. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a deep net, it does turn text into a numerical form that deep-learning nets can understand. 
 
