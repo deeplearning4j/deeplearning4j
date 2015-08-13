@@ -562,7 +562,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 throw new IllegalStateException("Index out of bounds " + i);
             return (float) doubleData[i];
         } else if(floatData != null) {
-            if(i >= doubleData.length)
+            if(i >= floatData.length)
                 throw new IllegalStateException("Index out of bounds " + i);
             return floatData[i];
         }
