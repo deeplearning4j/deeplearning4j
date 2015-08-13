@@ -100,7 +100,7 @@ public class Tanh extends BaseTransformOp {
 
     @Override
     public TransformOp derivative() {
-        return new OneMinus(x, y, z, n);
+        return new TanhDerivative(x, y, z, n);
     }
 
     @Override

@@ -19,96 +19,89 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Hard tanh elementwise function
- *
- * @author Adam Gibson
+ * Tanh derivative
  */
-public class HardTanh extends BaseTransformOp {
-    public HardTanh() {
+public class TanhDerivative extends BaseTransformOp {
+
+    public TanhDerivative() {
     }
 
-    public HardTanh(INDArray x, INDArray z) {
+    public TanhDerivative(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public HardTanh(INDArray x, INDArray z, int n) {
+    public TanhDerivative(INDArray x, INDArray z, int n) {
         super(x, z, n);
     }
 
-    public HardTanh(INDArray x, INDArray y, INDArray z, int n) {
+    public TanhDerivative(INDArray x, INDArray y, INDArray z, int n) {
         super(x, y, z, n);
     }
 
-    public HardTanh(INDArray x) {
+    public TanhDerivative(INDArray x) {
         super(x);
     }
 
     @Override
     public String name() {
-        return "hardtanh";
+        return "tanhderivative";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.hardTanh(origin);
+    	IComplexNumber tanh = ComplexUtil.tanh(origin);
+    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.hardTanh(origin);
+    	IComplexNumber tanh = ComplexUtil.tanh(origin);
+    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.hardTanh(origin);
+    	IComplexNumber tanh = ComplexUtil.tanh(origin);
+    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
     public float op(float origin, float other) {
-        return hardTanh(origin);
+    	double tanh = FastMath.tanh(origin);
+        return (float)(1.0 - tanh*tanh);
     }
 
     @Override
     public double op(double origin, double other) {
-        return hardTanh(origin);
+    	double tanh = FastMath.tanh(origin);
+        return 1.0 - tanh*tanh;
     }
 
     @Override
     public double op(double origin) {
-        return hardTanh(origin);
+    	double tanh = FastMath.tanh(origin);
+        return 1.0 - tanh*tanh;
     }
 
     @Override
     public float op(float origin) {
-        return hardTanh(origin);
+    	double tanh = FastMath.tanh(origin);
+        return (float)(1.0 - tanh*tanh);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.hardTanh(origin);
-    }
-
-
-    @Override
-    public TransformOp derivative() {
-        return new HardTanhDerivative(x, y, z, n);
-    }
-
-    private static float hardTanh(float num) {
-    	return num < -1.0f ? -1.0f : num > 1.0f ? 1.0f : num;
-    }
-
-    private static double hardTanh(double num) {
-        return num < -1.0 ? -1.0 : num > 1.0 ? 1.0 : num;
-
+    	IComplexNumber tanh = ComplexUtil.tanh(origin);
+    	return Nd4j.createComplexNumber(1, 1).sub(tanh.mul(tanh));
     }
 
     @Override
@@ -116,9 +109,9 @@ public class HardTanh extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardTanh(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new HardTanh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
@@ -127,10 +120,9 @@ public class HardTanh extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new HardTanh(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new HardTanh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new TanhDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
-
 }
