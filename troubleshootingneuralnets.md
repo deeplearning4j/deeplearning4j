@@ -11,41 +11,13 @@ Neural networks are notoriously difficult to tune. When training with any neural
 
 What's distribution of your data? Are you scaling it properly? With Deeplearning4j, there are a different scaling and normalization techniques to keep in mind.
 
-      DataSet d = ...;
-      //zero mean and unit variance
-      d.normalizeZeroMeanAndUnitVariance();
-      Scale between 0 and 1:
-      d.scale();
-      or:
-      d.scaleMinAndMax(0,1);
+Traverse the input data with the IrisDataSetInterator.
 
-The data transforms that you'll perform are relative to the problem you're solving, and will vary according to the data. Let's consider a configuration now:
- 
-       List<NeuralNetConfiguration> conf = new NeuralNetConfiguration.Builder()
-	    .iterations(1)
-	    .weightInit(WeightInit.DISTRIBUTION)
-	    .dist(Distributions.normal(gen, 1e-2))
-	    .activationFunction(Activations.tanh())
-	    .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-	    .hiddenUnit(RBM.HiddenUnit.RECTIFIED).constrainGradient
-	    .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-	    .optimizationAlgo(NeuralNetwork.OptimizationAlgorithm.GRADIENT_DESCENT)
-	    .rng(gen)
-	    .learningRate(1e-2f)
-	    .nIn(4).nOut(3).list(2)
-	    .override(new NeuralNetConfiguration.ConfOverride() {
-            @Override
-            public void override(int i, NeuralNetConfiguration.Builder builder) {
-            if (i == 1) {
-                builder.weightInit(WeightInit.ZERO);
-                builder.activationFunction(Activations.softMaxRows());
-                builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-              }
-            }
-        }).build();
-        
-        DBN d = new DBN.Builder().layerWiseConfiguration(conf)
-        .hiddenLayerSizes(new int[]{3}).build();
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=57:62"></script>
+
+Configure the DBN as a MultilayerNeuralNet whose layers are RBMs:
+
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNIrisExample.java?slice=42:98"></script>
 
 There's a lot going on here -- I'll cover each of the facets of the configuration and how it relates to troubleshooting.
 
@@ -92,6 +64,4 @@ You can enable this by adding:
  
       .constrainGradientToUnitNorm(true)
 
-
 to your configuration.
-
