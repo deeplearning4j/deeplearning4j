@@ -83,28 +83,33 @@ public class ConvolutionLayer extends BaseLayer {
         return new Pair<>(retGradient,weightGradient);
     }
 
+    public INDArray createFeatureMaps() {
+        // Creates number of feature maps wanted (depth) in the convolution layer = number kernels
+        return Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
+    }
+
+    public INDArray calculateActivation(INDArray featureMaps, INDArray kernelWeights, INDArray bias) {
+        INDArray activation = Nd4j.tensorMmul(featureMaps, kernelWeights, new int[][]{{1, 2, 3}, {1, 2, 3}});
+        activation = activation.reshape(activation.size(0), activation.size(1), activation.size(2), activation.size(3));
+        bias = bias.broadcast(activation.shape()).reshape(activation.shape());
+        activation.addi(bias);
+        return activation;
+    }
+
     @Override
     public INDArray activate(boolean training) {
         if(conf.getDropOut() > 0.0 && !conf.isUseDropConnect() && training) {
             input = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
-
-        // Activations
-        INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
-
         INDArray kernelWeights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
+        INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
+//        kernelWeights = kernelWeights.dup().reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
 
-        kernelWeights = kernelWeights.dup().reshape(Ints.concat(kernelWeights.shape(), new int[] {1, 1}));
         if(conf.getDropOut() > 0 && conf.isUseDropConnect()) {
             kernelWeights = kernelWeights.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(kernelWeights.shape()));
         }
-
-        // Creates number of feature maps wanted (depth) in the convolution layer = number kernels
-        INDArray convolved = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
-        INDArray activation = Nd4j.tensorMmul(convolved, kernelWeights, new int[][]{{1, 2, 3}, {1, 2, 3}});
-        activation = activation.reshape(activation.size(0),activation.size(1),activation.size(2),activation.size(3));
-        bias = bias.broadcast(activation.shape()).reshape(activation.shape());
-        activation.addi(bias);
+        INDArray featureMaps = createFeatureMaps();
+        INDArray activation = calculateActivation(featureMaps, kernelWeights, bias);
         return Nd4j.rollAxis(activation, 3, 1);
     }
 

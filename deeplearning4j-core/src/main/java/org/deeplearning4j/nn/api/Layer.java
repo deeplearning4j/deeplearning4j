@@ -40,8 +40,6 @@ public interface Layer extends Serializable,Cloneable,Model {
        FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE,MULTILAYER
     }
 
-
-
     /**
      * The l2 magnitude for the weights
      * @return the l2 magnitude for the weights
