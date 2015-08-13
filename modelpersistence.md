@@ -5,9 +5,7 @@ layout: default
 
 # Saving and Loading a Neural Network
 
-There are two ways to save a model with Deeplearning4j. The first is Java serialization:
-
-Neural networks that implement the Persistable interface are persistable via Java serialization. It looks like this in the [Javadoc](http://deeplearning4j.org/doc/), where you can find it by searching for "Persistable."
+There are two ways to save a model with Deeplearning4j. The first is Java serialization. Neural networks that implement the Persistable interface are persistable via Java serialization. It looks like this in the [Javadoc](http://deeplearning4j.org/doc/), where you can find it by searching for "Persistable."
 
 ![Alt text](../img/persistable.png) 
 
