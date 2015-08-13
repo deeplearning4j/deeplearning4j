@@ -88,7 +88,7 @@ class NeuralNetworkClassification(override val uid: String)
     val outputLayer = c.getConf(c.getConfs.size() - 1)
     val numClasses = outputLayer.getNOut match {
       case 0 => {
-        Attribute.fromStructField(dataset.schema($(labelCol))) match {
+        NominalAttribute.fromStructField(dataset.schema($(labelCol))) match {
           case (attr: NominalAttribute) => attr.getNumValues match {
             case Some(value: Int) => value
             case _ => throw new UnsupportedOperationException("expected numValues on nominal attribute")
