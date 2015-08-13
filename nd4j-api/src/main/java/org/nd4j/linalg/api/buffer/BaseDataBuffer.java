@@ -536,9 +536,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public double getDouble(int i) {
         if(doubleData != null) {
+            if(i >= doubleData.length)
+                throw new IllegalStateException("Index out of bounds " + i);
             return doubleData[i];
         }
         else if(floatData != null) {
+            if(i >= floatData.length)
+                throw new IllegalStateException("Index out of bounds " + i);
             return (double) floatData[i];
         }
         else if(intData != null) {
@@ -554,8 +558,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public float getFloat(int i) {
         if(doubleData != null) {
+            if(i >= doubleData.length)
+                throw new IllegalStateException("Index out of bounds " + i);
             return (float) doubleData[i];
         } else if(floatData != null) {
+            if(i >= doubleData.length)
+                throw new IllegalStateException("Index out of bounds " + i);
             return floatData[i];
         }
         else if(intData != null) {

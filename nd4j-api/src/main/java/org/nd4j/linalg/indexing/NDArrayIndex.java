@@ -41,6 +41,16 @@ public class NDArrayIndex implements INDArrayIndex {
 
 
     /**
+     * Returns a point index
+     * @param point the point index
+     * @return the point index based
+     * on the specified point
+     */
+    public static INDArrayIndex point(int point) {
+        return new PointIndex(point);
+    }
+
+    /**
      * Add indexes for the given shape
      * @param shape the shape ot convert to indexes
      * @return the indexes for the given shape
@@ -232,6 +242,22 @@ public class NDArrayIndex implements INDArrayIndex {
     public static INDArrayIndex[] resolve(INDArray arr, INDArrayIndex... intendedIndexes) {
         return resolve(NDArrayIndex.allFor(arr),intendedIndexes);
     }
+
+    /**
+     * Number of point indexes
+     * @param indexes the indexes
+     *                to count for points
+     * @return the number of point indexes
+     * in the array
+     */
+    public static int numPoints(INDArrayIndex...indexes) {
+        int ret = 0;
+        for(int i = 0; i < indexes.length; i++)
+            if(indexes[i] instanceof PointIndex)
+                ret++;
+        return ret;
+    }
+
     /**
      * Given an all index and
      * the intended indexes, return an
@@ -247,6 +273,12 @@ public class NDArrayIndex implements INDArrayIndex {
         INDArrayIndex[] all = new INDArrayIndex[allIndex.length + numNewAxes];
         Arrays.fill(all,NDArrayIndex.all());
         for(int i = 0; i < allIndex.length; i++) {
+            //collapse single length indexes in to point indexes
+            if(intendedIndexes[i] instanceof NDArrayIndex) {
+                NDArrayIndex idx = (NDArrayIndex) intendedIndexes[i];
+                if(idx.indices.length == 1)
+                    intendedIndexes[i] = new PointIndex(idx.indices[0]);
+            }
             if(i < intendedIndexes.length)
                 all[i] =  intendedIndexes[i];
 

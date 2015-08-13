@@ -57,6 +57,7 @@ public class ShapeOffsetResolution implements Serializable {
          * 1,1,0
          * when calculating offsets
          */
+        int pointIndexes = NDArrayIndex.numPoints(indexes);
         if(shape[0] == 1 && shape.length > 2 && !Indices.isScalar(arr,indexes)) {
             boolean[] ones = new boolean[shape.length - 1];
             int[] newShape  = new int[shape.length - 1];
@@ -119,6 +120,10 @@ public class ShapeOffsetResolution implements Serializable {
 
             else {
                 if(newShape.length < arr.shape().length || newShape.length < arr.stride().length) {
+                    if(offsets.length > shape.length) {
+                        offsets = ArrayUtil.keep(offsets, ArrayUtil.range(0, shape.length));
+                    }
+
                     if(stride.length < offsets.length) {
                         offsets = Arrays.copyOfRange(offsets,0,offsets.length - 1);
                     }
@@ -133,6 +138,35 @@ public class ShapeOffsetResolution implements Serializable {
 
         }
 
+        else if(arr.rank() > 2 && pointIndexes > 0) {
+            int numNewAxes = NDArrayIndex.numNewAxis(indexes);
+            if(numNewAxes > 0) {
+                throw new IllegalStateException("No support for new axis and point indexing yet");
+            }
+
+            int[] pointIndexArr = new int[pointIndexes];
+            int pointIndexIdx = 0;
+            for(int i = 0;i  < indexes.length; i++) {
+                if(indexes[i] instanceof PointIndex)
+                    pointIndexArr[pointIndexIdx++] = i;
+            }
+
+            int[] newShape = ArrayUtil.removeIndex(arr.shape(),pointIndexArr);
+            //use new strides for the stride of he array
+            int[] newStrides = ArrayUtil.removeIndex(arr.stride(),pointIndexArr);
+            //use the removed strides of the offset
+            int[] removedStrides = ArrayUtil.keep(arr.stride(),pointIndexArr);
+            int[] newOffsets = Shape.squeezeOffsets(shape, offsets);
+            int offset = 0;
+            for(int i = 0; i < removedStrides.length; i++) {
+                offset += removedStrides[i] * newOffsets[i];
+            }
+            this.offset = offset;
+            offsets = newOffsets;
+            stride = newStrides;
+            shape = newShape;
+
+        }
 
 
         if(stride.length > offsets.length) {

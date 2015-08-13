@@ -8,6 +8,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Adam Gibson
  */
@@ -75,16 +77,32 @@ public class IndexingTestsC extends BaseNd4jTest {
 
     @Test
     public void testMultiRow() {
-        INDArray matrix = Nd4j.linspace(1,9,9).reshape(3,3);
+        INDArray matrix = Nd4j.linspace(1,9,9).reshape(3, 3);
         INDArray assertion = Nd4j.create(new double[][]{
                 {4, 5},
                 {7, 8}
         });
         INDArray test = matrix.get(new NDArrayIndex(1,3),new NDArrayIndex(0,2));
         assertEquals(assertion,test);
-
-
     }
+
+    @Test
+    public void testPointIndexes() {
+        INDArray arr = Nd4j.create(4, 3, 2);
+        INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.all());
+        assertArrayEquals(new int[]{4,2},get.shape());
+        INDArray linspaced = Nd4j.linspace(1,24,24).reshape(4,3,2);
+        INDArray assertion = Nd4j.create(new double[][]{
+                {3, 4},
+                {9, 10},
+                {15, 16},
+                {21, 22}
+        });
+
+        INDArray linspacedGet = linspaced.get(NDArrayIndex.all(),NDArrayIndex.point(1),NDArrayIndex.all());
+        assertEquals(assertion,linspacedGet);
+    }
+
 
 
 

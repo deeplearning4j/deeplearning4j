@@ -3231,11 +3231,11 @@ public abstract class BaseNDArray implements INDArray {
     public double getDouble(int i) {
         if(i >= length()) {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
-
         }
 
 
         int[] dimensions = ordering == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
+        Shape.assertShapeLessThan(dimensions,shape());
         return getDouble(dimensions);
 
     }

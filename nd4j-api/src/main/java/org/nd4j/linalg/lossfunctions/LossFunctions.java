@@ -126,7 +126,8 @@ public class LossFunctions {
         if (useRegularization)
             ret += reg;
 
-        ret /= (double) labels.rows();
+
+        ret /= (double) labels.size(0);
         Nd4j.ENFORCE_NUMERICAL_STABILITY = oldEnforce;
         return ret;
 

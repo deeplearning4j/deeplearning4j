@@ -127,7 +127,6 @@ public class Indices {
      * @return the offsets for the given set of indices
      */
     public static int[] offsets(int[] shape,INDArrayIndex...indices) {
-        int numNewAxes = NDArrayIndex.numNewAxis(indices);
         //offset of zero for every new axes
         int[] ret = new int[shape.length];
 
@@ -147,14 +146,32 @@ public class Indices {
         }
 
         else {
-            for (int i = 0; i < shape.length; i++) {
-                if(indices[i] instanceof NDArrayIndexEmpty)
-                    ret[i] = 0;
+            int numPoints = NDArrayIndex.numPoints(indices);
+            if(numPoints > 0) {
+                List<Integer> nonZeros = new ArrayList<>();
+                for(int i = 0; i < indices.length; i++)
+                    if(indices[i].offset() > 0)
+                        nonZeros.add(indices[i].offset());
+                if(nonZeros.size() > shape.length)
+                    throw new IllegalStateException("Non zeros greater than shape unable to continue");
                 else {
-                    ret[i] = indices[i].offset();
+                    //push all zeros to the back
+                    for(int i = 0; i < nonZeros.size(); i++)
+                        ret[i] = nonZeros.get(i);
                 }
-
             }
+            else {
+                int shapeIndex = 0;
+                for (int i = 0; i < indices.length; i++) {
+                    if(indices[i] instanceof NDArrayIndexEmpty)
+                        ret[i] = 0;
+                    else {
+                        ret[i] = indices[shapeIndex++].offset();
+                    }
+
+                }
+            }
+
 
             if(ret.length == 1) {
                 ret = new int[] {ret[0],0};
@@ -378,8 +395,14 @@ public class Indices {
                 }
 
             }
+            //truncate all point indexes
             else if(indices[i] instanceof NDArrayIndexEmpty) {
                 ret[i] = 0;
+            }
+            else if(indices[i] instanceof PointIndex) {
+                ret[i] = 0;
+                //move to the next index since this is a point
+                shapeIndex++;
             }
 
             else if(indices[i] instanceof NewAxis) {
@@ -404,6 +427,9 @@ public class Indices {
 
         int[] ret2 =  ArrayUtil.toArray(nonZeros);
         if(Shape.isRowVectorShape(ret2) && ret2.length == 1) {
+            //get all rows
+            if(indices[0] instanceof NDArrayIndexAll)
+                return new int[] {ret2[0],1};
             return new int[]{1,ret2[0]};
         }
 
@@ -443,16 +469,16 @@ public class Indices {
     public static int[] stride(INDArray arr,INDArrayIndex[] indexes, int... shape) {
         int[] retStride = null;
         if(indexes.length >= arr.stride().length) {
-            //prepend zeros for new axis
+        //prepend zeros for new axis
             retStride = new int[arr.stride().length];
             for(int i = 0; i < retStride.length; i++) {
                 retStride[i] = arr.stride(i) * indexes[i].stride();
             }
+
         }
         else {
             retStride = Arrays.copyOfRange(arr.stride(), 1, shape.length);
         }
-
 
 
         return retStride;

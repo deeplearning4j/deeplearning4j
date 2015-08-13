@@ -671,6 +671,23 @@ public class Shape {
 
 
     /**
+     * Assert the both shapes are the same length
+     * and shape[i] < lessThan[i]
+     * @param shape the shape to check
+     * @param lessThan the shape to assert against
+     */
+    public static void assertShapeLessThan(int[] shape,int[] lessThan) {
+        if(shape.length != lessThan.length) {
+            throw new IllegalArgumentException("Shape length must be == less than length");
+        }
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] >= lessThan[i])
+                throw new IllegalStateException("Shape[" + i + "] should be less than lessThan[" + i + "]");
+        }
+    }
+
+
+    /**
      * Returns a permutation of the dimensions
      * with all 1s moved to end
      * @param shape the shape to permute
@@ -743,6 +760,8 @@ public class Shape {
         if(delta == 0)
             return ret;
         else {
+            if(ret.length > shape.length)
+                throw new IllegalStateException("Unable to squeeze offsets");
             int[] retOffsets = new int[shape.length];
             System.arraycopy(ret,0,retOffsets,0,ret.length);
             return retOffsets;
@@ -750,14 +769,6 @@ public class Shape {
     }
 
 
-    public static int[] squeezeStrides(int[] shape,int[] stride) {
-        List<Integer> squeezeIndices = new ArrayList<>();
-        for(int i = 0; i < shape.length; i++)
-            if(shape[i] == 1)
-                squeezeIndices.add(i);
-        int[] ret = ArrayUtil.removeIndex(stride,Ints.toArray(squeezeIndices));
-        return ret;
-    }
 
 
     /**
