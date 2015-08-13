@@ -20,50 +20,30 @@ package org.deeplearning4j.spark.text;
 
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Jeffrey Tang
  */
-public class VocabCacheFunction implements VoidFunction<Pair<List<String>, Long>> {
+public class UpdateAccumulatorFunction implements Function<List<String>, Pair<List<String>, AtomicLong>> {
 
     private Broadcast<List<String>> stopWords;
     private Accumulator<Counter<String>> wordFreqAcc;
-    private Accumulator<Double> wordCountAcc;
 
-    //Getters
-    public Accumulator<Counter<String>> getWordFreqAcc() {
-        return wordFreqAcc;
-    }
-
-    public Accumulator<Double> getWordCountAcc() {
-        return wordCountAcc;
-    }
-    //
-
-    public VocabCacheFunction(Broadcast<List<String>> stopWords,
-
-                              Accumulator<Counter<String>> wordFreqAcc,
-                              Accumulator<Double> wordCountAcc) {
+    public UpdateAccumulatorFunction(Broadcast<List<String>> stopWords,
+                                     Accumulator<Counter<String>> wordFreqAcc) {
         this.wordFreqAcc = wordFreqAcc;
-        this.wordCountAcc = wordCountAcc;
         this.stopWords = stopWords;
     }
 
     // Function to add to word freq counter and total count of words
     @Override
-    public void call(Pair<List<String>, Long> pair) throws Exception {
-        // Add the count of the sentence to the global count of all words
-        Long sentenceWordCount = pair.getSecond();
-        wordCountAcc.add((double)sentenceWordCount);
-        // Set up the list of words and the stop words and the counter
-        List<String> lstOfWords = pair.getFirst();
+    public Pair<List<String>, AtomicLong> call(List<String> lstOfWords) throws Exception {
         List<String> stops = stopWords.getValue();
         Counter<String> counter = new Counter<>();
 
@@ -71,13 +51,19 @@ public class VocabCacheFunction implements VoidFunction<Pair<List<String>, Long>
             if(w.isEmpty())
                 continue;
 
-            if (stops.contains(w)) {
-                counter.incrementCount("STOP", 1.0);
-            } else {
+            if (!stops.isEmpty()) {
+                if (stops.contains(w)) {
+                    counter.incrementCount("STOP", 1.0);
+                } else {
+                    counter.incrementCount(w, 1.0);
+                }
+            }  else {
                 counter.incrementCount(w, 1.0);
             }
         }
         wordFreqAcc.add(counter);
+        AtomicLong lstOfWordsSize = new AtomicLong(lstOfWords.size());
+        return new Pair<>(lstOfWords, lstOfWordsSize);
     }
 }
 

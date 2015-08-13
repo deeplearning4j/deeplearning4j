@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
+import lombok.NoArgsConstructor;
 import org.apache.spark.Accumulator;
-import org.apache.spark.AccumulatorParam;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -37,11 +37,9 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.spark.text.MaxPerPartitionAccumulator;
-import org.deeplearning4j.spark.text.TextPipeline;
-import org.deeplearning4j.spark.text.TokenizerFunction;
-import org.deeplearning4j.spark.text.TokentoVocabWord;
+import org.deeplearning4j.spark.text.*;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -51,154 +49,110 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables.*;
 
 /**
  * Spark version of word2vec
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class Word2Vec extends WordVectorsImpl implements Serializable  {
 
-    private  Broadcast<VocabCache> vocabCacheBroadcast;
-    private String tokenizerFactoryClazz;
     private InMemoryLookupTable table;
     private static Logger log = LoggerFactory.getLogger(Word2Vec.class);
 
-    public Word2Vec(String tokenizerFactoryClazz, InMemoryLookupTable table) {
-        this.tokenizerFactoryClazz = tokenizerFactoryClazz;
-        this.table = table;
-    }
+    // Constructor to take InMemoryLookupCache table from an already trained model
+    public Word2Vec(InMemoryLookupTable table) { this.table = table; }
 
-    public Word2Vec(String tokenizerFactoryClazz) {
-        this.tokenizerFactoryClazz = tokenizerFactoryClazz;
-    }
 
-    public Word2Vec() {
-        this(DefaultTokenizerFactory.class.getName());
-    }
+    // Training word2vec based on corpus
+    public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> corpusRDD) throws Exception {
 
-    /**
-     * Train and return the result based on the given records.
-     * Each string is assumed to be a document
-     * @param rdd the rdd to train on
-     * @return the vocab and lookup table for the model
-     */
-    public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> rdd) {
-        SparkConf conf = rdd.context().getConf();
-        int minWords = conf.getInt(Word2VecPerformer.NUM_WORDS, 5);
-        TextPipeline pipeline = new TextPipeline(rdd, minWords);
-        Pair<VocabCache,Long> vocabAndNumWords = pipeline.process(tokenizerFactoryClazz);
-        final JavaSparkContext sc = new JavaSparkContext(rdd.context());
-        vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
-        final InMemoryLookupTable lookupTable = this.table != null ? table : (InMemoryLookupTable) new InMemoryLookupTable.Builder()
-                .cache(vocabAndNumWords.getFirst()).lr(conf.getDouble(Word2VecPerformerVoid.ALPHA,0.025))
-                .vectorLength(conf.getInt(Word2VecPerformerVoid.VECTOR_LENGTH,100)).negative(conf.getDouble(Word2VecPerformerVoid.NEGATIVE,5))
-                .useAdaGrad(conf.getBoolean(Word2VecPerformerVoid.ADAGRAD,false)).build();
-        //only initialize if necessary
-        if(this.table == null)
-            lookupTable.resetWeights();
+        // Each `train()` can use different parameters
+        final JavaSparkContext sc = new JavaSparkContext(corpusRDD.context());
+        final SparkConf conf = sc.getConf();
+        int vectorLength = assignVar(VECTOR_LENGTH, conf, Integer.class);
+        boolean useAdaGrad = assignVar(ADAGRAD, conf, Boolean.class);
+        double negative = assignVar(NEGATIVE, conf, Double.class);
+        int numWords = assignVar(NUM_WORDS, conf, Integer.class);
+        int window = assignVar(WINDOW, conf, Integer.class);
+        double alpha = assignVar(ALPHA, conf, Double.class);
+        double minAlpha = assignVar(MIN_ALPHA, conf, Double.class);
+        int iterations = assignVar(ITERATIONS, conf, Integer.class);
+        int nGrams = assignVar(N_GRAMS, conf, Integer.class);
+        String tokenizer = assignVar(TOKENIZER, conf, String.class);
+        String tokenPreprocessor = assignVar(TOKEN_PREPROCESSOR, conf, String.class);
+        boolean removeStop = assignVar(REMOVE_STOPWORDS, conf, Boolean.class);
 
-        Huffman huffman = new Huffman(vocabAndNumWords.getFirst().vocabWords());
+        // Variables to fill in in train
+        final JavaRDD<AtomicLong> sentenceWordsCountRDD;
+        final JavaRDD<List<VocabWord>> vocabWordListRDD;
+        final Long totalWordCount;
+        final JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD;
+        final VocabCache vocabCache;
+        final Broadcast<VocabCache> vocabCacheBroadcast;
+        final JavaRDD<Long> sentenceCumSumCountRDD;
+
+        // Start Training //
+        //////////////////////////////////////
+        log.info("Tokenization and building VocabCache ...");
+        // Processing every sentence and make a VocabCache which gets fed into a LookupCache
+        TextPipeline pipeline = new TextPipeline(corpusRDD, numWords, nGrams, tokenizer,
+                                                 tokenPreprocessor, removeStop);
+        pipeline.buildVocabCache();
+
+        // Get total word count
+        totalWordCount = pipeline.getTotalWordCount();
+
+        // 2 RDDs: (vocab words list) and (sentence Count).Already cached
+        sentenceWordsCountRDD = pipeline.getSentenceCountRDD();
+        vocabWordListRDD = pipeline.getvocabWordListRDD();
+
+        // Get vocabCache and broad-casted vocabCache
+        vocabCache = pipeline.getVocabCache();
+        vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
+
+        //////////////////////////////////////
+        log.info("Building Huffman Tree ...");
+        // Building Huffman Tree would update the code and point in each of the vocabWord in vocabCache
+        Huffman huffman = new Huffman(vocabCache.vocabWords());
         huffman.build();
 
-        log.info("Built huffman tree");
+        //////////////////////////////////////
+        log.info("Calculating cumulative sum of sentence counts ...");
+        sentenceCumSumCountRDD =  new CountCumSum(sentenceWordsCountRDD).buildCumSum();
 
-        JavaRDD<Pair<List<VocabWord>, AtomicLong>> r = rdd
-                .map(new TokenizerFunction(tokenizerFactoryClazz))
-                .map(new TokentoVocabWord(vocabCacheBroadcast));
+        //////////////////////////////////////
+        log.info("Mapping to RDD(vocabWordList, cumulative sentence count) ...");
+        vocabWordListSentenceCumSumRDD = vocabWordListRDD.zip(sentenceCumSumCountRDD);
 
-        log.info("Built vocab..");
+        //////////////////////////////////////
+        log.info("Building Word2VecParams ...");
+        // Define InMemoryLookupTable with InMemoryLookupCache
+        final InMemoryLookupTable lookupTable;
+        if (table != null) {
+            lookupTable = table;
+        } else {
+            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
+                    .cache(vocabCache).vectorLength(vectorLength).negative(negative).build();
+            lookupTable.resetWeights();
+        }
+        //Define Word2VecParam from InMemoryLookupTable
         final Word2VecParam param = new Word2VecParam.Builder()
-                .negative(0.0).window(conf.getInt(Word2VecPerformer.WINDOW,5))
-                .expTable(sc.broadcast(lookupTable.getExpTable())).setAlpha(lookupTable.getLr().get())
-                .setMinAlpha(1e-2).setVectorLength(lookupTable.getVectorLength())
-                .useAdaGrad(lookupTable.isUseAdaGrad()).weights(lookupTable)
+                .negative(negative).window(window)
+                .expTable(sc.broadcast(lookupTable.getExpTable()))
+                .setAlpha(alpha)
+                .setMinAlpha(minAlpha)
+                .setVectorLength(vectorLength)
+                .useAdaGrad(useAdaGrad)
+                .weights(lookupTable)
                 .build();
 
-        param.getTotalWords();
-        param.setTotalWords(vocabAndNumWords.getSecond().intValue());
-
-        log.info("Counting words within sentences..");
-        // Get all the frequencies
-        final JavaRDD<AtomicLong> frequencies = r.map(new Function<Pair<List<VocabWord>, AtomicLong>, AtomicLong>() {
-            @Override
-            public AtomicLong call(Pair<List<VocabWord>, AtomicLong> listAtomicLongPair) throws Exception {
-                return listAtomicLongPair.getSecond();
-            }
-        }).cache();
-
-        // Accumulator to get the max of the cumulative sum in each partition
-        final Accumulator<Counter<Integer>> maxPerPartitionAcc = sc.accumulator(new Counter<Integer>(),
-                new MaxPerPartitionAccumulator());
-
-        //Do a scan-left equivalent in each partition
-        Function2 foldWithinPartition = new Function2<Integer, Iterator<AtomicLong>, Iterator<Long>>(){
-            @Override
-            public Iterator<Long> call(Integer ind, Iterator<AtomicLong> partition) throws Exception {
-
-                List<Long> foldedItemList = new ArrayList<Long>() {{ add(0L); }};
-
-                while (partition.hasNext()) {
-                    Long curPartitionItem = partition.next().get();
-                    Integer lastFoldedIndex = foldedItemList.size() - 1;
-                    Long lastFoldedItem = foldedItemList.get(lastFoldedIndex);
-                    Long sumLastCurrent = curPartitionItem + lastFoldedItem;
-
-                    foldedItemList.set(lastFoldedIndex, sumLastCurrent);
-                    foldedItemList.add(sumLastCurrent);
-                }
-
-                // Update Accumulator
-                Long maxFoldedItem = foldedItemList.remove(foldedItemList.size() - 1);
-                Counter<Integer> partitionIndex2maxItemCounter = new Counter<>();
-                partitionIndex2maxItemCounter.incrementCount(ind, maxFoldedItem);
-                maxPerPartitionAcc.add(partitionIndex2maxItemCounter);
-
-                return foldedItemList.iterator();
-            }
-        };
-
-        // Partition mapping to fold within partition
-        @SuppressWarnings("unchecked")
-        JavaRDD<Long> foldWithinPartitionRDD = frequencies.mapPartitionsWithIndex(foldWithinPartition, true);
-        // Action to fill the accumulator
-        foldWithinPartitionRDD.foreachPartition(new VoidFunction<Iterator<Long>>() {
-            @Override
-            public void call(Iterator<Long> integerIterator) throws Exception {
-            }
-        });
-        //Cache
-        foldWithinPartitionRDD.cache();
-
-        // Get the max count of the cumulative within each partition from accumulator
-        final Counter<Integer> maxPerPartitionCounter = maxPerPartitionAcc.value();
-        // Broadcast max count of cumulative of each partition
-        final Broadcast<Counter<Integer>> broadcastedmaxPerPartitionCounter = sc.broadcast(maxPerPartitionCounter);
-
-        // Fold between partitions based on max count of cumulative of each partition
-        Function2 foldBetweenPartitions = new Function2<Integer, Iterator<Long>, Iterator<Long>>() {
-            @Override
-            public Iterator<Long> call(Integer ind, Iterator<Long> partition) throws Exception {
-                int sumToAdd = 0;
-                Counter<Integer> maxPerPartitionCounterInScope = broadcastedmaxPerPartitionCounter.value();
-                if (ind != 0) {
-                    for (int i=0; i < ind; i++) { sumToAdd += maxPerPartitionCounterInScope.getCount(i); }
-                }
-
-                List<Long> itemsAddedToList = new ArrayList<>();
-                while (partition.hasNext()) {
-                    itemsAddedToList.add(partition.next() + sumToAdd);
-                }
-
-                return itemsAddedToList.iterator();
-            }
-        };
-        @SuppressWarnings("unchecked")
-        JavaRDD foldBetweenPartitionRDD = foldWithinPartitionRDD.mapPartitionsWithIndex(foldBetweenPartitions, true);
-        @SuppressWarnings("unchecked")
-        final List<Long> wordsSeen = foldBetweenPartitionRDD.collect();
+        param.setTotalWords(totalWordCount.intValue());
 
 
+        ////////////////////////////////////
         log.info("Calculating word frequencies...");
 
 
