@@ -32,7 +32,7 @@ import java.util.*;
 public class Word2VecChange implements Serializable {
     private Map<Integer,Set<INDArray>> changes = new HashMap<>();
 
-    public Word2VecChange(List<Triple<Integer,Integer,Integer>> counterMap,Word2VecParam param) {
+    public Word2VecChange(List<Triple<Integer,Integer,Integer>> counterMap, Word2VecParam param) {
         Iterator<Triple<Integer,Integer,Integer>> iter = counterMap.iterator();
         while(iter.hasNext()) {
             Triple<Integer,Integer,Integer> next = iter.next();
@@ -67,7 +67,7 @@ public class Word2VecChange implements Serializable {
             Set<INDArray> changes = this.changes.get(i);
             INDArray toChange = table.getSyn0().slice(i);
             for(INDArray syn1 : changes)
-                Nd4j.getBlasWrapper().axpy(1,syn1,toChange);
+                Nd4j.getBlasWrapper().level1().axpy(toChange.length(), 1, syn1, toChange);
         }
     }
 }

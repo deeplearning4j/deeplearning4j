@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
+import lombok.Data;
 import org.apache.spark.SparkConf;
 
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.Map;
 /**
  * @author jeffreytang
  */
+@Data
 public class Word2VecVariables {
 
     public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.word2vec";
@@ -38,8 +40,8 @@ public class Word2VecVariables {
         put(MIN_ALPHA, 1e-2);
         put(ITERATIONS, 1);
         put(N_GRAMS, 1);
-        put(TOKENIZER, "DefaultTokenizerFactory");
-        put(TOKEN_PREPROCESSOR, "CommonPreprocessor");
+        put(TOKENIZER, "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory");
+        put(TOKEN_PREPROCESSOR, "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor");
         put(REMOVE_STOPWORDS, false);
         put(STEMMING, null);
         put(ALPHANUMERIC_ONLY, null);
