@@ -205,7 +205,7 @@ private[api] case class DRange(startR: Int, endR: Int, isInclusive: Boolean, ste
 
   def toList: List[Int] = List.iterate(start, length)(_ + step)
 
-  override def toString: String = s"${getClass.getSimpleName}(start:$start,endIncl:$end,step:$step,length:$length)"
+  override def toString: String = s"[$start to $end by $step len:$length]"
 }
 
 private[api] object DRange extends {
