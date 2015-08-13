@@ -21,7 +21,7 @@ package org.nd4j.api
 
 import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.indexing.NDArrayIndex
+import org.nd4j.linalg.indexing.INDArrayIndex
 
 
 /**
@@ -112,7 +112,7 @@ trait OperatableNDArray[A <: INDArray] {
 
   def update(indices: Array[Int], element: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.put(underlying, indices, element)
 
-  def update(indices: Array[NDArrayIndex], element: INDArray): INDArray = underlying.put(indices, element)
+  def update(indices: Array[INDArrayIndex], element: INDArray): INDArray = underlying.put(indices, element)
 
   def update(i: Int, j: Int, element: INDArray): INDArray = underlying.put(i, j, element)
 
