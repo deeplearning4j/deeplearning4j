@@ -34,7 +34,7 @@ public class LayerBuilderTest {
     @Test
     public void testLayerBuilderAPI() {
         // Make new Convolutional layer
-        ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize,convType).activation(act).build();
+        ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize,new int[]{1,1}).activation(act).build();
         // Make new Subsampling layer
         SubsamplingLayer sample = new SubsamplingLayer.Builder(poolType, stride).build();
         // Make new RBM layer
