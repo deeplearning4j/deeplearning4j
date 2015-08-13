@@ -125,14 +125,6 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient errorSignal(Gradient error, INDArray input) {
-        INDArray derivative = derivativeActivation(input);
-        Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,derivative.mul(error.getGradientFor(DefaultParamInitializer.WEIGHT_KEY)));
-        return ret;
-    }
-
-    @Override
     public Gradient calcGradient(Gradient layerError, INDArray activation) {
         Gradient ret = new DefaultGradient();
         INDArray weightErrorSignal = layerError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
@@ -428,22 +420,18 @@ public abstract class BaseLayer implements Layer {
     }
 
     /**
-     * Averages the given logistic regression
-     * from a mini batch in to this one
-     * @param l the logistic regression to average in to this one
+     * Averages the given logistic regression from a mini batch into this layer
+     * @param l the logistic regression layer to average into this layer
      * @param batchSize  the batch size
      */
     @Override
-    public void merge(Layer l,int batchSize) {
+    public void merge(Layer l, int batchSize) {
         setParams(params().addi(l.params().divi(batchSize)));
         computeGradientAndScore();
     }
 
-
     @Override
     public Layer clone() {
-
-
         Layer layer = null;
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
@@ -545,8 +533,6 @@ public abstract class BaseLayer implements Layer {
     public Layer transpose() {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-
-
         Layer layer = null;
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);

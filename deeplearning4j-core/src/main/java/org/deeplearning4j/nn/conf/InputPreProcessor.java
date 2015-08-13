@@ -30,7 +30,6 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-@Deprecated
 public interface InputPreProcessor extends Serializable {
 
 
