@@ -87,7 +87,7 @@ public class NeuralNetConfLayerBuilderTest {
         NeuralNetConfiguration convConf = new NeuralNetConfiguration.Builder()
                 .activationFunction(act)
                 .kernelSize(kernelSize)
-                .layer(new ConvolutionLayer.Builder(newFS, newConvType).activation(newAct).build())
+                .layer(new ConvolutionLayer.Builder(newFS, new int[]{1,1}).activation(newAct).build())
                 .build();
 
         Layer conv = LayerFactories.getFactory(convConf.getLayer()).create(convConf);
