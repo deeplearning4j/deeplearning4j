@@ -18,135 +18,239 @@
 
 package org.deeplearning4j.spark.text;
 
-import static org.junit.Assert.*;
-
-import org.apache.commons.lang3.Range;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.word2vec.VocabWord;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
-import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.springframework.core.io.ClassPathResource;
+import org.junit.runners.MethodSorters;
 
-import java.io.FileWriter;
-import java.util.*;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Jeffrey Tang
  */
-public class TextPipelineTest extends BaseSparkTest {
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class TextPipelineTest {
 
-    /**
-     *
-     * Testing the TextPipeline on a toy example to make sure words and vocabs are counted correctly
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testTextPipelineSimple() throws Exception {
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("basic/word2vec.txt").getFile().getAbsolutePath(), 3);
-        TextPipeline pipeline = new TextPipeline(corpus, 1); //Min word freq
-        Pair<VocabCache,Long> pair = pipeline.process();
-        InMemoryLookupCache lookupCache = (InMemoryLookupCache)pair.getFirst();
+    private List<String> sentenceList;
+    private SparkConf conf;
 
-        // vocabWord count
-        assertEquals(lookupCache.vocabs.size(), 6);
-        // Check vocabWord Index
-        ArrayList<Integer> vocabWordInds = new ArrayList<>();
-        for (VocabWord vw : lookupCache.vocabs.values()) {
-            vocabWordInds.add(vw.getIndex());
-        }
-        assertTrue(Collections.min(vocabWordInds) == 0);
-        assertTrue(Collections.max(vocabWordInds) == 5);
-        // Check vocabWord themselves
-        // STOP and UNK are not added to
-        assertTrue(lookupCache.vocabs.containsKey("She"));
-        assertTrue(lookupCache.vocabs.containsKey("found"));
-        assertTrue(lookupCache.vocabs.containsKey("one"));
-        assertTrue(lookupCache.vocabs.containsKey("two"));
-        assertTrue(lookupCache.vocabs.containsKey("ba"));
-        assertTrue(lookupCache.vocabs.containsKey("abab"));
-        // Check total word count
-        assertTrue(pair.getSecond() == 8);
+
+    public SparkConf getConfClone() {
+        return conf.clone();
     }
 
-    /**
-     *
-     * Testing the TextPipeline on a bigger corpus to make sure words and vocabs are counted correctly
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testTextPipelineFull() throws Exception {
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath(), 3);
-        TextPipeline pipeline = new TextPipeline(corpus, 1); //Min word freq
-        Pair<VocabCache, Long> pair = pipeline.process();
-        InMemoryLookupCache lookupCache = (InMemoryLookupCache) pair.getFirst();
-
-        assertEquals(lookupCache.vocabs.size(), 542);
-        assertEquals(lookupCache.vocabs.get("SHOULD").getIndex(), 5);
-        assertEquals((int)lookupCache.wordFrequencies.getCount("SHOULD"), 4);
+    public JavaRDD<String> getCorpusRDD(JavaSparkContext sc) {
+        return sc.parallelize(sentenceList);
     }
 
-    /**
-     * Test Word2Vec on a toy dataset to make sure things at least run and check if words and vocab are
-     * counted properly after Word2Vec is trained
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testWord2VecSimple() throws Exception {
-        // Train Word2Vec
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("basic/word2vec.txt").getFile().getAbsolutePath(), 3);
-        Word2Vec model = new Word2Vec();
-        model.train(corpus);
-
-        // Test lookupcache
-        InMemoryLookupCache lookupCache = (InMemoryLookupCache)model.getVocabCacheBroadcast().value();
-        // vocabWord count
-        assertEquals(lookupCache.vocabs.size(), 7);
-        // Check vocabWord Index
-        ArrayList<Integer> vocabWordInds = new ArrayList<>();
-        for (VocabWord vw : lookupCache.vocabs.values()) {
-            vocabWordInds.add(vw.getIndex());
-        }
-        assertTrue(Collections.min(vocabWordInds) == 1);
-        assertTrue(Collections.max(vocabWordInds) == 7);
-        // Check vocabWord themselves
-        assertTrue(lookupCache.vocabs.containsKey("She"));
-        assertTrue(lookupCache.vocabs.containsKey("found"));
-        assertTrue(lookupCache.vocabs.containsKey("STOP"));
-        assertTrue(lookupCache.vocabs.containsKey("one"));
-        assertTrue(lookupCache.vocabs.containsKey("two"));
-        assertTrue(lookupCache.vocabs.containsKey("ba"));
-        assertTrue(lookupCache.vocabs.containsKey("abab"));
-        // Check word frequencies
-        assertTrue(lookupCache.wordFrequencies.getCount("She") == 1.0);
-        assertTrue(lookupCache.wordFrequencies.getCount("found") == 1.0);
-        assertTrue(lookupCache.wordFrequencies.getCount("STOP") == 2.0);
-        assertTrue(lookupCache.wordFrequencies.getCount("one") == 1.0);
-        assertTrue(lookupCache.wordFrequencies.getCount("two") == 1.0);
-        assertTrue(lookupCache.wordFrequencies.getCount("ba") == 1.0);
-        assertTrue(lookupCache.wordFrequencies.getCount("abab") == 1.0);
+    @Before
+    public void before() throws IOException {
+        conf = new SparkConf().setMaster("local[4]")
+                .setAppName("sparktest")
+                .set(NUM_WORDS, String.valueOf(1))
+                .set(N_GRAMS, String.valueOf(1))
+                .set(TOKENIZER, "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                .set(TOKEN_PREPROCESSOR, "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+                .set(REMOVE_STOPWORDS, String.valueOf(true));
+        sentenceList = Arrays.asList("This is a strange strange world.", "Flowers are red.");
     }
 
-    /**
-     *
-     * Run Word2Vec to a bigger corpus to make sure the results are sensible
-     *
-     * @throws Exception
-     */
     @Test
-    public void testWord2VecFull() throws Exception {
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath());
-        Word2Vec model = new Word2Vec();
-        model.train(corpus);
-        InMemoryLookupCache lookupCache = (InMemoryLookupCache)model.getVocabCacheBroadcast().value();
-        Collection<String> lst = model.wordsNearest("day", 10);
+    public void testTokenizeFunction() throws Exception {
+        String tokenizerString = (String) defaultVals.get(TOKENIZER);
+        String tokenizerPreprocessString = (String) defaultVals.get(TOKEN_PREPROCESSOR);
 
+        TokenizerFunction tokenizerFunction = new TokenizerFunction(tokenizerString, tokenizerPreprocessString, 1);
+
+        List<String> tokenList = tokenizerFunction.call(sentenceList.get(0));
+
+        assertTrue(tokenList.equals(Arrays.asList("this", "is", "a", "strange", "strange", "world")));
     }
+
+    @Test
+    public void testTokenizer() throws Exception {
+        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
+
+        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
+        assertEquals(tokenizedRDD.first(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
+
+        sc.stop();
+    }
+
+    @Test
+    public void testWordFreqAccIdentifyStopWords() throws Exception {
+        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
+
+        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
+        JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
+        List<Pair<List<String>, AtomicLong>> ret = sentenceWordsCountRDD.collect();
+        assertEquals(ret.get(0).getFirst(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
+        assertEquals(ret.get(1).getFirst(), Arrays.asList("flowers", "are", "red"));
+        assertEquals(ret.get(0).getSecond().get(), 6);
+        assertEquals(ret.get(1).getSecond().get(), 3);
+        Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
+        assertEquals(wordFreqCounter.getCount("STOP"), 4, 0);
+        assertEquals(wordFreqCounter.getCount("strange"), 2, 0);
+        assertEquals(wordFreqCounter.getCount("flowers"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("world"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("red"), 1, 0);
+
+        sc.stop();
+    }
+
+    @Test
+    public void testWordFreqAccNotIdentifyingStopWords() throws Exception {
+        SparkConf confCopy = getConfClone().set(REMOVE_STOPWORDS, String.valueOf(false));
+        JavaSparkContext sc = new JavaSparkContext(confCopy);
+        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
+
+        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
+        JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
+        List<Pair<List<String>, AtomicLong>> ret = sentenceWordsCountRDD.collect();
+        assertEquals(ret.get(0).getFirst(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
+        assertEquals(ret.get(1).getFirst(), Arrays.asList("flowers", "are", "red"));
+        assertEquals(ret.get(0).getSecond().get(), 6);
+        assertEquals(ret.get(1).getSecond().get(), 3);
+        Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
+        assertEquals(wordFreqCounter.getCount("is"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("this"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("are"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("a"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("strange"), 2, 0);
+        assertEquals(wordFreqCounter.getCount("flowers"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("world"), 1, 0);
+        assertEquals(wordFreqCounter.getCount("red"), 1, 0);
+
+        sc.stop();
+    }
+
+
+//    /**
+//     *
+//     * Testing the TextPipeline on a toy example to make sure words and vocabs are counted correctly
+//     *
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testTextPipelineSimple() throws Exception {
+//        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("basic/word2vec.txt").getFile().getAbsolutePath(), 3);
+//        TextPipeline pipeline = new TextPipeline(corpus, 1); //Min word freq
+//        Pair<VocabCache,Long> pair = pipeline.process();
+//        InMemoryLookupCache lookupCache = (InMemoryLookupCache)pair.getFirst();
+//
+//        // vocabWord count
+//        assertEquals(lookupCache.vocabs.size(), 6);
+//        // Check vocabWord Index
+//        ArrayList<Integer> vocabWordInds = new ArrayList<>();
+//        for (VocabWord vw : lookupCache.vocabs.values()) {
+//            vocabWordInds.add(vw.getIndex());
+//        }
+//        assertTrue(Collections.min(vocabWordInds) == 0);
+//        assertTrue(Collections.max(vocabWordInds) == 5);
+//        // Check vocabWord themselves
+//        // STOP and UNK are not added to
+//        assertTrue(lookupCache.vocabs.containsKey("She"));
+//        assertTrue(lookupCache.vocabs.containsKey("found"));
+//        assertTrue(lookupCache.vocabs.containsKey("one"));
+//        assertTrue(lookupCache.vocabs.containsKey("two"));
+//        assertTrue(lookupCache.vocabs.containsKey("ba"));
+//        assertTrue(lookupCache.vocabs.containsKey("abab"));
+//        // Check total word count
+//        assertTrue(pair.getSecond() == 8);
+//    }
+//
+//    /**
+//     *
+//     * Testing the TextPipeline on a bigger corpus to make sure words and vocabs are counted correctly
+//     *
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testTextPipelineFull() throws Exception {
+//        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath(), 3);
+//        TextPipeline pipeline = new TextPipeline(corpus, 1); //Min word freq
+//        Pair<VocabCache, Long> pair = pipeline.process();
+//        InMemoryLookupCache lookupCache = (InMemoryLookupCache) pair.getFirst();
+//
+//        assertEquals(lookupCache.vocabs.size(), 542);
+//        assertEquals(lookupCache.vocabs.get("SHOULD").getIndex(), 5);
+//        assertEquals((int)lookupCache.wordFrequencies.getCount("SHOULD"), 4);
+//    }
+//
+//    /**
+//     * Test Word2Vec on a toy dataset to make sure things at least run and check if words and vocab are
+//     * counted properly after Word2Vec is trained
+//     *
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testWord2VecSimple() throws Exception {
+//        // Train Word2Vec
+//        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("basic/word2vec.txt").getFile().getAbsolutePath(), 3);
+//        Word2Vec model = new Word2Vec();
+//        model.train(corpus);
+//
+//        // Test lookupcache
+//        InMemoryLookupCache lookupCache = (InMemoryLookupCache)model.getVocabCacheBroadcast().value();
+//        // vocabWord count
+//        assertEquals(lookupCache.vocabs.size(), 7);
+//        // Check vocabWord Index
+//        ArrayList<Integer> vocabWordInds = new ArrayList<>();
+//        for (VocabWord vw : lookupCache.vocabs.values()) {
+//            vocabWordInds.add(vw.getIndex());
+//        }
+//        assertTrue(Collections.min(vocabWordInds) == 1);
+//        assertTrue(Collections.max(vocabWordInds) == 7);
+//        // Check vocabWord themselves
+//        assertTrue(lookupCache.vocabs.containsKey("She"));
+//        assertTrue(lookupCache.vocabs.containsKey("found"));
+//        assertTrue(lookupCache.vocabs.containsKey("STOP"));
+//        assertTrue(lookupCache.vocabs.containsKey("one"));
+//        assertTrue(lookupCache.vocabs.containsKey("two"));
+//        assertTrue(lookupCache.vocabs.containsKey("ba"));
+//        assertTrue(lookupCache.vocabs.containsKey("abab"));
+//        // Check word frequencies
+//        assertTrue(lookupCache.wordFrequencies.getCount("She") == 1.0);
+//        assertTrue(lookupCache.wordFrequencies.getCount("found") == 1.0);
+//        assertTrue(lookupCache.wordFrequencies.getCount("STOP") == 2.0);
+//        assertTrue(lookupCache.wordFrequencies.getCount("one") == 1.0);
+//        assertTrue(lookupCache.wordFrequencies.getCount("two") == 1.0);
+//        assertTrue(lookupCache.wordFrequencies.getCount("ba") == 1.0);
+//        assertTrue(lookupCache.wordFrequencies.getCount("abab") == 1.0);
+//    }
+//
+//    /**
+//     *
+//     * Run Word2Vec to a bigger corpus to make sure the results are sensible
+//     *
+//     * @throws Exception
+//     */
+//    @Test
+//    public void testWord2VecFull() throws Exception {
+//        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath());
+//        Word2Vec model = new Word2Vec();
+//        model.train(corpus);
+//        InMemoryLookupCache lookupCache = (InMemoryLookupCache)model.getVocabCacheBroadcast().value();
+//        Collection<String> lst = model.wordsNearest("day", 10);
+//
+//    }
 
 }
 

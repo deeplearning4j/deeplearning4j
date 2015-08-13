@@ -36,10 +36,7 @@ public class TokenizerFunction implements Function<String,List<String>> {
     private String tokenizerPreprocessorClazz;
     private transient TokenizerFactory tokenizerFactory;
     private int nGrams = 1;
-    public TokenizerFunction(String clazz) {
-        tokenizerFactoryClazz = clazz;
 
-    }
     public TokenizerFunction(String tokenizer, String tokenizerPreprocessor, int nGrams) {
         this.tokenizerFactoryClazz = tokenizer;
         this.tokenizerPreprocessorClazz = tokenizerPreprocessor;
@@ -57,19 +54,19 @@ public class TokenizerFunction implements Function<String,List<String>> {
 
     private TokenizerFactory getTokenizerFactory() {
         try {
-            tokenizerFactory = ((Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz)).newInstance();
-            TokenPreProcess tokenPreProcess = ((Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz))
-                                               .newInstance();
-            tokenizerFactory.setTokenPreProcessor(tokenPreProcess);
-            Class<? extends TokenizerFactory> clazz = (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
-            tokenizerFactory = clazz.newInstance();
+            Class<? extends TokenPreProcess> clazz = (Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz);
+            TokenPreProcess tokenPreProcessInst = clazz.newInstance();
+
+            Class<? extends TokenizerFactory> clazz2 = (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
+            tokenizerFactory = clazz2.newInstance();
+            tokenizerFactory.setTokenPreProcessor(tokenPreProcessInst);
             if(nGrams > 1) {
-                tokenizerFactory = new NGramTokenizerFactory(tokenizerFactory,nGrams,nGrams);
+                tokenizerFactory = new NGramTokenizerFactory(tokenizerFactory, nGrams, nGrams);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-      return tokenizerFactory;
+        return tokenizerFactory;
     }
 
 }

@@ -21,70 +21,59 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.scaleout.perform.models.word2vec.Word2VecPerformer;
-import org.deeplearning4j.spark.text.BaseSparkTest;
-import org.deeplearning4j.spark.text.TextPipeline;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import java.util.Arrays;
 import java.util.Collection;
 
+import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables.*;
+
 /**
- * Created by agibsonccc on 1/31/15.
+ * @author jeffreytang
  */
-public class Word2VecTest extends BaseSparkTest {
-
-
-
-
+public class Word2VecTest {
 
     @Test
     public void testConcepts() throws Exception {
-        JavaRDD<String> corpus = sc.textFile(new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath()).map(new Function<String, String>() {
-            @Override
-            public String call(String s) throws Exception {
-                return s.toLowerCase();
-            }
-        }).cache();
+        // These are all default values for word2vec
+        SparkConf sparkConf = new SparkConf()
+                .setMaster("local[4]")
+                .setAppName("sparktest")
+                .set(VECTOR_LENGTH, String.valueOf(100))
+                .set(ADAGRAD, String.valueOf(false))
+                .set(NEGATIVE, String.valueOf(0))
+                .set(NUM_WORDS, String.valueOf(1))
+                .set(WINDOW, String.valueOf(5))
+                .set(ALPHA, String.valueOf(0.025))
+                .set(MIN_ALPHA, String.valueOf(1e-2))
+                .set(ITERATIONS, String.valueOf(1))
+                .set(N_GRAMS, String.valueOf(1))
+                .set(TOKENIZER, "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                .set(TOKEN_PREPROCESSOR, "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+                .set(REMOVE_STOPWORDS, String.valueOf(false));
+
+        // Set SparkContext
+        JavaSparkContext sc = new JavaSparkContext(sparkConf);
+
+        // Path of data
+        String dataPath = new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath();
+
+        // Read in data
+        JavaRDD<String> corpus = sc.textFile(dataPath);
 
         Word2Vec word2Vec = new Word2Vec();
-        sc.getConf().set(Word2VecVariables.NEGATIVE, String.valueOf(0));
         Pair<VocabCache,WeightLookupTable> table = word2Vec.train(corpus);
         WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), table.getFirst()));
         Collection<String> words = vectors.wordsNearest("day", 10);
         System.out.println(Arrays.toString(words.toArray()));
 //        assertTrue(words.contains("week"));
     }
-
-
-    /**
-     *
-     * @return
-     */
-    @Override
-    public JavaSparkContext getContext() {
-        if(sc != null) {
-            return sc;
-        }
-        // set to test mode
-        SparkConf sparkConf = new SparkConf().set(org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables.NUM_WORDS,"5")
-                .set(Word2VecPerformerVoid.ITERATIONS,"5")
-                .setMaster("local[8]").set(Word2VecPerformer.NEGATIVE, String.valueOf(0)).set(TextPipeline.MIN_WORDS,String.valueOf("1"))
-                .setAppName("sparktest");
-
-
-        sc = new JavaSparkContext(sparkConf);
-        return sc;
-
-    }
-
 
 }

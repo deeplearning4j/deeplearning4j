@@ -19,11 +19,11 @@
 package org.deeplearning4j.spark.text;
 
 import org.apache.spark.Accumulator;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables.*;
 /**
  * A spark based text pipeline
  * with minimum word frequency and stop words
@@ -65,6 +66,14 @@ public class TextPipeline {
     private long totalWordCount;
 
     // Getters
+    public Accumulator<Counter<String>> getWordFreqAcc() {
+        if (wordFreqAcc != null) {
+            return wordFreqAcc;
+        } else {
+            throw new IllegalStateException("IllegalStateException: wordFreqAcc not set at TextPipline.");
+        }
+    }
+
     public Broadcast<VocabCache> getBroadCastVocabCache() throws IllegalStateException {
         if (vocabCache.numWords() > 0) {
             return vocabCacheBroadcast;
@@ -78,6 +87,14 @@ public class TextPipeline {
             return vocabCache;
         } else {
             throw new IllegalStateException("IllegalStateException: VocabCache not set at TextPipline.");
+        }
+    }
+
+    public JavaRDD<Pair<List<String>, AtomicLong>> getSentenceWordsCountRDD() {
+        if (sentenceWordsCountRDD != null) {
+            return sentenceWordsCountRDD;
+        } else {
+            throw new IllegalStateException("IllegalStateException: sentenceWordsCountRDD not set at TextPipline.");
         }
     }
 
@@ -122,6 +139,29 @@ public class TextPipeline {
         setup();
     }
 
+    // Constructor (For testing purposes)
+    public TextPipeline(JavaRDD<String> corpusRDD) throws Exception {
+        final JavaSparkContext sc = new JavaSparkContext(corpusRDD.context());
+        final SparkConf conf = sc.getConf();
+        int numWords = assignVar(NUM_WORDS, conf, Integer.class);
+        int nGrams = assignVar(N_GRAMS, conf, Integer.class);
+        String tokenizer = assignVar(TOKENIZER, conf, String.class);
+        String tokenPreprocessor = assignVar(TOKEN_PREPROCESSOR, conf, String.class);
+        boolean removeStop = assignVar(REMOVE_STOPWORDS, conf, Boolean.class);
+        this.corpusRDD = corpusRDD;
+        this.numWords = numWords;
+        // TokenizerFunction Settings
+        this.nGrams = nGrams;
+        this.tokenizer = tokenizer;
+        this.tokenizerPreprocessor = tokenPreprocessor;
+        // Remove Stop words
+        if (removeStop) {
+            stopWords = StopWords.getStopWords();
+        }
+        // Setup all Spark variables
+        setup();
+    }
+
     public void setup() {
         // Set up accumulators and broadcast stopwords
         this.sc = new JavaSparkContext(corpusRDD.context());
@@ -129,16 +169,20 @@ public class TextPipeline {
         this.stopWordBroadCast = sc.broadcast(stopWords);
     }
 
+    public JavaRDD<List<String>> tokenize() {
+        if (corpusRDD == null) {
+            throw new IllegalStateException("corpusRDD not assigned. Define TextPipeline with corpusRDD assigned.");
+        }
+        return corpusRDD.map(new TokenizerFunction(tokenizer, tokenizerPreprocessor, nGrams));
+    }
+
     public JavaRDD<Pair<List<String>, AtomicLong>> updateAndReturnAccumulatorVal(JavaRDD<List<String>> tokenizedRDD) {
         // Update the 2 accumulators
         UpdateAccumulatorFunction accumulatorClassFunction = new UpdateAccumulatorFunction(stopWordBroadCast, wordFreqAcc);
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = tokenizedRDD.map(accumulatorClassFunction);
 
-        // Loop through each element to update accumulator
-        tokenizedRDD.foreach(new VoidFunction<List<String>>() {
-            public void call(List<String> lst) {
-            }
-        });
+        // Loop through each element to update accumulator. Count does the same job (verified).
+        tokenizedRDD.count();
 
         return sentenceWordsCountRDD;
     }
@@ -185,7 +229,7 @@ public class TextPipeline {
     public void buildVocabCache() {
 
         // Tokenize
-        JavaRDD<List<String>> tokenizedRDD = corpusRDD.map(new TokenizerFunction(tokenizer, tokenizerPreprocessor, nGrams));
+        JavaRDD<List<String>> tokenizedRDD = tokenize();
 
         // Update accumulator values and map to an RDD of sentence counts
         sentenceWordsCountRDD = updateAndReturnAccumulatorVal(tokenizedRDD).cache();
