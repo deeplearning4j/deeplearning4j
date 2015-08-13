@@ -23,102 +23,102 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- *
- * Rectified linear units
- *
- * @author Adam Gibson
+ * Unit step function.
+ * f(x) = 1 if x > cutoff; 0 otherwise
+ * cutoff = 0.0 usually.
  */
-public class RectifedLinear extends BaseTransformOp {
-    private double cutoff = 0.0;
-
-    public RectifedLinear() {
+public class Step extends BaseTransformOp {
+	private final double cutoff;
+    public Step() {
+    	cutoff = 0.0;
     }
 
-    public RectifedLinear(INDArray x, INDArray z, double cutoff) {
+    public Step(INDArray x, INDArray z) {
+        super(x, z);
+        cutoff = 0.0;
+    }
+
+    public Step(INDArray x, INDArray z, int n) {
+        super(x, z, n);
+        cutoff = 0.0;
+    }
+
+    public Step(INDArray x, INDArray y, INDArray z, int n) {
+        super(x, y, z, n);
+        cutoff = 0.0;
+    }
+
+    public Step(INDArray x) {
+        super(x);
+        cutoff = 0.0;
+    }
+    
+    public Step(INDArray x, INDArray z, double cutoff) {
         super(x, z);
         this.cutoff = cutoff;
     }
 
-    public RectifedLinear(INDArray x, INDArray z, int n, double cutoff) {
+    public Step(INDArray x, INDArray z, int n, double cutoff) {
         super(x, z, n);
         this.cutoff = cutoff;
     }
 
-    public RectifedLinear(INDArray x, INDArray y, INDArray z, int n, double cutoff) {
+    public Step(INDArray x, INDArray y, INDArray z, int n, double cutoff) {
         super(x, y, z, n);
         this.cutoff = cutoff;
     }
 
-    public RectifedLinear(INDArray x, double cutoff) {
+    public Step(INDArray x, double cutoff) {
         super(x);
         this.cutoff = cutoff;
-    }
-
-    public RectifedLinear(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public RectifedLinear(INDArray x, INDArray z, int n) {
-        super(x, z, n);
-    }
-
-    public RectifedLinear(INDArray x, INDArray y, INDArray z, int n) {
-        super(x, y, z, n);
-    }
-
-    public RectifedLinear(INDArray x) {
-        super(x);
     }
 
     @Override
     public String name() {
-        return "relu";
+        return "step";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
+        return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
+    	return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0)); 
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
+    	return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
     }
 
     @Override
     public float op(float origin, float other) {
-        return origin < cutoff ? (float) cutoff : origin;
+        return (origin > cutoff ? 1.0f : 0.0f);
     }
 
     @Override
     public double op(double origin, double other) {
-        return origin < cutoff ?  cutoff : origin;
+    	return (origin > cutoff ? 1.0 : 0.0);
     }
 
     @Override
     public double op(double origin) {
-        return origin < cutoff ? cutoff : origin;
-
+    	return (origin > cutoff ? 1.0 : 0.0);
     }
 
     @Override
     public float op(float origin) {
-        return origin < cutoff ? (float) cutoff : origin;
+    	return (origin > cutoff ? 1.0f : 0.0f);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return origin.realComponent().doubleValue() < cutoff ? Nd4j.createComplexNumber(cutoff,0) : origin;
-
+    	return (origin.realComponent().doubleValue() > cutoff ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0));
     }
 
     @Override
@@ -126,9 +126,10 @@ public class RectifedLinear extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Pow(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new Step(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Pow(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new Step(x.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+
     }
 
     @Override
@@ -136,14 +137,10 @@ public class RectifedLinear extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Pow(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new Step(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
-            return new Pow(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new Step(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
     }
 
-    @Override
-    public TransformOp derivative() {
-        return new Step(x,y,z,n,cutoff);
-    }
 }

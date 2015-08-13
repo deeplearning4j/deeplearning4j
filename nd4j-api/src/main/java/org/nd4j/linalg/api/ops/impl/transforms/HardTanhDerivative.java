@@ -24,10 +24,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Hard tanh elementwise function
+ * Hard tanh elementwise derivative function
  *
  * @author Adam Gibson
  */
@@ -58,76 +57,55 @@ public class HardTanhDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        if (origin.realComponent().doubleValue() < -1)
-            origin.set(-1, origin.imaginaryComponent().doubleValue());
-        else if (origin.realComponent().doubleValue() > 1)
-            origin.set(1, origin.imaginaryComponent().doubleValue());
-        else
-            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
-        return origin;
+    	double r = origin.realComponent().doubleValue();
+    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        if (origin.realComponent().doubleValue() < -1)
-            origin.set(-1, origin.imaginaryComponent().doubleValue());
-        else if (origin.realComponent().doubleValue() > 1)
-            origin.set(1, origin.imaginaryComponent().doubleValue());
-        else
-            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
-        return origin;
+    	double r = origin.realComponent().doubleValue();
+    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        if (origin.realComponent().doubleValue() < -1)
-            origin.set(-1, origin.imaginaryComponent().doubleValue());
-        else if (origin.realComponent().doubleValue() > 1)
-            origin.set(1, origin.imaginaryComponent().doubleValue());
-        else
-            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
-        return origin;
+    	double r = origin.realComponent().doubleValue();
+    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
     @Override
     public float op(float origin, float other) {
-        return hardTanh(origin);
+        return hardTanhDeriv(origin);
     }
 
     @Override
     public double op(double origin, double other) {
-        return hardTanh(origin);
+        return hardTanhDeriv(origin);
     }
 
     @Override
     public double op(double origin) {
-        return hardTanh(origin);
+        return hardTanhDeriv(origin);
     }
 
     @Override
     public float op(float origin) {
-        return hardTanh(origin);
+        return hardTanhDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        if (origin.realComponent().doubleValue() < -1)
-            origin.set(-1, origin.imaginaryComponent().doubleValue());
-        else if (origin.realComponent().doubleValue() > 1)
-            origin.set(1, origin.imaginaryComponent().doubleValue());
-        else
-            origin = Nd4j.createDouble(1, 0).subi(ComplexUtil.pow(ComplexUtil.tanh(origin), 2));
-        return origin;
+    	double r = origin.realComponent().doubleValue();
+    	return (r >= -1 && r <= 1) ? Nd4j.createDouble(1, 0) : Nd4j.createDouble(0, 0);
     }
 
 
-    private float hardTanh(float num) {
-        return (float) hardTanh((double) num);
+    private static float hardTanhDeriv(float num) {
+    	return ((num>=-1.0f && num<=1.0f) ? 1.0f : 0.0f);
     }
 
-    private double hardTanh(double num) {
-        return num < -1.0 ? -1.0 : num > 1.0 ? 1.0 : num;
-
+    private static double hardTanhDeriv(double num) {
+    	return ((num>=-1.0 && num<=1.0) ? 1.0 : 0.0);
     }
 
     @Override

@@ -19,6 +19,8 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -58,46 +60,42 @@ public class SigmoidDerivative extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
-        return origin.muli(oneMinus);
+    	return sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
-        return origin.muli(oneMinus);
+    	return sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
-        return origin.muli(oneMinus);
+    	return sigmoidDeriv(origin);
     }
 
     @Override
     public float op(float origin, float other) {
-        return origin * (1 - origin);
+        return (float)sigmoidDeriv(origin);
     }
 
     @Override
     public double op(double origin, double other) {
-        return origin * (1 - origin);
+    	return sigmoidDeriv(origin);
     }
 
     @Override
     public double op(double origin) {
-        return origin * (1 - origin);
+    	return sigmoidDeriv(origin);
     }
 
     @Override
     public float op(float origin) {
-        return origin * (1 - origin);
+    	return (float)sigmoidDeriv(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(origin);
-        return origin.muli(oneMinus);
+    	return sigmoidDeriv(origin);
     }
 
     @Override
@@ -120,5 +118,24 @@ public class SigmoidDerivative extends BaseTransformOp {
         else
             return new SigmoidDerivative(x.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
+    }
+    
+    private static double sigmoidDeriv(double input) {
+        double sigmoid = 1 / (1 + FastMath.exp(-input));
+    	double out = sigmoid * (1.0 - sigmoid);
+        if (Nd4j.ENFORCE_NUMERICAL_STABILITY) {
+            if (Double.isNaN(out) || Double.isInfinite(out))
+                out = Nd4j.EPS_THRESHOLD;
+        }
+        return out;
+    }
+    
+    private static IComplexNumber sigmoidDeriv(IComplexNumber number) {
+        double arg = number.complexArgument().doubleValue();
+        double sigArg = 1 / 1 + (FastMath.exp(-arg)) - 1 + .5f;
+        double ret = Math.exp(sigArg);
+        IComplexDouble sigmoid = Nd4j.createDouble(ret, 0);
+        IComplexNumber oneMinus = Nd4j.createComplexNumber(1, 1).subi(sigmoid);
+        return sigmoid.mul(oneMinus);
     }
 }
