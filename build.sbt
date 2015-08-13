@@ -8,6 +8,7 @@ lazy val root = (project in file(".")).settings(
   libraryDependencies ++= Seq(
     "org.nd4j" % "nd4j-api" % "0.0.3.5.5.6-SNAPSHOT",
     "org.nd4j" % "nd4j-jblas" % "0.0.3.5.5.6-SNAPSHOT" % Test,
+    "ch.qos.logback" % "logback-classic" %  "1.1.3" % Test,
     "org.scalatest" %% "scalatest" % "2.2.4" % Test cross CrossVersion.binaryMapped {
       case x if x startsWith "2.12" => "2.11"
       case x => x
