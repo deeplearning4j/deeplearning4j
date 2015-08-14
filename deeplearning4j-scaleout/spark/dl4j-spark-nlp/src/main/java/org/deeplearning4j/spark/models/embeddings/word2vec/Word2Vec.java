@@ -167,6 +167,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
 
             change2.unpersist();
             prevParam = param;
+            // TODO: Have to send the changes back and build logic to apply changes to lookuptable and broadcast again
             if (prevParam.equals(param)) {
                 throw new Exception("Param is not update.");
             }
