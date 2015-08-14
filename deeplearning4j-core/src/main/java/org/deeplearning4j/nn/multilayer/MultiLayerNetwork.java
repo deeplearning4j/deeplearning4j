@@ -1369,7 +1369,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if( getOutputLayer() instanceof OutputLayer ){
         	OutputLayer ol = (OutputLayer)getOutputLayer();
         	ol.setLabels(data.getLabels());
-        	ol.computeScore();
+        	ol.computeScore(calcL1(),calcL2());
         	this.score = ol.score();
         } else {
         	log.warn("Cannot calculate score wrt labels without an OutputLayer");
@@ -1404,7 +1404,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         backprop();
         // Updating activations based on new gradients
         feedForward();
-        score = ((OutputLayer)getOutputLayer()).computeScore();
+        score = ((OutputLayer)getOutputLayer()).computeScore(calcL1(),calcL2());
     }
 
     @Override
@@ -1706,13 +1706,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public double l2Magnitude() {
-        throw new UnsupportedOperationException();
+    public double calcL2() {
+    	double l2 = 0.0;
+    	for( int i=0; i<layers.length; i++ ){
+			l2 += layers[i].calcL2();
+    	}
+        return l2;
     }
 
     @Override
-    public double l1Magnitude() {
-        throw new UnsupportedOperationException();
+    public double calcL1() {
+    	double l1 = 0.0;
+    	for( int i=0; i<layers.length; i++ ){
+			l1 += layers[i].calcL1();
+    	}
+        return l1;
     }
 
     @Override
