@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.multilayer;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;

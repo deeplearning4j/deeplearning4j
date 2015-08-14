@@ -63,8 +63,7 @@ public class GradientCheckUtil {
             updater.update(mln, gradAndScore.getFirst(), 0);
         }
 
-//      INDArray gradientToCheck = gradAndScore.getFirst().gradient();
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient(mln.conf().variables());
+      INDArray gradientToCheck = gradAndScore.getFirst().gradient();
         INDArray originalParams = mln.params();
 
         int nParams = mln.numParams();

@@ -136,14 +136,15 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     	INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), preOut.dup()));
     	INDArray outSubLabels = output.sub(labels);
     	Gradient gradient = new DefaultGradient();
-    	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
     	
     	switch (conf.getLossFunction()) {
     	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
     		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+    		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
     		return new Triple<>(gradient,outSubLabels,output);
         case XENT: // cross-entropy (single binary output variable)
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
         	return new Triple<>(gradient,outSubLabels,output);
 
         case MSE: // mean squared error
@@ -154,20 +155,24 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         	
         case EXPLL: // exponential logarithmic
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
             return new Triple<>(gradient,outSubLabels,output);
             
         case RMSE_XENT: // root mean squared error cross entropy
         	INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
         	INDArray sqrt = sqrt(squaredrmseXentDiff);
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
             return new Triple<>(gradient,outSubLabels,output);
         	
         case SQUARED_LOSS:
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(outSubLabels,2))));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
             return new Triple<>(gradient,outSubLabels,output);
             
         case NEGATIVELOGLIKELIHOOD: // multi-class cross-entropy
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
             return new Triple<>(gradient,outSubLabels,output);
         default:
         	throw new IllegalStateException("Invalid loss function: " + conf.getLossFunction());
