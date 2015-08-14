@@ -162,7 +162,7 @@ public class TextPipeline {
         setup();
     }
 
-    public void setup() {
+    private void setup() {
         // Set up accumulators and broadcast stopwords
         this.sc = new JavaSparkContext(corpusRDD.context());
         this.wordFreqAcc = sc.accumulator(new Counter<String>(), new WordFreqAccumulator());
@@ -187,11 +187,11 @@ public class TextPipeline {
         return sentenceWordsCountRDD;
     }
 
-    public String filterMinWord(String stringToken, double tokenCount) {
+    private String filterMinWord(String stringToken, double tokenCount) {
         return (tokenCount < numWords) ? org.deeplearning4j.models.word2vec.Word2Vec.UNK : stringToken;
     }
 
-    public void addTokenToVocabCache(String stringToken, Double tokenCount) {
+    private void addTokenToVocabCache(String stringToken, Double tokenCount) {
         // Making string token into actual token if not already an actual token (vocabWord)
         VocabWord actualToken;
         if (vocabCache.hasToken(stringToken)) {
@@ -213,6 +213,10 @@ public class TextPipeline {
     }
 
     public void filterMinWordAddVocab(Counter<String> wordFreq) {
+
+        if (wordFreq.size() == 0) {
+            throw new IllegalStateException("IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
+        }
 
         for (Entry<String, Double> entry : wordFreq.entrySet()) {
             String stringToken = entry.getKey();
