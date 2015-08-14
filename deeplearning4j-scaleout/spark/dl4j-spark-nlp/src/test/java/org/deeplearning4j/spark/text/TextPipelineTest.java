@@ -26,6 +26,10 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
+import org.deeplearning4j.spark.text.functions.CountCumSum;
+import org.deeplearning4j.spark.text.functions.TextPipeline;
+import org.deeplearning4j.spark.text.functions.TokenizerFunction;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,29 +51,30 @@ public class TextPipelineTest {
 
     private List<String> sentenceList;
     private SparkConf conf;
-
-
-    public SparkConf getConfClone() {
-        return conf.clone();
-    }
-
-    public JavaRDD<String> getCorpusRDD(JavaSparkContext sc, int partitions) {
-        return sc.parallelize(sentenceList, partitions);
-    }
+    private Word2Vec word2vec;
 
     public JavaRDD<String> getCorpusRDD(JavaSparkContext sc) {
-        return sc.parallelize(sentenceList);
+        return sc.parallelize(sentenceList, 2);
     }
 
     @Before
     public void before() throws IOException {
         conf = new SparkConf().setMaster("local[4]")
-                .setAppName("sparktest")
-                .set(NUM_WORDS, String.valueOf(1))
-                .set(N_GRAMS, String.valueOf(1))
-                .set(TOKENIZER, "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
-                .set(TOKEN_PREPROCESSOR, "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
-                .set(REMOVE_STOPWORDS, String.valueOf(true));
+                .setAppName("sparktest");
+
+        // All the avaliable options. These are default values
+        word2vec = new Word2Vec().setNumWords(1).setnGrams(1)
+                .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
+                .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
+                .setRemoveStop(true)
+                .setSeed(42L)
+                .setNegative(0)
+                .setUseAdaGrad(false)
+                .setVectorLength(100)
+                .setWindow(5)
+                .setAlpha(0.025).setMinAlpha(0.01)
+                .setIterations(1);
+
         sentenceList = Arrays.asList("This is a strange strange world.", "Flowers are red.");
     }
 
@@ -87,10 +92,10 @@ public class TextPipelineTest {
 
     @Test
     public void testTokenizer() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
 
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
         assertEquals(tokenizedRDD.first(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
 
@@ -99,10 +104,10 @@ public class TextPipelineTest {
 
     @Test
     public void testWordFreqAccIdentifyStopWords() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
 
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD =
                 pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
@@ -126,11 +131,12 @@ public class TextPipelineTest {
 
     @Test
     public void testWordFreqAccNotIdentifyingStopWords() throws Exception {
-        SparkConf confCopy = getConfClone().set(REMOVE_STOPWORDS, String.valueOf(false));
-        JavaSparkContext sc = new JavaSparkContext(confCopy);
+
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        word2vec.setRemoveStop(false);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
 
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
         pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
 
@@ -149,10 +155,10 @@ public class TextPipelineTest {
 
     @Test
     public void testFilterMinWordAddVocab() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
 
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
         pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
         Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
@@ -188,11 +194,10 @@ public class TextPipelineTest {
 
     @Test
     public void testBuildVocabCache() throws  Exception{
-        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         pipeline.buildVocabCache();
-
         VocabCache vocabCache = pipeline.getVocabCache();
 
         assertTrue(vocabCache != null);
@@ -223,9 +228,10 @@ public class TextPipelineTest {
 
     @Test
     public void testBuildVocabWordListRDD() throws Exception{
-        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
         JavaRDD<AtomicLong> sentenceCountRDD = pipeline.getSentenceCountRDD();
@@ -260,9 +266,9 @@ public class TextPipelineTest {
 
     @Test
     public void testHuffman() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         pipeline.buildVocabCache();
 
         VocabCache vocabCache = pipeline.getVocabCache();
@@ -281,9 +287,9 @@ public class TextPipelineTest {
 
     @Test
     public void testCountCumSum() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext(getConfClone());
-        JavaRDD<String> corpusRDD = getCorpusRDD(sc, 2);
-        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, word2vec.getTokenizerVarMap());
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
         JavaRDD<AtomicLong> sentenceCountRDD = pipeline.getSentenceCountRDD();
@@ -293,6 +299,24 @@ public class TextPipelineTest {
         List<Long> sentenceCountCumSumList = sentenceCountCumSumRDD.collect();
         assertTrue(sentenceCountCumSumList.get(0) == 6L);
         assertTrue(sentenceCountCumSumList.get(1) == 9L);
+
+        sc.stop();
+    }
+
+    @Test
+    public void testSpark() {
+        JavaSparkContext sc = new JavaSparkContext(conf);
+        final List<Integer> lst = new ArrayList<>();
+        JavaRDD<Integer> rdd = sc.parallelize(Arrays.asList(1, 2, 3), 3);
+
+        TestFunction testFunction = new TestFunction(lst);
+        JavaRDD<Integer> rdd2 = rdd.map(testFunction);
+        rdd2.count();
+        System.out.println(rdd2.collect());
+        System.out.println(testFunction.getLst());
+        System.out.println(testFunction.getA());
+
+        sc.stop();
     }
 }
 
