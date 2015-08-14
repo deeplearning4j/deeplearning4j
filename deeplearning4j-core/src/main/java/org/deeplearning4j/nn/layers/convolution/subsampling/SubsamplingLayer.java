@@ -100,7 +100,7 @@ public class SubsamplingLayer extends BaseLayer {
                 }
 
                 //compute gradient for weights
-                INDArray finalRet = Convolution.col2im(ret2,conf.getStride(),conf.getPadding(),width,height);
+                INDArray finalRet = Convolution.col2im(ret2,conf.getStride(),conf.getPadding(),height, width);
 //                if(finalRet.rank() < 4)
 //                    finalRet = finalRet.reshape(Ints.concat(new int[]{1},finalRet.shape()));
                 ret.gradientForVariable().put(ConvolutionParamInitializer.WEIGHT_KEY, finalRet);
