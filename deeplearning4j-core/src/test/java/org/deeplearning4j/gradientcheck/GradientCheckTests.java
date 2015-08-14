@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -125,7 +124,7 @@ public class GradientCheckTests {
         INDArray labels = ds.getLabels();
         
         double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.5, 0.5};
+        double[] l1vals = {0.0, 0.5, 0.5};	//i.e., use l2vals[i] with l1vals[i]
     	
     	for( String afn : activFns ){
     		for( boolean doLearningFirst : characteristic ){
