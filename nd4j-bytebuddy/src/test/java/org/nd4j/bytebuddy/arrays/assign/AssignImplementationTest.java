@@ -17,7 +17,7 @@ public class AssignImplementationTest {
     public void testAssign() throws Exception {
         new ByteBuddy()
                 .subclass(AssignValue.class).method(ElementMatchers.isDeclaredBy(AssignValue.class))
-                .intercept(new AssignImplmentation(0,1)).make().saveIn(new File("/home/agibsonccc/Desktop"));
+                .intercept(new AssignImplmentation(0,1)).make().saveIn(new File("target/generated-classes"));
         Class<?> dynamicType = new ByteBuddy()
                 .subclass(AssignValue.class).method(ElementMatchers.isDeclaredBy(AssignValue.class))
                 .intercept(new AssignImplmentation(0,1)).make()

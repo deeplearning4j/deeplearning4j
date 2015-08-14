@@ -70,7 +70,7 @@ public class Convolution {
      * @param w width
      * @return
      */
-    public static INDArray col2im(INDArray col,int sy,int sx,int ph,int pw,int h,int w) {
+    public static INDArray col2im(INDArray col, int sy, int sx, int ph, int pw, int h, int w) {
         //number of images
         int n = col.size(0);
         //number of columns
@@ -135,21 +135,23 @@ public class Convolution {
      * @return the column formatted image
      *
      */
-    public static INDArray im2col(INDArray img,int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean coverAll) {
+    public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int pval, boolean coverAll) {
         //number of images
         int n = img.size(0);
         //number of channels (depth)
         int c = img.size(1);
         //image height
-        int h = img.size(2);
+        int h = img.size(3);
         //image width
-        int w = img.size(3);
-        int outWidth = outSize(h, kh, sy, ph, coverAll);
-        int outHeight = outSize(w, kw, sx, pw, coverAll);
+        int w = img.size(2);
+        int outHeight = outSize(h, kh, sy, ph, coverAll);
+        int outWidth = outSize(w, kw, sx, pw, coverAll);
         INDArray padded = Nd4j.pad(img, new int[][]{
                 {0, 0}
                 , {0, 0}
-                , {ph, ph + sy - 1}, {pw, pw + sx - 1}}, Nd4j.PadMode.CONSTANT);
+                , {ph, ph + sy - 1}
+                ,{pw, pw + sx - 1}}
+                , Nd4j.PadMode.CONSTANT);
         INDArray ret =   Nd4j.create(n, c, kh, kw, outHeight, outWidth);
         for(int i = 0; i < kh; i++) {
             //offset for the row based on the stride and output height
@@ -160,8 +162,8 @@ public class Convolution {
                 INDArray get = padded.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
-                        , NDArrayIndex.interval(i, sx, iLim)
-                        , NDArrayIndex.interval(j, sy, jLim));
+                        , NDArrayIndex.interval(j, sy, jLim)
+                        , NDArrayIndex.interval(i, sx, iLim));
                 ret.put(new INDArrayIndex[]{
                         NDArrayIndex.all()
                         ,NDArrayIndex.all()
