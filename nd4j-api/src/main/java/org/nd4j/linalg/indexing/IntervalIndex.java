@@ -36,7 +36,7 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public int length() {
-        return (end - begin) / stride;
+        return (end - 1 - begin) / stride + 1;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public boolean hasNext() {
-        return index < length();
+        return index < end();
     }
 
     @Override
@@ -83,6 +83,7 @@ public class IntervalIndex implements INDArrayIndex {
     @Override
     public void init(INDArray arr, int begin, int dimension) {
         this.begin = begin;
+        this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
     }
 
@@ -94,6 +95,7 @@ public class IntervalIndex implements INDArrayIndex {
     @Override
     public void init(int begin, int end) {
         this.begin = begin;
+        this.index = begin;
         this.end = inclusive ? end + 1 : end;
 
     }
