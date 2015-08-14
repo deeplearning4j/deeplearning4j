@@ -43,7 +43,7 @@ public abstract class BaseUpdater implements Updater {
         if(conf.isUseRegularization() && conf.getL1() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
         	gradient.addi(Transforms.sign(params).muli(conf.getL1()/layer.input().size(0)));
         if(conf.isMiniBatch())
-            gradient.divi((double) layer.input().size(0) / conf.getTimeSeriesLength());
+            gradient.divi(((double) layer.input().size(0)) / conf.getTimeSeriesLength());
 
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
