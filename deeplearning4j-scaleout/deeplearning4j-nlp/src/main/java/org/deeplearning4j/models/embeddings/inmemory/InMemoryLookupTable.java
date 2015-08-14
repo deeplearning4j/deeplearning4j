@@ -365,10 +365,10 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
         if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+            Nd4j.getBlasWrapper().level1().axpy(l1.length(), 1.0,neu1e,l1);
 
         else
-            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+            Nd4j.getBlasWrapper().level1().axpy(l1.length(), 1.0f, neu1e, l1);
 
 
 

@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.text;
+package org.deeplearning4j.spark.text.functions;
 
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.berkeley.Pair;

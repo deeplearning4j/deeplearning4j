@@ -34,7 +34,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCalculator;
 import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCounts;
-import org.deeplearning4j.spark.text.TextPipeline;
+import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -119,21 +119,28 @@ public class Glove implements Serializable {
         // Each `train()` can use different parameters
         final JavaSparkContext sc = new JavaSparkContext(rdd.context());
         final SparkConf conf = sc.getConf();
-        int vectorLength = assignVar(VECTOR_LENGTH, conf, Integer.class);
-        boolean useAdaGrad = assignVar(ADAGRAD, conf, Boolean.class);
-        double negative = assignVar(NEGATIVE, conf, Double.class);
-        int numWords = assignVar(NUM_WORDS, conf, Integer.class);
-        int window = assignVar(WINDOW, conf, Integer.class);
-        double alpha = assignVar(ALPHA, conf, Double.class);
-        double minAlpha = assignVar(MIN_ALPHA, conf, Double.class);
-        int iterations = assignVar(ITERATIONS, conf, Integer.class);
-        int nGrams = assignVar(N_GRAMS, conf, Integer.class);
-        String tokenizer = assignVar(TOKENIZER, conf, String.class);
-        String tokenPreprocessor = assignVar(TOKEN_PREPROCESSOR, conf, String.class);
-        boolean removeStop = assignVar(REMOVE_STOPWORDS, conf, Boolean.class);
+        final int vectorLength = assignVar(VECTOR_LENGTH, conf, Integer.class);
+        final boolean useAdaGrad = assignVar(ADAGRAD, conf, Boolean.class);
+        final double negative = assignVar(NEGATIVE, conf, Double.class);
+        final int numWords = assignVar(NUM_WORDS, conf, Integer.class);
+        final int window = assignVar(WINDOW, conf, Integer.class);
+        final double alpha = assignVar(ALPHA, conf, Double.class);
+        final double minAlpha = assignVar(MIN_ALPHA, conf, Double.class);
+        final int iterations = assignVar(ITERATIONS, conf, Integer.class);
+        final int nGrams = assignVar(N_GRAMS, conf, Integer.class);
+        final String tokenizer = assignVar(TOKENIZER, conf, String.class);
+        final String tokenPreprocessor = assignVar(TOKEN_PREPROCESSOR, conf, String.class);
+        final boolean removeStop = assignVar(REMOVE_STOPWORDS, conf, Boolean.class);
 
-        TextPipeline pipeline = new TextPipeline(rdd, numWords, nGrams, tokenizer,
-                tokenPreprocessor, removeStop);
+        Map<String, Object> tokenizerVarMap = new HashMap<String, Object>() {{
+            put("numWords", numWords);
+            put("nGrams", nGrams);
+            put("tokenizer", tokenizer);
+            put("tokenPreprocessor", tokenPreprocessor);
+            put("removeStop", removeStop);
+        }};
+
+        TextPipeline pipeline = new TextPipeline(rdd, tokenizerVarMap);
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
 
