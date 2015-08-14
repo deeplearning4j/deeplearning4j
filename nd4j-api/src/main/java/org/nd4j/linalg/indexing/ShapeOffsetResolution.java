@@ -244,10 +244,25 @@ public class ShapeOffsetResolution implements Serializable {
          * because a point index was encountered
          * but it was the lead index and therefore should
          * not be counted with the offset.
+         *
+         *
+         * Another thing of note here is that the strides
+         * and offsets should line up such that the point
+         * and stride match up.
          */
         if(numPointIndexes > 0 && !pointStrides.isEmpty()) {
-            while(pointStrides.size() < accumOffsets.size())
-                pointStrides.add(0,1);
+            //append to the end for tensors
+            if(arr.rank() > 2) {
+                while(pointStrides.size() < accumOffsets.size()) {
+                    pointStrides.add(1);
+                }
+            }
+            else {
+                while(pointStrides.size() < accumOffsets.size()) {
+                    pointStrides.add(0, 1);
+                }
+            }
+
             this.offset = ArrayUtil.dotProduct(pointStrides,accumOffsets);
         }
         else
