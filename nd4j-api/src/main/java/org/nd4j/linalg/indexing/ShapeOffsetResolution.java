@@ -169,7 +169,7 @@ public class ShapeOffsetResolution implements Serializable {
 
         //only one index and matrix, remove the first index rather than the last
         //equivalent to this is reversing the list with the prepended one
-        if(indexes.length <= 2 && indexes[0] instanceof PointIndex && shape.length == 2) {
+        if(indexes.length <= 2 && indexes[0] instanceof PointIndex && shape.length == 2 && newAxesPrepend < 1) {
             Collections.reverse(accumShape);
             Collections.reverse(accumStrides);
         }
