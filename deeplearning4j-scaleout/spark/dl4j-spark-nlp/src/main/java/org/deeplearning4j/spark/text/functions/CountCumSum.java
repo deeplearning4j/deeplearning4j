@@ -1,10 +1,11 @@
-package org.deeplearning4j.spark.text;
+package org.deeplearning4j.spark.text.functions;
 
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
+import org.deeplearning4j.spark.text.accumulators.MaxPerPartitionAccumulator;
 
 import java.util.concurrent.atomic.AtomicLong;
 

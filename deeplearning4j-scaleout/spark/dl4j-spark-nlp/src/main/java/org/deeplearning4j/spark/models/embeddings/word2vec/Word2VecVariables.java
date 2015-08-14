@@ -26,8 +26,7 @@ public class Word2VecVariables {
     public final static String TOKENIZER = NAME_SPACE + ".tokenizer";
     public final static String TOKEN_PREPROCESSOR = NAME_SPACE + ".preprocessor";
     public final static String REMOVE_STOPWORDS = NAME_SPACE + ".removestopwords";
-    public final static String STEMMING = NAME_SPACE + ".stemming";
-    public final static String ALPHANUMERIC_ONLY = NAME_SPACE + ".alphanumericonly";
+    public final static String SEED = NAME_SPACE + ".SEED";
 
     public final static Map<String, Object> defaultVals = new HashMap<String, Object>() {{
         put(VECTOR_LENGTH, 100);
@@ -43,8 +42,7 @@ public class Word2VecVariables {
         put(TOKENIZER, "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory");
         put(TOKEN_PREPROCESSOR, "org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor");
         put(REMOVE_STOPWORDS, false);
-        put(STEMMING, null);
-        put(ALPHANUMERIC_ONLY, null);
+        put(SEED, 42L);
     }};
 
     @SuppressWarnings("unchecked")
@@ -57,12 +55,18 @@ public class Word2VecVariables {
         Object ret;
         if (clazz.equals(Integer.class)) {
             ret = conf.getInt(variableName, (Integer) getDefault(variableName));
+
         } else if (clazz.equals(Double.class)) {
             ret = conf.getDouble(variableName, (Double) getDefault(variableName));
+
         } else if (clazz.equals(Boolean.class)) {
             ret = conf.getBoolean(variableName, (Boolean) getDefault(variableName));
+
         } else if (clazz.equals(String.class)) {
             ret = conf.get(variableName, (String) getDefault(variableName));
+
+        } else if (clazz.equals(Long.class)) {
+            ret = conf.getLong(variableName, (Long) getDefault(variableName));
         } else {
             throw new Exception("Variable Type not supported. Only boolean, int, double and String supported.");
         }
