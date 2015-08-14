@@ -73,6 +73,7 @@ public class Word2VecTest {
         WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), table.getFirst()));
         Collection<String> words = vectors.wordsNearest("day", 10);
         System.out.println(Arrays.toString(words.toArray()));
+
 //        assertTrue(words.contains("week"));
     }
 

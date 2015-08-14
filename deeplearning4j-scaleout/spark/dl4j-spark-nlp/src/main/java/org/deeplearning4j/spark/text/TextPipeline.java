@@ -252,23 +252,6 @@ public class TextPipeline {
         if (sentenceWordsCountRDD == null)
             throw new IllegalStateException("SentenceWordCountRDD must be defined first. Run buildLookupCache first.");
 
-//        Function wordsListToVocabWords = new Function<Pair<List<String>, AtomicLong>, List<VocabWord>>() {
-//            @Override
-//            public List<VocabWord> call(Pair<List<String>, AtomicLong> pair) throws Exception {
-//                List<String> wordsList = pair.getFirst();
-//                List<VocabWord> vocabWordsList = new ArrayList<>();
-//                for (String s : wordsList)
-//                    vocabWordsList.add(vocabCacheBroadcast.getValue().wordFor(s));
-//                return vocabWordsList;
-//            }
-//        };
-
-//        Function getSentenceCount = new Function<Pair<List<String>, AtomicLong>, AtomicLong>() {
-//            @Override
-//            public AtomicLong call(Pair<List<String>, AtomicLong> pair) throws Exception {
-//                return pair.getSecond();
-//            }
-//        };
         vocabWordListRDD = sentenceWordsCountRDD.map(new WordsListToVocabWordsFunction(vocabCacheBroadcast))
                 .setName("vocabWordListRDD").cache();
         sentenceCountRDD = sentenceWordsCountRDD.map(new GetSentenceCountFunction())

@@ -15,7 +15,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class FoldWithinPartitionFunction implements Function2<Integer, Iterator<AtomicLong>, Iterator<AtomicLong>> {
 
     public FoldWithinPartitionFunction(Accumulator<Counter<Integer>> maxPartitionAcc) {
+        this.maxPerPartitionAcc = maxPartitionAcc;
     }
+
+    private Accumulator<Counter<Integer>> maxPerPartitionAcc;
+
 
     @Override
     public Iterator<AtomicLong> call(Integer ind, Iterator<AtomicLong> partition) throws Exception {
@@ -43,5 +47,4 @@ public class FoldWithinPartitionFunction implements Function2<Integer, Iterator<
 
         return foldedItemList.iterator();
     }
-};
 }
