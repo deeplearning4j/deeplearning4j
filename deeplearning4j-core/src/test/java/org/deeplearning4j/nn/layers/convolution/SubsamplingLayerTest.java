@@ -42,85 +42,164 @@ public class SubsamplingLayerTest {
 
 
     @Test
-    public void testSubSamplingLayerActivateShape() throws Exception {
+    public void testSubSampleMaxActivate() throws Exception  {
+        INDArray containedExpectedOut = Nd4j.create(new double[] {
+                5.,  7.,  6.,  8.,  4.,  7.,  5.,  9.
+        },new int[]{1,2,2,2});
+        INDArray containedInput = getContainedData();
         INDArray input = getData();
-        SubsamplingLayer.PoolingType[] toTest = {
-                SubsamplingLayer.PoolingType.MAX,
-                SubsamplingLayer.PoolingType.AVG,
-//                SubsamplingLayer.PoolingType.SUM, not implemented yet
-        };
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
 
-        for(SubsamplingLayer.PoolingType pool : toTest) {
-            Layer model = getSubsamplingLayer(pool);
+        INDArray containedOutput = layer.activate(containedInput);
+        assertEquals(containedExpectedOut, containedOutput);
+        assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
 
-            INDArray output = model.activate(input);
-            assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, featureMapWidth, featureMapHeight}, output.shape()));
-            assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
-        }
+        INDArray output = layer.activate(input);
+        assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, featureMapWidth, featureMapHeight}, output.shape()));
+        assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
+    }
+
+    @Test
+    public void testSubSampleMeanActivate() throws Exception  {
+        INDArray containedExpectedOut = Nd4j.create(new double[]{
+                2., 4., 3., 5., 3.5, 6.5, 4.5, 8.5
+        }, new int[]{1, 2, 2, 2});
+        INDArray containedInput = getContainedData();
+        INDArray input = getData();
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+
+        INDArray containedOutput = layer.activate(containedInput);
+        assertEquals(containedExpectedOut, containedOutput);
+        assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
+
+        INDArray output = layer.activate(input);
+        assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, featureMapWidth, featureMapHeight}, output.shape()));
+        assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
     }
 
     @Test
     public void testSubSampleNoneActivate() throws Exception  {
+        INDArray containedExpectedOut = Nd4j.create(new double[]{
+                1., 1., 3., 7., 5., 1., 3., 3., 2., 2., 8., 4., 2.,
+                6., 4., 4., 3., 3., 6., 7., 4., 4., 6., 7., 5., 5.,
+                9., 8., 4., 4., 9., 8.
+        }, new int[]{1, 2, 4, 4});
+        INDArray containedInput = getContainedData();
         INDArray input = getData();
-        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
 
-        INDArray output = model.activate(input);
+        INDArray containedOutput = layer.activate(containedInput);
+        assertEquals(containedExpectedOut, containedOutput);
+        assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
+
+        INDArray output = layer.activate(input);
         assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, inputWidth, inputHeight}, output.shape()));
-        assertEquals(nExamples, output.shape()[0], 1e-4); // depth retained
+        assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
     }
 
     @Test (expected=IllegalStateException.class)
     public void testSubSampleSumActivate() throws Exception  {
         INDArray input = getData();
-        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
 
-        model.activate(input);
+        layer.activate(input);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
 
     @Test
     public void testSubSampleLayerMaxBackprop() throws Exception {
+        INDArray expectedContainedEpsilonInput = Nd4j.create(new double[]{
+                1., 1., 1., 1., 1., 1., 1., 1.
+        }, new int[]{1, 2, 2, 2});
+
+        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[]{
+                0., 0., 0., 1., 1., 0., 0., 0., 0., 0., 1., 0., 0.,
+                1., 0., 0., 0., 0., 0., 1., 1., 0., 0., 0., 1., 0.,
+                1., 0., 0., 0., 0., 0.
+        }, new int[]{1, 2, 4, 4});
+
         INDArray input = getData();
-        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
 
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
+        layer.setInput(input);
         Gradient gradient = createPrevGradient();
-        model.activate(input);
 
-        Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, gradient, null);
+        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
+        assertEquals(gradient.getGradientFor("W"), containedOutput.getFirst().getGradientFor("W"));
+        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
+
+        gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, gradient, null);
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
     @Test
     public void testSubSampleLayerAvgBackprop() throws Exception{
+        INDArray expectedContainedEpsilonInput = Nd4j.create(new double[] {
+                1.,  2.,  3.,  4.,  5.,  6.,  7.,  8.
+        }, new int[]{ 1,2,2,2});
+
+        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {
+                0.25,  0.25,  0.5 ,  0.5 ,  0.75,  0.75,  1.  ,  1.  ,  0.25,
+                0.25,  0.5 ,  0.5 ,  0.75,  0.75,  1.  ,  1.  ,  1.25,  1.25,
+                1.5 ,  1.5 ,  1.75,  1.75,  2.
+        }, new int[]{ 1,2,4,4});
+
         INDArray input = getData();
-        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
+        layer.activate(input);
         Gradient gradient = createPrevGradient();
 
-        model.activate(input);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, gradient, null);
+        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
+        assertEquals(gradient.getGradientFor("W"), containedOutput.getFirst().getGradientFor("W"));
+        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
-        Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
+        gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, gradient, null);
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
     @Test
-    public void testSubSampleLayerNoneBackprop() {
-        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
+    public void testSubSampleLayerNoneBackprop() throws Exception {
+        INDArray expectedContainedEpsilonInput = Nd4j.create(new double[]{
+                1., 1., 1., 1., 1., 1., 1., 1.
+        }, new int[]{1, 2, 2, 2});
+
+        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[]{
+                1., 1., 1., 1., 1., 1., 1., 1.
+        }, new int[]{1, 2, 2, 2});
+        INDArray input = getData();
+
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
+        layer.setInput(input);
         Gradient gradient = createPrevGradient();
 
-        Pair<Gradient, INDArray> out= model.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, gradient, null);
+        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
+        assertEquals(gradient.getGradientFor("W"), containedOutput.getFirst().getGradientFor("W"));
+        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
+
+        gradient = createPrevGradient();
+
+        Pair<Gradient, INDArray> out= layer.backpropGradient(epsilon, gradient, null);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
 
     @Test (expected=IllegalStateException.class)
     public void testSubSampleLayerSumBackprop() {
-        Layer model = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
         Gradient gradient = createPrevGradient();
 
-        Pair<Gradient, INDArray> out = model.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, gradient, null);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -146,6 +225,14 @@ public class SubsamplingLayerTest {
         return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputWidth, inputHeight);
     }
 
+    public INDArray getContainedData() {
+        INDArray ret = Nd4j.create(new double[]{
+                1., 1., 3., 7., 5., 1., 3., 3., 2., 2., 8., 4., 2.,
+                6., 4., 4., 3., 3., 6., 7., 4., 4., 6., 7., 5., 5.,
+                9., 8., 4., 4., 9., 8.
+        }, new int[]{1, 2, 4, 4});
+        return ret;
+    }
 
     private Gradient createPrevGradient() {
         Gradient gradient = new DefaultGradient();

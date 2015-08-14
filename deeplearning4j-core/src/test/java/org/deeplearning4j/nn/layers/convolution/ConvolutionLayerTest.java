@@ -256,6 +256,7 @@ public class ConvolutionLayerTest {
         }, new int[]{1,1,8,8});
         return ret;
     }
+
     public INDArray getContainedCol() {
         return Nd4j.create(new double[] {
                 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3,
