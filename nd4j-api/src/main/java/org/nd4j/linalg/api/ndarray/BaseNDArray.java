@@ -2889,6 +2889,9 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray slice(int slice) {
+        if(slice >= slices())
+            throw new IllegalArgumentException("Illegal slice " + slice);
+
         if (shape.length == 0) {
             if(slice == 0)
                 return createScalarForIndex(slice,true);
@@ -3727,7 +3730,26 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         if(indexes[0] instanceof SpecifiedIndex) {
-            throw new IllegalStateException("Don't support specified indexing yet");
+            INDArray ret = create(shape);
+            int count = 0;
+            if(isVector()) {
+                while(indexes[0].hasNext()) {
+                    ret.putScalar(count++,getDouble(indexes[0].next()));
+                }
+
+                //reset the index to be used elsewhere
+                indexes[0].reset();
+            }
+            else {
+                while(indexes[0].hasNext()) {
+                    int nextIdx = indexes[0].next();
+                    INDArray next = slice(nextIdx);
+                    ret.putSlice(count++,next.get(Arrays.copyOfRange(indexes, 1, indexes.length)));
+                }
+            }
+
+
+            return ret;
         }
 
         INDArray ret =  subArray(resolution);

@@ -3,6 +3,10 @@ package org.nd4j.linalg.indexing;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
+ * An index in to a particular dimension.
+ * This handles traversing indexes along a dimension
+ * such as particular rows, or intervals.
+ *
  * @author Adam Gibson
  */
 public interface INDArrayIndex {
@@ -92,4 +96,5 @@ public interface INDArrayIndex {
      */
     void init(int begin,int end);
 
+    void reset();
 }

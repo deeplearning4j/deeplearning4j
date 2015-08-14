@@ -20,6 +20,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ShapeOffsetResolution implements Serializable {
+
     private INDArray arr;
     private int[] offsets,shapes,strides;
     private int offset = -1;
@@ -232,7 +233,7 @@ public class ShapeOffsetResolution implements Serializable {
         this.strides = Ints.toArray(accumStrides);
         this.shapes = Ints.toArray(accumShape);
         this.offsets = Ints.toArray(accumOffsets);
-        
+
         //compute point offsets differently
         /**
          * We need to prepend the strides for the point indexes

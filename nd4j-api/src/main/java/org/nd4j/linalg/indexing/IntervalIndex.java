@@ -101,6 +101,11 @@ public class IntervalIndex implements INDArrayIndex {
     }
 
     @Override
+    public void reset() {
+
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof IntervalIndex)) return false;

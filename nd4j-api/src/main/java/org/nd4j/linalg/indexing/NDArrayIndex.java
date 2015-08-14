@@ -581,5 +581,10 @@ public class NDArrayIndex implements INDArrayIndex {
 
     }
 
+    @Override
+    public void reset() {
+
+    }
+
 
 }

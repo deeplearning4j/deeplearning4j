@@ -55,11 +55,11 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testGetRows() {
         INDArray arr = Nd4j.linspace(1,9,9).reshape(3,3);
         INDArray testAssertion = Nd4j.create(new double[][]{
-                {5, 6},
-                {8, 9}
+                {4,5},
+                {7,8}
         });
 
-        INDArray test = arr.get(new SpecifiedIndex(1, 3), new SpecifiedIndex(1, 3));
+        INDArray test = arr.get(new SpecifiedIndex(1, 2), new SpecifiedIndex(0,1));
         assertEquals(testAssertion, test);
 
     }
@@ -80,11 +80,10 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testMultiRow() {
         INDArray matrix = Nd4j.linspace(1,9,9).reshape(3, 3);
         INDArray assertion = Nd4j.create(new double[][]{
-                {4, 5},
-                {7, 8}
+                {4, 7}
         });
 
-        INDArray test = matrix.get(new SpecifiedIndex(1,3),NDArrayIndex.interval(0, 2));
+        INDArray test = matrix.get(new SpecifiedIndex(1,2),NDArrayIndex.interval(0, 1));
         assertEquals(assertion,test);
     }
 

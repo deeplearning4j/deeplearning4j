@@ -85,6 +85,11 @@ public class PointIndex implements INDArrayIndex {
     }
 
     @Override
+    public void reset() {
+        notUsed = false;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof PointIndex)) return false;
