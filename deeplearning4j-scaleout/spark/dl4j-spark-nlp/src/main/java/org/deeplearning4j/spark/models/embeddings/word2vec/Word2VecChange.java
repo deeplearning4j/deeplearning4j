@@ -47,14 +47,6 @@ public class Word2VecChange implements Serializable {
         }
     }
 
-    public Map<Integer, Set<INDArray>> getChanges() {
-        return changes;
-    }
-
-    public void setChanges(Map<Integer, Set<INDArray>> changes) {
-        this.changes = changes;
-    }
-
     /**
      * Take the changes and apply them
      * to the given table
