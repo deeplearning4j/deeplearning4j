@@ -130,19 +130,11 @@ public class SubsamplingLayer extends BaseLayer {
             this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
 
+        pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
         switch(conf.getPoolingType()) {
             case AVG:
-                pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
-                n = pooled.size(0);
-                c = pooled.size(1);
-                kh = pooled.size(2);
-                kw = pooled.size(3);
-                outWidth = pooled.size(4);
-                outHeight = pooled.size(5);
-                ret = pooled.reshape(n, c, kh * kw, outHeight, outWidth);
-                return ret.mean(2);
+                return pooled.mean(2,3);
             case MAX:
-                pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
                 n = pooled.size(0);
                 c = pooled.size(1);
                 kh = pooled.size(2);
