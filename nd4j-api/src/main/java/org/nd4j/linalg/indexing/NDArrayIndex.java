@@ -21,6 +21,7 @@ package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -268,17 +269,17 @@ public class NDArrayIndex implements INDArrayIndex {
      * for a particular dimension otherwise)
      */
     public static INDArrayIndex[] resolve(int[] shape, INDArrayIndex...intendedIndexes) {
-        if(intendedIndexes.length >= shape.length)
+        /**
+         * If it's a vector and index asking for a scalar just return the array
+         */
+        if(intendedIndexes.length >= shape.length || Shape.isVector(shape) && intendedIndexes.length == 1)
             return intendedIndexes;
+
         List<INDArrayIndex> retList = new ArrayList<>();
 
-        if(shape.length == 2 && intendedIndexes.length == 1) {
-            //row vector
-            if(intendedIndexes[0] instanceof PointIndex) {
-                retList.add(intendedIndexes[0]);
-                retList.add(NDArrayIndex.all());
-            }
-
+        if(Shape.isMatrix(shape) && intendedIndexes.length == 1) {
+            retList.add(intendedIndexes[0]);
+            retList.add(NDArrayIndex.all());
         }
         else {
             for(int i = 0; i < intendedIndexes.length; i++) {
@@ -316,8 +317,8 @@ public class NDArrayIndex implements INDArrayIndex {
                 NDArrayIndex idx = (NDArrayIndex) intendedIndexes[i];
                 if (idx.indices.length == 1)
                     intendedIndexes[i] = new PointIndex(idx.indices[0]);
-          }
-          all[i] = intendedIndexes[i];
+            }
+            all[i] = intendedIndexes[i];
         }
 
         return all;

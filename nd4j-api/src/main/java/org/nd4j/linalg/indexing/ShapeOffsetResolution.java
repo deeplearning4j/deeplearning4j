@@ -58,7 +58,7 @@ public class ShapeOffsetResolution implements Serializable {
         //this will be used to compute the offset
         //for the new array
         List<Integer> pointStrides = new ArrayList<>();
-
+        int numPointIndexes = 0;
 
         //bump number to read from the shape
         int shapeIndex = 0;
@@ -67,7 +67,10 @@ public class ShapeOffsetResolution implements Serializable {
         //list of indexes to prepend to for new axes
         //if all is encountered
         List<Integer> prependNewAxes = new ArrayList<>();
-
+        /**
+         * Need to account for strides and offsets that are 1
+         * eg: make them not count for tensors
+         */
 
 
         for(int i = 0; i < indexes.length; i++) {
@@ -77,8 +80,10 @@ public class ShapeOffsetResolution implements Serializable {
             //point: do nothing but move the shape counter
             //also move the stride counter
             if(idx instanceof PointIndex) {
-                accumOffsets.add(idx.offset());
+                if(idx.offset() > 0)
+                    accumOffsets.add(idx.offset());
                 pointStrides.add(arr.stride(i));
+                numPointIndexes++;
                 shapeIndex++;
                 strideIndex++;
                 continue;
@@ -111,8 +116,16 @@ public class ShapeOffsetResolution implements Serializable {
 
             //add the shape and stride
             //based on the original stride/shape
-            accumStrides.add(arr.stride(strideIndex++));
+
             accumShape.add(shape[shapeIndex++]);
+            //account for erroneous strides from dimensions of size 1
+            //move the stride index if its one and fill it in at the bottom
+            if(accumShape.get(accumShape.size() - 1) != 1) {
+                accumStrides.add(arr.stride(strideIndex++));
+            }
+
+            else
+                strideIndex++;
             //default offsets are zero
             accumOffsets.add(0);
 
@@ -120,15 +133,29 @@ public class ShapeOffsetResolution implements Serializable {
 
         //fill in missing strides and shapes
         while(shapeIndex < shape.length) {
-            accumShape.add(shape[shapeIndex++]);
+            //scalar, should be 1 x 1 rather than the number of columns in the vector
+            if(Shape.isVector(shape)) {
+                accumShape.add(1);
+                shapeIndex++;
+            }
+            else
+                accumShape.add(shape[shapeIndex++]);
         }
 
         while(strideIndex < arr.stride().length) {
-            accumStrides.add(arr.stride(strideIndex++));
+            //scalar: stride should be element wise
+            if(Shape.isVector(shape)) {
+                accumStrides.add(arr.elementStride());
+                strideIndex++;
+            }
+            else
+                accumStrides.add(arr.stride(strideIndex++));
         }
 
         //fill in the rest of the offsets with zero
-        while(accumOffsets.size() < shape.length)
+        int delta = (shape.length <= 2 ? shape.length : shape.length - numPointIndexes);
+        boolean needsFilledIn = accumShape.size() != accumStrides.size() && accumOffsets.size() != accumShape.size();
+        while(accumOffsets.size() < delta && needsFilledIn)
             accumOffsets.add(0);
 
 
@@ -181,9 +208,29 @@ public class ShapeOffsetResolution implements Serializable {
         }
 
 
+        /**
+         * Need to post process strides and offsets
+         * for trailing ones here
+         */
+        //prune off extra zeros for trailing and leading ones
+        int trailingZeroRemove = accumOffsets.size() - 1;
+        while(accumOffsets.size() > accumShape.size()) {
+            if(accumOffsets.get(trailingZeroRemove) == 0)
+                accumOffsets.remove(accumOffsets.size() - 1);
+            trailingZeroRemove--;
+        }
+
+        if(accumStrides.size() < accumOffsets.size())
+            accumStrides.addAll(pointStrides);
+        //finally fill in teh rest of the strides if any are left over
+        while(accumStrides.size() < accumOffsets.size()) {
+            accumStrides.add(arr.elementStride());
+        }
+
         this.strides = Ints.toArray(accumStrides);
         this.shapes = Ints.toArray(accumShape);
         this.offsets = Ints.toArray(accumOffsets);
+
         this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides);
 
 

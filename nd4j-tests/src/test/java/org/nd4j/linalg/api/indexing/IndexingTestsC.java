@@ -32,13 +32,13 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testOffsetsC() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
         assertEquals(3, NDArrayIndex.offset(arr,1,1));
-        assertEquals(3,NDArrayIndex.offset(arr,new NDArrayIndex(1),new NDArrayIndex(1)));
+        assertEquals(3,NDArrayIndex.offset(arr,NDArrayIndex.point(1),NDArrayIndex.point(1)));
 
         INDArray arr2 = Nd4j.linspace(1,6,6).reshape(3,2);
         assertEquals(3, NDArrayIndex.offset(arr2,1,1));
-        assertEquals(3, NDArrayIndex.offset(arr2, new NDArrayIndex(1), new NDArrayIndex(1)));
+        assertEquals(3, NDArrayIndex.offset(arr2, NDArrayIndex.point(1), NDArrayIndex.point(1)));
         assertEquals(6, NDArrayIndex.offset(arr2,2,2));
-        assertEquals(6, NDArrayIndex.offset(arr2, new NDArrayIndex(2), new NDArrayIndex(2)));
+        assertEquals(6, NDArrayIndex.offset(arr2, NDArrayIndex.point(2), NDArrayIndex.point(2)));
 
 
 
@@ -56,7 +56,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     @Test
     public void testGetScalar() {
         INDArray arr = Nd4j.linspace(1,5,5);
-        INDArray d = arr.get(new NDArrayIndex(1));
+        INDArray d = arr.get(NDArrayIndex.point(1));
         assertTrue(d.isScalar());
         assertEquals(2.0,d.getDouble(0));
 
@@ -71,7 +71,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray firstAndSecondRow = twoByTwo.getRows(new int[]{1, 2});
         INDArray firstRowViaIndexing = twoByTwo.get(NDArrayIndex.interval(0, 1));
         assertEquals(firstRow, firstRowViaIndexing);
-        INDArray secondRowViaIndexing = twoByTwo.get(new NDArrayIndex(1));
+        INDArray secondRowViaIndexing = twoByTwo.get(NDArrayIndex.point(1));
         assertEquals(secondRow, secondRowViaIndexing);
 
         INDArray firstAndSecondRowTest = twoByTwo.get(NDArrayIndex.interval(1, 3));
@@ -97,7 +97,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testGetIndicesVector() {
         INDArray line = Nd4j.linspace(1, 4, 4);
         INDArray test = Nd4j.create(new float[]{2, 3});
-        INDArray result = line.get(new NDArrayIndex(0), NDArrayIndex.interval(1, 3));
+        INDArray result = line.get(NDArrayIndex.point(0), NDArrayIndex.interval(1, 3));
         assertEquals(test, result);
     }
 

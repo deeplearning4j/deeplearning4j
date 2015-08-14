@@ -32,22 +32,13 @@ public class IndexingTests extends BaseNd4jTest {
     @Test
     public void testGetScalar() {
         INDArray arr = Nd4j.linspace(1,5,5);
-        INDArray d = arr.get(new NDArrayIndex(1));
+        INDArray d = arr.get(NDArrayIndex.point(1));
         assertTrue(d.isScalar());
         assertEquals(2.0,d.getDouble(0));
 
     }
 
 
-    @Test
-    public void testNewLinearView() {
-        INDArray arange = Nd4j.arange(1, 17).reshape(4, 4);
-        INDArrayIndex index = NDArrayIndex.interval(0, 2);
-        INDArray get = arange.get(index, index);
-        LinearViewNDArray linearViewNDArray = new LinearViewNDArray(get);
-        assertEquals(Nd4j.create(new double[]{1, 5,2, 6}),linearViewNDArray);
-
-    }
 
 
     @Test
@@ -77,7 +68,7 @@ public class IndexingTests extends BaseNd4jTest {
     public void testGetIndicesVector() {
         INDArray line = Nd4j.linspace(1, 4, 4);
         INDArray test = Nd4j.create(new float[]{2, 3});
-        INDArray result = line.get(new NDArrayIndex(0), NDArrayIndex.interval(1, 3));
+        INDArray result = line.get(NDArrayIndex.point(0), NDArrayIndex.interval(1, 3));
         assertEquals(test, result);
     }
 

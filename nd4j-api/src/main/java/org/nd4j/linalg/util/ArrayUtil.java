@@ -650,10 +650,6 @@ public class ArrayUtil {
             st *= shape[j];
         }
 
-        if(dimensions > 2 && shape[0] == 1) {
-            stride = ArrayUtil.reverseCopy(stride);
-        }
-
         return stride;
     }
 

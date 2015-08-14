@@ -18,6 +18,17 @@ public class IndexingIterationTests extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public IndexingIterationTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public IndexingIterationTests() {
+    }
+
+    public IndexingIterationTests(String name) {
+        super(name);
+    }
+
     @Test
     public void testAll() {
         INDArrayIndex all = NDArrayIndex.all();

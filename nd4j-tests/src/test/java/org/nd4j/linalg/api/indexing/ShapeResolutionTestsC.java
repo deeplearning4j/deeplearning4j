@@ -9,6 +9,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 
@@ -45,12 +47,17 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         assertArrayEquals(new int[]{0, 0}, oneIndexOffsets);
         assertEquals(0,resolution.getOffset());
         int[] oneIndexStrides = ArrayUtil.copy(resolution.getStrides());
-        assertArrayEquals(new int[]{2,1},oneIndexStrides);
+        assertArrayEquals(new int[]{2, 1}, oneIndexStrides);
 
     }
 
-
-
+    @Test
+    public void testIntervalFirstShapeResolution() {
+        INDArray arr = Nd4j.linspace(1,6,6).reshape(3,2);
+        ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
+        resolution.exec(NDArrayIndex.interval(1,3));
+        assertFalse(Arrays.equals(arr.shape(),resolution.getShapes()));
+    }
 
 
     @Test

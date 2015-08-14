@@ -29,6 +29,13 @@ public class NDArrayIndexResolveTests extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testResolvePointVector() {
+        INDArray arr = Nd4j.linspace(1,4,4);
+        INDArrayIndex[] getPoint  = {NDArrayIndex.point(1)};
+        assertArrayEquals(getPoint,NDArrayIndex.resolve(arr.shape(),getPoint));
+    }
+
     @Override
     public char ordering() {
         return 'f';
