@@ -20,11 +20,9 @@ Contents
 
 ##<a name="intro">Introduction to Word2Vec</a>
 
-[Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and Scala, which works with GPUs. 
-
 Word2vec is a two-layer neural net that processes text before that text is handled by deep-learning algorithms. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a deep net, it does turn text into a numerical form that deep-learning nets can understand. 
 
-Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned.
+Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and Scala, which works with GPUs. 
 
 Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
 
@@ -46,7 +44,7 @@ A neural word embedding is a representation, and representations are strange. Yo
 
 How can words represent sounds, and gestures represent arrangements of stone, glass and wood? You're mapping one set to another seemingly dissimilar set. 
 
-A neural word embedding represents a word with numbers. Like a [restricted Boltzmann machine](../restrictedboltzmannmachine.html), Word2vec is a form of autoencoder, and it encodes each word in a vector. It's a simple, yet unlikely, translation. 
+A neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input through reconstructions like a [restricted Boltzmann machine](../restrictedboltzmannmachine.html), word2vec trains words against other words that neighbor them in the input corpus. 
 
 Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so a 500 numbers arranged in a vector can represent a word, or a group of words. 
 
