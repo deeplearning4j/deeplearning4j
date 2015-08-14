@@ -39,12 +39,11 @@ public abstract class BaseUpdater implements Updater {
         NeuralNetConfiguration conf = layer.conf();
         INDArray params = layer.getParam(param);
         if(conf.isUseRegularization() && conf.getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(params.mul(conf.getL2()));
-        if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(Transforms.sign(params).muli(conf.getL1()));
-
+        	gradient.addi(params.mul(conf.getL2()/layer.input().size(0)));	//dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function 
+        if(conf.isUseRegularization() && conf.getL1() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        	gradient.addi(Transforms.sign(params).muli(conf.getL1()/layer.input().size(0)));
         if(conf.isMiniBatch())
-            gradient.divi((double) layer.input().size(0) * conf.getTimeSeriesLength());
+            gradient.divi(((double) layer.input().size(0)) / conf.getTimeSeriesLength());
 
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
