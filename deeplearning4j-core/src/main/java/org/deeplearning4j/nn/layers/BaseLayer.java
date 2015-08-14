@@ -177,8 +177,8 @@ public abstract class BaseLayer implements Layer {
 
         else {
             score = LossCalculation.builder()
-                    .l1(conf.getL1()).l2(conf.getL2())
-                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .l1(1.0).l2(1.0)	//TODO: Temporary until Nd4J LossCalculation refactor
+                    .l1Magnitude(calcL1()).l2Magnitude(calcL2())
                     .labels(input).z(z).lossFunction(conf.getLossFunction())
                     .useRegularization(conf.isUseRegularization()).build().score();
 
@@ -378,13 +378,15 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public double l2Magnitude() {
-        return Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
+    public double calcL2() {
+    	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
+        return 0.5 * conf.getL2() * Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
-    public double l1Magnitude() {
-        return Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    public double calcL1() {
+    	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
+        return conf.getL1() * Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override

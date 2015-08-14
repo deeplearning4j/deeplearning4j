@@ -729,12 +729,12 @@ public class TestOptimizers {
         }
 
         @Override
-        public double l2Magnitude() {
+        public double calcL2() {
             return 0;
         }
 
         @Override
-        public double l1Magnitude() {
+        public double calcL1() {
             return 0;
         }
 
