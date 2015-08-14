@@ -26,9 +26,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,7 +40,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Jeffrey Tang
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TextPipelineTest {
 
     private List<String> sentenceList;
@@ -102,17 +99,20 @@ public class TextPipelineTest {
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD =
                 pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
-        List<Pair<List<String>, AtomicLong>> ret = sentenceWordsCountRDD.collect();
-        assertEquals(ret.get(0).getFirst(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
-        assertEquals(ret.get(1).getFirst(), Arrays.asList("flowers", "are", "red"));
-        assertEquals(ret.get(0).getSecond().get(), 6);
-        assertEquals(ret.get(1).getSecond().get(), 3);
+
         Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
         assertEquals(wordFreqCounter.getCount("STOP"), 4, 0);
         assertEquals(wordFreqCounter.getCount("strange"), 2, 0);
         assertEquals(wordFreqCounter.getCount("flowers"), 1, 0);
         assertEquals(wordFreqCounter.getCount("world"), 1, 0);
         assertEquals(wordFreqCounter.getCount("red"), 1, 0);
+
+        List<Pair<List<String>, AtomicLong>> ret = sentenceWordsCountRDD.collect();
+        assertEquals(ret.get(0).getFirst(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
+        assertEquals(ret.get(1).getFirst(), Arrays.asList("flowers", "are", "red"));
+        assertEquals(ret.get(0).getSecond().get(), 6);
+        assertEquals(ret.get(1).getSecond().get(), 3);
+
 
         sc.stop();
     }
@@ -125,13 +125,8 @@ public class TextPipelineTest {
 
         TextPipeline pipeline = new TextPipeline(corpusRDD);
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
-        JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD =
-                pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
-        List<Pair<List<String>, AtomicLong>> ret = sentenceWordsCountRDD.collect();
-        assertEquals(ret.get(0).getFirst(), Arrays.asList("this", "is", "a", "strange", "strange", "world"));
-        assertEquals(ret.get(1).getFirst(), Arrays.asList("flowers", "are", "red"));
-        assertEquals(ret.get(0).getSecond().get(), 6);
-        assertEquals(ret.get(1).getSecond().get(), 3);
+        pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
+
         Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
         assertEquals(wordFreqCounter.getCount("is"), 1, 0);
         assertEquals(wordFreqCounter.getCount("this"), 1, 0);
@@ -152,7 +147,7 @@ public class TextPipelineTest {
 
         TextPipeline pipeline = new TextPipeline(corpusRDD);
         JavaRDD<List<String>> tokenizedRDD = pipeline.tokenize();
-        pipeline.updateAndReturnAccumulatorVal(tokenizedRDD).collect();
+        pipeline.updateAndReturnAccumulatorVal(tokenizedRDD);
         Counter<String> wordFreqCounter = pipeline.getWordFreqAcc().value();
 
         pipeline.filterMinWordAddVocab(wordFreqCounter);
@@ -183,6 +178,53 @@ public class TextPipelineTest {
 
         sc.stop();
     }
+
+    @Test
+    public void testBuildVocabCache() throws  Exception{
+        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
+        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        pipeline.buildVocabCache();
+
+        VocabCache vocabCache = pipeline.getVocabCache();
+
+        assertTrue(vocabCache != null);
+        VocabWord redVocab = vocabCache.tokenFor("red");
+        VocabWord flowerVocab = vocabCache.tokenFor("flowers");
+        VocabWord worldVocab = vocabCache.tokenFor("world");
+        VocabWord strangeVocab = vocabCache.tokenFor("strange");
+
+
+        assertEquals(redVocab.getWord(), "red");
+        assertEquals(redVocab.getIndex(), 0);
+        assertEquals(redVocab.getWordFrequency(), 1, 0);
+
+        assertEquals(flowerVocab.getWord(), "flowers");
+        assertEquals(flowerVocab.getIndex(), 1);
+        assertEquals(flowerVocab.getWordFrequency(), 1, 0);
+
+        assertEquals(worldVocab.getWord(), "world");
+        assertEquals(worldVocab.getIndex(), 2);
+        assertEquals(worldVocab.getWordFrequency(), 1, 0);
+
+        assertEquals(strangeVocab.getWord(), "strange");
+        assertEquals(strangeVocab.getIndex(), 3);
+        assertEquals(strangeVocab.getWordFrequency(), 2, 0);
+
+        sc.stop();
+    }
+
+//    @Test
+//    public void testBuildVocabWordListRDD() throws Exception{
+//        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+//        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
+//        TextPipeline pipeline = new TextPipeline(corpusRDD);
+//        pipeline.buildVocabCache();
+//        pipeline.buildVocabWordListRDD();
+//
+//        sc.stop();
+//     }
+
 
 //    /**
 //     *
