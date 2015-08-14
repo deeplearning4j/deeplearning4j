@@ -150,8 +150,10 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         //////////////////////////////////////
         log.info("Training word 2vec");
         //calculate all the errors
+        Word2VecParam prevParam;
         for(int i = 0; i < iterations; i++) {
             final Broadcast<Word2VecParam> finalParamBroadcast = sc.broadcast(param);
+
             if(finalParamBroadcast.value() == null)
                 throw new IllegalStateException("Value not found for param broadcast");
             JavaRDD<Word2VecFuncCall> call = vocabWordListSentenceCumSumRDD.map(new Word2VecSetup(finalParamBroadcast));
@@ -164,6 +166,10 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
             });
 
             change2.unpersist();
+            prevParam = param;
+            if (prevParam.equals(param)) {
+                throw new Exception("Param is not update.");
+            }
             log.info("Iteration " + i);
         }
 

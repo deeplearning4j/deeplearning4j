@@ -1,7 +1,15 @@
 package org.deeplearning4j.spark.text;
 
+import org.apache.spark.api.java.function.VoidFunction;
+
+import java.util.Iterator;
+
 /**
- * Created by jeffreytang on 8/13/15.
+ * @author jeffreytang
  */
-public class MapPerPartitionVoidFunction {
+public class MapPerPartitionVoidFunction implements VoidFunction<Iterator<?>> {
+
+    @Override
+    public void call(Iterator<?> integerIterator) throws Exception {}
 }
+
