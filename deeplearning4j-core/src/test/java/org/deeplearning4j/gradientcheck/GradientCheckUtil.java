@@ -14,8 +14,10 @@ import org.slf4j.LoggerFactory;
  * Basic idea: compare calculated gradients with those calculated numerically,
  * to check implementation of backpropagation gradient calculation.<br>
  * See:<br>
+ * - http://cs231n.github.io/neural-networks-3/#gradcheck<br>
  * - http://ufldl.stanford.edu/wiki/index.php/Gradient_checking_and_advanced_optimization<br>
  * - https://code.google.com/p/cuda-convnet/wiki/CheckingGradients<br>
+ *
  *
  * Is C is cost function, then dC/dw ~= (C(w+epsilon)-C(w-epsilon)) / (2*epsilon).<br>
  * Method checks gradient calculation for every parameter separately by doing 2 forward pass
@@ -31,7 +33,7 @@ public class GradientCheckUtil {
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
      * @param epsilon Usually on the order of 1e-4 or so.
-     * @param maxRelError Maximum relative error. Usually around 0.02 to 0.10.
+     * @param maxRelError Maximum relative error. Usually < 0.01, though maybe more for deep networks
      * @param print Whether to print full pass/failure details for each parameter gradient
      * @param exitOnFirstError If true: return upon first failure. If false: continue checking even if
      *  one parameter gradient has failed. Typically use false for debugging, true for unit tests.
@@ -61,7 +63,8 @@ public class GradientCheckUtil {
             updater.update(mln, gradAndScore.getFirst(), 0);
         }
 
-        INDArray gradientToCheck = gradAndScore.getFirst().gradient();
+//      INDArray gradientToCheck = gradAndScore.getFirst().gradient();
+        INDArray gradientToCheck = gradAndScore.getFirst().gradient(mln.conf().variables());
         INDArray originalParams = mln.params();
 
         int nParams = mln.numParams();
@@ -77,7 +80,7 @@ public class GradientCheckUtil {
             double scorePlus = mln.score();
 
             //(w-epsilon): Do forward pass and score
-            params.putScalar(i, params.getDouble(i)  - epsilon);
+            params.putScalar(i, params.getDouble(i)  - 2*epsilon); // +eps - 2*eps = -eps
             mln.setParameters(params);
             mln.computeGradientAndScore();
             double scoreMinus = mln.score();
@@ -94,15 +97,13 @@ public class GradientCheckUtil {
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
 
-
+            if(relError > maxError) maxError = relError;
             if(relError > maxRelError) {
                 if(print)
                     log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= "+numericalGradient
                             + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);
                 if(exitOnFirstError)
                     return false;
-                if(relError > maxError)
-                    maxError = relError;
                 totalNFailures++;
             }
             else if(print) {
