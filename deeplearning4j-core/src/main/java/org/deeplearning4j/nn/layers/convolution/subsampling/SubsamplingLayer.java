@@ -77,50 +77,63 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
-        // TODO assign this.gradient to the gradient from here
-
-        Gradient ret = new DefaultGradient();
-        int height = epsilon.size(-2);
-        int width = epsilon.size(-1);
+        // TODO assign this.gradient to the gradient from here?
+        //subsampling doesn't have weights and thus gradients are not calculated
+        //only scale and reshape epsilon and gradient
+        int n = epsilon.size(0);
+        int c = epsilon.size(1);
+        int outH = epsilon.size(2);
+        int outW = epsilon.size(3);
+        INDArray reshapeEpsilon, reshapeGradient, retE, retG;
+        int inputHeight = input().size(-2);
+        int inputWidth = input().size(-1);
+        Gradient retGradient = new DefaultGradient();
+        retGradient.gradientForVariable().put(ConvolutionParamInitializer.BIAS_KEY, gradient.getGradientFor("b"));
 
         switch(conf.getPoolingType()) {
             case MAX:
-                int n = epsilon.size(0);
-                int c = epsilon.size(1);
-                int outH = epsilon.size(2);
-                int outW = epsilon.size(3);
                 //compute backwards kernel based on rearranging the given error
-                INDArray ret2 = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
-                INDArray reverse = Nd4j.rollAxis(ret2.reshape(n,c,-1,outH,outW),2);
+                retE = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
+                reshapeEpsilon = Nd4j.rollAxis(retE.reshape(n,c,-1,outH,outW),2);
+                retG = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
+                reshapeGradient = Nd4j.rollAxis(retG.reshape(n,c,-1,outH,outW),2);
+
                 Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
                 while(iter.hasNext()) {
                     int[] next = iter.next();
                     INDArrayIndex[] indexes = NDArrayIndex.indexesFor(next);
-                    reverse.get(indexes).put(indexes,epsilon.get(indexes));
+                    reshapeEpsilon.get(indexes).put(indexes, epsilon.get(indexes));
+                    reshapeGradient.get(indexes).put(indexes, gradient.getGradientFor("W").get(indexes));
                 }
-
-                //compute gradient for weights
-                INDArray finalRet = Convolution.col2im(ret2,conf.getStride(),conf.getPadding(),height, width);
-//                if(finalRet.rank() < 4)
-//                    finalRet = finalRet.reshape(Ints.concat(new int[]{1},finalRet.shape()));
-                ret.gradientForVariable().put(ConvolutionParamInitializer.WEIGHT_KEY, finalRet);
-                return new Pair<>(ret,finalRet);
+                reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
+                retGradient.gradientForVariable().put(ConvolutionParamInitializer.WEIGHT_KEY, reshapeGradient);
+                return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
-                INDArray subError = epsilon.get(
+                retE = epsilon.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
-                        , NDArrayIndex.newAxis(),NDArrayIndex.newAxis());
-                INDArray tiled = Nd4j.tile(subError,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
-                //do convolution all at once
-                INDArray convolution = Convolution.col2im(tiled, conf.getStride(), conf.getPadding(), height, width);
-                convolution.divi(ArrayUtil.prod(conf.getKernelSize()));
-                if(convolution.rank() < 4)
-                    convolution = convolution.reshape(Ints.concat(new int[]{1},convolution.shape()));
+                        , NDArrayIndex.newAxis()
+                        , NDArrayIndex.newAxis());
+                reshapeEpsilon = Nd4j.tile(retE,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
 
-                ret.gradientForVariable().put(ConvolutionParamInitializer.WEIGHT_KEY, convolution);
-                return new Pair<>(ret,convolution);
+                reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
+                reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
+
+                retG = epsilon.get(
+                        NDArrayIndex.all()
+                        , NDArrayIndex.all()
+                        , NDArrayIndex.newAxis()
+                        , NDArrayIndex.newAxis()
+                        ,NDArrayIndex.newAxis());
+                reshapeGradient = Nd4j.tile(retG,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
+
+                reshapeGradient = Convolution.col2im(reshapeGradient, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
+                reshapeGradient.divi(ArrayUtil.prod(conf.getKernelSize()));
+
+                retGradient.gradientForVariable().put(ConvolutionParamInitializer.WEIGHT_KEY, reshapeGradient);
+                return new Pair<>(retGradient, reshapeEpsilon);
             case NONE:
                 return new Pair<>(gradient, epsilon);
             default: throw new IllegalStateException("Un supported pooling type");
@@ -131,27 +144,34 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public INDArray activate(boolean training) {
+        INDArray pooled, ret;
+        // n = num examples, c = num channels or depth
+        int n, c, kh, kw, outWidth, outHeight;
         if(training && conf.getDropOut() > 0) {
             this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
         }
 
-        INDArray pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
         switch(conf.getPoolingType()) {
             case AVG:
-                return pooled.mean(2,3);
+                pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
+                n = pooled.size(0);
+                c = pooled.size(1);
+                kh = pooled.size(2);
+                kw = pooled.size(3);
+                outWidth = pooled.size(4);
+                outHeight = pooled.size(5);
+                ret = pooled.reshape(n, c, kh * kw, outHeight, outWidth);
+                return ret.mean(2);
             case MAX:
-                //number of images
-                int n = pooled.size(0);
-                //number of channels (depth)
-                int c = pooled.size(1);
-                //image height
-                int kh = pooled.size(2);
-                //image width
-                int kw = pooled.size(3);
-                int outWidth = pooled.size(4);
-                int outHeight = pooled.size(5);
-                INDArray ret = pooled.reshape(n,c,kh * kw,outHeight,outWidth);
-                maxIndexes = Nd4j.argMax(ret,2);
+                pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
+                n = pooled.size(0);
+                c = pooled.size(1);
+                kh = pooled.size(2);
+                kw = pooled.size(3);
+                outWidth = pooled.size(4);
+                outHeight = pooled.size(5);
+                ret = pooled.reshape(n, c, kh * kw, outHeight, outWidth);
+                maxIndexes = Nd4j.argMax(ret, 2);
                 return ret.max(2);
             case NONE:
                 return input;
