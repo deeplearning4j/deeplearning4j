@@ -319,6 +319,11 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public void setInput(INDArray input) {
+
+    }
+
+    @Override
     public void setIndex(int index) {
         this.index = index;
     }

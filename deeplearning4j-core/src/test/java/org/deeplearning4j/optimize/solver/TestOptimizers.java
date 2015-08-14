@@ -356,6 +356,11 @@ public class TestOptimizers {
         public int getIndex() {
             return 0;
         }
+
+        @Override
+        public void setInput(INDArray input) {
+
+        }
     }
 
 
@@ -496,6 +501,11 @@ public class TestOptimizers {
         @Override
         public int getIndex() {
             return 0;
+        }
+
+        @Override
+        public void setInput(INDArray input) {
+
         }
     }
 
@@ -647,6 +657,11 @@ public class TestOptimizers {
         @Override
         public int getIndex() {
             return 0;
+        }
+
+        @Override
+        public void setInput(INDArray input) {
+
         }
     }
 

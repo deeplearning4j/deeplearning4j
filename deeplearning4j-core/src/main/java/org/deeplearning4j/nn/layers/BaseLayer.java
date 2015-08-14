@@ -77,6 +77,7 @@ public abstract class BaseLayer implements Layer {
         this.input = input;
     }
 
+    @Override
     public void setInput(INDArray input) {
         setInput(input,true);
     }
