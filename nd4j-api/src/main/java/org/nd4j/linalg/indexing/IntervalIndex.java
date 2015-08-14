@@ -99,4 +99,34 @@ public class IntervalIndex implements INDArrayIndex {
         this.end = inclusive ? end + 1 : end;
 
     }
+
+    @Override
+    public void reset() {
+
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IntervalIndex)) return false;
+
+        IntervalIndex that = (IntervalIndex) o;
+
+        if (begin != that.begin) return false;
+        if (end != that.end) return false;
+        if (inclusive != that.inclusive) return false;
+        if (stride != that.stride) return false;
+        return index == that.index;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = begin;
+        result = 31 * result + end;
+        result = 31 * result + (inclusive ? 1 : 0);
+        result = 31 * result + stride;
+        result = 31 * result + index;
+        return result;
+    }
 }

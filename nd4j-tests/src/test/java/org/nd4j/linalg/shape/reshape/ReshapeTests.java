@@ -39,7 +39,8 @@ public class ReshapeTests extends BaseNd4jTest {
         };
 
         for(int i = 0; i < threeTwoTwo.slices(); i++) {
-            assertEquals(assertions[i], threeTwoTwo.slice(i));
+            INDArray sliceI =  threeTwoTwo.slice(i);
+            assertEquals(assertions[i],sliceI);
         }
 
         INDArray linspaced = Nd4j.linspace(1,4,4).reshape(2,2);

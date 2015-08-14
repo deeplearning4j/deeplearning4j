@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.indexing;
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LinearIndex;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -361,102 +363,102 @@ public class Indices {
      * and if so, prune it down
      *
      * @param shape   the original shape
-     * @param offsets the offsets for the indexing
      * @param indices the indices to calculate the shape for
      * @return the shape for the given indices
      */
-    public static int[] shape(int[] shape, int[] offsets,INDArrayIndex...indices) {
-        int numNewAxes = NDArrayIndex.numNewAxis(indices);
-        if (indices.length > shape.length && numNewAxes < 1)
-            return shape;
-
-        if(Shape.isRowVectorShape(shape) && numNewAxes < 1 && indices.length <= 2) {
-            if(indices.length == 2)
-                return new int[] {1,Math.max(indices[0].length(),indices[1].length())};
-            else
-                return new int[]{1,indices[0].length()};
-        }
-
-        int[] ret = new int[offsets.length];
-        if(indices[0].length() == 1 && numNewAxes >= 1)
-            ret = new int[indices.length - 1];
-        if(offsets.length < shape.length) {
-            int[] dup = new int[shape.length];
-            System.arraycopy(offsets,0,dup,0,offsets.length);
-            offsets = dup;
-        }
-
+    public static int[] shape(int[] shape,INDArrayIndex...indices) {
+        int newAxesPrepend = 0;
+        boolean encounteredAll = false;
+        List<Integer> accumShape = new ArrayList<>();
+        //bump number to read from the shape
         int shapeIndex = 0;
-        for (int i = 0; i < indices.length; i++) {
-            if(indices[i] instanceof NDArrayIndexAll) {
-                if(shapeIndex < ret.length) {
-                    ret[shapeIndex] = shape[shapeIndex];
-                    shapeIndex++;
-                }
-
-            }
-            //truncate all point indexes
-            else if(indices[i] instanceof NDArrayIndexEmpty) {
-                ret[i] = 0;
-            }
-            else if(indices[i] instanceof PointIndex) {
-                ret[i] = 0;
-                //move to the next index since this is a point
+        //list of indexes to prepend to for new axes
+        //if all is encountered
+        List<Integer> prependNewAxes = new ArrayList<>();
+        for(int i = 0; i < indices.length; i++) {
+            INDArrayIndex idx = indices[i];
+            if (idx instanceof NDArrayIndexAll)
+                encounteredAll = true;
+            //point: do nothing but move the shape counter
+            if(idx instanceof PointIndex) {
                 shapeIndex++;
+                continue;
+            }
+            //new axes encountered, need to track whether to prepend or
+            //to set the new axis in the middle
+            else if(idx instanceof NewAxis) {
+                //prepend the new axes at different indexes
+                if(encounteredAll) {
+                    prependNewAxes.add(i);
+                }
+                //prepend to the beginning
+                //rather than a set index
+                else
+                    newAxesPrepend++;
+                continue;
+
             }
 
-            else if(indices[i] instanceof NewAxis) {
+            //points and intervals both have a direct desired length
+
+            else if(idx instanceof IntervalIndex && !(idx instanceof NDArrayIndexAll) || idx instanceof SpecifiedIndex) {
+                accumShape.add(idx.length());
+                shapeIndex++;
                 continue;
             }
 
-            else {
-                ret[i] = indices[i].length();
-                shapeIndex++;
-                ret[i] -= offsets[i];
-            }
+            accumShape.add(shape[shapeIndex]);
+            shapeIndex++;
 
         }
 
-
-        List<Integer> nonZeros = new ArrayList<>();
-        for (int i = 0; i < ret.length; i++) {
-            if (ret[i] > 0)
-                nonZeros.add(ret[i]);
+        while(shapeIndex < shape.length) {
+            accumShape.add(shape[shapeIndex++]);
         }
 
 
-        int[] ret2 =  ArrayUtil.toArray(nonZeros);
-        if(Shape.isRowVectorShape(ret2) && ret2.length == 1) {
-            //get all rows
-            if(indices[0] instanceof NDArrayIndexAll)
-                return new int[] {ret2[0],1};
-            return new int[]{1,ret2[0]};
+        while(accumShape.size() < 2) {
+            accumShape.add(1);
         }
 
-        if(ret2.length <= 1) {
-            ret2 = new int[] {1,1};
+        //only one index and matrix, remove the first index rather than the last
+        //equivalent to this is reversing the list with the prepended one
+        if(indices.length == 1 && indices[0] instanceof PointIndex && shape.length == 2) {
+            Collections.reverse(accumShape);
         }
 
-        return ret2;
+        //prepend for new axes; do this first before
+        //doing the indexes to prepend to
+        if(newAxesPrepend > 0) {
+            for(int i = 0; i < newAxesPrepend; i++)
+                accumShape.add(0,1);
+        }
+
+        /**
+         * For each dimension
+         * where we want to prepend a dimension
+         * we need to add it at the index such that
+         * we account for the offset of the number of indexes
+         * added up to that point.
+         *
+         * We do this by doing an offset
+         * for each item added "so far"
+         *
+         * Note that we also have an offset of - 1
+         * because we want to prepend to the given index.
+         *
+         * When prepend new axes for in the middle is triggered
+         * i is already > 0
+         */
+        for(int i = 0; i < prependNewAxes.size(); i++) {
+            accumShape.add(prependNewAxes.get(i) - i,1);
+        }
+
+
+
+        return Ints.toArray(accumShape);
     }
 
-    /**
-     * Calculate the shape for the given set of indices.
-     * <p/>
-     * The shape is defined as (for each dimension)
-     * the difference between the end index + 1 and
-     * the begin index
-     * <p/>
-     * If specified, this will check for whether any of the indices are >= to end - 1
-     * and if so, prune it down
-     *
-     * @param shape   the original shape
-     * @param indices the indices to calculate the shape for
-     * @return the shape for the given indices
-     */
-    public static int[] shape(int[] shape, INDArrayIndex...indices) {
-        return shape(shape, new int[shape.length], indices);
-    }
 
 
     /**
@@ -467,21 +469,44 @@ public class Indices {
      * @return the strides used for indexing
      */
     public static int[] stride(INDArray arr,INDArrayIndex[] indexes, int... shape) {
-        int[] retStride = null;
-        if(indexes.length >= arr.stride().length) {
-        //prepend zeros for new axis
-            retStride = new int[arr.stride().length];
-            for(int i = 0; i < retStride.length; i++) {
-                retStride[i] = arr.stride(i) * indexes[i].stride();
+        List<Integer> strides = new ArrayList<>();
+        int strideIndex = 0;
+        //list of indexes to prepend to for new axes
+        //if all is encountered
+        List<Integer> prependNewAxes = new ArrayList<>();
+
+        for(int i = 0; i < indexes.length; i++) {
+            //just like the shape, drops the stride
+            if(indexes[i] instanceof PointIndex) {
+                strideIndex++;
+                continue;
             }
+            else if(indexes[i] instanceof NewAxis) {
 
+            }
         }
-        else {
-            retStride = Arrays.copyOfRange(arr.stride(), 1, shape.length);
+
+        /**
+         * For each dimension
+         * where we want to prepend a dimension
+         * we need to add it at the index such that
+         * we account for the offset of the number of indexes
+         * added up to that point.
+         *
+         * We do this by doing an offset
+         * for each item added "so far"
+         *
+         * Note that we also have an offset of - 1
+         * because we want to prepend to the given index.
+         *
+         * When prepend new axes for in the middle is triggered
+         * i is already > 0
+         */
+        for(int i = 0; i < prependNewAxes.size(); i++) {
+            strides.add(prependNewAxes.get(i) - i,1);
         }
 
-
-        return retStride;
+        return Ints.toArray(strides);
 
     }
 

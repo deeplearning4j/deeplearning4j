@@ -9,6 +9,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 
@@ -22,40 +24,40 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public ShapeResolutionTestsC(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public ShapeResolutionTestsC() {
+    }
+
+    public ShapeResolutionTestsC(String name) {
+        super(name);
+    }
+
     @Test
     public void testRowVectorShapeOneZeroOffset() {
         INDArray arr = Nd4j.create(2, 2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         //row 0
-        resolution.exec(new NDArrayIndex(0));
+        resolution.exec(NDArrayIndex.point(0));
         int[] oneIndexShape = ArrayUtil.copy(resolution.getShapes());
         assertArrayEquals(new int[]{1,2},oneIndexShape);
         int[] oneIndexOffsets = ArrayUtil.copy(resolution.getOffsets());
         assertArrayEquals(new int[]{0, 0}, oneIndexOffsets);
         assertEquals(0,resolution.getOffset());
         int[] oneIndexStrides = ArrayUtil.copy(resolution.getStrides());
-        assertArrayEquals(new int[]{2,1},oneIndexStrides);
-
-
+        assertArrayEquals(new int[]{2, 1}, oneIndexStrides);
 
     }
 
     @Test
-    public void testRowVectorShapeTwoZeroOffset() {
-        INDArray arr = Nd4j.create(2, 2);
+    public void testIntervalFirstShapeResolution() {
+        INDArray arr = Nd4j.linspace(1,6,6).reshape(3,2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
-        //row 0
-        resolution.exec(new NDArrayIndex(0),NDArrayIndex.all());
-        int[] oneIndexShape = ArrayUtil.copy(resolution.getShapes());
-        assertArrayEquals(new int[]{1,2},oneIndexShape);
-        int[] oneIndexOffsets = ArrayUtil.copy(resolution.getOffsets());
-        assertArrayEquals(new int[]{0, 0}, oneIndexOffsets);
-        assertEquals(0,resolution.getOffset());
-        int[] oneIndexStrides = ArrayUtil.copy(resolution.getStrides());
-        assertArrayEquals(new int[]{2,1},oneIndexStrides);
-
+        resolution.exec(NDArrayIndex.interval(1,3));
+        assertFalse(Arrays.equals(arr.shape(),resolution.getShapes()));
     }
-
 
 
     @Test
@@ -63,7 +65,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.create(2, 2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         //row 0
-        resolution.exec(new NDArrayIndex(1));
+        resolution.exec(NDArrayIndex.point(1));
         int[] oneIndexShape = ArrayUtil.copy(resolution.getShapes());
         assertArrayEquals(new int[]{1,2},oneIndexShape);
         int[] oneIndexOffsets = ArrayUtil.copy(resolution.getOffsets());
@@ -81,7 +83,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.create(2, 2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         //row 0
-        resolution.exec(new NDArrayIndex(1), NDArrayIndex.all());
+        resolution.exec(NDArrayIndex.point(1), NDArrayIndex.all());
         int[] oneIndexShape = ArrayUtil.copy(resolution.getShapes());
         assertArrayEquals(new int[]{1,2},oneIndexShape);
         int[] oneIndexOffsets = ArrayUtil.copy(resolution.getOffsets());
@@ -97,7 +99,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
     public void testColumnVectorShapeZeroOffset() {
         INDArray arr = Nd4j.create(2, 2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
-        resolution.exec(NDArrayIndex.all(), new NDArrayIndex(0));
+        resolution.exec(NDArrayIndex.all(), NDArrayIndex.point(0));
         assertEquals(0, resolution.getOffset());
         int[] strides = resolution.getStrides();
         assertArrayEquals(new int[]{2,1},resolution.getShapes());
@@ -108,7 +110,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
     public void testColumnVectorShapeOneOffset() {
         INDArray arr = Nd4j.linspace(1,4, 4).reshape(2,2);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
-        resolution.exec(NDArrayIndex.all(), new NDArrayIndex(1));
+        resolution.exec(NDArrayIndex.all(),  NDArrayIndex.point(1));
         assertEquals(1, resolution.getOffset());
         int[] strides = resolution.getStrides();
         assertArrayEquals(new int[]{2,1},resolution.getShapes());

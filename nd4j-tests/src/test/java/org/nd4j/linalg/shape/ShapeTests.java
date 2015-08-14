@@ -208,12 +208,12 @@ public class ShapeTests extends BaseNd4jTest {
     public void testNewAxis() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray newAxisAssertion = Nd4j.create(new double[]{1, 3}).reshape(1,1,2);
-        INDArray newAxisGet = arr.get(new NDArrayIndex(0),NDArrayIndex.newAxis());
+        INDArray newAxisGet = arr.get(NDArrayIndex.point(0),NDArrayIndex.newAxis());
         assertEquals(newAxisAssertion,newAxisGet);
 
         INDArray tensor = Nd4j.linspace(1,12,12).reshape(3,2,2);
         INDArray assertion = Nd4j.create(new double[][]{{1, 7}, {4, 10}}).reshape(1,2,2);
-        INDArray tensorGet = tensor.get(new NDArrayIndex(0), NDArrayIndex.newAxis());
+        INDArray tensorGet = tensor.get(NDArrayIndex.point(0), NDArrayIndex.newAxis());
         assertEquals(assertion,tensorGet);
 
     }

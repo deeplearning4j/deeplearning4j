@@ -46,6 +46,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -2888,6 +2889,9 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray slice(int slice) {
+        if(slice >= slices())
+            throw new IllegalArgumentException("Illegal slice " + slice);
+
         if (shape.length == 0) {
             if(slice == 0)
                 return createScalarForIndex(slice,true);
@@ -2907,7 +2911,7 @@ public abstract class BaseNDArray implements INDArray {
         if(slice < 0)
             slice += shape.length;
         List<INDArrayIndex> indices = new ArrayList<>();
-        indices.add(new NDArrayIndex(slice));
+        indices.add(NDArrayIndex.point(slice));
         for(int i = 1; i < rank(); i++) {
             indices.add(NDArrayIndex.all());
         }
@@ -3206,7 +3210,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray putRow(int row, INDArray toPut) {
         if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape()))
             return assign(toPut);
-        return put(new INDArrayIndex[]{new NDArrayIndex(row),NDArrayIndex.all()},toPut);
+        return put(new INDArrayIndex[]{NDArrayIndex.point(row),NDArrayIndex.all()},toPut);
     }
 
     /**
@@ -3220,9 +3224,9 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
-        if(isColumnVector() && Shape.shapeEquals(shape(),toPut.shape()))
+        if(isColumnVector() && Shape.shapeEquals(shape(), toPut.shape()))
             return assign(toPut);
-        return put(new INDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(column)},toPut);
+        return put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(column)}, toPut);
 
     }
 
@@ -3677,12 +3681,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray getRows(int[] rindices) {
-
-        INDArray rows = create(new int[]{rindices.length, columns()});
-        for (int i = 0; i < rindices.length; i++) {
-            rows.putRow(i, getRow(rindices[i]));
-        }
-        return rows;
+        return get(new SpecifiedIndex(rindices));
     }
 
     /**
@@ -3730,8 +3729,30 @@ public abstract class BaseNDArray implements INDArray {
             return ret;
         }
 
+        if(indexes[0] instanceof SpecifiedIndex) {
+            INDArray ret = create(shape);
+            int count = 0;
+            if(isVector()) {
+                while(indexes[0].hasNext()) {
+                    ret.putScalar(count++,getDouble(indexes[0].next()));
+                }
+
+                //reset the index to be used elsewhere
+                indexes[0].reset();
+            }
+            else {
+                while(indexes[0].hasNext()) {
+                    int nextIdx = indexes[0].next();
+                    INDArray next = slice(nextIdx);
+                    ret.putSlice(count++,next.get(Arrays.copyOfRange(indexes, 1, indexes.length)));
+                }
+            }
+
+
+            return ret;
+        }
+
         INDArray ret =  subArray(resolution);
-        NDArrayIndex.updateForNewAxes(ret, indexes);
         return ret;
     }
 
@@ -3744,12 +3765,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray getColumns(int...cindices) {
-
-        INDArray rows = create(rows(), cindices.length);
-        for (int i = 0; i < cindices.length; i++) {
-            rows.putColumn(i, getColumn(cindices[i]));
-        }
-        return rows;
+        return get(new SpecifiedIndex(cindices));
     }
 
     protected INDArray create(int rows, int length) {
@@ -3865,7 +3881,6 @@ public abstract class BaseNDArray implements INDArray {
      * @return the shape of this matrix
      */
     public int[] shape() {
-
         return shape;
     }
 
@@ -3876,20 +3891,17 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int[] stride() {
-
         return stride;
     }
 
 
     @Override
     public int offset() {
-
         return offset;
     }
 
     @Override
     public char ordering() {
-
         return ordering;
     }
 

@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 
 import static org.junit.Assert.*;
 
@@ -33,7 +34,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testExecSubArray() {
         INDArray nd = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new int[]{2, 3});
 
-        INDArray sub = nd.get(NDArrayIndex.all(), new NDArrayIndex(0,1));
+        INDArray sub = nd.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2));
         Nd4j.getExecutioner().exec(new ScalarAdd(sub, 2));
         assertEquals(getFailureMessage(), Nd4j.create(new double[][]{
                 {3, 4}, {6, 7}
@@ -54,11 +55,11 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testGetRows() {
         INDArray arr = Nd4j.linspace(1,9,9).reshape(3,3);
         INDArray testAssertion = Nd4j.create(new double[][]{
-                {5, 6},
-                {8, 9}
+                {4,5},
+                {7,8}
         });
 
-        INDArray test = arr.get(new NDArrayIndex(1, 3), new NDArrayIndex(1, 3));
+        INDArray test = arr.get(new SpecifiedIndex(1, 2), new SpecifiedIndex(0,1));
         assertEquals(testAssertion, test);
 
     }
@@ -71,7 +72,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         });
 
         INDArray assertion = Nd4j.create(new double[]{5,6});
-        INDArray test = arr.get(NDArrayIndex.all(), new NDArrayIndex(0));
+        INDArray test = arr.get(NDArrayIndex.all(), NDArrayIndex.point(0));
         assertEquals(assertion,test);
     }
 
@@ -79,10 +80,10 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testMultiRow() {
         INDArray matrix = Nd4j.linspace(1,9,9).reshape(3, 3);
         INDArray assertion = Nd4j.create(new double[][]{
-                {4, 5},
-                {7, 8}
+                {4, 7}
         });
-        INDArray test = matrix.get(new NDArrayIndex(1,3),new NDArrayIndex(0,2));
+
+        INDArray test = matrix.get(new SpecifiedIndex(1,2),NDArrayIndex.interval(0, 1));
         assertEquals(assertion,test);
     }
 

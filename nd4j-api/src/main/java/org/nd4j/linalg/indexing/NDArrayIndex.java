@@ -21,6 +21,7 @@ package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -257,7 +258,42 @@ public class NDArrayIndex implements INDArrayIndex {
                 ret++;
         return ret;
     }
+    /**
+     * Given an all index and
+     * the intended indexes, return an
+     * index array containing a combination of all elements
+     * for slicing and overriding particular indexes where necessary
+     * @param shape the index containing all elements
+     * @param intendedIndexes the indexes specified by the user
+     * @return the resolved indexes (containing all where nothing is specified, and the intended index
+     * for a particular dimension otherwise)
+     */
+    public static INDArrayIndex[] resolve(int[] shape, INDArrayIndex...intendedIndexes) {
+        /**
+         * If it's a vector and index asking for a scalar just return the array
+         */
+        if(intendedIndexes.length >= shape.length || Shape.isVector(shape) && intendedIndexes.length == 1)
+            return intendedIndexes;
 
+        List<INDArrayIndex> retList = new ArrayList<>();
+
+        if(Shape.isMatrix(shape) && intendedIndexes.length == 1) {
+            retList.add(intendedIndexes[0]);
+            retList.add(NDArrayIndex.all());
+        }
+        else {
+            for(int i = 0; i < intendedIndexes.length; i++) {
+                retList.add(intendedIndexes[i]);
+            }
+        }
+
+        //fill the rest with all
+        while(retList.size() < shape.length)
+            retList.add(NDArrayIndex.all());
+
+
+        return retList.toArray(new INDArrayIndex[retList.size()]);
+    }
     /**
      * Given an all index and
      * the intended indexes, return an
@@ -269,6 +305,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * for a particular dimension otherwise)
      */
     public static INDArrayIndex[] resolve(INDArrayIndex[] allIndex, INDArrayIndex...intendedIndexes) {
+
         int numNewAxes = numNewAxis(intendedIndexes);
         INDArrayIndex[] all = new INDArrayIndex[allIndex.length + numNewAxes];
         Arrays.fill(all,NDArrayIndex.all());
@@ -280,8 +317,8 @@ public class NDArrayIndex implements INDArrayIndex {
                 NDArrayIndex idx = (NDArrayIndex) intendedIndexes[i];
                 if (idx.indices.length == 1)
                     intendedIndexes[i] = new PointIndex(idx.indices[0]);
-          }
-          all[i] = intendedIndexes[i];
+            }
+            all[i] = intendedIndexes[i];
         }
 
         return all;
@@ -541,6 +578,11 @@ public class NDArrayIndex implements INDArrayIndex {
 
     @Override
     public void init(int begin, int end) {
+
+    }
+
+    @Override
+    public void reset() {
 
     }
 

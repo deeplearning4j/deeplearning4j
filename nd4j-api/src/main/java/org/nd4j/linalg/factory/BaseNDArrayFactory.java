@@ -960,11 +960,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray concat(int dimension, INDArray... toConcat) {
         if (toConcat.length == 1)
             return toConcat[0];
-        int rank = toConcat[0].rank();
         int sumAlongDim = 0;
 
         for (int i = 0; i < toConcat.length; i++) {
-            sumAlongDim += toConcat[i].shape()[dimension];
+            sumAlongDim += toConcat[i].size(dimension);
         }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());

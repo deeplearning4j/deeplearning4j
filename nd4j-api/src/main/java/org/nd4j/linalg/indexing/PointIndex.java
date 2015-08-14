@@ -83,4 +83,28 @@ public class PointIndex implements INDArrayIndex {
     public void init(int begin, int end) {
 
     }
+
+    @Override
+    public void reset() {
+        notUsed = false;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof PointIndex)) return false;
+
+        PointIndex that = (PointIndex) o;
+
+        if (point != that.point) return false;
+        return notUsed == that.notUsed;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = point;
+        result = 31 * result + (notUsed ? 1 : 0);
+        return result;
+    }
 }
