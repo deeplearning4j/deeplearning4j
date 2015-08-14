@@ -3,6 +3,7 @@ package org.nd4j.api
 import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.linalg.indexing.{NDArrayIndex, INDArrayIndex}
 
 import _root_.scala.util.control.Breaks._
 
@@ -133,12 +134,20 @@ object Implicits {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }
 
-  case object -> extends IndexRange
+  case object -> extends IndexRange{
+    override def hasNegative: Boolean = false
+  }
 
-  case object ---> extends IndexRange
+  case object ---> extends IndexRange{
+    override def hasNegative: Boolean = false
+  }
 
   implicit class IntRange(val underlying: Int) extends IndexNumberRange {
     protected[api] override def asRange(max: => Int): DRange = DRange(underlying, underlying, true, 1, max)
+
+    override protected[api] def asNDArrayIndex(max: => Int): INDArrayIndex = NDArrayIndex.point(underlying)
+
+    override def hasNegative: Boolean = false
 
     override def toString: String = s"$underlying"
   }
@@ -146,7 +155,12 @@ object Implicits {
   implicit class TupleRange(val underlying: _root_.scala.Tuple2[Int, Int]) extends IndexNumberRange {
     protected[api] override def asRange(max: => Int): DRange = DRange(underlying._1, underlying._2, false, 1, max)
 
+    override protected[api] def asNDArrayIndex(max: => Int): INDArrayIndex = IndexNumberRange.toNDArrayIndex(underlying._1, underlying._2, false, 1,max)
+
     override def toString: String = s"${underlying._1}->${underlying._2}"
+
+
+    override def hasNegative: Boolean = underlying._1 < 0 || underlying._2 < 0
 
     def by(i: Int) = new IndexRangeWrapper(underlying._1 until underlying._2 by i)
   }
@@ -158,7 +172,11 @@ object Implicits {
   implicit class IndexRangeWrapper(val underlying: Range) extends IndexNumberRange {
     protected[api] override def asRange(max: => Int): DRange = DRange.from(underlying, max)
 
+    override protected[api] def asNDArrayIndex(max: => Int): INDArrayIndex = IndexNumberRange.toNDArrayIndex(underlying.start,underlying.end,underlying.isInclusive,underlying.step,max)
+
     override def toString: String = s"${underlying.start}->${underlying.end} by ${underlying.step}"
+
+    override def hasNegative: Boolean = underlying.start < 0 || underlying.end < 0 || underlying.step < 0
   }
 
   lazy val NDOrdering = org.nd4j.api.NDOrdering
@@ -184,14 +202,31 @@ private[api] class ImaginaryNumber[T <: Number](val value: T) extends AnyVal {
 
 sealed trait IndexNumberRange extends IndexRange {
   protected[api] def asRange(max: => Int): DRange
+  protected[api] def asNDArrayIndex(max: => Int):INDArrayIndex
+}
+object IndexNumberRange{
+  def toNDArrayIndex(startR:Int,endR:Int,isInclusive:Boolean,step:Int,max:Int):INDArrayIndex = {
+    val (start, end) = {
+      val start = if (startR >= 0) startR else max + startR
+      val diff = if (isInclusive) 0 else if (step >= 0) -1 else +1
+      val endInclusive = if (endR >= 0) endR + diff else max + endR + diff
+      (start, endInclusive)
+    }
+
+    NDArrayIndex.interval(start,step,end,true)
+  }
 }
 
-sealed trait IndexRange
+sealed trait IndexRange{
+  def hasNegative:Boolean
+}
 
 case class IntRangeFrom(underlying: Int) extends IndexRange {
   def apply(i: Int): (Int, Int) = (underlying, i)
 
   override def toString: String = s"$underlying->"
+
+  override def hasNegative: Boolean = false
 }
 
 private[api] case class DRange(startR: Int, endR: Int, isInclusive: Boolean, step: Int, max: Int) {
