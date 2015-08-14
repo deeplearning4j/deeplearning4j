@@ -182,7 +182,7 @@ public class TextPipeline {
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = tokenizedRDD.map(accumulatorClassFunction);
 
         // Loop through each element to update accumulator. Count does the same job (verified).
-        tokenizedRDD.count();
+        sentenceWordsCountRDD.count();
 
         return sentenceWordsCountRDD;
     }
