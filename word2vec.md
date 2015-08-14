@@ -314,6 +314,7 @@ While words in all languages may be converted into vectors with Word2vec, and th
 ### Resources
 
 * [How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)
+* [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
