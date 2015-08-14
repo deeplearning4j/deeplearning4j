@@ -40,17 +40,19 @@ public interface Layer extends Serializable,Cloneable,Model {
        FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE,MULTILAYER
     }
 
-    /**
-     * The l2 magnitude for the weights
-     * @return the l2 magnitude for the weights
+    /**Calculate the l2 regularization term<br>
+     * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l2 regularization term for this layer.
      */
-    double l2Magnitude();
+    double calcL2();
 
-    /**
-     * The l1 magnitude for the weights
-     * @return the l1 magnitude for the weights
+    /**Calculate the l1 regularization term<br>
+     * 0.0 if regularization is not used. Or l1Coeff * l1Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l1 regularization term for this layer.
      */
-    double l1Magnitude();
+    double calcL1();
 
     /**
      * Returns the layer type

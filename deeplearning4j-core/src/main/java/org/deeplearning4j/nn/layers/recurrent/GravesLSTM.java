@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -406,4 +407,20 @@ public class GravesLSTM extends BaseLayer {
 	public Layer transpose(){
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
+	
+	@Override
+    public double calcL2() {
+    	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
+    	double l2 = Transforms.pow(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0)
+    			+ Transforms.pow(getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    	return 0.5 * conf.getL2() * l2;
+    }
+
+    @Override
+    public double calcL1() {
+    	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
+        double l1 = Transforms.abs(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0)
+        		+ Transforms.abs(getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
+        return conf.getL1() * l1;
+    }
 }

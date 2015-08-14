@@ -59,6 +59,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     private INDArray labels;
     
     private transient Solver solver;
+    
+    private double fullNetworkL1;
+    private double fullNetworkL2;
 
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -70,9 +73,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     
     /** Compute score after labels and input have been set.
      */
-    public double computeScore(){
+    public double computeScore( double fullNetworkL1, double fullNetworkL2 ){
     	if( input == null || labels == null )
     		throw new IllegalStateException("Cannot calculate score without input and labels");
+    	this.fullNetworkL1 = fullNetworkL1;
+    	this.fullNetworkL2 = fullNetworkL2;
     	setScoreWithZ(output(input));
     	return score;
     }
@@ -98,8 +103,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         else {
             score = LossCalculation.builder()
-                    .l1(conf.getL1()).l2(conf.getL2())
-                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .l1(1.0).l2(1.0)	//TODO: Temporary until Nd4J LossCalculation refactor
+                    .l1Magnitude(fullNetworkL1).l2Magnitude(fullNetworkL2)
                     .labels(labels).z(z).lossFunction(conf.getLossFunction())
                     .miniBatch(true)
                     .useRegularization(conf.isUseRegularization()).build().score();
