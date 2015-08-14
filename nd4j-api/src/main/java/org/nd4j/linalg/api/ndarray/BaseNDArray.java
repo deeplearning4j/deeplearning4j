@@ -3210,7 +3210,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray putRow(int row, INDArray toPut) {
         if(isRowVector() && Shape.shapeEquals(shape(),toPut.shape()))
             return assign(toPut);
-        return put(new INDArrayIndex[]{new NDArrayIndex(row),NDArrayIndex.all()},toPut);
+        return put(new INDArrayIndex[]{NDArrayIndex.point(row),NDArrayIndex.all()},toPut);
     }
 
     /**
@@ -3226,7 +3226,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray putColumn(int column, INDArray toPut) {
         if(isColumnVector() && Shape.shapeEquals(shape(), toPut.shape()))
             return assign(toPut);
-        return put(new INDArrayIndex[]{NDArrayIndex.all(), new NDArrayIndex(column)}, toPut);
+        return put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(column)}, toPut);
 
     }
 
