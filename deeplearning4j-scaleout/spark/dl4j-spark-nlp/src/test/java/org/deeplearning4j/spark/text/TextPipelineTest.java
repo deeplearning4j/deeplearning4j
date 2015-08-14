@@ -29,6 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -214,16 +215,42 @@ public class TextPipelineTest {
         sc.stop();
     }
 
-//    @Test
-//    public void testBuildVocabWordListRDD() throws Exception{
-//        JavaSparkContext sc = new JavaSparkContext(getConfClone());
-//        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
-//        TextPipeline pipeline = new TextPipeline(corpusRDD);
-//        pipeline.buildVocabCache();
-//        pipeline.buildVocabWordListRDD();
-//
-//        sc.stop();
-//     }
+    @Test
+    public void testBuildVocabWordListRDD() throws Exception{
+        JavaSparkContext sc = new JavaSparkContext(getConfClone());
+        JavaRDD<String> corpusRDD = getCorpusRDD(sc);
+        TextPipeline pipeline = new TextPipeline(corpusRDD);
+        pipeline.buildVocabCache();
+        pipeline.buildVocabWordListRDD();
+        JavaRDD<AtomicLong> sentenceCountRDD = pipeline.getSentenceCountRDD();
+        JavaRDD<List<VocabWord>> vocabWordListRDD = pipeline.getVocabWordListRDD();
+        List<List<VocabWord>> vocabWordList = vocabWordListRDD.collect();
+        List<VocabWord> firstSentenceVocabList = vocabWordList.get(0);
+        List<VocabWord> secondSentenceVocabList = vocabWordList.get(1);
+
+        System.out.println(Arrays.deepToString(firstSentenceVocabList.toArray()));
+
+        List<String> firstSentenceTokenList = new ArrayList<>();
+        List<String> secondSentenceTokenList = new ArrayList<>();
+        for (VocabWord v : firstSentenceVocabList) {
+            if (v != null) {
+                firstSentenceTokenList.add(v.getWord());
+            }
+        }
+        for (VocabWord v : secondSentenceVocabList) {
+            if (v != null) {
+                secondSentenceTokenList.add(v.getWord());
+            }
+        }
+
+        assertEquals(pipeline.getTotalWordCount(), 9, 0);
+        assertEquals(sentenceCountRDD.collect().get(0).get(), 6);
+        assertEquals(sentenceCountRDD.collect().get(1).get(), 3);
+        assertTrue(firstSentenceTokenList.containsAll(Arrays.asList("strange", "strange", "world")));
+        assertTrue(secondSentenceTokenList.containsAll(Arrays.asList("flowers", "red")));
+
+        sc.stop();
+     }
 
 
 //    /**

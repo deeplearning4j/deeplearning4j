@@ -103,7 +103,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
 
         // 2 RDDs: (vocab words list) and (sentence Count).Already cached
         sentenceWordsCountRDD = pipeline.getSentenceCountRDD();
-        vocabWordListRDD = pipeline.getvocabWordListRDD();
+        vocabWordListRDD = pipeline.getVocabWordListRDD();
 
         // Get vocabCache and broad-casted vocabCache
         vocabCache = pipeline.getVocabCache();
