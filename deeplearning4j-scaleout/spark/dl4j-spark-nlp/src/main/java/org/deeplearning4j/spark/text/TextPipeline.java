@@ -22,8 +22,6 @@ import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
@@ -98,7 +96,7 @@ public class TextPipeline {
         }
     }
 
-    public JavaRDD<List<VocabWord>> getvocabWordListRDD() throws IllegalStateException {
+    public JavaRDD<List<VocabWord>> getVocabWordListRDD() throws IllegalStateException {
         if (vocabWordListRDD != null) {
             return vocabWordListRDD;
         } else {
@@ -254,33 +252,30 @@ public class TextPipeline {
         if (sentenceWordsCountRDD == null)
             throw new IllegalStateException("SentenceWordCountRDD must be defined first. Run buildLookupCache first.");
 
-        Function wordsListToVocabWords = new Function<Pair<List<String>, AtomicLong>, List<VocabWord>>() {
-            @Override
-            public List<VocabWord> call(Pair<List<String>, AtomicLong> pair) throws Exception {
-                List<String> wordsList = pair.getFirst();
-                List<VocabWord> vocabWordsList = new ArrayList<>();
-                for (String s : wordsList)
-                    vocabWordsList.add(vocabCacheBroadcast.getValue().wordFor(s));
-                return vocabWordsList;
-            }
-        };
+//        Function wordsListToVocabWords = new Function<Pair<List<String>, AtomicLong>, List<VocabWord>>() {
+//            @Override
+//            public List<VocabWord> call(Pair<List<String>, AtomicLong> pair) throws Exception {
+//                List<String> wordsList = pair.getFirst();
+//                List<VocabWord> vocabWordsList = new ArrayList<>();
+//                for (String s : wordsList)
+//                    vocabWordsList.add(vocabCacheBroadcast.getValue().wordFor(s));
+//                return vocabWordsList;
+//            }
+//        };
 
-        Function getSentenceCount = new Function<Pair<List<String>, AtomicLong>, AtomicLong>() {
-            @Override
-            public AtomicLong call(Pair<List<String>, AtomicLong> pair) throws Exception {
-                return pair.getSecond();
-            }
-        };
-        vocabWordListRDD = sentenceWordsCountRDD.map(wordsListToVocabWords).setName("vocabWordListRDD").cache();
-        sentenceCountRDD = sentenceWordsCountRDD.map(getSentenceCount).setName("sentenceCountRDD").cache();
+//        Function getSentenceCount = new Function<Pair<List<String>, AtomicLong>, AtomicLong>() {
+//            @Override
+//            public AtomicLong call(Pair<List<String>, AtomicLong> pair) throws Exception {
+//                return pair.getSecond();
+//            }
+//        };
+        vocabWordListRDD = sentenceWordsCountRDD.map(new WordsListToVocabWordsFunction(vocabCacheBroadcast))
+                .setName("vocabWordListRDD").cache();
+        sentenceCountRDD = sentenceWordsCountRDD.map(new GetSentenceCountFunction())
+                .setName("sentenceCountRDD").cache();
         // Actions to fill vocabWordListRDD and sentenceCountRDD
         vocabWordListRDD.count();
-        totalWordCount = sentenceCountRDD.reduce(new Function2<AtomicLong, AtomicLong, AtomicLong>() {
-            @Override
-            public AtomicLong call(AtomicLong a, AtomicLong b) {
-                return new AtomicLong(a.get() + b.get());
-            }
-        }).get();
+        totalWordCount = sentenceCountRDD.reduce(new ReduceSentenceCount()).get();
 
         // Release sentenceWordsCountRDD from cache
         sentenceWordsCountRDD.unpersist();
