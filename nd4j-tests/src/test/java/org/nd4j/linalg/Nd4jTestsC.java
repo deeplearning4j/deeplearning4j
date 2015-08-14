@@ -359,7 +359,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion,test);
 
         INDArray threeByThree = Nd4j.linspace(1,9,9).reshape(3, 3);
-        INDArray offsetTest = threeByThree.get(new NDArrayIndex(1, 2), NDArrayIndex.all());
+        INDArray offsetTest = threeByThree.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all());
         assertEquals(2, offsetTest.rows());
         INDArray offsetAssertion = Nd4j.create(new double[][]{
                 {3,3,3}

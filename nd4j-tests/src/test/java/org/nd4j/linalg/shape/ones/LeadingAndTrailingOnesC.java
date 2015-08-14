@@ -32,6 +32,12 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTest  {
         System.out.println(arr);
     }
 
+    @Test
+    public void testMultipleOnesInMiddle() {
+        INDArray tensor = Nd4j.create(2,2,1,1,6,6);
+        System.out.println(tensor);
+    }
+
 
     @Override
     public char ordering() {

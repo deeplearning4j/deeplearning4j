@@ -1039,7 +1039,7 @@ public abstract class BaseNDArray implements INDArray {
         else if(isColumnVector())
             return putScalar(new int[]{i,0},value);
         int[] indexes = ordering() == 'c' ? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
-        return putScalar(indexes,value);
+        return putScalar(indexes, value);
 
     }
 
@@ -1395,16 +1395,22 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public double getDouble(int... indices) {
         int offset = 0;
-        for(int i = 0; i < indices.length; i++) {
-            offset += indices[i] * stride(i);
+        if(isRowVector() && this.offset + offset + indices[1] * stride(1) >= data.length()) {
+            offset = indices[0] * stride(0);
         }
+        else {
+            for(int i = 0; i < indices.length; i++) {
+                offset += indices[i] * stride(i);
+            }
+        }
+
         return data.getDouble(offset + this.offset);
     }
 
     /**
      * Returns the elements at the the specified indices
      *
-     * @param indices the indices to getScalar
+     * @param indices the indices to get
      * @return the array with the specified elements
      */
     @Override
@@ -3695,6 +3701,9 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray get(INDArrayIndex... indexes) {
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
         resolution.exec(indexes);
+        if(indexes.length < 1)
+            throw new IllegalStateException("Invalid index found of zero length");
+
         int[] shape = resolution.getShapes();
 
         //This means upsampling.
@@ -3744,7 +3753,13 @@ public abstract class BaseNDArray implements INDArray {
                 while(indexes[0].hasNext()) {
                     int nextIdx = indexes[0].next();
                     INDArray next = slice(nextIdx);
-                    ret.putSlice(count++,next.get(Arrays.copyOfRange(indexes, 1, indexes.length)));
+                    if(indexes.length > 1)
+                        ret.putSlice(count++,next.get(Arrays.copyOfRange(indexes, 1, indexes.length)));
+                    else {
+                        ret.putSlice(count++, next.get(indexes));
+                        indexes[0].reset();
+                    }
+
                 }
             }
 
@@ -3765,7 +3780,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray getColumns(int...cindices) {
-        return get(new SpecifiedIndex(cindices));
+        return get(NDArrayIndex.all(),new SpecifiedIndex(cindices));
     }
 
     protected INDArray create(int rows, int length) {
@@ -4266,7 +4281,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public String toString() {
-
         return new NDArrayStrings().format(this);
     }
 
