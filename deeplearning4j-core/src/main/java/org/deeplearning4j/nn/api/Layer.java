@@ -221,4 +221,10 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     int getIndex();
 
+    /**
+     * Get the layer input.
+     */
+    void setInput(INDArray input);
+
+
 }
