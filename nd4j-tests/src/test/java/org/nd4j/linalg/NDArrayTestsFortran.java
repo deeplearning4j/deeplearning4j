@@ -1036,7 +1036,8 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testRollAxis() {
         INDArray toRoll = Nd4j.ones(3,4,5,6);
         assertArrayEquals(new int[]{3,6,4,5},Nd4j.rollAxis(toRoll,3,1).shape());
-        assertArrayEquals(new int[]{5,3,4,6},Nd4j.rollAxis(toRoll,3).shape());
+        int[] shape = Nd4j.rollAxis(toRoll,3).shape();
+        assertArrayEquals(new int[]{6,3,4,5},shape);
     }
 
     @Test
