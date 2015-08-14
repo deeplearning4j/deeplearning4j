@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 import com.google.common.primitives.Ints;
+
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -57,13 +58,15 @@ public class ConvolutionLayer extends BaseLayer {
     public void setCol(INDArray col) {this.col = col;}
 
     @Override
-    public double l2Magnitude() {
-        return Transforms.pow(getParam(ConvolutionParamInitializer.WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    public double calcL2() {
+    	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
+        return 0.5 * conf.getL2() * Transforms.pow(getParam(ConvolutionParamInitializer.WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
-    public double l1Magnitude() {
-        return Transforms.abs(getParam(ConvolutionParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    public double calcL1() {
+    	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
+        return conf.getL1() * Transforms.abs(getParam(ConvolutionParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
