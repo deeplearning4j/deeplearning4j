@@ -77,15 +77,11 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
-        // TODO assign this.gradient to the gradient from here?
-        //subsampling doesn't have weights and thus gradients are not calculated
-        //only scale and reshape epsilon and gradient
+        //subsampling doesn't have weights and thus gradients are not calculated for this layer
+        //only scale and reshape epsilon
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
-        INDArray weightGradient = gradient.getGradientFor("W");
-        Gradient retGradient = new DefaultGradient();
-        retGradient.gradientForVariable().put(ConvolutionParamInitializer.BIAS_KEY, gradient.getGradientFor("b"));
-        INDArray reshapeEpsilon, reshapeGradient, retE, retG;
+        INDArray reshapeEpsilon, retE;
 
         switch(conf.getPoolingType()) {
             case MAX:
@@ -96,18 +92,15 @@ public class SubsamplingLayer extends BaseLayer {
                 //compute backwards kernel based on rearranging the given error
                 retE = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
                 reshapeEpsilon = Nd4j.rollAxis(retE.reshape(n,c,-1,outH,outW),2);
-                reshapeGradient = reshapeEpsilon;
 
                 Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
                 while(iter.hasNext()) {
                     int[] next = iter.next();
                     INDArrayIndex[] indexes = NDArrayIndex.indexesFor(next);
                     reshapeEpsilon.get(indexes).put(indexes, epsilon.get(indexes));
-                    reshapeGradient.get(indexes).put(indexes, weightGradient.get(indexes));
                 }
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
-                retGradient.gradientForVariable().put(ConvolutionParamInitializer.WEIGHT_KEY, reshapeGradient);
-                return new Pair<>(retGradient,reshapeEpsilon);
+                return new Pair<>(gradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
                 retE = epsilon.slice(0).get(
@@ -119,16 +112,7 @@ public class SubsamplingLayer extends BaseLayer {
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
                 reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
 
-                retG = weightGradient.slice(0).get(
-                        NDArrayIndex.all()
-                        , NDArrayIndex.all()
-                        , NDArrayIndex.newAxis()
-                        , NDArrayIndex.newAxis());
-                reshapeGradient = Nd4j.tile(retG,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
-                reshapeGradient = Convolution.col2im(reshapeGradient, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
-                reshapeGradient.divi(ArrayUtil.prod(conf.getKernelSize()));
-                retGradient.gradientForVariable().put(ConvolutionParamInitializer.WEIGHT_KEY, reshapeGradient);
-                return new Pair<>(retGradient, reshapeEpsilon);
+                return new Pair<>(gradient, reshapeEpsilon);
             case NONE:
                 return new Pair<>(gradient, epsilon);
             default: throw new IllegalStateException("Un supported pooling type");
@@ -228,12 +212,6 @@ public class SubsamplingLayer extends BaseLayer {
     @Override
     public void accumulateScore(double accum) { throw new UnsupportedOperationException(); }
 
-    @Override
-    public Gradient gradient() {
-        if (gradient== null)
-            throw new NullPointerException("Gradient has not been set");
-        return gradient;
-    }
 
     @Override
     public void update(INDArray gradient, String paramType) {
