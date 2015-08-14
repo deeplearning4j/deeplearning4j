@@ -257,7 +257,42 @@ public class NDArrayIndex implements INDArrayIndex {
                 ret++;
         return ret;
     }
+    /**
+     * Given an all index and
+     * the intended indexes, return an
+     * index array containing a combination of all elements
+     * for slicing and overriding particular indexes where necessary
+     * @param shape the index containing all elements
+     * @param intendedIndexes the indexes specified by the user
+     * @return the resolved indexes (containing all where nothing is specified, and the intended index
+     * for a particular dimension otherwise)
+     */
+    public static INDArrayIndex[] resolve(int[] shape, INDArrayIndex...intendedIndexes) {
+        if(intendedIndexes.length >= shape.length)
+            return intendedIndexes;
+        List<INDArrayIndex> retList = new ArrayList<>();
 
+        if(shape.length == 2 && intendedIndexes.length == 1) {
+            //row vector
+            if(intendedIndexes[0] instanceof PointIndex) {
+                retList.add(intendedIndexes[0]);
+                retList.add(NDArrayIndex.all());
+            }
+
+        }
+        else {
+            for(int i = 0; i < intendedIndexes.length; i++) {
+                retList.add(intendedIndexes[i]);
+            }
+        }
+
+        //fill the rest with all
+        while(retList.size() < shape.length)
+            retList.add(NDArrayIndex.all());
+
+
+        return retList.toArray(new INDArrayIndex[retList.size()]);
+    }
     /**
      * Given an all index and
      * the intended indexes, return an
@@ -269,6 +304,7 @@ public class NDArrayIndex implements INDArrayIndex {
      * for a particular dimension otherwise)
      */
     public static INDArrayIndex[] resolve(INDArrayIndex[] allIndex, INDArrayIndex...intendedIndexes) {
+
         int numNewAxes = numNewAxis(intendedIndexes);
         INDArrayIndex[] all = new INDArrayIndex[allIndex.length + numNewAxes];
         Arrays.fill(all,NDArrayIndex.all());

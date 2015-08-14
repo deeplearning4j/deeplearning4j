@@ -3,6 +3,9 @@ package org.nd4j.linalg.indexing;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
+ * Mainly meant for internal use:
+ * represents all of the elements of a dimension
+ *
  * @author Adam Gibson
  */
 public class NDArrayIndexAll extends IntervalIndex {
@@ -20,6 +23,7 @@ public class NDArrayIndexAll extends IntervalIndex {
         this.begin = 0;
         this.end = arr.size(dimension);
     }
+
 
 
 }

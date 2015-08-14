@@ -247,6 +247,32 @@ public class ArrayUtil {
         return false;
     }
 
+
+    /**
+     *
+     * @param xs
+     * @param ys
+     * @return
+     */
+    public static int dotProduct(List<Integer> xs, List<Integer> ys) {
+        int result = 0;
+        int n = xs.size();
+
+        if (ys.size() != n)
+            throw new IllegalArgumentException("Different array sizes");
+
+        for (int i = 0; i < n; i++) {
+            result += xs.get(i) * ys.get(i);
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param xs
+     * @param ys
+     * @return
+     */
     public static int dotProduct(int[] xs, int[] ys) {
         int result = 0;
         int n = xs.length;
