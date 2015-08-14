@@ -222,6 +222,8 @@ public class ShapeOffsetResolution implements Serializable {
 
         if(accumStrides.size() < accumOffsets.size())
             accumStrides.addAll(pointStrides);
+        while(accumOffsets.size() < accumShape.size())
+            accumOffsets.add(0);
         //finally fill in teh rest of the strides if any are left over
         while(accumStrides.size() < accumOffsets.size()) {
             accumStrides.add(arr.elementStride());
@@ -230,8 +232,25 @@ public class ShapeOffsetResolution implements Serializable {
         this.strides = Ints.toArray(accumStrides);
         this.shapes = Ints.toArray(accumShape);
         this.offsets = Ints.toArray(accumOffsets);
-
-        this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides);
+        
+        //compute point offsets differently
+        /**
+         * We need to prepend the strides for the point indexes
+         * such that the point index offsets are counted.
+         * Note here that we only use point strides
+         * when points strides isn't empty.
+         * When point strides is empty, this is
+         * because a point index was encountered
+         * but it was the lead index and therefore should
+         * not be counted with the offset.
+         */
+        if(numPointIndexes > 0 && !pointStrides.isEmpty()) {
+            while(pointStrides.size() < accumOffsets.size())
+                pointStrides.add(0,1);
+            this.offset = ArrayUtil.dotProduct(pointStrides,accumOffsets);
+        }
+        else
+            this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides);
 
 
     }
