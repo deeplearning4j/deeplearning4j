@@ -51,7 +51,7 @@ public class GRUParamInitializer implements ParamInitializer {
         
         //Order: RUC - i.e., reset, update, candidate
         params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(nL, 3 * nL, conf.getWeightInit(), dist));
-        params.put(INPUT_WEIGHTS,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getWeightInit(), dist));
+        params.put(INPUT_WEIGHTS,WeightInitUtil.initWeights(nLast, 3 * nL, conf.getWeightInit(), dist));
         params.put(BIAS, Nd4j.zeros(1,3*nL));
 
         params.get(RECURRENT_WEIGHTS).data().persist();
