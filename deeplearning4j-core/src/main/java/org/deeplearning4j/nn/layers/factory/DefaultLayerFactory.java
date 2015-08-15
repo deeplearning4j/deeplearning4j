@@ -73,8 +73,6 @@ public class DefaultLayerFactory implements LayerFactory {
             return new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
             return new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer)
-            return new org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LSTM)
             return new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM)

@@ -85,8 +85,7 @@ public class ConvolutionLayer extends BaseLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
-        // TODO - how to handle transpose?
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
