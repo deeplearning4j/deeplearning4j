@@ -42,7 +42,7 @@ public class ConvolutionLayerTest {
     private int[] padding = new int[] {0,0};
     private int nChannelsIn = 1;
     private int depth = 10;
-    private int nExamples;
+    private int nExamples = 10;
     int featureMapHeight = (inputHeight + padding[0] * 2 - kernelSize[0]) / stride[0] + 1;
     int  featureMapWidth = (inputWidth + padding[1] * 2 - kernelSize[1]) / stride[1] + 1;
 //    private INDArray weights = Nd4j.rand() ;

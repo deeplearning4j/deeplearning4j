@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import com.google.common.primitives.Ints;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -27,16 +26,13 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
+
 
 /**
  * Convolution layer
@@ -79,7 +75,6 @@ public class ConvolutionLayer extends BaseLayer {
     public INDArray calculateDelta(INDArray epsilon) {
         INDArray z = preOutput(true);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
-
         return epsilon.mmul(activationDerivative);
 
     }
@@ -129,7 +124,7 @@ public class ConvolutionLayer extends BaseLayer {
         INDArray z = Nd4j.tensorMmul(col, Weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
         // TODO check shape and confirm correct approach
         z = z.reshape(z.size(0), z.size(1), z.size(2), z.size(3));
-        bias = bias.broadcast(z.shape()).reshape(z.shape());
+        bias = bias.broadcast(z.shape());
         z.addi(bias);
         return Nd4j.rollAxis(z, 3, 1);
     }
