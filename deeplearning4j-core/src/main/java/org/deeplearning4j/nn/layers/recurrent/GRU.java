@@ -42,8 +42,8 @@ public class GRU extends BaseLayer {
 		//First: Do forward pass to get gate activations etc.
 		INDArray[] activations = activateHelper(true);	//Order: {outputActivations,rucZs,rucAs}
 		INDArray outputActivations = activations[0];
-		INDArray rucZs = activations[2];
-		INDArray rucAs = activations[3];
+		INDArray rucZs = activations[1];
+		INDArray rucAs = activations[2];
 		
 		INDArray inputWeights = getParam(GRUParamInitializer.INPUT_WEIGHTS); //Shape: [n^(L-1),3*n^L], order: [wr,wu,wc]
 		INDArray recurrentWeights = getParam(GRUParamInitializer.RECURRENT_WEIGHTS);	//Shape: [n^L,3*n^L]; order: [wR,wU,wC]
@@ -77,17 +77,49 @@ public class GRU extends BaseLayer {
 			INDArray aSlice = (is2dInput ? rucAs : rucAs.slice(t,2));
 			INDArray zSlice = (is2dInput ? rucZs : rucZs.slice(t,2));
 			INDArray aSliceNext;
-			if(t == timeSeriesLength-1) aSliceNext = Nd4j.zeros(miniBatchSize,3*layerSize);
-			else aSliceNext = rucAs.slice(t,2);
-			INDArray aOut = (is2dInput ? outputActivations : outputActivations.slice(t,2));
+			INDArray zSliceNext;
+			if(t == timeSeriesLength-1){
+				aSliceNext = Nd4j.zeros(miniBatchSize,3*layerSize);
+				zSliceNext = Nd4j.zeros(miniBatchSize,3*layerSize);
+			} else {
+				aSliceNext = rucAs.slice(t,2);
+				zSliceNext = rucZs.slice(t,2);
+			}
 			
-			INDArray auNext = aSliceNext.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
-			INDArray dOutNextdOut = null;	//TODO
+			INDArray zr = zSlice.get(NDArrayIndex.all(),interval(0,layerSize));
+			INDArray sigmaPrimeR = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zr).derivative());
+			
+			INDArray dOutNextdOut;
+			if( t == timeSeriesLength-1 ){
+				//No need to calculate, as next delta is null
+				dOutNextdOut = Nd4j.zeros(miniBatchSize,layerSize);
+			} else {
+				INDArray aOut = (is2dInput ? outputActivations : outputActivations.slice(t,2));
+				INDArray arNext = aSliceNext.get(NDArrayIndex.all(),interval(0,layerSize));
+				INDArray auNext = aSliceNext.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
+				INDArray acNext = aSliceNext.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
+				INDArray zuNext = zSliceNext.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
+				INDArray zcNext = zSliceNext.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
+				
+				INDArray sigmaPrimeUNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zuNext).derivative());
+				INDArray sigmaPrimeCNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zcNext).derivative());
+				INDArray second = aOut.sub(acNext).muli(sigmaPrimeUNext);
+				INDArray third = auNext.rsub(1.0).muli(sigmaPrimeCNext);
+				INDArray tempTest = Nd4j.diag(Nd4j.diag(wC));
+				INDArray temp = Nd4j.diag(Nd4j.diag(wC)).mmul(arNext.transpose()).transpose()
+						.addi(
+								Nd4j.diag(Nd4j.diag(wR))
+								.mmul( wC.mmul(aOut.transpose()) ).transpose()
+								.muli(sigmaPrimeR)
+							);
+				third.muli(temp);
+				dOutNextdOut = auNext.add(second).addi(third);
+			}
 			
 			//First: Calculate hidden unit deltas (d^{Lt}_h)
 			INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.slice(t, 2));		//(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
 			INDArray deltaOut = epsilonSlice
-					.add(deltaOutNext.mmul(dOutNextdOut.transpose()))
+					.add(deltaOutNext.mul(dOutNextdOut.transpose()))
 					.addi(deltaRNext.mmul(wR.transpose()))
 					.addi(deltaUNext.mmul(wU.transpose()))
 					.addi(deltaCNext.mmul(wC.transpose()));
@@ -105,9 +137,7 @@ public class GRU extends BaseLayer {
 			INDArray deltaC = deltaOut.mul(sigmaPrimeC).muli(au.rsub(1.0));
 			
 			//Delta at reset gate
-			INDArray zr = zSlice.get(NDArrayIndex.all(),interval(0,layerSize));
-			INDArray sigmaPrimeR = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zr).derivative());
-			INDArray deltaR = deltaC.mul(Nd4j.diag(wC)).muli(prevOut).muli(sigmaPrimeR);
+			INDArray deltaR = deltaC.mul(Nd4j.diag(Nd4j.diag(wC))).muli(prevOut).muli(sigmaPrimeR);
 			
 			//Add input gradients for this time step:
 			INDArray prevLayerActivationSlice = (is2dInput ? input : input.slice(t, 2));
@@ -118,6 +148,21 @@ public class GRU extends BaseLayer {
 			inputWeightGradients.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize))
 				.addi(deltaC.transpose().mmul(prevLayerActivationSlice).transpose());
 			
+			//Add recurrent weight gradients for this time step:
+			if(t>0){
+				recurrentWeightGradients.get(NDArrayIndex.all(),interval(0,layerSize))
+					.addi(deltaR.transpose().mmul(prevOut).transpose());
+				recurrentWeightGradients.get(NDArrayIndex.all(),interval(layerSize,2*layerSize))
+					.addi(deltaU.transpose().mmul(prevOut).transpose());
+				recurrentWeightGradients.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize))
+					.addi(deltaC.transpose().mmul(prevOut).transpose());
+			}
+			
+			//Add bias gradients for this time step:
+			biasGradients.get(NDArrayIndex.all(),interval(0,layerSize)).addi(deltaR);
+			biasGradients.get(NDArrayIndex.all(),interval(layerSize,2*layerSize)).addi(deltaU);
+			biasGradients.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize)).addi(deltaC);
+
 			INDArray epsilonNextSlice = wr.mmul(deltaR.transpose()).transpose()
 					.addi(wu.mmul(deltaU.transpose()).transpose())
 					.addi(wc.mmul(deltaC.transpose()).transpose());
@@ -132,7 +177,7 @@ public class GRU extends BaseLayer {
 		Gradient g = new DefaultGradient();
 		g.setGradientFor(GRUParamInitializer.INPUT_WEIGHTS, inputWeightGradients);
 		g.setGradientFor(GRUParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients);
-		g.setGradientFor(GRUParamInitializer.BIAS, biasGradients.sum(0,2));//Sum over mini-batch and time
+		g.setGradientFor(GRUParamInitializer.BIAS, biasGradients.sum(0)); //Sum over mini-batch
 		
 		return new Pair<>(g,epsilonNext);
 	}
