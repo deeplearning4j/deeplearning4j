@@ -3,30 +3,17 @@ package org.deeplearning4j.nn.layers.convolution;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.LayerFactory;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.layers.feedforward.rbm.RBM;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
-
 
 import static org.junit.Assert.*;
 
@@ -59,8 +46,8 @@ public class ConvolutionLayerTest {
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize,  stride, padding);
         layer.activate(input);
 
-        assertEquals(input, layer.input());
-        assertEquals(input.shape(), layer.input().shape());
+        assertEquals(input.toString(), layer.input().toString());
+        assertArrayEquals(input.shape(), layer.input().shape());
     }
 
     @Test
@@ -90,32 +77,8 @@ public class ConvolutionLayerTest {
 
         INDArray convActivations = layer.activate(input);
 
-        assertEquals(expectedOutput, convActivations);
-        assertEquals(expectedOutput.shape(), convActivations.shape());
-
-    }
-
-    // TODO remove/move, technically this is testing Nd4j functionality
-    @Test
-    public void testCreateFeatureMapMethod()  {
-        Layer layer = getContainedConfig();
-        INDArray input = getContainedData();
-        int inputWidth = input.shape()[0];
-        int featureMapWidth = (inputWidth + layer.conf().getPadding()[0] * 2 - layer.conf().getKernelSize()[0]) / layer.conf().getStride()[0] + 1;
-
-        INDArray expectedOutput = Nd4j.create(new double[] {
-                1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3,
-                3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
-                4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4
-        },new int[]{1, 1, 2, 2, 4, 4});
-
-        layer.setInput(input);
-        org.deeplearning4j.nn.layers.convolution.ConvolutionLayer layer2 = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) layer;
-        INDArray featureMaps = layer2.createFeatureMapColumn();
-
-        assertEquals(featureMapWidth, featureMaps.shape()[4]);
-        assertEquals(expectedOutput.shape(), featureMaps.shape());
-        assertEquals(expectedOutput, featureMaps);
+        assertArrayEquals(expectedOutput.shape(), convActivations.shape());
+        assertEquals(expectedOutput.toString(), convActivations.toString());
 
     }
 
@@ -135,16 +98,18 @@ public class ConvolutionLayerTest {
         layer2.setCol(col);
         INDArray activation = layer2.preOutput(true);
 
-        assertEquals(expectedOutput.shape(), activation.shape());
-        assertEquals(expectedOutput, activation);
+        assertArrayEquals(expectedOutput.shape(), activation.shape());
+        assertEquals(expectedOutput.toString(), activation.toString());
 
     }
 
         //////////////////////////////////////////////////////////////////////////////////
 
     @Test
-    public void testSubSampleLayerNoneBackprop() throws Exception{
+    public void testMnistBackprop() throws Exception{
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
+        INDArray input = getMnistData();
+        layer.activate(input);
 
         Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
         assertEquals(epsilon.shape().length, out.getSecond().shape().length);
@@ -154,6 +119,7 @@ public class ConvolutionLayerTest {
     @Test
     public void testBackpropResults()  {
         Layer layer = getContainedConfig();
+        INDArray input = getContainedData();
         INDArray col = getContainedCol();
         INDArray epsilon = Nd4j.ones(1,2,4,4);
 
@@ -170,22 +136,24 @@ public class ConvolutionLayerTest {
                 -56., -56., -56., -56., -56., -56., -56., -56., -56.
         },new int[]{1,1,8,8});
 
+        layer.setInput(input);
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer layer2 = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) layer;
         layer2.setCol(col);
         Pair<Gradient, INDArray> pair = layer2.backpropGradient(epsilon);
 
-        assertEquals(expectedEpsilon.shape(), pair.getSecond().shape());
-        assertEquals(expectedWeightGradient.shape(), pair.getFirst().getGradientFor("W").shape());
-        assertEquals(expectedBiasGradient.shape(), pair.getFirst().getGradientFor("b").shape());
-        assertEquals(expectedEpsilon, pair.getSecond());
-        assertEquals(expectedWeightGradient, pair.getFirst().getGradientFor("W"));
-        assertEquals(expectedBiasGradient, pair.getFirst().getGradientFor("b"));
+        assertArrayEquals(expectedEpsilon.shape(), pair.getSecond().shape());
+        assertArrayEquals(expectedWeightGradient.shape(), pair.getFirst().getGradientFor("W").shape());
+        assertArrayEquals(expectedBiasGradient.shape(), pair.getFirst().getGradientFor("b").shape());
+        assertEquals(expectedEpsilon.toString(), pair.getSecond().toString());
+        assertEquals(expectedWeightGradient.toString(), pair.getFirst().getGradientFor("W").toString());
+        assertEquals(expectedBiasGradient.toString(), pair.getFirst().getGradientFor("b").toString());
 
     }
 
     @Test
     public void testCalculateDelta() {
         Layer layer = getContainedConfig();
+        INDArray input = getContainedData();
         INDArray col = getContainedCol();
         INDArray epsilon = Nd4j.ones(1,2,4,4);
 
@@ -195,12 +163,13 @@ public class ConvolutionLayerTest {
                 -56., -56., -12., -12., -12., -12., -56., -56., -56., -56.
         },new int[]{1, 2, 4, 4});
 
+        layer.setInput(input);
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer layer2 = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) layer;
         layer2.setCol(col);
         INDArray delta = layer2.calculateDelta(epsilon);
 
         assertArrayEquals(expectedOutput.shape(), delta.shape());
-        assertEquals(expectedOutput, delta);
+        assertEquals(expectedOutput.toString(), delta.toString());
 
     }
 

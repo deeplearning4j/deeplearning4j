@@ -6,20 +6,18 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
@@ -51,8 +49,8 @@ public class SubsamplingLayerTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
 
         INDArray containedOutput = layer.activate(containedInput);
-        assertEquals(containedExpectedOut, containedOutput);
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
+        assertEquals(containedExpectedOut.toString(), containedOutput.toString());
 
         INDArray output = layer.activate(input);
         assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, featureMapWidth, featureMapHeight}, output.shape()));
@@ -69,13 +67,14 @@ public class SubsamplingLayerTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
 
         INDArray containedOutput = layer.activate(containedInput);
-        assertEquals(containedExpectedOut, containedOutput);
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
+        assertEquals(containedExpectedOut.toString(), containedOutput.toString());
 
         INDArray output = layer.activate(input);
         assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, featureMapWidth, featureMapHeight}, output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
     }
+
 
     @Test
     public void testSubSampleNoneActivate() throws Exception  {
@@ -125,7 +124,7 @@ public class SubsamplingLayerTest {
         layer.setInput(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
-        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
+        assertEquals(expectedContainedEpsilonResult.toString(), containedOutput.getSecond().toString());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
@@ -151,7 +150,7 @@ public class SubsamplingLayerTest {
         layer.activate(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
-        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
+        assertEquals(expectedContainedEpsilonResult.toString(), containedOutput.getSecond().toString());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
@@ -175,7 +174,7 @@ public class SubsamplingLayerTest {
         layer.setInput(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
-        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
+        assertEquals(expectedContainedEpsilonResult.toString(), containedOutput.getSecond().toString());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
