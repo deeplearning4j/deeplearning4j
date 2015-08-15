@@ -563,9 +563,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray tensorMmul(INDArray a,INDArray b,int[][] axes) {
-        if(a.rank() != b.rank())
-            throw new IllegalArgumentException("a and b must be same rank");
-        for(int i = 0; i < axes[0].length; i++) {
+         for(int i = 0; i < axes[0].length; i++) {
             if(a.size(axes[0][i]) != b.size(axes[1][i]))
                 throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
             if(axes[0][i] < 0)
@@ -609,7 +607,7 @@ public class Nd4j {
 
         int[] newShapeB = {n3,-1};
         int[] oldShapeB = Ints.toArray(listB);
-        for(int i = 0; i < oldShapeA.length; i++)
+        for(int i = 0; i < oldShapeB.length; i++)
             oldShapeB[i] = b.size(oldShapeB[i]);
 
 
