@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.params;
 
+import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
@@ -34,13 +35,13 @@ import java.util.Map;
 public class RecursiveParamInitializer extends DefaultParamInitializer {
 
     //encoder weights
-    public final static String W = "w";
+    public final static String ENCODER_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
     //decoder weights
-    public final static String U = "u";
+    public final static String DECODER_WEIGHT_KEY = "U";
     //hidden bias
-    public final static String BIAS = "b";
+    public final static String HIDDEN_BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
     //visible bias
-    public final static String C = "c";
+    public final static String VISIBLE_BIAS_KEY = PretrainParamInitializer.VISIBLE_BIAS_KEY;
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
@@ -49,16 +50,15 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
         int vis = conf.getNIn();
         int out = vis * 2;
 
-        params.put(W, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), dist));
-        params.put(U, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), dist));
-        params.put(BIAS, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(), dist));
-        params.put(C, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(), dist));
+        params.put(ENCODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), dist));
+        params.put(DECODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), dist));
+        params.put(HIDDEN_BIAS_KEY, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(), dist));
+        params.put(VISIBLE_BIAS_KEY, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(), dist));
 
-        conf.addVariable(W);
-        conf.addVariable(U);
-        conf.addVariable(BIAS);
-        conf.addVariable(C);
-
+        conf.addVariable(ENCODER_WEIGHT_KEY);
+        conf.addVariable(DECODER_WEIGHT_KEY);
+        conf.addVariable(HIDDEN_BIAS_KEY);
+        conf.addVariable(VISIBLE_BIAS_KEY);
     }
 
 
