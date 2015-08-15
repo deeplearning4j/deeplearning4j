@@ -155,6 +155,7 @@ public class ConvolutionLayerTest {
     public void testBackpropResults()  {
         Layer layer = getContainedConfig();
         INDArray col = getContainedCol();
+        INDArray epsilon = Nd4j.ones(1,2,4,4);
 
         INDArray expectedWeightGradient = Nd4j.create(new double[] {
                 -1440., -1440., -1984., -1984., -1440., -1440., -1984., -1984.
@@ -186,6 +187,7 @@ public class ConvolutionLayerTest {
     public void testCalculateDelta() {
         Layer layer = getContainedConfig();
         INDArray col = getContainedCol();
+        INDArray epsilon = Nd4j.ones(1,2,4,4);
 
         INDArray expectedOutput = Nd4j.create(new double[] {
                 -12., -12., -12., -12., -56., -56., -56., -56., -12., -12., -12.,
