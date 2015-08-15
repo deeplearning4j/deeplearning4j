@@ -96,9 +96,9 @@ public class LSTM extends BaseLayer {
         INDArray dY = Nd4j.vstack(Nd4j.zeros(activations.columns()), activations);
 
         //backprop the decoder
-        INDArray inputWeightGradients = outputActivations.transpose().mmul(dY); //dWd
+        INDArray inputWeightGradients = outputActivations.transpose().mmul(dY); //dWd -- TODO is this epsilon?
         INDArray biasGradients = Nd4j.sum(inputWeightGradients,0); // dbd
-        INDArray dHout = dY.mmul(inputWeights.transpose());
+        INDArray dHout = dY.mmul(inputWeights.transpose()); //TODO is this nextEpsilon?
 
         if(conf.isUseDropConnect() & conf.getDropOut() > 0)
             dHout.muli(u2);
@@ -161,13 +161,12 @@ public class LSTM extends BaseLayer {
         retGradient.gradientForVariable().put(LSTMParamInitializer.RECURRENT_WEIGHT_KEY, recurrentWeightGradients);
         retGradient.gradientForVariable().put(LSTMParamInitializer.BIAS_KEY, biasGradients);
 
-        INDArray nextEpsilon = null; // TODO calc nextEpsilon
 
-        return new Pair<>(retGradient, nextEpsilon);
+        return new Pair<>(retGradient, inputWeightGradients);
 
     }
 
-    
+
     @Override
     public INDArray activate(boolean training) {
         INDArray prevOutputActivations, prevMemCellActivations;
