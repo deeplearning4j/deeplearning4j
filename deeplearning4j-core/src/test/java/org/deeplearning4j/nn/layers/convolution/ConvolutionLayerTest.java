@@ -199,7 +199,7 @@ public class ConvolutionLayerTest {
         layer2.setCol(col);
         INDArray delta = layer2.calculateDelta(epsilon);
 
-        assertEquals(expectedOutput.shape(), delta.shape());
+        assertArrayEquals(expectedOutput.shape(), delta.shape());
         assertEquals(expectedOutput, delta);
 
     }
