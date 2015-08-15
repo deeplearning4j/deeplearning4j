@@ -123,16 +123,13 @@ public class SubsamplingLayerTest {
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
         layer.setInput(input);
-        Gradient gradient = createPrevGradient();
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, gradient, null);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
-        assertEquals(gradient.getGradientFor("W"), containedOutput.getFirst().getGradientFor("W"));
+        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
-        gradient = createPrevGradient();
-
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
@@ -148,21 +145,17 @@ public class SubsamplingLayerTest {
                 0.25,  0.5 ,  0.5 ,  0.75,  0.75,  1.  ,  1.  ,  1.25,  1.25,
                 1.5 ,  1.5 ,  1.75,  1.75,  2.
         }, new int[]{ 1,2,4,4});
-
         INDArray input = getData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
         layer.activate(input);
-        Gradient gradient = createPrevGradient();
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, gradient, null);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
-        assertEquals(gradient.getGradientFor("W"), containedOutput.getFirst().getGradientFor("W"));
+        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
-        gradient = createPrevGradient();
-
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
@@ -180,16 +173,13 @@ public class SubsamplingLayerTest {
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
         layer.setInput(input);
-        Gradient gradient = createPrevGradient();
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, gradient, null);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
-        assertEquals(gradient.getGradientFor("W"), containedOutput.getFirst().getGradientFor("W"));
+        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
-        gradient = createPrevGradient();
-
-        Pair<Gradient, INDArray> out= layer.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> out= layer.backpropGradient(epsilon);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
@@ -197,9 +187,7 @@ public class SubsamplingLayerTest {
     @Test (expected=IllegalStateException.class)
     public void testSubSampleLayerSumBackprop() {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
-        Gradient gradient = createPrevGradient();
-
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, gradient, null);
+        layer.backpropGradient(epsilon);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
