@@ -87,7 +87,7 @@ public class GravesLSTMTest {
 
 		INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
-		Pair<Gradient,INDArray> out = lstm.backpropGradient(epsilon, null, null);
+		Pair<Gradient,INDArray> out = lstm.backpropGradient(epsilon);
 		Gradient outGradient = out.getFirst();
 		INDArray nextEpsilon = out.getSecond();
 
