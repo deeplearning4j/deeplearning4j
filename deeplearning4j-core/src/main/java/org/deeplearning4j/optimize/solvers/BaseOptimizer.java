@@ -135,10 +135,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Pair<Gradient,Double> pair = gradientAndScore();
         score = pair.getSecond();
         if(searchState.isEmpty()){
-        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient(conf.getVariables()));
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         	setupSearchState(pair);		//Only do this once
         } else {
-        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient(conf.getVariables()));
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         }
 
         //pre existing termination conditions
@@ -181,7 +181,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             pair = gradientAndScore();
 
             //updates searchDirection
-            postStep(pair.getFirst().gradient(conf.getVariables()));
+            postStep(pair.getFirst().gradient());
             score = pair.getSecond();
 
             //invoke listeners for debugging

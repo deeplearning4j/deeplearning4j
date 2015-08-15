@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.multilayer;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -183,7 +182,7 @@ public class BackPropMLPTest {
             }
 
 
-            float eps = 0.01f;
+            float eps = 1e-4f;
             assertArrayEquals(l1WeightsFloatAfter,expectedL1WeightsAfter,eps);
             assertArrayEquals(l2WeightsFloatAfter,expectedL2WeightsAfter,eps);
             assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);

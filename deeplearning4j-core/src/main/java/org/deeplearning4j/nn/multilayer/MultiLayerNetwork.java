@@ -1018,14 +1018,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void backprop() {
         String multiGradientKey;
         gradient = new DefaultGradient();
-        Layer currLayer, prevLayer;
+        Layer currLayer;
 
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You cannot use backprop without an output layer.");
             return;
         }
 
-        feedForward();	//Need to do this to calculate activations (which are stored in each layer, and later used in backprop)
         int miniBatchSize = input.size(0);
 
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
@@ -1047,8 +1046,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
          * This interpretation transpose a few things to get mini batch because ND4J is rows vs columns organization for params
          */
         int numLayers = getnLayers();
+        //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
+        LinkedList<Pair<String,INDArray>> gradientList = new LinkedList<>();
 
-        Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null,null, null);
+        Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null);
 
         for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
             multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
@@ -1056,32 +1057,35 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //Temporarily divide gradients by mini-batch size here. Better design possible?
             INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
             //=============
-            gradient.setGradientFor(multiGradientKey, g);
+            gradientList.addLast(new Pair<>(multiGradientKey,g));
         }
 
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
             currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond()));
 
-        prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
-            currPair = currLayer.backpropGradient(currPair.getSecond(), currPair.getFirst(), prevLayer);
+            currPair = currLayer.backpropGradient(currPair.getSecond());
 
+            LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
             for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
                 //=============
                 //Temporarily divide gradients by mini-batch size here. Better design possible?
                 INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
                 //=============
-                gradient.setGradientFor(multiGradientKey, g);
+                tempList.addFirst(new Pair<>(multiGradientKey,g));
             }
+            for(Pair<String,INDArray> pair : tempList) gradientList.addFirst(pair);
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
                 currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
-            prevLayer = currLayer;
         }
+        
+        //Add gradients to Gradients, in correct order
+        for( Pair<String,INDArray> pair : gradientList ) gradient.setGradientFor(pair.getFirst(), pair.getSecond());
     }
 
 
@@ -1362,7 +1366,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if( getOutputLayer() instanceof OutputLayer ){
         	OutputLayer ol = (OutputLayer)getOutputLayer();
         	ol.setLabels(data.getLabels());
-        	ol.computeScore();
+        	ol.computeScore(calcL1(),calcL2());
         	this.score = ol.score();
         } else {
         	log.warn("Cannot calculate score wrt labels without an OutputLayer");
@@ -1394,10 +1398,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void computeGradientAndScore() {
-        backprop();
-        // Updating activations based on new gradients
+        //Calculate activations (which are stored in each layer, and used in backprop)
         feedForward();
-        score = ((OutputLayer)getOutputLayer()).computeScore();
+        backprop();
+        score = ((OutputLayer)getOutputLayer()).computeScore(calcL1(),calcL2());
+        // Updating activations based on new gradients
+
     }
 
     @Override
@@ -1684,7 +1690,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -1699,13 +1705,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public double l2Magnitude() {
-        throw new UnsupportedOperationException();
+    public double calcL2() {
+    	double l2 = 0.0;
+    	for( int i=0; i<layers.length; i++ ){
+			l2 += layers[i].calcL2();
+    	}
+        return l2;
     }
 
     @Override
-    public double l1Magnitude() {
-        throw new UnsupportedOperationException();
+    public double calcL1() {
+    	double l1 = 0.0;
+    	for( int i=0; i<layers.length; i++ ){
+			l1 += layers[i].calcL1();
+    	}
+        return l1;
     }
 
     @Override

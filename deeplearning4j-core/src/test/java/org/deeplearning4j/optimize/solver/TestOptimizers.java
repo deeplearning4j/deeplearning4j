@@ -356,6 +356,11 @@ public class TestOptimizers {
         public int getIndex() {
             return 0;
         }
+
+        @Override
+        public void setInput(INDArray input) {
+
+        }
     }
 
 
@@ -496,6 +501,11 @@ public class TestOptimizers {
         @Override
         public int getIndex() {
             return 0;
+        }
+
+        @Override
+        public void setInput(INDArray input) {
+
         }
     }
 
@@ -648,6 +658,11 @@ public class TestOptimizers {
         public int getIndex() {
             return 0;
         }
+
+        @Override
+        public void setInput(INDArray input) {
+
+        }
     }
 
 
@@ -714,12 +729,12 @@ public class TestOptimizers {
         }
 
         @Override
-        public double l2Magnitude() {
+        public double calcL2() {
             return 0;
         }
 
         @Override
-        public double l1Magnitude() {
+        public double calcL1() {
             return 0;
         }
 
@@ -807,7 +822,7 @@ public class TestOptimizers {
         public Gradient calcGradient(Gradient layerError, INDArray indArray) { throw new UnsupportedOperationException(); }
 
         @Override
-        public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer){
+        public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon){
             throw new UnsupportedOperationException(); }
 
         @Override
