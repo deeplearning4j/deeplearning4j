@@ -234,9 +234,24 @@ public class ShapeOffsetResolution implements Serializable {
          */
         if(numPointIndexes > 0 && !pointStrides.isEmpty()) {
             //append to the end for tensors
-            while(pointStrides.size() < accumOffsets.size()) {
-                pointStrides.add(1);
+            if(newAxesPrepend >= 1) {
+                while(pointStrides.size() < accumOffsets.size()) {
+                    pointStrides.add(1);
+                }
+                //identify in the original accumulate strides
+                //where zero was set and emulate the
+                //same structure in the point strides
+                for(int i = 0; i < accumStrides.size(); i++) {
+                    if(accumStrides.get(i) == 0)
+                        pointStrides.set(i,0);
+                }
             }
+            else {
+                while(pointStrides.size() < accumOffsets.size()) {
+                    pointStrides.add(1);
+                }
+            }
+
 
             this.offset = ArrayUtil.calcOffset(accumShape,pointStrides,accumOffsets);
         }

@@ -48,10 +48,6 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTest  {
         INDArray tensor = Nd4j.linspace(1,144,144).reshape(2,2,1,1,6,6);
         INDArray tensorSlice1 = tensor.slice(1);
         INDArray tensorSlice1Slice1 = tensorSlice1.slice(1);
-        INDArray tensorSlice1Slice1SliceZero = tensorSlice1Slice1.slice(0);
-        INDArray tensorSlice1Slice1SliceZeroSlice = tensorSlice1Slice1SliceZero.slice(1);
-        INDArray tensorSlice1Slice1SliceZeroSliceSlice1 = tensorSlice1Slice1SliceZeroSlice.slice(1);
-
         System.out.println(tensor);
     }
 
