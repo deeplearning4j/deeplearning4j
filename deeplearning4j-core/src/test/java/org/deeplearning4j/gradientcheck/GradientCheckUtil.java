@@ -97,7 +97,7 @@ public class GradientCheckUtil {
             double relError = Math.abs(backpropGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
 
             if(relError > maxError) maxError = relError;
-            if(relError > maxRelError) {
+            if(relError > maxRelError || Double.isNaN(relError)) {
                 if(print)
                     log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= "+numericalGradient
                             + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);

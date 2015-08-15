@@ -105,7 +105,6 @@ public class GRU extends BaseLayer {
 				INDArray sigmaPrimeCNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zcNext).derivative());
 				INDArray second = aOut.sub(acNext).muli(sigmaPrimeUNext);
 				INDArray third = auNext.rsub(1.0).muli(sigmaPrimeCNext);
-				INDArray tempTest = Nd4j.diag(Nd4j.diag(wC));
 				INDArray temp = Nd4j.diag(Nd4j.diag(wC)).mmul(arNext.transpose()).transpose()
 						.addi(
 								Nd4j.diag(Nd4j.diag(wR))
@@ -137,7 +136,7 @@ public class GRU extends BaseLayer {
 			INDArray deltaC = deltaOut.mul(sigmaPrimeC).muli(au.rsub(1.0));
 			
 			//Delta at reset gate
-			INDArray deltaR = deltaC.mul(Nd4j.diag(Nd4j.diag(wC))).muli(prevOut).muli(sigmaPrimeR);
+			INDArray deltaR = deltaC.mul(Nd4j.diag(Nd4j.diag(wC)).mmul(prevOut.transpose()).transpose()).muli(sigmaPrimeR);
 			
 			//Add input gradients for this time step:
 			INDArray prevLayerActivationSlice = (is2dInput ? input : input.slice(t, 2));
@@ -211,11 +210,7 @@ public class GRU extends BaseLayer {
 
 	@Override
 	public INDArray activate(){
-		return activateHelper()[0];
-	}
-
-	private INDArray[] activateHelper() {
-		return activateHelper(false);
+		return activateHelper(false)[0];
 	}
 
 	/** Returns activations array: {output,rucZs,rucAs} in that order. */
