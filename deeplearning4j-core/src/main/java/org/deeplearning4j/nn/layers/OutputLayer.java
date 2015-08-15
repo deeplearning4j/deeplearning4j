@@ -117,7 +117,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
     	Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput(input));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
     	INDArray delta = triple.getSecond();
 

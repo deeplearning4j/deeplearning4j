@@ -145,9 +145,8 @@ public class ConvolutionLayerTest {
     @Test
     public void testSubSampleLayerNoneBackprop() throws Exception{
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
-        Gradient gradient = createPrevGradient();
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, gradient, null);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
         assertEquals(epsilon.shape().length, out.getSecond().shape().length);
         assertEquals(nExamples, out.getSecond().size(1)); // depth retained
     }
@@ -172,7 +171,7 @@ public class ConvolutionLayerTest {
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer layer2 = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) layer;
         layer2.setCol(col);
-        Pair<Gradient, INDArray> pair = layer2.backpropGradient(epsilon, null, null);
+        Pair<Gradient, INDArray> pair = layer2.backpropGradient(epsilon);
 
         assertEquals(expectedEpsilon.shape(), pair.getSecond().shape());
         assertEquals(expectedWeightGradient.shape(), pair.getFirst().getGradientFor("W").shape());
