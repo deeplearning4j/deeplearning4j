@@ -4183,7 +4183,7 @@ public class Nd4j {
         if(d < tile.rank()) {
             repeat = Ints.concat(ArrayUtil.nTimes(tile.rank() - d,1),repeat);
         }
-        for(int i = 0; i < repeat.length; i++) {
+        for(int i = 0; i < shape.length; i++) {
             if(repeat[i] != 1) {
                 tile = tile.reshape(-1, n).repeat(0,new int[]{repeat[i]});
             }
