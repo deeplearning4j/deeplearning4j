@@ -105,8 +105,8 @@ public class LSTM extends BaseLayer {
      * @return {@link org.deeplearning4j.nn.gradient.Gradient}
      */
     public Gradient backprop(INDArray y) {
-        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
+        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
 
         INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()), y);
         INDArray dWd = hOut.transpose().mmul(dY);
@@ -174,9 +174,9 @@ public class LSTM extends BaseLayer {
         clear();
 
         Gradient gradient = new DefaultGradient();
-        gradient.gradientForVariable().put(LSTMParamInitializer.DECODER_BIAS,dBd);
-        gradient.gradientForVariable().put(LSTMParamInitializer.DECODER_WEIGHTS,dWd);
-        gradient.gradientForVariable().put(LSTMParamInitializer.RECURRENT_WEIGHTS,dRecurrentWeights);
+        gradient.gradientForVariable().put(LSTMParamInitializer.BIAS_KEY,dBd);
+        gradient.gradientForVariable().put(LSTMParamInitializer.INPUT_WEIGHT_KEY,dWd);
+        gradient.gradientForVariable().put(LSTMParamInitializer.RECURRENT_WEIGHT_KEY,dRecurrentWeights);
         return gradient;
 
     }
@@ -186,9 +186,9 @@ public class LSTM extends BaseLayer {
     public INDArray activate(boolean training) {
         this.x = input;
 
-        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
-        INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
+        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
+        INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
 
 
         if(conf.getDropOut() > 0) {
@@ -257,7 +257,7 @@ public class LSTM extends BaseLayer {
      * @return
      */
     public Collection<Pair<List<Integer>,Double>> predict(INDArray xi,INDArray ws) {
-        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
+        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
         int d = decoderWeights.rows();
         Triple<INDArray,INDArray,INDArray> yhc = lstmTick(xi, Nd4j.zeros(d), Nd4j.zeros(d));
         BeamSearch search = new BeamSearch(20,ws,yhc.getSecond(),yhc.getThird());
@@ -421,9 +421,9 @@ public class LSTM extends BaseLayer {
     }
 
     private Triple<INDArray,INDArray,INDArray> lstmTick(INDArray x,INDArray hPrev,INDArray cPrev) {
-        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
-        INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
+        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
+        INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
 
         int t = 0;
         int d = decoderWeights.rows();
@@ -475,16 +475,16 @@ public class LSTM extends BaseLayer {
     @Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
-    	double l2 = Transforms.pow(getParam(LSTMParamInitializer.RECURRENT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0)
-    			+ Transforms.pow(getParam(LSTMParamInitializer.DECODER_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+	double l2 = Transforms.pow(getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
+			+ Transforms.pow(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     	return 0.5 * conf.getL2() * l2;
     }
 
     @Override
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
-        double l1 = Transforms.abs(getParam(LSTMParamInitializer.RECURRENT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0)
-        		+ Transforms.abs(getParam(LSTMParamInitializer.DECODER_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
+        double l1 = Transforms.abs(getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
+			+ Transforms.abs(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
         return conf.getL1() * l1;
     }
 
@@ -521,9 +521,9 @@ public class LSTM extends BaseLayer {
     @Override
     public void setParams(INDArray params) {
         int count = 0;
-        INDArray decoderWeights = getParam(LSTMParamInitializer.DECODER_WEIGHTS);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHTS);
-        INDArray decoderBias = getParam(LSTMParamInitializer.DECODER_BIAS);
+        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
+        INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
 
         INDArray recurrentWeightsLinear = recurrentWeights.linearView();
         INDArray decoderWeightsLinear = decoderWeights.linearView();
