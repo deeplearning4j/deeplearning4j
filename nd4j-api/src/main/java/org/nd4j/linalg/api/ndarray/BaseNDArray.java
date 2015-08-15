@@ -3962,7 +3962,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the broadcasted ndarray
      */
     @Override
-    public INDArray broadcast(int[] shape) {
+    public INDArray broadcast(int...shape) {
 
         if (Shape.shapeEquals(shape, shape()))
             return this;
@@ -4005,7 +4005,7 @@ public abstract class BaseNDArray implements INDArray {
                 }
             }
             else {
-                if(size(i) == 1)
+                if(i < rank() && size(i) == 1)
                     broadCastDimensions.add(i);
                 else
                     nonBroadCastDimensions.add(i);
