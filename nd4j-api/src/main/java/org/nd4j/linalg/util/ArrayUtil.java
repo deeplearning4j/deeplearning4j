@@ -249,6 +249,53 @@ public class ArrayUtil {
 
 
     /**
+     * Compute the offset
+     * based on teh shape strides and offsets
+     * @param shape the shape to compute
+     * @param offsets the offsets to compute
+     * @param strides the strides to compute
+     * @return the offset for the given shape,offset,and strides
+     */
+    public static int calcOffset(List<Integer> shape,List<Integer> offsets,List<Integer> strides) {
+        if(shape.size() != offsets.size() || shape.size() != strides.size())
+            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
+        int ret = 0;
+        for(int i = 0; i < offsets.size(); i++) {
+            //we should only do this in the general case, not on vectors
+            //the reason for this is we force everything including scalars
+            //to be 2d
+            if(shape.get(i) == 1 && offsets.size() > 2)
+                continue;
+            ret += offsets.get(i) * strides.get(i);
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Compute the offset
+     * based on teh shape strides and offsets
+     * @param shape the shape to compute
+     * @param offsets the offsets to compute
+     * @param strides the strides to compute
+     * @return the offset for the given shape,offset,and strides
+     */
+    public static int calcOffset(int[] shape,int[] offsets,int[] strides) {
+        if(shape.length != offsets.length || shape.length!= strides.length)
+            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
+
+        int ret = 0;
+        for(int i = 0; i < offsets.length; i++) {
+            if(shape[i] == 1)
+                continue;
+            ret += offsets[i] * strides[i];
+        }
+
+        return ret;
+    }
+
+    /**
      *
      * @param xs
      * @param ys

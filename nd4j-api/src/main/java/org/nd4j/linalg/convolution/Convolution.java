@@ -103,8 +103,8 @@ public class Convolution {
                 INDArray colAdd = col.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
-                        , new NDArrayIndex(i)
-                        ,new NDArrayIndex(j)
+                        , NDArrayIndex.point(i)
+                        ,NDArrayIndex.point(j)
                         ,NDArrayIndex.all()
                         ,NDArrayIndex.all());
                 get.addi(colAdd);
@@ -167,8 +167,8 @@ public class Convolution {
                 ret.put(new INDArrayIndex[]{
                         NDArrayIndex.all()
                         ,NDArrayIndex.all()
-                        ,new NDArrayIndex(i)
-                        ,new NDArrayIndex(j)
+                        ,NDArrayIndex.point(i)
+                        ,NDArrayIndex.point(j)
                         ,NDArrayIndex.all()
                         ,NDArrayIndex.all()}, get);
             }
