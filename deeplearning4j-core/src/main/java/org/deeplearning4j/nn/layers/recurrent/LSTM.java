@@ -475,8 +475,8 @@ public class LSTM extends BaseLayer {
     @Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
-	double l2 = Transforms.pow(getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
-			+ Transforms.pow(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    	double l2 = Transforms.pow(getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
+    			+ Transforms.pow(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     	return 0.5 * conf.getL2() * l2;
     }
 
@@ -484,7 +484,7 @@ public class LSTM extends BaseLayer {
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
         double l1 = Transforms.abs(getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
-			+ Transforms.abs(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+        		+ Transforms.abs(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
         return conf.getL1() * l1;
     }
 
