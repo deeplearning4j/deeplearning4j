@@ -66,7 +66,7 @@ public class GravesLSTM extends BaseLayer {
 	}
 
 	@Override
-	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 		//First: Do forward pass to get gate activations etc.
 		INDArray[] activations = activateHelper(true);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
 		INDArray outputActivations = activations[0];

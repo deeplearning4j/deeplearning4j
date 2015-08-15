@@ -76,12 +76,13 @@ public class SubsamplingLayer extends BaseLayer {
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
         INDArray reshapeEpsilon, retE;
+        Gradient retGradient = new DefaultGradient();
 
         switch(conf.getPoolingType()) {
             case MAX:
@@ -100,7 +101,7 @@ public class SubsamplingLayer extends BaseLayer {
                     reshapeEpsilon.get(indexes).put(indexes, epsilon.get(indexes));
                 }
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
-                return new Pair<>(gradient,reshapeEpsilon);
+                return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
                 retE = epsilon.slice(0).get(
@@ -112,9 +113,9 @@ public class SubsamplingLayer extends BaseLayer {
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
                 reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
 
-                return new Pair<>(gradient, reshapeEpsilon);
+                return new Pair<>(retGradient, reshapeEpsilon);
             case NONE:
-                return new Pair<>(gradient, epsilon);
+                return new Pair<>(retGradient, epsilon);
             default: throw new IllegalStateException("Un supported pooling type");
         }
 
