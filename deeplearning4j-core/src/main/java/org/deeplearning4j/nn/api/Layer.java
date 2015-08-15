@@ -40,17 +40,19 @@ public interface Layer extends Serializable,Cloneable,Model {
        FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE,MULTILAYER
     }
 
-    /**
-     * The l2 magnitude for the weights
-     * @return the l2 magnitude for the weights
+    /**Calculate the l2 regularization term<br>
+     * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l2 regularization term for this layer.
      */
-    double l2Magnitude();
+    double calcL2();
 
-    /**
-     * The l1 magnitude for the weights
-     * @return the l1 magnitude for the weights
+    /**Calculate the l1 regularization term<br>
+     * 0.0 if regularization is not used. Or l1Coeff * l1Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l1 regularization term for this layer.
      */
-    double l1Magnitude();
+    double calcL1();
 
     /**
      * Returns the layer type
@@ -95,13 +97,11 @@ public interface Layer extends Serializable,Cloneable,Model {
     /**Calculate the gradient relative to the error in the next layer
      * @param epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)/(dz/da) = dC/da, where C 
      * 	is cost function a=sigma(z) is activation.
-     * @param gradient gradient for next layer. Used for example by CNN layers (but not typically by MLP/RNN layers; may be null then)
-     * @param layer next layer above this one. Used for example by CNN layers (but not typically by MLP/RNN layers; may be null then)
      * @return Pair<Gradient,INDArray> where Gradient is gradient for this layer, INDArray is epsilon needed by next
      *  layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
      *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
-    Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer);
+    Pair<Gradient,INDArray> backpropGradient(INDArray epsilon);
 
 
     /**
@@ -220,5 +220,11 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Get the layer index.
      */
     int getIndex();
+
+    /**
+     * Get the layer input.
+     */
+    void setInput(INDArray input);
+
 
 }
