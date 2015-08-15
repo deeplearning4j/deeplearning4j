@@ -91,9 +91,9 @@ public class GravesLSTMTest {
 		Gradient outGradient = out.getFirst();
 		INDArray nextEpsilon = out.getSecond();
 
-		INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS);
-		INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHTS);
-		INDArray recurrentWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+		INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS_KEY);
+		INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
+		INDArray recurrentWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
 		assertNotNull(biasGradient);
 		assertNotNull(inWeightGradient);
 		assertNotNull(recurrentWeightGradient);
