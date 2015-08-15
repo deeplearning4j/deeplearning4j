@@ -264,7 +264,7 @@ public class ArrayUtil {
             //we should only do this in the general case, not on vectors
             //the reason for this is we force everything including scalars
             //to be 2d
-            if(shape.get(i) == 1 && offsets.size() > 2)
+            if(shape.get(i) == 1 && offsets.size() > 2 && i > 0)
                 continue;
             ret += offsets.get(i) * strides.get(i);
         }

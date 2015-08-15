@@ -68,8 +68,7 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
 
         }, new int[]{2,2,2,2});
         
-        INDArray otherConv = Convolution.col2im(ret, 1, 1, 1, 1, 2, 2);
-
+        INDArray otherConv = Convolution.col2im(ret, 1, 1, 2,2, 2, 2);
         assertEquals(col2ImAssertion,otherConv);
 
     }
