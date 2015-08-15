@@ -2,6 +2,8 @@ package org.deeplearning4j.gradientcheck;
 
 import static org.junit.Assert.*;
 
+import java.util.Random;
+
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -9,7 +11,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.GRU;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -184,5 +188,58 @@ public class GradientCheckTests {
     			}
     		}
     	}
+    }
+    
+    
+    @Test
+    public void testGRURNN(){
+    	//Initial basic test of GRU RNN
+    	Nd4j.getRandom().setSeed(12345L);
+    	
+    	int timeSeriesLength = 20;
+    	int nIn = 5;
+    	int gruLayerSize = 7;
+    	int nOut = 9;
+    	int miniBatchSize = 11;
+    	
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
+	        .regularization(false)
+	        .timeSeriesLength(timeSeriesLength)
+	        .seed(12345L)
+	        .list(2)
+	        .layer(0, new GRU.Builder().nIn(nIn).nOut(gruLayerSize).activation("tanh").build())
+	        .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(gruLayerSize).nOut(nOut).build())
+	        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+	        .pretrain(false).backprop(true)
+	        .build();
+    	
+    	MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+    	mln.init();
+    	
+    	Random r = new Random(12345L);
+    	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<nIn; j++ ){
+    			for( int k=0; k<timeSeriesLength; k++ ){
+    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    			}
+    		}
+    	}
+    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
+    	for( int i=0; i<labels.size(0); i++){
+    		int idx = r.nextInt(nOut);
+    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	}
+    	
+    	if( PRINT_RESULTS ){
+    		System.out.println("testGRURNN()");
+    		for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+    	}
+    	
+    	boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+        assertTrue(gradOK);
     }
 }
