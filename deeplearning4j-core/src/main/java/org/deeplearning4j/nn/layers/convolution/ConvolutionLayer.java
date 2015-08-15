@@ -31,7 +31,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.Arrays;
 
 
 /**
@@ -75,7 +77,9 @@ public class ConvolutionLayer extends BaseLayer {
     public INDArray calculateDelta(INDArray epsilon) {
         INDArray z = preOutput(true);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
-        return epsilon.mmul(activationDerivative);
+        if(!Arrays.equals(z.shape(),activationDerivative.shape()))
+            throw new IllegalStateException("Shapes must be same");
+        return z.muli(activationDerivative);
 
     }
 
