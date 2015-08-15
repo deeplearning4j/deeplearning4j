@@ -37,8 +37,8 @@ import java.util.Map;
  */
 public class ConvolutionParamInitializer implements ParamInitializer {
 
-    public final static String WEIGHT_KEY = "W";
-    public final static String BIAS_KEY = "b";
+    public final static String WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {

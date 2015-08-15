@@ -20,8 +20,8 @@ package org.deeplearning4j.nn.layers;
 
 import java.io.*;
 
-
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.api.Layer;
@@ -59,6 +59,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     private INDArray labels;
     
     private transient Solver solver;
+    
+    private double fullNetworkL1;
+    private double fullNetworkL2;
 
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -70,9 +73,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     
     /** Compute score after labels and input have been set.
      */
-    public double computeScore(){
+    public double computeScore( double fullNetworkL1, double fullNetworkL2 ){
     	if( input == null || labels == null )
     		throw new IllegalStateException("Cannot calculate score without input and labels");
+    	this.fullNetworkL1 = fullNetworkL1;
+    	this.fullNetworkL2 = fullNetworkL2;
     	setScoreWithZ(output(input));
     	return score;
     }
@@ -82,11 +87,10 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         if(input == null || labels == null)
             return;
 
-        INDArray output = output(input);
-        Pair<Gradient,INDArray> pair = getGradientsAndDelta(output);
-        this.gradient = pair.getFirst();
-        setScoreWithZ(output);
-
+        INDArray z = preOutput(input);
+        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(z);
+        this.gradient = triple.getFirst();
+        setScoreWithZ(triple.getThird());
     }
 
     @Override
@@ -99,8 +103,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         else {
             score = LossCalculation.builder()
-                    .l1(conf.getL1()).l2(conf.getL2())
-                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .l1(1.0).l2(1.0)	//TODO: Temporary until Nd4J LossCalculation refactor
+                    .l1Magnitude(fullNetworkL1).l2Magnitude(fullNetworkL2)
                     .labels(labels).z(z).lossFunction(conf.getLossFunction())
                     .miniBatch(true)
                     .useRegularization(conf.isUseRegularization()).build().score();
@@ -113,12 +117,12 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
-	Pair<Gradient,INDArray> pair = getGradientsAndDelta(output(input));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
-    	INDArray delta = pair.getSecond();
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
+    	Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput(input));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+    	INDArray delta = triple.getSecond();
 
         INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
-        return new Pair<>(pair.getFirst(),epsilonNext);
+        return new Pair<>(triple.getFirst(),epsilonNext);
     }
 
     /**
@@ -132,40 +136,49 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     }
     
-    private Pair<Gradient,INDArray> getGradientsAndDelta(INDArray output){
+    /** Returns tuple: {Gradient,Delta,Output} given preOut */
+    private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut){
+    	INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), preOut.dup()));
     	INDArray outSubLabels = output.sub(labels);
     	Gradient gradient = new DefaultGradient();
-    	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
     	
     	switch (conf.getLossFunction()) {
     	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
     		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
-    		return new Pair<>(gradient,outSubLabels);
+    		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+    		return new Triple<>(gradient,outSubLabels,output);
         case XENT: // cross-entropy (single binary output variable)
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
-        	return new Pair<>(gradient,outSubLabels);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+        	return new Triple<>(gradient,outSubLabels,output);
 
         case MSE: // mean squared error
-        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.neg()));
-            return new Pair<>(gradient,outSubLabels);
+        	INDArray delta = outSubLabels.mul(derivativeActivation(preOut));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(delta));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
+            return new Triple<>(gradient,delta,output);
         	
         case EXPLL: // exponential logarithmic
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
-            return new Pair<>(gradient,outSubLabels);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
             
         case RMSE_XENT: // root mean squared error cross entropy
         	INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
         	INDArray sqrt = sqrt(squaredrmseXentDiff);
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
-            return new Pair<>(gradient,outSubLabels);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
         	
         case SQUARED_LOSS:
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(outSubLabels,2))));
-            return new Pair<>(gradient,outSubLabels);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
             
-        case NEGATIVELOGLIKELIHOOD: // mulit-class cross-entropy
+        case NEGATIVELOGLIKELIHOOD: // multi-class cross-entropy
         	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
-            return new Pair<>(gradient,outSubLabels);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
         default:
         	throw new IllegalStateException("Invalid loss function: " + conf.getLossFunction());
     	}
