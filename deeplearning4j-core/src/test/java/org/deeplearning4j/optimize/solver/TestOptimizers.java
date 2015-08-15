@@ -822,7 +822,7 @@ public class TestOptimizers {
         public Gradient calcGradient(Gradient layerError, INDArray indArray) { throw new UnsupportedOperationException(); }
 
         @Override
-        public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer){
+        public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon){
             throw new UnsupportedOperationException(); }
 
         @Override

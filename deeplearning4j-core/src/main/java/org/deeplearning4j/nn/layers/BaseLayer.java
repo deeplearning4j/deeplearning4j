@@ -138,7 +138,7 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());

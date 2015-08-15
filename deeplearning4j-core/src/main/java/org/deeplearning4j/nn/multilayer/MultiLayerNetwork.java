@@ -1018,14 +1018,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected void backprop() {
         String multiGradientKey;
         gradient = new DefaultGradient();
-        Layer currLayer, prevLayer;
+        Layer currLayer;
 
         if(!(getOutputLayer() instanceof  OutputLayer)) {
             log.warn("Warning: final layer isn't output layer. You cannot use backprop without an output layer.");
             return;
         }
 
-        feedForward();	//Need to do this to calculate activations (which are stored in each layer, and later used in backprop)
         int miniBatchSize = input.size(0);
 
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
@@ -1050,7 +1049,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
         LinkedList<Pair<String,INDArray>> gradientList = new LinkedList<>();
 
-        Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null,null,null);
+        Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null);
 
         for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
             multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
@@ -1064,11 +1063,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
             currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond()));
 
-        prevLayer = outputLayer;
         // Calculate gradients for previous layers & drops output layer in count
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
-            currPair = currLayer.backpropGradient(currPair.getSecond(), currPair.getFirst(), prevLayer);
+            currPair = currLayer.backpropGradient(currPair.getSecond());
 
             LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
             for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
@@ -1084,7 +1082,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
                 currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
-            prevLayer = currLayer;
         }
         
         //Add gradients to Gradients, in correct order
@@ -1401,10 +1398,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public void computeGradientAndScore() {
-        backprop();
-        // Updating activations based on new gradients
+        //Calculate activations (which are stored in each layer, and used in backprop)
         feedForward();
+        backprop();
         score = ((OutputLayer)getOutputLayer()).computeScore(calcL1(),calcL2());
+        // Updating activations based on new gradients
+
     }
 
     @Override
@@ -1691,7 +1690,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient nextGradient, Layer layer) {
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
