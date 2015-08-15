@@ -58,7 +58,7 @@ public class ConvolutionLayerTest {
         INDArray convActivations = layer.activate(input);
 
         assertEquals(featureMapWidth, convActivations.size(2));
-        assertEquals(depth, convActivations.size(0));
+        assertEquals(depth, convActivations.size(1));
     }
 
     @Test
