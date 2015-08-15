@@ -112,10 +112,6 @@ public class ConvolutionLayer extends BaseLayer {
         return new Pair<>(retGradient,nextEpsilon);
     }
 
-    public INDArray createFeatureMapColumn() {
-        return Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
-    }
-
     public INDArray preOutput(boolean training) {
         INDArray Weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
@@ -139,7 +135,7 @@ public class ConvolutionLayer extends BaseLayer {
             throw new IllegalArgumentException("No null input allowed");
         applyDropOutIfNecessary(input, training);
 
-        col = createFeatureMapColumn();
+        col = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
         INDArray z = preOutput(training);
         INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), z));
         return activation;
