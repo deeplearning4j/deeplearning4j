@@ -1364,7 +1364,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray dup() {
-
         INDArray ret = Shape.toOffsetZeroCopy(this);
         return ret;
     }
@@ -1377,12 +1376,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int getInt(int... indices) {
-
-        int ix = offset;
-        for (int i = 0; i < indices.length; i++)
-            ix += indices[i] * stride[i];
-
-        return data.getInt(ix);
+        return (int) getDouble(indices);
 
     }
 
@@ -1395,14 +1389,17 @@ public abstract class BaseNDArray implements INDArray {
     @Override
     public double getDouble(int... indices) {
         int offset = 0;
-        if(isRowVector() && this.offset + offset + indices[1] * stride(1) >= data.length()) {
-            offset = indices[0] * stride(0);
+        for(int i = 0; i < indices.length; i++) {
+            /**
+             * See:
+             * http://docs.scipy.org/doc/numpy/reference/arrays.ndarray.html
+             * Basically if the size(i) is 1, the stride shouldn't be counted.
+             */
+            if(size(i) == 1)
+                continue;
+            offset += indices[i] * stride(i);
         }
-        else {
-            for(int i = 0; i < indices.length; i++) {
-                offset += indices[i] * stride(i);
-            }
-        }
+
 
         return data.getDouble(offset + this.offset);
     }
@@ -1463,7 +1460,8 @@ public abstract class BaseNDArray implements INDArray {
         else {
             int ix = offset;
             for (int i = 0; i < indices.length; i++)
-                ix += indices[i] * stride[i];
+                if(size(i) != 1)
+                    ix += indices[i] * stride[i];
             if (ix >= data.length())
                 throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
             data.put(ix, element.getDouble(0));
@@ -1497,7 +1495,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray put(int i, int j, Number element) {
-
         return putScalar(new int[]{i, j}, element.doubleValue());
     }
 
@@ -1510,7 +1507,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray putSlice(int slice, INDArray put) {
-
         if (isScalar()) {
             assert put.isScalar() : "Invalid dimension. Can only insert a scalar in to another scalar";
             put(0, put.getScalar(0));
@@ -3829,7 +3825,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public boolean equals(Object o) {
-
         INDArray n = null;
 
         if (!(o instanceof INDArray))

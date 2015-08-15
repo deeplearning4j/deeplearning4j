@@ -276,6 +276,7 @@ public class NDArrayIndex implements INDArrayIndex {
             return intendedIndexes;
 
         List<INDArrayIndex> retList = new ArrayList<>();
+        int numNewAxes = 0;
 
         if(Shape.isMatrix(shape) && intendedIndexes.length == 1) {
             retList.add(intendedIndexes[0]);
@@ -284,11 +285,14 @@ public class NDArrayIndex implements INDArrayIndex {
         else {
             for(int i = 0; i < intendedIndexes.length; i++) {
                 retList.add(intendedIndexes[i]);
+                if(intendedIndexes[i] instanceof NewAxis)
+                    numNewAxes++;
             }
         }
 
+        int length = shape.length + numNewAxes;
         //fill the rest with all
-        while(retList.size() < shape.length)
+        while(retList.size() < length)
             retList.add(NDArrayIndex.all());
 
 

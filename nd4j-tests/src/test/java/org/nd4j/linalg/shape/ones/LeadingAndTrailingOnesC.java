@@ -33,8 +33,21 @@ public class LeadingAndTrailingOnesC extends BaseNd4jTest  {
     }
 
     @Test
+    public void testMatrix() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray slice1 = arr.slice(1);
+        System.out.println(arr.slice(1));
+        INDArray oneInMiddle = Nd4j.linspace(1,4,4).reshape(2,1,2);
+        INDArray otherSlice = oneInMiddle.slice(1);
+        assertEquals(2,otherSlice.offset());
+        System.out.println(otherSlice);
+    }
+
+    @Test
     public void testMultipleOnesInMiddle() {
-        INDArray tensor = Nd4j.create(2,2,1,1,6,6);
+        INDArray tensor = Nd4j.linspace(1,144,144).reshape(2,2,1,1,6,6);
+        INDArray tensorSlice1 = tensor.slice(1);
+        INDArray tensorSlice1Slice1 = tensorSlice1.slice(1);
         System.out.println(tensor);
     }
 
