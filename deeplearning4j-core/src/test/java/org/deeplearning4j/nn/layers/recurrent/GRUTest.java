@@ -99,7 +99,7 @@ public class GRUTest {
 
 		assertArrayEquals(biasGradient.shape(),new int[]{1,3*gruNHiddenUnits});
 		assertArrayEquals(inWeightGradient.shape(),new int[]{nIn,3*gruNHiddenUnits});
-		assertArrayEquals(recurrentWeightGradient.shape(),new int[]{gruNHiddenUnits,3*gruNHiddenUnits+3});
+		assertArrayEquals(recurrentWeightGradient.shape(),new int[]{gruNHiddenUnits,3*gruNHiddenUnits});
 
 		assertNotNull(nextEpsilon);
 		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
