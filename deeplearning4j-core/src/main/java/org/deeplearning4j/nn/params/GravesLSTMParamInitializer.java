@@ -37,9 +37,9 @@ import java.util.Map;
  */
 public class GravesLSTMParamInitializer implements ParamInitializer {
 	/** Weights for previous time step -> current time step connections */
-    public final static String RECURRENT_WEIGHTS = "RW";
-    public final static String BIAS = DefaultParamInitializer.BIAS_KEY;
-    public final static String INPUT_WEIGHTS = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String RECURRENT_WEIGHT_KEY = "RW";
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
+    public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
@@ -49,13 +49,13 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         int nLast = conf.getNIn();	//i.e., n neurons in previous layer
         
         
-        conf.addVariable(RECURRENT_WEIGHTS);
-        conf.addVariable(INPUT_WEIGHTS);
-        conf.addVariable(BIAS);
+        conf.addVariable(RECURRENT_WEIGHT_KEY);
+        conf.addVariable(INPUT_WEIGHT_KEY);
+        conf.addVariable(BIAS_KEY);
         
         
-        params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getWeightInit(), dist));
-        params.put(INPUT_WEIGHTS,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getWeightInit(), dist));
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getWeightInit(), dist));
         INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
         biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
         /*The above line initializes the forget gate biases to 5.
@@ -66,11 +66,11 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
          *  gates will create a vanishing gradients problem."
          *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
          */
-        params.put(BIAS, biases);
+        params.put(BIAS_KEY, biases);
 
-        params.get(RECURRENT_WEIGHTS).data().persist();
-        params.get(INPUT_WEIGHTS).data().persist();
-        params.get(BIAS).data().persist();
+        params.get(RECURRENT_WEIGHT_KEY).data().persist();
+        params.get(INPUT_WEIGHT_KEY).data().persist();
+        params.get(BIAS_KEY).data().persist();
     }
 
     @Override
