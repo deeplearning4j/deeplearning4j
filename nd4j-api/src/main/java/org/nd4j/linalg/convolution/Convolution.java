@@ -141,9 +141,9 @@ public class Convolution {
         //number of channels (depth)
         int c = img.size(1);
         //image height
-        int h = img.size(3);
+        int h = img.size(2);
         //image width
-        int w = img.size(2);
+        int w = img.size(3);
         int outHeight = outSize(h, kh, sy, ph, coverAll);
         int outWidth = outSize(w, kw, sx, pw, coverAll);
         INDArray padded = Nd4j.pad(img, new int[][]{

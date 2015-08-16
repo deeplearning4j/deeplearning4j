@@ -45,6 +45,7 @@ public class ShapeOffsetResolution implements Serializable {
     public void exec(INDArrayIndex... indexes) {
         indexes = NDArrayIndex.resolve(arr.shape(),indexes);
         int[] shape = arr.shape();
+        int numIntervals = 0;
         //number of new axes dimensions to prepend to the beginning
         int newAxesPrepend = 0;
         //whether we have encountered an all so far
@@ -53,6 +54,7 @@ public class ShapeOffsetResolution implements Serializable {
         List<Integer> accumShape = new ArrayList<>();
         List<Integer> accumStrides = new ArrayList<>();
         List<Integer> accumOffsets = new ArrayList<>();
+        List<Integer> intervalStrides = new ArrayList<>();
 
         //collect the indexes of the points that get removed
         //for point purposes
@@ -102,14 +104,22 @@ public class ShapeOffsetResolution implements Serializable {
             else if(idx instanceof IntervalIndex && !(idx instanceof NDArrayIndexAll) || idx instanceof SpecifiedIndex) {
                 if(idx instanceof IntervalIndex) {
                     accumStrides.add(arr.stride(strideIndex) * idx.stride());
+                    //used in computing an adjusted offset for the augmented strides
+                    intervalStrides.add(idx.stride());
+                    if(idx.stride() > 1)
+                        numIntervals++;
                 }
                 else
                     accumStrides.add(arr.stride(strideIndex));
-
                 accumShape.add(idx.length());
                 //the stride stays the same
                 //add the offset for the index
-                accumOffsets.add(idx.offset());
+                if(idx instanceof IntervalIndex) {
+                    accumOffsets.add(idx.offset());
+                }
+                else
+                    accumOffsets.add(idx.offset());
+
                 shapeIndex++;
                 strideIndex++;
                 continue;
@@ -124,7 +134,7 @@ public class ShapeOffsetResolution implements Serializable {
             accumStrides.add(arr.stride(strideIndex++));
 
             //default offsets are zero
-            accumOffsets.add(0);
+            accumOffsets.add(idx.offset());
 
         }
 
@@ -147,12 +157,8 @@ public class ShapeOffsetResolution implements Serializable {
             accumOffsets.add(0);
 
 
-        while(accumShape.size() < 2) {
+        while(accumShape.size() < 2)
             accumShape.add(1);
-
-        }
-
-
 
         //prepend for new axes; do this first before
         //doing the indexes to prepend to
@@ -260,6 +266,10 @@ public class ShapeOffsetResolution implements Serializable {
 
 
             this.offset = ArrayUtil.dotProduct(pointOffsets,pointStrides);
+        }
+        else if(numIntervals > 0) {
+
+            this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
         }
         else
             this.offset = ArrayUtil.calcOffset(accumShape,accumOffsets,accumStrides);

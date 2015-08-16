@@ -130,7 +130,7 @@ public class IndexingTestsC extends BaseNd4jTest {
                 {0, 0}
                 , {0, 0}
                 , {ph, ph + sy - 1}
-                ,{pw, pw + sx - 1}}
+                , {pw, pw + sx - 1}}
                 , Nd4j.PadMode.CONSTANT);
 
         INDArray get = padded.get(
@@ -138,9 +138,38 @@ public class IndexingTestsC extends BaseNd4jTest {
                 , NDArrayIndex.all()
                 , NDArrayIndex.interval(i, sy, iLim)
                 , NDArrayIndex.interval(j, sx, jLim));
-        assertArrayEquals(new int[]{81,81,18,2},get.stride());
-        INDArray assertion = Nd4j.create(new double[]{1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3},new int[]{1,1,4,4});
-        assertEquals(assertion,get);
+        assertArrayEquals(new int[]{81, 81, 18, 2}, get.stride());
+        INDArray assertion = Nd4j.create(new double[]{1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3}, new int[]{1, 1, 4, 4});
+        assertEquals(assertion, get);
+
+        i = 1;
+        iLim = 9;
+        INDArray get3  = padded.get(
+                NDArrayIndex.all()
+                , NDArrayIndex.all()
+                , NDArrayIndex.interval(i, sy, iLim)
+                , NDArrayIndex.interval(j, sx, jLim));
+
+        INDArray assertion2 = Nd4j.create(new double[]{2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new int[]{1, 1, 4, 4});
+        assertArrayEquals(new int[]{81, 81, 18, 2}, get3.stride());
+        assertEquals(assertion2, get3);
+
+
+
+        i = 0;
+        iLim = 8;
+        jLim = 9;
+        j = 1;
+        INDArray get2 = padded.get(
+                NDArrayIndex.all()
+                , NDArrayIndex.all()
+                , NDArrayIndex.interval(i, sy, iLim)
+                , NDArrayIndex.interval(j, sx, jLim));
+        assertArrayEquals(new int[]{81, 81, 18, 2}, get2.stride());
+        assertEquals(assertion, get2);
+
+
+
     }
 
 

@@ -14,6 +14,7 @@ public class IntervalIndex implements INDArrayIndex {
     protected boolean inclusive;
     protected int stride = 1;
     protected int index = 0;
+    protected int length = 0;
     /**
      *
      * @param inclusive whether to include the last number
@@ -36,7 +37,7 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public int length() {
-        return (end - 1 - begin) / stride + 1;
+        return length;
     }
 
     @Override
@@ -85,6 +86,9 @@ public class IntervalIndex implements INDArrayIndex {
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
+        for(int i = begin; i < end; i+= stride) {
+            length++;
+        }
     }
 
     @Override
@@ -97,6 +101,9 @@ public class IntervalIndex implements INDArrayIndex {
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? end + 1 : end;
+        for(int i = begin; i < end; i+= stride) {
+            length++;
+        }
 
     }
 

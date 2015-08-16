@@ -164,7 +164,20 @@ public class ArrayUtil {
         return ret;
 
     }
-
+    /**
+     * Sum of an int array
+     * @param add the elements
+     *            to calculate the sum for
+     * @return the sum of this array
+     */
+    public static int sum(List<Integer> add) {
+        if (add.size() < 1)
+            return 0;
+        int ret = 0;
+        for (int i = 0; i < add.size(); i++)
+            ret += add.get(i);
+        return ret;
+    }
     /**
      * Sum of an int array
      * @param add the elements
@@ -179,6 +192,22 @@ public class ArrayUtil {
             ret += add[i];
         return ret;
     }
+    /**
+     * Product of an int array
+     * @param mult the elements
+     *            to calculate the sum for
+     * @return the product of this array
+     */
+    public static int prod(List<Integer> mult) {
+        if (mult.size() < 1)
+            return 0;
+        int ret = 1;
+        for (int i = 0; i < mult.size(); i++)
+            ret *= mult.get(i);
+        return ret;
+    }
+
+
     /**
      * Product of an int array
      * @param mult the elements
