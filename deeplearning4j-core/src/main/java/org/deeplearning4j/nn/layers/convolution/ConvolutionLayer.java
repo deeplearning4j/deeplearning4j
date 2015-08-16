@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import com.google.common.primitives.Ints;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
@@ -27,16 +26,15 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+
 
 /**
  * Convolution layer
@@ -79,8 +77,9 @@ public class ConvolutionLayer extends BaseLayer {
     public INDArray calculateDelta(INDArray epsilon) {
         INDArray z = preOutput(true);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
-
-        return epsilon.mmul(activationDerivative);
+        if(!Arrays.equals(z.shape(),activationDerivative.shape()))
+            throw new IllegalStateException("Shapes must be same");
+        return z.muli(activationDerivative);
 
     }
 
@@ -113,10 +112,6 @@ public class ConvolutionLayer extends BaseLayer {
         return new Pair<>(retGradient,nextEpsilon);
     }
 
-    public INDArray createFeatureMapColumn() {
-        return Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
-    }
-
     public INDArray preOutput(boolean training) {
         INDArray Weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
@@ -129,7 +124,7 @@ public class ConvolutionLayer extends BaseLayer {
         INDArray z = Nd4j.tensorMmul(col, Weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
         // TODO check shape and confirm correct approach
         z = z.reshape(z.size(0), z.size(1), z.size(2), z.size(3));
-        bias = bias.broadcast(z.shape()).reshape(z.shape());
+        bias = bias.broadcast(z.shape());
         z.addi(bias);
         return Nd4j.rollAxis(z, 3, 1);
     }
@@ -140,7 +135,7 @@ public class ConvolutionLayer extends BaseLayer {
             throw new IllegalArgumentException("No null input allowed");
         applyDropOutIfNecessary(input, training);
 
-        col = createFeatureMapColumn();
+        col = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
         INDArray z = preOutput(training);
         INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), z));
         return activation;
