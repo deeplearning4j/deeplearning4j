@@ -39,6 +39,9 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>2.18.1</version>
                     <configuration>
+						<additionalClasspathElements>
+							<additionalClasspathElement>../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
+						</additionalClasspathElements>
                         <argLine>-Xmx6g</argLine>
                     </configuration>
                 </plugin>
@@ -151,11 +154,5 @@
             <version>1.2.4</version>
             <scope>test</scope>
         </dependency>
-		<dependency>
-			<groupId>org.deeplearning4j</groupId>
-			<artifactId>dl4j-test-resources</artifactId>
-			<version>${project.version}</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>
