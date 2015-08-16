@@ -45,11 +45,11 @@ public class MultiLayerTestRNN {
         Map<String,INDArray> paramTable = layer.paramTable();
         assertTrue(paramTable.size() == 3);	//2 sets of weights, 1 set of biases
 
-        INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+        INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
         assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits,4*nHiddenUnits+3});	//Should be shape: [layerSize,4*layerSize+3]
-        INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHTS);
+        INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
         assertArrayEquals(inputWeights.shape(),new int[]{nIn,4*nHiddenUnits}); //Should be shape: [nIn,4*layerSize]
-        INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS);
+        INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
         assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits});	//Should be shape: [1,4*layerSize]
 
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
@@ -90,11 +90,11 @@ public class MultiLayerTestRNN {
 
             int layerNIn = (i == 0 ? nIn : nHiddenUnits[i-1] );
 
-            INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+            INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
             assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits[i],4*nHiddenUnits[i]+3});	//Should be shape: [layerSize,4*layerSize+3]
-            INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHTS);
+            INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
             assertArrayEquals(inputWeights.shape(),new int[]{layerNIn,4*nHiddenUnits[i]}); //Should be shape: [nIn,4*layerSize]
-            INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS);
+            INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
             assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits[i]});	//Should be shape: [1,4*layerSize]
 
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
