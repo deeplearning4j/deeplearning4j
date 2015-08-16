@@ -563,7 +563,8 @@ public class Nd4j {
      * @return
      */
     public static INDArray tensorMmul(INDArray a,INDArray b,int[][] axes) {
-         for(int i = 0; i < axes[0].length; i++) {
+        int validationLength = Math.min(axes[0].length,axes[1].length);
+         for(int i = 0; i < validationLength; i++) {
             if(a.size(axes[0][i]) != b.size(axes[1][i]))
                 throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
             if(axes[0][i] < 0)
@@ -591,7 +592,8 @@ public class Nd4j {
         int[] newAxesB = Ints.concat(axes[1],Ints.toArray(listB));
 
         int n2 = 1;
-        for(int i = 0; i < axes[0].length; i++) {
+        int aLength = Math.min(a.rank(),axes[0].length);
+        for(int i = 0; i < aLength; i++) {
             n2 *= a.size(axes[0][i]);
         }
 
@@ -601,8 +603,9 @@ public class Nd4j {
             oldShapeA[i] = a.size(oldShapeA[i]);
 
         int n3 = 1;
-        for(int i = 0; i < axes[1].length; i++) {
-            n3 *= a.size(axes[1][i]);
+        int bNax = Math.min(b.rank(),axes[1].length);
+        for(int i = 0; i < bNax; i++) {
+            n3 *= b.size(axes[1][i]);
         }
 
         int[] newShapeB = {n3,-1};

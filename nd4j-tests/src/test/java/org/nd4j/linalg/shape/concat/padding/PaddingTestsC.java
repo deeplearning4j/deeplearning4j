@@ -7,6 +7,8 @@ import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Adam Gibson
  */
@@ -39,6 +41,51 @@ public class PaddingTestsC extends BaseNd4jTest {
         assertEquals(assertion,prepend);
 
 
+    }
+
+
+    @Test
+    public void testPaddingOneThrougFour() {
+        int ph = 0;
+        int pw = 0;
+        int sy = 2;
+        int sx = 2;
+        INDArray ret = Nd4j.create(new double[]{
+                1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+                3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+                2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
+        }, new int[]{1, 1, 8, 8});
+        INDArray padded = Nd4j.pad(ret, new int[][]{
+                {0, 0}
+                , {0, 0}
+                , {ph, ph + sy - 1}
+                , {pw, pw + sx - 1}}
+                , Nd4j.PadMode.CONSTANT);
+
+        INDArray assertion = Nd4j.create(new double[]{1, 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 3, 3, 3, 3, 3, 3, 3, 3, 0, 4, 4, 4, 4, 4, 4, 4, 4, 0, 1
+                , 1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 3, 3, 3, 3, 3, 3, 3, 3, 0, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 0
+                , 0, 0, 0, 0, 0, 0, 0}, new int[]{1, 1, 9, 9});
+        assertArrayEquals(assertion.shape(),padded.shape());
+        assertEquals(assertion,padded);
+
+    }
+
+    @Test
+    public void testAppend2() {
+        INDArray ret = Nd4j.create(new double[] {
+                1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+                3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+                2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
+        }, new int[]{1,1,8,8});
+
+        INDArray appendAssertion  = Nd4j.create(new double[] {
+                1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,1,1,1,1,1
+                ,1,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0
+        },new int[]{1,1,9,8});
+
+        INDArray appended = Nd4j.append(ret,1,0,2);
+        assertArrayEquals(appendAssertion.shape(),appended.shape());
+        assertEquals(appendAssertion,appended);
     }
 
     @Test
