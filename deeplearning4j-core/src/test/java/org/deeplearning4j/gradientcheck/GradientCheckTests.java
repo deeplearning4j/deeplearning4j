@@ -196,10 +196,10 @@ public class GradientCheckTests {
     	//Initial basic test of GRU RNN
     	Nd4j.getRandom().setSeed(12345L);
     	
-    	int timeSeriesLength = 20;
+    	int timeSeriesLength = 1;
     	int nIn = 5;
     	int gruLayerSize = 7;
-    	int nOut = 9;
+    	int nOut = 3;
     	int miniBatchSize = 11;
     	
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -238,7 +238,7 @@ public class GradientCheckTests {
     	}
     	
     	boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, false);
 
         assertTrue(gradOK);
     }
