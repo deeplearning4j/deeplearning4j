@@ -59,6 +59,7 @@ public class ShapeOffsetResolution implements Serializable {
         //this will be used to compute the offset
         //for the new array
         List<Integer> pointStrides = new ArrayList<>();
+        List<Integer> pointOffsets = new ArrayList<>();
         int numPointIndexes = 0;
 
         //bump number to read from the shape
@@ -75,8 +76,7 @@ public class ShapeOffsetResolution implements Serializable {
             //point: do nothing but move the shape counter
             //also move the stride counter
             if(idx instanceof PointIndex) {
-                if(idx.offset() > 0)
-                    accumOffsets.add(idx.offset());
+                pointOffsets.add(idx.offset());
                 pointStrides.add(arr.stride(strideIndex));
                 numPointIndexes++;
                 shapeIndex++;
@@ -100,9 +100,14 @@ public class ShapeOffsetResolution implements Serializable {
 
             //points and intervals both have a direct desired length
             else if(idx instanceof IntervalIndex && !(idx instanceof NDArrayIndexAll) || idx instanceof SpecifiedIndex) {
+                if(idx instanceof IntervalIndex) {
+                    accumStrides.add(arr.stride(strideIndex) * idx.stride());
+                }
+                else
+                    accumStrides.add(arr.stride(strideIndex));
+
                 accumShape.add(idx.length());
                 //the stride stays the same
-                accumStrides.add(arr.stride(strideIndex));
                 //add the offset for the index
                 accumOffsets.add(idx.offset());
                 shapeIndex++;
@@ -207,10 +212,11 @@ public class ShapeOffsetResolution implements Serializable {
 
         //only one index and matrix, remove the first index rather than the last
         //equivalent to this is reversing the list with the prepended one
-        if(indexes.length <= 2 && indexes[0] instanceof PointIndex && shape.length == 2 && newAxesPrepend < 1) {
+        if(indexes.length <= 2 && indexes[0] instanceof PointIndex && shape.length == 2  && newAxesPrepend < 1) {
             Collections.reverse(accumShape);
             Collections.reverse(accumStrides);
         }
+
 
         this.strides = Ints.toArray(accumStrides);
         this.shapes = Ints.toArray(accumShape);
@@ -247,13 +253,13 @@ public class ShapeOffsetResolution implements Serializable {
                 }
             }
             else {
-                while(pointStrides.size() < accumOffsets.size()) {
+                while(pointStrides.size() < pointStrides.size()) {
                     pointStrides.add(1);
                 }
             }
 
 
-            this.offset = ArrayUtil.calcOffset(accumShape,pointStrides,accumOffsets);
+            this.offset = ArrayUtil.dotProduct(pointOffsets,pointStrides);
         }
         else
             this.offset = ArrayUtil.calcOffset(accumShape,accumOffsets,accumStrides);

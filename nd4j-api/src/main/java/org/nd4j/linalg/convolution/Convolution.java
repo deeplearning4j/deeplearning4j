@@ -162,8 +162,8 @@ public class Convolution {
                 INDArray get = padded.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
-                        , NDArrayIndex.interval(j, sy, jLim)
-                        , NDArrayIndex.interval(i, sx, iLim));
+                        , NDArrayIndex.interval(i, sy, iLim)
+                        , NDArrayIndex.interval(j, sx, jLim));
                 ret.put(new INDArrayIndex[]{
                         NDArrayIndex.all()
                         ,NDArrayIndex.all()

@@ -55,11 +55,11 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testGetRows() {
         INDArray arr = Nd4j.linspace(1,9,9).reshape(3,3);
         INDArray testAssertion = Nd4j.create(new double[][]{
-                {4,5},
-                {7,8}
+                {4, 5},
+                {7, 8}
         });
 
-        INDArray test = arr.get(new SpecifiedIndex(1, 2), new SpecifiedIndex(0,1));
+        INDArray test = arr.get(new SpecifiedIndex(1, 2), new SpecifiedIndex(0, 1));
         assertEquals(testAssertion, test);
 
     }
@@ -101,9 +101,47 @@ public class IndexingTestsC extends BaseNd4jTest {
         });
 
         INDArray linspacedGet = linspaced.get(NDArrayIndex.all(),NDArrayIndex.point(1),NDArrayIndex.all());
+        for(int i = 0; i < linspacedGet.slices(); i++) {
+            INDArray sliceI = linspacedGet.slice(i);
+            assertEquals(assertion.slice(i),sliceI);
+        }
+        assertArrayEquals(new int[]{6,1},linspacedGet.stride());
         assertEquals(assertion,linspacedGet);
     }
 
+    @Test
+    public void testGetWithVariedStride() {
+        int ph = 0;
+        int pw = 0;
+        int sy = 2;
+        int sx = 2;
+        int iLim = 8;
+        int jLim  = 8;
+        int i = 0;
+        int j = 0;
+        INDArray img = Nd4j.create(new double[]{
+                1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+                3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+                2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
+        }, new int[]{1, 1, 8, 8});
+
+
+        INDArray padded = Nd4j.pad(img, new int[][]{
+                {0, 0}
+                , {0, 0}
+                , {ph, ph + sy - 1}
+                ,{pw, pw + sx - 1}}
+                , Nd4j.PadMode.CONSTANT);
+
+        INDArray get = padded.get(
+                NDArrayIndex.all()
+                , NDArrayIndex.all()
+                , NDArrayIndex.interval(i, sy, iLim)
+                , NDArrayIndex.interval(j, sx, jLim));
+        assertArrayEquals(new int[]{81,81,18,2},get.stride());
+        INDArray assertion = Nd4j.create(new double[]{1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3},new int[]{1,1,4,4});
+        assertEquals(assertion,get);
+    }
 
 
 
