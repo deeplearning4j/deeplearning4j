@@ -3,7 +3,6 @@ package org.deeplearning4j.spark.ml.reconstruction
 import org.apache.spark.Logging
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.{Updater, MultiLayerConfiguration, NeuralNetConfiguration}
-import org.deeplearning4j.nn.conf.`override`.ConfOverride
 import org.deeplearning4j.nn.conf.layers.{OutputLayer, RBM}
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.spark.sql.sources.iris.DefaultSource
