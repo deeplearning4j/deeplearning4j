@@ -2,16 +2,25 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
+import java.util.Random;
+
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.GRUParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 
 public class GRUTest {
@@ -103,5 +112,60 @@ public class GRUTest {
 
 		assertNotNull(nextEpsilon);
 		assertArrayEquals(nextEpsilon.shape(),new int[]{miniBatchSize,nIn,timeSeriesLength});
+	}
+	
+	
+	@Test
+	public void testForwardPassSanityCheck(){
+		//Set up a basic GRU+OutputLayer network and do a sanity check on forward pass (i.e., check not NaN or Inf.)
+		Random r = new Random(12345L);
+		int timeSeriesLength = 20;
+    	int nIn = 5;
+    	int nOut = 4;
+    	int gruNUnits = 7;
+    	int miniBatchSize = 11;
+		
+		INDArray inputData = Nd4j.ones(miniBatchSize,nIn,timeSeriesLength);
+		for( int i=0; i<miniBatchSize; i++ ){
+			for( int j=0; j<nIn; j++ ){
+				for( int k=0; k<timeSeriesLength; k++ ){
+					inputData.putScalar(new int[]{i,j,k}, r.nextDouble()-0.5);
+				}
+			}
+		}
+		
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+			.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
+			.regularization(false)
+			.list(2)
+			.layer(0, new org.deeplearning4j.nn.conf.layers.GRU.Builder().activation("tanh")
+            	.nIn(nIn).nOut(gruNUnits).build())
+        	.layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
+        			.nIn(gruNUnits).nOut(nOut).build())
+        	.inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+        	.build();
+		
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+		
+		List<INDArray> activations = mln.feedForward(inputData);
+		
+		INDArray gruActiv = activations.get(1);
+		INDArray outActiv = activations.get(2);
+		assertArrayEquals(gruActiv.shape(),new int[]{miniBatchSize,gruNUnits,timeSeriesLength});
+		assertArrayEquals(outActiv.shape(),new int[]{miniBatchSize*timeSeriesLength,nOut});
+		
+		
+		for( int i=0; i<gruActiv.length(); i++ ){
+			double d = gruActiv.getDouble(i);
+			assertTrue(!Double.isNaN(d) && !Double.isInfinite(d));
+			assertTrue(d >= -1.0 && d <=1.0);	//Tanh
+		}
+		
+		for( int i=0; i<outActiv.length(); i++ ){
+			double d = outActiv.getDouble(i);
+			assertTrue(!Double.isNaN(d) && !Double.isInfinite(d));
+			assertTrue(d >= 0.0 && d <=1.0);	//Softmax
+		}
 	}
 }
