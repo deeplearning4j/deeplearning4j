@@ -72,8 +72,8 @@ public class GravesLSTM extends BaseLayer {
 		INDArray ifogZs = activations[2];
 		INDArray ifogAs = activations[3];
 		
-		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS);
-		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
+		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
 
 
 		//Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
@@ -241,9 +241,9 @@ public class GravesLSTM extends BaseLayer {
 
 		//Weight/bias gradients: sum across time dimension. But leave mini-batch dimension for time (in keeping with what BaseLayer.update() expects.
 		Gradient retGradient = new DefaultGradient();
-		retGradient.gradientForVariable().put(GravesLSTMParamInitializer.INPUT_WEIGHTS,inputWeightGradients.sum(2));
-		retGradient.gradientForVariable().put(GravesLSTMParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients.sum(2));
-		retGradient.gradientForVariable().put(GravesLSTMParamInitializer.BIAS, biasGradients.sum(2).sum(0));	//Sum on both time and mini-batch
+		retGradient.gradientForVariable().put(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY,inputWeightGradients.sum(2));
+		retGradient.gradientForVariable().put(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,recurrentWeightGradients.sum(2));
+		retGradient.gradientForVariable().put(GravesLSTMParamInitializer.BIAS_KEY, biasGradients.sum(2).sum(0));	//Sum on both time and mini-batch
 
 		return new Pair<>(retGradient,epsilonNext);
 	}
@@ -291,9 +291,9 @@ public class GravesLSTM extends BaseLayer {
 		//Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
 		//Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
 
-		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS);			//Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
-		INDArray biases = getParam(GravesLSTMParamInitializer.BIAS); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
+		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);			//Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+		INDArray biases = getParam(GravesLSTMParamInitializer.BIAS_KEY); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
 		boolean is2dInput = input.rank() < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
 		int timeSeriesLength = (is2dInput ? 1 : input.size(2));
@@ -304,7 +304,7 @@ public class GravesLSTM extends BaseLayer {
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
 			if (conf.getDropOut() > 0) {
-				inputWeights = Dropout.applyDropConnect(this,GravesLSTMParamInitializer.INPUT_WEIGHTS);
+				inputWeights = Dropout.applyDropConnect(this,GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
 			}
 		}
 
@@ -409,16 +409,16 @@ public class GravesLSTM extends BaseLayer {
 	@Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
-    	double l2 = Transforms.pow(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0)
-    			+ Transforms.pow(getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    	double l2 = Transforms.pow(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
+    			+ Transforms.pow(getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     	return 0.5 * conf.getL2() * l2;
     }
 
     @Override
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
-        double l1 = Transforms.abs(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0)
-        		+ Transforms.abs(getParam(GravesLSTMParamInitializer.INPUT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
+        double l1 = Transforms.abs(getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
+        		+ Transforms.abs(getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
         return conf.getL1() * l1;
     }
 }
