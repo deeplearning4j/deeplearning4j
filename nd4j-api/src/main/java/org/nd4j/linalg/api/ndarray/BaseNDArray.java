@@ -827,7 +827,10 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray ret =  tensorAlongDimension(index, dimension);
-
+        if(isMatrix() && ret.isVector() && dimension == 1 && !ret.isRowVector())
+            return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
+        else if(isMatrix() && ret.isVector() && dimension == 0 && !ret.isColumnVector())
+            return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
         return ret;
     }
 
@@ -2996,6 +2999,9 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray slice(int slice, int dimension) {
         if(dimension < 0)
             dimension += rank();
+        if(isMatrix())
+            return vectorAlongDimension(slice,dimension);
+
         return tensorAlongDimension(slice,dimension);
     }
 

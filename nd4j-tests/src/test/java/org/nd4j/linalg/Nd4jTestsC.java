@@ -508,7 +508,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testSlices() {
         INDArray arr = Nd4j.create(Nd4j.linspace(1, 24, 24).data(), new int[]{4, 3, 2});
         for (int i = 0; i < arr.slices(); i++) {
-            assertEquals(1, arr.slice(i).slice(1).slices());
+            assertEquals(2, arr.slice(i).slice(1).slices());
         }
 
     }
@@ -991,6 +991,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
+    }
+
+    @Test
+    public void testGetRow(){
+        INDArray arr = Nd4j.ones(10,4);
+        for( int i=0; i<10; i++ ){
+            INDArray row = arr.getRow(i);
+            assertArrayEquals(row.shape(),new int[]{1,4});
+        }
     }
 
 
