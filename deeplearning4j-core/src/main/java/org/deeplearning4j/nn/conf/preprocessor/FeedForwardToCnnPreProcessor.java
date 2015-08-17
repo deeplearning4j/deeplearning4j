@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -41,11 +43,14 @@ import java.util.Arrays;
  * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
 
  */
-@EqualsAndHashCode
+@Data
 public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     private int inputWidth;
     private int inputHeight;
     private int numChannels;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private int[] shape;
 
     /**
@@ -54,7 +59,10 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
      * @param inputHeight the columns
      * @param numChannels the channels
      */
-    public FeedForwardToCnnPreProcessor(int inputWidth, int inputHeight, int numChannels) {
+    @JsonCreator
+    public FeedForwardToCnnPreProcessor(@JsonProperty("inputWidth") int inputWidth,
+                                        @JsonProperty("inputHeight") int inputHeight,
+                                        @JsonProperty("numChannels") int numChannels) {
         this.inputWidth = inputWidth;
         this.inputHeight = inputHeight;
         this.numChannels = numChannels;

@@ -18,6 +18,10 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,8 +32,11 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adma Gibson
  */
+@Data
 public class UnitVarianceProcessor extends BaseInputPreProcessor {
 
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
 	INDArray columnStds;
 
     @Override
