@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -104,10 +105,10 @@ public class ConvolutionLayer extends BaseLayer {
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradient);
 
         //gcol = tensorMmul(W, gy[0], (0, 1))
-        INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta.slice(0), new int[][]{{0, 1}});
+        INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta, new int[][]{{0, 1},new int[] {1,0}});
         // TODO reshape epsilon?
 //        epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), epsilon.size(3));
-        nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3);
+        nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3).reshape(Ints.concat(new int[]{1, 1}, nextEpsilon.shape()));
         nextEpsilon = Convolution.col2im(nextEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
         return new Pair<>(retGradient,nextEpsilon);
     }
