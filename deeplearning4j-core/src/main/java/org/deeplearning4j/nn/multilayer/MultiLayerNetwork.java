@@ -160,7 +160,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if (i == 0) {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
-                    this.input = next.getFeatureMatrix();
+                    setInput(next.getFeatureMatrix());
                       /*During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
                     if (this.getInput() == null || this.getLayers() == null) {
                         setInput(input);
@@ -322,7 +322,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         if (input == null)
             throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
-        this.input = input;
+        setInput(input);
 
         if (!initCalled)
             init();
@@ -483,9 +483,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            this.input = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input);
+            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input));
         else
-            this.input = input;
+            setInput(input);
         return computeZ(training);
     }
 
@@ -574,9 +574,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
         else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            this.input = getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input);
+        	setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input));
         else
-            this.input = input;
+            setInput(input);
         return feedForward();
     }
 
@@ -1320,7 +1320,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public void update(MultiLayerNetwork network) {
         this.defaultConfiguration = network.defaultConfiguration;
-        this.input = network.input;
+        setInput(network.input);
         this.labels = network.labels;
         this.layers = ArrayUtils.clone(network.layers);
     }
