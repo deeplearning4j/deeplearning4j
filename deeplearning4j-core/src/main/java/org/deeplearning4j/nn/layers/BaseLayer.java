@@ -57,6 +57,7 @@ public abstract class BaseLayer implements Layer {
     protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected int index = 0;
+    protected int inputMiniBatchSize;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -177,11 +178,10 @@ public abstract class BaseLayer implements Layer {
 
         else {
             score = LossCalculation.builder()
-                    .l1(1.0).l2(1.0)	//TODO: Temporary until Nd4J LossCalculation refactor
-                    .l1Magnitude(calcL1()).l2Magnitude(calcL2())
+                    .l1(calcL1()).l2(calcL2())
                     .labels(input).z(z).lossFunction(conf.getLossFunction())
+                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
-
         }
     }
 
@@ -556,5 +556,13 @@ public abstract class BaseLayer implements Layer {
         score += accum;
     }
 
+    @Override
+    public void setInputMiniBatchSize(int size){
+    	this.inputMiniBatchSize = size;
+    }
 
+    @Override
+    public int getInputMiniBatchSize(){
+    	return inputMiniBatchSize;
+    }
 }

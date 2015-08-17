@@ -2,6 +2,9 @@ package org.deeplearning4j.gradientcheck;
 
 import static org.junit.Assert.*;
 
+import java.util.Iterator;
+import java.util.ServiceLoader;
+
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -18,6 +21,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**@author Alex Black 14 Aug 2015
@@ -51,6 +55,13 @@ public class GradientCheckTests {
         ds.normalizeZeroMeanZeroUnitVariance();
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
+        
+        ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
+        Iterator<Nd4jBackend> backendIterator = loader.iterator();
+        while(backendIterator.hasNext()){
+        	Nd4jBackend be = backendIterator.next();
+            System.out.println(be + "\t" + be.isAvailable() + "\t" + be.getPriority());
+        }
     	
     	for( String afn : activFns ){
     		for( boolean doLearningFirst : characteristic ){
@@ -63,7 +74,7 @@ public class GradientCheckTests {
 			                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                .regularization(false)
 			                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-			                .updater(Updater.SGD).learningRate(0.1)
+			                .updater(Updater.SGD).learningRate(1.0)
 			                .seed(12345L)
 			                .list(2)
 			                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
@@ -97,7 +108,7 @@ public class GradientCheckTests {
 			        }
 			
 			        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-			                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, false);
+			                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
 			
 			        String msg = "testGradMLP2LayerIrisSimple() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
 			        		+", doLearningFirst="+doLearningFirst;
