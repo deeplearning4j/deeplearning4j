@@ -17,7 +17,7 @@ This post introduces eigenvectors and their relationship to matrices in plain la
 
 The *eigen* in eigenvector comes from German, and it means something like “very own.” For example, in German, “mein eigenes Auto” means “my very own car.” So eigen denotes a special relationship between two things. Something particular, characteristic and definitive. This car, or this vector, is mine and not someone else’s.
 
-Matrices, in linear algebra, are simply rectangular arrays of numbers, a collection of scalar values between brackets, like a spreadsheet. Most square matrices (e.g. 2 x 2 or 3 x 3) have eigenvectors, and they have a very special relationship with them, a bit like Germans have with their cars. 
+Matrices, in linear algebra, are simply rectangular arrays of numbers, a collection of scalar values between brackets, like a spreadsheet. All square matrices (e.g. 2 x 2 or 3 x 3) have eigenvectors, and they have a very special relationship with them, a bit like Germans have with their cars. 
 
 ## Linear Transformations
 
@@ -27,17 +27,17 @@ Matrices are useful because you can do things with them like add and multiply. I
 
 *Av = b* 
 
-It [maps](https://en.wikipedia.org/wiki/Linear_map) one set of numbers *v* to another, *b*.  
+It [maps](https://en.wikipedia.org/wiki/Linear_map) one vector *v* to another, *b*.  
 
-We’ll illustrate with a concrete example. 
+We’ll illustrate with a concrete example. (You can see how this type of matrix multiply, called a dot product, is performed [here](http://math.stackexchange.com/a/24469).)
 
 ![Alt text](../img/eigen_matrix.png)
 
-So *A* turned *v* into *b*. In a two-dimensional plane, the coordinates of the vector changed. In the graph below, the short, low line is *v*, and the long, high one is *b*.
+So *A* turned *v* into *b*. In the graph below, we see how the matrix mapped the short, low line *v*, to the long, high one, *b*. 
 
 ![Alt text](../img/two_vectors.png)
 
-You could feed one vector after another into matrix A, and each would be projected onto a new space that stretches higher and farther to the right. 
+You could feed one positive vector after another into matrix A, and each would be projected onto a new space that stretches higher and farther to the right. 
 
 Imagine that all the input vectors *v* live in a normal grid, like this:
 
@@ -57,7 +57,7 @@ And here’s an animation that shows the matrix's work transforming one space to
 
 <iframe src="https://upload.wikimedia.org/wikipedia/commons/0/06/Eigenvectors.gif" width="100%" height="300px;" style="border:none;"></iframe>
 
-The blue lines are eigenvectors.
+The blue lines are eigenvectors. 
 
 You can imagine a matrix like a gust of wind, an invisible force that produces a visible result. And a gust of wind must blow in a certain direction. The eigenvector tells you the direction the matrix is blowing in. 
 
@@ -65,7 +65,7 @@ You can imagine a matrix like a gust of wind, an invisible force that produces a
 
 So out of all the vectors affected by a matrix blowing through one space, which one is the eigenvector? It’s the one that doesn’t change direction; that is, the eigenvector is already pointing in the same direction that the matrix is pushing all vectors toward. An eigenvector is a like a weathervane. An eigenvane, as it were. 
 
-The definition of an eigenvector, therefore, is a vector that responds to a matrix as though that matrix were a scalar coefficient. In this equation, A is the matrix, x the vector, and lambda the scalar coefficient, a simple number like 5 or 37.
+The definition of an eigenvector, therefore, is a vector that responds to a matrix as though that matrix were a scalar coefficient. In this equation, A is the matrix, x the vector, and lambda the scalar coefficient, a number like 5 or 37 or pi.
 
 ![Alt text](../img/lambda_eigen.png)
 
@@ -73,7 +73,7 @@ You might also say that eigenvectors are axes along which linear transformation 
 
 Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides (each serving a distinct purpose), square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix would have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix would have n eigenvectors, each one representing its line of action in one dimension. 
 
-Because eigenvectors distill the axes of principal force that a matrix moves along, they are useful in matrix decomposition, or matrix vectorization; i.e. the representation of a matrix by a vector. In that sense, they perform the same task as the autoencoders employed by deep neural networks. 
+Because eigenvectors distill the axes of principal force that a matrix moves input along, they are useful in matrix decomposition; i.e. [the diagonalization of a matrix along its eigenvectors](http://mathworld.wolfram.com/MatrixDiagonalization.html). Because those eigenvectors are representative of the matrix, they perform the same task as the autoencoders employed by deep neural networks. 
 
 To quote Yoshua Bengio:
 
@@ -89,21 +89,21 @@ To quote Yoshua Bengio:
 
 ## Principal Component Analysis (PCA)
 
-PCA is a tool for finding patterns in high-dimensional data such as images. Old-school machine-learning practitioners occasionally use PCA to preprocess data for their neural networks. By centering, rotating and scaling data, PCA reduces its dimensionality and can improve the neural network's convergence speed and the overall quality of results. 
+PCA is a tool for finding patterns in high-dimensional data such as images. Machine-learning practitioners sometimes use PCA to preprocess data for their neural networks. By centering, rotating and scaling data, PCA prioritizes dimensionality (allowing you to drop some low-variance dimensions) and can improve the neural network's convergence speed and the overall quality of results. 
 
-To get to PCA, we’re going to quickly define some basic statistical ideas -- *mean, standard deviation, variance* and *covariance* -- so we can weave them together later. Their equations are closely related.
+To get to PCA, we’re going to quickly define some basic statistical ideas -- *mean, standard deviation, variance* and *covariance* -- so we can weave them together later. Their equations are closely related. 
 
 *Mean* is simply the average value of all *x*'s in the set X, which is found by dividing the sum of all data points by the number of data points, *n*.
 
 ![Alt text](../img/mean.png)
 
-*Standard deviation* is "the average distance from the mean of the data set to a point." In the equation below, in the numerator, we have the sum of the differences between each datapoint and the mean, and in the denominator, we have the number of data points (minus one), producing the average distance.
+*Standard deviation* is the square root of the average square distance of data points to the mean. In the equation below, the numerator contains the sum of the differences between each datapoint and the mean, and the denominator is simply the number of data points (minus one), producing the average distance. 
 
 ![Alt text](../img/standard_deviation.png)
 
-Variance is the measure of the data's spread. If I take a team of Dutch basketball players and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
+Variance is the measure of the data's spread. If I take a team of [Dutch basketball players](http://www.theguardian.com/world/2015/apr/08/scientists-try-to-answer-why-dutch-people-are-so-tall) and measure their height, those measurements won’t have a lot of variance. They’ll all be grouped above six feet. 
 
-But if I throw in a classroom of psychotic kindergartners as well as a few CIA spies that have been carefully selected for appearing average in every way, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
+But if I throw the Dutch basketball team into a classroom of psychotic kindergartners, then the combined group’s height measurements will have a lot of variance. Variance is the spread, or the amount of difference that data expresses. 
 
 Variance is simply standard deviation squared, and is often expressed as *s^2*.
 
@@ -111,7 +111,7 @@ Variance is simply standard deviation squared, and is often expressed as *s^2*.
 
 For both variance and standard deviation, squaring the differences between data points and the mean makes them positive, so that values above and below the mean don't cancel each other out. 
 
-Let's assume you plotted the age (x axis) and height (y axis) of those indivuals and came up with an oblong scatterplot:
+Let's assume you plotted the age (x axis) and height (y axis) of those individuals (setting the mean to zero) and came up with an oblong scatterplot: 
 
 ![Alt text](../img/scatterplot.png)
 
@@ -123,13 +123,13 @@ The first principal component bisects a scatterplot with a straight line in a wa
 
 ![Alt text](../img/scatterplot_line.png)
 
-The second principal component cuts through the data nearly perpendicular to the first, fitting the errors produced by the first. The third fits the errors from the first and second principal components and so forth. 
+The second principal component cuts through the data perpendicular to the first, fitting the errors produced by the first. There are only two principal components in the graph above, but if it were three-dimensional, the third component would fits the errors from the first and second principal components, and so forth. 
 
 ## Covariance Matrix
 
 While we introduced matrices as something that transformed one set of vectors into another, another way to think about them is as a description of data that captures the the forces at work upon it, the forces by which two variables might relate to each other as expressed by their variance and covariance. 
 
-Imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. Like many many other matrices, it has its very own eigenvectors. 
+Imagine that we compose a square matrix of numbers that describe the variance of the data, and the covariance among variables. This is the *covariance matrix*. It is an empirical description of data we observe.
 
 Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-component lines to the variance of the data. 
 
@@ -155,15 +155,21 @@ vs.
 
 ![Alt text](../img/variance.png)
 
-The great thing about calculating covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you can know  how two variables move together by the positive, negative or non-existent character of their covariance.
+The great thing about calculating covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you can know how two variables move together by the positive, negative or non-existent character of their covariance. (*Correlation* is a kind of normalized covariance, with a value between 0 and 1.)
 
-The main difference between covariance and *correlation* is that correlation also tracks the magnitude of the change in two variables, so two variables with a correlation of 1 always move the *same distance* in the same direction.
+To sum up, the covariance matrix defines the shape of the data. Diagonal spread along eigenvectors is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
 
-To sum up, the covariance matrix defines the shape of the data. Diagonal spread (along eigenvectors) is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
+Causality has a bad name in statistics, so take this with a grain of salt: While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees. You can read covariance as traces of possible cause. 
 
-Causality has a bad name in statistics, so take this with a grain of salt: While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees.
+### Basis
 
 Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. You rebase the coordinate system for the dataset in a new space defined by its principal components.
+
+The x and y axes we've shown above are what's called the basis of a matrix; that is, they provide the points of the matrix with x, y coordinates. But it is possible to recast a matrix along other axes; for example, the eigenvectors of a matrix can serve as a new set of coordinates for the same matrix. Matrices and vectors are animals in themselves, independent of the numbers linked to a specific coordinate system like x and y. 
+
+![Alt text](../img/basis_change.png)
+
+This has profound implications, one of which is that there exists no natural coordinate system, and objects in space are subject to multiple descriptions. 
 
 ## Entropy & Information Gain
 
@@ -192,4 +198,5 @@ The first component of PCA, like the first split in a properly formed decision t
 * [Introduction to Eigenvectors & Eigenvalues Part 1](https://www.youtube.com/watch?v=G4N8vJpf7hM) (Video)
 * [(Another) Introduction to Eigenvectors & Eigenvalues](https://www.youtube.com/watch?v=8UX82qVJzYI) (Video)
 * [Information & Entropy, Unit 1, Lecture 2](https://www.youtube.com/watch?v=phxsQrZQupo) (MIT OpenCourseWare)
+* [The $25 Billion Eigenvector: The Linear Algebra Behind Google](https://www.rose-hulman.edu/~bryan/googleFinalVersionFixed.pdf)
 * [Regression & Neural Networks](../linear-regression.html)
