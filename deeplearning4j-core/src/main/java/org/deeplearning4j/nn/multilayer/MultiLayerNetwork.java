@@ -1025,7 +1025,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
 
-        int miniBatchSize = input.size(0);
+//        int miniBatchSize = input.size(0);
 
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
         if(labels == null)
@@ -1055,9 +1055,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
             //=============
             //Temporarily divide gradients by mini-batch size here. Better design possible?
-            INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
+//            INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
             //=============
-            gradientList.addLast(new Pair<>(multiGradientKey,g));
+            gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
         }
 
         if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
@@ -1073,9 +1073,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
                 //=============
                 //Temporarily divide gradients by mini-batch size here. Better design possible?
-                INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
+//                INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
                 //=============
-                tempList.addFirst(new Pair<>(multiGradientKey,g));
+                tempList.addFirst(new Pair<>(multiGradientKey,entry.getValue()));
             }
             for(Pair<String,INDArray> pair : tempList) gradientList.addFirst(pair);
 
@@ -1490,6 +1490,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         this.input = input;
         if (this.layers == null)
             this.initializeLayers(getInput());
+        if( input != null ) setInputMiniBatchSize(input.size(0));
     }
 
     private void initMask() {
@@ -1741,5 +1742,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public INDArray activate(INDArray input, boolean training) {
         throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public void setInputMiniBatchSize(int size){
+    	for( Layer l : layers ) l.setInputMiniBatchSize(size);
+    }
+
+    @Override
+    public int getInputMiniBatchSize(){
+    	return layers[0].getInputMiniBatchSize();
     }
 }

@@ -26,11 +26,11 @@ public class TestSetGetParameters {
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 			.weightInit(WeightInit.DISTRIBUTION)
 			.dist(new NormalDistribution(0,1))
-			.list(4)
+			.list(2)
 			.layer(0, new DenseLayer.Builder().nIn(9).nOut(10).build())
-			.layer(1, new RBM.Builder().nIn(10).nOut(11).build())
-			.layer(2, new AutoEncoder.Builder(0.5).nIn(11).nOut(12).build())
-			.layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(12).nOut(12).build())
+//			.layer(1, new RBM.Builder().nIn(10).nOut(11).build())
+//			.layer(2, new AutoEncoder.Builder(0.5).nIn(11).nOut(12).build())
+			.layer(1, new OutputLayer.Builder(LossFunction.MSE).nIn(12).nOut(12).build())
 			.build();
 		
 		MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -48,6 +48,8 @@ public class TestSetGetParameters {
 			assertTrue("Params differ: "+s, initParams2.get(s).equals(initParams2After.get(s)));
 		}
 		
+		System.out.println(initParams);
+		System.out.println(initParamsAfter);
 		assertTrue(initParams.equals(initParamsAfter));
 		
 		//Now, try the other way: get(set(random))
