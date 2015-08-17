@@ -24,7 +24,7 @@ public class ConvolutionLayerTest {
     private int inputWidth = 28;
     private int inputHeight = 28;
 
-    private int[] kernelSize = new int[] {9, 9};
+    private int[] kernelSize = new int[] {2, 2};
     private int[] stride = new int[] {2,2};
     private int[] padding = new int[] {0,0};
     private int nChannelsIn = 1;
