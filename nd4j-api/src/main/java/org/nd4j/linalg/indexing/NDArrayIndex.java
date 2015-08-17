@@ -272,8 +272,15 @@ public class NDArrayIndex implements INDArrayIndex {
         /**
          * If it's a vector and index asking for a scalar just return the array
          */
-        if(intendedIndexes.length >= shape.length || Shape.isVector(shape) && intendedIndexes.length == 1)
+        if(intendedIndexes.length >= shape.length || Shape.isVector(shape) && intendedIndexes.length == 1) {
+            if(Shape.isRowVectorShape(shape) && intendedIndexes.length ==  1 && intendedIndexes[0] instanceof IntervalIndex) {
+                INDArrayIndex[] ret = new INDArrayIndex[2];
+                ret[0] = NDArrayIndex.point(0);
+                ret[1] = intendedIndexes[0];
+                return ret;
+            }
             return intendedIndexes;
+        }
 
         List<INDArrayIndex> retList = new ArrayList<>();
         int numNewAxes = 0;

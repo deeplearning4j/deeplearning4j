@@ -1462,6 +1462,12 @@ public interface INDArray extends Serializable  {
     void setShape(int...shape);
 
     /**
+     * Set the ordering
+     * @param order the ordering to set
+     */
+    void setOrder(char order);
+
+    /**
      * Sub array based on the
      * pre calculated shape,strides, offsets
      * @param resolution the resolution to use

@@ -831,6 +831,10 @@ public abstract class BaseNDArray implements INDArray {
         return ret;
     }
 
+    @Override
+    public void setOrder(char order) {
+        this.ordering = order;
+    }
 
     @Override
     public void setShape(int... shape) {
@@ -1629,9 +1633,9 @@ public abstract class BaseNDArray implements INDArray {
 
     protected INDArray create(int[] shape) {
         if (this instanceof IComplexNDArray)
-            return Nd4j.createComplex(shape, getStrides(shape, ordering), 0);
+            return Nd4j.createComplex(shape, getStrides(shape, Nd4j.order()), 0);
         else
-            return Nd4j.create(shape, getStrides(shape, ordering), 0);
+            return Nd4j.create(shape, getStrides(shape, Nd4j.order()), 0);
     }
 
     protected INDArray create(int[] shape,int[] strides,int offset) {
@@ -2367,7 +2371,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray mmul(INDArray other) {
 
         int[] shape = {rows(), other.columns()};
-        INDArray result = create(shape,ordering());
+        INDArray result = create(shape);
         return mmuli(other, result);
     }
 
@@ -2992,53 +2996,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray slice(int slice, int dimension) {
         if(dimension < 0)
             dimension += rank();
-
-        if (shape.length == 2) {
-            //rows
-            if (dimension == 1)
-                return getRow(slice);
-
-
-            else if (dimension == 0)
-                return getColumn(slice);
-
-            else throw new IllegalAccessError("Illegal dimension for matrix");
-
-        }
-
-        int realDimension = dimension;
-        int numLeadingOnes = getLeadingOnes();
-
-        //get rid of leading dimensions and correct
-        //for weird behavior when 1 is a leading dimension
-        //of say: a tensor
-        if(numLeadingOnes > 0) {
-            for(int i = 0; i < shape.length; i++) {
-                if(size(i) != 1) {
-                    realDimension = i;
-                    break;
-                }
-            }
-        }
-
-        //account for leading ones
-        else if(size(0) == 1 && !isVector() && !isMatrix()) {
-            realDimension = rank() - getLeadingOnes();
-        }
-        if(realDimension != dimension) {
-            int[] newShape = ArrayUtil.removeIndex(shape, dimension);
-            INDArray slice2 = create(data,
-                    ArrayUtil.removeIndex(shape, dimension),
-                    calcStrides(newShape),
-                    offset + slice * stride[realDimension], ordering);
-            return slice2;
-        }
-
-        INDArray slice2 = create(data,
-                ArrayUtil.removeIndex(shape, dimension),
-                ArrayUtil.removeIndex(stride, dimension),
-                offset + slice * stride[realDimension], ordering);
-        return slice2;
+        return tensorAlongDimension(slice,dimension);
     }
 
     /**
@@ -3385,7 +3343,9 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
-        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape), ordering == 'f');
+
+        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape),order == 'f');
+        reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
         if(reshapeAttempt != null)
             return reshapeAttempt;
 
@@ -4170,19 +4130,15 @@ public abstract class BaseNDArray implements INDArray {
         checkArrangeArray(rearrange);
         int[] newShape = doPermuteSwap(shape, rearrange);
         int[] newStride = doPermuteSwap(stride, rearrange);
-
+        char newOrder = Shape.getOrder(newShape, newStride, elementStride());
 
         INDArray value = create(
                 data(),
                 newShape,
                 newStride,
                 offset(),
-                ordering());
-
-
+                newOrder);
         return value;
-
-
     }
 
 
