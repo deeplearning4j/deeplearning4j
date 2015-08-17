@@ -3,7 +3,6 @@ package org.nd4j.linalg.lossfunctions;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
@@ -16,11 +15,13 @@ public @Data @Builder
 class LossCalculation {
     private INDArray labels;
     private INDArray z;
-    private double l1,l1Magnitude,l2,l2Magnitude;
+    /** L1/L2 values: before division by miniBatchSize, but after multiplication by l1Coeff or 0.5*l2Coeff */
+    private double l1,l2;
     private LossFunctions.LossFunction lossFunction;
     private boolean useRegularization;
     private INDArray delta;
     private boolean miniBatch = false;
+    private int miniBatchSize;
 
     public double score() {
         double ret = 0.0;
@@ -63,18 +64,14 @@ class LossCalculation {
                 INDArray sums2 = labels.mul(log(z));
                 ret = -sums2.sumNumber().doubleValue();
                 break;
-
-
-
         }
 
         if (useRegularization) {
-            ret += l2 * l2Magnitude;
-            ret += l1 * l1Magnitude;
+            ret += l1 + l2;
         }
 
         if(miniBatch)
-            ret /= (double) labels.size(0);
+            ret /= (double) miniBatchSize;
         return ret;
     }
 
