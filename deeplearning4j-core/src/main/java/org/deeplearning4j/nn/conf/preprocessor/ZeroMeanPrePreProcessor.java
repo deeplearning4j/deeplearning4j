@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
+@Data
 public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
 
 	@Override

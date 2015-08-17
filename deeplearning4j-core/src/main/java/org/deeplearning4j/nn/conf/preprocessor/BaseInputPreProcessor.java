@@ -7,10 +7,4 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
  */
 
 public abstract class BaseInputPreProcessor implements InputPreProcessor {
-
-
-    @Override
-    public boolean equals(Object obj) {
-        return getClass().toString().equals(obj.getClass().toString());
-    }
 }
