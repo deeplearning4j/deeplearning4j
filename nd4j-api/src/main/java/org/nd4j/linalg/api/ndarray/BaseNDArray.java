@@ -3983,19 +3983,15 @@ public abstract class BaseNDArray implements INDArray {
 
         }
 
+        INDArray ret = create(retShape);
 
         if(isRowVector()) {
-            INDArray ret = create(retShape);
             //number of times to repeat each value
             for(int i = 0; i < ret.slices(); i++) {
                 ret.putSlice(i,this);
             }
-
-            return ret;
-
         }
         else {
-            INDArray ret = create(retShape);
             //number of times to repeat each value
             int repeatDelta = ArrayUtil.prod(retShape) / length();
             for(int i = 0; i < slices(); i++) {
@@ -4008,10 +4004,8 @@ public abstract class BaseNDArray implements INDArray {
                     }
                 }
             }
-
-            return ret;
-
         }
+        return ret;
 
     }
 
