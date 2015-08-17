@@ -123,8 +123,6 @@ public class ConvolutionLayer extends BaseLayer {
         }
 
         INDArray z = Nd4j.tensorMmul(col, Weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
-        // TODO check shape and confirm correct approach
-        z = z.reshape(z.size(0), z.size(1), z.size(2), z.size(3));
         bias = bias.broadcast(z.shape());
         z.addi(bias);
         return Nd4j.rollAxis(z, 3, 1);
