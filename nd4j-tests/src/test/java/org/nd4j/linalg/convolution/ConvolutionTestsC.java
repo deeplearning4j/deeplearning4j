@@ -56,7 +56,6 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
     @Test
     public void testIm2Col() {
         INDArray linspaced = Nd4j.linspace(1,16,16).reshape(2, 2, 2, 2);
-        INDArray slice = linspaced.slice(1);
         INDArray ret = Convolution.im2col(linspaced, 1, 1, 1, 1, 2, 2, 0, false);
         INDArray im2colAssertion = Nd4j.create(new double[]{
                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0, 0.0, 0.0, 0.0, 7.0, 8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.0, 10.0, 0.0, 0.0, 0.0, 0.0, 11.0, 12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 14.0, 0.0, 0.0, 0.0, 0.0, 15.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
@@ -82,19 +81,43 @@ public  class ConvolutionTestsC extends BaseNd4jTest {
         int sy = 2;
         int sx = 2;
         int depth = 2;
-        INDArray assertion  = Nd4j.create(new double[] {
-                1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3,2,2,2,2,4,4,4,4,2,2,2,2,4,4,4,4,2,2,2,2,4,4,4,4,2,2,2,2,4,4,4,4
-        },new int[]{1, 1, 2, 2, 4, 4});
+        INDArray assertion  = Nd4j.create(new double[]{
+                1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4
+        }, new int[]{1, 1, 2, 2, 4, 4});
         INDArray ret = Nd4j.create(new double[]{
                 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
                 3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
                 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
         }, new int[]{1, 1, 8, 8});
 
-        INDArray test = Convolution.im2col(ret,kh,kw,sy,sx,ph,pw,0,false);
+        INDArray test = Convolution.im2col(ret, kh, kw, sy, sx, ph, pw, 0, false);
         assertEquals(assertion,test);
 
     }
+
+    @Test
+    public void testMoreIm2Col2() {
+        int kh = 2;
+        int kw = 2;
+        int ph = 0;
+        int pw = 0;
+        int sy = 2;
+        int sx = 2;
+
+        INDArray ret = Nd4j.create(new double[]{
+                1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3,
+                3, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+                2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
+        }, new int[]{1, 1, 8, 8});
+
+        INDArray assertion = Nd4j.create(new double[]{1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3,1,1,1,1,3,3,3,3
+                ,2,2,2,2,4,4,4,4,2,2,
+                2,2,4,4,4,4,2,2,2,2,4,4,4,4,2,2,2,2,4,4,4,4},new int[] {1, 1, 2, 2, 4, 4});
+        INDArray im2colTest = Convolution.im2col(ret,kh,kw,sy,sx,ph,pw,0,false);
+        assertEquals(assertion,im2colTest);
+    }
+
+
 
 
 
