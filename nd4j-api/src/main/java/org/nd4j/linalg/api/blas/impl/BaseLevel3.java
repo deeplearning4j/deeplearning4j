@@ -36,6 +36,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
         GemmParams params = new GemmParams(A,B,C);
 
+
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemm(Order
                     ,TransA

@@ -592,7 +592,7 @@ public class Nd4j {
         int[] newAxesB = Ints.concat(axes[1],Ints.toArray(listB));
 
         int n2 = 1;
-        int aLength = Math.min(a.rank(),axes[0].length);
+        int aLength = Math.min(a.rank(), axes[0].length);
         for(int i = 0; i < aLength; i++) {
             n2 *= a.size(axes[0][i]);
         }
@@ -603,7 +603,7 @@ public class Nd4j {
             oldShapeA[i] = a.size(oldShapeA[i]);
 
         int n3 = 1;
-        int bNax = Math.min(b.rank(),axes[1].length);
+        int bNax = Math.min(b.rank(), axes[1].length);
         for(int i = 0; i < bNax; i++) {
             n3 *= b.size(axes[1][i]);
         }
@@ -615,8 +615,14 @@ public class Nd4j {
 
 
 
-        INDArray at = a.permute(newAxesA).reshape(newShapeA);
-        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
+        INDArray at = a.permute(newAxesA);
+        at = at.dup().reshape(newShapeA);
+        INDArray bt = b.permute(newAxesB);
+        bt = bt.dup().reshape(newShapeB);
+         if(at.ordering() == 'f')
+             at = at.dup();
+        if(bt.ordering()  == 'f')
+            bt = bt.dup();
         INDArray ret = at.mmul(bt);
 
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);

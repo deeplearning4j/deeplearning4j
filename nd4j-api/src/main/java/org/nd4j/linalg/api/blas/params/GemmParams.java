@@ -39,10 +39,18 @@ public @Data class GemmParams {
         this.lda = Math.max(1, m);
         this.ldb = Math.max(1, k);
         this.ldc = Math.max(1, m);
-
+        if(unevenStrides(a))
+            this.a = a.dup();
+        if(unevenStrides(b))
+            this.b = b.dup();
 
         validate();
     }
+
+    protected boolean unevenStrides(INDArray arr) {
+       return arr.ordering() == 'f';
+    }
+
 
 
     private void validate() {

@@ -114,15 +114,11 @@ public class Shape {
         }
         else {
             INDArray ret = Nd4j.create(arr.shape());
-            for(int i = 0; i < ret.slices(); i++) {
-                INDArray putSlice = arr.slice(i);
-                if(putSlice.length() == ret.length()) {
-                    ret.assign(arr);
-                    break;
-                }
-                else
-                    ret.putSlice(i, putSlice);
+            for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
+                ret.vectorAlongDimension(i,0).assign(arr.vectorAlongDimension(i,0));
             }
+
+
             return ret;
         }
     }
