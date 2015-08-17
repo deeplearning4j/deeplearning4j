@@ -1025,8 +1025,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
 
-//        int miniBatchSize = input.size(0);
-
         OutputLayer outputLayer = (OutputLayer) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
@@ -1053,10 +1051,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
             multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
-            //=============
-            //Temporarily divide gradients by mini-batch size here. Better design possible?
-//            INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
-            //=============
             gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
         }
 
@@ -1071,10 +1065,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
             for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
-                //=============
-                //Temporarily divide gradients by mini-batch size here. Better design possible?
-//                INDArray g = (miniBatchSize > 1 ? entry.getValue().divi(miniBatchSize) : entry.getValue());
-                //=============
                 tempList.addFirst(new Pair<>(multiGradientKey,entry.getValue()));
             }
             for(Pair<String,INDArray> pair : tempList) gradientList.addFirst(pair);
