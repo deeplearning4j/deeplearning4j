@@ -962,18 +962,34 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testTensorDot() {
+        INDArray w = Nd4j.valueArrayOf(new int[]{2,1,2,2},0.5);
+        INDArray col = Nd4j.create(new double[] {
+                1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3,
+                3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
+                4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4
+        },new int[]{1,1,2,2,4,4});
+
+        INDArray test = Nd4j.tensorMmul(col, w, new int[][]{{1, 2, 3}, {1, 2, 3}});
+        INDArray assertion2 = Nd4j.create(new double[]{3.,3.,3.,3.,3.,3.,3.,3.,7.,7.,7.,7.,7.,7.,7.,7.,3.,3.
+                ,3.,3.,3.,3.,3.,3.,7.,7.,7.,7.,7.,7.,7.,7.},new int[]{1, 4, 4, 2},new int[]{16, 8, 2, 1},0,'f');
+        assertion2.setOrder('f');
+        assertEquals(assertion2,test);
+
         INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
-        INDArray result = Nd4j.tensorMmul(oneThroughSixty,oneThroughTwentyFour,new int[][]{{1,0},{0,1}});
-        assertArrayEquals(new int[]{5,2},result.shape());
+        INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][]{{1, 0}, {0, 1}});
+        assertArrayEquals(new int[]{5, 2}, result.shape());
         INDArray assertion = Nd4j.create(new double[][]{
                 {   4400 ,  4730},
                 {  4532 ,  4874},
                 {  4664  , 5018},
                 {  4796 ,  5162},
                 {  4928 , 5306}
-        });
+        },'f');
         assertEquals(assertion,result);
+
+
+
 
     }
 

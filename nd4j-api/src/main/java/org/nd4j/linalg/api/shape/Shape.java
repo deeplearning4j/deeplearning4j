@@ -531,6 +531,73 @@ public class Shape {
 
 
     /**
+     * Infer order from
+     * @param shape the shape to infer by
+     * @param stride the stride to infer by
+     * @param elementStride the element stride to start at
+     * @return the storage order given shape and element stride
+     */
+    public static char getOrder(int[] shape,int[] stride,int elementStride) {
+        int sd;
+        int dim;
+        int i;
+        boolean cContiguous = true;
+        boolean isFortran = true;
+
+        sd = 1;
+        for (i = shape.length - 1; i >= 0; --i) {
+            dim = shape[i];
+
+            if (stride[i] != sd) {
+                cContiguous = false;
+                break;
+            }
+        /* contiguous, if it got this far */
+            if (dim == 0) {
+                break;
+            }
+            sd *= dim;
+
+        }
+
+
+    /* check if fortran contiguous */
+        sd = elementStride;
+        for (i = 0; i < shape.length; ++i) {
+            dim = shape[i];
+            if (stride[i] != sd) {
+                isFortran = false;
+            }
+            if (dim == 0) {
+                break;
+            }
+            sd *= dim;
+
+        }
+
+        if(isFortran && cContiguous)
+            return 'a';
+        else if(isFortran && !cContiguous)
+            return 'f';
+        else if(!isFortran && !cContiguous)
+            return 'c';
+        else
+            return 'c';
+
+    }
+
+    /**
+     * Infer the order for the ndarray based on the
+     * array's strides
+     * @param arr the array to get the
+     *            ordering for
+     * @return the ordering for the given array
+     */
+    public static char getOrder(INDArray arr) {
+        return getOrder(arr.shape(),arr.stride(),arr.elementStride());
+    }
+
+    /**
      * Convert the given index (such as 1,1)
      * to a linear index
      * @param shape the shape of the indexes to convert

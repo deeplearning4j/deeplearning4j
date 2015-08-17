@@ -157,9 +157,12 @@ public class ShapeOffsetResolution implements Serializable {
             accumOffsets.add(0);
 
 
-        while(accumShape.size() < 2)
-            accumShape.add(1);
-
+        while(accumShape.size() < 2) {
+            if(Shape.isRowVectorShape(arr.shape()))
+                accumShape.add(0,1);
+            else
+                accumShape.add(1);
+        }
         //prepend for new axes; do this first before
         //doing the indexes to prepend to
         if(newAxesPrepend > 0) {
@@ -209,19 +212,21 @@ public class ShapeOffsetResolution implements Serializable {
 
         if(accumStrides.size() < accumOffsets.size())
             accumStrides.addAll(pointStrides);
-        while(accumOffsets.size() < accumShape.size())
-            accumOffsets.add(0);
+        while(accumOffsets.size() < accumShape.size()) {
+            if(Shape.isRowVectorShape(arr.shape()))
+                accumOffsets.add(0,0);
+            else
+                accumOffsets.add(0);
+        }
         //finally fill in teh rest of the strides if any are left over
         while(accumStrides.size() < accumOffsets.size()) {
-            accumStrides.add(arr.elementStride());
+            if(arr.isRowVector())
+                accumStrides.add(0,arr.elementStride());
+            else
+                accumStrides.add(arr.elementStride());
         }
 
-        //only one index and matrix, remove the first index rather than the last
-        //equivalent to this is reversing the list with the prepended one
-        if(indexes.length <= 2 && indexes[0] instanceof PointIndex && shape.length == 2  && newAxesPrepend < 1) {
-            Collections.reverse(accumShape);
-            Collections.reverse(accumStrides);
-        }
+
 
 
         this.strides = Ints.toArray(accumStrides);
@@ -264,8 +269,11 @@ public class ShapeOffsetResolution implements Serializable {
                 }
             }
 
-
-            this.offset = ArrayUtil.dotProduct(pointOffsets,pointStrides);
+            //specical case where offsets aren't caught
+            if(arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0)
+                this.offset = indexes[1].offset();
+            else
+                this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
         }
         else if(numIntervals > 0) {
 

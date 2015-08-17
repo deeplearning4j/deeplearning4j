@@ -615,8 +615,8 @@ public class Nd4j {
 
 
 
-        INDArray at = a.permute(newAxesA).reshape('c',newShapeA);
-        INDArray bt = b.permute(newAxesB).reshape('c',newShapeB);
+        INDArray at = a.permute(newAxesA).reshape(newShapeA);
+        INDArray bt = b.permute(newAxesB).reshape(newShapeB);
         INDArray ret = at.mmul(bt);
 
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
@@ -2145,13 +2145,19 @@ public class Nd4j {
 
     /**
      *
-     * @param doubles
+     * @param data
      * @return
      */
     public static INDArray create(float[][] data) {
         return INSTANCE.create(data);
     }
 
+    /**
+     *
+     * @param data
+     * @param ordering
+     * @return
+     */
     public static INDArray create(float[][] data, char ordering) {
         return INSTANCE.create(data, ordering);
     }
@@ -2167,6 +2173,12 @@ public class Nd4j {
         return INSTANCE.create(data);
     }
 
+    /**
+     *
+     * @param data
+     * @param ordering
+     * @return
+     */
     public static INDArray create(double[][] data, char ordering) {
         return INSTANCE.create(data,ordering);
     }
