@@ -136,7 +136,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double rmsDecay = 0.0;
 
 
-    protected boolean miniBatch = false;
+    protected boolean miniBatch = true;
 
 
     protected Convolution.Type convolutionType = Convolution.Type.VALID;
@@ -585,7 +585,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useDropConnect = false;
         private double rho;
         private Updater updater = Updater.ADAGRAD;
-        private boolean miniBatch = false;
+        private boolean miniBatch = true;
 
         /**
          +         * Time series length
