@@ -502,9 +502,9 @@ public class LSTM extends BaseLayer {
 
         else {
             score = LossCalculation.builder()
-                    .l1(1.0).l2(1.0)	//TODO: Temporary until Nd4J LossCalculation refactor
-                    .l1Magnitude(calcL1()).l2Magnitude(calcL2())
+                    .l1(calcL1()).l2(calcL2())
                     .labels(xs).z(probas).lossFunction(conf.getLossFunction())
+                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
 
         }
