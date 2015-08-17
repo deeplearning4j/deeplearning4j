@@ -42,17 +42,17 @@ public class LossFunctions {
      * @param labels            the labels to score
      * @param lossFunction      the loss function to use
      * @param z                 the output function
-     * @param l2                the l2 coefficient
-     * @param l1                the l1 coefficient
+     * @param l2                the l2 regularization term (0.5 * l2Coeff * sum w^2)
+     * @param l1                the l1 regularization term (l1Coeff * sum |w|)
      * @param l1Magnitude       the l1 magnitude
      * @param l2Magnitude       the l2 magnitude
      * @param useRegularization whether to use regularization
      * @return the score for the given parameters
      */
-    public static double score(INDArray labels, LossFunction lossFunction, INDArray z, double l2, double l1,double l1Magnitude,double l2Magnitude,boolean useRegularization) {
+    public static double score(INDArray labels, LossFunction lossFunction, INDArray z, double l2, double l1,boolean useRegularization) {
         return LossCalculation.builder()
-                .l1(l1).l1Magnitude(l1Magnitude).lossFunction(lossFunction)
-                .l2(l2).l2Magnitude(l2Magnitude).labels(labels)
+                .l1(l1).lossFunction(lossFunction)
+                .l2(l2).labels(labels)
                 .z(z)
                 .useRegularization(useRegularization)
                 .build().score();
