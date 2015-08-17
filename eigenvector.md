@@ -171,7 +171,7 @@ The x and y axes we've shown above are what's called the basis of a matrix; that
 
 In the graph above, we show how the same vector v can be situated differently in two coordinate systems, the x-y axes in black, and two other axes shown by the red dashes. In the first coordinate system, v = (1,1), and in the second, v = (1,0), but v itself has not changed. 
 
-This has profound implications, one of which is that there exists no natural coordinate system, and objects in space are subject to multiple descriptions. 
+This has profound and almost spiritual implications, one of which is that there exists no natural coordinate system, and mathematical objects in n-dimensional space are subject to multiple descriptions. Changing matrices' bases also makes them easier to manipulate. 
 
 ## Entropy & Information Gain
 
