@@ -2996,53 +2996,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray slice(int slice, int dimension) {
         if(dimension < 0)
             dimension += rank();
-
-        if (shape.length == 2) {
-            //rows
-            if (dimension == 1)
-                return getRow(slice);
-
-
-            else if (dimension == 0)
-                return getColumn(slice);
-
-            else throw new IllegalAccessError("Illegal dimension for matrix");
-
-        }
-
-        int realDimension = dimension;
-        int numLeadingOnes = getLeadingOnes();
-
-        //get rid of leading dimensions and correct
-        //for weird behavior when 1 is a leading dimension
-        //of say: a tensor
-        if(numLeadingOnes > 0) {
-            for(int i = 0; i < shape.length; i++) {
-                if(size(i) != 1) {
-                    realDimension = i;
-                    break;
-                }
-            }
-        }
-
-        //account for leading ones
-        else if(size(0) == 1 && !isVector() && !isMatrix()) {
-            realDimension = rank() - getLeadingOnes();
-        }
-        if(realDimension != dimension) {
-            int[] newShape = ArrayUtil.removeIndex(shape, dimension);
-            INDArray slice2 = create(data,
-                    ArrayUtil.removeIndex(shape, dimension),
-                    calcStrides(newShape),
-                    offset + slice * stride[realDimension], ordering);
-            return slice2;
-        }
-
-        INDArray slice2 = create(data,
-                ArrayUtil.removeIndex(shape, dimension),
-                ArrayUtil.removeIndex(stride, dimension),
-                offset + slice * stride[realDimension], ordering);
-        return slice2;
+        return tensorAlongDimension(slice,dimension);
     }
 
     /**
