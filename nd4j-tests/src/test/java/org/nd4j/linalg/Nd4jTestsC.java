@@ -987,13 +987,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 ,3.,3.,3.,3.,3.,3.,7.,7.,7.,7.,7.,7.,7.,7.},new int[]{1, 4, 4, 2},new int[]{16, 8, 2, 1},0,'f');
         assertion2.setOrder('f');
         assertEquals(assertion2,test);
-
-
-
-
-
-
     }
+
+
 
     @Test
     public void testGetRow(){

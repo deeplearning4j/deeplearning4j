@@ -59,7 +59,7 @@ public class NDArrayIndex implements INDArrayIndex {
     public static INDArrayIndex[] indexesFor(int...shape) {
         INDArrayIndex[] ret = new INDArrayIndex[shape.length];
         for(int i = 0; i < shape.length; i++) {
-            ret[i] = new NDArrayIndex(shape[i]);
+            ret[i] = NDArrayIndex.point(shape[i]);
         }
 
         return ret;

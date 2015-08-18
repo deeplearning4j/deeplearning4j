@@ -1772,24 +1772,12 @@ public abstract class BaseNDArray implements INDArray {
         if(offset >= data().length())
             offset = ArrayUtil.sum(offsets);
 
-
-        if(ordering() == NDArrayFactory.C ) {
-            return create(
-                    data
-                    , Arrays.copyOf(shape, shape.length)
-                    ,stride
-                    , offset, ordering
-            );
-        }
-        else if(ordering() == NDArrayFactory.FORTRAN) {
-            return create(
-                    data
-                    , Arrays.copyOf(shape, shape.length)
-                    , stride
-                    , offset, ordering
-            );
-        }
-        throw new IllegalStateException("Illegal ordering");
+        return create(
+                data
+                , Arrays.copyOf(shape, shape.length)
+                ,stride
+                , offset, ordering
+        );
 
     }
 
@@ -4084,12 +4072,13 @@ public abstract class BaseNDArray implements INDArray {
 
             count = 0;
 
+            int dropIdx = 0;
             int[] newShape = new int[shuffle.length + drop.size()];
             for (int i = 0; i < newShape.length; i++) {
                 if (i < shuffle.length) {
                     newShape[count++] = shuffle[i];
                 } else
-                    newShape[count++] = drop.get(i);
+                    newShape[count++] = drop.get(dropIdx++);
             }
 
 
@@ -4116,7 +4105,7 @@ public abstract class BaseNDArray implements INDArray {
     }
 
     /**
-     * See: http://www.mathworks.com/help/matlab/ref/permute.htsliceml
+     * See: http://www.mathworks.com/help/matlab/ref/permute.html
      *
      * @param rearrange the dimensions to swap to
      * @return the newly permuted array

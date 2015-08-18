@@ -619,10 +619,7 @@ public class Nd4j {
         at = at.dup().reshape(newShapeA);
         INDArray bt = b.permute(newAxesB);
         bt = bt.dup().reshape(newShapeB);
-         if(at.ordering() == 'f')
-             at = at.dup();
-        if(bt.ordering()  == 'f')
-            bt = bt.dup();
+
         INDArray ret = at.mmul(bt);
 
         int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);

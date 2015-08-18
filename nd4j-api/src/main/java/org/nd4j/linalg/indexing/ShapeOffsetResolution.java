@@ -192,9 +192,15 @@ public class ShapeOffsetResolution implements Serializable {
          * i is already > 0
          */
         for(int i = 0; i < prependNewAxes.size(); i++) {
-            accumShape.add(prependNewAxes.get(i) - i,1);
+            if(prependNewAxes.get(i) - i >= 0)
+                accumShape.add(prependNewAxes.get(i) - i,1);
+            else
+                accumShape.add(0,1);
             //stride for the new axis is zero
-            accumStrides.add(prependNewAxes.get(i) - i,0);
+            if(prependNewAxes.get(i) - i >= 0 && prependNewAxes.get(i) - i < prependNewAxes.size())
+                accumStrides.add(prependNewAxes.get(i) - i,0);
+            else
+                prependNewAxes.add(0,0);
         }
 
 
@@ -263,13 +269,16 @@ public class ShapeOffsetResolution implements Serializable {
                         pointStrides.set(i,0);
                 }
             }
-            else {
-                while(pointStrides.size() < pointStrides.size()) {
-                    pointStrides.add(1);
-                }
-            }
 
-            //specical case where offsets aren't caught
+            //prepend any missing offsets where relevant for the dot product
+            //note here we are using the point offsets and strides
+            //for computing the offset
+            //the point of a point index is to drop a dimension
+            //and index in to a particular offset
+            while(pointOffsets.size() < pointStrides.size()) {
+                pointOffsets.add(0);
+            }
+            //special case where offsets aren't caught
             if(arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0)
                 this.offset = indexes[1].offset();
             else
