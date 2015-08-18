@@ -44,6 +44,7 @@ public class ConvolutionLayerTest {
         INDArray input = getMnistData();
         int[] stride = new int[] {3,3};
         int[] padding = new int[] {1,1};
+        int[] kernelSize = new int[] {2,2};
 
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize,  stride, padding);
         layer.activate(input);
@@ -165,13 +166,13 @@ public class ConvolutionLayerTest {
 
     }
 
-        //////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
 
     private static Layer getCNNConfig(int nIn, int nOut, int[] kernelSize, int[] stride, int[] padding){
-       ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding)
-               .nIn(nIn)
-               .nOut(nOut)
-               .build();
+        ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding)
+                .nIn(nIn)
+                .nOut(nOut)
+                .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .activationFunction("sigmoid")
