@@ -161,7 +161,7 @@ To sum up, the covariance matrix defines the shape of the data. Diagonal spread 
 
 Causality has a bad name in statistics, so take this with a grain of salt: While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees. You can read covariance as traces of possible cause. 
 
-### Basis
+### Change of Basis
 
 Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. You [re-base the coordinate system](https://en.wikipedia.org/wiki/Change_of_basis) for the dataset in a new space defined by its principal components.
 
@@ -169,9 +169,9 @@ The x and y axes we've shown above are what's called the basis of a matrix; that
 
 ![Alt text](../img/basis_change.png)
 
-In the graph above, we show how the same vector v can be situated differently in two coordinate systems, the x-y axes in black, and two other axes shown by the red dashes. In the first coordinate system, v = (1,1), and in the second, v = (1,0), but v itself has not changed. 
+In the graph above, we show how the same vector v can be situated differently in two coordinate systems, the x-y axes in black, and the two other axes shown by the red dashes. In the first coordinate system, v = (1,1), and in the second, v = (1,0), but v itself has not changed. Vectors and matrices can therefore be abstracted from the numbers that appear inside the brackets. 
 
-This has profound and almost spiritual implications, one of which is that there exists no natural coordinate system, and mathematical objects in n-dimensional space are subject to multiple descriptions. Changing matrices' bases also makes them easier to manipulate. 
+This has profound and almost spiritual implications, one of which is that there exists no natural coordinate system, and mathematical objects in n-dimensional space are subject to multiple descriptions. (Changing matrices' bases also makes them easier to manipulate.) 
 
 ## Entropy & Information Gain
 
