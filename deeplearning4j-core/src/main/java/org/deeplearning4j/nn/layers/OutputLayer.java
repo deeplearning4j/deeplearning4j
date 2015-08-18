@@ -102,10 +102,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
         else {
             score = LossCalculation.builder()
-                    .l1(1.0).l2(1.0)	//TODO: Temporary until Nd4J LossCalculation refactor
-                    .l1Magnitude(fullNetworkL1).l2Magnitude(fullNetworkL2)
+                    .l1(fullNetworkL1).l2(fullNetworkL2)
                     .labels(labels).z(z).lossFunction(conf.getLossFunction())
-                    .miniBatch(true)
+                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
     }

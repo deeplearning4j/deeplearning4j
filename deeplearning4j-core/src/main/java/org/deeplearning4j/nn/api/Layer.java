@@ -226,5 +226,16 @@ public interface Layer extends Serializable,Cloneable,Model {
      */
     void setInput(INDArray input);
 
+    /** Set current/last input mini-batch size.<br>
+     * Used for score and gradient calculations. Mini batch size may be different from
+     * getInput().size(0) due to reshaping operations - for example, when using RNNs with
+     * DenseLayer and OutputLayer. Called automatically during forward pass.
+     */
+    void setInputMiniBatchSize(int size);
+    
+    /** Get current/last input mini-batch size, as set by setInputMiniBatchSize(int)
+     * @see Layer#setInputMiniBatchSize(int)
+     */
+    int getInputMiniBatchSize();
 
 }

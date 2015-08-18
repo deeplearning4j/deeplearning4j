@@ -67,7 +67,7 @@ public class GradientCheckTests {
 			                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                .regularization(false)
 			                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-			                .updater(Updater.SGD).learningRate(0.1)
+			                .updater(Updater.SGD).learningRate(1.0)
 			                .seed(12345L)
 			                .list(2)
 			                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
@@ -101,7 +101,7 @@ public class GradientCheckTests {
 			        }
 			
 			        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-			                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, false);
+			                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
 			
 			        String msg = "testGradMLP2LayerIrisSimple() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
 			        		+", doLearningFirst="+doLearningFirst;
