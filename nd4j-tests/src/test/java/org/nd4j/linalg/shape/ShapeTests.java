@@ -243,6 +243,22 @@ public class ShapeTests extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testDimShuffle() {
+        INDArray scalarTest = Nd4j.scalar(0.0);
+        INDArray broadcast = scalarTest.dimShuffle(new Object[]{'x'}, new int[]{0, 1}, new boolean[]{true, true});
+        assertTrue(broadcast.rank() == 3);
+        INDArray rowVector = Nd4j.linspace(1,4,4);
+        assertEquals(rowVector,rowVector.dimShuffle(new Object[] {0,1},new int[]{0,1},new boolean[]{false,false}));
+        //add extra dimension to row vector in middle
+        INDArray rearrangedRowVector = rowVector.dimShuffle(new Object[]{0,'x',1},new int[]{0,1},new boolean[]{true,true});
+        assertArrayEquals(new int[]{1,1,4},rearrangedRowVector.shape());
+
+        INDArray dimshuffed = rowVector.dimShuffle(new Object[] {'x', 0, 'x', 'x'},new int[]{0,1},new boolean[]{true,true});
+        assertArrayEquals(new int[]{1,1,1,1,4},dimshuffed.shape());
+    }
+
+
 
     @Test
     public void testEight() {

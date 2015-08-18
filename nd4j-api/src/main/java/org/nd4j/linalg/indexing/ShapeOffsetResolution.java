@@ -263,13 +263,16 @@ public class ShapeOffsetResolution implements Serializable {
                         pointStrides.set(i,0);
                 }
             }
-            else {
-                while(pointStrides.size() < pointStrides.size()) {
-                    pointStrides.add(1);
-                }
-            }
 
-            //specical case where offsets aren't caught
+            //prepend any missing offsets where relevant for the dot product
+            //note here we are using the point offsets and strides
+            //for computing the offset
+            //the point of a point index is to drop a dimension
+            //and index in to a particular offset
+            while(pointOffsets.size() < pointStrides.size()) {
+                pointOffsets.add(0);
+            }
+            //special case where offsets aren't caught
             if(arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0)
                 this.offset = indexes[1].offset();
             else
