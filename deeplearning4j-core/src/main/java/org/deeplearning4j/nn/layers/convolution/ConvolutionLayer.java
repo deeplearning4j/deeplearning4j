@@ -80,7 +80,7 @@ public class ConvolutionLayer extends BaseLayer {
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
         if(!Arrays.equals(z.shape(),activationDerivative.shape()))
             throw new IllegalStateException("Shapes must be same");
-        return z.muli(activationDerivative);
+        return epsilon.muli(activationDerivative);
 
     }
 
@@ -123,7 +123,7 @@ public class ConvolutionLayer extends BaseLayer {
         }
 
         INDArray z = Nd4j.tensorMmul(col, Weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
-        bias = bias.broadcast(z.shape());
+        bias = bias.dimShuffle(new Object[] {'x', 0, 'x', 'x'},new int[]{0,1},new boolean[]{true,true}).broadcast(z.shape());
         z.addi(bias);
         return Nd4j.rollAxis(z, 3, 1);
     }
