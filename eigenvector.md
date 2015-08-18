@@ -10,6 +10,7 @@ Content:
 * [Linear Transformations](#linear)
 * [Principal Component Analysis (PCA)](#principal)
 * [Covariance Matrix](#covariance)
+* [Change of Basis](#change)
 * [Entropy & Information Gain](#entropy)
 * [Resources](#resources)
 
