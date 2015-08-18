@@ -80,7 +80,7 @@ public class ConvolutionLayer extends BaseLayer {
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
         if(!Arrays.equals(z.shape(),activationDerivative.shape()))
             throw new IllegalStateException("Shapes must be same");
-        return z.muli(activationDerivative);
+        return epsilon.muli(activationDerivative);
 
     }
 
