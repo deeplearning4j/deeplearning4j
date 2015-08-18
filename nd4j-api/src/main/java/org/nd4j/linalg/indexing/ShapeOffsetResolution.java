@@ -192,9 +192,15 @@ public class ShapeOffsetResolution implements Serializable {
          * i is already > 0
          */
         for(int i = 0; i < prependNewAxes.size(); i++) {
-            accumShape.add(prependNewAxes.get(i) - i,1);
+            if(prependNewAxes.get(i) - i >= 0)
+                accumShape.add(prependNewAxes.get(i) - i,1);
+            else
+                accumShape.add(0,1);
             //stride for the new axis is zero
-            accumStrides.add(prependNewAxes.get(i) - i,0);
+            if(prependNewAxes.get(i) - i >= 0 && prependNewAxes.get(i) - i < prependNewAxes.size())
+                accumStrides.add(prependNewAxes.get(i) - i,0);
+            else
+                prependNewAxes.add(0,0);
         }
 
 
