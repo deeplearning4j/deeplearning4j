@@ -64,7 +64,7 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         if(slice.isRowVector()) {
             vectors.add(slice);
         }
-        else if(isMatrix()) {
+        else if(slice.isMatrix()) {
             for(int i = 0; i < slice.rows(); i++)
                 vectors.add(slice.getRow(i));
         }
@@ -136,7 +136,6 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
 
 
         int idx =  i - offset;
-
         return currVector.getComplex(idx);
     }
 
@@ -206,7 +205,4 @@ public class LinearViewComplexNDArray extends BaseComplexNDArray {
         sb.append("]");
         return sb.toString();
     }
-
-
-
 }
