@@ -205,23 +205,14 @@ public class AdaGrad implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        boolean historicalInitialized = false;
-        if (this.historicalGradient == null) {
-            this.historicalGradient = Nd4j.ones(gradient.rows(), gradient.columns());
-            historicalInitialized = true;
-        } else if (this.historicalGradient.length() != gradient.length())
-            throw new IllegalArgumentException("Illegal gradient");
+    	if(historicalGradient == null) historicalGradient = pow(gradient,2);
+    	else historicalGradient.addi(pow(gradient,2));
 
-
-        INDArray sqrtHistory = !historicalInitialized ? sqrt(historicalGradient) : historicalGradient;
-        INDArray learningRates = sqrtHistory.add(Nd4j.EPS_THRESHOLD).rdivi(masterStepSize);
-        gradient.muli(learningRates);
-
-        this.historicalGradient.addi(pow(gradient, 2));
+    	INDArray sqrtHistory = sqrt(historicalGradient.add(1e-8));
+    	// lr * gradient / sqrt(sumSquaredGradients + 1e-8)
+    	INDArray ret = sqrtHistory.rdivi(masterStepSize).muli(gradient);
         numIterations++;
-
-        //ensure no zeros
-        return gradient;
+        return ret;
     }
 
 

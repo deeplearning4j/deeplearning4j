@@ -14,13 +14,12 @@ import java.io.Serializable;
  */
 public class Nesterovs implements Serializable,GradientUpdater {
     private double momentum = 0.5;
-    private INDArray lastGradient;
+    private INDArray v;
     private double lr;
 
     public Nesterovs(double momentum,double lr) {
         this.momentum = momentum;
         this.lr = lr;
-
     }
 
     /**
@@ -55,14 +54,16 @@ public class Nesterovs implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(lastGradient == null)
-            lastGradient = Nd4j.zeros(gradient.shape());
-        INDArray v = lastGradient.mul(momentum).sub(gradient.mul(lr));
+        if(v == null)
+            v = Nd4j.zeros(gradient.shape());
+        INDArray vPrev = v;
+        v = vPrev.mul(momentum).subi(gradient.mul(lr));
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
-        //default is negative step function thus we flipped the signs:
+        //DL4J default is negative step function thus we flipped the signs:
         // x += mu * v_prev + (-1 - mu) * v
-        INDArray ret = lastGradient.muli(momentum).addi(v.mul(-momentum - 1));
-        lastGradient = v;
+        //i.e., we do params -= updatedGradient, not params += updatedGradient
+        
+        INDArray ret = vPrev.muli(momentum).addi(v.mul(-momentum - 1));
         return ret;
     }
 
