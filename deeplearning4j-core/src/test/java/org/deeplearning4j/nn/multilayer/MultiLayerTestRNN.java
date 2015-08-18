@@ -130,11 +130,11 @@ public class MultiLayerTestRNN {
         Map<String,INDArray> paramTable = layer.paramTable();
         assertTrue(paramTable.size() == 3);	//2 sets of weights, 1 set of biases
 
-        INDArray recurrentWeights = paramTable.get(GRUParamInitializer.RECURRENT_WEIGHTS);
+        INDArray recurrentWeights = paramTable.get(GRUParamInitializer.RECURRENT_WEIGHT_KEY);
         assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits,3*nHiddenUnits});	//Should be shape: [layerSize,3*layerSize]
-        INDArray inputWeights = paramTable.get(GRUParamInitializer.INPUT_WEIGHTS);
+        INDArray inputWeights = paramTable.get(GRUParamInitializer.INPUT_WEIGHT_KEY);
         assertArrayEquals(inputWeights.shape(),new int[]{nIn,3*nHiddenUnits}); //Should be shape: [nIn,3*layerSize]
-        INDArray biases = paramTable.get(GRUParamInitializer.BIAS);
+        INDArray biases = paramTable.get(GRUParamInitializer.BIAS_KEY);
         assertArrayEquals(biases.shape(),new int[]{1,3*nHiddenUnits});	//Should be shape: [1,3*layerSize]
 
         int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
@@ -172,11 +172,11 @@ public class MultiLayerTestRNN {
 
             int layerNIn = (i == 0 ? nIn : nHiddenUnits[i-1] );
 
-            INDArray recurrentWeights = paramTable.get(GRUParamInitializer.RECURRENT_WEIGHTS);
+            INDArray recurrentWeights = paramTable.get(GRUParamInitializer.RECURRENT_WEIGHT_KEY);
             assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits[i],3*nHiddenUnits[i]});	//Should be shape: [layerSize,3*layerSize]
-            INDArray inputWeights = paramTable.get(GRUParamInitializer.INPUT_WEIGHTS);
+            INDArray inputWeights = paramTable.get(GRUParamInitializer.INPUT_WEIGHT_KEY);
             assertArrayEquals(inputWeights.shape(),new int[]{layerNIn,3*nHiddenUnits[i]}); //Should be shape: [nIn,3*layerSize]
-            INDArray biases = paramTable.get(GRUParamInitializer.BIAS);
+            INDArray biases = paramTable.get(GRUParamInitializer.BIAS_KEY);
             assertArrayEquals(biases.shape(),new int[]{1,3*nHiddenUnits[i]});	//Should be shape: [1,3*layerSize]
 
             int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();

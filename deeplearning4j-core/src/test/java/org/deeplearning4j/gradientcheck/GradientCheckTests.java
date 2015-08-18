@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.GRU;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -45,7 +46,7 @@ public class GradientCheckTests {
     	// (a) activation function
     	// (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
     	// (c) Loss function (with specified output activations)
-    	String[] activFns = {"sigmoid","tanh","relu","hardtanh"};
+    	String[] activFns = {"sigmoid","tanh","relu","hardtanh","softplus"};
     	boolean[] characteristic = {false,true};	//If true: run some backprop steps first
     	
     	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
@@ -116,7 +117,7 @@ public class GradientCheckTests {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
 
-    	String[] activFns = {"sigmoid","tanh","relu","hardtanh"};
+    	String[] activFns = {"sigmoid","tanh","relu"};
     	boolean[] characteristic = {false,true};	//If true: run some backprop steps first
     	
     	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
@@ -192,20 +193,20 @@ public class GradientCheckTests {
     
     
     @Test
-    public void testGRURNN(){
-    	//Initial basic test of GRU RNN
+    public void testGRURNNBasic(){
+    	//Basic test of GRU RNN
     	Nd4j.getRandom().setSeed(12345L);
     	
-    	int timeSeriesLength = 1;
+    	int timeSeriesLength = 20;
     	int nIn = 5;
     	int gruLayerSize = 7;
     	int nOut = 3;
-    	int miniBatchSize = 11;
+    	int miniBatchSize = 12;
     	
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
 	        .regularization(false)
-	        .timeSeriesLength(timeSeriesLength)
+	        .updater(Updater.NONE)
 	        .seed(12345L)
 	        .list(2)
 	        .layer(0, new GRU.Builder().nIn(nIn).nOut(gruLayerSize).activation("tanh").build())
@@ -233,13 +234,211 @@ public class GradientCheckTests {
     	}
     	
     	if( PRINT_RESULTS ){
-    		System.out.println("testGRURNN()");
+    		System.out.println("testGRURNNBasic()");
     		for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
     	}
     	
     	boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, false);
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
 
         assertTrue(gradOK);
+    }
+    
+    @Test
+    public void testGradientGRURNNFull(){
+    	String[] activFns = {"tanh","relu"};
+    	
+    	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+    	String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
+    	
+    	int timeSeriesLength = 10;
+    	int nIn = 7;
+    	int layerSize = 9;
+    	int nOut = 4;
+    	int miniBatchSize = 8;
+    	
+    	Random r = new Random(12345L);
+    	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<nIn; j++ ){
+    			for( int k=0; k<timeSeriesLength; k++ ){
+    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    			}
+    		}
+    	}
+    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
+    	for( int i=0; i<labels.size(0); i++){
+    		int idx = r.nextInt(nOut);
+    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	}
+        
+        double[] l2vals = {0.0, 0.4, 0.0};
+        double[] l1vals = {0.0, 0.0, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+    	
+    	for( String afn : activFns ){
+			for( int i=0; i<lossFunctions.length; i++ ){
+				for( int k=0; k<l2vals.length; k++ ){
+    				LossFunction lf = lossFunctions[i];
+    				String outputActivation = outputActivations[i];
+    				double l2 = l2vals[k];
+    				double l1 = l1vals[k];
+    				
+			        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+			                .activationFunction(afn)
+			                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+			                .regularization(l1>0.0 && l2>0.0).dropOut(0.0)
+			                .l2(l2).l1(l1)
+			                .updater(Updater.NONE)
+			                .seed(12345L)
+			                .list(2)
+			                .layer(0, new GRU.Builder().nIn(nIn).nOut(layerSize).build())
+			                .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize).nOut(nOut).build())
+			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+			                .pretrain(false).backprop(true)
+			                .build();
+			
+			        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+			        mln.init();
+			
+			        if( PRINT_RESULTS ){
+			        	System.out.println("testGradientGRURNNFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+			        		+", l2="+l2+", l1="+l1 );
+			        	for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+			        }
+			
+			        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+			                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+			
+			        String msg = "testGradientGRURNNFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+			        		+", l2="+l2+", l1="+l1;
+			        assertTrue(msg,gradOK);
+				}
+			}
+    	}
+    }
+    
+    @Test
+    public void testGravesLSTMBasic(){
+    	//Basic test of GravesLSTM layer
+    	Nd4j.getRandom().setSeed(12345L);
+    	
+    	int timeSeriesLength = 1;
+    	int nIn = 5;
+    	int layerSize = 7;
+    	int nOut = 3;
+    	int miniBatchSize = 11;
+    	
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
+	        .regularization(false)
+	        .updater(Updater.NONE)
+	        .seed(12345L)
+	        .list(2)
+	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("tanh").build())
+	        .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut).build())
+	        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+	        .pretrain(false).backprop(true)
+	        .build();
+    	
+    	MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+    	mln.init();
+    	
+    	Random r = new Random(12345L);
+    	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<nIn; j++ ){
+    			for( int k=0; k<timeSeriesLength; k++ ){
+    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    			}
+    		}
+    	}
+    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
+    	for( int i=0; i<labels.size(0); i++){
+    		int idx = r.nextInt(nOut);
+    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	}
+    	
+    	if( PRINT_RESULTS ){
+    		System.out.println("testGravesLSTMBasic()");
+    		for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+    	}
+    	
+    	boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+
+        assertTrue(gradOK);
+    }
+    
+    @Test
+    public void testGradientGravesLSTMFull(){
+    	String[] activFns = {"tanh","relu"};
+    	
+    	LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
+    	String[] outputActivations = {"softmax","tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
+    	
+    	int timeSeriesLength = 10;
+    	int nIn = 7;
+    	int layerSize = 9;
+    	int nOut = 4;
+    	int miniBatchSize = 8;
+    	
+    	Random r = new Random(12345L);
+    	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<nIn; j++ ){
+    			for( int k=0; k<timeSeriesLength; k++ ){
+    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    			}
+    		}
+    	}
+    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
+    	for( int i=0; i<labels.size(0); i++){
+    		int idx = r.nextInt(nOut);
+    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	}
+        
+        double[] l2vals = {0.0, 0.4, 0.0};
+        double[] l1vals = {0.0, 0.0, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+    	
+    	for( String afn : activFns ){
+			for( int i=0; i<lossFunctions.length; i++ ){
+				for( int k=0; k<l2vals.length; k++ ){
+    				LossFunction lf = lossFunctions[i];
+    				String outputActivation = outputActivations[i];
+    				double l2 = l2vals[k];
+    				double l1 = l1vals[k];
+    				
+			        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+			                .activationFunction(afn)
+			                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+			                .regularization(l1>0.0 && l2>0.0).dropOut(0.0)
+			                .l2(l2).l1(l1)
+			                .updater(Updater.NONE)
+			                .seed(12345L)
+			                .list(2)
+			                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).build())
+			                .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize).nOut(nOut).build())
+			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+			                .pretrain(false).backprop(true)
+			                .build();
+			
+			        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+			        mln.init();
+			
+			        if( PRINT_RESULTS ){
+			        	System.out.println("testGradientGravesLSTMFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+			        		+", l2="+l2+", l1="+l1 );
+			        	for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+			        }
+			
+			        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+			                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
+			
+			        String msg = "testGradientGravesLSTMFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
+			        		+", l2="+l2+", l1="+l1;
+			        assertTrue(msg,gradOK);
+				}
+			}
+    	}
     }
 }
