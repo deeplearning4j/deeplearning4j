@@ -69,9 +69,12 @@ public class AdaDelta implements Serializable,GradientUpdater {
 
         msg.muli(rho);
         msg.addi(1 - rho).muli(gradient.mul(gradient));
-        INDArray ret = Transforms.sqrt(msdx.add(Nd4j.EPS_THRESHOLD).divi(msg.addi(Nd4j.EPS_THRESHOLD))).muli(gradient);
+        // modifiedGradient = sqrt(modifiedGradient^2)_t-1 / sqrt(avgSquaredRawGradient^2)_t * rawGradient
+        INDArray ret = Transforms.sqrt(msdx.add(Nd4j.EPS_THRESHOLD))
+        		.divi(Transforms.sqrt(msg.add(Nd4j.EPS_THRESHOLD))).muli(gradient);
         msdx.muli(rho);
-        msdx.addi(1 - rho).muli(ret).muli(ret);
+        INDArray dxSquared = ret.mul(ret);
+        msdx.addi(dxSquared.muli(1 - rho));
 
         return ret;
     }

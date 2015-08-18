@@ -7,72 +7,54 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.Serializable;
 
+import lombok.NoArgsConstructor;
+
 /**
  * The Adam updater.
  * http://arxiv.org/abs/1412.6980
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class Adam implements Serializable,GradientUpdater {
 
     private double alpha = 1e-3;
     private double beta1 = 0.9;
-    private double beta2 = 0.99;
-    private double lam = 1 - 1e-8;
-    private double lr = -1;
-    private double beta1T = -1;
+    private double beta2 = 0.999;
+    private double epsilon = 1e-8;
     private INDArray m,v;
-    private double t = 1;
 
-    public Adam() {
-    }
-
-    /**
-     *
-     * @param alpha
-     * @param beta1
-     * @param beta2
-     * @param lam
-     * @param lr
-     * @param beta1T
-     */
-    public Adam(double alpha, double beta1, double beta2, double lam, double lr, double beta1T) {
+    public Adam(double alpha, double beta1, double beta2, double epsilon) {
         this.alpha = alpha;
         this.beta1 = beta1;
         this.beta2 = beta2;
-        this.lam = lam;
-        this.lr = lr;
-        this.beta1T = beta1T;
+        this.epsilon = epsilon;
     }
 
-    /**
-     * Calculate the update based
-     * on the given gradient
+    /**Calculate the update based on the given gradient
      * @param gradient the gradient to get the update for
      * @param iteration
      * @return the gradient
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-        if(m == null) {
-            m = Nd4j.zeros(gradient.shape());
-        }
+        if(m == null) m = Nd4j.zeros(gradient.shape());
+        if (v == null) v = Nd4j.zeros(gradient.shape());
 
+        INDArray oneMinusBeta1Grad = gradient.mul(1.0-beta1);
+        m.muli(beta1).addi(oneMinusBeta1Grad);
 
+        INDArray oneMinusBeta2GradSquared = gradient.mul(gradient).muli(1-beta2);
+        v.muli(beta2).addi(oneMinusBeta2GradSquared);
 
-        this.t = iteration;
-        beta1T = beta1T();
+        double beta1t = FastMath.pow(beta1, iteration);
+        double beta2t = FastMath.pow(beta2, iteration);
 
-
-        m.addi(1 - beta1T).muli(gradient.sub(m));
-        if (v == null)
-            v = Nd4j.zeros(gradient.shape());
-        v.addi(1 - beta2).muli(gradient.mul(gradient).subi(v));
-        lr = lr();
-        INDArray mTimesLr = m.mul(lr);
-        INDArray sqrtV = Transforms.sqrt(v).add(Nd4j.EPS_THRESHOLD);
-        Nd4j.clearNans(sqrtV);
-        return mTimesLr.divi(sqrtV);
+        double alphat = alpha * FastMath.sqrt(1-beta2t)/(1-beta1t);
+        if(Double.isNaN(alphat) || alphat==0.0) alphat = Nd4j.EPS_THRESHOLD;
+        INDArray sqrtV = Transforms.sqrt(v).addi(epsilon);
+        INDArray ret = m.mul(alphat).divi(sqrtV);
+        return ret;
     }
 
     public double getAlpha() {
@@ -99,30 +81,6 @@ public class Adam implements Serializable,GradientUpdater {
         this.beta2 = beta2;
     }
 
-    public double getLam() {
-        return lam;
-    }
-
-    public void setLam(double lam) {
-        this.lam = lam;
-    }
-
-    public double getLr() {
-        return lr;
-    }
-
-    public void setLr(double lr) {
-        this.lr = lr;
-    }
-
-    public double getBeta1T() {
-        return beta1T;
-    }
-
-    public void setBeta1T(double beta1T) {
-        this.beta1T = beta1T;
-    }
-
     public INDArray getM() {
         return m;
     }
@@ -138,19 +96,4 @@ public class Adam implements Serializable,GradientUpdater {
     public void setV(INDArray v) {
         this.v = v;
     }
-
-    private double beta1T() {
-        return beta1 * (Math.pow(lam ,(t - 1)));
-    }
-
-
-    private double lr() {
-        double fix1 = 1. - Math.pow(beta1,t);
-        double fix2 = 1 - Math.pow(beta2,t);
-        double ret =  alpha * FastMath.sqrt(fix2) / fix1;
-        if(Double.isNaN(ret))
-            return Nd4j.EPS_THRESHOLD;
-        return ret;
-    }
-
 }

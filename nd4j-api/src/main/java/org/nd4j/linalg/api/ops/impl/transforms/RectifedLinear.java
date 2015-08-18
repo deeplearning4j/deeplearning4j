@@ -126,9 +126,9 @@ public class RectifedLinear extends BaseTransformOp {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Pow(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
         else
-            return new Pow(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
     }
 
     @Override
@@ -136,9 +136,9 @@ public class RectifedLinear extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
         if (y() != null)
-            return new Pow(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
         else
-            return new Pow(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
+            return new RectifedLinear(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(), cutoff);
 
     }
 

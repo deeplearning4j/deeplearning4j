@@ -10,9 +10,11 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.HardTanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftSignDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.Step;
 import org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -193,4 +195,46 @@ public class TestDerivatives {
 		}
 	}
 	
+	@Test
+	public void testLeakyReLUDerivative(){
+		assertTrue( Nd4j.getOpFactory().createTransform("leakyrelu", Nd4j.ones(1)).derivative() instanceof LeakyReLUDerivative );
+		
+		//Derivative: 0.01 if x<0, 1 otherwise
+		INDArray z = Nd4j.zeros(100);
+		double[] expOut = new double[100]; 
+		for( int i=0; i<100; i++ ){
+			double x = 0.1 * (i - 50);
+			z.putScalar(i, x);
+			expOut[i] = (x>=0 ? 1 : 0.01);
+		}
+		
+		INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("leakyrelu", z).derivative());
+		
+		for( int i=0; i<100; i++ ){
+			double relError = Math.abs(expOut[i]-zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+			assertTrue(relError < REL_ERROR_TOLERANCE);
+		}
+	}
+	
+	@Test
+	public void testSoftSignDerivative(){
+		assertTrue( Nd4j.getOpFactory().createTransform("softsign", Nd4j.ones(1)).derivative() instanceof SoftSignDerivative );
+		
+		//Derivative: 1 / (1+abs(x))^2
+		INDArray z = Nd4j.zeros(100);
+		double[] expOut = new double[100]; 
+		for( int i=0; i<100; i++ ){
+			double x = 0.1 * (i - 50);
+			z.putScalar(i, x);
+			double temp = 1 + Math.abs(x);
+			expOut[i] = 1.0 / (temp*temp);
+		}
+		
+		INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softsign", z).derivative());
+		
+		for( int i=0; i<100; i++ ){
+			double relError = Math.abs(expOut[i]-zPrime.getDouble(i)) / (Math.abs(expOut[i]) + Math.abs(zPrime.getDouble(i)));
+			assertTrue(relError < REL_ERROR_TOLERANCE);
+		}
+	}
 }
