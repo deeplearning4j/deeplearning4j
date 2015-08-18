@@ -20,7 +20,7 @@ The *eigen* in eigenvector comes from German, and it means something like “ver
 
 Matrices, in linear algebra, are simply rectangular arrays of numbers, a collection of scalar values between brackets, like a spreadsheet. All square matrices (e.g. 2 x 2 or 3 x 3) have eigenvectors, and they have a very special relationship with them, a bit like Germans have with their cars. 
 
-## Linear Transformations
+## <a name="linear">Linear Transformations</a> 
 
 We’ll define that relationship after a brief detour into what matrices do, and how they relate to other numbers.
 
@@ -88,7 +88,7 @@ To quote Yoshua Bengio:
     
     One of the most widely used kinds of matrix decomposition is called eigen-decomposition, in which we decompose a matrix into a set of eigenvectors and eigenvalues.
 
-## Principal Component Analysis (PCA)
+## <a name="principal">Principal Component Analysis (PCA)</a> 
 
 PCA is a tool for finding patterns in high-dimensional data such as images. Machine-learning practitioners sometimes use PCA to preprocess data for their neural networks. By centering, rotating and scaling data, PCA prioritizes dimensionality (allowing you to drop some low-variance dimensions) and can improve the neural network's convergence speed and the overall quality of results. 
 
@@ -126,7 +126,7 @@ The first principal component bisects a scatterplot with a straight line in a wa
 
 The second principal component cuts through the data perpendicular to the first, fitting the errors produced by the first. There are only two principal components in the graph above, but if it were three-dimensional, the third component would fits the errors from the first and second principal components, and so forth. 
 
-## Covariance Matrix
+## <a name="covariance">Covariance Matrix</a>
 
 While we introduced matrices as something that transformed one set of vectors into another, another way to think about them is as a description of data that captures the the forces at work upon it, the forces by which two variables might relate to each other as expressed by their variance and covariance. 
 
@@ -162,7 +162,7 @@ To sum up, the covariance matrix defines the shape of the data. Diagonal spread 
 
 Causality has a bad name in statistics, so take this with a grain of salt: While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees. You can read covariance as traces of possible cause. 
 
-### Change of Basis
+### <a name="change">Change of Basis</a>
 
 Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. You [re-base the coordinate system](https://en.wikipedia.org/wiki/Change_of_basis) for the dataset in a new space defined by its principal components.
 
@@ -174,7 +174,7 @@ In the graph above, we show how the same vector v can be situated differently in
 
 This has profound and almost spiritual implications, one of which is that there exists no natural coordinate system, and mathematical objects in n-dimensional space are subject to multiple descriptions. (Changing matrices' bases also makes them easier to manipulate.) 
 
-## Entropy & Information Gain
+## <a name="entropy">Entropy & Information Gain</a>
 
 In information theory, the term *entropy* refers to information we don't have (normally people define "information" as what they know, and jargon has triumphed once again in turning plain language on its head to the detriment of the uninitiated). The information we don't have about a system, its entropy, is related to its unpredictability: how much it can surprise us.
 
@@ -192,7 +192,7 @@ So each principal component cutting through the scatterplot represents a decreas
 
 The first component of PCA, like the first split in a properly formed decision tree, will be along the dimension that reduces unpredictability the most. 
 
-## Other Resources
+## <a name="resources">Other Resources</a>
 
 * [A Tutorial on Principal Components Analysis](http://www.cs.otago.ac.nz/cosc453/student_tutorials/principal_components.pdf)
 * [What is the importance of eigenvalues/eigenvectors?](http://math.stackexchange.com/a/23325)
