@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
