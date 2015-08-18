@@ -119,9 +119,9 @@ public class VectorIFFT extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new VectorFFT(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
         else
-            return new VectorFFT(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
 
     }
 
@@ -129,9 +129,9 @@ public class VectorIFFT extends BaseTransformOp {
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new VectorFFT(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
         else
-            return new VectorFFT(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
+            return new VectorIFFT(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length(),fftLength);
 
     }
 
