@@ -3339,9 +3339,10 @@ public abstract class BaseNDArray implements INDArray {
 
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape),order == 'f');
-        reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
-        if(reshapeAttempt != null)
+        if(reshapeAttempt != null) {
+            reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
+        }
 
         INDArray raveled = ravel();
         return create(raveled.data(), shape, getStrides(shape, order));

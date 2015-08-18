@@ -147,6 +147,19 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testReshapePermute(){
+        INDArray arrNoPermute = Nd4j.ones(5,3,4);
+        INDArray reshaped2dNoPermute = arrNoPermute.reshape(5*3,4); //OK
+        assertArrayEquals(reshaped2dNoPermute.shape(),new int[]{5*3,4});
+
+        INDArray arr = Nd4j.ones(5,4,3);
+        INDArray permuted = arr.permute(0,2,1);
+        assertArrayEquals(arrNoPermute.shape(),permuted.shape());
+        INDArray reshaped2D = permuted.reshape(5*3,4);  //NullPointerException
+        assertArrayEquals(reshaped2D.shape(),new int[]{5*3,4});
+    }
+
 
     @Test
     public void testEight() {
@@ -362,8 +375,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         assertArrayEquals(new int[]{1,5,20},permute.stride());
         INDArray reshapedPermute = permute.reshape(-1, 12);
         assertArrayEquals(new int[]{5,12},reshapedPermute.shape());
-        assertArrayEquals(new int[]{12, 1}, reshapedPermute.stride());
-
+        assertArrayEquals(new int[]{1,5}, reshapedPermute.stride());
 
     }
 
