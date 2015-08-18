@@ -103,8 +103,9 @@ public class SubsamplingLayer extends BaseLayer {
                 return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
-                retE = epsilon.slice(0).get(
-                        NDArrayIndex.all()
+                retE = epsilon.get(
+                        NDArrayIndex.point(0)
+                        , NDArrayIndex.all()
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());

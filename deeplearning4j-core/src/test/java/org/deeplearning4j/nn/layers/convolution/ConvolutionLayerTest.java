@@ -21,11 +21,13 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class ConvolutionLayerTest {
+
+    // Mnist data example parameters
     private int inputWidth = 28;
     private int inputHeight = 28;
 
     private int[] kernelSize = new int[] {9, 9};
-    private int[] stride = new int[] {2,2};
+    private int[] stride = new int[] {2, 2};
     private int[] padding = new int[] {0,0};
     private int nChannelsIn = 1;
     private int depth = 10;
@@ -46,7 +48,7 @@ public class ConvolutionLayerTest {
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize,  stride, padding);
         layer.activate(input);
 
-        assertEquals(input.toString(), layer.input().toString());
+        assertEquals(input, layer.input());
         assertArrayEquals(input.shape(), layer.input().shape());
     }
 
@@ -78,7 +80,7 @@ public class ConvolutionLayerTest {
         INDArray convActivations = layer.activate(input);
 
         assertArrayEquals(expectedOutput.shape(), convActivations.shape());
-        assertEquals(expectedOutput.toString(), convActivations.toString());
+        assertEquals(expectedOutput, convActivations);
 
     }
 
@@ -99,22 +101,12 @@ public class ConvolutionLayerTest {
         INDArray activation = layer2.preOutput(true);
 
         assertArrayEquals(expectedOutput.shape(), activation.shape());
-        assertEquals(expectedOutput.toString(), activation.toString());
+        assertEquals(expectedOutput, activation);
 
     }
 
-        //////////////////////////////////////////////////////////////////////////////////
 
-    @Test
-    public void testMnistBackprop() throws Exception{
-        Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
-        INDArray input = getMnistData();
-        layer.activate(input);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
-        assertEquals(epsilon.shape().length, out.getSecond().shape().length);
-        assertEquals(nExamples, out.getSecond().size(1)); // depth retained
-    }
 
     @Test
     public void testBackpropResults()  {
@@ -126,7 +118,7 @@ public class ConvolutionLayerTest {
         INDArray expectedWeightGradient = Nd4j.create(new double[] {
                 -1440., -1440., -1984., -1984., -1440., -1440., -1984., -1984.
         }, new int[]{2,1,2,2});
-        INDArray expectedBiasGradient = Nd4j.create(new double[] {-544., -544.}, new int[]{2,});
+        INDArray expectedBiasGradient = Nd4j.create(new double[] {-544., -544.}, new int[]{1,2});
         INDArray expectedEpsilon = Nd4j.create(new double[] {
                 -12., -12., -12., -12., -12., -12., -12., -12., -12., -12., -12.,
                 -12., -12., -12., -12., -12., -56., -56., -56., -56., -56., -56.,
@@ -144,9 +136,9 @@ public class ConvolutionLayerTest {
         assertArrayEquals(expectedEpsilon.shape(), pair.getSecond().shape());
         assertArrayEquals(expectedWeightGradient.shape(), pair.getFirst().getGradientFor("W").shape());
         assertArrayEquals(expectedBiasGradient.shape(), pair.getFirst().getGradientFor("b").shape());
-        assertEquals(expectedEpsilon.toString(), pair.getSecond().toString());
-        assertEquals(expectedWeightGradient.toString(), pair.getFirst().getGradientFor("W").toString());
-        assertEquals(expectedBiasGradient.toString(), pair.getFirst().getGradientFor("b").toString());
+        assertEquals(expectedEpsilon, pair.getSecond());
+        assertEquals(expectedWeightGradient, pair.getFirst().getGradientFor("W"));
+        assertEquals(expectedBiasGradient, pair.getFirst().getGradientFor("b"));
 
     }
 
@@ -169,7 +161,7 @@ public class ConvolutionLayerTest {
         INDArray delta = layer2.calculateDelta(epsilon);
 
         assertArrayEquals(expectedOutput.shape(), delta.shape());
-        assertEquals(expectedOutput.toString(), delta.toString());
+        assertEquals(expectedOutput, delta);
 
     }
 
