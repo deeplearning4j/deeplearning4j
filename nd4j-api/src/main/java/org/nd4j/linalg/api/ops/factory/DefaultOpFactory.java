@@ -197,6 +197,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Identity(x, y);
             case "log":
                 return new Log(x, y);
+            case "leakyrelu":
+            	return new LeakyReLU(x,y);
             case "maxout":
                 return new MaxOut(x, y);
             case "negative":
@@ -211,6 +213,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Sign(x, y);
             case "sin":
                 return new Sin(x, y);
+            case "softsign":
+            	return new SoftSign(x,y);
             case "sqrt":
                 return new Sqrt(x, y);
             case "stabilize":
@@ -254,6 +258,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new HardTanh(x);
             case "identity":
                 return new Identity(x);
+            case "leakyrelu":
+            	return new LeakyReLU(x);
             case "log":
                 return new Log(x);
             case "maxout":
@@ -270,6 +276,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Sign(x);
             case "sin":
                 return new Sin(x);
+            case "softsign":
+            	return new SoftSign(x);
             case "sqrt":
                 return new Sqrt(x);
             case "stabilize":
@@ -313,6 +321,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new HardTanh(x, z);
             case "identity":
                 return new Identity(x, z);
+            case "leakyrelu":
+            	return new LeakyReLU(x,z);
             case "log":
                 return new Log(x, z);
             case "maxout":
@@ -329,6 +339,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Sign(x, z);
             case "sin":
                 return new Sin(x, z);
+            case "softsign":
+            	return new SoftSign(x,z);
             case "sqrt":
                 return new Sqrt(x, z);
             case "stabilize":
