@@ -49,9 +49,7 @@ public class Nesterovs implements Serializable,GradientUpdater {
 
     /**
      * Get the nesterov update
-     * @param gradient the
-     *                 gradient to get the update for
-     *
+     * @param gradient the gradient to get the update for
      * @param iteration
      * @return
      */
@@ -59,8 +57,12 @@ public class Nesterovs implements Serializable,GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(lastGradient == null)
             lastGradient = Nd4j.zeros(gradient.shape());
-        INDArray ret  = lastGradient.mul(momentum).subi(gradient.mul(lr));
-        lastGradient = ret;
+        INDArray v = lastGradient.mul(momentum).sub(gradient.mul(lr));
+        //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
+        //default is negative step function thus we flipped the signs:
+        // x += mu * v_prev + (-1 - mu) * v
+        INDArray ret = lastGradient.muli(momentum).addi(v.mul(-momentum - 1));
+        lastGradient = v;
         return ret;
     }
 
