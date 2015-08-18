@@ -156,7 +156,7 @@ vs.
 
 ![Alt text](../img/variance.png)
 
-The great thing about calculating covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you can know how two variables move together by the positive, negative or non-existent character of their covariance. (*Correlation* is a kind of normalized covariance, with a value between 0 and 1.)
+The great thing about calculating covariance is that, in a high-dimensional space where you can't eyeball intervariable relationships, you can know how two variables move together by the positive, negative or non-existent character of their covariance. (*Correlation* is a kind of normalized covariance, with a value between -1 and 1.)
 
 To sum up, the covariance matrix defines the shape of the data. Diagonal spread along eigenvectors is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
 
