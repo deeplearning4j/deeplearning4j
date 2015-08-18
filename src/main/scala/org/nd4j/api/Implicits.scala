@@ -9,7 +9,7 @@ import _root_.scala.util.control.Breaks._
 
 object Implicits {
 
-  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray with OperatableNDArray[A] with CollectionLikeNDArray {
+  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A] {
     def forall(f: Double => Boolean): Boolean = {
       var result = true
       val lv = underlying.linearView()
@@ -32,7 +32,7 @@ object Implicits {
 
     def <=(d: Double): Boolean = forall(_ <= d)
 
-    def apply(target: IndexRange*): INDArray = subMatrix(target: _*)
+    def apply[B](target: IndexRange*)(implicit ev:NDArrayEvidence[A,B],ev2:Manifest[B]):A = subMatrix(target: _*)(ev,ev2)
 
     def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
 
