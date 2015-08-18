@@ -23,9 +23,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
