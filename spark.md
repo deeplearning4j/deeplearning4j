@@ -38,17 +38,15 @@ The output, amid a river of other log info, should look like this:
 
 ![Alt text](../img/dl4j_iris_dataframe.png)
 
-You can run other examples by entering similar commands such as `bin/run-example ml.JavaLfwClassification`
+You can run other examples with the `bin/run-example` command:
 
-    export SPARK_HOME=<Your Spark Path>
     bin/run-example
+    Usage: ./bin/run-example <example-class> [example-args]
+        - set MASTER=XX to use a specific master
+        - can use abbreviated example class name relative to org.deeplearning4j
+        (e.g. ml.JavaIrisClassification,ml.JavaLfwClassification)
 
-Usage: ./bin/run-example <example-class> [example-args]
-  - set MASTER=XX to use a specific master
-  - can use abbreviated example class name relative to org.deeplearning4j
-     (e.g. ml.JavaIrisClassification,ml.JavaLfwClassification)
-
-You can run any of Deeplearning4j's Spark examples on your local machine by setting `master` to `local[YourNumberOfCores]` or `local[*]` for all cores.
+They can be run on your local machine by setting `master` to `local[YourNumberOfCores]` or `local[*]` for all cores. For example: 
 
     ./bin/spark-submit --class "some.ml.Word2VecExample" --master local[4] target/scala-2.10/word2vec-spark.jar small.txt
 
