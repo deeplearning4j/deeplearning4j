@@ -188,9 +188,9 @@ Understanding the die is loaded is analogous to finding a principal component in
 
 That transfer of information, from *what we don't know* about the system to *what we know*, represents a change in entropy. Insight decreases the entropy of the system. Get information, reduce entropy. This is information gain. And yes, this type of entropy is subjective, in that it depends on what we know about the system at hand. (Fwiw, [information gain](https://en.wikipedia.org/wiki/Information_gain_in_decision_trees) is synonymous with Kullback-Leibler divergence, which we explored briefly in this tutorial on [restricted Boltzmann machines](../restrictedboltzmannmachine.html).) 
 
-So each principal component cutting through the scatterplot represents a decrease in the system's entropy, in its unpredictability. It so happens that explaining the shape of the data one principal component at a time, beginning with the component that accounts for the most variance, is similar to walking data through a decision tree. 
+So each principal component cutting through the scatterplot represents a decrease in the system's entropy, in its unpredictability. 
 
-The first component of PCA, like the first split in a properly formed decision tree, will be along the dimension that reduces unpredictability the most. 
+It so happens that explaining the shape of the data one principal component at a time, beginning with the component that accounts for the most variance, is similar to walking data through a decision tree. The first component of PCA, like the first split in a properly formed decision tree, will be along the dimension that reduces unpredictability the most. 
 
 ## <a name="resources">Other Resources</a>
 
