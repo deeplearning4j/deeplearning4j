@@ -45,8 +45,8 @@ public class GRU extends BaseLayer {
 		INDArray rucZs = activations[1];
 		INDArray rucAs = activations[2];
 		
-		INDArray inputWeights = getParam(GRUParamInitializer.INPUT_WEIGHTS); //Shape: [n^(L-1),3*n^L], order: [wr,wu,wc]
-		INDArray recurrentWeights = getParam(GRUParamInitializer.RECURRENT_WEIGHTS);	//Shape: [n^L,3*n^L]; order: [wR,wU,wC]
+		INDArray inputWeights = getParam(GRUParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),3*n^L], order: [wr,wu,wc]
+		INDArray recurrentWeights = getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [n^L,3*n^L]; order: [wR,wU,wC]
 		
 		int layerSize = recurrentWeights.size(0);	//i.e., n^L
 		int prevLayerSize = inputWeights.size(0);	//n^(L-1)
@@ -174,9 +174,9 @@ public class GRU extends BaseLayer {
 		}
 		
 		Gradient g = new DefaultGradient();
-		g.setGradientFor(GRUParamInitializer.INPUT_WEIGHTS, inputWeightGradients);
-		g.setGradientFor(GRUParamInitializer.RECURRENT_WEIGHTS,recurrentWeightGradients);
-		g.setGradientFor(GRUParamInitializer.BIAS, biasGradients.sum(0)); //Sum over mini-batch
+		g.setGradientFor(GRUParamInitializer.INPUT_WEIGHT_KEY, inputWeightGradients);
+		g.setGradientFor(GRUParamInitializer.RECURRENT_WEIGHT_KEY,recurrentWeightGradients);
+		g.setGradientFor(GRUParamInitializer.BIAS_KEY, biasGradients.sum(0)); //Sum over mini-batch
 		
 		return new Pair<>(g,epsilonNext);
 	}
@@ -216,9 +216,9 @@ public class GRU extends BaseLayer {
 	/** Returns activations array: {output,rucZs,rucAs} in that order. */
 	private INDArray[] activateHelper(boolean training){
 		
-		INDArray inputWeights = getParam(GRUParamInitializer.INPUT_WEIGHTS); //Shape: [n^(L-1),3*n^L], order: [wr,wu,wc]
-		INDArray recurrentWeights = getParam(GRUParamInitializer.RECURRENT_WEIGHTS);	//Shape: [n^L,3*n^L]; order: [wR,wU,wC]
-		INDArray biases = getParam(GRUParamInitializer.BIAS); //Shape: [1,3*n^L]; order: [br,bu,bc]
+		INDArray inputWeights = getParam(GRUParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),3*n^L], order: [wr,wu,wc]
+		INDArray recurrentWeights = getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [n^L,3*n^L]; order: [wR,wU,wC]
+		INDArray biases = getParam(GRUParamInitializer.BIAS_KEY); //Shape: [1,3*n^L]; order: [br,bu,bc]
 		
 		boolean is2dInput = input.rank() < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
 		int timeSeriesLength = (is2dInput ? 1 : input.size(2));
@@ -228,7 +228,7 @@ public class GRU extends BaseLayer {
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
 			if (conf.getDropOut() > 0) {
-				inputWeights = Dropout.applyDropConnect(this,GRUParamInitializer.INPUT_WEIGHTS);
+				inputWeights = Dropout.applyDropConnect(this,GRUParamInitializer.INPUT_WEIGHT_KEY);
 			}
 		}
 		
@@ -284,16 +284,16 @@ public class GRU extends BaseLayer {
 	@Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
-    	double l2 = Transforms.pow(getParam(GRUParamInitializer.RECURRENT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0)
-    			+ Transforms.pow(getParam(GRUParamInitializer.INPUT_WEIGHTS), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    	double l2 = Transforms.pow(getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
+    			+ Transforms.pow(getParam(GRUParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     	return 0.5 * conf.getL2() * l2;
     }
 
     @Override
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
-        double l1 = Transforms.abs(getParam(GRUParamInitializer.RECURRENT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0)
-        		+ Transforms.abs(getParam(GRUParamInitializer.INPUT_WEIGHTS)).sum(Integer.MAX_VALUE).getDouble(0);
+        double l1 = Transforms.abs(getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
+        		+ Transforms.abs(getParam(GRUParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
         return conf.getL1() * l1;
     }
 	

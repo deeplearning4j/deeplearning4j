@@ -99,9 +99,9 @@ public class GRUTest {
 		Gradient outGradient = out.getFirst();
 		INDArray nextEpsilon = out.getSecond();
 
-		INDArray biasGradient = outGradient.getGradientFor(GRUParamInitializer.BIAS);
-		INDArray inWeightGradient = outGradient.getGradientFor(GRUParamInitializer.INPUT_WEIGHTS);
-		INDArray recurrentWeightGradient = outGradient.getGradientFor(GRUParamInitializer.RECURRENT_WEIGHTS);
+		INDArray biasGradient = outGradient.getGradientFor(GRUParamInitializer.BIAS_KEY);
+		INDArray inWeightGradient = outGradient.getGradientFor(GRUParamInitializer.INPUT_WEIGHT_KEY);
+		INDArray recurrentWeightGradient = outGradient.getGradientFor(GRUParamInitializer.RECURRENT_WEIGHT_KEY);
 		assertNotNull(biasGradient);
 		assertNotNull(inWeightGradient);
 		assertNotNull(recurrentWeightGradient);

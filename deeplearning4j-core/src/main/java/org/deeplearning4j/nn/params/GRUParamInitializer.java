@@ -32,9 +32,9 @@ import java.util.Map;
 
 public class GRUParamInitializer implements ParamInitializer {
 	/** Weights for previous time step -> current time step connections */
-    public final static String RECURRENT_WEIGHTS = "RW";
-    public final static String BIAS = DefaultParamInitializer.BIAS_KEY;
-    public final static String INPUT_WEIGHTS = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String RECURRENT_WEIGHT_KEY = "RW";
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
+    public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
@@ -44,19 +44,19 @@ public class GRUParamInitializer implements ParamInitializer {
         int nLast = conf.getNIn();	//i.e., n neurons in previous layer
         
         
-        conf.addVariable(RECURRENT_WEIGHTS);
-        conf.addVariable(INPUT_WEIGHTS);
-        conf.addVariable(BIAS);
+        conf.addVariable(RECURRENT_WEIGHT_KEY);
+        conf.addVariable(INPUT_WEIGHT_KEY);
+        conf.addVariable(BIAS_KEY);
         
         
         //Order: RUC - i.e., reset, update, candidate
-        params.put(INPUT_WEIGHTS,WeightInitUtil.initWeights(nLast, 3 * nL, conf.getWeightInit(), dist));
-        params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(nL, 3 * nL, conf.getWeightInit(), dist));
-        params.put(BIAS, Nd4j.zeros(1,3*nL));
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 3 * nL, conf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 3 * nL, conf.getWeightInit(), dist));
+        params.put(BIAS_KEY, Nd4j.zeros(1,3*nL));
 
-        params.get(RECURRENT_WEIGHTS).data().persist();
-        params.get(INPUT_WEIGHTS).data().persist();
-        params.get(BIAS).data().persist();
+        params.get(INPUT_WEIGHT_KEY).data().persist();
+        params.get(RECURRENT_WEIGHT_KEY).data().persist();
+        params.get(BIAS_KEY).data().persist();
     }
 
     @Override
