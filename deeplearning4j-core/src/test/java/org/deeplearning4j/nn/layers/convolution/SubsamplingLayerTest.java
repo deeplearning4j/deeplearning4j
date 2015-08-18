@@ -121,7 +121,7 @@ public class SubsamplingLayerTest {
         INDArray input = getData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
-        layer.setInput(input);
+        layer.activate(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
