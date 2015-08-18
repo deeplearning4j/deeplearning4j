@@ -48,14 +48,12 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         int nL = conf.getNOut();	//i.e., n neurons in this layer
         int nLast = conf.getNIn();	//i.e., n neurons in previous layer
         
-        
-        conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(INPUT_WEIGHT_KEY);
+        conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
         
-        
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getWeightInit(), dist));
         params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getWeightInit(), dist));
         INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
         biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
         /*The above line initializes the forget gate biases to 5.
@@ -68,8 +66,8 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
          */
         params.put(BIAS_KEY, biases);
 
-        params.get(RECURRENT_WEIGHT_KEY).data().persist();
         params.get(INPUT_WEIGHT_KEY).data().persist();
+        params.get(RECURRENT_WEIGHT_KEY).data().persist();
         params.get(BIAS_KEY).data().persist();
     }
 
