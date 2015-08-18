@@ -72,18 +72,18 @@ public class GRU extends BaseLayer {
 		INDArray deltaUNext = deltaOutNext;
 		INDArray deltaCNext = deltaOutNext;
 		for( int t=timeSeriesLength-1; t>=0; t-- ){
-			INDArray prevOut = (t==0 ? Nd4j.zeros(miniBatchSize,layerSize) : outputActivations.slice(t-1,2));	//Shape: [m,n^L]
+			INDArray prevOut = (t==0 ? Nd4j.zeros(miniBatchSize,layerSize) : outputActivations.tensorAlongDimension(t-1,1,0));	//Shape: [m,n^L]
 			
-			INDArray aSlice = (is2dInput ? rucAs : rucAs.slice(t,2));
-			INDArray zSlice = (is2dInput ? rucZs : rucZs.slice(t,2));
+			INDArray aSlice = (is2dInput ? rucAs : rucAs.tensorAlongDimension(t,1,0));
+			INDArray zSlice = (is2dInput ? rucZs : rucZs.tensorAlongDimension(t,1,0));
 			INDArray aSliceNext;
 			INDArray zSliceNext;
 			if(t == timeSeriesLength-1){
 				aSliceNext = Nd4j.zeros(miniBatchSize,3*layerSize);
 				zSliceNext = Nd4j.zeros(miniBatchSize,3*layerSize);
 			} else {
-				aSliceNext = rucAs.slice(t,2);
-				zSliceNext = rucZs.slice(t,2);
+				aSliceNext = rucAs.tensorAlongDimension(t,1,0);
+				zSliceNext = rucZs.tensorAlongDimension(t,1,0);
 			}
 			
 			INDArray zr = zSlice.get(NDArrayIndex.all(),interval(0,layerSize));
@@ -94,7 +94,7 @@ public class GRU extends BaseLayer {
 				//No need to calculate, as next delta is null
 				dOutNextdOut = Nd4j.zeros(miniBatchSize,layerSize);
 			} else {
-				INDArray aOut = (is2dInput ? outputActivations : outputActivations.slice(t,2));
+				INDArray aOut = (is2dInput ? outputActivations : outputActivations.tensorAlongDimension(t,1,0));
 				INDArray arNext = aSliceNext.get(NDArrayIndex.all(),interval(0,layerSize));
 				INDArray auNext = aSliceNext.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
 				INDArray acNext = aSliceNext.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
@@ -116,7 +116,7 @@ public class GRU extends BaseLayer {
 			}
 			
 			//First: Calculate hidden unit deltas (d^{Lt}_h)
-			INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.slice(t, 2));		//(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
+			INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(t,1,0));		//(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
 			INDArray deltaOut = epsilonSlice
 					.add(deltaOutNext.mul(dOutNextdOut.transpose()))
 					.addi(deltaRNext.mmul(wR.transpose()))
@@ -139,7 +139,7 @@ public class GRU extends BaseLayer {
 			INDArray deltaR = deltaC.mul(Nd4j.diag(Nd4j.diag(wC)).mmul(prevOut.transpose()).transpose()).muli(sigmaPrimeR);
 			
 			//Add input gradients for this time step:
-			INDArray prevLayerActivationSlice = (is2dInput ? input : input.slice(t, 2));
+			INDArray prevLayerActivationSlice = (is2dInput ? input : input.tensorAlongDimension(t,1,0));
 			inputWeightGradients.get(NDArrayIndex.all(),interval(0,layerSize))
 				.addi(deltaR.transpose().mmul(prevLayerActivationSlice).transpose());
 			inputWeightGradients.get(NDArrayIndex.all(),interval(layerSize,2*layerSize))
@@ -165,7 +165,7 @@ public class GRU extends BaseLayer {
 			INDArray epsilonNextSlice = wr.mmul(deltaR.transpose()).transpose()
 					.addi(wu.mmul(deltaU.transpose()).transpose())
 					.addi(wc.mmul(deltaC.transpose()).transpose());
-			epsilonNext.slice(t,2).assign(epsilonNextSlice);
+			epsilonNext.tensorAlongDimension(t,1,0).assign(epsilonNextSlice);
 			
 			deltaOutNext = deltaOut;
 			deltaRNext = deltaR;
@@ -238,8 +238,8 @@ public class GRU extends BaseLayer {
 		INDArray rucAs = Nd4j.zeros(miniBatchSize,3*hiddenLayerSize,timeSeriesLength);	//activations for above
 		
 		for( int t=0; t<timeSeriesLength; t++ ){
-			INDArray prevLayerInputSlice = (is2dInput ? input : input.slice(t, 2));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
-			INDArray prevOutputActivations = (t==0 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) : outputActivations.slice(t-1,2));	//Shape: [m,nL]
+			INDArray prevLayerInputSlice = (is2dInput ? input : input.tensorAlongDimension(t,1,0));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
+			INDArray prevOutputActivations = (t==0 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) : outputActivations.tensorAlongDimension(t-1,1,0));	//Shape: [m,nL]
 			
 			//Calculate reset gate, update gate and candidate zs
 			INDArray zs = prevLayerInputSlice.mmul(inputWeights)
@@ -258,9 +258,9 @@ public class GRU extends BaseLayer {
 			INDArray oneMinUpdateAs = updateAs.rsub(1);
 			INDArray outputASlice = updateAs.mul(prevOutputActivations).addi(oneMinUpdateAs.muli(candidateAs));
 			
-			rucZs.slice(t,2).assign(zs);
-			rucAs.slice(t,2).assign(as);
-			outputActivations.slice(t,2).assign(outputASlice);
+			rucZs.tensorAlongDimension(t,1,0).assign(zs);
+			rucAs.tensorAlongDimension(t,1,0).assign(as);
+			outputActivations.tensorAlongDimension(t,1,0).assign(outputASlice);
 		}
 		
 		return new INDArray[]{outputActivations,rucZs,rucAs};
