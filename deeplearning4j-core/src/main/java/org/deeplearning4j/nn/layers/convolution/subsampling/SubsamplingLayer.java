@@ -97,9 +97,8 @@ public class SubsamplingLayer extends BaseLayer {
                 while(iter.hasNext()) {
                     int[] next = iter.next();
                     double epsGet = epsilon.getDouble(next);
-
-                    double get = maxIndexes.getDouble(next);
-                    reshapeEpsilon.putScalar(next,epsilon.getDouble(next));
+                    int idx = maxIndexes.getInt(next);
+                    reshapeEpsilon.putScalar(idx,epsGet);
                 }
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
