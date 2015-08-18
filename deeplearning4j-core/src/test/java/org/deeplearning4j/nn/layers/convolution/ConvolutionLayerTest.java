@@ -92,9 +92,8 @@ public class ConvolutionLayerTest {
         INDArray col = getContainedCol();
 
         INDArray expectedOutput = Nd4j.create(new double[] {
-                4.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  8.,  8.,  8.,  8.,  8.,
-                8.,  8.,  8.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  8.,  8.,
-                8., 8., 8., 8., 8.,  8.
+                4.,4.,4.,4.,8.,8.,8.,8.,4.,4.,4.,4.,8.,8.,8.,8.,4.,4.
+                ,4.,4.,8.,8.,8.,8.,4.,4.,4.,4.,8.,8.,8.,8
         },new int[]{1, 2, 4, 4});
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer layer2 = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) layer;
