@@ -113,9 +113,8 @@ public class SubsamplingLayerTest {
         }, new int[]{1, 2, 2, 2});
 
         INDArray expectedContainedEpsilonResult = Nd4j.create(new double[]{
-                0., 0., 0., 1., 1., 0., 0., 0., 0., 0., 1., 0., 0.,
-                1., 0., 0., 0., 0., 0., 1., 1., 0., 0., 0., 1., 0.,
-                1., 0., 0., 0., 0., 0.
+                0.,0.,0.,1.,1.,0.,0.,0.,0.,0.,1.,0.,0.,1.,0.,0.,0.,0.
+                ,0.,1.,1.,0.,0.,0.,1.,0.,1.,0.,0.,0.,0.,0.
         }, new int[]{1, 2, 4, 4});
 
         INDArray input = getContainedData();
