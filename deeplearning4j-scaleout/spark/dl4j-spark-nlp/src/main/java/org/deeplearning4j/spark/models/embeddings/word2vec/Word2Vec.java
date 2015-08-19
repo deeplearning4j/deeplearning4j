@@ -19,7 +19,6 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.commons.math3.util.FastMath;
-import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -27,15 +26,15 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.spark.text.accumulators.Syn0Accumulator;
-import org.deeplearning4j.spark.text.functions.*;
+import org.deeplearning4j.spark.text.functions.CountCumSum;
+import org.deeplearning4j.spark.text.functions.FirstIterationFunction;
+import org.deeplearning4j.spark.text.functions.MapToPairFunction;
+import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,19 +178,19 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         /////////////////////////////////////
         log.info("Training word2vec sentences ...");
         FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast);
-        @SuppressWarnings("unchecked")
-        JavaRDD< Pair<Integer, INDArray> > pointSyn0Vec =
-                vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).flatMap(new FlatMapSyn0VecFunction());
+        JavaRDD< Pair<Integer, INDArray> > pointSyn0Vec = vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc)
+                .map(new MapToPairFunction());
 
 
-        final Accumulator<Pair<Integer, INDArray>> syn0Acc = sc.accumulator(new Pair<>(0, Nd4j.zeros(vectorLength)),
-                new Syn0Accumulator(vectorLength));
-        pointSyn0Vec.foreach(new UpdateSyn0AccumulatorFunction(syn0Acc));
-        INDArray syn0 = syn0Acc.value().getSecond();
-        InMemoryLookupTable inMemoryLookupTable = new InMemoryLookupTable();
-        inMemoryLookupTable.setSyn0(syn0);
-        inMemoryLookupTable.setVocab(vocabCache);
-        lookupTable = inMemoryLookupTable;
+//        final Accumulator<Pair<Integer, INDArray>> syn0Acc =
+//                sc.accumulator(new Pair<>(0, Nd4j.zeros(vocabCache.numWords(), vectorLength)),
+//                new Syn0Accumulator(vocabCache.numWords(), vectorLength));
+//        pointSyn0Vec.foreach(new UpdateSyn0AccumulatorFunction(syn0Acc));
+//        INDArray syn0 = syn0Acc.value().getSecond();
+//        InMemoryLookupTable inMemoryLookupTable = new InMemoryLookupTable();
+//        inMemoryLookupTable.setSyn0(syn0);
+//        inMemoryLookupTable.setVocab(vocabCache);
+//        lookupTable = inMemoryLookupTable;
 
         return new Pair<>(vocabCacheBroadcast.getValue(), this.lookupTable);
     }

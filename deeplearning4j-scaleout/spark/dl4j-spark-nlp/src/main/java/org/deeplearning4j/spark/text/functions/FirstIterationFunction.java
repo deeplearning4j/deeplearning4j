@@ -15,7 +15,7 @@ import java.util.Map.Entry;
  * @author jeffreytang
  */
 public class FirstIterationFunction
-        implements FlatMapFunction< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<Integer, List<INDArray>> > {
+        implements FlatMapFunction< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<Integer, INDArray> > {
 
     private int ithIteration;
     private int vectorLength;
@@ -46,7 +46,7 @@ public class FirstIterationFunction
     }
 
     @Override
-    public Iterable<Entry<Integer, List<INDArray>>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
+    public Iterable<Entry<Integer, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
 
         Map<Integer, INDArray> indexSyn0VecMap = new HashMap<>();
         Map<Integer, INDArray> pointSyn1VecMap = new HashMap<>();
@@ -161,10 +161,10 @@ public class FirstIterationFunction
         indexSyn0VecMap.put(currentWordIndex, randomSyn0Vec);
     }
 
-    public Map<Integer, List<INDArray>> groupMap(Map<Integer, INDArray> indexSyn0VecMap,
+    public Map<Integer, INDArray> groupMap(Map<Integer, INDArray> indexSyn0VecMap,
                                            Map<Integer, List<Integer>> pointIndexListMap) {
 
-        Map<Integer, List<INDArray>> pointSyn0VecMap = new HashMap<>();
+        Map<Integer, INDArray> pointSyn0VecMap = new HashMap<>();
         for (Entry<Integer, List<Integer>> pointIndexList : pointIndexListMap.entrySet()) {
             int point = pointIndexList.getKey();
             List<Integer> indexList = pointIndexList.getValue();
@@ -172,11 +172,9 @@ public class FirstIterationFunction
                 int index = indexList.get(i);
                 INDArray syn0Vec = indexSyn0VecMap.get(index);
                 if (!pointSyn0VecMap.containsKey(point)) {
-                    ArrayList<INDArray> indArrays = new ArrayList<>();
-                    pointSyn0VecMap.put(point, indArrays);
-                    indArrays.add(syn0Vec);
+                    pointSyn0VecMap.put(point, syn0Vec);
                 } else {
-                    pointSyn0VecMap.get(point).add(syn0Vec);
+                    pointSyn0VecMap.get(point).addi(syn0Vec);
                 }
             }
         }
