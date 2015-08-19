@@ -26,6 +26,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
@@ -115,7 +116,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
     }
 
     // Training word2vec based on corpus
-    public void train(JavaRDD<String> corpusRDD) throws Exception {
+    public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> corpusRDD) throws Exception {
         log.info("Start training ...");
 
         // SparkContext
@@ -173,6 +174,8 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         Broadcast<Map<String, Object>> word2vecVarMapBroadcast = sc.broadcast(word2vecVarMap);
         Broadcast<double[]> expTableBroadcast = sc.broadcast(expTable);
 
+
+
         /////////////////////////////////////
         log.info("Training word2vec sentences ...");
         FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast);
@@ -189,6 +192,8 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         inMemoryLookupTable.setSyn0(syn0);
         inMemoryLookupTable.setVocab(vocabCache);
         lookupTable = inMemoryLookupTable;
+
+        return new Pair<>(vocabCacheBroadcast.getValue(), this.lookupTable);
     }
 
     public int getVectorLength() {
