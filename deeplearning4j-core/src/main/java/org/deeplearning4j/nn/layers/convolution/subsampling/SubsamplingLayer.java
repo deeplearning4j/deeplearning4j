@@ -31,7 +31,6 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -80,7 +79,7 @@ public class SubsamplingLayer extends BaseLayer {
         //only scale and reshape epsilon
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
-        INDArray reshapeEpsilon, retE;
+        INDArray reshapeEpsilon, retE, reshaped;
         Gradient retGradient = new DefaultGradient();
 
         switch(conf.getPoolingType()) {
@@ -91,26 +90,27 @@ public class SubsamplingLayer extends BaseLayer {
                 int outW = epsilon.size(3);
                 //compute backwards kernel based on rearranging the given error
                 retE = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
-                reshapeEpsilon = Nd4j.rollAxis(retE.reshape(n,c,-1,outH,outW),2);
+                reshaped = retE.reshape(n,c,-1,outH,outW);
+                reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
                 Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
                 while(iter.hasNext()) {
-                    int[] next = iter.next();
-                    double epsGet = epsilon.getDouble(next);
-                    int idx = maxIndexes.getInt(next);
-                    reshapeEpsilon.putScalar(idx,epsGet);
+                    int[] i = iter.next();
+                    double epsGet = epsilon.getDouble(i);
+                    int idx = maxIndexes.getInt(i);
+                    INDArray sliceToGetFrom = reshapeEpsilon.get(NDArrayIndex.point(idx));
+                    sliceToGetFrom.putScalar(i,epsGet);
                 }
-                reshapeEpsilon = reshapeEpsilon.reshape(Ints.concat(new int[] {1}, reshapeEpsilon.shape()));
-                reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
+                reshapeEpsilon = Convolution.col2im(retE,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
                 retE = epsilon.get(
-                        NDArrayIndex.point(0)
-                        , NDArrayIndex.all()
+                        NDArrayIndex.all()
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());
+//                retE = retE.reshape(1,2,1,1,2,2); TODO remove - this is just used to check shapes till get is fixed
                 reshapeEpsilon = Nd4j.tile(retE,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
                 reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
@@ -120,7 +120,6 @@ public class SubsamplingLayer extends BaseLayer {
                 return new Pair<>(retGradient, epsilon);
             default: throw new IllegalStateException("Un supported pooling type");
         }
-
     }
 
 
