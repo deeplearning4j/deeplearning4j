@@ -139,8 +139,10 @@ public class Glove implements Serializable {
             put("tokenPreprocessor", tokenPreprocessor);
             put("removeStop", removeStop);
         }};
+        Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(tokenizerVarMap);
 
-        TextPipeline pipeline = new TextPipeline(rdd, tokenizerVarMap);
+
+        TextPipeline pipeline = new TextPipeline(rdd, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
 

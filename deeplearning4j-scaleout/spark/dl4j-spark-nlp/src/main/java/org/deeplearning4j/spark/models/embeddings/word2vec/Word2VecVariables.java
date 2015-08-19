@@ -1,6 +1,5 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
-import lombok.Data;
 import org.apache.spark.SparkConf;
 
 import java.util.HashMap;
@@ -9,7 +8,7 @@ import java.util.Map;
 /**
  * @author jeffreytang
  */
-@Data
+@Deprecated
 public class Word2VecVariables {
 
     public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.word2vec";

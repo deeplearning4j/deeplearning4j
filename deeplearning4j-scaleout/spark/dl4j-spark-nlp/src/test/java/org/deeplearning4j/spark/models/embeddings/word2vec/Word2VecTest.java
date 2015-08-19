@@ -21,12 +21,6 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -69,12 +63,12 @@ public class Word2VecTest {
         JavaRDD<String> corpus = sc.textFile(dataPath);
 
         Word2Vec word2Vec = new Word2Vec();
-        Pair<VocabCache,WeightLookupTable> table = word2Vec.train(corpus);
-        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(), table.getFirst()));
-        Collection<String> words = vectors.wordsNearest("day", 10);
+        word2Vec.train(corpus);
+        Collection<String> words = word2Vec.wordsNearest("day", 10);
         System.out.println(Arrays.toString(words.toArray()));
 
 //        assertTrue(words.contains("week"));
     }
+
 
 }
