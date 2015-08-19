@@ -975,7 +975,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if(ret.isVector()) {
             int offset = 0;
             for(INDArray arr : toConcat) {
-                for(int i = 0; i < arr.length(); i++) {
+                for(int i = 0; i < arr.size(dimension); i++) {
                     ret.putScalar(offset++,arr.getDouble(i));
                 }
             }
