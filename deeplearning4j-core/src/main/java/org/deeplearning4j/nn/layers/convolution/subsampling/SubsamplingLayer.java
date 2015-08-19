@@ -79,7 +79,7 @@ public class SubsamplingLayer extends BaseLayer {
         //only scale and reshape epsilon
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
-        INDArray reshapeEpsilon, retE;
+        INDArray reshapeEpsilon, retE, reshaped;
         Gradient retGradient = new DefaultGradient();
 
         switch(conf.getPoolingType()) {
@@ -90,7 +90,7 @@ public class SubsamplingLayer extends BaseLayer {
                 int outW = epsilon.size(3);
                 //compute backwards kernel based on rearranging the given error
                 retE = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
-                INDArray reshaped = retE.reshape(n,c,-1,outH,outW);
+                reshaped = retE.reshape(n,c,-1,outH,outW);
                 reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
                 Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
@@ -106,12 +106,10 @@ public class SubsamplingLayer extends BaseLayer {
             case AVG:
                 //compute reverse average error
                 retE = epsilon.get(
-                        NDArrayIndex.all(),
                         NDArrayIndex.all()
+                        , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());
-                 //strides appear to be wrong here
-
                 reshapeEpsilon = Nd4j.tile(retE,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
                 reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
