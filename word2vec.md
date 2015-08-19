@@ -136,7 +136,11 @@ If you want to load a text file besides the sentences provided in our example, y
             }
         });
 
-That is, get rid of the `ClassPathResource` and feed the absolute path of your txt file into the LineSentenceIterator. In bash, you can find the absolute file path by typing `pwd` in your command line. To that, you'll add the file name and voila.
+That is, get rid of the `ClassPathResource` and feed the absolute path of your txt file into the LineSentenceIterator. 
+
+        SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
+
+In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that directory. To that path, you'll add the file name and voila.
 
 ### Tokenizing the Data
 
