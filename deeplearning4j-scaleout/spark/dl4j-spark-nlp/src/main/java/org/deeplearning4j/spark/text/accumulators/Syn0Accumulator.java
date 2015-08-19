@@ -11,10 +11,11 @@ import org.nd4j.linalg.factory.Nd4j;
 public class Syn0Accumulator implements AccumulatorParam< Pair<Integer, INDArray> > {
 
     private int vectorLength;
+    private int vocabSize;
 
-    public Syn0Accumulator(int vectorLength) {
-
+    public Syn0Accumulator(int vectorLength, int vocabSize) {
         this.vectorLength = vectorLength;
+        this.vocabSize = vocabSize;
     }
 
     @Override
@@ -29,14 +30,14 @@ public class Syn0Accumulator implements AccumulatorParam< Pair<Integer, INDArray
 
     @Override
     public Pair<Integer, INDArray> zero(Pair<Integer, INDArray> pair) {
-        return new Pair<>(0, Nd4j.zeros(vectorLength));
+        return new Pair<>(0, Nd4j.zeros(vocabSize, vectorLength));
     }
 
     @Override
     public Pair<Integer, INDArray> addAccumulator(Pair<Integer, INDArray> pair1,
                                                       Pair<Integer, INDArray> pair2) {
         if (pair1 == null) {
-            return new Pair<>(0, Nd4j.zeros(vectorLength));
+            return new Pair<>(0, Nd4j.zeros(vocabSize, vectorLength));
         }
         addInPlace(pair1, pair2);
         return pair1;

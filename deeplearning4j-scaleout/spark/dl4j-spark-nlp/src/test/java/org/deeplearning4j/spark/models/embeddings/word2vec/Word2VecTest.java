@@ -27,6 +27,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -52,7 +53,7 @@ public class Word2VecTest {
         Word2Vec word2Vec = new Word2Vec().setNumWords(1).setnGrams(1)
                 .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
                 .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
-                .setRemoveStop(true)
+                .setRemoveStop(false)
                 .setSeed(42L)
                 .setNegative(0)
                 .setUseAdaGrad(false)
@@ -60,10 +61,15 @@ public class Word2VecTest {
                 .setWindow(5)
                 .setAlpha(0.025).setMinAlpha(0.0001)
                 .setIterations(1);
-        ;
+
         Pair<VocabCache, WeightLookupTable> table = word2Vec.train(corpus);
+        WeightLookupTable second = table.getSecond();
         WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(),
-                                                                       table.getFirst()));
+                table.getFirst()));
+        WordVectorSerializer.writeWordVectors((InMemoryLookupTable) table.getSecond(),
+                (InMemoryLookupCache) table.getFirst(), "spark_wordvectors.txt");
+
+
 //        Collection<String> words = vectors.wordsNearest("day", 10);
 //        System.out.println(Arrays.toString(words.toArray()));
 //
