@@ -106,9 +106,8 @@ public class SubsamplingLayer extends BaseLayer {
             case AVG:
                 //compute reverse average error
                 retE = epsilon.get(
-                        NDArrayIndex.point(0)
-                        , NDArrayIndex.all()
-                        , NDArrayIndex.all()
+                        NDArrayIndex.all(),
+                        NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());
                  //strides appear to be wrong here
@@ -122,7 +121,6 @@ public class SubsamplingLayer extends BaseLayer {
                 return new Pair<>(retGradient, epsilon);
             default: throw new IllegalStateException("Un supported pooling type");
         }
-
     }
 
 
