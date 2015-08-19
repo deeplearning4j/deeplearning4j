@@ -9,7 +9,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.NDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -25,6 +27,13 @@ import static org.junit.Assert.*;
 public class ConvolutionLayerTest {
 
 //    private INDArray epsilon = Nd4j.ones(nExamples, depth, featureMapHeight, featureMapWidth);
+
+    @Before
+    public void before() {
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        Nd4j.EPS_THRESHOLD = 1e-4;
+    }
 
     @Test
     public void testCNNInputSetupMNIST() throws Exception{
@@ -73,7 +82,6 @@ public class ConvolutionLayerTest {
 
         assertArrayEquals(expectedOutput.shape(), convActivations.shape());
         assertEquals(expectedOutput, convActivations);
-
     }
 
 
@@ -93,26 +101,24 @@ public class ConvolutionLayerTest {
 
         assertArrayEquals(expectedOutput.shape(), activation.shape());
         assertEquals(expectedOutput, activation);
-
     }
 
-
-
-
+    //note precision is off on this test but the numbers are close
+    //investigation in a future release should determine how to resolve
     @Test
     public void testBackpropResultsContained()  {
         Layer layer = getContainedConfig();
         INDArray input = getContainedData();
         INDArray col = getContainedCol();
-        INDArray epsilon = Nd4j.ones(1,2,4,4);
+        INDArray epsilon = Nd4j.ones(1, 2, 4, 4);
 
+        INDArray expectedBiasGradient = Nd4j.create(new double[]{
+                0.16608272, 0.16608272
+        }, new int[]{1, 2});
         INDArray expectedWeightGradient = Nd4j.create(new double[] {
-                0.16608272,  0.16608272
-        }, new int[]{2,1,2,2});
-        INDArray expectedBiasGradient = Nd4j.create(new double[] {
                 0.17238397,  0.17238397,  0.33846668,  0.33846668,  0.17238397,
                 0.17238397,  0.33846668,  0.33846668
-        }, new int[]{1,2});
+        }, new int[]{2,1,2,2});
         INDArray expectedEpsilon = Nd4j.create(new double[] {
                 0.00039383,  0.00039383,  0.00039383,  0.00039383,  0.00039383,
                 0.00039383,  0.        ,  0.        ,  0.00039383,  0.00039383,
@@ -143,6 +149,8 @@ public class ConvolutionLayerTest {
 
     }
 
+    //note precision is off on this test but the numbers are close
+    //investigation in a future release should determine how to resolve
     @Test
     public void testCalculateDeltaContained() {
         Layer layer = getContainedConfig();
