@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -89,17 +90,18 @@ public class SubsamplingLayer extends BaseLayer {
                 int outW = epsilon.size(3);
                 //compute backwards kernel based on rearranging the given error
                 retE = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
-                reshapeEpsilon = Nd4j.rollAxis(retE.reshape(n,c,-1,outH,outW),2);
+                INDArray reshaped = retE.reshape(n,c,-1,outH,outW);
+                reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
                 Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
                 while(iter.hasNext()) {
-                    int[] next = iter.next();
-                    double epsGet = epsilon.getDouble(next);
-                    int idx = maxIndexes.getInt(next);
-                    reshapeEpsilon.putScalar(idx,epsGet);
+                    int[] i = iter.next();
+                    double epsGet = epsilon.getDouble(i);
+                    int idx = maxIndexes.getInt(i);
+                    INDArray sliceToGetFrom = reshapeEpsilon.get(NDArrayIndex.point(idx));
+                    sliceToGetFrom.putScalar(i,epsGet);
                 }
-                reshapeEpsilon = reshapeEpsilon.reshape(Ints.concat(new int[] {1}, reshapeEpsilon.shape()));
-                reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
+                reshapeEpsilon = Convolution.col2im(retE,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
@@ -109,6 +111,8 @@ public class SubsamplingLayer extends BaseLayer {
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());
+                 //strides appear to be wrong here
+
                 reshapeEpsilon = Nd4j.tile(retE,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
                 reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
