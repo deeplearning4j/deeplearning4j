@@ -95,8 +95,8 @@ public class ConvolutionLayer extends BaseLayer {
 
         Gradient retGradient = new DefaultGradient();
 
-        // TODO do we roll delta for biasGradient? Note chainer adds bias to existing biasGradient for layer. Do we want to do this?
-        //gb += gy[0].sum(axis=(0, 2, 3)) - add delta to bias or just pass in delta?
+        // TODO chainer adds bias to existing biasGradient for layer. Do we want to do this?
+        //gb += gy[0].sum(axis=(0, 2, 3))
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta.sum(0, 2, 3));
 
         // TODO Note chainer adds weightGradient to existing weightGradient for layer. Do we want to do this?
@@ -106,8 +106,7 @@ public class ConvolutionLayer extends BaseLayer {
 
         //gcol = tensorMmul(W, gy[0], (0, 1))
         INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta, new int[][]{{0, 1},new int[] {1,0}});
-        // TODO reshape epsilon?
-//        epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), epsilon.size(3));
+
         nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3).reshape(Ints.concat(new int[]{1, 1}, nextEpsilon.shape()));
         nextEpsilon = Convolution.col2im(nextEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
         return new Pair<>(retGradient,nextEpsilon);
