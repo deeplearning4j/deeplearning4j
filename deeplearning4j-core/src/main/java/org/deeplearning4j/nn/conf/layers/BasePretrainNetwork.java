@@ -18,10 +18,11 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     public BasePretrainNetwork(FeedForwardLayer.Builder builder){

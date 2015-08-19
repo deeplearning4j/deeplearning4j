@@ -93,10 +93,7 @@ public class TestOptimizers {
             double score = network.score(ds);
             assertTrue(score != 0.0 && !Double.isNaN(score));
 
-            if(PRINT_OPT_RESULTS) {
-                System.out.println("testOptimizersMLP() - " + oa );
-                System.out.println(score);
-            }
+            if(PRINT_OPT_RESULTS) System.out.println("testOptimizersMLP() - " + oa );
 
             int nCallsToOptimizer = 30;
             double[] scores = new double[nCallsToOptimizer + 1];
@@ -106,7 +103,6 @@ public class TestOptimizers {
                 network.computeGradientAndScore();
                 double scoreAfter = network.score();
                 scores[i + 1] = scoreAfter;
-                if(PRINT_OPT_RESULTS) System.out.println(scoreAfter);
                 assertTrue("Score is NaN after optimization", !Double.isNaN(scoreAfter));
                 assertTrue("OA= " + oa+", before= " + score + ", after= " + scoreAfter,scoreAfter < score);
                 score = scoreAfter;
@@ -121,7 +117,7 @@ public class TestOptimizers {
                 .weightInit(WeightInit.XAVIER)
                 .activationFunction("relu")
                 .optimizationAlgo(oa)
-                .updater(Updater.SGD)
+                .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
                 .iterations(nIterations)
                 .constrainGradientToUnitNorm(false)
                 .regularization(false)
@@ -355,6 +351,16 @@ public class TestOptimizers {
         public void setListeners(IterationListener... listeners) {
 
         }
+
+        @Override
+        public int getIndex() {
+            return 0;
+        }
+
+        @Override
+        public void setInput(INDArray input) {
+
+        }
     }
 
 
@@ -489,6 +495,16 @@ public class TestOptimizers {
 
         @Override
         public void setListeners(IterationListener... listeners) {
+
+        }
+
+        @Override
+        public int getIndex() {
+            return 0;
+        }
+
+        @Override
+        public void setInput(INDArray input) {
 
         }
     }
@@ -637,6 +653,16 @@ public class TestOptimizers {
         public void setListeners(IterationListener... listeners) {
 
         }
+
+        @Override
+        public int getIndex() {
+            return 0;
+        }
+
+        @Override
+        public void setInput(INDArray input) {
+
+        }
     }
 
 
@@ -703,12 +729,12 @@ public class TestOptimizers {
         }
 
         @Override
-        public double l2Magnitude() {
+        public double calcL2() {
             return 0;
         }
 
         @Override
-        public double l1Magnitude() {
+        public double calcL1() {
             return 0;
         }
 
@@ -796,10 +822,7 @@ public class TestOptimizers {
         public Gradient calcGradient(Gradient layerError, INDArray indArray) { throw new UnsupportedOperationException(); }
 
         @Override
-        public Gradient errorSignal(Gradient error, INDArray input){ throw new UnsupportedOperationException(); }
-
-        @Override
-        public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer){
+        public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon){
             throw new UnsupportedOperationException(); }
 
         @Override
@@ -833,6 +856,10 @@ public class TestOptimizers {
         public void setIndex(int index) { throw new UnsupportedOperationException(); }
 
         @Override
-        public int getIndex() { throw new UnsupportedOperationException(); }
+        public void setInputMiniBatchSize(int size){ }
+
+        @Override
+        public int getInputMiniBatchSize(){ return 1; }
+
     }
 }

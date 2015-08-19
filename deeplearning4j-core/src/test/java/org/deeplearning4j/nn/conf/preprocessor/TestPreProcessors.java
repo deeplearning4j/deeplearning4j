@@ -14,9 +14,9 @@ public class TestPreProcessors {
 		int hiddenLayerSize = 7;
 		int timeSeriesLength = 9;
 		
-		RnnToFeedForwardPreProcessor proc = new RnnToFeedForwardPreProcessor(miniBatchSize,hiddenLayerSize,timeSeriesLength);
+		RnnToFeedForwardPreProcessor proc = new RnnToFeedForwardPreProcessor(timeSeriesLength);
 		
-		INDArray activations3d = Nd4j.zeros(miniBatchSize,hiddenLayerSize,timeSeriesLength);	//Nd4j.rand(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
+		INDArray activations3d = Nd4j.rand(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
 		for( int i=0; i<miniBatchSize; i++ ){
 			for( int j=0; j<hiddenLayerSize; j++ ){
 				for( int k=0; k<timeSeriesLength; k++ ){
@@ -51,12 +51,11 @@ public class TestPreProcessors {
 	@Test
 	public void testFeedForwardToRnnPreProcessor(){
 		Nd4j.getRandom().setSeed(12345L);
-		
 		int miniBatchSize = 5;
 		int hiddenLayerSize = 7;
 		int timeSeriesLength = 9;
 		
-		FeedForwardToRnnPreProcessor proc = new FeedForwardToRnnPreProcessor(miniBatchSize,hiddenLayerSize,timeSeriesLength);
+		FeedForwardToRnnPreProcessor proc = new FeedForwardToRnnPreProcessor(timeSeriesLength);
 		
 		INDArray activations2d = Nd4j.rand(miniBatchSize*timeSeriesLength,hiddenLayerSize);
 		
@@ -79,5 +78,4 @@ public class TestPreProcessors {
 		
 		assertTrue(epsilon2d.equals(activations2d));
 	}
-
 }

@@ -29,13 +29,6 @@ public abstract class BaseUpdater implements Updater {
         }
     }
 
-    @Override
-    public void applyUpdate(Layer layer, Gradient gradient) {
-        for(Map.Entry<String,INDArray> variables : layer.paramTable().entrySet()) {
-            layer.getParam(variables.getKey()).addi(gradient.getGradientFor(variables.getKey()));
-        }
-    }
-
     /**
      * Apply the regularization
      * @param layer
@@ -46,18 +39,16 @@ public abstract class BaseUpdater implements Updater {
         NeuralNetConfiguration conf = layer.conf();
         INDArray params = layer.getParam(param);
         if(conf.isUseRegularization() && conf.getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(params.mul(conf.getL2()));
-        if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(Transforms.sign(params).muli(conf.getL1()));
-
+        	gradient.addi(params.mul(conf.getL2()));	//dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function 
+        if(conf.isUseRegularization() && conf.getL1() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        	gradient.addi(Transforms.sign(params).muli(conf.getL1()));
         if(conf.isMiniBatch())
-            gradient.divi((double) layer.input().size(0));
+            gradient.divi(layer.getInputMiniBatchSize());
 
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
     }
-
 
     public abstract void init();
 

@@ -1,4 +1,4 @@
-package org.deeplearning4j.models.classifiers.lstm;
+package org.deeplearning4j.nn.layers.recurrent;
 
 import static org.junit.Assert.*;
 
@@ -87,13 +87,13 @@ public class GravesLSTMTest {
 
 		INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
-		Pair<Gradient,INDArray> out = lstm.backpropGradient(epsilon, null, null);
+		Pair<Gradient,INDArray> out = lstm.backpropGradient(epsilon);
 		Gradient outGradient = out.getFirst();
 		INDArray nextEpsilon = out.getSecond();
 
-		INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS);
-		INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHTS);
-		INDArray recurrentWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+		INDArray biasGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.BIAS_KEY);
+		INDArray inWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
+		INDArray recurrentWeightGradient = outGradient.getGradientFor(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
 		assertNotNull(biasGradient);
 		assertNotNull(inWeightGradient);
 		assertNotNull(recurrentWeightGradient);
