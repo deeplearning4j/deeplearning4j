@@ -33,7 +33,13 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/** Gated Recurrent Unit RNN Layer.
+/** Gated Recurrent Unit RNN Layer.<br>
+ * The GRU was recently proposed by Cho et al. 2014 - http://arxiv.org/abs/1406.1078<br>
+ * It is similar to the LSTM architecture in that both use a gating structure within each unit
+ * to attempt to capture long-term dependencies and deal with the vanishing gradient problem.
+ * A GRU layer contains fewer parameters than an equivalent size LSTM layer, and some research
+ * (such as http://arxiv.org/abs/1412.3555) suggests it may outperform LSTM layers (given an
+ * equal number of parameters) in some cases.
  * @author Alex Black
  */
 public class GRU extends BaseLayer {

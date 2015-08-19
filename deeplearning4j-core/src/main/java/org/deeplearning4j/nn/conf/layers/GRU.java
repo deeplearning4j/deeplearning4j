@@ -26,7 +26,14 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
-/**GRU Recurrent net
+/** Gated Recurrent Unit RNN Layer.<br>
+ * The GRU was recently proposed by Cho et al. 2014 - http://arxiv.org/abs/1406.1078<br>
+ * It is similar to the LSTM architecture in that both use a gating structure within each unit
+ * to attempt to capture long-term dependencies and deal with the vanishing gradient problem.
+ * A GRU layer contains fewer parameters than an equivalent size LSTM layer, and some research
+ * (such as http://arxiv.org/abs/1412.3555) suggests it may outperform LSTM layers (given an
+ * equal number of parameters) in some cases.
+ * @author Alex Black
  */
 @Data @NoArgsConstructor
 public class GRU extends FeedForwardLayer {
