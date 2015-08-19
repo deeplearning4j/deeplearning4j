@@ -20,7 +20,7 @@ package org.deeplearning4j.spark.text;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecPerformer;
+import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables;
 import org.junit.After;
 import org.junit.Before;
 
@@ -53,7 +53,7 @@ public abstract class BaseSparkTest implements Serializable {
         SparkConf sparkConf = new SparkConf()
                 .setMaster("local[4]")
                 .setAppName("sparktest")
-                .set(Word2VecPerformer.NUM_WORDS, String.valueOf(1));
+                .set(Word2VecVariables.NUM_WORDS, String.valueOf(1));
 
 
         sc = new JavaSparkContext(sparkConf);

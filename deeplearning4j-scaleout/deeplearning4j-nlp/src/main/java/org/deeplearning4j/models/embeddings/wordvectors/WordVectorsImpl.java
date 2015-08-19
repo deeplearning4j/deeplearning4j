@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.models.embeddings.wordvectors;
 
+import com.google.common.collect.Lists;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -382,6 +383,7 @@ public class WordVectorsImpl implements WordVectors {
      */
     @Override
     public Collection<String> wordsNearest(Collection<String> positive, Collection<String> negative, int top) {
+        // Check every word is in the model
         for (String p : SetUtils.union(new HashSet<>(positive), new HashSet<>(negative))) {
             if (!vocab().containsWord(p)) {
                 return new ArrayList<>();
@@ -404,19 +406,19 @@ public class WordVectorsImpl implements WordVectors {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
 
             INDArray syn0 = l.getSyn0();
-
+            syn0.diviRowVector(syn0.norm2(1));
             INDArray weights = Transforms.unitVec(mean);
-            INDArray distances = syn0.mmul(weights.transpose());
+
+            INDArray similarity = weights.mmul(syn0.transpose());
             // We assume that syn0 is normalized.
             // Hence, the following division is not needed anymore.
             // distances.diviRowVector(distances.norm2(1));
             //INDArray[] sorted = Nd4j.sortWithIndices(distances,0,false);
-            INDArray[] sorted = getTopN(distances.vectorAlongDimension(0, 0), top + union.size());
-            INDArray sort = sorted[0];
+            List<Double> highToLowSimList = getTopN(similarity, top);
             List<String> ret = new ArrayList<>();
 
-            for (int i = 0; i < sort.length(); i++) {
-                String word = vocab().wordAtIndex(sort.getInt(i));
+            for (int i = 0; i < highToLowSimList.size(); i++) {
+                String word = vocab().wordAtIndex(highToLowSimList.get(i).intValue());
                 if (word != null && !word.equals("UNK") && !word.equals("STOP") && !union.contains(word)) {
                     ret.add(word);
                     if (ret.size() >= top) {
@@ -458,7 +460,7 @@ public class WordVectorsImpl implements WordVectors {
      * @param N the number of elements to extract
      * @return the indices and the sorted top N elements
      */
-    private static INDArray[] getTopN(INDArray vec, int N) {
+    private static List<Double> getTopN(INDArray vec, int N) {
         ArrayComparator comparator = new ArrayComparator();
         PriorityQueue<Double[]> queue = new PriorityQueue<>(vec.rows(),comparator);
 
@@ -475,18 +477,13 @@ public class WordVectorsImpl implements WordVectors {
             }
         }
 
-        vec = Nd4j.create(queue.size());
-        INDArray indexVector = Nd4j.create(queue.size());
-
-        int index = queue.size();
+        List<Double> lowToHighSimLst = new ArrayList<>();
 
         while (!queue.isEmpty()) {
-            Double[] pair = queue.poll();
-            vec.putScalar(--index, pair[0]);
-            indexVector.putScalar(index, pair[1]);
+            double ind = queue.poll()[1];
+            lowToHighSimLst.add(ind);
         }
-
-        return new INDArray[]{indexVector, vec};
+        return Lists.reverse(lowToHighSimLst);
     }
 
 
