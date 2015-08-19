@@ -11,9 +11,11 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.NDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.*;
 
@@ -22,31 +24,12 @@ import static org.junit.Assert.*;
  */
 public class ConvolutionLayerTest {
 
-    // Mnist data example parameters
-    private int inputWidth = 28;
-    private int inputHeight = 28;
-
-    private int[] kernelSize = new int[] {9, 9};
-    private int[] stride = new int[] {2, 2};
-    private int[] padding = new int[] {0,0};
-    private int nChannelsIn = 1;
-    private int depth = 10;
-    private int nExamples = 10;
-    int featureMapHeight = (inputHeight + padding[0] * 2 - kernelSize[0]) / stride[0] + 1;
-    int  featureMapWidth = (inputWidth + padding[1] * 2 - kernelSize[1]) / stride[1] + 1;
-//    private INDArray weights = Nd4j.rand() ;
-//    private INDArray bias = Nd4j.rand();
-
-    private INDArray epsilon = Nd4j.ones(nExamples, depth, featureMapHeight, featureMapWidth);
+//    private INDArray epsilon = Nd4j.ones(nExamples, depth, featureMapHeight, featureMapWidth);
 
     @Test
-    public void testCNNInputSetup() throws Exception{
+    public void testCNNInputSetupMNIST() throws Exception{
         INDArray input = getMnistData();
-        int[] stride = new int[] {3,3};
-        int[] padding = new int[] {1,1};
-        int[] kernelSize = new int[] {2,2};
-
-        Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize,  stride, padding);
+        Layer layer = getMNISTConfig();
         layer.activate(input);
 
         assertEquals(input, layer.input());
@@ -54,7 +37,15 @@ public class ConvolutionLayerTest {
     }
 
     @Test
-    public void testFeatureMapShape() throws Exception  {
+    public void testFeatureMapShapeMNIST() throws Exception  {
+        int inputWidth = 28;
+        int[] stride = new int[] {2, 2};
+        int[] padding = new int[] {0,0};
+        int[] kernelSize = new int[] {9, 9};
+        int nChannelsIn = 1;
+        int depth = 20;
+        int  featureMapWidth = (inputWidth + padding[1] * 2 - kernelSize[1]) / stride[1] + 1;
+
         INDArray input = getMnistData();
 
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
@@ -65,7 +56,7 @@ public class ConvolutionLayerTest {
     }
 
     @Test
-    public void testActivateResults()  {
+    public void testActivateResultsContained()  {
         Layer layer = getContainedConfig();
         INDArray input = getContainedData();
         INDArray expectedOutput = Nd4j.create(new double[] {
@@ -87,7 +78,7 @@ public class ConvolutionLayerTest {
 
 
     @Test
-    public void testPreOutputMethod()  {
+    public void testPreOutputMethodContained()  {
         Layer layer = getContainedConfig();
         INDArray col = getContainedCol();
 
@@ -109,23 +100,33 @@ public class ConvolutionLayerTest {
 
 
     @Test
-    public void testBackpropResults()  {
+    public void testBackpropResultsContained()  {
         Layer layer = getContainedConfig();
         INDArray input = getContainedData();
         INDArray col = getContainedCol();
         INDArray epsilon = Nd4j.ones(1,2,4,4);
 
         INDArray expectedWeightGradient = Nd4j.create(new double[] {
-                -1440., -1440., -1984., -1984., -1440., -1440., -1984., -1984.
+                0.16608272,  0.16608272
         }, new int[]{2,1,2,2});
-        INDArray expectedBiasGradient = Nd4j.create(new double[] {-544., -544.}, new int[]{1,2});
+        INDArray expectedBiasGradient = Nd4j.create(new double[] {
+                0.17238397,  0.17238397,  0.33846668,  0.33846668,  0.17238397,
+                0.17238397,  0.33846668,  0.33846668
+        }, new int[]{1,2});
         INDArray expectedEpsilon = Nd4j.create(new double[] {
-                -12., -12., -12., -12., -12., -12., -12., -12., -12., -12., -12.,
-                -12., -12., -12., -12., -12., -56., -56., -56., -56., -56., -56.,
-                -56., -56., -56., -56., -56., -56., -56., -56., -56., -56., -12.,
-                -12., -12., -12., -12., -12., -12., -12., -12., -12., -12., -12.,
-                -12., -12., -12., -12., -56., -56., -56., -56., -56., -56., -56.,
-                -56., -56., -56., -56., -56., -56., -56., -56., -56.
+                0.00039383,  0.00039383,  0.00039383,  0.00039383,  0.00039383,
+                0.00039383,  0.        ,  0.        ,  0.00039383,  0.00039383,
+                0.00039383,  0.00039383,  0.00039383,  0.00039383,  0.        ,
+                0.        ,  0.02036651,  0.02036651,  0.02036651,  0.02036651,
+                0.02036651,  0.02036651,  0.        ,  0.        ,  0.02036651,
+                0.02036651,  0.02036651,  0.02036651,  0.02036651,  0.02036651,
+                0.        ,  0.        ,  0.00039383,  0.00039383,  0.00039383,
+                0.00039383,  0.00039383,  0.00039383,  0.        ,  0.        ,
+                0.00039383,  0.00039383,  0.00039383,  0.00039383,  0.00039383,
+                0.00039383,  0.        ,  0.        ,  0.        ,  0.        ,
+                0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+                0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+                0.        ,  0.        ,  0.        ,  0.
         },new int[]{1,1,8,8});
 
         layer.setInput(input);
@@ -143,16 +144,20 @@ public class ConvolutionLayerTest {
     }
 
     @Test
-    public void testCalculateDelta() {
+    public void testCalculateDeltaContained() {
         Layer layer = getContainedConfig();
         INDArray input = getContainedData();
         INDArray col = getContainedCol();
         INDArray epsilon = Nd4j.ones(1,2,4,4);
 
         INDArray expectedOutput = Nd4j.create(new double[] {
-                -12., -12., -12., -12., -56., -56., -56., -56., -12., -12., -12.,
-                -12., -56., -56., -56., -56., -12., -12., -12., -12., -56., -56.,
-                -56., -56., -12., -12., -12., -12., -56., -56., -56., -56.
+                0.02036651,  0.02036651,  0.02036651,  0.02036651,  0.00039383,
+                0.00039383,  0.00039383,  0.00039383,  0.02036651,  0.02036651,
+                0.02036651,  0.02036651,  0.00039383,  0.00039383,  0.00039383,
+                0.00039383,  0.02036651,  0.02036651,  0.02036651,  0.02036651,
+                0.00039383,  0.00039383,  0.00039383,  0.00039383,  0.02036651,
+                0.02036651,  0.02036651,  0.02036651,  0.00039383,  0.00039383,
+                0.00039383,  0.00039383
         },new int[]{1, 2, 4, 4});
 
         layer.setInput(input);
@@ -162,12 +167,12 @@ public class ConvolutionLayerTest {
 
         assertArrayEquals(expectedOutput.shape(), delta.shape());
         assertEquals(expectedOutput, delta);
-
     }
 
     //////////////////////////////////////////////////////////////////////////////////
 
     private static Layer getCNNConfig(int nIn, int nOut, int[] kernelSize, int[] stride, int[] padding){
+
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding)
                 .nIn(nIn)
                 .nOut(nOut)
@@ -182,17 +187,36 @@ public class ConvolutionLayerTest {
 
     }
 
-    public Layer getContainedConfig(){
-//        int inputWidth = input.shape()[0];
-//        int inputHeight = input.shape()[1];
+    public Layer getMNISTConfig(){
+        int[] kernelSize = new int[] {9, 9};
+        int[] stride = new int[] {2,2};
+        int[] padding = new int[] {1,1};
+        int nChannelsIn = 1;
+        int depth = 20;
 
+        return getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
+
+    }
+
+    public INDArray getMnistData() throws Exception {
+        int inputWidth = 28;
+        int inputHeight = 28;
+        int nChannelsIn = 1;
+        int nExamples = 5;
+
+        DataSetIterator data = new MnistDataSetIterator(nExamples, nExamples);
+        DataSet mnist = data.next();
+        nExamples = mnist.numExamples();
+        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputHeight, inputWidth);
+    }
+
+    public Layer getContainedConfig(){
         int[] kernelSize = new int[] {2, 2};
         int[] stride = new int[] {2,2};
         int[] padding = new int[] {0,0};
         int nChannelsIn = 1;
         int depth = 2;
-//        int featureMapWidth = (inputWidth + padding[0] * 2 - kernelSize[0]) / stride[0] + 1;
-//        int featureMapHeight = (inputHeight + padding[1] * 2 - kernelSize[1]) / stride[0] + 1;
+
         INDArray W = Nd4j.create(new double[] {0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5}, new int[]{2,1,2,2});
         INDArray b = Nd4j.create(new double[] {1,1});
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
@@ -201,13 +225,6 @@ public class ConvolutionLayerTest {
 
         return layer;
 
-    }
-
-    public INDArray getMnistData() throws Exception {
-        DataSetIterator data = new MnistDataSetIterator(5,5);
-        DataSet mnist = data.next();
-        nExamples = mnist.numExamples();
-        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputHeight, inputWidth);
     }
 
     public INDArray getContainedData() {
@@ -228,6 +245,16 @@ public class ConvolutionLayerTest {
     }
 
     private Gradient createPrevGradient() {
+        int inputWidth = 28;
+        int inputHeight = 28;
+        int[] stride = new int[] {2, 2};
+        int[] padding = new int[] {0,0};
+        int[] kernelSize = new int[] {9, 9};
+        int nChannelsIn = 1;
+        int nExamples = 5;
+        int  featureMapHeight = (inputHeight + padding[0] * 2 - kernelSize[0]) / stride[0] + 1;
+        int  featureMapWidth = (inputWidth + padding[1] * 2 - kernelSize[1]) / stride[1] + 1;
+
         Gradient gradient = new DefaultGradient();
         INDArray pseudoGradients = Nd4j.ones(nExamples, nChannelsIn, featureMapHeight, featureMapWidth);
 
