@@ -72,7 +72,7 @@ The definition of an eigenvector, therefore, is a vector that responds to a matr
 
 You might also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
 
-Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides (each serving a distinct purpose), square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix would have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix would have n eigenvectors, each one representing its line of action in one dimension. 
+Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides (each serving a distinct purpose), square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix could have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix could have n eigenvectors, each one representing its line of action in one dimension. 
 
 Because eigenvectors distill the axes of principal force that a matrix moves input along, they are useful in matrix decomposition; i.e. [the diagonalization of a matrix along its eigenvectors](http://mathworld.wolfram.com/MatrixDiagonalization.html). Because those eigenvectors are representative of the matrix, they perform the same task as the autoencoders employed by deep neural networks. 
 
@@ -124,7 +124,7 @@ The first principal component bisects a scatterplot with a straight line in a wa
 
 ![Alt text](../img/scatterplot_line.png)
 
-The second principal component cuts through the data perpendicular to the first, fitting the errors produced by the first. There are only two principal components in the graph above, but if it were three-dimensional, the third component would fits the errors from the first and second principal components, and so forth. 
+The second principal component cuts through the data perpendicular to the first, fitting the errors produced by the first. There are only two principal components in the graph above, but if it were three-dimensional, the third component would fit the errors from the first and second principal components, and so forth. 
 
 ## <a name="covariance">Covariance Matrix</a>
 
@@ -148,7 +148,9 @@ If two variables increase and decrease together (a line going up and to the righ
 
 (*Credit: Vincent Spruyt*)
 
-Notice that when one variable or the other doesn't move at all, and the graph shows no diagonal motion, there is no covariance whatsoever. Also, in the equation below, you'll notice that there is only a small difference between covariance and variance.
+Notice that when one variable or the other doesn't move at all, and the graph shows no diagonal motion, there is no covariance whatsoever. Covariance answers the question: do these two variables dance together? If one remains null while the other moves, the answer is no. 
+
+Also, in the equation below, you'll notice that there is only a small difference between covariance and variance.
 
 ![Alt text](../img/covariance.png)
 
@@ -160,13 +162,15 @@ The great thing about calculating covariance is that, in a high-dimensional spac
 
 To sum up, the covariance matrix defines the shape of the data. Diagonal spread along eigenvectors is expressed by the covariance, while x-and-y-axis-aligned spread is expressed by the variance. 
 
-Causality has a bad name in statistics, so take this with a grain of salt: While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees. You can read covariance as traces of possible cause. 
+Causality has a bad name in statistics, so take this with a grain of salt: 
+
+While not entirely accurate, it may help to think of each component as a causal force in the Dutch basketball player example above, with the first principal component being age; the second possibly gender; the third nationality (implying nations' differing healthcare systems), and each of those occupying its own dimension in relation to height. Each acts on height to different degrees. You can read covariance as traces of possible cause. 
 
 ### <a name="change">Change of Basis</a>
 
 Because the eigenvectors of the covariance matrix are orthogonal to each other, they can be used to to reorient the data from the x and y axes to the axes represented by the principal components. You [re-base the coordinate system](https://en.wikipedia.org/wiki/Change_of_basis) for the dataset in a new space defined by its lines of greatest variance.
 
-The x and y axes we've shown above are what's called the basis of a matrix; that is, they provide the points of the matrix with x, y coordinates. But it is possible to recast a matrix along other axes; for example, the eigenvectors of a matrix can serve as a new set of coordinates for the same matrix. Matrices and vectors are animals in themselves, independent of the numbers linked to a specific coordinate system like x and y. 
+The x and y axes we've shown above are what's called the basis of a matrix; that is, they provide the points of the matrix with x, y coordinates. But it is possible to recast a matrix along other axes; for example, the eigenvectors of a matrix can serve as the foundation of a new set of coordinates for the same matrix. Matrices and vectors are animals in themselves, independent of the numbers linked to a specific coordinate system like x and y. 
 
 ![Alt text](../img/basis_change.png)
 
