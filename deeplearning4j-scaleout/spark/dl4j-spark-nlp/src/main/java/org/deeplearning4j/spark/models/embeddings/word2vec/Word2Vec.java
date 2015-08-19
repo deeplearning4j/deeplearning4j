@@ -19,19 +19,22 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.commons.math3.util.FastMath;
+import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.spark.text.functions.CountCumSum;
-import org.deeplearning4j.spark.text.functions.TextPipeline;
+import org.deeplearning4j.spark.text.accumulators.Syn0Accumulator;
+import org.deeplearning4j.spark.text.functions.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +63,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
     private int numWords = 1;
     private int window = 5;
     private double alpha= 0.025;
-    private double minAlpha = 1e-2;
+    private double minAlpha = 0.0001;
     private int iterations = 1;
     private int nGrams = 1;
     private String tokenizer = "org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory";
@@ -68,8 +71,15 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
     private boolean removeStop = false;
     private long seed = 42L;
 
-//    // Constructor to take InMemoryLookupCache table from an already trained model
-//    public Word2Vec(INDArray trainedSyn1) { this.trainedSyn1 = trainedSyn1; }
+    // Constructor to take InMemoryLookupCache table from an already trained model
+    public Word2Vec(INDArray trainedSyn1) {
+        this.trainedSyn1 = trainedSyn1;
+        this.expTable = initExpTable();
+    }
+
+    public Word2Vec() {
+        this.expTable = initExpTable();
+    }
 
     public double[] initExpTable() {
         double[] expTable = new double[1000];
@@ -100,20 +110,24 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
             put("minAlpha", minAlpha);
             put("iterations", iterations);
             put("seed", seed);
+            put("maxExp", MAX_EXP);
         }};
     }
 
     // Training word2vec based on corpus
-    public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> corpusRDD) throws Exception {
+    public void train(JavaRDD<String> corpusRDD) throws Exception {
         log.info("Start training ...");
 
-        // Each `train()` can use different parameters
+        // SparkContext
         final JavaSparkContext sc = new JavaSparkContext(corpusRDD.context());
 
-            // Variables to fill in in train
+        // Pre-defined variables
+        Map<String, Object> tokenizerVarMap = getTokenizerVarMap();
+        Map<String, Object> word2vecVarMap = getWord2vecVarMap();
+
+        // Variables to fill in in train
         final JavaRDD<AtomicLong> sentenceWordsCountRDD;
         final JavaRDD<List<VocabWord>> vocabWordListRDD;
-        final Long totalWordCount;
         final JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD;
         final VocabCache vocabCache;
         final Broadcast<VocabCache> vocabCacheBroadcast;
@@ -123,12 +137,13 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         //////////////////////////////////////
         log.info("Tokenization and building VocabCache ...");
         // Processing every sentence and make a VocabCache which gets fed into a LookupCache
-        TextPipeline pipeline = new TextPipeline(corpusRDD, getTokenizerVarMap());
+        Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(tokenizerVarMap);
+        TextPipeline pipeline = new TextPipeline(corpusRDD, broadcastTokenizerVarMap);
         pipeline.buildVocabCache();
         pipeline.buildVocabWordListRDD();
 
-        // Get total word count
-        totalWordCount = pipeline.getTotalWordCount();
+        // Get total word count and put into word2vec variable map
+        word2vecVarMap.put("totalWordCount", pipeline.getTotalWordCount());
 
         // 2 RDDs: (vocab words list) and (sentence Count).Already cached
         sentenceWordsCountRDD = pipeline.getSentenceCountRDD();
@@ -154,71 +169,26 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
                 .setName("vocabWordListSentenceCumSumRDD").cache();
 
         /////////////////////////////////////
-        log.info("Broadcasting word2vec variable map to workers ...");
-        Broadcast<Map<String, Object>> word2vecVarMapBroadcast = sc.broadcast(getWord2vecVarMap());
+        log.info("Broadcasting word2vec variables to workers ...");
+        Broadcast<Map<String, Object>> word2vecVarMapBroadcast = sc.broadcast(word2vecVarMap);
+        Broadcast<double[]> expTableBroadcast = sc.broadcast(expTable);
 
         /////////////////////////////////////
-//        vocabWordListSentenceCumSumRDD.map(new FirstIterationFunction(word2vecVarMapBroadcast))
+        log.info("Training word2vec sentences ...");
+        FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast);
+        @SuppressWarnings("unchecked")
+        JavaRDD< Pair<Integer, INDArray> > pointSyn0Vec =
+                vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc).flatMap(new FlatMapSyn0VecFunction());
 
 
-
-
-
-        //////////////////////////////////////
-//        log.info("Building Word2VecParams ...");
-//        // Define InMemoryLookupTable with InMemoryLookupCache
-//        final INDArray syn1;
-//        if (trainedSyn1 != null) {
-//            syn1 = trainedSyn1;
-//        } else {
-//            lookupTable = (InMemoryLookupTable) new InMemoryLookupTable.Builder()
-//                    .cache(vocabCache).vectorLength(vectorLength).negative(negative).build();
-//            lookupTable.resetWeights();
-//        }
-//        //Define Word2VecParam from InMemoryLookupTable
-//        final Word2VecParam param = new Word2VecParam.Builder()
-//                .negative(negative).window(window)
-//                .expTable(sc.broadcast(lookupTable.getExpTable()))
-//                .setAlpha(alpha)
-//                .setMinAlpha(minAlpha)
-//                .setVectorLength(vectorLength)
-//                .useAdaGrad(useAdaGrad)
-//                .weights(lookupTable)
-//                .build();
-//        param.setTotalWords(totalWordCount.intValue());
-
-        //////////////////////////////////////
-//        log.info("Training word2vec");
-//        //calculate all the errors
-//        Word2VecParam prevParam;
-//        for(int i = 0; i < iterations; i++) {
-//            final Broadcast<Word2VecParam> finalParamBroadcast = sc.broadcast(param);
-//
-//            if(finalParamBroadcast.value() == null)
-//                throw new IllegalStateException("Value not found for param broadcast");
-//            JavaRDD<Word2VecFuncCall> call = vocabWordListSentenceCumSumRDD.map(new Word2VecSetup(finalParamBroadcast));
-//            JavaRDD<Word2VecChange> change2 = call.map(new SentenceBatch());
-//            change2.foreach(new VoidFunction<Word2VecChange>() {
-//                @Override
-//                public void call(Word2VecChange change) throws Exception {
-//                    change.apply(lookupTable);
-//                }
-//            });
-//
-//            change2.unpersist();
-//            prevParam = param;
-//            // TODO: Have to send the changes back and build logic to apply changes to lookuptable and broadcast again
-//            if (prevParam.equals(param)) {
-//                throw new Exception("Param is not updated.");
-//            }
-//            log.info("Iteration " + i);
-//        }
-//
-//        // For WordVectorImpl, so nearestWord can be called
-//        super.lookupTable = lookupTable;
-//        super.vocab = vocabCacheBroadcast.getValue();
-//
-        return new Pair<VocabCache, WeightLookupTable>(vocabCacheBroadcast.getValue(),lookupTable);
+        final Accumulator<Pair<Integer, INDArray>> syn0Acc = sc.accumulator(new Pair<>(0, Nd4j.zeros(vectorLength)),
+                new Syn0Accumulator(vectorLength));
+        pointSyn0Vec.foreach(new UpdateSyn0AccumulatorFunction(syn0Acc));
+        INDArray syn0 = syn0Acc.value().getSecond();
+        InMemoryLookupTable inMemoryLookupTable = new InMemoryLookupTable();
+        inMemoryLookupTable.setSyn0(syn0);
+        inMemoryLookupTable.setVocab(vocabCache);
+        lookupTable = inMemoryLookupTable;
     }
 
     public int getVectorLength() {
@@ -338,4 +308,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         return this;
     }
 
+    public double[] getExpTable() {
+        return expTable;
+    }
 }

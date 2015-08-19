@@ -62,8 +62,20 @@ public class TextPipeline {
     private JavaRDD<AtomicLong> sentenceCountRDD;
     private long totalWordCount;
 
+    // Empty Constructor
+    public TextPipeline() {}
+
     // Constructor
-    public TextPipeline(JavaRDD<String> corpusRDD, Map<String, Object> tokenizerVarMap) throws Exception {
+    public TextPipeline(JavaRDD<String> corpusRDD, Broadcast<Map<String, Object>> broadcasTokenizerVarMap)
+            throws Exception {
+        setRDDVarMap(corpusRDD, broadcasTokenizerVarMap);
+        // Setup all Spark variables
+        setup();
+    }
+
+    public void setRDDVarMap(JavaRDD<String> corpusRDD,
+                                     Broadcast<Map<String, Object>> broadcasTokenizerVarMap) {
+        Map<String, Object> tokenizerVarMap = broadcasTokenizerVarMap.getValue();
         this.corpusRDD = corpusRDD;
         this.numWords = (int) tokenizerVarMap.get("numWords");
         // TokenizerFunction Settings
@@ -74,8 +86,6 @@ public class TextPipeline {
         if ((boolean) tokenizerVarMap.get("removeStop")) {
             stopWords = StopWords.getStopWords();
         }
-        // Setup all Spark variables
-        setup();
     }
 
     private void setup() {
@@ -94,7 +104,7 @@ public class TextPipeline {
 
     public JavaRDD<Pair<List<String>, AtomicLong>> updateAndReturnAccumulatorVal(JavaRDD<List<String>> tokenizedRDD) {
         // Update the 2 accumulators
-        UpdateAccumulatorFunction accumulatorClassFunction = new UpdateAccumulatorFunction(stopWordBroadCast, wordFreqAcc);
+        UpdateWordFreqAccumulatorFunction accumulatorClassFunction = new UpdateWordFreqAccumulatorFunction(stopWordBroadCast, wordFreqAcc);
         JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = tokenizedRDD.map(accumulatorClassFunction);
 
         // Loop through each element to update accumulator. Count does the same job (verified).

@@ -30,13 +30,13 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Jeffrey Tang
  */
-public class UpdateAccumulatorFunction implements Function<List<String>, Pair<List<String>, AtomicLong>> {
+public class UpdateWordFreqAccumulatorFunction implements Function<List<String>, Pair<List<String>, AtomicLong>> {
 
     private Broadcast<List<String>> stopWords;
     private Accumulator<Counter<String>> wordFreqAcc;
 
-    public UpdateAccumulatorFunction(Broadcast<List<String>> stopWords,
-                                     Accumulator<Counter<String>> wordFreqAcc) {
+    public UpdateWordFreqAccumulatorFunction(Broadcast<List<String>> stopWords,
+                                             Accumulator<Counter<String>> wordFreqAcc) {
         this.wordFreqAcc = wordFreqAcc;
         this.stopWords = stopWords;
     }
