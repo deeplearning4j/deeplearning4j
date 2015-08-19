@@ -125,7 +125,7 @@ public class CNNProcessorTest {
                 .activationFunction("relu")
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
-                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{9, 9}, Convolution.Type.VALID)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{9, 9},new int[]{1,1})
                         .nIn(1)
                         .nOut(20)
                         .build())

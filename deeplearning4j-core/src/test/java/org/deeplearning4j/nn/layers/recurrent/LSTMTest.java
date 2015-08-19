@@ -16,15 +16,13 @@
  *
  */
 
-package org.deeplearning4j.models.classifiers.lstm;
+package org.deeplearning4j.nn.layers.recurrent;
 
 import java.util.Arrays;
 
-import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;

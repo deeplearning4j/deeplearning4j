@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -45,15 +46,15 @@ public class MultiLayerTestRNN {
         Map<String,INDArray> paramTable = layer.paramTable();
         assertTrue(paramTable.size() == 3);	//2 sets of weights, 1 set of biases
 
-        INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+        INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
         assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits,4*nHiddenUnits+3});	//Should be shape: [layerSize,4*layerSize+3]
-        INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHTS);
+        INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
         assertArrayEquals(inputWeights.shape(),new int[]{nIn,4*nHiddenUnits}); //Should be shape: [nIn,4*layerSize]
-        INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS);
+        INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
         assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits});	//Should be shape: [1,4*layerSize]
 
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-        INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits)});
+        INDArray forgetGateBiases = biases.get(new INDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits)});
         assertTrue(forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0) == nHiddenUnits);
 
         int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
@@ -90,15 +91,15 @@ public class MultiLayerTestRNN {
 
             int layerNIn = (i == 0 ? nIn : nHiddenUnits[i-1] );
 
-            INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+            INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
             assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits[i],4*nHiddenUnits[i]+3});	//Should be shape: [layerSize,4*layerSize+3]
-            INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHTS);
+            INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
             assertArrayEquals(inputWeights.shape(),new int[]{layerNIn,4*nHiddenUnits[i]}); //Should be shape: [nIn,4*layerSize]
-            INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS);
+            INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
             assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits[i]});	//Should be shape: [1,4*layerSize]
 
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-            INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i])});
+            INDArray forgetGateBiases = biases.get(new INDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i])});
             assertTrue(forgetGateBiases.gt(0).sum(1).getDouble(0) == nHiddenUnits[i]);
 
             int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();

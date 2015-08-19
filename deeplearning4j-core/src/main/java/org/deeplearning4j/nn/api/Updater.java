@@ -18,11 +18,4 @@ public interface Updater extends Serializable {
      */
     void update(Layer layer,Gradient gradient,int iteration);
 
-    /**
-     * Apply update for a particular layer
-     * @param layer the layer to apply the update for
-     * @param gradient the gradient to apply
-     */
-    void applyUpdate(Layer layer,Gradient gradient);
-
 }

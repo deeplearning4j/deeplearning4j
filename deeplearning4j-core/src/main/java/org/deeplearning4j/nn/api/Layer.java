@@ -40,19 +40,19 @@ public interface Layer extends Serializable,Cloneable,Model {
        FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE,MULTILAYER
     }
 
-
-
-    /**
-     * The l2 magnitude for the weights
-     * @return the l2 magnitude for the weights
+    /**Calculate the l2 regularization term<br>
+     * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l2 regularization term for this layer.
      */
-    double l2Magnitude();
+    double calcL2();
 
-    /**
-     * The l1 magnitude for the weights
-     * @return the l1 magnitude for the weights
+    /**Calculate the l1 regularization term<br>
+     * 0.0 if regularization is not used. Or l1Coeff * l1Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l1 regularization term for this layer.
      */
-    double l1Magnitude();
+    double calcL1();
 
     /**
      * Returns the layer type
@@ -94,33 +94,14 @@ public interface Layer extends Serializable,Cloneable,Model {
     Gradient calcGradient(Gradient layerError, INDArray indArray);
 
 
-    /**
-     * Error signal for this layer
-     *
-     * Using the amount of error
-     * caused by this layer
-     * calculate the error signal used
-     * as input in to the next layer.
-     * This is used for actually calculating the
-     * gradient of the layer
-     *
-     * @param error
-     * @param input
-     * @return
-     */
-    @Deprecated
-    Gradient errorSignal(Gradient error, INDArray input);
-
     /**Calculate the gradient relative to the error in the next layer
      * @param epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)/(dz/da) = dC/da, where C 
      * 	is cost function a=sigma(z) is activation.
-     * @param gradient gradient for next layer. Used for example by CNN layers (but not typically by MLP/RNN layers; may be null then)
-     * @param layer next layer above this one. Used for example by CNN layers (but not typically by MLP/RNN layers; may be null then)
      * @return Pair<Gradient,INDArray> where Gradient is gradient for this layer, INDArray is epsilon needed by next
      *  layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
      *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
-    Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer);
+    Pair<Gradient,INDArray> backpropGradient(INDArray epsilon);
 
 
     /**
@@ -239,5 +220,22 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Get the layer index.
      */
     int getIndex();
+
+    /**
+     * Get the layer input.
+     */
+    void setInput(INDArray input);
+
+    /** Set current/last input mini-batch size.<br>
+     * Used for score and gradient calculations. Mini batch size may be different from
+     * getInput().size(0) due to reshaping operations - for example, when using RNNs with
+     * DenseLayer and OutputLayer. Called automatically during forward pass.
+     */
+    void setInputMiniBatchSize(int size);
+    
+    /** Get current/last input mini-batch size, as set by setInputMiniBatchSize(int)
+     * @see Layer#setInputMiniBatchSize(int)
+     */
+    int getInputMiniBatchSize();
 
 }

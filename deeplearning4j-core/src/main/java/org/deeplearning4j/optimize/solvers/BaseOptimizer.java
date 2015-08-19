@@ -134,7 +134,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
         score = pair.getSecond();
-        setupSearchState(pair);		//Currently: Resets search state every mini-batch
+        if(searchState.isEmpty()){
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+        	setupSearchState(pair);		//Only do this once
+        } else {
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+        }
 
         //pre existing termination conditions
         /*
@@ -183,11 +188,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
-
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions){
                 if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
-                    log.debug("Hit termination condition: score={}, oldScore={}, condition={}",score,oldScore,condition);
+                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}",i,score,oldScore,condition);
                     return true;
                 }
             }

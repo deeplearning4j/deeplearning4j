@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -17,20 +20,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  * @see FeedForwardToRnnPreProcessor for opposite case (i.e., DenseLayer -> GravesLSTM etc)
  */
-@EqualsAndHashCode
+@Data
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
-	private static final long serialVersionUID = -2493450489790917106L;
-	private final int miniBatchSize;
-	private final int rnnLayerSize;
+	private static final long serialVersionUID = -2334789406636365730L;
 	private final int timeSeriesLength;
 	
-	/**@param miniBatchSize mini-batch size for training data
-	 * @param rnnLayerSize Size (number of hidden units) for the RNN layer
-	 * @param timeSeriesLength Length of time series training data
+	/**@param timeSeriesLength Length of time series training data
 	 */
-	public RnnToFeedForwardPreProcessor(int miniBatchSize, int rnnLayerSize, int timeSeriesLength ) {
-		this.miniBatchSize = miniBatchSize;
-		this.rnnLayerSize = rnnLayerSize;
+	@JsonCreator
+	public RnnToFeedForwardPreProcessor(@JsonProperty("timeSeriesLength") int timeSeriesLength ) {
 		this.timeSeriesLength = timeSeriesLength;
 	}
 	
@@ -39,12 +37,9 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 		//Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)
 		if( input.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
 		
+		int[] shape = input.shape();
 		INDArray permuted = input.permute(0,2,1);	//Permute, so we get correct order after reshaping
-		//TODO: TEMPORARY copy to work around a bug in reshape on permuted NDArrays.
-		//This can be removed at some point in the future
-		permuted = permuted.dup();
-		
-		return permuted.reshape(miniBatchSize*timeSeriesLength,rnnLayerSize);
+		return permuted.reshape(shape[0]*timeSeriesLength,shape[1]);
 	}
 
 	@Override
@@ -52,8 +47,8 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 		//Need to reshape FeedForward layer epsilons (2d) to 3d (for use in RNN layer backprop calculations)
 		if( output.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
 		
-		INDArray reshaped = output.reshape(miniBatchSize,timeSeriesLength,rnnLayerSize);
-		
+		int[] shape = output.shape();
+		INDArray reshaped = output.reshape(shape[0]/timeSeriesLength,timeSeriesLength,shape[1]);
 		return reshaped.permute(0,2,1);
 	}
 }

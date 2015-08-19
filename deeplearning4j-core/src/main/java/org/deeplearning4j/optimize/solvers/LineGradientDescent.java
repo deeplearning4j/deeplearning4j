@@ -58,6 +58,7 @@ public class LineGradientDescent extends BaseOptimizer {
             searchState.put(SEARCH_DIR,gradient.dup().muli(stepMax / norm2));
         else
             searchState.put(SEARCH_DIR, gradient.dup());
+        searchState.put(GRADIENT_KEY,gradient.dup());
     }
 
 }

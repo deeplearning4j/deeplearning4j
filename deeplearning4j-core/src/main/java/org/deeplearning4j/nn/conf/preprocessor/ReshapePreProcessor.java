@@ -18,6 +18,10 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**Reshape post processor.<br>
@@ -27,6 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
+@Data
 public class ReshapePreProcessor extends BaseInputPreProcessor {
     private int[] fromShape;	//Epsilons: To this shape in backward pass
     private int[] toShape;		//Activations: To this shape in forward pass
@@ -39,9 +44,12 @@ public class ReshapePreProcessor extends BaseInputPreProcessor {
      * Otherwise fromShape is the shape that epsilons (weights*deltas or equiv.)
 	 *  are reshaped to by backprop(...)
 	 */
-    public ReshapePreProcessor(int[] fromShape, int[] toShape, boolean dynamic){
+    @JsonCreator
+    public ReshapePreProcessor(@JsonProperty("fromShape") int[] fromShape,
+                               @JsonProperty("toShape") int[] toShape,
+                               @JsonProperty("dynamic") boolean dynamic){
         this.fromShape = fromShape;
-	this.toShape = toShape;
+	    this.toShape = toShape;
         this.dynamic = dynamic;
     }
 
