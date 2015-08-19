@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.indexing.shape;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.Indices;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -12,6 +13,10 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class IndexShapeTests extends BaseNd4jTest {
+    public IndexShapeTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
     private  int[] shape = {1,1,2,1,3,4,5,1};
 
     @Test
