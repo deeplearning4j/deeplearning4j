@@ -72,7 +72,7 @@ The definition of an eigenvector, therefore, is a vector that responds to a matr
 
 You might also say that eigenvectors are axes along which linear transformation acts, stretching or compressing input vectors. They are the lines of change that represent the action of the larger matrix.
 
-Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides (each serving a distinct purpose), square matrices have as many eigenvectors as they have linearly independent dimensions; i.e. a 2 x 2 matrix could have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix could have n eigenvectors, each one representing its line of action in one dimension. 
+Notice we’re using the plural – axes and lines. Just as a German may have a Volkswagen for grocery shopping, a Mercedes for business travel, and a Porsche for joy rides (each serving a distinct purpose), square matrices have as many eigenvectors as they have linearly independent variables; i.e. a 2 x 2 matrix could have two eigenvectors, a 3 x 3 matrix three, and an n x n matrix could have n eigenvectors, each one representing its line of action in one dimension. 
 
 Because eigenvectors distill the axes of principal force that a matrix moves input along, they are useful in matrix decomposition; i.e. [the diagonalization of a matrix along its eigenvectors](http://mathworld.wolfram.com/MatrixDiagonalization.html). Because those eigenvectors are representative of the matrix, they perform the same task as the autoencoders employed by deep neural networks. 
 
