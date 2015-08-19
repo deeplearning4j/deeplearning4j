@@ -98,6 +98,7 @@ public class SubsamplingLayer extends BaseLayer {
                     int idx = maxIndexes.getInt(next);
                     reshapeEpsilon.putScalar(idx,epsGet);
                 }
+                reshapeEpsilon = reshapeEpsilon.reshape(Ints.concat(new int[] {1}, reshapeEpsilon.shape()));
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
