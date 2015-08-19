@@ -34,15 +34,18 @@ public class Word2VecChange implements Serializable {
 
     public Word2VecChange(List<Triple<Integer,Integer,Integer>> counterMap, Word2VecParam param) {
         Iterator<Triple<Integer,Integer,Integer>> iter = counterMap.iterator();
-        while(iter.hasNext()) {
+        while (iter.hasNext()) {
             Triple<Integer,Integer,Integer> next = iter.next();
-            Set<INDArray> changes = this.changes.get(next.getFirst());
+            Integer point = next.getFirst();
+            Integer index = next.getSecond();
+
+            Set<INDArray> changes = this.changes.get(point);
             if(changes == null) {
                 changes = new HashSet<>();
-                this.changes.put(next.getFirst(),changes);
+                this.changes.put(point,changes);
             }
 
-            changes.add(param.getWeights().getSyn1().slice(next.getSecond()));
+            changes.add(param.getWeights().getSyn1().slice(index));
 
         }
     }
