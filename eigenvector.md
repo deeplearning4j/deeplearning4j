@@ -212,4 +212,4 @@ It so happens that explaining the shape of the data one principal component at a
 * [The $25 Billion Eigenvector: The Linear Algebra Behind Google](https://www.rose-hulman.edu/~bryan/googleFinalVersionFixed.pdf)
 * [Regression & Neural Networks](../linear-regression.html)
 
-<a name="ref">1)</a> *In some cases operators may not have a full set of eigenvectors, so it is only appropriate to say a matrix can have at most as many linearly independent eigenvectors as its order.*
+<a name="ref">1)</a> *In some cases, matrices may not have a full set of eigenvectors; they can have at most as many linearly independent eigenvectors as their respective order, or number of dimensions.*
