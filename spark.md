@@ -2,7 +2,11 @@
 layout: default
 ---
 
-# Multi-threaded Deeplearning4j on Spark
+# Deeplearning4j on Spark
+
+INTRO TKTK
+
+## Install Spark
 
 First, see whether you have Spark installed by entering `which spark` in the command line.
 
@@ -22,6 +26,8 @@ Remove `/bin/spark-submit` and feed the rest of the file path into your environm
 
     export SPARK_HOME=users/cvn/Desktop/spark-1.4.1-bin-hadoop2.4
 
+## Build the Examples
+
 Now `git clone` the Deeplearning4j Spark ML examples repo from Github:
 
     git clone https://github.com/deeplearning4j/dl4j-spark-ml-examples
@@ -29,6 +35,8 @@ Now `git clone` the Deeplearning4j Spark ML examples repo from Github:
 Compile the project with Maven using whichever Spark and Hadoop versions you need. 
 
     mvn clean package -Dspark.version=1.4.1 -Dhadoop.version=2.4.0
+
+## Run the Examples
 
 Then make sure you're in the dl4j-spark-ml-examples directory and run
 
