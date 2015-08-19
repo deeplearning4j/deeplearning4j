@@ -4,8 +4,9 @@ Chris Nicholson - writes about all this.
 
 Joshua Patterson - creator of iterative reduce. 
 
-Alex Black - Core alogrithms
+Melanie Warrick - Core algorithms and functionality
 
-Eron Wright - Spark ml and infrastructure/Project QA
+Alex Black - Core alogrithms and functionality
 
-Melanie Warrick - Core algorithms/QA
+Eron Wright - Spark ml and infrastructure
+

@@ -82,7 +82,6 @@ public class ConvolutionLayerTest {
 
         assertArrayEquals(expectedOutput.shape(), convActivations.shape());
         assertEquals(expectedOutput, convActivations);
-
     }
 
 
@@ -102,12 +101,10 @@ public class ConvolutionLayerTest {
 
         assertArrayEquals(expectedOutput.shape(), activation.shape());
         assertEquals(expectedOutput, activation);
-
     }
 
-
-
-
+    //note precision is off on this test but the numbers are close
+    //investigation in a future release should determine how to resolve
     @Test
     public void testBackpropResultsContained()  {
         Layer layer = getContainedConfig();
@@ -152,6 +149,8 @@ public class ConvolutionLayerTest {
 
     }
 
+    //note precision is off on this test but the numbers are close
+    //investigation in a future release should determine how to resolve
     @Test
     public void testCalculateDeltaContained() {
         Layer layer = getContainedConfig();
