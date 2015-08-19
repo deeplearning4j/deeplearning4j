@@ -79,7 +79,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
 
 
     public INDArray decode(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.U).addiRowVector(params.get(RecursiveParamInitializer.BIAS)))));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.DECODER_WEIGHT_KEY).addiRowVector(params.get(RecursiveParamInitializer.HIDDEN_BIAS_KEY)))));
     }
 
 
@@ -113,7 +113,7 @@ public class RecursiveAutoEncoder extends BaseLayer {
             y = decode(encoded);
 
             INDArray currVisibleLoss = currInput.sub(y);
-            INDArray currHiddenLoss = currVisibleLoss.mmul(getParam(RecursiveParamInitializer.W)).muli(encoded).muli(encoded.rsub(1));
+            INDArray currHiddenLoss = currVisibleLoss.mmul(getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY)).muli(encoded).muli(encoded.rsub(1));
 
             INDArray hiddenGradient = y.transpose().mmul(currHiddenLoss);
             INDArray visibleGradient = encoded.transpose().mmul(currVisibleLoss);

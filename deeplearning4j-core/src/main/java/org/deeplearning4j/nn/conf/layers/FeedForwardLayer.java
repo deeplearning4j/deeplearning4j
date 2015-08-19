@@ -1,13 +1,13 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 /**
  * Created by jeffreytang on 7/21/15.
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public abstract class FeedForwardLayer extends Layer {
     protected int nIn;
     protected int nOut;

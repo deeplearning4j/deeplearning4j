@@ -2,8 +2,8 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.Shape;
 
 
 /**
@@ -30,7 +30,7 @@ public class Dropout {
      * @return the dropout mask used
      */
     public static INDArray applyDropout(INDArray input,double dropout,INDArray dropoutMask) {
-        if(dropoutMask == null || !Shape.shapeEquals(input.shape(),dropoutMask.shape())) {
+        if(dropoutMask == null || !Shape.shapeEquals(input.shape(), dropoutMask.shape())) {
             dropoutMask = Nd4j.getDistributions().createBinomial(1,dropout).sample(input.shape()).divi(dropout);
 
         }

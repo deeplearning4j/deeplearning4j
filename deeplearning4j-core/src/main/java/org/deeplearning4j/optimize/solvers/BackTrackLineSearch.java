@@ -157,11 +157,10 @@ public class BackTrackLineSearch implements LineOptimizer {
     @Override
     public double optimize(INDArray parameters, INDArray gradients, INDArray searchDirection) throws InvalidStepException {
         double test, stepMin, step, step2, oldStep, tmpStep;
-        double rhs1, rhs2, a, b, disc, score, oldScore, score2;
+        double rhs1, rhs2, a, b, disc, score, scoreAtStart, score2;
         minObjectiveFunction = (stepFunction instanceof NegativeDefaultStepFunction || stepFunction instanceof NegativeGradientStepFunction);
 
         double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
-//        double slope = (minObjectiveFunction) ? -1f * Nd4j.getBlasWrapper().dot(searchDirection, gradients) : Nd4j.getBlasWrapper().dot(searchDirection, gradients) ;
         double slope = -1f * Nd4j.getBlasWrapper().dot(searchDirection, gradients);
 
         log.debug("slope = {}", slope);
@@ -176,12 +175,13 @@ public class BackTrackLineSearch implements LineOptimizer {
         oldStep = 0.0;
         step2 = 0.0;
 
-        score = score2 = oldScore = layer.score();
-        double scoreAtStart = score2;    //Before any line search etc.
+        score = score2 = scoreAtStart = layer.score();
+        double bestScore = score;
+        double bestStepSize = 1.0;
 
         if (log.isTraceEnabled()) {
             log.trace("ENTERING BACKTRACK\n");
-            log.trace("Entering BackTrackLineSearch, value = " + oldScore + ",\ndirection.oneNorm:"
+            log.trace("Entering BackTrackLineSearch, value = " + scoreAtStart + ",\ndirection.oneNorm:"
                     + searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:" +
                     FastMath.max(Float.NEGATIVE_INFINITY, abs(searchDirection.dup()).max(Integer.MAX_VALUE).getDouble(0)));
         }
@@ -190,8 +190,9 @@ public class BackTrackLineSearch implements LineOptimizer {
             searchDirection.muli(stepMax / sum);
         }
 
-        if (slope >= 0.0)
-            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0");
+//        if (slope >= 0.0) {
+//            throw new InvalidStepException("Slope " + slope + " is >= 0.0. Expect slope < 0.0 when minimizing objective function");
+//        }
 
         // find maximum lambda
         // converge when (delta x) / x < REL_TOLX for all coordinates.
@@ -216,37 +217,46 @@ public class BackTrackLineSearch implements LineOptimizer {
             stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
 
-            if (log.isDebugEnabled()) {
+            if (log.isTraceEnabled()) {
                 double norm1 = candidateParameters.norm1(Integer.MAX_VALUE).getDouble(0);
-                log.debug("after step, x.1norm: " + norm1);
+                log.trace("after step, x.1norm: " + norm1);
             }
 
             // check for convergence on delta x
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(parameters, candidateParameters,
                     candidateParameters.dup(), candidateParameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
                 score = setScoreFor(parameters);
-                log.trace("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Value = {}", stepMin, score);
+                log.debug("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Score = {}", stepMin, score);
                 return 0.0;
             }
 
             score = setScoreFor(candidateParameters);
             log.debug("Model score after step = {}", score);
 
+            //Score best step size for use if we terminate on maxIterations
+            if( minObjectiveFunction && score < bestScore ){
+            	bestScore = score;
+            	bestStepSize = step;
+            } else if( !minObjectiveFunction && score > bestScore ){
+            	bestScore = score;
+            	bestStepSize = step;
+            }
+            
             //Sufficient decrease in cost/loss function (Wolfe condition / Armijo condition)
-            if (minObjectiveFunction && score <= oldScore + ALF * step * slope) {
-                log.debug("Sufficient decrease (Wolfe cond.), exiting backtrack on iter {}: score={}, oldScore={}", iteration, score, oldScore);
-                if (score > oldScore)
+            if (minObjectiveFunction && score <= scoreAtStart + ALF * step * slope) {
+                log.debug("Sufficient decrease (Wolfe cond.), exiting backtrack on iter {}: score={}, scoreAtStart={}", iteration, score, scoreAtStart);
+                if (score > scoreAtStart)
                     throw new IllegalStateException
-                            ("Function did not decrease: score = " + score + " > " + oldScore + " = oldScore");
+                            ("Function did not decrease: score = " + score + " > " + scoreAtStart + " = oldScore");
                 return step;
             }
 
             //Sufficient increase in cost/loss function (Wolfe condition / Armijo condition)
-            if (!minObjectiveFunction && score >= oldScore + ALF * step * slope) {
-                log.debug("Sufficient increase (Wolfe cond.), exiting backtrack on iter {}: score={}, oldScore={}", iteration, score, oldScore);
-                if (score < oldScore)
+            if (!minObjectiveFunction && score >= scoreAtStart + ALF * step * slope) {
+                log.debug("Sufficient increase (Wolfe cond.), exiting backtrack on iter {}: score={}, bestScore={}", iteration, score, scoreAtStart);
+                if (score < scoreAtStart)
                     throw new IllegalStateException
-                            ("Function did not increase: score = " + score + " < " + oldScore + " = oldScore");
+                            ("Function did not increase: score = " + score + " < " + scoreAtStart + " = scoreAtStart");
                 return step;
             }
 
@@ -254,20 +264,21 @@ public class BackTrackLineSearch implements LineOptimizer {
             else if (Double.isInfinite(score) || Double.isInfinite(score2) || Double.isNaN(score) || Double.isNaN(score2)) {
                 log.warn("Value is infinite after jump. oldStep={}. score={}, score2={}. Scaling back step size...", oldStep, score, score2);
                 tmpStep = .2 * step;
-                if (step < stepMin || Double.isNaN(score2) || Double.isInfinite(score2)) { //convergence on delta x
+                if (step < stepMin) { //convergence on delta x
                     score = setScoreFor(parameters);
-                    log.warn("EXITING BACKTRACK: Jump too small. Exiting and using previous parameters. Value={}", score);
+                    log.warn("EXITING BACKTRACK: Jump too small (step={} < stepMin={}). Exiting and using previous parameters. Value={}",step,stepMin, score);
                     return 0.0;
                 }
             }
 
             // backtrack
+
             else if (minObjectiveFunction){
                 if (step == 1.0) // first time through
-                    tmpStep = -slope / (2.0 * (score - oldScore - slope));
+                    tmpStep = -slope / (2.0 * (score - scoreAtStart - slope));
                 else {
-                    rhs1 = score - oldScore - step * slope;
-                    rhs2 = score2 - oldScore - step2 * slope;
+                    rhs1 = score - scoreAtStart - step * slope;
+                    rhs2 = score2 - scoreAtStart - step2 * slope;
                     if (step == step2)
                         throw new IllegalStateException("FAILURE: dividing by step-step2 which equals 0. step=" + step);
                     double stepSquared = step * step;
@@ -290,10 +301,10 @@ public class BackTrackLineSearch implements LineOptimizer {
                 }
             } else {
                 if (step == 1.0) // first time through
-                    tmpStep = -slope / (2.0 * ( oldScore - score  - slope));
+                    tmpStep = -slope / (2.0 * ( scoreAtStart - score  - slope));
                 else {
-                    rhs1 = oldScore - score - step * slope;
-                    rhs2 = oldScore - score2 - step2 * slope;
+                    rhs1 = scoreAtStart - score - step * slope;
+                    rhs2 = scoreAtStart - score2 - step2 * slope;
                     if (step == step2)
                         throw new IllegalStateException("FAILURE: dividing by step-step2 which equals 0. step=" + step);
                     double stepSquared = step * step;
@@ -324,16 +335,16 @@ public class BackTrackLineSearch implements LineOptimizer {
         }
 
 
-        if (minObjectiveFunction && score < scoreAtStart) {
+        if (minObjectiveFunction && bestScore < scoreAtStart) {
             //Return best step size
-            log.debug("Exited line search after maxIterations termination condition; best step={}, score={}, scoreAtStart={}", step, score, scoreAtStart);
-            return step;
-        } else if (!minObjectiveFunction && score > scoreAtStart) {
+            log.debug("Exited line search after maxIterations termination condition; bestStepSize={}, bestScore={}, scoreAtStart={}", bestStepSize, bestScore, scoreAtStart);
+            return bestStepSize;
+        } else if (!minObjectiveFunction && bestScore > scoreAtStart) {
             //Return best step size
-            log.debug("Exited line search after maxIterations termination condition; best step={}, score={}, scoreAtStart={}", step, score, scoreAtStart);
-            return step;
+        	log.debug("Exited line search after maxIterations termination condition; bestStepSize={}, bestScore={}, scoreAtStart={}", bestStepSize, bestScore, scoreAtStart);
+            return bestStepSize;
         } else {
-            log.debug("Exited line search after maxIterations termination condition; score did not improve. Resetting parameters");
+            log.debug("Exited line search after maxIterations termination condition; score did not improve (bestScore={}, scoreAtStart={}). Resetting parameters",bestScore,scoreAtStart);
             setScoreFor(parameters);
             return 0.0;
         }

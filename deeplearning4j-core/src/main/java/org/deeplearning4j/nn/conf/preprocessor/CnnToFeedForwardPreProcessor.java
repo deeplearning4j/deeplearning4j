@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -38,12 +40,11 @@ import java.util.Arrays;
  * @author Adam Gibson
  * @see FeedForwardToCnnPreProcessor for opposite case (i.e., DenseLayer -> CNNetc)
 */
- @EqualsAndHashCode
+@Data
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
      private int inputWidth;
      private int inputHeight;
      private int numChannels;
-     private int[] shape;
 
      /**
       * @param inputWidth the rows
@@ -51,7 +52,10 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
       * @param numChannels the channels
       */
 
-    public CnnToFeedForwardPreProcessor(int inputWidth, int inputHeight, int numChannels) {
+     @JsonCreator
+    public CnnToFeedForwardPreProcessor(@JsonProperty("inputWidth") int inputWidth,
+                                        @JsonProperty("inputHeight") int inputHeight,
+                                        @JsonProperty("numChannels") int numChannels) {
         this.inputWidth = inputWidth;
         this.inputHeight = inputHeight;
         this.numChannels = numChannels;
@@ -77,7 +81,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         else if(input.shape().length == 3) {
             otherOutputs = new int[2];
         }
-        shape = new int[] {input.shape()[0], ArrayUtil.prod(otherOutputs)};
+        int[] shape = new int[] {input.shape()[0], ArrayUtil.prod(otherOutputs)};
         return input.reshape(shape);
     }
 

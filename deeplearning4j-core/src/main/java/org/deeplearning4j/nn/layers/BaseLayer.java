@@ -36,7 +36,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.Shape;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -58,6 +57,7 @@ public abstract class BaseLayer implements Layer {
     protected Gradient gradient;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected int index = 0;
+    protected int inputMiniBatchSize;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
@@ -78,6 +78,7 @@ public abstract class BaseLayer implements Layer {
         this.input = input;
     }
 
+    @Override
     public void setInput(INDArray input) {
         setInput(input,true);
     }
@@ -126,14 +127,6 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Gradient errorSignal(Gradient error, INDArray input) {
-        INDArray derivative = derivativeActivation(input);
-        Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,derivative.mul(error.getGradientFor(DefaultParamInitializer.WEIGHT_KEY)));
-        return ret;
-    }
-
-    @Override
     public Gradient calcGradient(Gradient layerError, INDArray activation) {
         Gradient ret = new DefaultGradient();
         INDArray weightErrorSignal = layerError.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
@@ -146,7 +139,7 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
@@ -185,11 +178,10 @@ public abstract class BaseLayer implements Layer {
 
         else {
             score = LossCalculation.builder()
-                    .l1(conf.getL1()).l2(conf.getL2())
-                    .l1Magnitude(l1Magnitude()).l2Magnitude(l2Magnitude())
+                    .l1(calcL1()).l2(calcL2())
                     .labels(input).z(z).lossFunction(conf.getLossFunction())
+                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
-
         }
     }
 
@@ -299,7 +291,7 @@ public abstract class BaseLayer implements Layer {
         Set<String> paramKeySet = this.params.keySet();
         for(String s : paramKeySet ){
             INDArray param = getParam(s);
-            INDArray get = params.get(NDArrayIndex.interval(idx,idx + param.length()));
+            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
             param.linearView().assign(get);
@@ -368,7 +360,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public  INDArray activate() {
-        return activate();
+        return activate(false);
     }
 
 
@@ -386,13 +378,15 @@ public abstract class BaseLayer implements Layer {
     }
 
     @Override
-    public double l2Magnitude() {
-        return Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
+    public double calcL2() {
+    	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
+        return 0.5 * conf.getL2() * Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
-    public double l1Magnitude() {
-        return Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    public double calcL1() {
+    	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
+        return conf.getL1() * Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -429,22 +423,18 @@ public abstract class BaseLayer implements Layer {
     }
 
     /**
-     * Averages the given logistic regression
-     * from a mini batch in to this one
-     * @param l the logistic regression to average in to this one
+     * Averages the given logistic regression from a mini batch into this layer
+     * @param l the logistic regression layer to average into this layer
      * @param batchSize  the batch size
      */
     @Override
-    public void merge(Layer l,int batchSize) {
+    public void merge(Layer l, int batchSize) {
         setParams(params().addi(l.params().divi(batchSize)));
         computeGradientAndScore();
     }
 
-
     @Override
     public Layer clone() {
-
-
         Layer layer = null;
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class);
@@ -546,8 +536,6 @@ public abstract class BaseLayer implements Layer {
     public Layer transpose() {
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-
-
         Layer layer = null;
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
@@ -568,5 +556,13 @@ public abstract class BaseLayer implements Layer {
         score += accum;
     }
 
+    @Override
+    public void setInputMiniBatchSize(int size){
+    	this.inputMiniBatchSize = size;
+    }
 
+    @Override
+    public int getInputMiniBatchSize(){
+    	return inputMiniBatchSize;
+    }
 }

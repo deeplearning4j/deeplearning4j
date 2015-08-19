@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.multilayer;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -183,7 +182,7 @@ public class BackPropMLPTest {
             }
 
 
-            float eps = 0.01f;
+            float eps = 1e-4f;
             assertArrayEquals(l1WeightsFloatAfter,expectedL1WeightsAfter,eps);
             assertArrayEquals(l2WeightsFloatAfter,expectedL2WeightsAfter,eps);
             assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);
@@ -360,8 +359,9 @@ public class BackPropMLPTest {
             INDArray[] dLdb = new INDArray[nLayers];
             for( int i = 0; i<nLayers; i++ ){
                 INDArray prevActivations = (i == 0 ? x : layerActivations[i-1]);
-                dLdw[i] = deltas[i].transpose().mmul(prevActivations).divi(miniBatchSize).transpose();	//Shape: [nIn, nOut]
-                dLdb[i] = deltas[i].mean(0); //Shape: [1,nOut]
+                //Raw gradients, so not yet divided by mini-batch size (division is done in BaseUpdater)
+                dLdw[i] = deltas[i].transpose().mmul(prevActivations).transpose();	//Shape: [nIn, nOut]
+                dLdb[i] = deltas[i].sum(0); //Shape: [1,nOut]
 
                 int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
                 int nOut = (i < nLayers - 1 ? hiddenLayerSizes[i] : 3);

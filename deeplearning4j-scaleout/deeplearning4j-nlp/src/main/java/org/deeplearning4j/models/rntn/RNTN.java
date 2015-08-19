@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.AdaGrad;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -108,6 +109,7 @@ public class RNTN implements Layer {
     /** Regularization cost for the word vectors */
     private double regWordVector = 0.0001f;
 
+    private int inputMiniBatchSize;
 
     /**
      * How many epochs between resets of the adagrad learning rates.
@@ -318,6 +320,11 @@ public class RNTN implements Layer {
     }
 
     @Override
+    public void setInput(INDArray input) {
+
+    }
+
+    @Override
     public void setIndex(int index) {
         this.index = index;
     }
@@ -345,9 +352,9 @@ public class RNTN implements Layer {
         INDArray binary = Nd4j.create(numHidden, numHidden * 2 + 1);
         // bias column values are initialized zero
         INDArray block = randomTransformBlock();
-        NDArrayIndex[] indices = new NDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())};
+        INDArrayIndex[] indices = new INDArrayIndex[] {interval(0,block.rows()),interval(0,block.columns())};
         binary.put(indices,block);
-        NDArrayIndex[] indices2 = new NDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
+        INDArrayIndex[] indices2 = new INDArrayIndex[]{interval(0,block.rows()),interval(numHidden,numHidden + block.columns())};
         binary.put(indices2,randomTransformBlock());
         Nd4j.getBlasWrapper().level1().scal(binary.length(),scalingForInit,binary);
         return binary;
@@ -367,7 +374,7 @@ public class RNTN implements Layer {
         double range = 1.0 / (Math.sqrt((double) numHidden));
         INDArray ret = Nd4j.zeros(numOuts,numHidden + 1);
         INDArray insert = Nd4j.rand(numOuts, numHidden, -range, range, rng);
-        ret.put(new NDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
+        ret.put(new INDArrayIndex[] {interval(0,numOuts),interval(0,numHidden)},insert);
         Nd4j.getBlasWrapper().level1().scal(ret.length(), scalingForInit, ret);
         return ret;
     }
@@ -1124,12 +1131,12 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public double l2Magnitude() {
+    public double calcL2() {
         return 0;
     }
 
     @Override
-    public double l1Magnitude() {
+    public double calcL1() {
         return 0;
     }
 
@@ -1154,12 +1161,7 @@ public class RNTN implements Layer {
     }
 
     @Override
-    public Gradient errorSignal(Gradient error, INDArray input) {
-        return null;
-    }
-
-    @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, Gradient gradient, Layer layer) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         return null;
     }
 
@@ -1445,8 +1447,13 @@ public class RNTN implements Layer {
         }
     }
 
+    @Override
+    public void setInputMiniBatchSize(int size){
+    	this.inputMiniBatchSize = size;
+    }
 
-
-
-
+    @Override
+    public int getInputMiniBatchSize(){
+    	return inputMiniBatchSize;
+    }
 }
