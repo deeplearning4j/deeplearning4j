@@ -125,6 +125,19 @@ Now create and name a new class in Java. After that, you'll take the raw sentenc
             }
         });
 
+If you want to load a text file besides the sentences provided in our example, you'd do this:
+
+        log.info("Load data....");
+        SentenceIterator iter = new LineSentenceIterator(new File("/Users/cvn/Desktop/file.txt"));
+        iter.setPreProcessor(new SentencePreProcessor() {
+            @Override
+            public String preProcess(String sentence) {
+                return sentence.toLowerCase();
+            }
+        });
+
+That is, get rid of the `ClassPathResource` and feed the absolute path of your txt file into the LineSentenceIterator. In bash, you can find the absolute file path by typing `pwd` in your command line. To that, you'll add the file name and voila.
+
 ### Tokenizing the Data
 
 Word2vec needs to be fed words rather than whole sentences, so the next step is to tokenize the data. To tokenize a text is to break it up into its atomic units, creating a new token each time you hit a white space, for example. 
@@ -212,19 +225,31 @@ We rely on TSNE to reduce the dimensionality of word feature vectors and project
 
 ### Saving, Reloading, Using the Model
 
-You'll want to save the model. The normal way to save models in deeplearning4j is via the SerializationUtils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
+You'll want to save the model. The normal way to save models in deeplearning4j is via the serialization utils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
 
         log.info("Save vectors....");
         WordVectorSerializer.writeWordVectors(vec, "words.txt");
 
-This will save Word2vec to mypath. You can reload it into memory like this:
+This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. 
 
-        Word2Vec vec = WordVectorSerializer.readTextModel(textFile, false);
+To keep working with the vectors, simply call `vec` like this:
+
+    vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
+
+The classic example of Word2vec's arithmatic of words is "king - queen = man - woman" and its logical extension "king - queen + woman = man". 
+
+The example above will output the 10 nearest words to the vector `king - queen + woman`, which should include `man`. The first parameter for wordsNearest has to include the "positive" words `king` and `woman`; the second parameter includes the negative word `queen`; the third is the length of the list of nearest words you would like to see. 
+
+You can reload the vectors into memory like this:
+
+        WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File("words.txt"));
 
 You can then use Word2vec as a lookup table:
 
-        INDArray wordVector = vec.getWordVectorMatrix("myword");
-        double[] wordVector = vec.getWordVector("myword");
+        WeightLookupTable weightLookupTable = wordVectors.lookupTable();
+        Iterator<INDArray> vectors = weightLookupTable.vectors();
+        INDArray wordVector = vectors.getWordVectorMatrix("myword");
+        double[] wordVector = vectors.getWordVector("myword");
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
 
