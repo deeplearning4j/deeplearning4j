@@ -20,31 +20,31 @@ Given that deep learning is computationally intensive, if you are working with l
 
 * You'll need to set the environmental variable SPARK_HOME. To figure out what the file path should be, search for the spark command you'll need later, `spark-submit`:
 
-    sudo find / -name "spark-submit"
+        sudo find / -name "spark-submit"
 
 * Take the results (here's what mine look like)
 
-    /Users/cvn/Desktop/spark-1.4.1-bin-hadoop2.4/bin/spark-submit
+        /Users/cvn/Desktop/spark-1.4.1-bin-hadoop2.4/bin/spark-submit
 
 * Remove `/bin/spark-submit` and feed the rest of the file path into your environment variable SPARK_HOME like so:
 
-    export SPARK_HOME=/users/cvn/Desktop/spark-1.4.1-bin-hadoop2.4
+        export SPARK_HOME=/users/cvn/Desktop/spark-1.4.1-bin-hadoop2.4
 
 ## Build the Examples
 
 Now `git clone` the Deeplearning4j Spark ML examples repo from Github:
 
-    git clone https://github.com/deeplearning4j/dl4j-spark-ml-examples
+       git clone https://github.com/deeplearning4j/dl4j-spark-ml-examples
 
 Compile the project with Maven using whichever Spark and Hadoop versions you need. 
 
-    mvn clean package -Dspark.version=1.4.1 -Dhadoop.version=2.4.0
+       mvn clean package -Dspark.version=1.4.1 -Dhadoop.version=2.4.0
 
 ## Run the Examples
 
 Then make sure you're in the dl4j-spark-ml-examples directory and run
 
-    bin/run-example ml.JavaIrisClassification
+        bin/run-example ml.JavaIrisClassification
 
 The output, amid a river of other log info, should look like this:
 
