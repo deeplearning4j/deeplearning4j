@@ -217,12 +217,12 @@ public class GravesLSTM extends BaseLayer {
 
 				//Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
 				INDArray dLdwFF = deltaf.mul(prevMemCellActivations).sum(0).transpose();	//mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
-				recurrentWeightGradients.tensorAlongDimension(t,1,0).put(new INDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize)}, dLdwFF);	//dL/dw_{FF}
+				recurrentWeightGradients.tensorAlongDimension(t,1,0).put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.point(4*hiddenLayerSize)}, dLdwFF);	//dL/dw_{FF}
 				INDArray dLdwGG = deltag.mul(prevMemCellActivations).sum(0).transpose();
-				recurrentWeightGradients.tensorAlongDimension(t,1,0).put(new INDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize + 2)}, dLdwGG);	//dL/dw_{GG}
+				recurrentWeightGradients.tensorAlongDimension(t,1,0).put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.point(4*hiddenLayerSize + 2)}, dLdwGG);	//dL/dw_{GG}
 			}
 			INDArray dLdwOO = deltao.mul(currMemCellActivations).sum(0).transpose();	//Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
-			recurrentWeightGradients.tensorAlongDimension(t,1,0).put(new INDArrayIndex[]{NDArrayIndex.all(),new NDArrayIndex(4*hiddenLayerSize + 1)}, dLdwOO);	//dL/dw_{OOxy}
+			recurrentWeightGradients.tensorAlongDimension(t,1,0).put(new INDArrayIndex[]{NDArrayIndex.all(),NDArrayIndex.point(4*hiddenLayerSize + 1)}, dLdwOO);	//dL/dw_{OOxy}
 
 			INDArray bGradSlice = (is2dInput ? biasGradients : biasGradients.tensorAlongDimension(t,1,0));
 			bGradSlice.put(new INDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}, deltai);
@@ -311,22 +311,22 @@ public class GravesLSTM extends BaseLayer {
 		//Extract weights and biases:
 		INDArray wi = inputWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize
 		INDArray wI = recurrentWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));
-		INDArray bi = biases.get(new NDArrayIndex(0),interval(0,hiddenLayerSize));
+		INDArray bi = biases.get(NDArrayIndex.point(0),interval(0,hiddenLayerSize));
 
 		INDArray wf = inputWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));
 		INDArray wF = recurrentWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)); //previous
 		INDArray wFF = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize,4 * hiddenLayerSize + 1)); //current
-		INDArray bf = biases.get(new NDArrayIndex(0),interval(hiddenLayerSize,2*hiddenLayerSize));
+		INDArray bf = biases.get(NDArrayIndex.point(0),interval(hiddenLayerSize,2*hiddenLayerSize));
 
 		INDArray wo = inputWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
 		INDArray wO = recurrentWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)); //previous
 		INDArray wOO = recurrentWeights.get(NDArrayIndex.all(),interval(4 * hiddenLayerSize + 1,4 * hiddenLayerSize + 2)); //current
-		INDArray bo = biases.get(new NDArrayIndex(0),interval(2*hiddenLayerSize,3 * hiddenLayerSize));
+		INDArray bo = biases.get(NDArrayIndex.point(0),interval(2*hiddenLayerSize,3 * hiddenLayerSize));
 
 		INDArray wg = inputWeights.get(NDArrayIndex.all(),interval(3 * hiddenLayerSize,4*hiddenLayerSize));
 		INDArray wG = recurrentWeights.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)); //previous
 		INDArray wGG = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3)); //previous
-		INDArray bg = biases.get(new NDArrayIndex(0),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
+		INDArray bg = biases.get(NDArrayIndex.point(0),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
 
 		//Allocate arrays for activations:
 		INDArray outputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
