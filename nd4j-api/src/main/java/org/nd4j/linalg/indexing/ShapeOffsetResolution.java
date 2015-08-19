@@ -163,6 +163,12 @@ public class ShapeOffsetResolution implements Serializable {
             else
                 accumShape.add(1);
         }
+
+        while(strideIndex < accumShape.size()) {
+            accumStrides.add(arr.stride(strideIndex++));
+        }
+
+
         //prepend for new axes; do this first before
         //doing the indexes to prepend to
         if(newAxesPrepend > 0) {
@@ -191,18 +197,13 @@ public class ShapeOffsetResolution implements Serializable {
          * When prepend new axes for in the middle is triggered
          * i is already > 0
          */
+        int numAdded = 0;
         for(int i = 0; i < prependNewAxes.size(); i++) {
-            if(prependNewAxes.get(i) - i >= 0)
-                accumShape.add(prependNewAxes.get(i) - i,1);
-            else
-                accumShape.add(0,1);
+            accumShape.add(prependNewAxes.get(i) - numAdded,1);
             //stride for the new axis is zero
-            if(prependNewAxes.get(i) - i >= 0 && prependNewAxes.get(i) - i < prependNewAxes.size())
-                accumStrides.add(prependNewAxes.get(i) - i,0);
-            else
-                prependNewAxes.add(0,0);
+            accumStrides.add(prependNewAxes.get(i) - numAdded,0);
+            numAdded++;
         }
-
 
         /**
          * Need to post process strides and offsets
