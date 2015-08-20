@@ -65,7 +65,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                .momentum(0.9).seed(123)
-                .activationFunction("relu")
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100)
@@ -75,17 +74,15 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .maxNumLineSearchIterations(10)
                 .constrainGradientToUnitNorm(true)
                 .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(2).hiddenLayerSizes(3).backprop(false)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.weightInit(WeightInit.XAVIER);
-                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                    }
-                }).build();
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                    .activation("relu").build())
+                .list(2)
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .hiddenLayerSizes(3).backprop(false)
+                .build();
 
 
 
@@ -121,18 +118,14 @@ public class TestSparkMultiLayer extends BaseSparkTest {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .activationFunction("tanh").list(2).hiddenLayerSizes(3)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 1) {
-                            builder.activationFunction("softmax");
-                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                        }
-                    }
-                }).build();
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                    .activation("tanh").build())
+                .list(2)
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax")
+                        .build())
+                .hiddenLayerSizes(3)
+                .build();
 
         DataSet dataSet = new IrisDataSetIterator(150,150).next();
         List<DataSet> list = dataSet.asList();

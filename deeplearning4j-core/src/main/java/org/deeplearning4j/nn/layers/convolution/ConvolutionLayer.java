@@ -77,7 +77,7 @@ public class ConvolutionLayer extends BaseLayer {
 
     public INDArray calculateDelta(INDArray epsilon) {
         INDArray z = preOutput(true);
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
+        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
         if(!Arrays.equals(z.shape(),activationDerivative.shape()))
             throw new IllegalStateException("Shapes must be same");
         return epsilon.muli(activationDerivative);
@@ -135,7 +135,7 @@ public class ConvolutionLayer extends BaseLayer {
 
         col = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
         INDArray z = preOutput(training);
-        INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), z));
+        INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), z));
         return activation;
     }
 

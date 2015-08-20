@@ -131,7 +131,7 @@ public class LSTM extends BaseLayer {
 
 
         for(int t = n -1; t > 0; t--) {
-            if(conf.getActivationFunction().equals("tanh")) {
+            if(conf.getLayer().getActivationFunction().equals("tanh")) {
                 INDArray tanhCt = tanh(c.slice(t));
                 dIFogF.slice(t).put(new INDArrayIndex[]{interval(2 * d,3 * d)},tanhCt.mul(dHout.slice(t)));
                 dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogF.slice(t).get(interval(2 * d, 3 * d)).mul(dHout.slice(t))));
@@ -231,7 +231,7 @@ public class LSTM extends BaseLayer {
                 c.slice(t).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(c.getRow(t - 1)));
 
 
-            if(conf.getActivationFunction().equals("tanh"))
+            if(conf.getLayer().getActivationFunction().equals("tanh"))
                 hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.getRow(t))));
 
             else
@@ -443,7 +443,7 @@ public class LSTM extends BaseLayer {
         iFogf.slice(t).put(after,tanh(iFogf.slice(t).get(after)));
         c.slice(t).assign(iFogf.slice(t).get(interval(0,d)).mul(iFogf.slice(t).get(interval(3 * d,iFogf.columns()))).addi(iFogf.slice(t).get(interval(d, 2 * d))).muli(cPrev));
 
-        if(conf.getActivationFunction().equals("tanh"))
+        if(conf.getLayer().getActivationFunction().equals("tanh"))
             hOut.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.slice(t))));
         else
             hOut.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(c.slice(t)));

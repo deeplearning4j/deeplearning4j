@@ -137,7 +137,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
     private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut){
-    	INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), preOut.dup()));
+    	INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
     	INDArray outSubLabels = output.sub(labels);
     	Gradient gradient = new DefaultGradient();
     	
@@ -225,7 +225,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             throw new IllegalArgumentException("No null input allowed");
 
         INDArray preOutput = preOutput(input, training);
-        if(conf.getActivationFunction().equals("softmax")) {
+        if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);
             return softMax.z();

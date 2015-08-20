@@ -45,7 +45,6 @@ public class MultiNeuralNetConfLayerBuilderTest {
         int newNumIn = numIn + 1;
         int newNumOut = numOut + 1;
         WeightInit newWeight = WeightInit.UNIFORM;
-        String newAct = "rectify";
         double newDrop = 0.5;
         int[] newFS = new int[]{3, 3};
         int newFD = 7;
@@ -58,12 +57,11 @@ public class MultiNeuralNetConfLayerBuilderTest {
         VisibleUnit newVisible = VisibleUnit.BINARY;
 
         MultiLayerConfiguration multiConf1 = new NeuralNetConfiguration.Builder()
-                .activationFunction(act)
                 .nIn(numIn).nOut(numOut)
                 .lossFunction(loss)
                 .list(2)
-                .layer(0, new DenseLayer.Builder().nIn(newNumIn).nOut(newNumOut).build())
-                .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1).build())
+                .layer(0, new DenseLayer.Builder().nIn(newNumIn).nOut(newNumOut).activation(act).build())
+                .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1).activation(act).build())
                 .build();
         NeuralNetConfiguration firstLayer = multiConf1.getConf(0);
         NeuralNetConfiguration secondLayer = multiConf1.getConf(1);
@@ -78,7 +76,6 @@ public class MultiNeuralNetConfLayerBuilderTest {
                 .seed(123)
                 .iterations(5)
                 .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
-                .activationFunction("relu")
                 .k(1) // Annoying dl4j bug that is yet to be fixed.
                 .weightInit(WeightInit.XAVIER)
                 .constrainGradientToUnitNorm(true)
@@ -86,9 +83,9 @@ public class MultiNeuralNetConfLayerBuilderTest {
                 .regularization(true)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .list(4)
-                .layer(0, new RBM.Builder().nIn(784).nOut(1000).build())
-                .layer(1, new RBM.Builder().nIn(1000).nOut(500).build())
-                .layer(2, new RBM.Builder().nIn(500).nOut(250).build())
+                .layer(0, new RBM.Builder().nIn(784).nOut(1000).activation("relu").build())
+                .layer(1, new RBM.Builder().nIn(1000).nOut(500).activation("relu").build())
+                .layer(2, new RBM.Builder().nIn(500).nOut(250).activation("relu").build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
                         .nIn(250).nOut(10).build())
                         // Pretrain is unsupervised pretraining and finetuning on output layer

@@ -105,8 +105,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //feed forward nets
     protected int nIn,nOut;
 
-    protected String activationFunction;
-
     protected boolean useDropConnect = false;
 
     //RBMs
@@ -164,7 +162,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   Distribution dist,
                                   int nIn,
                                   int nOut,
-                                  String activationFunction,
                                   RBM.VisibleUnit visibleUnit,
                                   RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
@@ -207,7 +204,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.dist = dist;
         this.nIn = nIn;
         this.nOut = nOut;
-        this.activationFunction = activationFunction;
         this.visibleUnit = visibleUnit;
         this.hiddenUnit = hiddenUnit;
         if(weightShape != null)
@@ -328,6 +324,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     	variables.clear();
     }
 
+    @Deprecated
     private static <T> T overrideFields(T configInst, Layer layer) {
         // overwrite builder with fields with layer fields
         Class<?> layerClazz = layer.getClass();
@@ -564,7 +561,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
         private int nOut;
-        private String activationFunction = "sigmoid";
         private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 5;
@@ -864,11 +860,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder activationFunction(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-
         public Builder visibleUnit(RBM.VisibleUnit visibleUnit) {
             this.visibleUnit = visibleUnit;
             return this;
@@ -893,7 +884,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
+                    dist,  nIn,  nOut, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
                     ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,
                     l1,customLossFunction);
 

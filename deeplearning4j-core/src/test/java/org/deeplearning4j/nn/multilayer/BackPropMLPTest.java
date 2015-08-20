@@ -401,7 +401,6 @@ public class BackPropMLPTest {
     	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
-                .activationFunction(activationFunction)
                 .iterations(1)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
@@ -420,7 +419,10 @@ public class BackPropMLPTest {
     	
     	for( int i=0; i<hiddenLayerSizes.length; i++) {
     		int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
-    		lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).build());
+    		lb.layer(i, new DenseLayer.Builder()
+                    .nIn(nIn).nOut(hiddenLayerSizes[i])
+                    .activation(activationFunction)
+                    .build());
     	}
     	lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
     			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3).activation("softmax").build());

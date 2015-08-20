@@ -13,40 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**@author Alex Black 28/07/15
  */
 public class LayerwiseConfigurationTest {
-	
-	@Test
-	public void testLayerConfigActivation(){
-		//Idea: Set some common values for all layers. Then selectively override
-		// the global config, and check they actually work.
-		
-		//Without layerwise override:
-		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-		.activationFunction("relu")
-		.list(2)
-		.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
-		.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
-		.build();
-		MultiLayerNetwork net = new MultiLayerNetwork(conf);
-		net.init();
-		
-		assertTrue(conf.getConf(0).getActivationFunction().equals("relu"));
-		assertTrue(conf.getConf(1).getActivationFunction().equals("relu"));
-		
-		//With:
-		conf = new NeuralNetConfiguration.Builder()
-			.activationFunction("sigmoid")
-			.list(2)
-			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).activation("tanh").build() )
-			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).activation("relu").build() )
-			.build();
-		
-		net = new MultiLayerNetwork(conf);
-		net.init();
-		
-		assertTrue(conf.getConf(0).getActivationFunction().equals("tanh"));
-		assertTrue(conf.getConf(1).getActivationFunction().equals("relu"));
-	}
-	
+
 	@Test
 	public void testLayerWeightInit(){
 		//Without layerwise override:
@@ -68,7 +35,6 @@ public class LayerwiseConfigurationTest {
 		
 		//With:
 		conf = new NeuralNetConfiguration.Builder()
-			.activationFunction("sigmoid")
 			.weightInit(WeightInit.ZERO)
 			.list(2)
 			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10,11)).build() )
@@ -93,7 +59,6 @@ public class LayerwiseConfigurationTest {
 		
 		
 		conf = new NeuralNetConfiguration.Builder()
-			.activationFunction("sigmoid")
 			.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-30,-20))
 			.list(2)
 			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )

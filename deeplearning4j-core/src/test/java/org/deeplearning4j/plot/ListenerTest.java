@@ -108,7 +108,6 @@ public class ListenerTest {
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
 
-                .activationFunction(activationFunction)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
 
@@ -117,7 +116,7 @@ public class ListenerTest {
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
 
-                .layer(new RBM())
+                .layer(new RBM.Builder().activation(activationFunction).build())
                 .learningRate(0.1).useAdaGrad(false)
 
                 .regularization(false)
@@ -127,19 +126,17 @@ public class ListenerTest {
                 .momentum(0.0)
                 .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
+                .list(hiddenLayerSizes.length + 1)
+                .layer(hiddenLayerSizes.length, new OutputLayer.Builder()
+                        .activation("softmax")
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.1))
+                        .build())
 
-                .list(hiddenLayerSizes.length + 1).hiddenLayerSizes(hiddenLayerSizes)
+                .hiddenLayerSizes(hiddenLayerSizes)
                 .useDropConnect(false)
 
-                .override(hiddenLayerSizes.length, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.weightInit(WeightInit.DISTRIBUTION);
-                        builder.dist(new NormalDistribution(0, 0.1));
-                    }
-                }).build();
+                .build();
 
 
         return c;
@@ -151,7 +148,7 @@ public class ListenerTest {
                 .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
 
-                .activationFunction(activationFunction)
+
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
 
@@ -160,7 +157,9 @@ public class ListenerTest {
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
 
-                .layer(new RBM())
+                .layer(new RBM.Builder()
+                        .activation(activationFunction)
+                        .build())
                 .learningRate(0.1).useAdaGrad(false)
 
                 .regularization(false)
@@ -172,19 +171,16 @@ public class ListenerTest {
                 .seed(12345L)
 
                 .list(hiddenLayerSizes.length + 1)
+                .layer(hiddenLayerSizes.length, new OutputLayer.Builder()
+                        .activation("softmax")
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 0.1))
+                        .build())
                 .hiddenLayerSizes(hiddenLayerSizes)
                 .backprop(true).pretrain(false)
                 .useDropConnect(false)
 
-                .override(hiddenLayerSizes.length, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.weightInit(WeightInit.DISTRIBUTION);
-                        builder.dist(new NormalDistribution(0, 0.1));
-                    }
-                }).build();
+                .build();
 
 
         return c;

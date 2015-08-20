@@ -25,7 +25,6 @@ class NeuralNetworkReconstructionTest
       .seed(11L)
       .iterations(100)
       .weightInit(WeightInit.XAVIER)
-      .activationFunction("relu")
       .k(1)
       .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
       .learningRate(1e-3f)
@@ -37,7 +36,7 @@ class NeuralNetworkReconstructionTest
       .useDropConnect(true)
       .list(2)
       .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-        .nIn(4).nOut(3).build())
+        .nIn(4).nOut(3).activation("relu").build())
       .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
         .nIn(3).nOut(3).activation("softmax").build())
       .build();
