@@ -36,9 +36,11 @@ A tensor encompasses the dimensions beyond that 2-D plane. You can easily pictur
 
 In code, the tensor above would appear like this: `[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]].` And here's a visual: 
 
-![Alt text](../img/3d_matrix.png) 
+![Alt text](../img/3d_matrix_cube.png) 
 
-In other words, tensors are formed by arrays nested within arrays, and that nesting can go on infinitely, accounting for an arbitrary number of dimensions far greater than what we can visualize spatially. A 4-D tensor would simply replace each of these scalars with an array nested one level deeper. Convolutional networks deal in 4-D tensors.  
+In other words, tensors are formed by arrays nested within arrays, and that nesting can go on infinitely, accounting for an arbitrary number of dimensions far greater than what we can visualize spatially. A 4-D tensor would simply replace each of these scalars with an array nested one level deeper. Convolutional networks deal in 4-D tensors like the one below (notice the nested array).
+
+![Alt text](../img/3d_matrix.png) 
 
 ND4J and Deeplearning4j use `NDArray` synonymously with tensor. A tensor’s dimensionality `(1,2,3…n)` is called its order; i.e. a fifth-order tensor would have five dimensions.
 
