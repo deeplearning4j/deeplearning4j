@@ -85,6 +85,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
+    // return 4 dimensions
     public INDArray backprop(INDArray output){
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
             int[] otherOutputs = null;
@@ -96,6 +97,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
             else if(output.shape().length == 3) {
                 otherOutputs = new int[2];
             }
+            System.arraycopy(output.shape(), 1, otherOutputs, 0, otherOutputs.length);
             shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
         }
         return output.reshape(shape);
