@@ -73,20 +73,16 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     // return 2 dimensions
     public INDArray preProcess(INDArray input) {
         int[] otherOutputs = null;
+        this.inputHeight = input.size(-2);
+        this.inputWidth = input.size(-1);
 
         if(input.shape().length == 2) {
-            this.inputHeight = input.shape()[0];
-            this.inputWidth = input.shape()[1];
             return input;
         } else if(input.shape().length == 4) {
-            this.inputHeight = input.shape()[2];
-            this.inputWidth = input.shape()[3];
-            this.numChannels = input.shape()[1];
+            this.numChannels = input.size(-3);
             otherOutputs = new int[3];
         }
         else if(input.shape().length == 3) {
-            this.inputHeight = input.shape()[1];
-            this.inputWidth = input.shape()[2];
             otherOutputs = new int[2];
         }
         System.arraycopy(input.shape(), 1, otherOutputs, 0, otherOutputs.length);
