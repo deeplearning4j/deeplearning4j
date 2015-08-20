@@ -71,7 +71,7 @@ public abstract class Layer implements Serializable {
         protected WeightInit weightInit = WeightInit.VI;
         protected Distribution dist = new NormalDistribution(1e-3,1);
         protected double dropOut = 0;
-        protected Updater updater;
+        protected Updater updater = Updater.ADAGRAD;
 
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;

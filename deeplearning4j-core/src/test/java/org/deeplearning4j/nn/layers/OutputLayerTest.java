@@ -111,13 +111,13 @@ public class OutputLayerTest {
                 .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).
                         optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .constrainGradientToUnitNorm(true)
-                .updater(Updater.ADAGRAD)
                 .seed(123)
                 .iterations(1000)
                 .learningRate(1e-1)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
                         .weightInit(WeightInit.XAVIER)
+                        .updater(Updater.ADAGRAD)
                         .activation("softmax").build())
                 .build();
 
@@ -167,13 +167,13 @@ public class OutputLayerTest {
         NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).
                         optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.SGD)
                 .seed(123)
                 .iterations(200)
                 .learningRate(1e-2)
                 .nIn(6).nOut(2)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
                         .weightInit(WeightInit.ZERO)
+                        .updater(Updater.SGD)
                         .activation("softmax").build())
                 .build();
 
