@@ -37,10 +37,12 @@ public class CNNProcessorTest {
         INDArray check2to4 = convProcessor.preProcess(in2D);
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
+        assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
 
-        INDArray result2 = convProcessor.preProcess(in4D);
-        int val4to4 = result2.shape().length;
+        INDArray check4to4 = convProcessor.preProcess(in4D);
+        int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
+        assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
 
     }
 
@@ -48,19 +50,23 @@ public class CNNProcessorTest {
     @Test
     public void testFeeForwardToCnnPreProcessorBackprop() {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
+        convProcessor.preProcess(in2D);
 
         INDArray check2to2 = convProcessor.backprop(in2D);
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
+        assertEquals(Nd4j.create(1, 784), check2to2);
 
         INDArray check3to2 = convProcessor.backprop(in3D);
         int val3to2 = check3to2.shape().length;
         assertTrue(val3to2 == 2);
+        assertEquals(Nd4j.create(20, 5488), check3to2);
 
 
         INDArray check4to2 = convProcessor.backprop(in4D);
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
+        assertEquals(Nd4j.create(20, 784), check4to2);
 
     }
 
@@ -71,30 +77,37 @@ public class CNNProcessorTest {
         INDArray check2to4 = convProcessor.backprop(in2D);
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
+        assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
 
-        INDArray result2 = convProcessor.backprop(in4D);
-        int val4to4 = result2.shape().length;
+        INDArray check4to4 = convProcessor.backprop(in4D);
+        int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
+        assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
 
     }
 
     @Test
     public void testCnnToFeeForwardPreProcessorBackprop() {
         CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, 1);
+        convProcessor.preProcess(in4D);
 
         INDArray check2to2 = convProcessor.preProcess(in2D);
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
+        assertEquals(Nd4j.create(1, 784), check2to2);
 
         INDArray check3to2 = convProcessor.preProcess(in3D);
         int val3to2 = check3to2.shape().length;
         assertTrue(val3to2 == 2);
+        assertEquals(Nd4j.create(20, 5488), check3to2);
 
         INDArray check4to2 = convProcessor.preProcess(in4D);
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
+        assertEquals(Nd4j.create(20, 784), check4to2);
 
     }
+
     @Test
     public void testCNNInputPreProcessorMnist() throws Exception {
         int numSamples = 1;

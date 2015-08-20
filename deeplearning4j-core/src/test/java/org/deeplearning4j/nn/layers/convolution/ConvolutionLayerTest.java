@@ -297,8 +297,6 @@ public class ConvolutionLayerTest {
 
     @Test
     public void testCNNMLN() throws Exception {
-        Nd4j.MAX_SLICES_TO_PRINT = -1;
-        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         final int numRows = 28;
@@ -334,6 +332,7 @@ public class ConvolutionLayerTest {
                         .build())
                 .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor())
+                .backprop(true).pretrain(false)
                 .build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
