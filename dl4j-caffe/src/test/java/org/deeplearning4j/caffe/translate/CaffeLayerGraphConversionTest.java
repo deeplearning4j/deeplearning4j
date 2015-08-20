@@ -5,9 +5,6 @@ import org.deeplearning4j.caffe.projo.Caffe.NetParameter;
 import org.deeplearning4j.dag.Graph;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -16,8 +13,7 @@ import static org.junit.Assert.assertTrue;
 public class CaffeLayerGraphConversionTest {
 
     @Test
-    public void convertTest() throws IOException, IllegalAccessException,
-            NoSuchMethodException, InvocationTargetException {
+    public void convertTest() throws Exception {
         NetParameter net = CaffeTestUtil.getNet();
         Graph graph = new CaffeLayerGraphConversion(net).convert();
         System.out.println(graph);
