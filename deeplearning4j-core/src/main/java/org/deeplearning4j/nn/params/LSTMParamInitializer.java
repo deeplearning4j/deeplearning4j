@@ -42,7 +42,7 @@ public class LSTMParamInitializer implements ParamInitializer {
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+        Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
 
         int inputSize = conf.getNIn();
         int hiddenSize = conf.getNIn();

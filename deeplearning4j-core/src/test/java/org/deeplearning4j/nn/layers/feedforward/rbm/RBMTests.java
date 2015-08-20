@@ -147,13 +147,13 @@ public class RBMTests {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .iterations(30).constrainGradientToUnitNorm(true).dist(new NormalDistribution(1, 1e-5))
+                .iterations(30).constrainGradientToUnitNorm(true)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .learningRate(1e-1f).nIn(784).nOut(600)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                        .weightInit(WeightInit.DISTRIBUTION)
-                .build())
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1, 1e-5))
+                        .build())
                 .build();
 
         fetcher.fetch(10);
