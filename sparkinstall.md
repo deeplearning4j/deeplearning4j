@@ -36,6 +36,6 @@ On a Linux OS, you'll want to follow these steps:
         wget http://apache.mirrors.lucidnetworks.net/spark/spark-1.4.1/spark-1.4.1-bin-hadoop2.4.tgz
         tar -zxf spark-1.4.1-bin-hadoop2.4.tgz
         cd spark-1.4.1-bin-hadoop2.4
-        ./bin/spark-shell 
+        ./bin/spark-shell //<this is just to test that Spark is installed
 
 Once you have Spark running, you can [build the DL4J examples](../spark.html).
