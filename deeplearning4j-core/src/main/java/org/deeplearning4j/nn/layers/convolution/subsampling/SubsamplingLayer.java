@@ -69,7 +69,7 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public Type type() {
-        return Type.CONVOLUTIONAL;
+        return Type.SUBSAMPLING;
     }
 
 
@@ -110,7 +110,6 @@ public class SubsamplingLayer extends BaseLayer {
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());
-//                retE = retE.reshape(1,2,1,1,2,2); TODO remove - this is just used to check shapes till get is fixed
                 reshapeEpsilon = Nd4j.tile(retE,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
                 reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
@@ -171,7 +170,7 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public INDArray activationMean() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -185,13 +184,17 @@ public class SubsamplingLayer extends BaseLayer {
     }
 
     @Override
-    public void fit() {}
+    public void fit() {
+
+    }
 
     @Override
     public void fit(INDArray input) {}
 
     @Override
-    public void computeGradientAndScore() {}
+    public void computeGradientAndScore() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public double score() {
@@ -204,17 +207,19 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray params() { return Nd4j.create(0);}
+    public INDArray params() { throw new UnsupportedOperationException();}
 
     @Override
     public INDArray getParam(String param) {
-        return Nd4j.create(0);
+        throw new UnsupportedOperationException();
     }
     @Override
     public void setParams(INDArray params) {
+        throw new UnsupportedOperationException();
     }
 
 
