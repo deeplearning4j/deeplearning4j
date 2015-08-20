@@ -1002,7 +1002,19 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
 
+    @Test
+    public void testMMulMatrixTimesColVector(){
+        //[1 1 1 1 1; 10 10 10 10 10; 100 100 100 100 100] x [1; 1; 1; 1; 1] = [5; 50; 500]
+        INDArray matrix = Nd4j.ones(3,5);
+        matrix.getRow(1).muli(10);
+        matrix.getRow(2).muli(100);
 
+        INDArray colVector = Nd4j.ones(5,1);
+        INDArray out = matrix.mmul(colVector);
+
+        INDArray expected = Nd4j.create(new double[]{5,50,500},new int[]{3,1});
+        assertEquals(expected,out);
+    }
 
 
 

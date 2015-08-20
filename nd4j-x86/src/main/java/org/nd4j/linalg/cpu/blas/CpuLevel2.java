@@ -20,7 +20,16 @@ public class CpuLevel2 extends BaseLevel2 {
     @Override
     protected void sgemv(char order, char TransA, int M, int N, float alpha, INDArray A, int lda, INDArray X, int incX, float beta, INDArray Y, int incY) {
         float[] yData = getFloatData(Y);
-        BLAS.getInstance().sgemv(String.valueOf(TransA), M, N, alpha, getFloatData(A), getBlasOffset(A), lda, getFloatData(X), getBlasOffset(X), incX, beta, yData, getBlasOffset(Y), incY);
+        BLAS.getInstance().sgemv(String.valueOf(TransA)
+                , M, N, alpha, getFloatData(A)
+                , getBlasOffset(A), lda
+                , getFloatData(X)
+                , getBlasOffset(X)
+                , incX
+                , beta,
+                yData
+                , getBlasOffset(Y)
+                , incY);
         setData(yData,Y);
     }
 

@@ -2555,16 +2555,6 @@ public abstract class BaseNDArray implements INDArray {
 
 
         } else {
-            if (otherArray.columns() == 1)
-                Nd4j.getBlasWrapper().level2().gemv(
-                        BlasBufferUtil.getCharForTranspose(resultArray)
-                        ,BlasBufferUtil.getCharForTranspose(this)
-                        ,1.0
-                        ,this
-                        ,other
-                        ,0.0,
-                        resultArray);
-            else {
                 Nd4j.getBlasWrapper().level3().gemm(
                         BlasBufferUtil.getCharForTranspose(this)
                         ,BlasBufferUtil.getCharForTranspose(other)
@@ -2575,7 +2565,7 @@ public abstract class BaseNDArray implements INDArray {
                         ,0.0
                         ,resultArray);
 
-            }
+
         }
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
