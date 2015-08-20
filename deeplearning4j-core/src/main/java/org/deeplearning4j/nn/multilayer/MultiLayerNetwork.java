@@ -541,10 +541,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (int i = 0; i < layers.length; i++) {
             currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
             //special case: row wise softmax
-            if (layers[i].conf().getActivationFunction().equals("softmax"))
+            if (layers[i].conf().getLayer().getActivationFunction().equals("softmax"))
                 activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", currInput.dup()), 1));
             else
-                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), currInput)));
+                activations.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), currInput)));
         }
 
         currInput = this.input;
@@ -552,10 +552,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             currInput = zFromPrevLayer(i, currInput,training); // w*x+b for each layer
             INDArray dup = currInput.dup();
             //special case: row wise softmax
-            if (layers[i].conf().getActivationFunction().equals("softmax"))
-                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative(), 1));
+            if (layers[i].conf().getLayer().getActivationFunction().equals("softmax"))
+                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), dup).derivative(), 1));
             else
-                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getActivationFunction(), dup).derivative()));
+                derivatives.add(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(layerWiseConfigurations.getConf(i).getLayer().getActivationFunction(), dup).derivative()));
         }
         // Duplicating last layer derivative to keep pair list equal
         derivatives.add(derivatives.get(layers.length - 1));
@@ -626,7 +626,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (int j = 0; j < getLayers().length; j++) {
             weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
             biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
-            activationFunctions.add(getLayers()[j].conf().getActivationFunction());
+            activationFunctions.add(getLayers()[j].conf().getLayer().getActivationFunction());
         }
 
 
@@ -705,7 +705,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (int j = 0; j < getLayers().length; j++) {
             weights.add(getLayers()[j].getParam(DefaultParamInitializer.WEIGHT_KEY));
             biases.add(getLayers()[j].getParam(DefaultParamInitializer.BIAS_KEY));
-            activationFunctions.add(getLayers()[j].conf().getActivationFunction());
+            activationFunctions.add(getLayers()[j].conf().getLayer().getActivationFunction());
         }
 
 
@@ -1531,7 +1531,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> W = MultiLayerUtil.weightMatrices(this);
 
         for (int i = 0; i < layers.length; i++) {
-            String derivative = getLayers()[i].conf().getActivationFunction();
+            String derivative = getLayers()[i].conf().getLayer().getActivationFunction();
             //R[i] * W[i] + acts[i] * (vW[i] + vB[i]) .* f'([acts[i + 1])
             R.add(R.get(i).mmul(W.get(i)).addi(acts.get(i)
                     .mmul(vWvB.get(i).getFirst().addiRowVector(vWvB.get(i).getSecond())))
