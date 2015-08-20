@@ -182,11 +182,27 @@
         <developer>
             <id>agibsonccc</id>
             <name>Adam Gibson</name>
-            <email>0@blix.io</email>
+            <email>adam@skymind.io</email>
         </developer>
         <developer>
             <id>jpatanooga</id>
             <name>Josh Patterson</name>
+        </developer>
+        <developer>
+            <id>Eron Wright</id>
+            <name>Josh Patterson</name>
+        </developer>
+        <developer>
+            <id>AlexDBlack</id>
+            <name>Alex Black</name>
+        </developer>
+        <developer>
+            <id>EronWright</id>
+            <name>Eron Wright</name>
+        </developer>
+        <developer>
+            <id>nyghtowl</id>
+            <name>Melanie Warrick</name>
         </developer>
     </developers>
 

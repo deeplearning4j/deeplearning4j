@@ -18,12 +18,10 @@
 
 package org.deeplearning4j.nn.params;
 
-import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
 import java.util.Map;
@@ -52,8 +50,8 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
 
         params.put(ENCODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), dist));
         params.put(DECODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), dist));
-        params.put(HIDDEN_BIAS_KEY, WeightInitUtil.initWeights(new int[]{out},conf.getWeightInit(), dist));
-        params.put(VISIBLE_BIAS_KEY, WeightInitUtil.initWeights(new int[]{vis},conf.getWeightInit(), dist));
+        params.put(HIDDEN_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,out},conf.getWeightInit(), dist));
+        params.put(VISIBLE_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,vis},conf.getWeightInit(), dist));
 
         conf.addVariable(ENCODER_WEIGHT_KEY);
         conf.addVariable(DECODER_WEIGHT_KEY);
