@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.spark.text;
 
-import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -26,17 +25,18 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.spark.models.embeddings.word2vec.FirstIterationFunction;
+import org.deeplearning4j.spark.models.embeddings.word2vec.MapToPairFunction;
 import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
-import org.deeplearning4j.spark.text.accumulators.Syn0Accumulator;
-import org.deeplearning4j.spark.text.functions.*;
+import org.deeplearning4j.spark.text.functions.CountCumSum;
+import org.deeplearning4j.spark.text.functions.TextPipeline;
+import org.deeplearning4j.spark.text.functions.TokenizerFunction;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import scala.Tuple2;
 
 import java.io.IOException;
@@ -430,16 +430,6 @@ public class TextPipelineTest {
                 new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast);
         JavaRDD< Pair<Integer, INDArray> > pointSyn0Vec =
                 vocabWordListSentenceCumSumRDD.mapPartitions(firstIterationFunction).map(new MapToPairFunction());
-
-//        List<Pair<Integer, INDArray>> collect = pointSyn0Vec.collect();
-//        System.out.print("ddfskjm");
-        final Accumulator<Pair<Integer, INDArray>> syn0Acc =
-                sc.accumulator(new Pair<>(0, Nd4j.zeros(vocabCache.numWords(), word2vec.getVectorLength())),
-                new Syn0Accumulator(vocabCache.numWords(), word2vec.getVectorLength()));
-        pointSyn0Vec.foreach(new UpdateSyn0AccumulatorFunction(syn0Acc));
-        INDArray syn0 = syn0Acc.value().getSecond();
-        InMemoryLookupTable inMemoryLookupTable = new InMemoryLookupTable();
-
     }
 
 }
