@@ -153,7 +153,7 @@ public class GradientCheckTests {
 	    				double l1 = l1vals[k];
 	    				
 				        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-				                .regularization(true).dropOut(0.0)
+				                .regularization(true)
 				                .l2(l2).l1(l1)
 				                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
 				                .updater(Updater.NONE)

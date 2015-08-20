@@ -67,8 +67,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
     // Encode
     public INDArray encode(boolean training) {
-        if(conf.getDropOut() > 0 && training) {
-            dropoutMask = Dropout.applyDropout(input, conf.getDropOut(),dropoutMask);
+        if(conf.getLayer().getDropOut() > 0 && training) {
+            dropoutMask = Dropout.applyDropout(input, conf.getLayer().getDropOut(),dropoutMask);
         }
 
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);

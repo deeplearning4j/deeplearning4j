@@ -308,8 +308,8 @@ public  class RBM extends BasePretrainNetwork {
     public INDArray propUp(INDArray v) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
-            if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
+            if (conf.getLayer().getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getLayer().getDropOut()).sample(W.shape()).divi(conf.getLayer().getDropOut()));
             }
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);

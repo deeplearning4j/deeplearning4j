@@ -112,7 +112,7 @@ public class LSTM extends BaseLayer {
         INDArray dWd = hOut.transpose().mmul(dY);
         INDArray dBd = Nd4j.sum(dWd,0);
         INDArray dHout = dY.mmul(decoderWeights.transpose());
-        if(conf.getDropOut() > 0) {
+        if(conf.getLayer().getDropOut() > 0) {
             dHout.muli(u2);
         }
 
@@ -165,7 +165,7 @@ public class LSTM extends BaseLayer {
 
 
 
-            if(conf.getDropOut() > 0)
+            if(conf.getLayer().getDropOut() > 0)
                 dx.muli(u);
 
         }
@@ -191,9 +191,9 @@ public class LSTM extends BaseLayer {
         INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
 
 
-        if(conf.getDropOut() > 0) {
-            double scale = 1 / (1 - conf.getDropOut());
-            u = Nd4j.rand(x.shape()).lti(1 - conf.getDropOut()).muli(scale);
+        if(conf.getLayer().getDropOut() > 0) {
+            double scale = 1 / (1 - conf.getLayer().getDropOut());
+            u = Nd4j.rand(x.shape()).lti(1 - conf.getLayer().getDropOut()).muli(scale);
             x.muli(u);
         }
 
@@ -239,8 +239,8 @@ public class LSTM extends BaseLayer {
 
         }
 
-        if(conf.getDropOut() > 0) {
-            u2 = Dropout.applyDropout(hOut,conf.getDropOut(),u2);
+        if(conf.getLayer().getDropOut() > 0) {
+            u2 = Dropout.applyDropout(hOut,conf.getLayer().getDropOut(),u2);
         }
 
 

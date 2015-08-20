@@ -128,8 +128,8 @@ public class SubsamplingLayer extends BaseLayer {
         INDArray pooled, ret;
         // n = num examples, c = num channels or depth
         int n, c, kh, kw, outWidth, outHeight;
-        if(training && conf.getDropOut() > 0) {
-            this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
+        if(training && conf.getLayer().getDropOut() > 0) {
+            this.dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         }
 
         pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());

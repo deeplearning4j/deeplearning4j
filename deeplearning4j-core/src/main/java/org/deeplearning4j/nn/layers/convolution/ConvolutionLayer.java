@@ -116,7 +116,7 @@ public class ConvolutionLayer extends BaseLayer {
         INDArray Weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
         if(conf.isUseDropConnect() && training) {
-            if (conf.getDropOut() > 0) {
+            if (conf.getLayer().getDropOut() > 0) {
                 Weights = Dropout.applyDropConnect(this, ConvolutionParamInitializer.WEIGHT_KEY);
             }
         }
