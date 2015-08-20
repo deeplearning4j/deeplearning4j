@@ -54,8 +54,8 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         conf.addVariable(BIAS_KEY);
         
         
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getWeightInit(), dist));
-        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getLayer().getWeightInit(), dist));
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getLayer().getWeightInit(), dist));
         INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
         biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
         /*The above line initializes the forget gate biases to 5.

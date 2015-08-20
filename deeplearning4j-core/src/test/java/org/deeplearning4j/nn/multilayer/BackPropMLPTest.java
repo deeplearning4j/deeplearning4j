@@ -399,7 +399,6 @@ public class BackPropMLPTest {
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, String activationFunction) {
     	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
                 .iterations(1)
                 .batchSize(1)
@@ -421,11 +420,15 @@ public class BackPropMLPTest {
     		int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
     		lb.layer(i, new DenseLayer.Builder()
                     .nIn(nIn).nOut(hiddenLayerSizes[i])
+                    .weightInit(WeightInit.DISTRIBUTION)
                     .activation(activationFunction)
                     .build());
     	}
     	lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
-    			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3).activation("softmax").build());
+    			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3)
+                .weightInit(WeightInit.DISTRIBUTION)
+                .activation("softmax")
+                .build());
     	lb.pretrain(false).backprop(true);
     	
         return lb.build();

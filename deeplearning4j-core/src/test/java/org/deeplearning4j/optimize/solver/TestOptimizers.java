@@ -114,7 +114,6 @@ public class TestOptimizers {
 
     private static MultiLayerConfiguration getMLPConfigIris( OptimizationAlgorithm oa, int nIterations) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(oa)
                 .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
                 .iterations(nIterations)
@@ -124,9 +123,15 @@ public class TestOptimizers {
                 .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
                 .list(2)
-                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation("relu").build())
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
+                        .build())
                 .layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
-                        .activation("softmax").nIn(3).nOut(3).build())
+                        .nIn(3).nOut(3)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .build())
                 .backprop(true).pretrain(false)
                 .build();
 

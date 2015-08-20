@@ -50,8 +50,8 @@ public class LSTMParamInitializer implements ParamInitializer {
         conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(INPUT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, conf.getWeightInit(), dist));
-        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, conf.getLayer().getWeightInit(), dist));
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getLayer().getWeightInit(), dist));
         params.put(BIAS_KEY, Nd4j.zeros(outputSize));
         params.get(RECURRENT_WEIGHT_KEY).data().persist();
         params.get(BIAS_KEY).data().persist();

@@ -64,8 +64,9 @@ public class TestSparkLayer extends BaseSparkTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(10).weightInit(WeightInit.XAVIER)
+                .iterations(10)
                 .learningRate(1e-1).nIn(4).nOut(3).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
+                        .weightInit(WeightInit.XAVIER)
                         .activation("softmax").build())
                 .build();
 

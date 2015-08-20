@@ -48,10 +48,10 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
         int vis = conf.getNIn();
         int out = vis * 2;
 
-        params.put(ENCODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), dist));
-        params.put(DECODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), dist));
-        params.put(HIDDEN_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,out},conf.getWeightInit(), dist));
-        params.put(VISIBLE_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,vis},conf.getWeightInit(), dist));
+        params.put(ENCODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{out,vis},conf.getLayer().getWeightInit(), dist));
+        params.put(DECODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{vis,out},conf.getLayer().getWeightInit(), dist));
+        params.put(HIDDEN_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,out},conf.getLayer().getWeightInit(), dist));
+        params.put(VISIBLE_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,vis},conf.getLayer().getWeightInit(), dist));
 
         conf.addVariable(ENCODER_WEIGHT_KEY);
         conf.addVariable(DECODER_WEIGHT_KEY);

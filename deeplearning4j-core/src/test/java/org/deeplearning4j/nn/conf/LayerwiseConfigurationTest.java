@@ -18,16 +18,15 @@ public class LayerwiseConfigurationTest {
 	public void testLayerWeightInit(){
 		//Without layerwise override:
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-		.weightInit(WeightInit.ZERO)
 		.list(2)
-		.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
-		.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+		.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.ZERO).build() )
+		.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.ZERO).build() )
 		.build();
 		MultiLayerNetwork net = new MultiLayerNetwork(conf);
 		net.init();
 		
-		assertTrue(conf.getConf(0).getWeightInit() == WeightInit.ZERO);
-		assertTrue(conf.getConf(1).getWeightInit() == WeightInit.ZERO);
+		assertTrue(conf.getConf(0).getLayer().getWeightInit() == WeightInit.ZERO);
+		assertTrue(conf.getConf(1).getLayer().getWeightInit() == WeightInit.ZERO);
 		INDArray w0 = net.getLayer(0).getParam(DefaultParamInitializer.WEIGHT_KEY).linearView();
 		for( int i=0; i<w0.length(); i++ ) assertTrue(w0.getDouble(i)==0.0);	//Weights should be 0.0
 		INDArray w1 = net.getLayer(1).getParam(DefaultParamInitializer.WEIGHT_KEY).linearView();
@@ -35,7 +34,6 @@ public class LayerwiseConfigurationTest {
 		
 		//With:
 		conf = new NeuralNetConfiguration.Builder()
-			.weightInit(WeightInit.ZERO)
 			.list(2)
 			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10,11)).build() )
 			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(20,21)).build() )
@@ -43,8 +41,8 @@ public class LayerwiseConfigurationTest {
 		
 		net = new MultiLayerNetwork(conf);
 		net.init();
-		assertTrue(conf.getConf(0).getWeightInit() == WeightInit.DISTRIBUTION);
-		assertTrue(conf.getConf(1).getWeightInit() == WeightInit.DISTRIBUTION);
+		assertTrue(conf.getConf(0).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
+		assertTrue(conf.getConf(1).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
 		assertTrue(conf.getConf(0).getDist() instanceof UniformDistribution);
 		assertTrue(conf.getConf(1).getDist() instanceof UniformDistribution);
 		UniformDistribution d0 = (UniformDistribution)conf.getConf(0).getDist();
@@ -59,15 +57,15 @@ public class LayerwiseConfigurationTest {
 		
 		
 		conf = new NeuralNetConfiguration.Builder()
-			.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-30,-20))
+			.dist(new UniformDistribution(-30, -20))
 			.list(2)
-			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build() )
-			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).build() )
+			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION).build() )
+			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION).build() )
 			.build();
 		net = new MultiLayerNetwork(conf);
 		net.init();
-		assertTrue(conf.getConf(0).getWeightInit() == WeightInit.DISTRIBUTION);
-		assertTrue(conf.getConf(1).getWeightInit() == WeightInit.DISTRIBUTION);
+		assertTrue(conf.getConf(0).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
+		assertTrue(conf.getConf(1).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
 		assertTrue(conf.getConf(0).getDist() instanceof UniformDistribution);
 		assertTrue(conf.getConf(1).getDist() instanceof UniformDistribution);
 	}

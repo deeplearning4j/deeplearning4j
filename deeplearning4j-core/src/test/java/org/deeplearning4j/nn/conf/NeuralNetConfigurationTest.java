@@ -97,13 +97,13 @@ public class NeuralNetConfigurationTest {
         RBM layer = new RBM.Builder()
                 .nIn(trainingSet.numInputs())
                 .nOut(trainingSet.numOutcomes())
+                .weightInit(WeightInit.UNIFORM)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activation("tanh")
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.UNIFORM)
                 .seed(123)
                 .iterations(3)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
@@ -189,13 +189,13 @@ public class NeuralNetConfigurationTest {
         RBM layer = new RBM.Builder()
                 .nIn(1)
                 .nOut(1)
+                .weightInit(WeightInit.UNIFORM)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activation("tanh")
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.UNIFORM)
                 .iterations(3)
                 .timeSeriesLength(1)
                 .regularization(false)
@@ -213,13 +213,13 @@ public class NeuralNetConfigurationTest {
         RBM layer = new RBM.Builder()
                 .nIn(nIn)
                 .nOut(nOut)
+                .weightInit(weightInit)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activation("tanh")
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(weightInit)
                 .iterations(3)
                 .regularization(false)
                 .dist(new NormalDistribution(1, 1))

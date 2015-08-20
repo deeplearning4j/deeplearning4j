@@ -42,10 +42,12 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
     @Test
     public void testDbn() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1e-1, 1))
+                .momentum(9e-1f).dist(new NormalDistribution(1e-1, 1))
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).iterations(10)
                 .learningRate(1e-1f).nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .build())
                 .list(2)
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax")

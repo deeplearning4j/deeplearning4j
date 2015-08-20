@@ -54,10 +54,10 @@ public class OutputLayerTest {
     public void testIris2() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-
-                .iterations(10).weightInit(WeightInit.XAVIER)
+                .iterations(10)
                 .learningRate(1e-1).nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
+                        .weightInit(WeightInit.XAVIER)
                         .activation("softmax").build())
                 .build();
 
@@ -114,10 +114,10 @@ public class OutputLayerTest {
                 .updater(Updater.ADAGRAD)
                 .seed(123)
                 .iterations(1000)
-                .weightInit(WeightInit.XAVIER)
                 .learningRate(1e-1)
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
+                        .weightInit(WeightInit.XAVIER)
                         .activation("softmax").build())
                 .build();
 
@@ -167,13 +167,13 @@ public class OutputLayerTest {
         NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).
                         optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.ZERO)
                 .updater(Updater.SGD)
                 .seed(123)
                 .iterations(200)
                 .learningRate(1e-2)
                 .nIn(6).nOut(2)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
+                        .weightInit(WeightInit.ZERO)
                         .activation("softmax").build())
                 .build();
 
@@ -190,9 +190,10 @@ public class OutputLayerTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(5).weightInit(WeightInit.XAVIER)
+                .iterations(5)
                 .learningRate(1e-1).nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
+                        .weightInit(WeightInit.XAVIER)
                         .activation("softmax").build())
                 .build();
 
@@ -221,9 +222,10 @@ public class OutputLayerTest {
     public void testSetParams() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .lossFunction(LossFunctions.LossFunction.MCXENT).optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(100).weightInit(WeightInit.ZERO)
+                .iterations(100)
                 .learningRate(1e-1).nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder()
+                        .weightInit(WeightInit.ZERO)
                         .activation("softmax").build())
                 .build();
 
