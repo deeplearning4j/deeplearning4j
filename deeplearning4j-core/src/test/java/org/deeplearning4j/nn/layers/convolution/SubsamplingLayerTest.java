@@ -157,12 +157,6 @@ public class SubsamplingLayerTest {
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertArrayEquals(expectedContainedEpsilonResult.shape(), containedOutput.getSecond().shape());
 
-        INDArray input2 = getData();
-        layer.activate(input2);
-
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
-        assertArrayEquals(input.shape(), out.getSecond().shape());
-        assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
     @Test
