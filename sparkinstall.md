@@ -11,6 +11,12 @@ First, see whether you have Spark installed by entering `which spark` in the com
 
 If you don't have it, you can easily install Spark on OSX with [Homebrew](http://brew.sh/), a package manager for OSX.
 
+First install Homebrew, if you don't have it:
+
+        ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+Then install Spark with `brew`:
+
         brew install apache-spark
 
 ## Linux
