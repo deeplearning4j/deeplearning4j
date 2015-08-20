@@ -6,7 +6,7 @@ layout: default
 
 Given that deep learning is computationally intensive, if you are working with large datasets, you should think about how to train deep neural networks in parallel. 
 
-With Spark standalone, Deeplearning4j can run multi-threaded on your local machine; i.e. you don't need a cluster or the cloud. If you don't have Spark, please see our [Spark installation page](../spark-install.html).
+With Spark standalone, Deeplearning4j can run multi-threaded on your local machine; i.e. you don't need a cluster or the cloud. If you don't have Spark, please see our [Spark installation page](../sparkinstall.html).
 
 ## Build the Examples
 
