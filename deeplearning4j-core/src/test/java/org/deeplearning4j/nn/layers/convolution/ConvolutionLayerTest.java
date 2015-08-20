@@ -342,7 +342,9 @@ public class ConvolutionLayerTest {
         model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
         model.fit(mnistIter);
 
+        DataSet data = mnistIter.next();
+
     }
 
 
-    }
+}
