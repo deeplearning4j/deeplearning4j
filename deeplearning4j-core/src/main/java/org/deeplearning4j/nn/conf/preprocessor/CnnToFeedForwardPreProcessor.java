@@ -42,28 +42,28 @@ import java.util.Arrays;
 */
 @Data
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
-     private int inputWidth;
      private int inputHeight;
+     private int inputWidth;
      private int numChannels;
 
      /**
-      * @param inputWidth the rows
       * @param inputHeight the columns
+      * @param inputWidth the rows
       * @param numChannels the channels
       */
 
      @JsonCreator
-    public CnnToFeedForwardPreProcessor(@JsonProperty("inputWidth") int inputWidth,
-                                        @JsonProperty("inputHeight") int inputHeight,
+    public CnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") int inputHeight,
+                                        @JsonProperty("inputWidth") int inputWidth,
                                         @JsonProperty("numChannels") int numChannels) {
-        this.inputWidth = inputWidth;
-        this.inputHeight = inputHeight;
-        this.numChannels = numChannels;
+         this.inputHeight = inputHeight;
+         this.inputWidth = inputWidth;
+         this.numChannels = numChannels;
     }
 
-    public CnnToFeedForwardPreProcessor(int inputWidth, int inputHeight) {
-        this.inputWidth = inputWidth;
+    public CnnToFeedForwardPreProcessor(int inputHeight, int inputWidth) {
         this.inputHeight = inputHeight;
+        this.inputWidth = inputWidth;
         this.numChannels = 1;
     }
 
@@ -75,11 +75,18 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         int[] otherOutputs = null;
 
         if(input.shape().length == 2) {
+            this.inputHeight = input.shape()[0];
+            this.inputWidth = input.shape()[1];
             return input;
         } else if(input.shape().length == 4) {
+            this.inputHeight = input.shape()[2];
+            this.inputWidth = input.shape()[3];
+            this.numChannels = input.shape()[1];
             otherOutputs = new int[3];
         }
         else if(input.shape().length == 3) {
+            this.inputHeight = input.shape()[1];
+            this.inputWidth = input.shape()[2];
             otherOutputs = new int[2];
         }
         System.arraycopy(input.shape(), 1, otherOutputs, 0, otherOutputs.length);
@@ -91,9 +98,9 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     public INDArray backprop(INDArray output){
         if (output.shape().length == 4)
             return output;
-        if (output.columns() != inputWidth * inputHeight)
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputWidth + " x columns " + inputHeight + " but was instead " + Arrays.toString(output.shape()));
-        return output.reshape(output.size(0), numChannels, inputWidth, inputHeight);
+        if (output.columns() != inputWidth * inputHeight * numChannels)
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight + " x columns " + inputWidth + " x depth " + numChannels +" but was instead " + Arrays.toString(output.shape()));
+        return output.reshape(output.size(0), numChannels, inputHeight, inputWidth);
     }
 
 }
