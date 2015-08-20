@@ -43,10 +43,10 @@ public class LayerwiseConfigurationTest {
 		net.init();
 		assertTrue(conf.getConf(0).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
 		assertTrue(conf.getConf(1).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
-		assertTrue(conf.getConf(0).getDist() instanceof UniformDistribution);
-		assertTrue(conf.getConf(1).getDist() instanceof UniformDistribution);
-		UniformDistribution d0 = (UniformDistribution)conf.getConf(0).getDist();
-		UniformDistribution d1 = (UniformDistribution)conf.getConf(1).getDist();
+		assertTrue(conf.getConf(0).getLayer().getDist() instanceof UniformDistribution);
+		assertTrue(conf.getConf(1).getLayer().getDist() instanceof UniformDistribution);
+		UniformDistribution d0 = (UniformDistribution)conf.getConf(0).getLayer().getDist();
+		UniformDistribution d1 = (UniformDistribution)conf.getConf(1).getLayer().getDist();
 		assertTrue(d0.getLower()==10 && d0.getUpper()==11);
 		assertTrue(d1.getLower()==20 && d1.getUpper()==21);
 		
@@ -57,17 +57,18 @@ public class LayerwiseConfigurationTest {
 		
 		
 		conf = new NeuralNetConfiguration.Builder()
-			.dist(new UniformDistribution(-30, -20))
 			.list(2)
-			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION).build() )
-			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION).build() )
+			.layer(0, new DenseLayer.Builder().nIn(2).nOut(2)
+					.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-30, -20)).build() )
+			.layer(1, new DenseLayer.Builder().nIn(2).nOut(2)
+					.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-30, -20)).build() )
 			.build();
 		net = new MultiLayerNetwork(conf);
 		net.init();
 		assertTrue(conf.getConf(0).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
 		assertTrue(conf.getConf(1).getLayer().getWeightInit() == WeightInit.DISTRIBUTION);
-		assertTrue(conf.getConf(0).getDist() instanceof UniformDistribution);
-		assertTrue(conf.getConf(1).getDist() instanceof UniformDistribution);
+		assertTrue(conf.getConf(0).getLayer().getDist() instanceof UniformDistribution);
+		assertTrue(conf.getConf(1).getLayer().getDist() instanceof UniformDistribution);
 	}
 	
 	@Test

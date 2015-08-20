@@ -30,6 +30,7 @@ import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -68,7 +69,7 @@ public abstract class Layer implements Serializable {
     public abstract static class Builder {
         protected String activationFunction = "sigmoid";
         protected WeightInit weightInit = WeightInit.VI;
-        protected Distribution dist;
+        protected Distribution dist = new NormalDistribution(1e-3,1);
         protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
         protected Updater updater;
 

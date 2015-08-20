@@ -90,8 +90,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //adadelta - weight for how much to consider previous history
     protected double rho;
     protected long seed;
-    //weight initialization
-    protected Distribution dist;
+
     protected StepFunction stepFunction;
     protected Layer layer;
 
@@ -155,7 +154,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   LossFunctions.LossFunction lossFunction,
                                   boolean constrainGradientToUnitNorm,
                                   long seed,
-                                  Distribution dist,
                                   int nIn,
                                   int nOut,
                                   RBM.VisibleUnit visibleUnit,
@@ -196,7 +194,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.lossFunction = lossFunction;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
         this.seed = seed;
-        this.dist = dist;
         this.nIn = nIn;
         this.nOut = nOut;
         this.visibleUnit = visibleUnit;
@@ -234,10 +231,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 e.printStackTrace();
             }
         }
-
-        if(dist == null)
-            this.dist = new NormalDistribution(0.01,1);
-
     }
 
 
@@ -549,7 +542,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
         private long seed = System.currentTimeMillis();
-        private Distribution dist  = new NormalDistribution(1e-3,1);
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
         private int nOut;
@@ -736,11 +728,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder dist(Distribution dist) {
-            this.dist = dist;
-            return this;
-        }
-
         public Builder sparsity(double sparsity) {
             this.sparsity = sparsity;
             return this;
@@ -871,7 +858,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
-                    dist,  nIn,  nOut, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
+                    nIn,  nOut, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
                     ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,
                     l1,customLossFunction);
 

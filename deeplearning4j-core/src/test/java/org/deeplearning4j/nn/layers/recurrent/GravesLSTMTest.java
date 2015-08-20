@@ -71,11 +71,10 @@ public class GravesLSTMTest {
 		INDArray inputData = Nd4j.ones(miniBatchSize,nIn,timeSeriesLength);
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.dist(new UniformDistribution(0, 1))
                 .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
 						.nIn(nIn)
 						.nOut(lstmNHiddenUnits)
-						.weightInit(WeightInit.DISTRIBUTION)
+						.weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
 						.activation("tanh")
 						.build())
 				.build();
