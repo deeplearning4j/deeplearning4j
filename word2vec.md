@@ -140,7 +140,7 @@ That is, get rid of the `ClassPathResource` and feed the absolute path of your t
 
         SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
 
-In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that directory. To that path, you'll add the file name and voila.
+In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that directory. To that path, you'll add the file name and voila. Make sure that you have one word per line. 
 
 ### Tokenizing the Data
 
