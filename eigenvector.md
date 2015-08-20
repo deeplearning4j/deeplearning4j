@@ -134,7 +134,7 @@ Imagine that we compose a square matrix of numbers that describe the variance of
 
 Finding the eigenvectors and eigenvalues of the covariance matrix is the equivalent of fitting those straight, principal-component lines to the variance of the data. Why? Because eigenvectors *trace the principal lines of force*, and the axes of greatest variance and covariance illustrate where the data is most susceptible to change. 
 
-Think of it like this: If a variable changes, it is being acted upon by a force known or unknown. If two variables change together, in all likelihood that is either because one is acting upon the other, or they are both subject to the same hidden and unnamed force. So in a matrix that measures variance and covariance, eigenvectors and eigenvalues trace the main lines of those forces.
+Think of it like this: If a variable changes, it is being acted upon by a force known or unknown. If two variables change together, in all likelihood that is either because one is acting upon the other, or they are both subject to the same hidden and unnamed force. So in a matrix that measures variance and covariance, eigenvectors and eigenvalues trace the main lines of those forces. That is, when a matrix performs a linear transformation, eigenvectors trace the lines of force it applies to input; when a matrix is populated with the variance and covariance of the data, eigenvectors reflect the forces that have been applied to the given. One applies force and the other reflects it. 
 
 *Eigenvalues* are simply the coefficients attached to eigenvectors, which give the axes magnitude. In this case, they are the measure of the data's covariance. By ranking your eigenvectors in order of their eigenvalues, highest to lowest, you get the principal components in order of significance.
 
@@ -180,7 +180,7 @@ In the graph above, we show how the same vector v can be situated differently in
 
 This has profound and almost spiritual implications, one of which is that there exists no natural coordinate system, and mathematical objects in n-dimensional space are subject to multiple descriptions. (Changing matrices' bases also makes them easier to manipulate.) 
 
-A change of basis for vectors is roughly analogous to changing the base for numbers; i.e. the quantity nine can be described as 9 in base ten, as 1001 in binary (base two), and as 30 in base three. Same quantity, different symbols; same vector, different coordinates.
+A change of basis for vectors is roughly analogous to changing the base for numbers; i.e. the quantity nine can be described as 9 in base ten, as 1001 in binary, and as 30 in base three (e.g. 1, 2, 10, 11, 12, 20, 21, 22, 30 <-- that is "nine"). Same quantity, different symbols; same vector, different coordinates.
 
 ## <a name="entropy">Entropy & Information Gain</a>
 
