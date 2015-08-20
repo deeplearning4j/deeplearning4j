@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -26,6 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * Binomial sampling pre processor
  * @author Adam Gibson
  */
+@Data
 public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
 	@Override

@@ -18,9 +18,7 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -31,6 +29,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
  * Based on karpathy et. al's work on generation of image descriptions.
  */
 @Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class LSTM extends FeedForwardLayer {
     
     private LSTM(Builder builder) {

@@ -109,6 +109,7 @@ public class RNTN implements Layer {
     /** Regularization cost for the word vectors */
     private double regWordVector = 0.0001f;
 
+    private int inputMiniBatchSize;
 
     /**
      * How many epochs between resets of the adagrad learning rates.
@@ -1446,8 +1447,13 @@ public class RNTN implements Layer {
         }
     }
 
+    @Override
+    public void setInputMiniBatchSize(int size){
+    	this.inputMiniBatchSize = size;
+    }
 
-
-
-
+    @Override
+    public int getInputMiniBatchSize(){
+    	return inputMiniBatchSize;
+    }
 }

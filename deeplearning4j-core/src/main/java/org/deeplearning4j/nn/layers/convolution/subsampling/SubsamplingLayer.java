@@ -25,14 +25,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -71,7 +69,7 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public Type type() {
-        return Type.CONVOLUTIONAL;
+        return Type.SUBSAMPLING;
     }
 
 
@@ -81,7 +79,7 @@ public class SubsamplingLayer extends BaseLayer {
         //only scale and reshape epsilon
         int inputHeight = input().size(-2);
         int inputWidth = input().size(-1);
-        INDArray reshapeEpsilon, retE;
+        INDArray reshapeEpsilon, retE, reshaped;
         Gradient retGradient = new DefaultGradient();
 
         switch(conf.getPoolingType()) {
@@ -92,19 +90,22 @@ public class SubsamplingLayer extends BaseLayer {
                 int outW = epsilon.size(3);
                 //compute backwards kernel based on rearranging the given error
                 retE = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
-                reshapeEpsilon = Nd4j.rollAxis(retE.reshape(n,c,-1,outH,outW),2);
+                reshaped = retE.reshape(n,c,-1,outH,outW);
+                reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
                 Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
                 while(iter.hasNext()) {
-                    int[] next = iter.next();
-                    INDArrayIndex[] indexes = NDArrayIndex.indexesFor(next);
-                    reshapeEpsilon.get(indexes).put(indexes, epsilon.get(indexes));
+                    int[] i = iter.next();
+                    double epsGet = epsilon.getDouble(i);
+                    int idx = maxIndexes.getInt(i);
+                    INDArray sliceToGetFrom = reshapeEpsilon.get(NDArrayIndex.point(idx));
+                    sliceToGetFrom.putScalar(i,epsGet);
                 }
-                reshapeEpsilon = Convolution.col2im(reshapeEpsilon,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
+                reshapeEpsilon = Convolution.col2im(retE,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
-                retE = epsilon.slice(0).get(
+                retE = epsilon.get(
                         NDArrayIndex.all()
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
@@ -118,7 +119,6 @@ public class SubsamplingLayer extends BaseLayer {
                 return new Pair<>(retGradient, epsilon);
             default: throw new IllegalStateException("Un supported pooling type");
         }
-
     }
 
 
@@ -184,18 +184,17 @@ public class SubsamplingLayer extends BaseLayer {
     }
 
     @Override
-    public ConvexOptimizer getOptimizer() {
-        throw new UnsupportedOperationException();
-    }
+    public void fit() {
 
-    @Override
-    public void fit() {}
+    }
 
     @Override
     public void fit(INDArray input) {}
 
     @Override
-    public void computeGradientAndScore() {}
+    public void computeGradientAndScore() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public double score() {
@@ -212,9 +211,7 @@ public class SubsamplingLayer extends BaseLayer {
     }
 
     @Override
-    public INDArray params() {
-        throw new UnsupportedOperationException();
-    }
+    public INDArray params() { throw new UnsupportedOperationException();}
 
     @Override
     public INDArray getParam(String param) {

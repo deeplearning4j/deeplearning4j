@@ -136,7 +136,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double rmsDecay = 0.0;
 
 
-    protected boolean miniBatch = false;
+    protected boolean miniBatch = true;
 
 
     protected Convolution.Type convolutionType = Convolution.Type.VALID;
@@ -328,7 +328,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     	variables.clear();
     }
 
-    private static <T> T overRideFields(T configInst, Layer layer) {
+    private static <T> T overrideFields(T configInst, Layer layer) {
         // overwrite builder with fields with layer fields
         Class<?> layerClazz = layer.getClass();
         Field[] neuralNetConfFields = Dl4jReflection.getAllFields(configInst.getClass());
@@ -585,7 +585,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useDropConnect = false;
         private double rho;
         private Updater updater = Updater.ADAGRAD;
-        private boolean miniBatch = false;
+        private boolean miniBatch = true;
 
         /**
          +         * Time series length
@@ -908,7 +908,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.updater = updater;
 
             //override the properties from the layer
-            ret = overRideFields(ret, layer);
+            ret = overrideFields(ret, layer);
             return ret;
         }
     }

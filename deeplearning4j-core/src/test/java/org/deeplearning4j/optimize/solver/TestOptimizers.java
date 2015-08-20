@@ -855,6 +855,11 @@ public class TestOptimizers {
         @Override
         public void setIndex(int index) { throw new UnsupportedOperationException(); }
 
+        @Override
+        public void setInputMiniBatchSize(int size){ }
+
+        @Override
+        public int getInputMiniBatchSize(){ return 1; }
 
     }
 }

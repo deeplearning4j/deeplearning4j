@@ -6,20 +6,18 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 
@@ -51,8 +49,8 @@ public class SubsamplingLayerTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
 
         INDArray containedOutput = layer.activate(containedInput);
-        assertEquals(containedExpectedOut, containedOutput);
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
+        assertEquals(containedExpectedOut, containedOutput);
 
         INDArray output = layer.activate(input);
         assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, featureMapWidth, featureMapHeight}, output.shape()));
@@ -69,13 +67,14 @@ public class SubsamplingLayerTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
 
         INDArray containedOutput = layer.activate(containedInput);
-        assertEquals(containedExpectedOut, containedOutput);
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
+        assertEquals(containedExpectedOut, containedOutput);
 
         INDArray output = layer.activate(input);
         assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, featureMapWidth, featureMapHeight}, output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
     }
+
 
     @Test
     public void testSubSampleNoneActivate() throws Exception  {
@@ -114,20 +113,22 @@ public class SubsamplingLayerTest {
         }, new int[]{1, 2, 2, 2});
 
         INDArray expectedContainedEpsilonResult = Nd4j.create(new double[]{
-                0., 0., 0., 1., 1., 0., 0., 0., 0., 0., 1., 0., 0.,
-                1., 0., 0., 0., 0., 0., 1., 1., 0., 0., 0., 1., 0.,
-                1., 0., 0., 0., 0., 0.
+                0.,0.,0.,1.,1.,0.,0.,0.,0.,0.,1.,0.,0.,1.,0.,0.,0.,0.
+                ,0.,1.,1.,0.,0.,0.,1.,0.,1.,0.,0.,0.,0.,0.
         }, new int[]{1, 2, 4, 4});
 
-        INDArray input = getData();
+        INDArray input = getContainedData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
-        layer.setInput(input);
+        layer.activate(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
+
+        INDArray input2 = getData();
+        layer.activate(input2);
 
         Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
         assertEquals(input.shape().length, out.getSecond().shape().length);
@@ -141,11 +142,12 @@ public class SubsamplingLayerTest {
         }, new int[]{ 1,2,2,2});
 
         INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {
-                0.25,  0.25,  0.5 ,  0.5 ,  0.75,  0.75,  1.  ,  1.  ,  0.25,
-                0.25,  0.5 ,  0.5 ,  0.75,  0.75,  1.  ,  1.  ,  1.25,  1.25,
-                1.5 ,  1.5 ,  1.75,  1.75,  2.
+                0.25,  0.25,  0.5 ,  0.5 ,  0.25,  0.25,  0.5 ,  0.5 ,  0.75,
+                0.75,  1.  ,  1.  ,  0.75,  0.75,  1.  ,  1.  ,  1.25,  1.25,
+                1.5 ,  1.5 ,  1.25,  1.25,  1.5 ,  1.5 ,  1.75,  1.75,  2.  ,
+                2.  ,  1.75,  1.75,  2.  ,  2.
         }, new int[]{ 1,2,4,4});
-        INDArray input = getData();
+        INDArray input = getContainedData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
         layer.activate(input);
@@ -153,11 +155,8 @@ public class SubsamplingLayerTest {
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
-        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
+        assertArrayEquals(expectedContainedEpsilonResult.shape(), containedOutput.getSecond().shape());
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
-        assertEquals(input.shape().length, out.getSecond().shape().length);
-        assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
     @Test
@@ -169,7 +168,7 @@ public class SubsamplingLayerTest {
         INDArray expectedContainedEpsilonResult = Nd4j.create(new double[]{
                 1., 1., 1., 1., 1., 1., 1., 1.
         }, new int[]{1, 2, 2, 2});
-        INDArray input = getData();
+        INDArray input = getContainedData();
 
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
         layer.setInput(input);
@@ -179,14 +178,19 @@ public class SubsamplingLayerTest {
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
 
+        INDArray input2 = getData();
+        layer.activate(input2);
+
         Pair<Gradient, INDArray> out= layer.backpropGradient(epsilon);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
 
     @Test (expected=IllegalStateException.class)
-    public void testSubSampleLayerSumBackprop() {
+    public void testSubSampleLayerSumBackprop() throws Exception {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
+        INDArray input = getData();
+        layer.setInput(input);
         layer.backpropGradient(epsilon);
     }
 
