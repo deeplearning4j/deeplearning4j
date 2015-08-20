@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class FirstIterationFunction
         implements FlatMapFunction< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<Integer, INDArray> > {
 
+    private int ithIteration = 1;
     private int vectorLength;
     private boolean useAdaGrad;
     private int negative;
