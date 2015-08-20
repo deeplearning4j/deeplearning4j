@@ -62,6 +62,7 @@ These vectors are in fact the basis of a more comprehensive geometry of words. N
 
 Let's imagine some other associations:
 
+* Gender: *King - Queen = Man - Woman*
 * Filiation: *George H. W. Bush - George W. Bush = John Adams - John Quincy Adams.*
 * Geopolitics: *Iraq - Violence = Jordan*
 * Distinction: *Human - Animal = Ethics*
@@ -111,7 +112,7 @@ Create a new project in IntelliJ using Maven. Then specify these properties and 
                    </dependency>
                 </dependencies>
 
-### Loading the Data
+### Loading Data
 
 Now create and name a new class in Java. After that, you'll take the raw sentences in your .txt file, traverse them with your iterator, and subject them to some sort of preprocessing, such as converting all words to lowercase. 
 
@@ -227,7 +228,7 @@ We rely on TSNE to reduce the dimensionality of word feature vectors and project
                 .build();
         vec.lookupTable().plotVocab(tsne);
 
-### Saving, Reloading, Using the Model
+### Saving, Reloading & Using the Model
 
 You'll want to save the model. The normal way to save models in deeplearning4j is via the serialization utils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
 
@@ -280,11 +281,11 @@ This n-gram is then fed into a neural network to learn the significance of a giv
 
 ### <a name="code">A Working Example</a>
 
-Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
+Now that you have a basic idea of how to set up Word2Vec, here's [one example](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java) of how it can be used with DL4J's API:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=28:97"></script>
 
-After following the instructions in the [Quickstart](../quickstart.html), you can open this example in IntelliJ and hit run to see it work. 
+After following the instructions in the [Quickstart](../quickstart.html), you can open this example in IntelliJ and hit run to see it work. If you query the Word2vec model with a word isn't contained in the training corpus, it will return null. 
 
 ### <a name="trouble">Troubleshooting & Tuning Word2Vec</a>
 
