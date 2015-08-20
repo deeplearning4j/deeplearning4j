@@ -25,7 +25,7 @@ The efficacy of convolutional nets (ConvNets) in image recognition is one of the
 
 Convolutional nets ingest and process images as tensors, and tensors are matrices of numbers with additional dimensions. 
 
-They can be hard to visualize, so let’s approach them by analogy. A scalar is just a number, such as 7; a vector is a list of numbers (e.g., `[7,8,9]`); and a matrix is a rectangular grid of numbers occupying several rows and columns like a spreadsheet. Geometrically, if a scalar is a zero-dimensional point, then a vector is a one-dimensional line, a matrix is a two-dimensional plane, a stack of matrices is a three-dimensional cube, and when each element of those stacks is stacked again, you enter the fourth dimension. For reference, here’s a 2 x 2 matrix:
+They can be hard to visualize, so let’s approach them by analogy. A scalar is just a number, such as 7; a vector is a list of numbers (e.g., `[7,8,9]`); and a matrix is a rectangular grid of numbers occupying several rows and columns like a spreadsheet. Geometrically, if a scalar is a zero-dimensional point, then a vector is a one-dimensional line, a matrix is a two-dimensional plane, a stack of matrices is a three-dimensional cube, and when each element of those matrices has a stack of *feature maps* atttached to it, you enter the fourth dimension. For reference, here’s a 2 x 2 matrix:
 
     [ 1, 2 ] 
     [ 5, 8 ]
@@ -36,9 +36,11 @@ A tensor encompasses the dimensions beyond that 2-D plane. You can easily pictur
 
 In code, the tensor above would appear like this: `[[[2,3],[3,5],[4,7]],[[3,4],[4,6],[5,8]]]`. In other words, tensors are formed by arrays nested within arrays, and that nesting can go on infinitely, accounting for an arbitrary number of dimensions far greater than what we can visualize spatially. A 4-D tensor would simply replace each of these scalars with an array nested one level deeper. Convolutional networks deal in 4-D tensors.  
 
-ND4J and Deeplearning4j use `NDArray` synonymously with tensor. A tensor’s dimensionality `(1,2,3…n)` is called its order; i.e. a fifth-order tensor.
+ND4J and Deeplearning4j use `NDArray` synonymously with tensor. A tensor’s dimensionality `(1,2,3…n)` is called its order; i.e. a fifth-order tensor would have five dimensions.
 
-The width and height of an image are easily understood. The depth is due to how colors are encoded. Red-Green-Blue (RGB) encoding, for example, produces an image three layers deep. Each of the layers produces a stack of activation maps which exist in the fourth dimension, just down the street from time itself. So instead of thinking of images as two-dimensional areas, in convolutional nets they are treated as four-dimensional volumes. These ideas will be explored more thoroughly below. 
+The width and height of an image are easily understood. The depth is necessary because of how colors are encoded. Red-Green-Blue (RGB) encoding, for example, produces an image three layers deep. Each layer is called a "channel", and it produces a stack of activation, or feature, maps which exist in the fourth dimension, just down the street from time itself. (Features are just details of images, like a line or curve, that convolutional networks create maps of.)
+
+So instead of thinking of images as two-dimensional areas, in convolutional nets they are treated as four-dimensional volumes. These ideas will be explored more thoroughly below. 
 
 ##<a name="define">Definition</a>
 
