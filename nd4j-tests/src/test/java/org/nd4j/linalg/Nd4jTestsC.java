@@ -993,7 +993,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testGetRow(){
-        INDArray arr = Nd4j.ones(10,4);
+        INDArray arr = Nd4j.ones(10, 4);
         for( int i=0; i<10; i++ ){
             INDArray row = arr.getRow(i);
             assertArrayEquals(row.shape(), new int[]{1, 4});
@@ -1012,10 +1012,75 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray colVector = Nd4j.ones(5,1);
         INDArray out = matrix.mmul(colVector);
 
-        INDArray expected = Nd4j.create(new double[]{5,50,500},new int[]{3,1});
-        assertEquals(expected,out);
+        INDArray expected = Nd4j.create(new double[]{5, 50, 500}, new int[]{3, 1});
+        assertEquals(expected, out);
     }
 
+
+    @Test
+    public void testMMulMixedOrder(){
+        INDArray first = Nd4j.ones(5,2);
+        INDArray second = Nd4j.ones(2,3);
+        INDArray out = first.mmul(second);
+        assertArrayEquals(out.shape(),new int[]{5,3});
+        assertTrue(out.equals(Nd4j.ones(5,3).muli(2)));
+        //Above: OK
+
+        INDArray firstC = Nd4j.create(new int[]{5,2},'c');
+        INDArray secondF = Nd4j.create(new int[]{2, 3}, 'f');
+        for(int i=0; i<firstC.length(); i++ ) firstC.putScalar(i, 1.0);
+        for(int i=0; i<secondF.length(); i++ ) secondF.putScalar(i, 1.0);
+        assertTrue(first.equals(firstC));
+        assertTrue(second.equals(secondF));
+
+        INDArray outCF = firstC.mmul(secondF);
+        assertArrayEquals(outCF.shape(),new int[]{5,3});
+        assertEquals(outCF,Nd4j.ones(5, 3).muli(2));
+    }
+
+
+    @Test
+    public void testMMulRowColVectorMixedOrder(){
+        INDArray colVec = Nd4j.ones(5,1);
+        INDArray rowVec = Nd4j.ones(1,3);
+        INDArray out = colVec.mmul(rowVec);
+        assertArrayEquals(out.shape(),new int[]{5,3});
+        assertTrue(out.equals(Nd4j.ones(5, 3)));
+        //Above: OK
+
+        INDArray colVectorC = Nd4j.create(new int[]{5,1},'c');
+        INDArray rowVectorF = Nd4j.create(new int[]{1,3},'f');
+        for(int i = 0; i < colVectorC.length(); i++ )
+            colVectorC.putScalar(i, 1.0);
+        for(int i = 0 ; i < rowVectorF.length(); i++)
+            rowVectorF.putScalar(i, 1.0);
+        assertTrue(colVec.equals(colVectorC));
+        assertTrue(rowVec.equals(rowVectorF));
+
+        INDArray outCF = colVectorC.mmul(rowVectorF);
+        assertArrayEquals(outCF.shape(),new int[]{5,3});
+        assertEquals(outCF,Nd4j.ones(5, 3));
+    }
+
+    @Test
+    public void testMMulColVectorRowVectorMixedOrder(){
+        INDArray colVec = Nd4j.ones(5,1);
+        INDArray rowVec = Nd4j.ones(1,5);
+        INDArray out = rowVec.mmul(colVec);
+        assertArrayEquals(out.shape(),new int[]{1,1});
+        assertTrue(out.equals(Nd4j.ones(1,1).muli(5)));
+
+        INDArray colVectorC = Nd4j.create(new int[]{5,1},'c');
+        INDArray rowVectorF = Nd4j.create(new int[]{1,5},'f');
+        for(int i=0; i<colVectorC.length(); i++ ) colVectorC.putScalar(i, 1.0);
+        for(int i=0; i<rowVectorF.length(); i++ ) rowVectorF.putScalar(i, 1.0);
+        assertTrue(colVec.equals(colVectorC));
+        assertTrue(rowVec.equals(rowVectorF));
+
+        INDArray outCF = rowVectorF.mmul(colVectorC);
+        assertArrayEquals(outCF.shape(),new int[]{1,1});
+        assertTrue(outCF.equals(Nd4j.ones(1,1).muli(5)));
+    }
 
 
     @Test

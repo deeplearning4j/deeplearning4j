@@ -26,7 +26,8 @@ public @Data class GemmParams {
         this.m = a.rows();
         this.n = b.columns();
         this.k = a.columns();
-        if(a.ordering() == NDArrayFactory.C) {
+
+        if(a.ordering() == NDArrayFactory.C && b.ordering() == NDArrayFactory.C) {
             int oldN = n;
             int oldM = m;
             this.m = oldN;

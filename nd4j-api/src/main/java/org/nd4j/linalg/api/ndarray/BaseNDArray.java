@@ -2555,15 +2555,15 @@ public abstract class BaseNDArray implements INDArray {
 
 
         } else {
-                Nd4j.getBlasWrapper().level3().gemm(
-                        BlasBufferUtil.getCharForTranspose(this)
-                        ,BlasBufferUtil.getCharForTranspose(other)
-                        ,BlasBufferUtil.getCharForTranspose(resultArray)
-                        ,1.0
-                        ,this
-                        ,other
-                        ,0.0
-                        ,resultArray);
+            Nd4j.getBlasWrapper().level3().gemm(
+                    BlasBufferUtil.getCharForTranspose(this)
+                    ,BlasBufferUtil.getCharForTranspose(other)
+                    ,BlasBufferUtil.getCharForTranspose(resultArray)
+                    ,1.0
+                    ,this
+                    ,other
+                    ,0.0
+                    ,resultArray);
 
 
         }
