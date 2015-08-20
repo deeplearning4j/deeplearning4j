@@ -70,7 +70,7 @@ public abstract class Layer implements Serializable {
         protected String activationFunction = "sigmoid";
         protected WeightInit weightInit = WeightInit.VI;
         protected Distribution dist = new NormalDistribution(1e-3,1);
-        protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
+        protected double dropOut = 0;
         protected Updater updater;
 
         public Builder activation(String activationFunction) {

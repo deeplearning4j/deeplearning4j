@@ -305,7 +305,7 @@ public class GravesLSTM extends BaseLayer {
 
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
-			if (conf.getDropOut() > 0) {
+			if (conf.getLayer().getDropOut() > 0) {
 				inputWeights = Dropout.applyDropConnect(this,GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
 			}
 		}

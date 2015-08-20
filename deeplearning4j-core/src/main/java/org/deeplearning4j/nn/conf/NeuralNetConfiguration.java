@@ -80,7 +80,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected int resetAdaGradIterations = -1;
     //number of line search iterations
     protected int maxNumLineSearchIterations = 5;
-    protected double dropOut = 0;
     //use only when binary hidden neuralNets are active
     protected boolean applySparsity = false;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
@@ -148,7 +147,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   boolean useRegularization,
                                   Map<Integer, Double> momentumAfter,
                                   int resetAdaGradIterations,
-                                  double dropOut,
                                   boolean applySparsity,
                                   OptimizationAlgorithm optimizationAlgo,
                                   LossFunctions.LossFunction lossFunction,
@@ -188,7 +186,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.useRegularization = useRegularization;
         this.momentumAfter = momentumAfter;
         this.resetAdaGradIterations = resetAdaGradIterations;
-        this.dropOut = dropOut;
         this.applySparsity = applySparsity;
         this.optimizationAlgo = optimizationAlgo;
         this.lossFunction = lossFunction;
@@ -537,7 +534,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useRegularization = false;
         private Map<Integer, Double> momentumAfter;
         private int resetAdaGradIterations = -1;
-        private double dropOut = 0;
         private boolean applySparsity = false;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
@@ -770,11 +766,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-
         public Builder applySparsity(boolean applySparsity) {
             this.applySparsity = applySparsity;
             return this;
@@ -856,7 +847,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             NeuralNetConfiguration ret = new NeuralNetConfiguration(sparsity, useAdaGrad,  lr,  k,
                     corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
-                    resetAdaGradIterations,  dropOut,  applySparsity,  optimizationAlgo, lossFunction,
+                    resetAdaGradIterations,  applySparsity,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
                     nIn,  nOut, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
                     ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,

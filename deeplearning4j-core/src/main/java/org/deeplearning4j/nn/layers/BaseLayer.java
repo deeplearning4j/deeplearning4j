@@ -73,8 +73,8 @@ public abstract class BaseLayer implements Layer {
     }
 
     public void setInput(INDArray input,boolean training) {
-        if(conf.getDropOut() > 0 && training)
-            this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
+        if(conf.getLayer().getDropOut() > 0 && training)
+            this.dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         this.input = input;
     }
 
@@ -325,7 +325,7 @@ public abstract class BaseLayer implements Layer {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect() && training) {
-            if (conf.getDropOut() > 0) {
+            if (conf.getLayer().getDropOut() > 0) {
                 W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
             }
         }
@@ -417,8 +417,8 @@ public abstract class BaseLayer implements Layer {
     }
 
     protected void applyDropOutIfNecessary(INDArray input,boolean training) {
-        if(conf.getDropOut() > 0 && !conf.isUseDropConnect() && training) {
-            dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
+        if(conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training) {
+            dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         }
     }
 
