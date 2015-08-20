@@ -66,16 +66,16 @@ public class RecursiveAutoEncoder extends BaseLayer {
     @Override
     public void computeGradientAndScore() {
         gradient();
-        score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);;
+        score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
     }
 
-//    @Override
-//    public INDArray transform(INDArray data) {
-//        INDArray w = getParam(RecursiveParamInitializer.W);
-//        INDArray c = getParam(RecursiveParamInitializer.C);
-//        INDArray inputTimesW = data.mmul(w);
-//        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
-//    }
+    @Override
+    public INDArray activate(INDArray data) {
+        INDArray w = getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY);
+        INDArray c = getParam(RecursiveParamInitializer.DECODER_WEIGHT_KEY);
+        INDArray inputTimesW = data.mmul(w);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
+    }
 
 
     public INDArray decode(INDArray input) {

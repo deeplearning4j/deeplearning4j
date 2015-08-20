@@ -18,8 +18,8 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
-import com.google.common.primitives.Ints;
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,16 +27,15 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+
 
 /**
  * Convolution layer
@@ -79,8 +78,9 @@ public class ConvolutionLayer extends BaseLayer {
     public INDArray calculateDelta(INDArray epsilon) {
         INDArray z = preOutput(true);
         INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
-
-        return epsilon.mmul(activationDerivative);
+        if(!Arrays.equals(z.shape(),activationDerivative.shape()))
+            throw new IllegalStateException("Shapes must be same");
+        return epsilon.muli(activationDerivative);
 
     }
 
@@ -95,26 +95,19 @@ public class ConvolutionLayer extends BaseLayer {
 
         Gradient retGradient = new DefaultGradient();
 
-        // TODO do we roll delta for biasGradient? Note chainer adds bias to existing biasGradient for layer. Do we want to do this?
-        //gb += gy[0].sum(axis=(0, 2, 3)) - add delta to bias or just pass in delta?
+        //gb = gy[0].sum(axis=(0, 2, 3))
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta.sum(0, 2, 3));
 
-        // TODO Note chainer adds weightGradient to existing weightGradient for layer. Do we want to do this?
-        // gW += np.tensordot(gy[0], col, ([0, 2, 3], [0, 4, 5]))
+        // gW = np.tensordot(gy[0], col, ([0, 2, 3], [0, 4, 5]))
         INDArray weightGradient = Nd4j.tensorMmul(delta, col, new int[][] {{0, 2, 3},{0, 4, 5}});
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradient);
 
         //gcol = tensorMmul(W, gy[0], (0, 1))
-        INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta.slice(0), new int[][]{{0, 1}});
-        // TODO reshape epsilon?
-//        epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), epsilon.size(3));
+        INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta, new int[][] {{0}, {1}});
+
         nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3);
         nextEpsilon = Convolution.col2im(nextEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
         return new Pair<>(retGradient,nextEpsilon);
-    }
-
-    public INDArray createFeatureMapColumn() {
-        return Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
     }
 
     public INDArray preOutput(boolean training) {
@@ -127,9 +120,7 @@ public class ConvolutionLayer extends BaseLayer {
         }
 
         INDArray z = Nd4j.tensorMmul(col, Weights, new int[][]{{1, 2, 3}, {1, 2, 3}});
-        // TODO check shape and confirm correct approach
-        z = z.reshape(z.size(0), z.size(1), z.size(2), z.size(3));
-        bias = bias.broadcast(z.shape()).reshape(z.shape());
+        bias = bias.dimShuffle(new Object[] {'x', 0, 'x', 'x'},new int[]{0,1},new boolean[]{true,true}).broadcast(z.shape());
         z.addi(bias);
         return Nd4j.rollAxis(z, 3, 1);
     }
@@ -140,7 +131,7 @@ public class ConvolutionLayer extends BaseLayer {
             throw new IllegalArgumentException("No null input allowed");
         applyDropOutIfNecessary(input, training);
 
-        col = createFeatureMapColumn();
+        col = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
         INDArray z = preOutput(training);
         INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), z));
         return activation;

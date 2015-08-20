@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -41,28 +43,34 @@ import java.util.Arrays;
  * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
 
  */
-@EqualsAndHashCode
+@Data
 public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
-    private int inputWidth;
     private int inputHeight;
+    private int inputWidth;
     private int numChannels;
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private int[] shape;
 
     /**
      * Reshape to a channels x rows x columns tensor
-     * @param inputWidth the rows
      * @param inputHeight the columns
+     * @param inputWidth the rows
      * @param numChannels the channels
      */
-    public FeedForwardToCnnPreProcessor(int inputWidth, int inputHeight, int numChannels) {
-        this.inputWidth = inputWidth;
+    @JsonCreator
+    public FeedForwardToCnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
+                                        @JsonProperty("inputWidth") int inputWidth,
+                                        @JsonProperty("numChannels") int numChannels) {
         this.inputHeight = inputHeight;
+        this.inputWidth = inputWidth;
         this.numChannels = numChannels;
     }
 
     public FeedForwardToCnnPreProcessor(int inputWidth, int inputHeight) {
-        this.inputWidth = inputWidth;
         this.inputHeight = inputHeight;
+        this.inputWidth = inputWidth;
         this.numChannels = 1;
     }
 
@@ -72,11 +80,12 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         if(input.shape().length == 4)
             return input;
         if(input.columns() != inputWidth * inputHeight)
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputWidth + " x columns " + inputHeight + " but was instead " + Arrays.toString(input.shape()));
-        return input.reshape(input.size(0),numChannels,inputWidth,inputHeight);
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows " + inputHeight + " x columns " + inputWidth  + " but was instead " + Arrays.toString(input.shape()));
+        return input.reshape(input.size(0),numChannels,inputHeight,inputWidth);
     }
 
     @Override
+    // return 4 dimensions
     public INDArray backprop(INDArray output){
         if(shape == null || ArrayUtil.prod(shape) != output.length()) {
             int[] otherOutputs = null;
@@ -88,6 +97,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
             else if(output.shape().length == 3) {
                 otherOutputs = new int[2];
             }
+            System.arraycopy(output.shape(), 1, otherOutputs, 0, otherOutputs.length);
             shape = new int[] {output.shape()[0], ArrayUtil.prod(otherOutputs)};
         }
         return output.reshape(shape);

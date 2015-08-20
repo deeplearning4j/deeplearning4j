@@ -1,5 +1,8 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -17,14 +20,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  * @see FeedForwardToRnnPreProcessor for opposite case (i.e., DenseLayer -> GravesLSTM etc)
  */
-@EqualsAndHashCode
+@Data
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 	private static final long serialVersionUID = -2334789406636365730L;
 	private final int timeSeriesLength;
 	
 	/**@param timeSeriesLength Length of time series training data
 	 */
-	public RnnToFeedForwardPreProcessor(int timeSeriesLength ) {
+	@JsonCreator
+	public RnnToFeedForwardPreProcessor(@JsonProperty("timeSeriesLength") int timeSeriesLength ) {
 		this.timeSeriesLength = timeSeriesLength;
 	}
 	
