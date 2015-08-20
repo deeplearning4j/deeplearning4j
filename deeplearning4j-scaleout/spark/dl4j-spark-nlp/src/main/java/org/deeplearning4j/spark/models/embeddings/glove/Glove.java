@@ -19,12 +19,12 @@
 package org.deeplearning4j.spark.models.embeddings.glove;
 
 import org.apache.commons.math3.util.FastMath;
-import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.*;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.CounterMap;
 import org.deeplearning4j.berkeley.Pair;
@@ -34,8 +34,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCalculator;
 import org.deeplearning4j.spark.models.embeddings.glove.cooccurrences.CoOccurrenceCounts;
-import org.deeplearning4j.spark.text.TextPipeline;
-import org.deeplearning4j.spark.text.TokenizerFunction;
+import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,6 +45,9 @@ import scala.Tuple2;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables.*;
 
 /**
  * Spark glove
@@ -113,11 +115,44 @@ public class Glove implements Serializable {
      * @param rdd the rdd to train
      * @return the vocab and weights
      */
-    public Pair<VocabCache,GloveWeightLookupTable> train(JavaRDD<String> rdd) {
-        TextPipeline pipeline = new TextPipeline(rdd);
-        final Pair<VocabCache,Long> vocabAndNumWords = pipeline.process();
-        SparkConf conf = rdd.context().getConf();
-        JavaSparkContext sc = new JavaSparkContext(rdd.context());
+    public Pair<VocabCache,GloveWeightLookupTable> train(JavaRDD<String> rdd) throws Exception{
+        // Each `train()` can use different parameters
+        final JavaSparkContext sc = new JavaSparkContext(rdd.context());
+        final SparkConf conf = sc.getConf();
+        final int vectorLength = assignVar(VECTOR_LENGTH, conf, Integer.class);
+        final boolean useAdaGrad = assignVar(ADAGRAD, conf, Boolean.class);
+        final double negative = assignVar(NEGATIVE, conf, Double.class);
+        final int numWords = assignVar(NUM_WORDS, conf, Integer.class);
+        final int window = assignVar(WINDOW, conf, Integer.class);
+        final double alpha = assignVar(ALPHA, conf, Double.class);
+        final double minAlpha = assignVar(MIN_ALPHA, conf, Double.class);
+        final int iterations = assignVar(ITERATIONS, conf, Integer.class);
+        final int nGrams = assignVar(N_GRAMS, conf, Integer.class);
+        final String tokenizer = assignVar(TOKENIZER, conf, String.class);
+        final String tokenPreprocessor = assignVar(TOKEN_PREPROCESSOR, conf, String.class);
+        final boolean removeStop = assignVar(REMOVE_STOPWORDS, conf, Boolean.class);
+
+        Map<String, Object> tokenizerVarMap = new HashMap<String, Object>() {{
+            put("numWords", numWords);
+            put("nGrams", nGrams);
+            put("tokenizer", tokenizer);
+            put("tokenPreprocessor", tokenPreprocessor);
+            put("removeStop", removeStop);
+        }};
+        Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(tokenizerVarMap);
+
+
+        TextPipeline pipeline = new TextPipeline(rdd, broadcastTokenizerVarMap);
+        pipeline.buildVocabCache();
+        pipeline.buildVocabWordListRDD();
+
+
+        // Get total word count
+        Long totalWordCount = pipeline.getTotalWordCount();
+        VocabCache vocabCache = pipeline.getVocabCache();
+        JavaRDD<Pair<List<String>, AtomicLong>> sentenceWordsCountRDD = pipeline.getSentenceWordsCountRDD();
+        final Pair<VocabCache,Long> vocabAndNumWords = new Pair<>(vocabCache, totalWordCount);
+
         vocabCacheBroadcast = sc.broadcast(vocabAndNumWords.getFirst());
 
         final GloveWeightLookupTable gloveWeightLookupTable = new GloveWeightLookupTable.Builder()
@@ -130,10 +165,9 @@ public class Glove implements Serializable {
         gloveWeightLookupTable.getWeightAdaGrad().historicalGradient = Nd4j.ones(gloveWeightLookupTable.getSyn0().shape());
 
 
-
         log.info("Created lookup table of size " + Arrays.toString(gloveWeightLookupTable.getSyn0().shape()));
-        CounterMap<String,String> coOccurrenceCounts = rdd.map(new TokenizerFunction(tokenizerFactoryClazz))
-                .map(new CoOccurrenceCalculator(symmetric,vocabCacheBroadcast,windowSize)).fold(new CounterMap<String, String>(), new CoOccurrenceCounts());
+        CounterMap<String,String> coOccurrenceCounts = sentenceWordsCountRDD.map(new CoOccurrenceCalculator(symmetric,vocabCacheBroadcast, windowSize))
+                .fold(new CounterMap<String, String>(), new CoOccurrenceCounts());
         Iterator<Pair<String,String>> pair2 = coOccurrenceCounts.getPairIterator();
         List<Triple<String,String,Double>> counts = new ArrayList<>();
 

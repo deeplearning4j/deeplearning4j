@@ -19,18 +19,11 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import scala.Tuple2;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> {
 
     private AtomicLong nextRandom = new AtomicLong(5);
-    private static Logger log = LoggerFactory.getLogger(SentenceBatch.class);
+//    private static Logger log = LoggerFactory.getLogger(SentenceBatch.class);
 
 
     @Override
@@ -52,8 +45,8 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
         double alpha = Math.max(param.getMinAlpha(), param.getAlpha() *
                 (1 - (1.0 * sentence.getWordsSeen() / (double) param.getTotalWords())));
 
-        trainSentence(param,sentence.getSentence(), alpha, changed);
-        return new Word2VecChange(changed,param);
+        trainSentence(param, sentence.getSentence(), alpha, changed);
+        return new Word2VecChange(changed, param);
     }
 
 
@@ -61,14 +54,15 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
      * Train on a list of vocab words
      * @param sentence the list of vocab words to train on
      */
-    public void trainSentence(Word2VecParam param,final List<VocabWord> sentence,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
+    public void trainSentence(Word2VecParam param, final List<VocabWord> sentence, double alpha,
+                              List<Triple<Integer,Integer,Integer>> changed) {
         if (sentence != null && !sentence.isEmpty()) {
             for (int i = 0; i < sentence.size(); i++) {
                 VocabWord vocabWord = sentence.get(i);
                 if (vocabWord != null) {
                     if (vocabWord.getWord().endsWith("STOP")) {
                         nextRandom.set(nextRandom.get() * 25214903917L + 11);
-                        skipGram(param,i, sentence, (int) nextRandom.get() % param.getWindow(), alpha,changed);
+                        skipGram(param, i, sentence, (int) nextRandom.get() % param.getWindow(), alpha, changed);
                     }
                 }
             }
@@ -83,7 +77,8 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
      * @param b
      * @param alpha the learning rate
      */
-    public void skipGram(Word2VecParam param,int i,List<VocabWord> sentence, int b,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
+    public void skipGram(Word2VecParam param, int i, List<VocabWord> sentence, int b,
+                         double alpha,List<Triple<Integer,Integer,Integer>> changed) {
 
         final VocabWord word = sentence.get(i);
         int window = param.getWindow();
@@ -94,7 +89,7 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
                     int c = i - window + a;
                     if (c >= 0 && c < sentence.size()) {
                         VocabWord lastWord = sentence.get(c);
-                        iterateSample(param,word, lastWord, alpha,changed);
+                        iterateSample(param, word, lastWord, alpha, changed);
                     }
                 }
             }
@@ -109,8 +104,10 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
      * @param w1 the first word to iterate on
      * @param w2 the second word to iterate on
      */
-    public  void iterateSample(Word2VecParam param,VocabWord w1, VocabWord w2,double alpha,List<Triple<Integer,Integer,Integer>> changed) {
-        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getWord().equals("STOP") || w2.getWord().equals("STOP") || w1.getWord().equals("UNK") || w2.getWord().equals("UNK"))
+    public void iterateSample(Word2VecParam param, VocabWord w1, VocabWord w2, double alpha,
+                              List<Triple<Integer,Integer,Integer>> changed) {
+        if(w2 == null || w2.getIndex() < 0 || w1.getIndex() == w2.getIndex() || w1.getWord().equals("STOP")
+                || w2.getWord().equals("STOP") || w1.getWord().equals("UNK") || w2.getWord().equals("UNK"))
             return;
         int vectorLength = param.getVectorLength();
         InMemoryLookupTable weights = param.getWeights();
@@ -194,7 +191,7 @@ public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> 
         }
 
 
-            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+        Nd4j.getBlasWrapper().level1().axpy(l1.length(), 1.0f,neu1e,l1);
 
 
     }

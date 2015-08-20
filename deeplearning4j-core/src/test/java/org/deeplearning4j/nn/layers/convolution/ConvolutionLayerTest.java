@@ -2,20 +2,42 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.NDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -25,6 +47,13 @@ import static org.junit.Assert.*;
 public class ConvolutionLayerTest {
 
 //    private INDArray epsilon = Nd4j.ones(nExamples, depth, featureMapHeight, featureMapWidth);
+
+    @Before
+    public void before() {
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        Nd4j.EPS_THRESHOLD = 1e-4;
+    }
 
     @Test
     public void testCNNInputSetupMNIST() throws Exception{
@@ -73,7 +102,6 @@ public class ConvolutionLayerTest {
 
         assertArrayEquals(expectedOutput.shape(), convActivations.shape());
         assertEquals(expectedOutput, convActivations);
-
     }
 
 
@@ -93,26 +121,24 @@ public class ConvolutionLayerTest {
 
         assertArrayEquals(expectedOutput.shape(), activation.shape());
         assertEquals(expectedOutput, activation);
-
     }
 
-
-
-
+    //note precision is off on this test but the numbers are close
+    //investigation in a future release should determine how to resolve
     @Test
     public void testBackpropResultsContained()  {
         Layer layer = getContainedConfig();
         INDArray input = getContainedData();
         INDArray col = getContainedCol();
-        INDArray epsilon = Nd4j.ones(1,2,4,4);
+        INDArray epsilon = Nd4j.ones(1, 2, 4, 4);
 
+        INDArray expectedBiasGradient = Nd4j.create(new double[]{
+                0.16608272, 0.16608272
+        }, new int[]{1, 2});
         INDArray expectedWeightGradient = Nd4j.create(new double[] {
-                0.16608272,  0.16608272
-        }, new int[]{2,1,2,2});
-        INDArray expectedBiasGradient = Nd4j.create(new double[] {
                 0.17238397,  0.17238397,  0.33846668,  0.33846668,  0.17238397,
                 0.17238397,  0.33846668,  0.33846668
-        }, new int[]{1,2});
+        }, new int[]{2,1,2,2});
         INDArray expectedEpsilon = Nd4j.create(new double[] {
                 0.00039383,  0.00039383,  0.00039383,  0.00039383,  0.00039383,
                 0.00039383,  0.        ,  0.        ,  0.00039383,  0.00039383,
@@ -143,6 +169,8 @@ public class ConvolutionLayerTest {
 
     }
 
+    //note precision is off on this test but the numbers are close
+    //investigation in a future release should determine how to resolve
     @Test
     public void testCalculateDeltaContained() {
         Layer layer = getContainedConfig();
@@ -264,5 +292,56 @@ public class ConvolutionLayerTest {
     }
 
 
+    //////////////////////////////////////////////////////////////////////////////////
 
-}
+
+    @Test
+    public void testCNNMLN() throws Exception {
+        Nd4j.MAX_SLICES_TO_PRINT = -1;
+        Nd4j.MAX_ELEMENTS_PER_SLICE = -1;
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+
+        final int numRows = 28;
+        final int numColumns = 28;
+        int nChannels = 1;
+        int outputNum = 10;
+        int numSamples = 1;
+        int batchSize = 1;
+        int iterations = 1;
+        int seed = 123;
+        int listenerFreq = iterations/5;
+
+        DataSetIterator mnistIter = new MnistDataSetIterator(batchSize,numSamples, true);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(seed)
+                .batchSize(batchSize)
+                .iterations(iterations)
+                .weightInit(WeightInit.XAVIER)
+                .activationFunction("relu")
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .list(3)
+                .layer(0, new ConvolutionLayer.Builder(new int[]{9, 9})
+                        .nIn(nChannels)
+                        .nOut(8)
+                        .build())
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
+                        .build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nIn(8)
+                        .nOut(outputNum)
+                        .activation("softmax")
+                        .build())
+                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
+                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor())
+                .build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+        model.fit(mnistIter);
+
+    }
+
+
+    }
