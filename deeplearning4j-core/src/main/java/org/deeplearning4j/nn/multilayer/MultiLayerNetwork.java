@@ -401,7 +401,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public INDArray activationMean() {
+        //TODO determine how to pass back all activationMean for MLN
         throw new UnsupportedOperationException();
+//        List<INDArray> avgActivations =  new ArrayList<>();
+//
+//        for( Layer layer: getLayers() ){
+//            avgActivations.add(layer.activationMean());
+//            }
+//        return Nd4j.toFlattened(avgActivations);
     }
 
     /**
