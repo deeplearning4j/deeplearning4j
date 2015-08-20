@@ -206,8 +206,10 @@ The next step is to evaluate the quality of your feature vectors.
         log.info("Evaluate model....");
         double sim = vec.similarity("people", "money");
         log.info("Similarity between people and money: " + sim);
-        Collection<String> similar = vec.wordsNearest("day", 20);
+        Collection<String> similar = vec.wordsNearest("day", 10);
         log.info("Similar words to 'day' : " + similar);
+        
+        //output: [night, week, year, game, season, during, office, until, -]
 
 vec.similarity("word1","word2") will return the cosine similarity of the two words you enter. The closer it is to one, the more similar the net perceives them to be (see the Sweden example above). With wordsNearest, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest.
 
