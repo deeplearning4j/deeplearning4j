@@ -77,16 +77,15 @@ public class MultiNeuralNetConfLayerBuilderTest {
                 .iterations(5)
                 .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
                 .k(1) // Annoying dl4j bug that is yet to be fixed.
-                .weightInit(WeightInit.XAVIER)
                 .constrainGradientToUnitNorm(true)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .regularization(true)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .list(4)
-                .layer(0, new RBM.Builder().nIn(784).nOut(1000).activation("relu").build())
-                .layer(1, new RBM.Builder().nIn(1000).nOut(500).activation("relu").build())
-                .layer(2, new RBM.Builder().nIn(500).nOut(250).activation("relu").build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                .layer(0, new RBM.Builder().nIn(784).nOut(1000).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(1, new RBM.Builder().nIn(1000).nOut(500).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(2, new RBM.Builder().nIn(500).nOut(250).weightInit(WeightInit.XAVIER).activation("relu").build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation("softmax")
                         .nIn(250).nOut(10).build())
                         // Pretrain is unsupervised pretraining and finetuning on output layer
                         // Backward is full propagation on ALL layers.

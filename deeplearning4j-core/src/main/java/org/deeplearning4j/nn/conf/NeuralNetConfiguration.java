@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.serializers.*;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -84,8 +83,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected double dropOut = 0;
     //use only when binary hidden neuralNets are active
     protected boolean applySparsity = false;
-    //weight init scheme, this can either be a distribution or a applyTransformToDestination scheme
-    protected WeightInit weightInit = WeightInit.XAVIER;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     public LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
     //whether to constrain the gradient to unit norm or not
@@ -154,7 +151,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int resetAdaGradIterations,
                                   double dropOut,
                                   boolean applySparsity,
-                                  WeightInit weightInit,
                                   OptimizationAlgorithm optimizationAlgo,
                                   LossFunctions.LossFunction lossFunction,
                                   boolean constrainGradientToUnitNorm,
@@ -196,7 +192,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.resetAdaGradIterations = resetAdaGradIterations;
         this.dropOut = dropOut;
         this.applySparsity = applySparsity;
-        this.weightInit = weightInit;
         this.optimizationAlgo = optimizationAlgo;
         this.lossFunction = lossFunction;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
@@ -553,7 +548,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int resetAdaGradIterations = -1;
         private double dropOut = 0;
         private boolean applySparsity = false;
-        private WeightInit weightInit = WeightInit.VI;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
         private long seed = System.currentTimeMillis();
@@ -801,11 +795,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-
         public Builder seed(int seed) {
             this.seed = (long) seed;
             Nd4j.getRandom().setSeed(seed);
@@ -882,7 +871,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             NeuralNetConfiguration ret = new NeuralNetConfiguration(sparsity, useAdaGrad,  lr,  k,
                     corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
-                    resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
+                    resetAdaGradIterations,  dropOut,  applySparsity,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
                     dist,  nIn,  nOut, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
                     ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,

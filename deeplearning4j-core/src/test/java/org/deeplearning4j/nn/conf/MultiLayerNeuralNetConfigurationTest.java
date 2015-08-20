@@ -148,14 +148,17 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 1))
                 .seed(12345l)
                 .list(2)
                 .layer(0, new RBM.Builder()
-                        .nIn(2).nOut(2).build())
+                        .nIn(2).nOut(2)
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .build())
                 .layer(1, new OutputLayer.Builder()
-                        .nIn(2).nOut(1).build())
+                        .nIn(2).nOut(1)
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .build())
                 .build();
         return conf;
     }

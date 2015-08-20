@@ -71,14 +71,22 @@ public class GradientCheckTests {
     				
 			        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
-			                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+			                .dist(new NormalDistribution(0, 1))
 			                .regularization(false)
 			                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
 			                .updater(Updater.SGD).learningRate(1.0)
 			                .seed(12345L)
 			                .list(2)
-			                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(afn).build())
-							.layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(3).nOut(3).build())
+			                .layer(0, new DenseLayer.Builder()
+									.nIn(4).nOut(3)
+									.weightInit(WeightInit.DISTRIBUTION)
+									.activation(afn)
+									.build())
+							.layer(1, new OutputLayer.Builder(lf)
+									.activation(outputActivation)
+									.nIn(3).nOut(3)
+									.weightInit(WeightInit.DISTRIBUTION)
+									.build())
 							.pretrain(false).backprop(true)
 							.build();
 			
@@ -147,16 +155,23 @@ public class GradientCheckTests {
 	    				double l1 = l1vals[k];
 	    				
 				        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-
-				                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+				                .dist(new NormalDistribution(0,1))
 				                .regularization(true).dropOut(0.0)
 				                .l2(l2).l1(l1)
 				                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
 				                .updater(Updater.NONE)
 				                .seed(12345L)
 				                .list(2)
-				                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(afn).build())
-								.layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(3).nOut(3).build())
+				                .layer(0, new DenseLayer.Builder()
+										.nIn(4).nOut(3)
+										.weightInit(WeightInit.DISTRIBUTION)
+										.activation(afn)
+										.build())
+								.layer(1, new OutputLayer.Builder(lf)
+										.nIn(3).nOut(3)
+										.weightInit(WeightInit.DISTRIBUTION)
+										.activation(outputActivation)
+										.build())
 								.pretrain(false).backprop(true)
 								.build();
 				

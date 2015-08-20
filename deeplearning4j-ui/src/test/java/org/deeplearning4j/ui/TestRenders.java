@@ -83,11 +83,12 @@ public class TestRenders extends BaseUiServerTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .corruptionLevel(0.6)
-                .iterations(100).weightInit(WeightInit.XAVIER)
+                .iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder(0.6)
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
                 .build();
 
 
