@@ -245,7 +245,9 @@ public class ConvolutionLayerTest {
         int nChannelsIn = 1;
         int depth = 2;
 
-        INDArray W = Nd4j.create(new double[] {0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5}, new int[]{2,1,2,2});
+        INDArray W = Nd4j.create(new double[] {
+                0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5
+        }, new int[]{2,1,2,2});
         INDArray b = Nd4j.create(new double[] {1,1});
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
         layer.setParam("W", W);
@@ -326,7 +328,7 @@ public class ConvolutionLayerTest {
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(20)
+                        .nIn(150)
                         .nOut(outputNum)
                         .activation("softmax")
                         .build())

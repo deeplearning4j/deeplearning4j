@@ -110,7 +110,6 @@ public class SubsamplingLayer extends BaseLayer {
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());
-//                retE = retE.reshape(1,2,1,1,2,2); TODO remove - this is just used to check shapes till get is fixed
                 reshapeEpsilon = Nd4j.tile(retE,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
                 reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
                 reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
