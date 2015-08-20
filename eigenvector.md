@@ -99,7 +99,7 @@ To get to PCA, we’re going to quickly define some basic statistical ideas -- *
 
 ![Alt text](../img/mean.png)
 
-*Standard deviation* is the square root of the average square distance of data points to the mean. In the equation below, the numerator contains the sum of the differences between each datapoint and the mean, and the denominator is simply the number of data points (minus one), producing the average distance. 
+*Standard deviation*, as fun as that sounds, is simply the square root of the average square distance of data points to the mean. In the equation below, the numerator contains the sum of the differences between each datapoint and the mean, and the denominator is simply the number of data points (minus one), producing the average distance. 
 
 ![Alt text](../img/standard_deviation.png)
 
@@ -183,7 +183,7 @@ In the graph above, we show how the same vector v can be situated differently in
 
 This has profound and almost spiritual implications, one of which is that there exists no natural coordinate system, and mathematical objects in n-dimensional space are subject to multiple descriptions. (Changing matrices' bases also makes them easier to manipulate.) 
 
-A change of basis for vectors is roughly analogous to changing the base for numbers; i.e. the quantity nine can be described as 9 in base ten, as 1001 in binary, and as 30 in base three (e.g. 1, 2, 10, 11, 12, 20, 21, 22, 30 <-- that is "nine"). Same quantity, different symbols; same vector, different coordinates.
+A change of basis for vectors is roughly analogous to changing the base for numbers; i.e. the quantity nine can be described as 9 in base ten, as 1001 in binary, and as 30 in base three (i.e. 1, 2, 10, 11, 12, 20, 21, 22, 30 <-- that is "nine"). Same quantity, different symbols; same vector, different coordinates.
 
 ## <a name="entropy">Entropy & Information Gain</a>
 
