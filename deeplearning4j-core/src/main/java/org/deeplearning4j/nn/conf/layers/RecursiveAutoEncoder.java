@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
@@ -31,6 +31,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 *
 */
 @Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class RecursiveAutoEncoder extends FeedForwardLayer {
 
     private RecursiveAutoEncoder(Builder builder) {
@@ -75,6 +77,12 @@ public class RecursiveAutoEncoder extends FeedForwardLayer {
         @SuppressWarnings("unchecked")
         public RecursiveAutoEncoder build() {
             return new RecursiveAutoEncoder(this);
+        }
+        
+        @Override
+        public Builder updater(Updater updater){
+        	this.updater = updater;
+        	return this;
         }
     }
 }

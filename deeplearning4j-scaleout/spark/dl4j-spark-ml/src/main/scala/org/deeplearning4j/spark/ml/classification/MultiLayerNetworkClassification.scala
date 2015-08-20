@@ -88,7 +88,7 @@ class NeuralNetworkClassification(override val uid: String)
     val outputLayer = c.getConf(c.getConfs.size() - 1)
     val numClasses = outputLayer.getNOut match {
       case 0 => {
-        Attribute.fromStructField(dataset.schema($(labelCol))) match {
+        NominalAttribute.fromStructField(dataset.schema($(labelCol))) match {
           case (attr: NominalAttribute) => attr.getNumValues match {
             case Some(value: Int) => value
             case _ => throw new UnsupportedOperationException("expected numValues on nominal attribute")
@@ -124,23 +124,6 @@ class NeuralNetworkClassification(override val uid: String)
     if (handlePersistence) prepared.unpersist()
 
     new NeuralNetworkClassificationModel(uid, numClasses, sc.broadcast(networkParams)).setParent(this)
-  }
-}
-
-/**
- * Companion object for running of classification process.
- */
-object NeuralNetworkClassification {
-  def apply(uid: String) = new NeuralNetworkClassification(uid)
-
-  def apply() = new NeuralNetworkClassification()
-
-  def train(dataset: DataFrame): NeuralNetworkClassificationModel = {
-    NeuralNetworkClassification().train(dataset)
-  }
-
-  def train(uid: String, dataset: DataFrame): NeuralNetworkClassificationModel = {
-    NeuralNetworkClassification(uid).train(dataset)
   }
 }
 

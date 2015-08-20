@@ -37,17 +37,18 @@ import java.util.Map;
  */
 public class ConvolutionParamInitializer implements ParamInitializer {
 
-    public final static String CONVOLUTION_BIAS = "convbias";
-    public final static String CONVOLUTION_WEIGHTS = "convweights";
+    public final static String WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
+
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         if(conf.getKernelSize().length < 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
-        params.put(CONVOLUTION_BIAS,createBias(conf));
-        params.put(CONVOLUTION_WEIGHTS,createWeightMatrix(conf));
-        conf.addVariable(CONVOLUTION_WEIGHTS);
-        conf.addVariable(CONVOLUTION_BIAS);
+        params.put(BIAS_KEY,createBias(conf));
+        params.put(WEIGHT_KEY,createWeightMatrix(conf));
+        conf.addVariable(WEIGHT_KEY);
+        conf.addVariable(BIAS_KEY);
 
     }
 
@@ -75,7 +76,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          */
 
         Distribution dist = Distributions.createDistribution(conf.getDist());
-        return WeightInitUtil.initWeights(Ints.concat(new int[]{conf.getNOut(), conf.getNIn()}, conf.getKernelSize()), conf.getWeightInit(), dist);
+        return WeightInitUtil.initWeights(Ints.concat(new int[] {conf.getNOut(), conf.getNIn()}, conf.getKernelSize()), conf.getWeightInit(), dist);
     }
 
 }

@@ -18,6 +18,9 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -27,10 +30,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Composable input pre processor
  * @author Adam Gibson
  */
+@Data
 public class ComposableInputPreProcessor extends BaseInputPreProcessor {
 	private InputPreProcessor[] inputPreProcessors;
 
-    public ComposableInputPreProcessor(InputPreProcessor[] inputPreProcessors) {
+    @JsonCreator
+    public ComposableInputPreProcessor(@JsonProperty("inputPreProcessors") InputPreProcessor[] inputPreProcessors) {
         this.inputPreProcessors = inputPreProcessors;
     }
 

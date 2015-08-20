@@ -28,8 +28,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -39,10 +39,14 @@ import org.deeplearning4j.nn.weights.WeightInit;
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
         @JsonSubTypes.Type(value = ConvolutionDownSampleLayer.class, name = "convolutionDownSample"),
+        @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
         @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
+        @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
+        @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
+        @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
         })
 @Data
 @NoArgsConstructor
@@ -51,12 +55,14 @@ public abstract class Layer implements Serializable {
     protected WeightInit weightInit;
     protected Distribution dist;
     protected double dropOut;
+    protected Updater updater;
     
     public Layer(Builder builder){
     	this.activationFunction = builder.activationFunction;
     	this.weightInit = builder.weightInit;
     	this.dist = builder.dist;
     	this.dropOut = builder.dropOut;
+    	this.updater = builder.updater;
     }
 
     public abstract static class Builder {
@@ -64,6 +70,7 @@ public abstract class Layer implements Serializable {
         protected WeightInit weightInit;
         protected Distribution dist;
         protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
+        protected Updater updater;
 
         public Builder activation(String activationFunction) {
             this.activationFunction = activationFunction;
@@ -86,6 +93,11 @@ public abstract class Layer implements Serializable {
         public Builder dropOut(double dropOut) {
             this.dropOut = dropOut;
             return this;
+        }
+        
+        public Builder updater(Updater updater){
+        	this.updater = updater;
+        	return this;
         }
 
         public abstract <E extends Layer> E build();

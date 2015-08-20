@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -31,9 +32,9 @@ public class MultiLayerTestRNN {
                 .activationFunction("tanh")
                 .list(2)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-					.nIn(nIn).nOut(nHiddenUnits).weightInit(WeightInit.DISTRIBUTION).build())
-				.layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
-					.nIn(nHiddenUnits).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(nIn).nOut(nHiddenUnits).weightInit(WeightInit.DISTRIBUTION).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
+                        .nIn(nHiddenUnits).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -45,23 +46,23 @@ public class MultiLayerTestRNN {
         Map<String,INDArray> paramTable = layer.paramTable();
         assertTrue(paramTable.size() == 3);	//2 sets of weights, 1 set of biases
 
-        INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+        INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
         assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits,4*nHiddenUnits+3});	//Should be shape: [layerSize,4*layerSize+3]
-        INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHTS);
+        INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
         assertArrayEquals(inputWeights.shape(),new int[]{nIn,4*nHiddenUnits}); //Should be shape: [nIn,4*layerSize]
-        INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS);
+        INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
         assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits});	//Should be shape: [1,4*layerSize]
 
         //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-        INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nHiddenUnits, 2*nHiddenUnits)});
-        assertTrue(forgetGateBiases.gt(0).sum(0).getDouble(0)==nHiddenUnits);
+        INDArray forgetGateBiases = biases.get(new INDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits, 2 * nHiddenUnits)});
+        assertTrue(forgetGateBiases.gt(0).sum(Integer.MAX_VALUE).getDouble(0) == nHiddenUnits);
 
         int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
         assertTrue(nParams == layer.numParams());
     }
 
     @Test
-    public void testGravesTLSTMInitStacked(){
+    public void testGravesTLSTMInitStacked() {
         int nIn = 8;
         int nOut = 25;
         int[] nHiddenUnits = {17,19,23};
@@ -69,13 +70,13 @@ public class MultiLayerTestRNN {
                 .activationFunction("tanh")
                 .list(4)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-					.nIn(nIn).nOut(17).weightInit(WeightInit.DISTRIBUTION).build())
-				.layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-					.nIn(17).nOut(19).weightInit(WeightInit.DISTRIBUTION).build())
-				.layer(2, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-					.nIn(19).nOut(23).weightInit(WeightInit.DISTRIBUTION).build())
-				.layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
-						.nIn(23).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(nIn).nOut(17).weightInit(WeightInit.DISTRIBUTION).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(17).nOut(19).weightInit(WeightInit.DISTRIBUTION).build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+                        .nIn(19).nOut(23).weightInit(WeightInit.DISTRIBUTION).build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
+                        .nIn(23).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -88,46 +89,22 @@ public class MultiLayerTestRNN {
             Map<String,INDArray> paramTable = layer.paramTable();
             assertTrue(paramTable.size() == 3);	//2 sets of weights, 1 set of biases
 
-            int layerNIn = (i==0 ? nIn : nHiddenUnits[i-1] );
+            int layerNIn = (i == 0 ? nIn : nHiddenUnits[i-1] );
 
-            INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHTS);
+            INDArray recurrentWeights = paramTable.get(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
             assertArrayEquals(recurrentWeights.shape(),new int[]{nHiddenUnits[i],4*nHiddenUnits[i]+3});	//Should be shape: [layerSize,4*layerSize+3]
-            INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHTS);
+            INDArray inputWeights = paramTable.get(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
             assertArrayEquals(inputWeights.shape(),new int[]{layerNIn,4*nHiddenUnits[i]}); //Should be shape: [nIn,4*layerSize]
-            INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS);
+            INDArray biases = paramTable.get(GravesLSTMParamInitializer.BIAS_KEY);
             assertArrayEquals(biases.shape(),new int[]{1,4*nHiddenUnits[i]});	//Should be shape: [1,4*layerSize]
 
             //Want forget gate biases to be initialized to > 0. See parameter initializer for details
-            INDArray forgetGateBiases = biases.get(new NDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nHiddenUnits[i], 2*nHiddenUnits[i])});
-            assertTrue(forgetGateBiases.gt(0).sum(1).getDouble(0)==nHiddenUnits[i]);
+            INDArray forgetGateBiases = biases.get(new INDArrayIndex[]{NDArrayIndex.interval(nHiddenUnits[i], 2 * nHiddenUnits[i])});
+            assertTrue(forgetGateBiases.gt(0).sum(1).getDouble(0) == nHiddenUnits[i]);
 
             int nParams = recurrentWeights.length() + inputWeights.length() + biases.length();
             assertTrue(nParams == layer.numParams());
         }
     }
-
-
-    @Test
-    public void testMultiLayerRnn() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM())
-                .nIn(10).nOut(10)
-                .activationFunction("sigmoid")
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .weightInit(WeightInit.DISTRIBUTION)
-                .list(2)
-                .hiddenLayerSizes(10, 10)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-
-                    }
-                })
-                .backprop(true)
-                .pretrain(false)
-                .build();
-    }
-
 
 }

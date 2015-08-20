@@ -1,9 +1,8 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.convolution.Convolution;
@@ -11,8 +10,9 @@ import org.nd4j.linalg.convolution.Convolution;
 /**
  * @author Adam Gibson
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
     protected Convolution.Type convolutionType;
     protected int[] kernelSize; // Square filter
@@ -50,20 +50,16 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.stride = stride;
         }
 
-        public Builder(Convolution.Type convolutionType) {
-            this.convolutionType = convolutionType;
-        }
-
-        public Builder(int[] kernelSize, Convolution.Type convolutionType) {
-            this.kernelSize = kernelSize;
-            this.convolutionType = convolutionType;
-        }
-
         public Builder(int[] kernelSize) {
             this.kernelSize = kernelSize;
         }
 
         public Builder() {}
+
+        public Builder convolutionType(Convolution.Type convolutionType) {
+            this.convolutionType = convolutionType;
+            return this;
+        }
 
         @Override
         public Builder nIn(int nIn) {
@@ -92,10 +88,16 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.dropOut = dropOut;
             return this;
         }
-        
+
         @Override
         public Builder dist(Distribution dist){
         	super.dist(dist);
+        	return this;
+        }
+        
+        @Override
+        public Builder updater(Updater updater){
+        	this.updater = updater;
         	return this;
         }
 

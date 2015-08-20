@@ -1,13 +1,21 @@
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
@@ -62,4 +70,77 @@ public class MultiNeuralNetConfLayerBuilderTest {
 
         assertFalse(firstLayer.equals(secondLayer));
     }
+
+    @Test
+    public void testRbmSetup() throws Exception {
+        MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .seed(123)
+                .iterations(5)
+                .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
+                .activationFunction("relu")
+                .k(1) // Annoying dl4j bug that is yet to be fixed.
+                .weightInit(WeightInit.XAVIER)
+                .constrainGradientToUnitNorm(true)
+                .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .regularization(true)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
+                .list(4)
+                .layer(0, new RBM.Builder().nIn(784).nOut(1000).build())
+                .layer(1, new RBM.Builder().nIn(1000).nOut(500).build())
+                .layer(2, new RBM.Builder().nIn(500).nOut(250).build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax")
+                        .nIn(250).nOut(10).build())
+                        // Pretrain is unsupervised pretraining and finetuning on output layer
+                        // Backward is full propagation on ALL layers.
+                .pretrain(false).backprop(true)
+                .build();
+        MultiLayerNetwork network = new MultiLayerNetwork(multiLayerConfiguration);
+        network.init();
+        DataSet d = new MnistDataSetIterator(2,2).next();
+        org.deeplearning4j.nn.api.Layer firstRbm = network.getLayer(0);
+        org.deeplearning4j.nn.api.Layer secondRbm = network.getLayer(1);
+        org.deeplearning4j.nn.api.Layer thirdRbm = network.getLayer(2);
+        org.deeplearning4j.nn.api.Layer fourthRbm = network.getLayer(3);
+        INDArray[] weightMatrices = new INDArray[] {
+                firstRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                secondRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                thirdRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+                fourthRbm.getParam(DefaultParamInitializer.WEIGHT_KEY),
+
+        };
+        INDArray[] hiddenBiases = new INDArray[] {
+                firstRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+                secondRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+                thirdRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+                fourthRbm.getParam(DefaultParamInitializer.BIAS_KEY),
+
+        };
+
+
+        int[][] shapeAssertions = new int[][]{
+                {784,1000},
+                {1000,500},
+                {500,250},
+                {250,10},
+        };
+
+        int[][] biasAssertions = new int[][] {
+                {1,1000},
+                {1,500},
+                {1,250},
+                {1,10},
+
+        };
+
+        for(int i = 0; i < shapeAssertions.length; i++) {
+            assertArrayEquals(shapeAssertions[i],weightMatrices[i].shape());
+            assertArrayEquals(biasAssertions[i],hiddenBiases[i].shape());
+        }
+
+        network.fit(d);
+
+
+    }
+
 }

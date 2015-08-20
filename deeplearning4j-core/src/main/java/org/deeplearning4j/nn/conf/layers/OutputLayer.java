@@ -18,11 +18,9 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import lombok.RequiredArgsConstructor;
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -34,6 +32,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
  *
  */
 @Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class OutputLayer extends FeedForwardLayer {
     private LossFunction lossFunction;
 
@@ -44,7 +44,9 @@ public class OutputLayer extends FeedForwardLayer {
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
-        private LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        private LossFunction lossFunction = LossFunction.RMSE_XENT;
+
+        public Builder() {}
 
         @Override
         public Builder nIn(int nIn) {
@@ -78,6 +80,13 @@ public class OutputLayer extends FeedForwardLayer {
             this.dropOut = dropOut;
             return this;
         }
+        
+        @Override
+        public Builder updater(Updater updater){
+        	this.updater = updater;
+        	return this;
+        }
+        
         @Override
         @SuppressWarnings("unchecked")
         public OutputLayer build() {

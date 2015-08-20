@@ -31,15 +31,12 @@ import org.deeplearning4j.nn.conf.deserializers.*;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.serializers.*;
-import org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
-import org.deeplearning4j.nn.conf.stepfunctions.GradientStepFunction;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.rng.DefaultRandom;
 import org.deeplearning4j.util.Dl4jReflection;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -83,8 +80,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //reset adagrad historical gradient after n iterations
     protected int resetAdaGradIterations = -1;
     //number of line search iterations
-    @Deprecated
-    protected int numLineSearchIterations = 5;
     protected int maxNumLineSearchIterations = 5;
     protected double dropOut = 0;
     //use only when binary hidden neuralNets are active
@@ -100,7 +95,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected long seed;
     //weight initialization
     protected Distribution dist;
-    protected StepFunction stepFunction = new GradientStepFunction();
+    protected StepFunction stepFunction;
     protected Layer layer;
 
 
@@ -123,6 +118,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     private int[] weightShape;
 
+    // Graves LSTM & RNN
+    private int timeSeriesLength = 1;
     //convolutional nets: this is the height and width of the kernel
     private int[] kernelSize = {2,2};
     //aka pool size for subsampling
@@ -136,11 +133,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //l1 regularization
     protected double l1 = 0.0;
 
-
     protected double rmsDecay = 0.0;
 
 
-    protected boolean miniBatch = false;
+    protected boolean miniBatch = true;
 
 
     protected Convolution.Type convolutionType = Convolution.Type.VALID;
@@ -172,11 +168,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   RBM.VisibleUnit visibleUnit,
                                   RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
+                                  int timeSeriesLength,
                                   int[] kernelSize,
                                   int[] stride,
                                   int[] padding,
                                   int batchSize,
-                                  int numLineSearchIterations,
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
                                   Layer layer, Convolution.Type convolutionType,
@@ -186,7 +182,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.customLossFunction = customLossFunction;
         this.convolutionType = convolutionType;
         this.poolingType = poolingType;
-        this.numLineSearchIterations = numLineSearchIterations;
         this.maxNumLineSearchIterations = maxNumLineSearchIterations;
         this.l1 = l1;
         this.batchSize = batchSize;
@@ -219,6 +214,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.weightShape = weightShape;
         else
             this.weightShape = new int[]{nIn,nOut};
+        this.timeSeriesLength = timeSeriesLength;
         this.kernelSize = kernelSize;
         this.stride = stride;
         this.padding = padding;
@@ -233,7 +229,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         for(Field f : fields) {
             try {
                 f.setAccessible(true);
-                f.set(this,f.get(neuralNetConfiguration));
+                
+                //Copy lists, maps etc. to avoid same object being in 
+                Object o = f.get(neuralNetConfiguration);
+                if( o instanceof List ){
+                	f.set(this, new ArrayList<>((List<?>)o));
+                } else if( o instanceof Map ){
+                	f.set(this, new HashMap<>((Map<?,?>)o));
+                } else {
+                	f.set(this,o);
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -318,8 +323,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         if(!variables.contains(variable))
             variables.add(variable);
     }
+    
+    public void clearVariables(){
+    	variables.clear();
+    }
 
-    private static <T> T overRideFields(T configInst, Layer layer) {
+    private static <T> T overrideFields(T configInst, Layer layer) {
         // overwrite builder with fields with layer fields
         Class<?> layerClazz = layer.getClass();
         Field[] neuralNetConfFields = Dl4jReflection.getAllFields(configInst.getClass());
@@ -332,42 +341,42 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     try {
                         Object layerFieldValue = layerField.get(layer);
                         if(layerFieldValue != null ) {
-                        	if(neuralNetField.getType().isAssignableFrom(layerField.getType())){
-                        		//Same class, or neuralNetField is superclass/superinterface of layer field
-                        		if(!ClassUtils.isPrimitiveOrWrapper(layerField.getType()) ){
-                            		neuralNetField.set(configInst, layerFieldValue);
-                            	} else {
-                            		//Primitive -> autoboxed by Field.get(...). Hence layerFieldValue is never null for primitive fields,
-                            		// even if not explicitly set (due to default value for primitives)
-                            		//Convention here is to use Double.NaN, Float.NaN, Integer.MIN_VALUE, etc. as defaults in layer configs
-                            		// to signify 'not set'
-                            		Class<?> primitiveClass = layerField.getType();
-                            		if( primitiveClass == double.class || primitiveClass == Double.class ){
-                            			if( !Double.isNaN((double)layerFieldValue) ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == float.class || primitiveClass == Float.class ){
-                            			if( !Float.isNaN((float)layerFieldValue) ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == int.class || primitiveClass == Integer.class ){
-                            			if( ((int)layerFieldValue) != Integer.MIN_VALUE ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == long.class || primitiveClass == Long.class ){
-                            			if( ((long)layerFieldValue) != Long.MIN_VALUE ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else if( primitiveClass == char.class || primitiveClass == Character.class ){
-                            			if( ((char)layerFieldValue) != Character.MIN_VALUE ){
-                            				neuralNetField.set(configInst, layerFieldValue);
-                            			}
-                            		} else {
-                            			//Boolean: can only be true/false. No usable 'not set' value -> need some other workaround
-                            			//Short, Byte: probably never used
-                            			throw new RuntimeException("Primitive type not settable via reflection");
-                            		}
-                            	}
+                            if(neuralNetField.getType().isAssignableFrom(layerField.getType())){
+                                //Same class, or neuralNetField is superclass/superinterface of layer field
+                                if(!ClassUtils.isPrimitiveOrWrapper(layerField.getType()) ){
+                                    neuralNetField.set(configInst, layerFieldValue);
+                                } else {
+                                    //Primitive -> autoboxed by Field.get(...). Hence layerFieldValue is never null for primitive fields,
+                                    // even if not explicitly set (due to default value for primitives)
+                                    //Convention here is to use Double.NaN, Float.NaN, Integer.MIN_VALUE, etc. as defaults in layer configs
+                                    // to signify 'not set'
+                                    Class<?> primitiveClass = layerField.getType();
+                                    if( primitiveClass == double.class || primitiveClass == Double.class ){
+                                        if( !Double.isNaN((double)layerFieldValue) ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass == float.class || primitiveClass == Float.class ){
+                                        if( !Float.isNaN((float)layerFieldValue) ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass == int.class || primitiveClass == Integer.class ){
+                                        if( ((int)layerFieldValue) != Integer.MIN_VALUE ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass == long.class || primitiveClass == Long.class ){
+                                        if( ((long)layerFieldValue) != Long.MIN_VALUE ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else if( primitiveClass == char.class || primitiveClass == Character.class ){
+                                        if( ((char)layerFieldValue) != Character.MIN_VALUE ){
+                                            neuralNetField.set(configInst, layerFieldValue);
+                                        }
+                                    } else {
+                                        //Boolean: can only be true/false. No usable 'not set' value -> need some other workaround
+                                        //Short, Byte: probably never used
+                                        throw new RuntimeException("Primitive type not settable via reflection");
+                                    }
+                                }
                             }
                         }
                     } catch(Exception e) {
@@ -379,14 +388,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return configInst;
     }
 
-        /**
-         * Fluent interface for building a list of configurations
-         */
+    /**
+     * Fluent interface for building a list of configurations
+     */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
-        private HashMap<Integer, Builder> layerwise;
+        private Map<Integer, Builder> layerwise;
 
         // Constructor
-        public ListBuilder(HashMap<Integer, Builder> layerMap) {
+        public ListBuilder(Map<Integer, Builder> layerMap) {
             this.layerwise = layerMap;
         }
 
@@ -396,15 +405,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public ListBuilder hiddenLayerSizes(int...hiddenLayerSizes) {
-            this.hiddenLayerSizes = hiddenLayerSizes;
+        public ListBuilder pretrain(boolean pretrain) {
+            this.pretrain = pretrain;
             return this;
         }
 
         public ListBuilder layer(int ind, Layer layer) {
-            if (layerwise.size() < 2) {
-                throw new IllegalArgumentException("IndexOutOfBoundsError: Layer index exceeds listed size. List at least 2 layers");
-            }
             if (layerwise.get(0) == null && ind != 0) {
                 throw new IllegalArgumentException("LayerZeroIndexError: Layer index must start from 0");
             }
@@ -428,9 +434,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             for(int i = 0; i < layerwise.size(); i++) {
                 list.add(layerwise.get(i).build());
             }
-            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
-                    .useDropConnect(useDropConnect).pretrain(pretrain).outputPostProcessors(outputPostProcessors)
-                    .hiddenLayerSizes(hiddenLayerSizes)
+            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
+                    pretrain(pretrain)
                     .confs(list).build();
         }
 
@@ -564,15 +569,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 5;
         private int[] weightShape;
+        private int timeSeriesLength = 1;
         private int[] kernelSize = {2,2};
         // convolution & subsampling layers
         private int[] stride = {2,2};
         private int[] padding = {0,0};
-        private StepFunction stepFunction = new NegativeDefaultStepFunction();
+        private StepFunction stepFunction = null;
         private Layer layer;
         private int batchSize = 100;
-        @Deprecated
-        private int numLineSearchIterations = 5;
         private int maxNumLineSearchIterations = 5;
         private boolean minimize = false;
         private Convolution.Type convolutionType = Convolution.Type.VALID;
@@ -581,8 +585,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useDropConnect = false;
         private double rho;
         private Updater updater = Updater.ADAGRAD;
-        private boolean miniBatch = false;
+        private boolean miniBatch = true;
 
+        /**
+         +         * Time series length
+         +         * @param timeSeriesLength
+         +         * @return
+         +         */
+
+        public Builder timeSeriesLength(int timeSeriesLength) {
+            this.timeSeriesLength = timeSeriesLength;
+            return this;
+        }
 
         /**
          * Size of the convolution
@@ -591,12 +605,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
          *                   kernel
          * @return
          */
-         public Builder kernelSize(int...kernelSize) {
-             if(kernelSize.length != 2)
-                 throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
-             this.kernelSize = kernelSize;
-             return this;
-         }
+        public Builder kernelSize(int...kernelSize) {
+            if(kernelSize.length != 2)
+                throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
+            this.kernelSize = kernelSize;
+            return this;
+        }
 
         /**
          * The updater to use
@@ -667,12 +681,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder numLineSearchIterations(int numLineSearchIterations) {
-            this.numLineSearchIterations = numLineSearchIterations;
-            return this;
-        }
-
         public Builder maxNumLineSearchIterations(int maxNumLineSearchIterations) {
             this.maxNumLineSearchIterations = maxNumLineSearchIterations;
             return this;
@@ -694,10 +702,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
         public ListBuilder list(int size) {
-            if(size < 2)
-                throw new IllegalArgumentException("Number of layers must be > 1");
-
-            HashMap<Integer, Builder> layerMap = new HashMap<>();
+            Map<Integer, Builder> layerMap = new HashMap<>();
             for(int i = 0; i < size; i++)
                 layerMap.put(i, clone());
             return new ListBuilder(layerMap);
@@ -732,6 +737,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         }
 
 
+        @Deprecated
         public Builder weightShape(int[] weightShape) {
             this.weightShape = weightShape;
             return this;
@@ -827,6 +833,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        @Deprecated
         public Builder resetAdaGradIterations(int resetAdaGradIterations) {
             this.resetAdaGradIterations = resetAdaGradIterations;
             return this;
@@ -872,6 +879,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+
         /**
          * Return a configuration based on this builder
          *
@@ -881,14 +889,16 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
 
-            NeuralNetConfiguration ret = new NeuralNetConfiguration( sparsity,  useAdaGrad,  lr,  k,
-                    corruptionLevel,  numIterations,  momentum,  l2,  useRegularization, momentumAfter,
+            NeuralNetConfiguration ret = new NeuralNetConfiguration(sparsity, useAdaGrad,  lr,  k,
+                    corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  dropOut,  applySparsity,  weightInit,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
-                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit,weightShape, kernelSize, stride,padding
-                    ,batchSize,numLineSearchIterations,maxNumLineSearchIterations,minimize,layer,convolutionType,poolingType,
+                    dist,  nIn,  nOut,  activationFunction, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
+                    ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,
                     l1,customLossFunction);
 
+            ret.padding = this.padding;
+            ret.stride = this.stride;
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
@@ -897,9 +907,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.rho = rho;
             ret.updater = updater;
 
-
             //override the properties from the layer
-            ret = overRideFields(ret, layer);
+            ret = overrideFields(ret, layer);
             return ret;
         }
     }

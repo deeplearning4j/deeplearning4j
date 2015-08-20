@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 
+import lombok.Data;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,6 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Adam Gibson
  */
+@Data
 public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
 
 

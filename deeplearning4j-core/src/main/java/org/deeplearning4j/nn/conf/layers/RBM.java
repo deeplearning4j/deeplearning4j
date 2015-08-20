@@ -18,10 +18,9 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
@@ -50,6 +49,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
  */
 
 @Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class RBM extends BasePretrainNetwork {
     protected HiddenUnit hiddenUnit;
     protected VisibleUnit visibleUnit;
@@ -136,6 +137,11 @@ public class RBM extends BasePretrainNetwork {
         	return this;
         }
 
+        @Override
+        public Builder updater(Updater updater){
+        	this.updater = updater;
+        	return this;
+        }
 
     }
 }

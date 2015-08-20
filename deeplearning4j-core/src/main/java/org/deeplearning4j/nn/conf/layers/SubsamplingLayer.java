@@ -1,9 +1,8 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
@@ -18,6 +17,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
  */
 
 @Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class SubsamplingLayer extends Layer {
 
     protected PoolingType poolingType;
@@ -101,28 +102,28 @@ public class SubsamplingLayer extends Layer {
         public Builder poolingType(PoolingType poolingType){
             this.poolingType = poolingType;
             return this;
-
         }
 
         public Builder kernelSize(int[] kernelSize){
             this.kernelSize = kernelSize;
             return this;
-
         }
 
         public Builder stride(int[] stride){
             this.stride = stride;
             return this;
-
         }
 
         public Builder padding(int[] padding){
             this.padding = padding;
             return this;
-
         }
 
-
+        @Override
+        public Builder updater(Updater updater){
+        	this.updater = updater;
+        	return this;
+        }
     }
 
 }

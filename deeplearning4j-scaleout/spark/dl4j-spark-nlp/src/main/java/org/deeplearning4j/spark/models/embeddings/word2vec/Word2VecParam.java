@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class Word2VecParam implements Serializable {
 
     private boolean useAdaGrad = false;

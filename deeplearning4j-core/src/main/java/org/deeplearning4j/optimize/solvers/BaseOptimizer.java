@@ -30,6 +30,9 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -86,11 +89,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Collection<TerminationCondition> terminationConditions,Model model) {
         this.conf = conf;
-        this.stepFunction = stepFunction;
+        this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
         this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
-        lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);
+        lineMaximizer = new BackTrackLineSearch(model,this.stepFunction,this);
         lineMaximizer.setStepMax(stepMax);
         lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
 
@@ -131,7 +134,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
         score = pair.getSecond();
-        setupSearchState(pair);		//Currently: Resets search state every mini-batch
+        if(searchState.isEmpty()){
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+        	setupSearchState(pair);		//Only do this once
+        } else {
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+        }
 
         //pre existing termination conditions
         /*
@@ -164,9 +172,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             if(step != 0.0) {
                 stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
                 model.setParams(parameters);
-            }
-
-            else {
+            }else {
                 log.debug("Step size returned by line search is 0.0.");
             }
 
@@ -182,11 +188,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
-
             //check for termination conditions based on absolute change in score
             for(TerminationCondition condition : terminationConditions){
                 if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
-                    log.debug("Hit termination condition: score={}, oldScore={}, condition={}",score,oldScore,condition);
+                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}",i,score,oldScore,condition);
                     return true;
                 }
             }
@@ -231,7 +236,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
         if(updater == null)
-            updater = UpdaterCreator.getUpdater(model.conf());
+            updater = UpdaterCreator.getUpdater(model);
         Layer layer = (Layer) model;
         updater.update(layer, gradient, iteration);
     }
@@ -250,6 +255,13 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
 
-
+    public static StepFunction getDefaultStepFunctionForOptimizer( Class<? extends ConvexOptimizer> optimizerClass ){
+        log.warn("Objective function automatically set to minimize. Set stepFunction in neural net configuration to change default settings.");
+    	if( optimizerClass == StochasticGradientDescent.class ){
+    		return new NegativeGradientStepFunction();
+    	} else {
+    		return new NegativeDefaultStepFunction();
+    	}
+    }
 
 }

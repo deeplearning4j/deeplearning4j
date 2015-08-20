@@ -27,13 +27,14 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Calculate co occurrences based on tokens
  *
  * @author Adam Gibson
  */
-public class CoOccurrenceCalculator implements Function<Pair<List<String>,Long>,CounterMap<String,String>> {
+public class CoOccurrenceCalculator implements Function<Pair<List<String>,AtomicLong>,CounterMap<String,String>> {
     private boolean symmetric = false;
     private Broadcast<VocabCache> vocab;
     private int windowSize = 5;
@@ -46,7 +47,7 @@ public class CoOccurrenceCalculator implements Function<Pair<List<String>,Long>,
 
 
     @Override
-    public CounterMap<String, String> call(Pair<List<String>,Long> pair) throws Exception {
+    public CounterMap<String, String> call(Pair<List<String>,AtomicLong> pair) throws Exception {
         List<String> sentence = pair.getFirst();
         CounterMap<String,String> coOCurreneCounts = new CounterMap<>();
         VocabCache vocab = this.vocab.value();
