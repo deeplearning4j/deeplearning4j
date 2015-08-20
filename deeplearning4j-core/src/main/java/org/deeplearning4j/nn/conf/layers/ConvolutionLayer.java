@@ -1,8 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -12,8 +10,9 @@ import org.nd4j.linalg.convolution.Convolution;
 /**
  * @author Adam Gibson
  */
-@Data
-@NoArgsConstructor
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class ConvolutionLayer extends FeedForwardLayer {
     protected Convolution.Type convolutionType;
     protected int[] kernelSize; // Square filter
@@ -57,6 +56,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder() {}
 
+        public Builder convolutionType(Convolution.Type convolutionType) {
+            this.convolutionType = convolutionType;
+            return this;
+        }
+
         @Override
         public Builder nIn(int nIn) {
             super.nIn(nIn);
@@ -84,7 +88,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.dropOut = dropOut;
             return this;
         }
-        
+
         @Override
         public Builder dist(Distribution dist){
         	super.dist(dist);
