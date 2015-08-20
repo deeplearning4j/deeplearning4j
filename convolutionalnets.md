@@ -8,7 +8,7 @@ layout: default
 Contents
 
 * <a href="#intro">Convolutional Net Introduction</a>
-* <a href="#tensors">Images = 4-D Tensors</a>
+* <a href="#tensors">Images Are 4-D Tensors?</a>
 * <a href="#define">ConvNet Definition</a>
 * <a href="#work">How Convolutional Nets Work</a>
 * <a href="#max">Maxpooling/Downsampling</a>
@@ -21,7 +21,7 @@ Convolutional nets perform object recognition with images. They can identify fac
 
 The efficacy of convolutional nets (ConvNets) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
-##<a name="tensors">Images = 4-D Tensors</a>
+##<a name="tensors">Images Are 4-D Tensors?</a>
 
 Convolutional nets ingest and process images as tensors, and tensors are matrices of numbers with additional dimensions. 
 
@@ -38,7 +38,7 @@ In code, the tensor above would appear like this: `[[[2,3],[3,5],[4,7]],[[3,4],[
 
 ND4J and Deeplearning4j use `NDArray` synonymously with tensor. A tensor’s dimensionality `(1,2,3…n)` is called its order; i.e. a fifth-order tensor would have five dimensions.
 
-The width and height of an image are easily understood. The depth is necessary because of how colors are encoded. Red-Green-Blue (RGB) encoding, for example, produces an image three layers deep. Each layer is called a "channel", and it produces a stack of activation, or feature, maps which exist in the fourth dimension, just down the street from time itself. (Features are just details of images, like a line or curve, that convolutional networks create maps of.)
+The width and height of an image are easily understood. The depth is necessary because of how colors are encoded. Red-Green-Blue (RGB) encoding, for example, produces an image three layers deep. Each layer is called a "channel", and through convolution it produces a stack of feature maps (explained below), which exist in the fourth dimension, just down the street from time itself. (Features are just details of images, like a line or curve, that convolutional networks create maps of.)
 
 So instead of thinking of images as two-dimensional areas, in convolutional nets they are treated as four-dimensional volumes. These ideas will be explored more thoroughly below. 
 
