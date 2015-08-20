@@ -95,19 +95,17 @@ public class ConvolutionLayer extends BaseLayer {
 
         Gradient retGradient = new DefaultGradient();
 
-        // TODO chainer adds bias to existing biasGradient for layer. Do we want to do this?
-        //gb += gy[0].sum(axis=(0, 2, 3))
+        //gb = gy[0].sum(axis=(0, 2, 3))
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, delta.sum(0, 2, 3));
 
-        // TODO Note chainer adds weightGradient to existing weightGradient for layer. Do we want to do this?
-        // gW += np.tensordot(gy[0], col, ([0, 2, 3], [0, 4, 5]))
+        // gW = np.tensordot(gy[0], col, ([0, 2, 3], [0, 4, 5]))
         INDArray weightGradient = Nd4j.tensorMmul(delta, col, new int[][] {{0, 2, 3},{0, 4, 5}});
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradient);
 
         //gcol = tensorMmul(W, gy[0], (0, 1))
-        INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta, new int[][]{{0, 1},new int[] {1,0}});
+        INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta, new int[][] {{0}, {1}});
 
-        nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3).reshape(Ints.concat(new int[]{1, 1}, nextEpsilon.shape()));
+        nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3);
         nextEpsilon = Convolution.col2im(nextEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
         return new Pair<>(retGradient,nextEpsilon);
     }
