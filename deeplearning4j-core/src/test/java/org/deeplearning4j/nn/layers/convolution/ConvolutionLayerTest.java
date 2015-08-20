@@ -305,9 +305,9 @@ public class ConvolutionLayerTest {
         final int numColumns = 28;
         int nChannels = 1;
         int outputNum = 10;
-        int numSamples = 1;
-        int batchSize = 1;
-        int iterations = 1;
+        int numSamples = 10;
+        int batchSize = 10;
+        int iterations = 10;
         int seed = 123;
         int listenerFreq = iterations/5;
 
@@ -321,9 +321,9 @@ public class ConvolutionLayerTest {
                 .activationFunction("relu")
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
-                .layer(0, new ConvolutionLayer.Builder(new int[]{9, 9})
+                .layer(0, new ConvolutionLayer.Builder(new int[]{10, 10})
                         .nIn(nChannels)
-                        .nOut(8)
+                        .nOut(6)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
                         .build())
