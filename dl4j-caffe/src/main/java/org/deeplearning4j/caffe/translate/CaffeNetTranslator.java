@@ -31,8 +31,8 @@ public class CaffeNetTranslator {
             put(LayerSubType.SIGMOID, new DenseLayer.Builder().activation("sigmoid"));
             put(LayerSubType.TANH, new DenseLayer.Builder().activation("tanh"));
             put(LayerSubType.SOFTMAX, new DenseLayer.Builder().activation("softmax"));
-            put(LayerSubType.SOFTMAXWITHLOSS, new OutputLayer.Builder().activation("softmax")
-                    .loss(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY));
+            put(LayerSubType.SOFTMAXWITHLOSS, new OutputLayer.Builder().loss(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
+                    .activation("softmax"));
             put(LayerSubType.EUCLIDEANLOSS, new OutputLayer.Builder().loss(LossFunctions.LossFunction.MSE));
             put(LayerSubType.SIGMOIDCROSSENTROPYLOSS, new OutputLayer.Builder()
                     .loss(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)); //TODO: Fix loss functions

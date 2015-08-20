@@ -19,11 +19,9 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
-
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
@@ -47,6 +45,11 @@ public class OutputLayer extends FeedForwardLayer {
         private LossFunction lossFunction = LossFunction.RMSE_XENT;
 
         public Builder() {}
+
+        public Builder loss(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
 
         @Override
         public Builder nIn(int nIn) {
