@@ -43,7 +43,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+        Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
 
         int nL = conf.getNOut();	//i.e., n neurons in this layer
         int nLast = conf.getNIn();	//i.e., n neurons in previous layer

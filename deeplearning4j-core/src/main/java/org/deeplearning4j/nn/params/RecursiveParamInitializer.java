@@ -43,7 +43,7 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+        Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
 
         int vis = conf.getNIn();
         int out = vis * 2;

@@ -47,7 +47,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM()).dist(new NormalDistribution(1, 1e-1))
+                .layer(new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                 .list(2).inputPreProcessor(1, new ReshapePreProcessor())
                 .build();
 
@@ -79,7 +79,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM()).dist(new NormalDistribution(1, 1e-1))
+                .layer(new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                 .list(2).inputPreProcessor(1, new ReshapePreProcessor())
                 .build();
         String json = conf.toYaml();
@@ -148,16 +148,15 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .dist(new NormalDistribution(0, 1))
                 .seed(12345l)
                 .list(2)
                 .layer(0, new RBM.Builder()
                         .nIn(2).nOut(2)
-                        .weightInit(WeightInit.DISTRIBUTION)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                         .build())
                 .layer(1, new OutputLayer.Builder()
                         .nIn(2).nOut(1)
-                        .weightInit(WeightInit.DISTRIBUTION)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                         .build())
                 .build();
         return conf;

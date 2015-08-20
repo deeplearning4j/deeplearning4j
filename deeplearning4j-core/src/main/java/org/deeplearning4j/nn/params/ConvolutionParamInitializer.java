@@ -75,7 +75,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
          */
 
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+        Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
         return WeightInitUtil.initWeights(
                 Ints.concat(new int[] {conf.getNOut(), conf.getNIn()}, conf.getKernelSize()),
                 conf.getLayer().getWeightInit(),

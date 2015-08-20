@@ -105,7 +105,6 @@ public class ListenerTest {
     private static MultiLayerConfiguration getIrisSimpleConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3)
-                .dist(new NormalDistribution(0, 0.1))
 
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -116,7 +115,7 @@ public class ListenerTest {
                 .corruptionLevel(0.0)
 
                 .layer(new RBM.Builder()
-                        .weightInit(WeightInit.DISTRIBUTION)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
                         .activation(activationFunction)
                         .build())
                 .learningRate(0.1).useAdaGrad(false)
@@ -131,7 +130,7 @@ public class ListenerTest {
                 .list(hiddenLayerSizes.length + 1)
                 .layer(hiddenLayerSizes.length, new OutputLayer.Builder()
                         .activation("softmax")
-                        .weightInit(WeightInit.DISTRIBUTION)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
                         .dist(new NormalDistribution(0, 0.1))
                         .build())
 
@@ -147,8 +146,6 @@ public class ListenerTest {
     private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3)
-                .dist(new NormalDistribution(0, 0.1))
-
 
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -159,7 +156,7 @@ public class ListenerTest {
                 .corruptionLevel(0.0)
 
                 .layer(new RBM.Builder()
-                        .weightInit(WeightInit.DISTRIBUTION)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
                         .activation(activationFunction)
                         .build())
                 .learningRate(0.1).useAdaGrad(false)
