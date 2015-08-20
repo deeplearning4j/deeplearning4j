@@ -44,15 +44,22 @@ public class TrainMultiLayerConfigTest {
     public void testMultiLayerConfig() throws Exception {
         Model testModelFlag = new Model();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM()).nIn(4).nOut(3)
+                .layer(new RBM.Builder()
+                        .activation("tanh")
+                        .build())
+                .nIn(4).nOut(3)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .iterations(100).weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                .activationFunction("tanh").k(1).batchSize(10)
+                .k(1).batchSize(10)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).momentum(0.9).regularization(true).l2(2e-4)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS).constrainGradientToUnitNorm(true)
-                .list(2).hiddenLayerSizes(3)
-                .override(1, new ClassifierOverride(1))
+                .list(2)
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation("softmax")
+                        .weightInit(WeightInit.ZERO)
+                        .build())
+                .hiddenLayerSizes(3)
                 .build();
         String json = conf.toJson();
 

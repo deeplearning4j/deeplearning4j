@@ -204,10 +204,10 @@ public class ConvolutionLayerTest {
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding)
                 .nIn(nIn)
                 .nOut(nOut)
+                .activation("sigmoid")
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activationFunction("sigmoid")
                 .iterations(1)
                 .layer(layer)
                 .build();
@@ -318,14 +318,15 @@ public class ConvolutionLayerTest {
                 .batchSize(batchSize)
                 .iterations(iterations)
                 .weightInit(WeightInit.XAVIER)
-                .activationFunction("relu")
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
                 .layer(0, new ConvolutionLayer.Builder(new int[]{9, 9})
                         .nIn(nChannels)
                         .nOut(8)
+                        .activation("relu")
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
+                        .activation("relu")
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nIn(8)

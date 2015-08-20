@@ -72,9 +72,10 @@ public class MultiLayerTest {
                 .nIn(4)
                 .nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .activationFunction("tanh")
                 .list(1).layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(4).nOut(3).build())
+                        .nIn(4).nOut(3)
+                        .activation("tanh")
+                        .build())
                 .build();
 
         MultiLayerNetwork network3 = new MultiLayerNetwork(conf);
@@ -131,12 +132,11 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(5).weightInit(WeightInit.XAVIER)
                 .seed(123)
-                .activationFunction("tanh")
                 .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
                 .list(3)
-                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
-                .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).build())
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation("tanh").build())
+                .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).activation("tanh").build())
                 .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation("softmax")
                         .nIn(2).nOut(3).build())
@@ -173,7 +173,7 @@ public class MultiLayerTest {
                 .iterations(100)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
-                .activationFunction("tanh").momentum(0.9)
+                .momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .constrainGradientToUnitNorm(true)
                 .k(1)
@@ -184,9 +184,9 @@ public class MultiLayerTest {
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .nIn(4).nOut(3).list(2)
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(4).nOut(3)
-                        .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3).activation("softmax").build())
+                        .nIn(4).nOut(3).activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3).activation("softmax").build())
                .build();
 
 

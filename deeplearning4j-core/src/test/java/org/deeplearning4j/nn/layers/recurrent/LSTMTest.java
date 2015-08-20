@@ -42,8 +42,10 @@ public class LSTMTest {
 
     @Test
     public void testTraffic() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().activationFunction("tanh")
-                .layer(new org.deeplearning4j.nn.conf.layers.LSTM()).optimizationAlgo(OptimizationAlgorithm.LBFGS)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(new org.deeplearning4j.nn.conf.layers.LSTM.Builder()
+                        .activation("tanh").build())
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .nIn(4).nOut(4).build();
         LSTM l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(10)),0);
