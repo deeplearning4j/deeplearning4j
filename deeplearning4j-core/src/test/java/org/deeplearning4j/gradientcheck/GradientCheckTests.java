@@ -197,9 +197,9 @@ public class GradientCheckTests {
     	//Basic test of GRU RNN
     	Nd4j.getRandom().setSeed(12345L);
     	
-    	int timeSeriesLength = 1;
-    	int nIn = 5;
-    	int gruLayerSize = 7;
+    	int timeSeriesLength = 2;
+    	int nIn = 2;
+    	int gruLayerSize = 2;
     	int nOut = 3;
     	int miniBatchSize = 12;
     	
@@ -323,8 +323,8 @@ public class GradientCheckTests {
     	Nd4j.getRandom().setSeed(12345L);
     	
     	int timeSeriesLength = 1;
-    	int nIn = 1;
-    	int layerSize = 2;
+    	int nIn = 5;
+    	int layerSize = 7;
     	int nOut = 3;
     	int miniBatchSize = 11;
     	
