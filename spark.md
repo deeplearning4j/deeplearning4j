@@ -10,9 +10,10 @@ With Spark standalone, Deeplearning4j can run multi-threaded on your local machi
 
 ## Build the Examples
 
-Now `git clone` the Deeplearning4j Spark ML examples repo from Github:
+Now `git clone` the Deeplearning4j Spark ML examples repo from Github and `cd` in:
 
        git clone https://github.com/deeplearning4j/dl4j-spark-ml-examples
+       cd dl4j-spark-ml-examples
 
 Compile the project with Maven using whichever Spark and Hadoop versions you need. 
 
