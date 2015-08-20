@@ -63,7 +63,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
     private static final Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
-    private static final long serialVersionUID = -5029161847383716484L;
     //the hidden neuralNets
     protected Layer[] layers;
 
@@ -160,19 +159,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if (i == 0) {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
-                    setInput(next.getFeatureMatrix());
+                    if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
+                        layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(next.getFeatureMatrix());
+                    else
+                        layerInput = next.getFeatureMatrix();
+                    setInput(layerInput);
                       /*During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
-                    if (this.getInput() == null || this.getLayers() == null) {
-                        setInput(input);
-                        initializeLayers(input);
-                    } else
-                        setInput(input);
-                    getLayers()[i].fit(this.input);
-                    log.info("Training on layer " + (i + 1) + " with " + input.slices() + " examples");
-
+                    if (this.getInput() == null || this.getLayers() == null)
+                        initializeLayers(input());
+                    getLayers()[i].fit(input());
+                    log.info("Training on layer " + (i + 1) + " with " + input().slices() + " examples");
                 }
 
-                iter.reset();
             } else {
                 while (iter.hasNext()) {
                     DataSet next = iter.next();
@@ -184,11 +182,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     getLayers()[i].fit(layerInput);
 
                 }
-
-                iter.reset();
-
-
             }
+            iter.reset();
         }
     }
 
@@ -213,7 +208,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         for (int i = 0; i < getnLayers() - 1; i++) {
             if (i == 0)
-                layerInput = input;
+                if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
+                    layerInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input);
+                else
+                    layerInput = input;
             else
                 layerInput = activationFromPrevLayer(i - 1, layerInput,true);
             log.info("Training on layer " + (i + 1) + " with " + layerInput.slices() + " examples");

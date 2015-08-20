@@ -78,6 +78,26 @@ public class OutputLayerTest {
 
 
     }
+    @Test
+    public void test3() {
+
+        org.nd4j.linalg.dataset.api.iterator.DataSetIterator iter = new IrisDataSetIterator(150,150);
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(3)
+                .miniBatch(false).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer
+                        .Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(4).nOut(3)
+                        .activation("softmax")
+                        .weightInit(WeightInit.XAVIER).build()).build();
+        org.deeplearning4j.nn.layers.OutputLayer layer = LayerFactories.getFactory(conf).create(conf);
+        DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
+        layer.setListeners(new ScoreIterationListener(1));
+
+        layer.fit(next);
+
+
+    }
 
     @Test
     public void testWeightsDifferent() {
