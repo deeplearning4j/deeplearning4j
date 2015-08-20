@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.layers;
+package org.deeplearning4j.nn.conf.layers;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
