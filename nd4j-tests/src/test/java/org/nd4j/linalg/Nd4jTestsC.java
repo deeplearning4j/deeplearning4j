@@ -197,10 +197,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testReadWriteDouble() throws Exception {
-        INDArray write = Nd4j.linspace(1,4,4);
+        INDArray write = Nd4j.linspace(1, 4, 4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        Nd4j.write(write,dos);
+        Nd4j.write(write, dos);
 
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         DataInputStream dis = new DataInputStream(bis);
@@ -228,9 +228,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray column = matrix.getColumn(1);
         INDArray ret = first.broadcast(3, 4);
         INDArray testRet = Nd4j.create(new double[][]{
-                {0,0,0,0},
-                {1,1,1,1},
-                {2,2,2,2}
+                {0, 0, 0, 0},
+                {1, 1, 1, 1},
+                {2, 2, 2, 2}
         });
         assertEquals(testRet, ret);
         INDArray r = Nd4j.arange(0, 4).reshape(1, 4);
@@ -352,9 +352,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray matrix = Nd4j.linspace(1,6,6).reshape(2,3);
         INDArray row = Nd4j.linspace(1, 3, 3);
         INDArray test = matrix.subRowVector(row);
-        INDArray assertion = Nd4j.create(new double[][] {
-                {0,0,0}
-                ,{3,3,3}
+        INDArray assertion = Nd4j.create(new double[][]{
+                {0, 0, 0}
+                , {3, 3, 3}
         });
         assertEquals(assertion,test);
 
@@ -362,8 +362,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray offsetTest = threeByThree.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all());
         assertEquals(2, offsetTest.rows());
         INDArray offsetAssertion = Nd4j.create(new double[][]{
-                {3,3,3}
-                ,{6,6,6}
+                {3, 3, 3}
+                , {6, 6, 6}
         });
         INDArray offsetSub = offsetTest.subRowVector(row);
         assertEquals(offsetAssertion, offsetSub);
@@ -841,7 +841,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testPutSlice() {
-        INDArray n = Nd4j.linspace(1,27,27).reshape(3,3,3);
+        INDArray n = Nd4j.linspace(1,27,27).reshape(3, 3, 3);
         INDArray newSlice = Nd4j.zeros(3, 3);
         n.putSlice(0, newSlice);
         assertEquals(newSlice, n.slice(0));
@@ -955,7 +955,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
 
         for( int i = 0; i < 7; i++ ){
-            INDArray slice = array2D.slice(i,0);
+            INDArray slice = array2D.slice(i, 0);
             assertTrue(Arrays.equals(slice.shape(), new int[]{5, 1}));
         }
     }
@@ -973,7 +973,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 {  4796 ,  5162},
                 {  4928 , 5306}
         });
-        assertEquals(assertion,result);
+        assertEquals(assertion, result);
 
         INDArray w = Nd4j.valueArrayOf(new int[]{2, 1, 2, 2}, 0.5);
         INDArray col = Nd4j.create(new double[]{
@@ -1005,7 +1005,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMMulMatrixTimesColVector(){
         //[1 1 1 1 1; 10 10 10 10 10; 100 100 100 100 100] x [1; 1; 1; 1; 1] = [5; 50; 500]
-        INDArray matrix = Nd4j.ones(3,5);
+        INDArray matrix = Nd4j.ones(3, 5);
         matrix.getRow(1).muli(10);
         matrix.getRow(2).muli(100);
 
@@ -1035,10 +1035,25 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray outCF = firstC.mmul(secondF);
         assertArrayEquals(outCF.shape(),new int[]{5,3});
-        assertEquals(outCF,Nd4j.ones(5, 3).muli(2));
+        assertEquals(outCF, Nd4j.ones(5, 3).muli(2));
     }
 
 
+    @Test
+    public void testMmulGet(){
+        Nd4j.getRandom().setSeed(12345L);
+        INDArray elevenByTwo = Nd4j.rand(new int[]{11,2});
+        INDArray twoByEight = Nd4j.rand(new int[]{2,8});
+
+        INDArray view = twoByEight.get(NDArrayIndex.all(),NDArrayIndex.interval(0,2));
+        INDArray viewCopy = view.dup();
+        assertTrue(view.equals(viewCopy));
+
+        INDArray mmul1 = elevenByTwo.mmul(view);
+        INDArray mmul2 = elevenByTwo.mmul(viewCopy);
+
+        assertTrue(mmul1.equals(mmul2));
+    }
     @Test
     public void testMMulRowColVectorMixedOrder(){
         INDArray colVec = Nd4j.ones(5,1);

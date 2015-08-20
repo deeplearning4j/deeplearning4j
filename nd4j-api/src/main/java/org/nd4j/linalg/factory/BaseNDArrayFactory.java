@@ -20,10 +20,7 @@
 package org.nd4j.linalg.factory;
 
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
@@ -233,39 +230,29 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray toFlattened(Collection<INDArray> matrices) {
-        int length = 0;
-        for (INDArray m : matrices)
-            length += m.length();
-
-        INDArray ret = Nd4j.create(length);
-        int count = 0;
-        for(INDArray arr : matrices) {
-            INDArray linear = arr.ravel();
-            for(int j = 0; j < linear.length(); j++)
-                ret.putScalar(count++,linear.getDouble(j));
+        INDArray[] flattenedView = new INDArray[matrices.size()];
+        List<INDArray> list = matrices instanceof List ? (List<INDArray>) matrices : new ArrayList<>(matrices);
+        for(int i = 0; i < matrices.size(); i++) {
+            flattenedView[i] = list.get(i).reshape(1,list.get(i).length());
         }
 
-        return ret;
-
+        return concat(0,flattenedView);
     }
 
     @Override
     public INDArray toFlattened(int length, Iterator<? extends INDArray>... matrices) {
-        INDArray ret = Nd4j.create(length);
-        int linearIndex = 0;
+        List<INDArray> arr = new ArrayList<>();
+
 
         for (Iterator<? extends INDArray> iter1 : matrices) {
             while (iter1.hasNext()) {
                 INDArray d = iter1.next();
-                INDArray flattened = d.linearView();
-                for (int i = 0; i < d.length(); i++) {
-                    ret.putScalar(linearIndex++, flattened.getDouble(i));
-                }
+                arr.add(d.reshape(1,d.length()));
             }
 
         }
 
-        return ret;
+        return concat(0,arr.toArray(new INDArray[arr.size()]));
     }
 
     /**
@@ -299,20 +286,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     @Override
     public INDArray toFlattened(INDArray... matrices) {
-        int length = 0;
-        for (INDArray m : matrices)
-            length += m.length();
-        INDArray ret = Nd4j.create(1, length);
-        int linearIndex = 0;
-        for (INDArray d : matrices) {
-            if (!d.isVector())
-                d = Nd4j.create(d.data(), new int[]{1, d.length()}, d.offset());
-            for (int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++, d.getFloat(i));
-            }
+        INDArray[] flattenedView = new INDArray[matrices.length];
+        for(int i = 0; i < matrices.length; i++) {
+            flattenedView[i] = matrices[i].reshape(1,matrices[i].length());
         }
 
-        return ret;
+        return concat(0,flattenedView);
     }
 
     /**
