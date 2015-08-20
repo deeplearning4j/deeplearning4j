@@ -67,7 +67,7 @@ public abstract class Layer implements Serializable {
 
     public abstract static class Builder {
         protected String activationFunction = "sigmoid";
-        protected WeightInit weightInit;
+        protected WeightInit weightInit = WeightInit.VI;
         protected Distribution dist;
         protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
         protected Updater updater;

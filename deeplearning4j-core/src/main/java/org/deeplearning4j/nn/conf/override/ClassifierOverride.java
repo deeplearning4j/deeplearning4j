@@ -39,8 +39,7 @@ public class ClassifierOverride implements ConfOverride {
     }
     @Override
     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-        builder.weightInit(WeightInit.ZERO);
-        builder.layer(new OutputLayer.Builder().activation("softmax").build());
+        builder.layer(new OutputLayer.Builder().weightInit(WeightInit.ZERO).activation("softmax").build());
         builder.lossFunction(LossFunctions.LossFunction.MCXENT);
 
     }

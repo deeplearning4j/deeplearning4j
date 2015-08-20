@@ -105,7 +105,6 @@ public class ListenerTest {
     private static MultiLayerConfiguration getIrisSimpleConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3)
-                .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
 
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
@@ -116,7 +115,10 @@ public class ListenerTest {
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
 
-                .layer(new RBM.Builder().activation(activationFunction).build())
+                .layer(new RBM.Builder()
+                        .weightInit(WeightInit.DISTRIBUTION)
+                        .activation(activationFunction)
+                        .build())
                 .learningRate(0.1).useAdaGrad(false)
 
                 .regularization(false)
@@ -145,7 +147,6 @@ public class ListenerTest {
     private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
                 .nIn(4).nOut(3)
-                .weightInit(WeightInit.DISTRIBUTION)
                 .dist(new NormalDistribution(0, 0.1))
 
 
@@ -158,6 +159,7 @@ public class ListenerTest {
                 .corruptionLevel(0.0)
 
                 .layer(new RBM.Builder()
+                        .weightInit(WeightInit.DISTRIBUTION)
                         .activation(activationFunction)
                         .build())
                 .learningRate(0.1).useAdaGrad(false)

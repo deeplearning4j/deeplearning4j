@@ -44,11 +44,14 @@ public class RecursiveAutoEncoderTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .corruptionLevel(0.3).weightInit(WeightInit.VI)
+                .corruptionLevel(0.3)
                 .iterations(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .learningRate(1e-1f).nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder.Builder().nIn(784).nOut(784).build())
+                .layer(new org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder.Builder()
+                        .nIn(784).nOut(784)
+                        .weightInit(WeightInit.VI)
+                        .build())
                 .build();
 
         fetcher.fetch(10);

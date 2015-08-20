@@ -66,7 +66,7 @@ public class DefaultParamInitializer implements ParamInitializer {
         INDArray ret =  WeightInitUtil.initWeights(
                 conf.getNIn(),
                 conf.getNOut(),
-                conf.getWeightInit(),
+                conf.getLayer().getWeightInit(),
                 dist);
         ret.data().persist();
         return ret;
