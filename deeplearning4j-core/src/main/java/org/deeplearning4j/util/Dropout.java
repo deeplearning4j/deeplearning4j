@@ -18,7 +18,7 @@ public class Dropout {
      * @return the post applied drop connect
      */
     public static INDArray applyDropConnect(Layer layer,String variable) {
-        return layer.getParam(variable).mul(Nd4j.getDistributions().createBinomial(1,layer.conf().getDropOut()).sample(layer.getParam(variable).shape()));
+        return layer.getParam(variable).mul(Nd4j.getDistributions().createBinomial(1,layer.conf().getLayer().getDropOut()).sample(layer.getParam(variable).shape()));
     }
 
     /**

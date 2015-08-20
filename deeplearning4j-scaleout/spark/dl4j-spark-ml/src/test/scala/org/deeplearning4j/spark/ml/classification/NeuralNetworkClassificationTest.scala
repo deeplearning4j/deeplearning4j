@@ -31,13 +31,12 @@ class NeuralNetworkClassificationTest
       .momentum(0.9)
       .updater(Updater.ADAGRAD)
       .constrainGradientToUnitNorm(true)
-      .dropOut(0.5)
       .useDropConnect(true)
       .list(2)
       .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-        .nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("relu").build())
+        .nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("relu").dropOut(0.5).build())
       .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-        .nIn(3).nOut(3).weightInit(WeightInit.XAVIER).activation("softmax").build())
+        .nIn(3).nOut(3).weightInit(WeightInit.XAVIER).activation("softmax").dropOut(0.5).build())
       .build()
   }
 
