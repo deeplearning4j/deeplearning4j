@@ -472,7 +472,7 @@ public abstract class BaseLayer implements Layer {
     @Override
     public void fit(INDArray input) {
         if(input != null) {
-            this.input = input.dup();
+            setInput(input.dup());
             applyDropOutIfNecessary(this.input,true);
         }
         Solver solver = new Solver.Builder()
