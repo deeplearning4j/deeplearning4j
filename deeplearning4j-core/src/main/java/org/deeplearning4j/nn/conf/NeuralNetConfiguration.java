@@ -441,8 +441,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         try {
             String ret =  mapper.writeValueAsString(this);
-            return ret
-                    .replaceAll("\"activationFunction\",","");
+            return ret;
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -473,8 +472,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         try {
             String ret =  mapper.writeValueAsString(this);
-            return ret
-                    .replaceAll("\"activationFunction\",","");
+            return ret;
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
