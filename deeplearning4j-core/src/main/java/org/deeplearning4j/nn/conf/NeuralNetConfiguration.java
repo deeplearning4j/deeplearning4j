@@ -72,7 +72,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* L2 Regularization constant */
     protected double l2 = 0;
     protected boolean useRegularization = false;
-    protected Updater updater = Updater.ADAGRAD;
     private String customLossFunction;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
@@ -560,7 +559,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
-        private Updater updater = Updater.ADAGRAD;
         private boolean miniBatch = true;
 
         /**
@@ -587,17 +585,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             this.kernelSize = kernelSize;
             return this;
         }
-
-        /**
-         * The updater to use
-         * @param updater
-         * @return
-         */
-        public Builder updater(Updater updater) {
-            this.updater = updater;
-            return this;
-        }
-
+        
         /**
          * Ada delta coefficient
          * @param rho
@@ -861,7 +849,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.useDropConnect = useDropConnect;
             ret.miniBatch = miniBatch;
             ret.rho = rho;
-            ret.updater = updater;
 
             //override the properties from the layer
             ret = overrideFields(ret, layer);
