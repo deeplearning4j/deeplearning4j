@@ -404,7 +404,6 @@ public class BackPropMLPTest {
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
                 .learningRate(0.1)
-                .updater(Updater.SGD)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)
                 .l1(0.0)
@@ -419,12 +418,14 @@ public class BackPropMLPTest {
     		lb.layer(i, new DenseLayer.Builder()
                     .nIn(nIn).nOut(hiddenLayerSizes[i])
                     .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                    .updater(Updater.SGD)
                     .activation(activationFunction)
                     .build());
     	}
     	lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
     			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3)
                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                .updater(Updater.SGD)
                 .activation("softmax")
                 .build());
     	lb.pretrain(false).backprop(true);
