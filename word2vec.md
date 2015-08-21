@@ -142,7 +142,7 @@ That is, get rid of the `ClassPathResource` and feed the absolute path of your `
 
         SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
 
-In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that same directory. To that path, you'll add the file name and *voila*. Make sure you have one word per line. 
+In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that same directory. To that path, you'll add the file name and *voila*. 
 
 ### Tokenizing the Data
 
@@ -162,6 +162,8 @@ Word2vec needs to be fed words rather than whole sentences, so the next step is 
                 return base;
             }
         });
+
+That should give you one word per line. 
 
 ### Training the Model
 
