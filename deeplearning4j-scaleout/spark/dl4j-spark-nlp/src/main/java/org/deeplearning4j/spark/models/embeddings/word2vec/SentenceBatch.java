@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class SentenceBatch implements Function<Word2VecFuncCall,Word2VecChange> {
 
     private AtomicLong nextRandom = new AtomicLong(5);

@@ -21,15 +21,10 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
+
+import java.util.Collection;
 
 /**
  * @author jeffreytang
@@ -46,11 +41,13 @@ public class Word2VecTest {
 
         // Path of data
         String dataPath = new ClassPathResource("raw_sentences.txt").getFile().getAbsolutePath();
+//        String dataPath = new ClassPathResource("spark_word2vec_test.txt").getFile().getAbsolutePath();
 
         // Read in data
         JavaRDD<String> corpus = sc.textFile(dataPath);
 
-        Word2Vec word2Vec = new Word2Vec().setNumWords(1).setnGrams(1)
+        Word2Vec word2Vec = new Word2Vec()
+                .setnGrams(1)
                 .setTokenizer("org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory")
                 .setTokenPreprocessor("org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor")
                 .setRemoveStop(false)
@@ -60,20 +57,14 @@ public class Word2VecTest {
                 .setVectorLength(100)
                 .setWindow(5)
                 .setAlpha(0.025).setMinAlpha(0.0001)
-                .setIterations(1);
+                .setIterations(1)
+                .setNumWords(5);
 
-        Pair<VocabCache, WeightLookupTable> table = word2Vec.train(corpus);
-        WeightLookupTable second = table.getSecond();
-        WordVectors vectors = WordVectorSerializer.fromPair(new Pair<>((InMemoryLookupTable) table.getSecond(),
-                table.getFirst()));
-        WordVectorSerializer.writeWordVectors((InMemoryLookupTable) table.getSecond(),
-                (InMemoryLookupCache) table.getFirst(), "spark_wordvectors.txt");
+        word2Vec.train(corpus);
+        Collection<String> words = word2Vec.wordsNearest("day", 10);
+        System.out.println(words);
 
-
-//        Collection<String> words = vectors.wordsNearest("day", 10);
-//        System.out.println(Arrays.toString(words.toArray()));
-//
-//        assertTrue(words.contains("week"));
+        sc.stop();
     }
 
 
