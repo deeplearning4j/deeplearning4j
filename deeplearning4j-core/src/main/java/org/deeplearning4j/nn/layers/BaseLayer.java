@@ -45,7 +45,7 @@ import java.util.*;
  * and activation function
  * @author Adam Gibson
  */
-public abstract class BaseLayer implements Layer {
+public abstract class BaseLayer<LayerConfT> implements Layer {
 
     protected INDArray input;
     protected Map<String,INDArray> params;
@@ -66,6 +66,10 @@ public abstract class BaseLayer implements Layer {
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
         this.input = input;
         this.conf = conf;
+    }
+
+    protected LayerConfT layerConf() {
+        return (LayerConfT) this.conf.getLayer();
     }
 
     public INDArray getInput() {

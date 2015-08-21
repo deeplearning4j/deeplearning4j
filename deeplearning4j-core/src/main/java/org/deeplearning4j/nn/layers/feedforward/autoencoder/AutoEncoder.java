@@ -38,7 +38,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * @author Adam Gibson
  *
  */
-public class AutoEncoder extends BasePretrainNetwork  {
+public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder>  {
 
     private static final long serialVersionUID = -6445530486350763837L;
 
