@@ -1078,6 +1078,31 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testMMulFTimesC() {
+        int nRows = 3;
+        int nCols = 3;
+        java.util.Random r = new java.util.Random(12345);
+
+        INDArray arrC = Nd4j.create(new int[]{nRows,nCols},'c');
+        INDArray arrF = Nd4j.create(new int[]{nRows,nCols},'f');
+        INDArray arrC2 = Nd4j.create(new int[]{nRows,nCols},'c');
+        for( int i = 0; i< nRows; i++ ){
+            for( int j = 0; j< nCols; j++ ){
+                double rv = r.nextDouble();
+                arrC.putScalar(new int[]{i,j}, rv);
+                arrF.putScalar(new int[]{i,j}, rv);
+                arrC2.putScalar(new int[]{i,j}, r.nextDouble());
+            }
+        }
+        assertTrue(arrF.equals(arrC));
+
+        INDArray fTimesC = arrF.mmul(arrC2);
+        INDArray cTimesC = arrC.mmul(arrC2);
+
+        assertEquals(fTimesC,cTimesC);
+    }
+
+    @Test
     public void testMMulColVectorRowVectorMixedOrder(){
         INDArray colVec = Nd4j.ones(5,1);
         INDArray rowVec = Nd4j.ones(1,5);

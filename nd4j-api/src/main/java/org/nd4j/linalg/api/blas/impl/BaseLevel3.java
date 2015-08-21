@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDArrayFactory;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Base class for level 3 functions, abstract headers pulled from:
@@ -67,6 +68,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     , 0
                     , C
                     , params.getLdc());
+
+        //when order clashes reverse stride
+        if(A.ordering() != B.ordering() && A.ordering() == 'f' && B.ordering() == 'c') {
+            C.setStride(ArrayUtil.reverseCopy(C.stride()));
+        }
 
     }
 
