@@ -89,7 +89,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 int outH = epsilon.size(2);
                 int outW = epsilon.size(3);
                 //compute backwards kernel based on rearranging the given error
-                retE = Nd4j.zeros(n, c, conf.getKernelSize()[0], conf.getKernelSize()[1], outH, outW);
+                retE = Nd4j.zeros(n, c, layerConf().getKernelSize()[0], layerConf().getKernelSize()[1], outH, outW);
                 reshaped = retE.reshape(n,c,-1,outH,outW);
                 reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
@@ -101,7 +101,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     INDArray sliceToGetFrom = reshapeEpsilon.get(NDArrayIndex.point(idx));
                     sliceToGetFrom.putScalar(i,epsGet);
                 }
-                reshapeEpsilon = Convolution.col2im(retE,conf.getStride(),conf.getPadding(),inputHeight, inputWidth);
+                reshapeEpsilon = Convolution.col2im(retE,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:
                 //compute reverse average error
@@ -110,9 +110,9 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                         , NDArrayIndex.all()
                         , NDArrayIndex.newAxis()
                         , NDArrayIndex.newAxis());
-                reshapeEpsilon = Nd4j.tile(retE,1,1,conf.getKernelSize()[0],conf.getKernelSize()[1],1,1);
-                reshapeEpsilon = Convolution.col2im(reshapeEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
-                reshapeEpsilon.divi(ArrayUtil.prod(conf.getKernelSize()));
+                reshapeEpsilon = Nd4j.tile(retE,1,1,layerConf().getKernelSize()[0],layerConf().getKernelSize()[1],1,1);
+                reshapeEpsilon = Convolution.col2im(reshapeEpsilon, layerConf().getStride(), layerConf().getPadding(), inputHeight, inputWidth);
+                reshapeEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
 
                 return new Pair<>(retGradient, reshapeEpsilon);
             case NONE:
@@ -131,7 +131,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             this.dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         }
 
-        pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
+        pooled = Convolution.im2col(input,layerConf().getKernelSize(),layerConf().getStride(),layerConf().getPadding());
         switch(layerConf().getPoolingType()) {
             case AVG:
                 return pooled.mean(2,3);

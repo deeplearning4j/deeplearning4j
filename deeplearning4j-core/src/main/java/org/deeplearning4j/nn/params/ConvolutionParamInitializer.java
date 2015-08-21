@@ -42,7 +42,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        if(conf.getKernelSize().length < 2)
+        if(((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length < 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
         params.put(BIAS_KEY,createBias(conf));
@@ -77,7 +77,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
         Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
         return WeightInitUtil.initWeights(
-                Ints.concat(new int[] {conf.getNOut(), conf.getNIn()}, conf.getKernelSize()),
+                Ints.concat(new int[] {conf.getNOut(), conf.getNIn()}, ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize()),
                 conf.getLayer().getWeightInit(),
                 dist);
     }
