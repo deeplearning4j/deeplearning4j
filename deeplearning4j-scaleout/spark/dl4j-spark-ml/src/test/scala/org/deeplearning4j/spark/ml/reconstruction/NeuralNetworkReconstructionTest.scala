@@ -24,7 +24,6 @@ class NeuralNetworkReconstructionTest
     new NeuralNetConfiguration.Builder()
       .seed(11L)
       .iterations(100)
-      .k(1)
       .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
       .learningRate(1e-3f)
       .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)

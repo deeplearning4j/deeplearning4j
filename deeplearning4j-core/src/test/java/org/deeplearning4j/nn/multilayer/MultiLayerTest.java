@@ -178,7 +178,6 @@ public class MultiLayerTest {
                 .momentum(0.9)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .constrainGradientToUnitNorm(true)
-                .k(1)
                 .regularization(true)
                 .l2(2e-4)
                 .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)

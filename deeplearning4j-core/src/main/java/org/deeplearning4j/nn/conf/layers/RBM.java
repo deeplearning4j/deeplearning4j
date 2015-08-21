@@ -74,7 +74,7 @@ public class RBM extends BasePretrainNetwork {
     public static class Builder extends FeedForwardLayer.Builder {
         private HiddenUnit hiddenUnit= RBM.HiddenUnit.BINARY;
         private VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
-        private int k = Integer.MIN_VALUE;
+        private int k = 1;
 
         public Builder(HiddenUnit hiddenUnit, VisibleUnit visibleUnit) {
             this.hiddenUnit = hiddenUnit;
