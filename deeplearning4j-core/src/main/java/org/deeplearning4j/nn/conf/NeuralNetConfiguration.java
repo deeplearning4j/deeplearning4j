@@ -113,9 +113,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     protected boolean miniBatch = true;
 
-
-    protected Convolution.Type convolutionType = Convolution.Type.VALID;
-
     public NeuralNetConfiguration(boolean useAdaGrad,
                                   double lr,
                                   int numIterations,
@@ -135,11 +132,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int batchSize,
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
-                                  Layer layer, Convolution.Type convolutionType,
+                                  Layer layer,
                                   double l1,String customLossFunction) {
         this.minimize = minimize;
         this.customLossFunction = customLossFunction;
-        this.convolutionType = convolutionType;
         this.maxNumLineSearchIterations = maxNumLineSearchIterations;
         this.l1 = l1;
         this.batchSize = batchSize;
@@ -505,7 +501,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int batchSize = 100;
         private int maxNumLineSearchIterations = 5;
         private boolean minimize = false;
-        private Convolution.Type convolutionType = Convolution.Type.VALID;
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
@@ -563,11 +558,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder customLossFunction(String customLossFunction) {
             this.customLossFunction = customLossFunction;
-            return this;
-        }
-
-        public Builder convolutionType(Convolution.Type convolutionType) {
-            this.convolutionType = convolutionType;
             return this;
         }
 
@@ -724,7 +714,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     resetAdaGradIterations,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
                     nIn,  nOut, weightShape, timeSeriesLength,
-                    batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType,
+                    batchSize, maxNumLineSearchIterations, minimize, layer,
                     l1,customLossFunction);
 
             ret.useAdaGrad = this.useAdaGrad;
