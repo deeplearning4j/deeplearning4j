@@ -119,7 +119,6 @@ public class TestOptimizers {
                 .constrainGradientToUnitNorm(false)
                 .regularization(false)
                 .learningRate(0.1)
-                .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
                 .list(2)
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
