@@ -3,6 +3,7 @@ package org.deeplearning4j.gradientcheck;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -21,6 +22,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -324,14 +326,14 @@ public class GradientCheckTests {
     	//Basic test of GravesLSTM layer
     	Nd4j.getRandom().setSeed(12345L);
     	
-    	int timeSeriesLength = 1;
+    	int timeSeriesLength = 2;
     	int nIn = 2;
     	int layerSize = 2;
-    	int nOut = 3;
-    	int miniBatchSize = 11;
+    	int nOut = 2;
+    	int miniBatchSize = 1;
     	
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,5.0))
+	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0))
 	        .regularization(false)
 	        .updater(Updater.NONE)
 	        .seed(12345L)
@@ -347,11 +349,10 @@ public class GradientCheckTests {
     	
     	Random r = new Random(12345L);
     	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
-    	int x=0;
     	for( int i=0; i<miniBatchSize; i++ ){
     		for( int j=0; j<nIn; j++ ){
     			for( int k=0; k<timeSeriesLength; k++ ){
-    				input.putScalar(x++, r.nextDouble()-0.5);
+    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
     			}
     		}
     	}
@@ -387,7 +388,8 @@ public class GradientCheckTests {
     
     public static double[] flatten(INDArray in){
     	double[] d = new double[in.length()];
-    	for( int i=0; i<d.length; i++ ) d[i] = in.getDouble(i);
+    	Iterator<int[]> iter = new NdIndexIterator(in.shape());
+    	for( int i=0; i<d.length; i++ ) d[i] = in.getDouble(iter.next());
     	return d;
     }
     

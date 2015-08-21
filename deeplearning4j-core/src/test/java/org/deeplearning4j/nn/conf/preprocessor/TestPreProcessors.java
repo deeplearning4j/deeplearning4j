@@ -37,7 +37,7 @@ public class TestPreProcessors {
 			assertArrayEquals(row.shape(),new int[]{1,hiddenLayerSize});
 			int origExampleNum = i / timeSeriesLength;
 			int time = i % timeSeriesLength;
-			INDArray expectedRow = activations3d.slice(time, 2).getRow(origExampleNum);
+			INDArray expectedRow = activations3d.tensorAlongDimension(time,1,0).getRow(origExampleNum);
 			assertTrue(row.equals(expectedRow));
 		}
 		
@@ -68,7 +68,7 @@ public class TestPreProcessors {
 			int example = i / timeSeriesLength;
 			
 			INDArray row2d = activations2d.getRow(i);
-			INDArray row3d = activations3d.slice(time, 2).getRow(example);
+			INDArray row3d = activations3d.tensorAlongDimension(time,1,0).getRow(example);
 			
 			assertTrue(row2d.equals(row3d));
 		}
