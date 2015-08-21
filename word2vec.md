@@ -359,7 +359,8 @@ While words in all languages may be converted into vectors with Word2vec, and th
 
 ### Resources
 
-* [How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)
+* [Quora: How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)
+* [Quora: What Are Some Interesting Word2Vec Results?](http://www.quora.com/Word2vec/What-are-some-interesting-Word2Vec-results/answer/Omer-Levy)
 * [Word2Vec: an introduction](http://www.folgertkarsdorp.nl/word2vec-an-introduction/); Folgert Karsdorp
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
