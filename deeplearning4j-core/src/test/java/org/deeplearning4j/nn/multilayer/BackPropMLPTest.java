@@ -402,7 +402,6 @@ public class BackPropMLPTest {
                 .iterations(1)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
-                .corruptionLevel(0.0)
                 .learningRate(0.1)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)

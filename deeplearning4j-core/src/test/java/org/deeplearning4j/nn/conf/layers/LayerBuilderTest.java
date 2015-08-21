@@ -117,7 +117,7 @@ public class LayerBuilderTest {
 
     @Test
     public void testAutoEncoder() throws Exception {
-        AutoEncoder enc = new AutoEncoder.Builder(corruptionLevel).sparsity(sparsity).build();
+        AutoEncoder enc = new AutoEncoder.Builder().corruptionLevel(corruptionLevel).sparsity(sparsity).build();
 
         checkSerialization(enc);
 

@@ -117,7 +117,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     public void computeGradientAndScore() {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
 
-        double corruptionLevel = conf.getCorruptionLevel();
+        double corruptionLevel = layerConf().getCorruptionLevel();
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
         setInput(corruptedX);

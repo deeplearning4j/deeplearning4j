@@ -125,7 +125,6 @@ public class ListenerTest {
                 .iterations(iterations)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
-                .corruptionLevel(0.0)
                 .learningRate(0.1)
 
                 .regularization(false)
@@ -162,7 +161,6 @@ public class ListenerTest {
                 .iterations(iterations)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
-                .corruptionLevel(0.0)
 
                 .learningRate(0.1)
 

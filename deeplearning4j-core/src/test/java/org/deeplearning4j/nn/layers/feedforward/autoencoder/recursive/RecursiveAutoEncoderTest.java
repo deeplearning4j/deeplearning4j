@@ -44,7 +44,6 @@ public class RecursiveAutoEncoderTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .corruptionLevel(0.3)
                 .iterations(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .learningRate(1e-1f).nIn(784).nOut(600)
