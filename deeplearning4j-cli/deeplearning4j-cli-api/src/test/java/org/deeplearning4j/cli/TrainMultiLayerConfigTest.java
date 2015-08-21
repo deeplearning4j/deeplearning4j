@@ -51,7 +51,7 @@ public class TrainMultiLayerConfigTest {
                 .nIn(4).nOut(3)
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .iterations(100)
-                .k(1).batchSize(10)
+                .batchSize(10)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).momentum(0.9).regularization(true).l2(2e-4)
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS).constrainGradientToUnitNorm(true)
