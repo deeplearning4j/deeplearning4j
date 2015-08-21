@@ -121,8 +121,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
 
     protected Convolution.Type convolutionType = Convolution.Type.VALID;
-    protected SubsamplingLayer.PoolingType poolingType = SubsamplingLayer.PoolingType.MAX;
-
 
     public NeuralNetConfiguration(boolean useAdaGrad,
                                   double lr,
@@ -147,12 +145,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
                                   Layer layer, Convolution.Type convolutionType,
-                                  SubsamplingLayer.PoolingType poolingType,
                                   double l1,String customLossFunction) {
         this.minimize = minimize;
         this.customLossFunction = customLossFunction;
         this.convolutionType = convolutionType;
-        this.poolingType = poolingType;
         this.maxNumLineSearchIterations = maxNumLineSearchIterations;
         this.l1 = l1;
         this.batchSize = batchSize;
@@ -526,7 +522,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int maxNumLineSearchIterations = 5;
         private boolean minimize = false;
         private Convolution.Type convolutionType = Convolution.Type.VALID;
-        private SubsamplingLayer.PoolingType poolingType = SubsamplingLayer.PoolingType.MAX;
         private double l1 = 0.0;
         private boolean useDropConnect = false;
         private double rho;
@@ -603,11 +598,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder convolutionType(Convolution.Type convolutionType) {
             this.convolutionType = convolutionType;
-            return this;
-        }
-
-        public Builder poolingType(SubsamplingLayer.PoolingType poolingType) {
-            this.poolingType = poolingType;
             return this;
         }
 
@@ -778,7 +768,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     resetAdaGradIterations,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
                     nIn,  nOut, weightShape, timeSeriesLength,  kernelSize, stride,padding
-                    ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,
+                    ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType,
                     l1,customLossFunction);
 
             ret.padding = this.padding;

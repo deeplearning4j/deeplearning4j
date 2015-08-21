@@ -82,7 +82,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapeEpsilon, retE, reshaped;
         Gradient retGradient = new DefaultGradient();
 
-        switch(conf.getPoolingType()) {
+        switch(layerConf().getPoolingType()) {
             case MAX:
                 int n = epsilon.size(0);
                 int c = epsilon.size(1);
@@ -132,7 +132,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
 
         pooled = Convolution.im2col(input,conf.getKernelSize(),conf.getStride(),conf.getPadding());
-        switch(conf.getPoolingType()) {
+        switch(layerConf().getPoolingType()) {
             case AVG:
                 return pooled.mean(2,3);
             case MAX:
