@@ -82,13 +82,14 @@ public class LayerBuilderTest {
 
     @Test
     public void testRBM() throws Exception {
-        RBM rbm = new RBM.Builder(hidden, visible, k).build();
+        RBM rbm = new RBM.Builder(hidden, visible).sparsity(sparsity).k(k).build();
 
         checkSerialization(rbm);
 
         assertEquals(hidden, rbm.getHiddenUnit());
         assertEquals(visible, rbm.getVisibleUnit());
         assertEquals(k, rbm.getK());
+        assertEquals(sparsity, rbm.getSparsity(), DELTA);
     }
 
     @Test
