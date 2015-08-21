@@ -2,6 +2,8 @@ package org.deeplearning4j.gradientcheck;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -197,14 +199,14 @@ public class GradientCheckTests {
     	//Basic test of GRU RNN
     	Nd4j.getRandom().setSeed(12345L);
     	
-    	int timeSeriesLength = 2;
-    	int nIn = 2;
-    	int gruLayerSize = 2;
+    	int timeSeriesLength = 1;
+    	int nIn = 5;
+    	int gruLayerSize = 7;
     	int nOut = 3;
     	int miniBatchSize = 12;
     	
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
+	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0))
 	        .regularization(false)
 	        .updater(Updater.NONE)
 	        .seed(12345L)
@@ -323,13 +325,13 @@ public class GradientCheckTests {
     	Nd4j.getRandom().setSeed(12345L);
     	
     	int timeSeriesLength = 1;
-    	int nIn = 5;
-    	int layerSize = 7;
+    	int nIn = 2;
+    	int layerSize = 2;
     	int nOut = 3;
     	int miniBatchSize = 11;
     	
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
+	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,5.0))
 	        .regularization(false)
 	        .updater(Updater.NONE)
 	        .seed(12345L)
@@ -345,10 +347,11 @@ public class GradientCheckTests {
     	
     	Random r = new Random(12345L);
     	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	int x=0;
     	for( int i=0; i<miniBatchSize; i++ ){
     		for( int j=0; j<nIn; j++ ){
     			for( int k=0; k<timeSeriesLength; k++ ){
-    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    				input.putScalar(x++, r.nextDouble()-0.5);
     			}
     		}
     	}
@@ -363,10 +366,29 @@ public class GradientCheckTests {
     		for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
     	}
     	
+    	System.out.println("INPUT");
+    	System.out.println(Arrays.toString(flatten(input)));
+    	
+    	System.out.println("Activations: ");
+//    	System.out.println(Arrays.toString(mln.params().data().asDouble()));
+    	List<INDArray> activations = mln.feedForward(input);
+    	INDArray in = activations.get(0);
+    	System.out.println(Arrays.toString(flatten(in)));
+    	INDArray l0 = activations.get(1);
+    	System.out.println(Arrays.toString(flatten(l0)));
+    	INDArray l1 = activations.get(2);
+    	System.out.println(Arrays.toString(flatten(l1)));
+    	
     	boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                 PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, true);
 
         assertTrue(gradOK);
+    }
+    
+    public static double[] flatten(INDArray in){
+    	double[] d = new double[in.length()];
+    	for( int i=0; i<d.length; i++ ) d[i] = in.getDouble(i);
+    	return d;
     }
     
     @Test
