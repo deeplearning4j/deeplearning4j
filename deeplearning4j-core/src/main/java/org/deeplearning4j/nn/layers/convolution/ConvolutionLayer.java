@@ -42,7 +42,7 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
-public class ConvolutionLayer extends BaseLayer {
+public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
     protected INDArray col; // vectorized input
 
     public ConvolutionLayer(NeuralNetConfiguration conf) {

@@ -45,7 +45,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class SubsamplingLayer extends BaseLayer {
+public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
     private INDArray maxIndexes;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {

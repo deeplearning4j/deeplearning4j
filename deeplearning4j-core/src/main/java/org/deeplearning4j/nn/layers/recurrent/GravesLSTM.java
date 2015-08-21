@@ -45,7 +45,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  *
  * @author Alex Black
  */
-public class GravesLSTM extends BaseLayer {
+public class GravesLSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
 
 	public GravesLSTM(NeuralNetConfiguration conf) {
 		super(conf);

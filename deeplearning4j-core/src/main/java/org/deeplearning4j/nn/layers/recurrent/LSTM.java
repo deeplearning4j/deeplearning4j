@@ -52,7 +52,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.tanh;
  *
  * @author Adam Gibson
  */
-public class LSTM extends BaseLayer {
+public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     //recurrent weights (iFogZ = iFog & iFogA = iFogF & memCellActivations = c & outputActivations = hOut)
     private INDArray iFogZ, iFogA, memCellActivations, hIn, outputActivations;
     // update values for drop connect

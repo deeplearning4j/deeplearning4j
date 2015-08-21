@@ -35,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Adam Gibson
  *
  */
-public abstract class BasePretrainNetwork extends BaseLayer {
+public abstract class BasePretrainNetwork<LayerConfT> extends BaseLayer<LayerConfT> {
 
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
