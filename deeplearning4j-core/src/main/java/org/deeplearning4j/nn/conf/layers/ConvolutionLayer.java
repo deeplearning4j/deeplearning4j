@@ -50,7 +50,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.stride = stride;
         }
 
-        public Builder(int[] kernelSize) {
+        public Builder(int...kernelSize) {
             this.kernelSize = kernelSize;
         }
 
