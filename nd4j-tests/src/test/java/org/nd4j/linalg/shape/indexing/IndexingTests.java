@@ -1,5 +1,6 @@
 package org.nd4j.linalg.shape.indexing;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,6 +52,16 @@ public class IndexingTests extends BaseNd4jTest  {
 
 
 
+    }
+
+    @Test
+    public void testShape(){
+        INDArray ndarray = Nd4j.create(new float[][]{{1f,2f},{3f,4f}});
+        INDArray subarray = ndarray.get(NDArrayIndex.point(0),NDArrayIndex.all());
+        assertTrue(subarray.isRowVector());
+        int[] shape = subarray.shape();
+        assertEquals(shape[0],1);
+        assertEquals(shape[0],2);
     }
 
     @Test
