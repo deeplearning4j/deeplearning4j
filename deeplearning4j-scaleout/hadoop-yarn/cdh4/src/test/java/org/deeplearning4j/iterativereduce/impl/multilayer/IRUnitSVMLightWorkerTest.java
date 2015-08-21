@@ -33,8 +33,8 @@ public class IRUnitSVMLightWorkerTest {
 	@Test
 	public void createSynthJSONConf() {
 		
-		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().nIn(4).nOut(3)
-				 .layer(new RBM())
+		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				 .layer(new RBM.Builder().nIn(4).nOut(3).build())
          .list(3).hiddenLayerSizes(new int[]{2,2}).build();
 		 String json = conf.toJson();
 		 

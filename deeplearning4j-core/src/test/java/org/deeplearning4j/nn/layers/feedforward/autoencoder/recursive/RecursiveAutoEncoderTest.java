@@ -46,7 +46,7 @@ public class RecursiveAutoEncoderTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .iterations(10)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600)
+                .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder.Builder()
                         .nIn(784).nOut(784)
                         .weightInit(WeightInit.VI)

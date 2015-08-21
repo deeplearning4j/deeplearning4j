@@ -92,12 +92,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
-    //feed forward nets
-    protected int nIn,nOut;
 
     protected boolean useDropConnect = false;
-
-    private int[] weightShape;
 
     // Graves LSTM & RNN
     private int timeSeriesLength = 1;
@@ -125,9 +121,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   LossFunctions.LossFunction lossFunction,
                                   boolean constrainGradientToUnitNorm,
                                   long seed,
-                                  int nIn,
-                                  int nOut,
-                                  int[] weightShape,
                                   int timeSeriesLength,
                                   int batchSize,
                                   int maxNumLineSearchIterations,
@@ -152,12 +145,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.lossFunction = lossFunction;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
         this.seed = seed;
-        this.nIn = nIn;
-        this.nOut = nOut;
-        if(weightShape != null)
-            this.weightShape = weightShape;
-        else
-            this.weightShape = new int[]{nIn,nOut};
         this.timeSeriesLength = timeSeriesLength;
     }
 
@@ -491,10 +478,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean constrainGradientToUnitNorm = false;
         private long seed = System.currentTimeMillis();
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
-        private int nIn;
-        private int nOut;
         private int numIterations = 5;
-        private int[] weightShape;
         private int timeSeriesLength = 1;
         private StepFunction stepFunction = null;
         private Layer layer;
@@ -608,12 +592,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return b;
         }
 
-        @Deprecated
-        public Builder weightShape(int[] weightShape) {
-            this.weightShape = weightShape;
-            return this;
-        }
-
         public Builder iterations(int numIterations) {
             this.numIterations = numIterations;
             return this;
@@ -690,16 +668,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder nIn(int nIn) {
-            this.nIn = nIn;
-            return this;
-        }
-
-        public Builder nOut(int nOut) {
-            this.nOut = nOut;
-            return this;
-        }
-
         /**
          * Return a configuration based on this builder
          *
@@ -713,7 +681,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
-                    nIn,  nOut, weightShape, timeSeriesLength,
+                    timeSeriesLength,
                     batchSize, maxNumLineSearchIterations, minimize, layer,
                     l1,customLossFunction);
 

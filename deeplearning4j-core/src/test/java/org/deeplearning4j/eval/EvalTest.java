@@ -88,7 +88,6 @@ public class EvalTest {
                 .iterations(500)
                 .seed(42)
                 .learningRate(1e-1)
-                .nIn(4).nOut(3)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("softmax").build()).build();
 

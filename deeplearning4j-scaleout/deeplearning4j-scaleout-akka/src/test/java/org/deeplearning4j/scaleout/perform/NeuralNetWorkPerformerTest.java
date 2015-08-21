@@ -36,8 +36,8 @@ public class NeuralNetWorkPerformerTest extends BaseWorkPerformerTest {
     @Test
     public void testRbm() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration
-                .Builder().nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .Builder()
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder().nIn(4).nOut(3).build())
                 .build();
         String json = conf.toJson();
         NeuralNetConfiguration conf3 = NeuralNetConfiguration.fromJson(json);
