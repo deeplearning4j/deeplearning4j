@@ -276,7 +276,16 @@ If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDY
     File gModel = new File("/Developer/Vector Models/GoogleNews-vectors-negative300.bin.gz");
     Word2Vec vec = WordVectorSerializer.loadGoogleModel(gModel, true);
 
-With large models, you may run into trouble with your heap space. If you do, please see our [trouble-shooting guide](../gettingstarted.html#trouble).
+Remember to add `import java.io.File;` to your imported packages.
+
+With large models, you may run into trouble with your heap space. The Google model may take as much as 10G of RAM, and the JVM only launches with 256 MB of RAM, so you have to adjust your heap space. You can do that either with a `bash_profile` file (see our [Troubleshooting section](../gettingstarted.html#trouble)), or through IntelliJ itself: 
+
+    //Click:
+    IntelliJ Preferences > Compiler > Command Line Options 
+    //Then paste:
+    -Xms1024m
+    -Xmx10g
+    -XX:MaxPermSize=2g
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
