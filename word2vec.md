@@ -74,7 +74,7 @@ By building a sense of one word's proximity to other similar words, which do not
 
 ![Alt text](../img/man_woman_king_queen.png) 
 
-##<a name="anatomy">Anatomy of Word2vec</a>
+##<a name="anatomy">Anatomy of Word2vec in DL4J</a>
 
 Here are Deeplearning4j's natural-language processing components:
 
@@ -137,11 +137,11 @@ If you want to load a text file besides the sentences provided in our example, y
             }
         });
 
-That is, get rid of the `ClassPathResource` and feed the absolute path of your txt file into the LineSentenceIterator. 
+That is, get rid of the `ClassPathResource` and feed the absolute path of your `.txt` file into the `LineSentenceIterator`. 
 
         SentenceIterator iter = new LineSentenceIterator(new File("/your/absolute/file/path/here.txt"));
 
-In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that directory. To that path, you'll add the file name and voila. Make sure that you have one word per line. 
+In bash, you can find the absolute file path of any directory by typing `pwd` in your command line from within that same directory. To that path, you'll add the file name and *voila*. Make sure you have one word per line. 
 
 ### Tokenizing the Data
 
@@ -186,10 +186,10 @@ Now that the data is ready, you can configure the Word2vec neural net and feed i
                 .build();
         vec.fit();
 
-This configuration accepts a number of hyperparameters. A few require more explanation: 
+This configuration accepts a number of hyperparameters. A few require some explanation: 
 
-* *batchSize* is the amount of words you process at any one time. 
-* *minWordFrequency* is the floor on the number of times a word must appear in the corpus. Here, if it appears less than 5 times, it is not learned. Words must appear in multiple contexts to learn useful features about them. In very large corpora, it's reasonable to raise the minimum.
+* *batchSize* is the amount of words you process at a time. 
+* *minWordFrequency* is the minimum number of times a word must appear in the corpus. Here, if it appears less than 5 times, it is not learned. Words must appear in multiple contexts to learn useful features about them. In very large corpora, it's reasonable to raise the minimum.
 * *useAdaGrad* - Adagrad creates a different gradient for each feature. Here we are not concerned with that. 
 * *layerSize* specifies the number of features in the word vector. This is equal to the number of dimensions in the featurespace. Words represented by 500 features become points in a 500-dimensional space.
 * *iterations* this is the number of times you allow the net to update its coefficients for one batch of the data. Too few iterations mean it many not have time to learn all it can; too many will make the net's training longer.
@@ -211,11 +211,11 @@ The next step is to evaluate the quality of your feature vectors.
         
         //output: [night, week, year, game, season, during, office, until, -]
 
-vec.similarity("word1","word2") will return the cosine similarity of the two words you enter. The closer it is to one, the more similar the net perceives them to be (see the Sweden example above). With wordsNearest, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest.
+The line `vec.similarity("word1","word2")` will return the cosine similarity of the two words you enter. The closer it is to 1, the more similar the net perceives those words to be (see the Sweden example above). With `wordsNearest`, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest.
 
 ### Visualizing the Model
 
-We rely on TSNE to reduce the dimensionality of word feature vectors and project words into a two or three-dimensional space. 
+We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of word feature vectors and project words into a two or three-dimensional space. 
 
         log.info("Plot TSNE....");
         BarnesHutTsne tsne = new BarnesHutTsne.Builder()
@@ -232,14 +232,14 @@ We rely on TSNE to reduce the dimensionality of word feature vectors and project
 
 ### Saving, Reloading & Using the Model
 
-You'll want to save the model. The normal way to save models in deeplearning4j is via the serialization utils (Java serialization, akin to Python pickling, which converts an object into a series of bytes).
+You'll want to save the model. The normal way to save models in Deeplearning4j is via the serialization utils (Java serialization is akin to Python pickling, converting an object into a *series* of bytes).
 
         log.info("Save vectors....");
         WordVectorSerializer.writeWordVectors(vec, "words.txt");
 
-This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should one word per line followed by a series of floats that are its vector representation.
+This will save the vectors to a file called `words.txt` that will appear in the root of the directory where Word2vec is trained. The output in the file should one word per line, followed by a series of numbers that together are its vector representation.
 
-To keep working with the vectors, simply call `vec` like this:
+To keep working with the vectors, simply call methods on `vec` like this:
 
         vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
 
@@ -264,7 +264,7 @@ If the word isn't in the vocabulary, Word2vec returns zeros.
 
 ### Importing Models
 
-The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz) we use to test the accuracy of our trained nets is hosted on S3. Users whose current hardware takes a long time to train on large corpora can simply download it.
+The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz) we use to test the accuracy of our trained nets is hosted on S3. Users whose current hardware takes a long time to train on large corpora can simply download it to explore a Word2vec model without the prelude.
 
 If you trained with the [C vectors](https://docs.google.com/file/d/0B7XkCwpI5KDYaDBDQm1tZGNDRHc/edit) or Gensimm, this line will import the model.
 
@@ -275,7 +275,7 @@ With large models, you may run into trouble with your heap space. If you do, ple
 
 ### <a name="grams">N-grams & Skip-grams</a>
 
-Words are read into the vector one at a time, *and scanned back and forth within a certain range*. The range is an n-gram, and an n-gram is a contiguous sequence of n items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram. A skip-gram simply drops items from the n-gram. 
+Words are read into the vector one at a time, *and scanned back and forth within a certain range*. Those ranges are n-grams, and an n-gram is a contiguous sequence of *n* items from a given linguistic sequence; it is the nth version of unigram, bigram, trigram, four-gram or five-gram. A skip-gram simply drops items from the n-gram. 
 
 The skip-gram representation popularized by Mikolov and used in the DL4J implementation has proven to be more accurate than other models, such as continuous bag of words, due to the more generalizable contexts generated. 
 
