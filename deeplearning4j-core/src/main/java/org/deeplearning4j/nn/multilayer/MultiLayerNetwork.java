@@ -860,8 +860,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 Layer layer = getLayer(i);
                 int range = layer.numParams();
                 INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-                if (get.length() < 1)
-                    throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
+//                if (get.length() < 1)
+//                    throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
                 layer.setParams(get);
                 idx += range;
 
@@ -872,8 +872,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             Layer layer = getLayer(i);
             int range = layer.numParams();
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-            if (get.length() < 1)
-                throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
+//            if (get.length() < 1)
+//                throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
             idx += range;
 
@@ -1139,7 +1139,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers-1).backprop(currPair.getSecond()));
+                currPair = new Pair<> (currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair.getSecond()));
         }
 
         //Add gradients to Gradients, in correct order
