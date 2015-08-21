@@ -203,8 +203,6 @@ public class BackTrackLineSearchTest {
                 .l1(0.0)
                 .l2(0.0)
                 .momentum(0.0)
-                .applySparsity(false)
-                .sparsity(0.0)
                 .seed(12345L)
                 .list(2)
                 .layer(0, new RBM.Builder()

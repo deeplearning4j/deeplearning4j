@@ -61,7 +61,6 @@ import java.util.Map;
 @NoArgsConstructor
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
-    private double sparsity = 0;
     @Deprecated
     private boolean useAdaGrad = true;
     private double lr = 1e-1;
@@ -78,8 +77,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected int resetAdaGradIterations = -1;
     //number of line search iterations
     protected int maxNumLineSearchIterations = 5;
-    //use only when binary hidden neuralNets are active
-    protected boolean applySparsity = false;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
     public LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
     //whether to constrain the gradient to unit norm or not
@@ -127,8 +124,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected SubsamplingLayer.PoolingType poolingType = SubsamplingLayer.PoolingType.MAX;
 
 
-    public NeuralNetConfiguration(double sparsity,
-                                  boolean useAdaGrad,
+    public NeuralNetConfiguration(boolean useAdaGrad,
                                   double lr,
                                   int numIterations,
                                   double momentum,
@@ -136,7 +132,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   boolean useRegularization,
                                   Map<Integer, Double> momentumAfter,
                                   int resetAdaGradIterations,
-                                  boolean applySparsity,
                                   OptimizationAlgorithm optimizationAlgo,
                                   LossFunctions.LossFunction lossFunction,
                                   boolean constrainGradientToUnitNorm,
@@ -162,7 +157,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.l1 = l1;
         this.batchSize = batchSize;
         this.layer = layer;
-        this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
         this.numIterations = numIterations;
@@ -171,7 +165,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.useRegularization = useRegularization;
         this.momentumAfter = momentumAfter;
         this.resetAdaGradIterations = resetAdaGradIterations;
-        this.applySparsity = applySparsity;
         this.optimizationAlgo = optimizationAlgo;
         this.lossFunction = lossFunction;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
@@ -506,7 +499,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static class Builder {
         private String customLossFunction;
         private double rmsDecay;
-        private double sparsity = 0f;
         @Deprecated
         private boolean useAdaGrad = true;
         private double lr = 1e-1f;
@@ -515,7 +507,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private boolean useRegularization = false;
         private Map<Integer, Double> momentumAfter;
         private int resetAdaGradIterations = -1;
-        private boolean applySparsity = false;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
         private long seed = System.currentTimeMillis();
@@ -692,11 +683,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder sparsity(double sparsity) {
-            this.sparsity = sparsity;
-            return this;
-        }
-
         @Deprecated
         public Builder useAdaGrad(boolean useAdaGrad) {
             this.useAdaGrad = useAdaGrad;
@@ -721,11 +707,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         @Deprecated
         public Builder adagradResetIterations(int resetAdaGradIterations) {
             this.resetAdaGradIterations = resetAdaGradIterations;
-            return this;
-        }
-
-        public Builder applySparsity(boolean applySparsity) {
-            this.applySparsity = applySparsity;
             return this;
         }
 
@@ -792,9 +773,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
 
-            NeuralNetConfiguration ret = new NeuralNetConfiguration(sparsity, useAdaGrad,  lr,
+            NeuralNetConfiguration ret = new NeuralNetConfiguration(useAdaGrad,  lr,
                     numIterations, momentum, l2, useRegularization, momentumAfter,
-                    resetAdaGradIterations,  applySparsity,  optimizationAlgo, lossFunction,
+                    resetAdaGradIterations,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
                     nIn,  nOut, weightShape, timeSeriesLength,  kernelSize, stride,padding
                     ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,

@@ -166,9 +166,9 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
         INDArray hBiasGradient;
 
-        if(conf.getSparsity() != 0)
+        if(layerConf().getSparsity() != 0)
             //all hidden units must stay around this number
-            hBiasGradient = probHidden.getSecond().rsub(conf.getSparsity()).sum(0);
+            hBiasGradient = probHidden.getSecond().rsub(layerConf().getSparsity()).sum(0);
         else
             //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
             hBiasGradient = probHidden.getSecond().sub(nhMeans).sum(0);
