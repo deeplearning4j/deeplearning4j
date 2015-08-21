@@ -9,6 +9,7 @@ Contents
 
 * <a href="#intro">Introduction</a>
 * <a href="#embed">Neural Word Embeddings</a>
+* <a href="#just">**Just Give Me the Code**</a>
 * <a href="#anatomy">Anatomy of Word2Vec</a>
 * <a href="#setup">Setup, Load and Train</a>
 * <a href="#code">A Code Example</a>
@@ -20,15 +21,15 @@ Contents
 
 ##<a name="intro">Introduction to Word2Vec</a>
 
-Word2vec is a two-layer neural net that processes text before that text is handled by deep-learning algorithms. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a deep net, it does turn text into a numerical form that deep-learning nets can understand. 
+Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a deep neural network, it turns text into a numerical form that deep nets can understand. 
 
-Word2vec's applications extend beyond parsing natural-language sentences occurring in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and Scala, which works with GPUs. 
+Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and Scala, which works on Spark with GPUs. 
 
-Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
+The purpose and usefulness of Word2vec is to group the vectors of similar words together in vectorspace. That is, it detects similarities mathematically. Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
 
-Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, sentiment analysis and recommendations in diverse fields such as scientific research, legal discovery, e-commerce and customer relationship management. 
+Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, sentiment analysis and recommendations in such diverse fields as scientific research, legal discovery, e-commerce and customer relationship management. 
 
-The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net. 
+The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net or simply queried to detect relationships between words. 
 
 Broadly speaking, we measure words' proximity to each other through their cosine similarity, which gauges the distance/dissimilarity between two word vectors. A perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
 
@@ -40,23 +41,21 @@ The nations of Scandinavia and several wealthy, northern European, Germanic coun
 
 ##<a name="embed">Neural Word Embeddings</a>
 
-A neural word embedding is a representation, and representations are strange. You use one thing to describe another, even though those two things can be radically different. Elvis Costello was probably the harshest critic of representations, when he said that "Writing about music is like dancing about architecture." 
+The vectors we use to represent words are called *neural word embeddings*, and representations are strange. One thing describes another, even though those two things are radically different. As Elvis Costello said: "Writing about music is like dancing about architecture." Word2vec "vectorizes" about words, and by doing so it makes natural language computer-readable -- we can start to perform powerful mathematical operations on words to detect their similarities. 
 
-How can words represent sounds, and gestures represent arrangements of stone, glass and wood? You're mapping one set to another seemingly dissimilar set. 
+So a neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through reconstruction, as a [restricted Boltzmann machine](../restrictedboltzmannmachine.html) does, word2vec trains words against other words that neighbor them in the input corpus. 
 
-A neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input through reconstructions like a [restricted Boltzmann machine](../restrictedboltzmannmachine.html), word2vec trains words against other words that neighbor them in the input corpus. 
+Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so 500 numbers arranged in a vector can represent a word or group of words.
 
-Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so a 500 numbers arranged in a vector can represent a word, or a group of words. 
+Those numbers locate each word as a point in 500-dimensional vectorspace. (Geoff Hinton, teaching people to imagine 13-dimensional space, suggests that students first picture 3-dimensional space and then say to themselves: "Thirteen, thirteen, thirteen." :) 
 
-Those numbers locate each word as a point in 500-dimensional space. (Geoff Hinton, teaching people to imagine 13-dimensional space, suggests that students first picture 3-dimensional space and then say to themselves: "Thirteen, thirteen, thirteen." :) 
+A well trained set of word vectors will place similar words close to each other in that space. The words *oak*, *elm* and *birch* might cluster in one corner, while *war*, *conflict* and *strife* huddle together in another. 
 
-A well trained set of word vectors will place similar words close to each other in that low-dimensional space. The words *oak*, *elm* and *birch* might cluster in one corner, while *war*, *conflict* and *strife* huddle together in another. 
-
-This in itself is interesting, because similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can start their work. But similarity is not the only association that Word2vec can learn and represent. It can gauge relations between words of one language, and map them to another.
+Similar things and ideas are shown to be "close". Their relative meanings have been translated to measurable distances. Qualities become quantities, and algorithms can do their work. But similarity is just the basis of many associations that Word2vec can learn. For example, it can gauge relations between words of one language, and map them to another.
 
 ![Alt text](../img/word2vec_translation.png) 
 
-These vectors are in fact the basis of a more comprehensive geometry of words. Not only will Rome, Paris, Berlin and Beijing cluster near each other, but they will each have similar distances in the vector space with regard to the countries whose capitals they are; i.e. Rome - Italy = Beijing - China. And if you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
+These vectors are the basis of a more comprehensive geometry of words. Not only will Rome, Paris, Berlin and Beijing cluster near each other, but they will each have similar distances in vectorspace to the countries whose capitals they are; i.e. Rome - Italy = Beijing - China. And if you only knew that Rome was the capital of Italy, and were wondering about the capital of China, then the equation Rome -Italy + China would return Beijing. No kidding. 
 
 ![Alt text](../img/countries_capitals.png) 
 
@@ -70,9 +69,11 @@ Let's imagine some other associations:
 * *Library - Books = Hall*
 * Analogy: *Stock Market ≈ Thermometer*
 
-By building a sense of one word's proximity to other similar words, which do not necessarily contain the same letters, we have moved beyond hard tokens to a smoother sense of meaning. 
+By building a sense of one word's proximity to other similar words, which do not necessarily contain the same letters, we have moved beyond hard tokens to a smoother and more general sense of meaning. 
 
 ![Alt text](../img/man_woman_king_queen.png) 
+
+# <a name="just">Just Give Me the Code</a>
 
 ##<a name="anatomy">Anatomy of Word2vec in DL4J</a>
 
