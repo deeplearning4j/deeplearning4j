@@ -21,7 +21,7 @@ Contents
 
 ##<a name="intro">Introduction to Word2Vec</a>
 
-Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a deep neural network, it turns text into a numerical form that deep nets can understand. 
+Word2vec is a two-layer neural net that processes text. Its input is a text corpus and its output is a set of vectors: feature vectors for words in that corpus. While Word2vec is not a [deep neural network](../neuralnet-overview.html), it turns text into a numerical form that deep nets can understand. 
 
 Word2vec's applications extend beyond parsing sentences in the wild. It can be applied just as well to playlists, social media graphs and other verbal series in which patterns may be discerned. [Deeplearning4j](http://deeplearning4j.org/quickstart.html) implements a distributed form of Word2vec for Java and Scala, which works on Spark with GPUs. 
 
