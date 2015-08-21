@@ -245,7 +245,9 @@ public class ConvolutionLayerTest {
         int nChannelsIn = 1;
         int depth = 2;
 
-        INDArray W = Nd4j.create(new double[] {0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5}, new int[]{2,1,2,2});
+        INDArray W = Nd4j.create(new double[] {
+                0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5
+        }, new int[]{2,1,2,2});
         INDArray b = Nd4j.create(new double[] {1,1});
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
         layer.setParam("W", W);
@@ -303,9 +305,9 @@ public class ConvolutionLayerTest {
         final int numColumns = 28;
         int nChannels = 1;
         int outputNum = 10;
-        int numSamples = 1;
-        int batchSize = 1;
-        int iterations = 1;
+        int numSamples = 10;
+        int batchSize = 10;
+        int iterations = 10;
         int seed = 123;
         int listenerFreq = iterations/5;
 
@@ -319,14 +321,14 @@ public class ConvolutionLayerTest {
                 .activationFunction("relu")
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
-                .layer(0, new ConvolutionLayer.Builder(new int[]{9, 9})
+                .layer(0, new ConvolutionLayer.Builder(new int[]{10, 10})
                         .nIn(nChannels)
-                        .nOut(8)
+                        .nOut(6)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(20)
+                        .nIn(150)
                         .nOut(outputNum)
                         .activation("softmax")
                         .build())
@@ -340,7 +342,9 @@ public class ConvolutionLayerTest {
         model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
         model.fit(mnistIter);
 
+        DataSet data = mnistIter.next();
+
     }
 
 
-    }
+}
