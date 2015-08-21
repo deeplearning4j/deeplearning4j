@@ -106,7 +106,7 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
 
     @Override
     public void computeGradientAndScore() {
-        int k = conf.getK();
+        int k = layerConf().getK();
 
         //POSITIVE PHASE
         Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input());

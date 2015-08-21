@@ -105,9 +105,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
     private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
 
-
-    protected int k = 1;
-
     private int[] weightShape;
 
     // Graves LSTM & RNN
@@ -138,7 +135,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public NeuralNetConfiguration(double sparsity,
                                   boolean useAdaGrad,
                                   double lr,
-                                  int k,
                                   double corruptionLevel,
                                   int numIterations,
                                   double momentum,
@@ -177,7 +173,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
-        this.k = k;
         this.corruptionLevel = corruptionLevel;
         this.numIterations = numIterations;
         this.momentum = momentum;
@@ -520,7 +515,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public static class Builder {
-        private int k = 1;
         private String customLossFunction;
         private double rmsDecay;
         private double corruptionLevel = 3e-1f;
@@ -733,11 +727,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder k(int k) {
-            this.k = k;
-            return this;
-        }
-
         public Builder corruptionLevel(double corruptionLevel) {
             this.corruptionLevel = corruptionLevel;
             return this;
@@ -833,7 +822,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
 
-            NeuralNetConfiguration ret = new NeuralNetConfiguration(sparsity, useAdaGrad,  lr,  k,
+            NeuralNetConfiguration ret = new NeuralNetConfiguration(sparsity, useAdaGrad,  lr,
                     corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  applySparsity,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,

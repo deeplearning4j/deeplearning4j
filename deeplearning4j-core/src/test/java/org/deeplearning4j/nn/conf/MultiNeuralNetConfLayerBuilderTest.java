@@ -76,7 +76,6 @@ public class MultiNeuralNetConfLayerBuilderTest {
                 .seed(123)
                 .iterations(5)
                 .maxNumLineSearchIterations(10) // Magical Optimisation Stuff
-                .k(1) // Annoying dl4j bug that is yet to be fixed.
                 .constrainGradientToUnitNorm(true)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .regularization(true)
