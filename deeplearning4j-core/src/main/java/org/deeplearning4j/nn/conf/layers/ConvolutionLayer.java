@@ -22,7 +22,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
     private ConvolutionLayer(Builder builder) {
     	super(builder);
         this.convolutionType = builder.convolutionType;
+        if(builder.kernelSize.length != 2)
+            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
+        if(builder.stride.length != 2)
+            throw new IllegalArgumentException("Invalid stride, must be length 2");
         this.stride = builder.stride;
         this.padding = builder.padding;
     }
@@ -58,6 +62,28 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder convolutionType(Convolution.Type convolutionType) {
             this.convolutionType = convolutionType;
+            return this;
+        }
+
+        /**
+         * Size of the convolution
+         * rows/columns
+         * @param kernelSize the height and width of the
+         *                   kernel
+         * @return
+         */
+        public Builder kernelSize(int[] kernelSize){
+            this.kernelSize = kernelSize;
+            return this;
+        }
+
+        public Builder stride(int[] stride){
+            this.stride = stride;
+            return this;
+        }
+
+        public Builder padding(int[] padding){
+            this.padding = padding;
             return this;
         }
 

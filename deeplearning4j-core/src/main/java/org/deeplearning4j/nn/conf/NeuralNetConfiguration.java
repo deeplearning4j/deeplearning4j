@@ -101,12 +101,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     // Graves LSTM & RNN
     private int timeSeriesLength = 1;
-    //convolutional nets: this is the height and width of the kernel
-    private int[] kernelSize = {2,2};
-    //aka pool size for subsampling
-    private int[] stride = {2,2};
-    // convolution net padding
-    private int[] padding = {0,0};
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected int batchSize = 10;
     //minimize or maximize objective
@@ -138,9 +132,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int nOut,
                                   int[] weightShape,
                                   int timeSeriesLength,
-                                  int[] kernelSize,
-                                  int[] stride,
-                                  int[] padding,
                                   int batchSize,
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
@@ -172,9 +163,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         else
             this.weightShape = new int[]{nIn,nOut};
         this.timeSeriesLength = timeSeriesLength;
-        this.kernelSize = kernelSize;
-        this.stride = stride;
-        this.padding = padding;
     }
 
     /**
@@ -512,10 +500,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private int numIterations = 5;
         private int[] weightShape;
         private int timeSeriesLength = 1;
-        private int[] kernelSize = {2,2};
-        // convolution & subsampling layers
-        private int[] stride = {2,2};
-        private int[] padding = {0,0};
         private StepFunction stepFunction = null;
         private Layer layer;
         private int batchSize = 100;
@@ -535,20 +519,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder timeSeriesLength(int timeSeriesLength) {
             this.timeSeriesLength = timeSeriesLength;
-            return this;
-        }
-
-        /**
-         * Size of the convolution
-         * rows/columns
-         * @param kernelSize the height and width of the
-         *                   kernel
-         * @return
-         */
-        public Builder kernelSize(int...kernelSize) {
-            if(kernelSize.length != 2)
-                throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
-            this.kernelSize = kernelSize;
             return this;
         }
         
@@ -647,20 +617,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             return b;
         }
-
-        public Builder stride(int[] stride) {
-            if(stride.length != 2)
-                throw new IllegalArgumentException("Invalid stride  must be length 2");
-            this.stride = stride;
-            return this;
-        }
-
-
-        public Builder padding(int[] padding){
-            this.padding = padding;
-            return this;
-        }
-
 
         @Deprecated
         public Builder weightShape(int[] weightShape) {
@@ -767,12 +723,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
-                    nIn,  nOut, weightShape, timeSeriesLength,  kernelSize, stride,padding
-                    ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType,
+                    nIn,  nOut, weightShape, timeSeriesLength,
+                    batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType,
                     l1,customLossFunction);
 
-            ret.padding = this.padding;
-            ret.stride = this.stride;
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;

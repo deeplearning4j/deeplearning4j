@@ -33,7 +33,11 @@ public class SubsamplingLayer extends Layer {
     private SubsamplingLayer(Builder builder) {
     	super(builder);
         this.poolingType = builder.poolingType;
+        if(builder.kernelSize.length != 2)
+            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
+        if(builder.stride.length != 2)
+            throw new IllegalArgumentException("Invalid stride, must be length 2");
         this.stride = builder.stride;
         this.padding = builder.padding;
     }
