@@ -53,7 +53,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  * @author Adam Gibson
  *
  */
-public class OutputLayer extends BaseLayer implements Serializable,Classifier {
+public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> implements Serializable,Classifier {
 
     //current input and label matrices
     private INDArray labels;

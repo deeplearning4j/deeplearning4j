@@ -35,7 +35,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  *
  * @author Adam Gibson
  */
-public class RecursiveAutoEncoder extends BaseLayer {
+public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder> {
     private INDArray currInput = null,
                      allInput = null,
                      visibleLoss = null,

@@ -63,7 +63,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
  * @author Adam Gibson
  *
  */
-public  class RBM extends BasePretrainNetwork {
+public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.RBM> {
 
     private transient Random rng;
 
