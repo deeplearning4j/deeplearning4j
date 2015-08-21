@@ -53,7 +53,6 @@ public class RenderTest {
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .corruptionLevel(0.3)
                 .iterations(10).constrainGradientToUnitNorm(true)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f).nIn(784).nOut(600)

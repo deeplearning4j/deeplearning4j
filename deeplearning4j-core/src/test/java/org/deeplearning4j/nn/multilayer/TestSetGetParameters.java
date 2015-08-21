@@ -28,7 +28,7 @@ public class TestSetGetParameters {
 					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
 			.layer(1, new RBM.Builder().nIn(10).nOut(11)
 					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
-			.layer(2, new AutoEncoder.Builder(0.5).nIn(11).nOut(12)
+			.layer(2, new AutoEncoder.Builder().corruptionLevel(0.5).nIn(11).nOut(12)
 					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
 			.layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(12).nOut(12)
 					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
