@@ -54,7 +54,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.stride = stride;
         }
 
-        public Builder(int[] kernelSize) {
+        public Builder(int... kernelSize) {
             this.kernelSize = kernelSize;
         }
 
@@ -72,17 +72,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
          *                   kernel
          * @return
          */
-        public Builder kernelSize(int[] kernelSize){
+        public Builder kernelSize(int... kernelSize){
             this.kernelSize = kernelSize;
             return this;
         }
 
-        public Builder stride(int[] stride){
+        public Builder stride(int... stride){
             this.stride = stride;
             return this;
         }
 
-        public Builder padding(int[] padding){
+        public Builder padding(int... padding){
             this.padding = padding;
             return this;
         }
