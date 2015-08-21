@@ -88,6 +88,41 @@ public class MultiLayerTest {
     }
 
     @Test
+    public void testReDistribute() {
+        DataSetIterator iter = new LFWDataSetIterator(28,28);
+
+        DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .nIn(next.numInputs()).nOut(next.numOutcomes())
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .constrainGradientToUnitNorm(true)
+                .weightInit(WeightInit.DISTRIBUTION)
+                .dist(new NormalDistribution(0, 1e-5))
+                .iterations(5).learningRate(1e-3)
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
+                .layer(new RBM())
+                .list(4).layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(next.numInputs()).nOut(600).build())
+                .layer(1, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(600).nOut(250).build())
+                .layer(2, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(250).nOut(100).build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(100).nOut(iter.totalOutcomes()).build())
+                .build();
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        INDArray params = network.params();
+        network.reDistributeParams();
+        INDArray params2 = network.params();
+        assertEquals(params,params2);
+    }
+
+    @Test
     public void testDbnFaces() {
         DataSetIterator iter = new LFWDataSetIterator(28,28);
 
