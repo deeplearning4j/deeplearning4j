@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -400,7 +401,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public INDArray activationMean() {
+        //TODO determine how to pass back all activationMean for MLN
         throw new UnsupportedOperationException();
+//        List<INDArray> avgActivations =  new ArrayList<>();
+//
+//        for( Layer layer: getLayers() ){
+//            avgActivations.add(layer.activationMean());
+//            }
+//        return Nd4j.toFlattened(avgActivations);
     }
 
     /**
@@ -791,11 +799,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public INDArray params() {
-        List<INDArray> params = new ArrayList<>();
-        for (int i = 0; i < getnLayers(); i++)
-            params.add(layers[i].params());
 
-        return Nd4j.toFlattened(params);
+        List<INDArray> params = new ArrayList<>();
+        for (Layer layer: getLayers())
+            if(!(layer instanceof SubsamplingLayer)) {
+                params.add(layer.params());
+            }
+            return Nd4j.toFlattened(params);
     }
 
     /**
@@ -1510,13 +1520,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
             Layer layer = getLayer(i);
-
-            int range = layer.numParams();
-            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-            if (get.length() < 1)
-                throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
-            layer.setParams(get);
-            idx += range;
+            if(!(layer instanceof SubsamplingLayer)) {
+                int range = layer.numParams();
+                INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
+                if (get.length() < 1)
+                    throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
+                layer.setParams(get);
+                idx += range;
+            }
         }
     }
 
