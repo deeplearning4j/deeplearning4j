@@ -62,9 +62,7 @@ public class RBMTests {
         int nOut = 600;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
                         .weightInit(WeightInit.VI)
                         .build())
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -87,9 +85,10 @@ public class RBMTests {
         d.normalizeZeroMeanZeroUnitVariance();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.GAUSSIAN).learningRate(1e-1f)
+                .learningRate(1e-1f)
                 .nIn(d.numInputs()).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(
+                        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.GAUSSIAN, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).build())
                 .build();
 
         RBM r = LayerFactories.getFactory(conf).create(conf);
@@ -106,9 +105,9 @@ public class RBMTests {
         d.normalizeZeroMeanZeroUnitVariance();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED).learningRate(1e-1f)
+                .learningRate(1e-1f)
                 .nIn(d.numInputs()).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
+                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED, org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN).build())
                 .build();
 
         RBM r = LayerFactories.getFactory(conf).create(conf);

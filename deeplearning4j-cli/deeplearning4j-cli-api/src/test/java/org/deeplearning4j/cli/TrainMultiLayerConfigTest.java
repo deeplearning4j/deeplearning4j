@@ -44,12 +44,11 @@ public class TrainMultiLayerConfigTest {
     public void testMultiLayerConfig() throws Exception {
         Model testModelFlag = new Model();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM.Builder()
+                .layer(new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .activation("tanh")
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
                         .build())
                 .nIn(4).nOut(3)
-                .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .iterations(100)
                 .batchSize(10)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)

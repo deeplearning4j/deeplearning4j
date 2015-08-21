@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -68,12 +69,10 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100)
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
                 .maxNumLineSearchIterations(10)
                 .constrainGradientToUnitNorm(true)
                 .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                .layer(new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu").build())
                 .list(2)
