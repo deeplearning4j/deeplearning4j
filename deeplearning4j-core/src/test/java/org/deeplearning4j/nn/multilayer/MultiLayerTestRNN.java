@@ -27,8 +27,6 @@ public class MultiLayerTestRNN {
         int nOut = 25;
         int nHiddenUnits = 17;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM())
-                .nIn(nIn).nOut(nOut)
                 .list(2)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
                         .nIn(nIn).nOut(nHiddenUnits).weightInit(WeightInit.DISTRIBUTION).activation("tanh").build())

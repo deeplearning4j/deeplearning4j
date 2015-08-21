@@ -51,8 +51,9 @@ public class AutoEncoderTest {
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(1)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().corruptionLevel(0.6).build())
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(784).nOut(600).corruptionLevel(0.6).build())
                 .build();
 
 
@@ -80,8 +81,8 @@ public class AutoEncoderTest {
                 .iterations(100)
                 .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .learningRate(1e-1f)
-                .nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder().corruptionLevel(0.6).build()).build();
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(784).nOut(600).corruptionLevel(0.6).build()).build();
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();

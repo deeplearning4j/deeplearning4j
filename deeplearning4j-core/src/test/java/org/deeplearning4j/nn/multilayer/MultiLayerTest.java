@@ -69,9 +69,6 @@ public class MultiLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(4)
-                .nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
                 .list(1).layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .activation("tanh")
@@ -96,12 +93,10 @@ public class MultiLayerTest {
         next.normalizeZeroMeanZeroUnitVariance();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(next.numInputs()).nOut(next.numOutcomes())
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .constrainGradientToUnitNorm(true)
                 .iterations(5).learningRate(1e-3)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .layer(new RBM())
                 .list(4)
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(next.numInputs()).nOut(600)
@@ -134,8 +129,6 @@ public class MultiLayerTest {
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(5)
                 .seed(123)
-                .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer())
                 .list(3)
                 .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("tanh").build())
                 .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation("tanh").build())
@@ -180,7 +173,7 @@ public class MultiLayerTest {
                 .regularization(true)
                 .l2(2e-4)
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .nIn(4).nOut(3).list(2)
+                .list(2)
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(0, 1))
@@ -262,8 +255,6 @@ public class MultiLayerTest {
 
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM())
-                .nIn(4).nOut(3)
                 .seed(12345L)
                 .list(2)
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)

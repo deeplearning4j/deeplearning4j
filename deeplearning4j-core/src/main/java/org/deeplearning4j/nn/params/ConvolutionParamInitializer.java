@@ -60,7 +60,9 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf) {
         //the bias is a 1D tensor -- one bias per output feature map
-        return Nd4j.zeros(conf.getNOut());
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        return Nd4j.zeros(layerConf.getNOut());
     }
 
 
@@ -74,11 +76,13 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          image height, image width)
 
          */
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
         Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
         return WeightInitUtil.initWeights(
-                Ints.concat(new int[] {conf.getNOut(), conf.getNIn()}, ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize()),
-                conf.getLayer().getWeightInit(),
+                Ints.concat(new int[] {layerConf.getNOut(), layerConf.getNIn()}, layerConf.getKernelSize()),
+                layerConf.getWeightInit(),
                 dist);
     }
 

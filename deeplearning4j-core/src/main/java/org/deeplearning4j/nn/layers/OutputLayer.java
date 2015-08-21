@@ -371,7 +371,7 @@ public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Out
      */
     @Override
     public void setParams(INDArray params) {
-        INDArray wParams = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
+        INDArray wParams = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, layerConf().getNIn() * layerConf().getNOut()));
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
