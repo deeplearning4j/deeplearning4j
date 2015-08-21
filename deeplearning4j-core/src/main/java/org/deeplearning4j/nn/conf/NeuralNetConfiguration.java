@@ -65,7 +65,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     @Deprecated
     private boolean useAdaGrad = true;
     private double lr = 1e-1;
-    protected double corruptionLevel = 0.3;
     protected int numIterations = 5;
     /* momentum for learning */
     protected double momentum = 0.5;
@@ -131,7 +130,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public NeuralNetConfiguration(double sparsity,
                                   boolean useAdaGrad,
                                   double lr,
-                                  double corruptionLevel,
                                   int numIterations,
                                   double momentum,
                                   double l2,
@@ -167,7 +165,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.sparsity = sparsity;
         this.useAdaGrad = useAdaGrad;
         this.lr = lr;
-        this.corruptionLevel = corruptionLevel;
         this.numIterations = numIterations;
         this.momentum = momentum;
         this.l2 = l2;
@@ -509,7 +506,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public static class Builder {
         private String customLossFunction;
         private double rmsDecay;
-        private double corruptionLevel = 3e-1f;
         private double sparsity = 0f;
         @Deprecated
         private boolean useAdaGrad = true;
@@ -717,11 +713,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder corruptionLevel(double corruptionLevel) {
-            this.corruptionLevel = corruptionLevel;
-            return this;
-        }
-
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return this;
@@ -802,7 +793,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 throw new IllegalStateException("No layer defined.");
 
             NeuralNetConfiguration ret = new NeuralNetConfiguration(sparsity, useAdaGrad,  lr,
-                    corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
+                    numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  applySparsity,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
                     nIn,  nOut, weightShape, timeSeriesLength,  kernelSize, stride,padding
