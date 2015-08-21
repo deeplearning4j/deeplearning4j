@@ -19,12 +19,11 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -33,12 +32,9 @@ import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.lossfunctions.LossCalculation;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -57,11 +53,13 @@ import static org.nd4j.linalg.ops.transforms.Transforms.tanh;
  * @author Adam Gibson
  */
 public class LSTM extends BaseLayer {
-    //recurrent weights
-    private INDArray iFog,iFogF,c,x,hIn,hOut,u,u2;
-    //current input
+    //recurrent weights (iFogZ = iFog & iFogA = iFogF & memCellActivations = c & outputActivations = hOut)
+    private INDArray iFogZ, iFogA, memCellActivations, hIn, outputActivations;
+    // update values for drop connect
+    private INDArray u, u2;
+    //current input // paper has it as image representations
     private INDArray xi;
-    //predicted time series
+    //predicted time series // paper has it as word representations
     private INDArray xs;
 
     public LSTM(NeuralNetConfiguration conf) {
@@ -74,117 +72,104 @@ public class LSTM extends BaseLayer {
 
 
     /**
-     * Forward propagation
-     * @param xi the current example
-     * @return
-     */
-    public INDArray forward(INDArray xi) {
-        setInput(xi);
-        return activate();
-    }
-
-
-    /**
-     * Forward propagation
+     * SetInput when img and words exist
      * @param xi the current example
      * @param xs the tim series to predict based on
      * @return
      */
-    public INDArray forward(INDArray xi,INDArray xs) {
-        this.xs = xs;
+    public void setInput(INDArray xi, INDArray xs) {
         this.xi = xi;
-        x = Nd4j.vstack(xi,xs);
-        setInput(x);
-        return activate();
+        this.xs = xs;
+        setInput(Nd4j.vstack(xi,xs));
     }
 
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        // TODO fix following backprop to just backpropGradient - how to use epsilon?
 
-    /**
-     * Back propagation in the given input
-     * @param y
-     * @return {@link org.deeplearning4j.nn.gradient.Gradient}
-     */
-    public Gradient backprop(INDArray y) {
-        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray activations = activate(true);
+
+        INDArray inputWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
 
-        INDArray dY = Nd4j.vstack(Nd4j.zeros(y.columns()), y);
-        INDArray dWd = hOut.transpose().mmul(dY);
-        INDArray dBd = Nd4j.sum(dWd,0);
-        INDArray dHout = dY.mmul(decoderWeights.transpose());
-        if(conf.getLayer().getDropOut() > 0) {
+        // Original code with y - output passed in...
+        //add column of zeros since not used in forward pass
+        INDArray dY = Nd4j.vstack(Nd4j.zeros(activations.columns()), activations);
+
+        //backprop the decoder
+        INDArray inputWeightGradients = outputActivations.transpose().mmul(dY); //dWd -- TODO is this epsilon?
+        INDArray biasGradients = Nd4j.sum(inputWeightGradients,0); // dbd
+        INDArray dHout = dY.mmul(inputWeights.transpose()); //TODO is this nextEpsilon?
+
+        if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
             dHout.muli(u2);
-        }
 
-
-
-
-        INDArray dIFog = Nd4j.zeros(iFog.shape());
-        INDArray dIFogF = Nd4j.zeros(iFogF.shape());
-        INDArray dRecurrentWeights = Nd4j.zeros(recurrentWeights.shape());
+        //backprop the LSTM
+        INDArray dIFogZ = Nd4j.zeros(iFogZ.shape());
+        INDArray dIFogA = Nd4j.zeros(iFogA.shape());
+        INDArray recurrentWeightGradients = Nd4j.zeros(recurrentWeights.shape()); //dWLSTM
         INDArray dHin = Nd4j.zeros(hIn.shape());
 
-        INDArray dC = Nd4j.zeros(c.shape());
-        INDArray dx = Nd4j.zeros(x.shape());
-        int n = hOut.rows();
-        int d = hOut.columns();
+        INDArray dC = Nd4j.zeros(memCellActivations.shape());
+        INDArray dX = Nd4j.zeros(input.shape());
+
+        int sequenceLen = outputActivations.rows(); // n
+        int hiddenLayerSize = outputActivations.columns(); // d
 
 
-        for(int t = n -1; t > 0; t--) {
+        for(int t = sequenceLen -1; t > 0; t--) {
             if(conf.getLayer().getActivationFunction().equals("tanh")) {
-                INDArray tanhCt = tanh(c.slice(t));
-                dIFogF.slice(t).put(new INDArrayIndex[]{interval(2 * d,3 * d)},tanhCt.mul(dHout.slice(t)));
-                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogF.slice(t).get(interval(2 * d, 3 * d)).mul(dHout.slice(t))));
+                INDArray tanhCt = tanh(memCellActivations.slice(t));
+                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},tanhCt.mul(dHout.slice(t)));
+                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(dHout.slice(t))));
             }
             else {
-                dIFogF.slice(t).put(new INDArrayIndex[]{interval(2 * d,3 * d)},c.slice(t).mul(dHout.slice(t)));
-                dC.slice(t).addi(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(dHout.slice(t)));
+                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},memCellActivations.slice(t).mul(dHout.slice(t)));
+                dC.slice(t).addi(iFogA.slice(t).get(interval(2 * hiddenLayerSize,3 * hiddenLayerSize)).mul(dHout.slice(t)));
             }
 
             if(t > 0) {
-                dIFogF.slice(t).put(new INDArrayIndex[]{interval(d, 2 * d)},c.slice(t - 1).mul(dC.slice(t)));
-                dC.slice(t - 1).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(dC.slice(t)));
+                dIFogA.slice(t).put(new INDArrayIndex[]{interval(hiddenLayerSize, 2 * hiddenLayerSize)},memCellActivations.slice(t - 1).mul(dC.slice(t)));
+                dC.slice(t - 1).addi(iFogA.slice(t).get(interval(hiddenLayerSize, 2 * hiddenLayerSize)).mul(dC.slice(t)));
             }
+            dIFogA.slice(t).put(new INDArrayIndex[]{interval(0, hiddenLayerSize)}, iFogA.slice(t).get(interval(3 * hiddenLayerSize, iFogA.columns())).mul(dC.slice(t)));
+            dIFogA.slice(t).put(new INDArrayIndex[]{interval(3 * hiddenLayerSize, dIFogA.columns())},iFogA.slice(t).get(interval(0,hiddenLayerSize)).mul(dC.slice(t)));
 
-            dIFogF.slice(t).put(new INDArrayIndex[]{interval(0, d)}, iFogF.slice(t).get(interval(3 * d, iFogF.columns())).mul(dC.slice(t)));
-            dIFogF.slice(t).put(new INDArrayIndex[]{interval(3 * d, dIFogF.columns())},iFogF.slice(t).get(interval(0,d)).mul(dC.slice(t)));
+            //backprop activation functions
+            dIFogZ.slice(t).put(new INDArrayIndex[]{interval(3 * hiddenLayerSize, dIFogZ.columns())},pow(iFogA.slice(t).get(interval(3 * hiddenLayerSize,iFogA.columns())),2).rsubi(1).mul(dIFogA.slice(t).get(interval(3 * hiddenLayerSize,dIFogA.columns()))));
+            activations = iFogA.slice(t).get(interval(0,3 * hiddenLayerSize));
+            dIFogA.slice(t).put(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)}, activations.mul(activations.rsub(1)).mul(dIFogA.slice(t).get(interval(0, 3 * hiddenLayerSize))));
 
-            dIFog.slice(t).put(new INDArrayIndex[]{interval(3 * d,dIFog.columns())},pow(iFogF.slice(t).get(interval(3 * d,iFogF.columns())),2).rsubi(1).mul(dIFogF.slice(t).get(interval(3 * d,dIFogF.columns()))));
-            y = iFogF.slice(t).get(interval(0,3 * d));
-            dIFogF.slice(t).put(new INDArrayIndex[]{interval(0, 3 * d)}, y.mul(y.rsub(1)).mul(dIFogF.slice(t).get(interval(0, 3 * d))));
+            //backprop matrix multiply
+            recurrentWeightGradients.addi(hIn.slice(t).transpose().mmul(dIFogZ.slice(t)));
+            dHin.slice(t).assign(dIFogZ.slice(t).mmul(recurrentWeights.transpose()));
 
-            dRecurrentWeights.addi(hIn.slice(t).transpose().mmul(dIFog.slice(t)));
-            dHin.slice(t).assign(dIFog.slice(t).mmul(recurrentWeights.transpose()));
-
-
-            INDArray get = dHin.slice(t).get(interval(1, 1 + d));
-
-            dx.slice(t).assign(get);
+            INDArray get = dHin.slice(t).get(interval(1, 1 + hiddenLayerSize));
+            dX.slice(t).assign(get);
             if(t > 0)
-                dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + d, dHin.columns())));
+                dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns())));
 
 
-
-            if(conf.getLayer().getDropOut() > 0)
-                dx.muli(u);
+            if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
+                dX.muli(u);
 
         }
 
+        clear(); //TODO is this still needed
 
-        clear();
+        Gradient retGradient = new DefaultGradient();
+        retGradient.gradientForVariable().put(LSTMParamInitializer.INPUT_WEIGHT_KEY, inputWeightGradients);
+        retGradient.gradientForVariable().put(LSTMParamInitializer.RECURRENT_WEIGHT_KEY, recurrentWeightGradients);
+        retGradient.gradientForVariable().put(LSTMParamInitializer.BIAS_KEY, biasGradients);
 
-        Gradient gradient = new DefaultGradient();
-        gradient.gradientForVariable().put(LSTMParamInitializer.BIAS_KEY,dBd);
-        gradient.gradientForVariable().put(LSTMParamInitializer.INPUT_WEIGHT_KEY,dWd);
-        gradient.gradientForVariable().put(LSTMParamInitializer.RECURRENT_WEIGHT_KEY,dRecurrentWeights);
-        return gradient;
+
+        return new Pair<>(retGradient, inputWeightGradients);
 
     }
 
 
     @Override
     public INDArray activate(boolean training) {
-        this.x = input;
+        INDArray prevOutputActivations, prevMemCellActivations;
 
         INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
@@ -193,59 +178,64 @@ public class LSTM extends BaseLayer {
 
         if(conf.getLayer().getDropOut() > 0) {
             double scale = 1 / (1 - conf.getLayer().getDropOut());
-            u = Nd4j.rand(x.shape()).lti(1 - conf.getLayer().getDropOut()).muli(scale);
-            x.muli(u);
+            u = Nd4j.rand(input.shape()).lti(1 - conf.getLayer().getDropOut()).muli(scale);
+            input.muli(u);
         }
 
-        int n = x.rows();
-        int d = decoderWeights.rows();
-        //xt, ht-1, bias
-        hIn = Nd4j.zeros(n,recurrentWeights.rows());
-        hOut = Nd4j.zeros(n,d);
+        int sequenceLen = input.rows(); // n, not miniBatch
+        int hiddenLayerSize = decoderWeights.rows(); // hidden layer size
+        int recurrentSize = recurrentWeights.size(0);
+
+        hIn = Nd4j.zeros(sequenceLen, recurrentWeights.rows()); //xt, ht-1, bias
+        outputActivations = Nd4j.zeros(sequenceLen, hiddenLayerSize);
         //non linearities
-        iFog = Nd4j.zeros(n,d * 4);
-        iFogF = Nd4j.zeros(iFog.shape());
-        c = Nd4j.zeros(n,d);
+        iFogZ = Nd4j.zeros(sequenceLen, hiddenLayerSize * 4);
+        iFogA = Nd4j.zeros(iFogZ.shape());
+        memCellActivations = Nd4j.zeros(sequenceLen, hiddenLayerSize);
 
-        INDArray prev;
 
-        for(int t = 0; t < n ; t++) {
-            prev = t == 0 ? Nd4j.zeros(d) : hOut.getRow(t - 1);
+        for(int t = 0; t < sequenceLen ; t++) {
+            prevOutputActivations = t == 0 ? Nd4j.zeros(hiddenLayerSize) : outputActivations.getRow(t - 1);
+            prevMemCellActivations = t == 0 ? Nd4j.zeros(hiddenLayerSize) : memCellActivations.getRow(t - 1);
+
             hIn.put(t, 0, 1.0);
-            hIn.slice(t).put(new INDArrayIndex[]{interval(1,1 + d)},x.slice(t));
-            hIn.slice(t).put(new INDArrayIndex[]{interval(1 + d,hIn.columns())},prev);
+            hIn.slice(t).put(new INDArrayIndex[]{interval(1, 1 + hiddenLayerSize)}, input.slice(t));
+            hIn.slice(t).put(new INDArrayIndex[]{interval(1 + hiddenLayerSize, hIn.columns())}, prevOutputActivations);
 
             //compute all gate activations. dots:
-            iFog.putRow(t,hIn.slice(t).mmul(recurrentWeights));
+            iFogZ.putRow(t, hIn.slice(t).mmul(recurrentWeights));
 
-            //non linearity
-            iFogF.slice(t).put(new INDArrayIndex[]{interval(0,3 * d)}, sigmoid(iFog.slice(t).get(interval(0, 3 * d))));
-            iFogF.slice(t).put(new INDArrayIndex[]{interval(3 * d,iFogF.columns() - 1)}, tanh(iFog.slice(t).get(interval(3 * d, iFog.columns() - 1))));
+            //store activations for i, f, o
+            iFogA.slice(t).put(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)}, sigmoid(iFogZ.slice(t).get(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)})));
 
-            //cell activations
-            INDArray cPut = iFogF.slice(t).get(interval(0, d)).mul(iFogF.slice(t).get(interval(3 * d, iFogF.columns())));
-            c.putRow(t,cPut);
+            // store activations for c
+            iFogA.slice(t).put(new INDArrayIndex[]{interval(3 * hiddenLayerSize, iFogA.columns() - 1)},
+                    tanh(iFogZ.slice(t).get(interval(3 * hiddenLayerSize, iFogZ.columns() - 1))));
+
+            //i dot product h(WcxXt + WcmMt-1)
+            memCellActivations.putRow(t, iFogA.slice(t).get(interval(0, hiddenLayerSize)).mul(iFogA.slice(t).get(interval(3 * hiddenLayerSize, iFogA.columns()))));
 
 
             if(t > 0)
-                c.slice(t).addi(iFogF.slice(t).get(interval(d,2 * d)).mul(c.getRow(t - 1)));
+                // Ct curr memory cell activations after t 0
+                memCellActivations.slice(t).addi(iFogA.slice(t).get(interval(hiddenLayerSize, 2 * hiddenLayerSize)).mul(prevMemCellActivations));
 
-
-            if(conf.getLayer().getActivationFunction().equals("tanh"))
-                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.getRow(t))));
-
-            else
-                hOut.slice(t).assign(iFogF.slice(t).get(interval(2 * d,3 * d)).mul(c.getRow(t)));
-
+            // mt hidden out or output before activation
+            if(conf.getLayer().getActivationFunction().equals("tanh")) {
+                outputActivations.slice(t).assign(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(tanh(memCellActivations.getRow(t))));
+            } else {
+                outputActivations.slice(t).assign(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(memCellActivations.getRow(t)));
+            }
         }
 
-        if(conf.getLayer().getDropOut() > 0) {
-            u2 = Dropout.applyDropout(hOut,conf.getLayer().getDropOut(),u2);
+        if(conf.isUseDropConnect() && training) {
+            if (conf.getLayer().getDropOut() > 0) {
+                u2 = Dropout.applyDropout(outputActivations, conf.getLayer().getDropOut(), u2);
+                outputActivations.muli(u2);
+            }
         }
 
-
-        INDArray y = hOut.get(interval(1,hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
-        return y;
+        return outputActivations.get(interval(1, outputActivations.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
 
 
     }
@@ -256,6 +246,7 @@ public class LSTM extends BaseLayer {
      * @param ws
      * @return
      */
+    //TODO is this deprecated ?
     public Collection<Pair<List<Integer>,Double>> predict(INDArray xi,INDArray ws) {
         INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
         int d = decoderWeights.rows();
@@ -264,20 +255,20 @@ public class LSTM extends BaseLayer {
         return search.search();
     }
 
-
+    //TODO is this deprecated ?
     @Override
     public  void clear() {
-        u = null;
         hIn = null;
-        hOut = null;
-        iFog = null;
-        iFogF = null;
-        c = null;
-        x = null;
+        input = null;
+        iFogZ = null;
+        iFogA = null;
+        u = null;
         u2 = null;
+        memCellActivations = null;
+        outputActivations = null;
     }
 
-
+    //TODO is this deprecated ?
     private  class BeamSearch {
         private List<Beam> beams = new ArrayList<>();
         private int nSteps = 0;
@@ -363,6 +354,7 @@ public class LSTM extends BaseLayer {
         }
     }
 
+    //TODO is this deprecated ?
     private Pair<Integer,Double> yMax(INDArray y) {
         INDArray y1 = y.linearView();
         double max = y.max(Integer.MAX_VALUE).getDouble(0);
@@ -374,6 +366,7 @@ public class LSTM extends BaseLayer {
         return new Pair<>(ix,sorted[1].getDouble(ix));
     }
 
+    //TODO is this deprecated ?
     private static class Beam {
         private double logProba = 0.0;
         private List<Integer> indices;
@@ -438,39 +431,20 @@ public class LSTM extends BaseLayer {
         INDArray c = Nd4j.zeros(d);
         iFog.putScalar(t,hIn.slice(t).mmul(recurrentWeights).getDouble(0));
         INDArrayIndex[] indices = new INDArrayIndex[]{interval(0,3 * d)};
-        iFogf.slice(t).put(indices,sigmoid(iFogF.slice(t).get(indices)));
+        iFogf.slice(t).put(indices,sigmoid(iFogA.slice(t).get(indices)));
         INDArrayIndex[] after = new INDArrayIndex[]{interval(3 * d,iFogf.columns())};
         iFogf.slice(t).put(after,tanh(iFogf.slice(t).get(after)));
         c.slice(t).assign(iFogf.slice(t).get(interval(0,d)).mul(iFogf.slice(t).get(interval(3 * d,iFogf.columns()))).addi(iFogf.slice(t).get(interval(d, 2 * d))).muli(cPrev));
 
         if(conf.getLayer().getActivationFunction().equals("tanh"))
-            hOut.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.slice(t))));
+            outputActivations.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.slice(t))));
         else
-            hOut.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(c.slice(t)));
-        INDArray y = hOut.mmul(decoderWeights).addiRowVector(decoderBias);
-        return new Triple<>(y,hOut,c);
+            outputActivations.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(c.slice(t)));
+        INDArray y = outputActivations.mmul(decoderWeights).addiRowVector(decoderBias);
+        return new Triple<>(y,outputActivations,c);
 
 
     }
-
-
-    @Override
-    public void fit() {
-        Solver solver = new Solver.Builder()
-                .model(this).configure(conf()).listeners(getListeners())
-                .build();
-        solver.optimize();
-    }
-
-
-
-    @Override
-    public void update(INDArray gradient, String paramType) {
-        setParams(params().subi(gradient));
-        computeGradientAndScore();
-
-    }
-
 
     @Override
     public double calcL2() {
@@ -488,69 +462,17 @@ public class LSTM extends BaseLayer {
         return conf.getL1() * l1;
     }
 
-
     @Override
-    public void computeGradientAndScore() {
-        INDArray forward = forward(xi, xs);
-        INDArray probas = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",forward).derivative(),1);
-        gradient = backprop(probas);
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, forward);
-            create.exec();
-            score = create.currentResult().doubleValue();
-        }
-
-        else {
-            score = LossCalculation.builder()
-                    .l1(calcL1()).l2(calcL2())
-                    .labels(xs).z(probas).lossFunction(conf.getLossFunction())
-                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
-                    .useRegularization(conf.isUseRegularization()).build().score();
-
-        }
+    public Type type(){
+        return Type.RECURRENT;
     }
 
-
-//    @Override
-//    public INDArray transform(INDArray data) {
-//        return  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", activate(data)).derivative(), 1);
-//    }
-
-
-
     @Override
-    public void setParams(INDArray params) {
-        int count = 0;
-        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
-        INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
-
-        INDArray recurrentWeightsLinear = recurrentWeights.linearView();
-        INDArray decoderWeightsLinear = decoderWeights.linearView();
-        INDArray decoderBiasLinear = decoderBias.linearView();
-        int recurrentPlusDecoder = recurrentWeightsLinear.length() + decoderWeightsLinear.length();
-        boolean pastRecurrentWeights = false;
-        for(int i = 0; i < params.length(); i++) {
-            //reset once for normal recurrent weights
-            if(count == recurrentWeightsLinear.length()) {
-                count = 0;
-                pastRecurrentWeights = true;
-            }
-            //reset again for decoder weights, no need to do this as this sets up the bias count properly
-            else if(count == decoderWeightsLinear.length() && pastRecurrentWeights)
-                count = 0;
-
-            if(i < recurrentWeights.length())
-                recurrentWeights.linearView().putScalar(count++,params.getDouble(i));
-
-            else if(i < recurrentPlusDecoder)
-                decoderWeightsLinear.putScalar(count++,params.getDouble(i));
-            else
-                decoderBiasLinear.putScalar(count++,params.getDouble(i));
-
-        }
+    public Layer transpose(){
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    //TODO verfiy this is still needed
     @Override
     public void fit(INDArray data) {
         xi = data.slice(0);
@@ -564,13 +486,7 @@ public class LSTM extends BaseLayer {
         solver.optimize();
     }
 
-    @Override
-    public void iterate(INDArray input) {
-
-    }
-
-
-
+    //TODO verfiy this is correct
     @Override
     public int batchSize() {
         return xi.rows();

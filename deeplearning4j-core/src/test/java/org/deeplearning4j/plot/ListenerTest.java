@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
@@ -41,10 +42,10 @@ public class ListenerTest {
 
     private DataSetIterator irisIter = new IrisDataSetIterator(50,50);
 
-
+    // TODO fix activation and rendor for MLP...
     @Test
     public void testNeuralNetGraphsCapturedMLPNetwork() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{5}, "sigmoid", 1));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig("sigmoid", 1));
         network.init();
         DataSet data = irisIter.next();
         IterationListener listener = new NeuralNetPlotterIterationListener(1,true);
@@ -57,7 +58,7 @@ public class ListenerTest {
 
     @Test
     public void testScoreIterationListenerMLP() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[]{5}, "sigmoid", 5));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig("sigmoid", 5));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -67,7 +68,7 @@ public class ListenerTest {
 
     @Test
     public void testScoreIterationListenerBackTrack() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10, 5}, "sigmoid", 5));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig("sigmoid", 5));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
@@ -75,10 +76,23 @@ public class ListenerTest {
         assertEquals(listener.invoked(), true);
     }
 
+    @Test
+    public void testNeuralNetGraphsCaptured() {
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig("sigmoid", 1));
+        network.init();
+        DataSet data = irisIter.next();
+        IterationListener listener = new NeuralNetPlotterIterationListener(1,true);
+
+        network.setListeners(Collections.singletonList(listener));
+        network.fit(data.getFeatureMatrix(), data.getLabels());
+        assertNotNull(network.getListeners());
+        assertEquals(listener.invoked(), true);
+    }
+
     // TODO fix so it tracks epochs...
     @Test
     public void testAccuracyGraphCaptured() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10}, "sigmoid", 10));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig("sigmoid", 10));
         network.init();
         DataSet data = irisIter.next();
         IterationListener listener = new AccuracyPlotterIterationListener(1, network, data);
@@ -92,7 +106,7 @@ public class ListenerTest {
     @Test
     public void testMultipleGraphsCapturedForMultipleLayers() {
         // Tests Gradient Plotter and Loss Plotter
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig(new int[]{10, 5}, "sigmoid", 5));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisSimpleConfig("sigmoid", 5));
         network.init();
         IterationListener listener = new GradientPlotterIterationListener(2);
         IterationListener listener2 = new LossPlotterIterationListener(2);
@@ -102,9 +116,8 @@ public class ListenerTest {
         assertEquals(listener2.invoked(), true);
     }
 
-    private static MultiLayerConfiguration getIrisSimpleConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
+    private static MultiLayerConfiguration getIrisSimpleConfig(String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3)
 
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -113,12 +126,7 @@ public class ListenerTest {
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
-
-                .layer(new RBM.Builder()
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
-                        .activation(activationFunction)
-                        .build())
-                .learningRate(0.1).useAdaGrad(false)
+                .learningRate(0.1)
 
                 .regularization(false)
                 .l1(0.0)
@@ -126,25 +134,27 @@ public class ListenerTest {
                 .momentum(0.0)
                 .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
-                .list(hiddenLayerSizes.length + 1)
-                .layer(hiddenLayerSizes.length, new OutputLayer.Builder()
-                        .activation("softmax")
+                .list(3)
+                .layer(0, new RBM.Builder()
+                        .nIn(4).nOut(10)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
-                        .dist(new NormalDistribution(0, 0.1))
+                        .activation(activationFunction)
                         .build())
-
-                .hiddenLayerSizes(hiddenLayerSizes)
-                .useDropConnect(false)
-
+                .layer(1, new RBM.Builder()
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                        .nIn(10).nOut(5)
+                        .activation(activationFunction)
+                        .build())
+                .layer(2, new OutputLayer.Builder()
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                        .nIn(5).nOut(3)
+                        .build())
                 .build();
-
-
         return c;
     }
 
-    private static MultiLayerConfiguration getIrisMLPSimpleConfig( int[] hiddenLayerSizes, String activationFunction, int iterations ) {
+    private static MultiLayerConfiguration getIrisMLPSimpleConfig(String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3)
 
                 .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -154,11 +164,7 @@ public class ListenerTest {
                 .constrainGradientToUnitNorm(false)
                 .corruptionLevel(0.0)
 
-                .layer(new RBM.Builder()
-                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
-                        .activation(activationFunction)
-                        .build())
-                .learningRate(0.1).useAdaGrad(false)
+                .learningRate(0.1)
 
                 .regularization(false)
                 .l1(0.0)
@@ -167,16 +173,17 @@ public class ListenerTest {
                 .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
 
-                .list(hiddenLayerSizes.length + 1)
-                .layer(hiddenLayerSizes.length, new OutputLayer.Builder()
-                        .activation("softmax")
-                        .weightInit(WeightInit.DISTRIBUTION)
-                        .dist(new NormalDistribution(0, 0.1))
+                .list(2)
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(4).nOut(5)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                        .activation(activationFunction)
                         .build())
-                .hiddenLayerSizes(hiddenLayerSizes)
+                .layer(1, new OutputLayer.Builder()
+                        .nIn(5).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                        .build())
                 .backprop(true).pretrain(false)
-                .useDropConnect(false)
-
                 .build();
 
 
