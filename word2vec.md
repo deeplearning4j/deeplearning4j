@@ -214,7 +214,9 @@ The next step is to evaluate the quality of your feature vectors.
         
         //output: [night, week, year, game, season, during, office, until, -]
 
-The line `vec.similarity("word1","word2")` will return the cosine similarity of the two words you enter. The closer it is to 1, the more similar the net perceives those words to be (see the Sweden example above). With `wordsNearest`, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest.
+The line `vec.similarity("word1","word2")` will return the cosine similarity of the two words you enter. The closer it is to 1, the more similar the net perceives those words to be (see the Sweden-Norway example above). 
+
+With `vec.wordsNearest("word1", numWordsNearest)`, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest.
 
 ### Visualizing the Model
 
@@ -265,7 +267,7 @@ You can then use Word2vec as a lookup table:
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
 
-### Importing Models
+### Importing Word2vec Models
 
 The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz) we use to test the accuracy of our trained nets is hosted on S3. Users whose current hardware takes a long time to train on large corpora can simply download it to explore a Word2vec model without the prelude.
 
