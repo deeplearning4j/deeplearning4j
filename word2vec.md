@@ -88,7 +88,7 @@ While Word2vec refers to a family of related algorithms, this implementation use
 
 ## <a name="setup">Word2Vec Setup</a> 
 
-Create a new project in IntelliJ using Maven. Then specify these properties and dependencies in the POM.xml file in your project's root directory.
+Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](../quickstart.html). Then specify these properties and dependencies in the POM.xml file in your project's root directory.
 
                 <properties>
                   <nd4j.version>0.0.3.5.5.3</nd4j.version> // check Maven Central for latest versions
