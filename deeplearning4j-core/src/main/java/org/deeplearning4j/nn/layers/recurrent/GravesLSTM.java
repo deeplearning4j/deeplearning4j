@@ -351,7 +351,6 @@ public class GravesLSTM extends BaseLayer {
 			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputActivations));
 			ifogA.tensorAlongDimension(t,1,0).put(iIndexes, inputActivations);
 
-
 			INDArray forgetGateActivations = miniBatchData.mmul(wf)
 					.addi(prevOutputActivations.mmul(wF))
 					.addi(prevMemCellState.mulRowVector(wFF.transpose()))
@@ -370,7 +369,7 @@ public class GravesLSTM extends BaseLayer {
 			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
 			ifogA.tensorAlongDimension(t,1,0).put(gIndexes, inputModGateActivations);
 
-			//Memory cell activations: (s_t then sigmah(s_t))
+			//Memory cell state
 			INDArray currentMemoryCellState = forgetGateActivations.mul(prevMemCellState)
 					.addi(inputModGateActivations.mul(inputActivations));
 
