@@ -101,10 +101,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     protected boolean useDropConnect = false;
 
-    //RBMs
-    private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
-    private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
-
     private int[] weightShape;
 
     // Graves LSTM & RNN
@@ -149,8 +145,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   long seed,
                                   int nIn,
                                   int nOut,
-                                  RBM.VisibleUnit visibleUnit,
-                                  RBM.HiddenUnit hiddenUnit,
                                   int[] weightShape,
                                   int timeSeriesLength,
                                   int[] kernelSize,
@@ -187,8 +181,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.seed = seed;
         this.nIn = nIn;
         this.nOut = nOut;
-        this.visibleUnit = visibleUnit;
-        this.hiddenUnit = hiddenUnit;
         if(weightShape != null)
             this.weightShape = weightShape;
         else
@@ -534,8 +526,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int nIn;
         private int nOut;
-        private RBM.VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
-        private RBM.HiddenUnit hiddenUnit = RBM.HiddenUnit.BINARY;
         private int numIterations = 5;
         private int[] weightShape;
         private int timeSeriesLength = 1;
@@ -802,17 +792,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder visibleUnit(RBM.VisibleUnit visibleUnit) {
-            this.visibleUnit = visibleUnit;
-            return this;
-        }
-
-        public Builder hiddenUnit(RBM.HiddenUnit hiddenUnit) {
-            this.hiddenUnit = hiddenUnit;
-            return this;
-        }
-
-
         /**
          * Return a configuration based on this builder
          *
@@ -826,7 +805,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     corruptionLevel, numIterations, momentum, l2, useRegularization, momentumAfter,
                     resetAdaGradIterations,  applySparsity,  optimizationAlgo, lossFunction,
                     constrainGradientToUnitNorm,  seed,
-                    nIn,  nOut, visibleUnit,hiddenUnit, weightShape, timeSeriesLength,  kernelSize, stride,padding
+                    nIn,  nOut, weightShape, timeSeriesLength,  kernelSize, stride,padding
                     ,batchSize, maxNumLineSearchIterations, minimize, layer, convolutionType, poolingType,
                     l1,customLossFunction);
 
