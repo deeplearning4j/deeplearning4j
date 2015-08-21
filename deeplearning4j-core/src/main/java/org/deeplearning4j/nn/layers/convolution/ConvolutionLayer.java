@@ -106,7 +106,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray nextEpsilon = Nd4j.tensorMmul(weights, delta, new int[][] {{0}, {1}});
 
         nextEpsilon = Nd4j.rollAxis(nextEpsilon, 3);
-        nextEpsilon = Convolution.col2im(nextEpsilon, conf.getStride(), conf.getPadding(), inputHeight, inputWidth);
+        nextEpsilon = Convolution.col2im(nextEpsilon, layerConf().getStride(), layerConf().getPadding(), inputHeight, inputWidth);
         return new Pair<>(retGradient,nextEpsilon);
     }
 
@@ -131,7 +131,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             throw new IllegalArgumentException("No null input allowed");
         applyDropOutIfNecessary(input, training);
 
-        col = Convolution.im2col(input, conf.getKernelSize(), conf.getStride(), conf.getPadding());
+        col = Convolution.im2col(input, layerConf().getKernelSize(), layerConf().getStride(), layerConf().getPadding());
         INDArray z = preOutput(training);
         INDArray activation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), z));
         return activation;
