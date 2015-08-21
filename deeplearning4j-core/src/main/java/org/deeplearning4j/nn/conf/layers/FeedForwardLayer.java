@@ -19,8 +19,8 @@ public abstract class FeedForwardLayer extends Layer {
     }
 
     public abstract static class Builder extends Layer.Builder {
-        protected int nIn = Integer.MIN_VALUE;
-        protected int nOut = Integer.MIN_VALUE;
+        protected int nIn = 0;
+        protected int nOut = 0;
 
         public Builder nIn(int nIn) {
             this.nIn = nIn;

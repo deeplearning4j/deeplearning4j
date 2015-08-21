@@ -28,6 +28,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Add;
@@ -104,8 +105,9 @@ public class SparkDl4jMultiLayer implements Serializable {
     public MultiLayerNetwork fit(String path,int labelIndex,RecordReader recordReader) {
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
+        FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
         JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
-                , labelIndex, conf.getConf(conf.getConfs().size() - 1).getNOut()));
+                , labelIndex, outputLayer.getNOut()));
         return fitDataSet(points);
 
     }
@@ -147,7 +149,8 @@ public class SparkDl4jMultiLayer implements Serializable {
      * @return the multi layer network that was fitDataSet
      */
     public MultiLayerNetwork fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
-        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, conf.getConf(conf.getConfs().size() - 1).getNOut()));
+        FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
+        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, outputLayer.getNOut()));
     }
 
 

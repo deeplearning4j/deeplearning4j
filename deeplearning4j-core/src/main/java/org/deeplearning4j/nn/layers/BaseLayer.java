@@ -538,18 +538,25 @@ public abstract class BaseLayer<LayerConfT> implements Layer {
 
     @Override
     public Layer transpose() {
+        if(!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
+            throw new UnsupportedOperationException("unsupported layer type: " + conf.getLayer().getClass().getName());
+
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        Layer layer = null;
+        Layer layer;
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
-            NeuralNetConfiguration clone = conf.clone();
-            int nIn = clone.getNOut(),nOut = clone.getNIn();
-            clone.setNIn(nIn);
-            clone.setNOut(nOut);
+            NeuralNetConfiguration clone = conf.clone();  // assume a deep clone here
+
+            org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
+                    (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
+            int nIn = clonedLayerConf.getNOut(), nOut = clonedLayerConf.getNIn();
+            clonedLayerConf.setNIn(nIn);
+            clonedLayerConf.setNOut(nOut);
+
             layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("unable to construct transposed layer", e);
         }
 
         return layer;

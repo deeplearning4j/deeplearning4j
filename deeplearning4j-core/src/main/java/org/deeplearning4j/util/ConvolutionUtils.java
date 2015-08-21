@@ -46,7 +46,7 @@ public class ConvolutionUtils {
      * @return the number of kernels/filters to apply
      */
     public static int numFeatureMap(NeuralNetConfiguration conf) {
-        return conf.getNOut();
+        return ((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getNOut();
     }
 
     /**
