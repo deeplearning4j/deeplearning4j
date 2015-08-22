@@ -66,7 +66,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                .momentum(0.9).seed(123)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100)
                 .maxNumLineSearchIterations(10)
@@ -75,7 +74,8 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.XAVIER)
-                        .activation("relu").build())
+                        .activation("relu")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(3).nOut(3)
                         .activation("softmax")

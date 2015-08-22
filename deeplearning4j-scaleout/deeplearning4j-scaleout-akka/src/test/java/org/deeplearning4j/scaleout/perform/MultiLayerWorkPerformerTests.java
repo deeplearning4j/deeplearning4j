@@ -43,18 +43,17 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
     public void testDbn() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .momentum(9e-1f)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).iterations(10)
+                .iterations(10)
                 .learningRate(1e-1f)
                 .list(2)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(4).nOut(3)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1e-1, 1))
-                        .build())
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .nIn(3).nOut(3)
                         .activation("softmax")
-                        .weightInit(WeightInit.ZERO)
-                        .build())
+                        .weightInit(WeightInit.ZERO).build())
                 .hiddenLayerSizes(new int[]{3})
                 .build();
 

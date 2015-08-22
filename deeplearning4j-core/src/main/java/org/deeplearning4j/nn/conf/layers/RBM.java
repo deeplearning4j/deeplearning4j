@@ -73,7 +73,7 @@ public class RBM extends BasePretrainNetwork {
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
+    public static class Builder extends BasePretrainNetwork.Builder {
         private HiddenUnit hiddenUnit= RBM.HiddenUnit.BINARY;
         private VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private int k = 1;

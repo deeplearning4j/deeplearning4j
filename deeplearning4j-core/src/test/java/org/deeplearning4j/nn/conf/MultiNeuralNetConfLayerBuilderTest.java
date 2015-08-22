@@ -57,7 +57,6 @@ public class MultiNeuralNetConfLayerBuilderTest {
         VisibleUnit newVisible = VisibleUnit.BINARY;
 
         MultiLayerConfiguration multiConf1 = new NeuralNetConfiguration.Builder()
-                .lossFunction(loss)
                 .list(2)
                 .layer(0, new DenseLayer.Builder().nIn(newNumIn).nOut(newNumOut).activation(act).build())
                 .layer(1, new DenseLayer.Builder().nIn(newNumIn + 1).nOut(newNumOut + 1).activation(act).build())
