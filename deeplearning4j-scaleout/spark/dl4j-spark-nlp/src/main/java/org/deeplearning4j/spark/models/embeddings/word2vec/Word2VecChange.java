@@ -29,6 +29,7 @@ import java.util.*;
 /**
  * @author Adam Gibson
  */
+@Deprecated
 public class Word2VecChange implements Serializable {
     private Map<Integer,Set<INDArray>> changes = new HashMap<>();
 
