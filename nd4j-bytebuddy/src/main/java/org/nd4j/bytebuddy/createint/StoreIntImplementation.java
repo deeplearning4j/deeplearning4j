@@ -1,13 +1,28 @@
-package org.nd4j.bytebuddy.dup;
+package org.nd4j.bytebuddy.createint;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 
 /**
+ * Instantiate an int with the given value
+ * as a variable.
+ * An example is:
+ * int i = 5;
  * @author Adam Gibson
  */
-public class DuplicateImplementation implements Implementation {
+public class StoreIntImplementation implements Implementation {
+
+   private int idx = -1;
+
+    /**
+     * Specify the variable index
+     * @param idx
+     */
+    public StoreIntImplementation(int idx) {
+        this.idx = idx;
+    }
+
     @Override
     public InstrumentedType prepare(InstrumentedType instrumentedType) {
         return instrumentedType;
@@ -15,7 +30,8 @@ public class DuplicateImplementation implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new Duplicate();
+        return new StoreInt(idx);
     }
+
 
 }

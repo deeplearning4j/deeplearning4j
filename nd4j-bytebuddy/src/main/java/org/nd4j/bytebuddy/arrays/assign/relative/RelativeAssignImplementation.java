@@ -24,4 +24,23 @@ public class RelativeAssignImplementation implements Implementation {
     public ByteCodeAppender appender(Target implementationTarget) {
         return new RelativeAssignArrayValueAppender(index,val);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RelativeAssignImplementation)) return false;
+
+        RelativeAssignImplementation that = (RelativeAssignImplementation) o;
+
+        if (index != that.index) return false;
+        return val == that.val;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = index;
+        result = 31 * result + val;
+        return result;
+    }
 }
