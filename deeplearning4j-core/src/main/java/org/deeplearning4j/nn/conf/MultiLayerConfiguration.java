@@ -16,6 +16,8 @@
  *
  */
 
+
+
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,24 +43,11 @@ import java.util.*;
 @NoArgsConstructor
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
-    @Deprecated
-    protected int[] hiddenLayerSizes;
     protected List<NeuralNetConfiguration> confs;
-    @Deprecated
-    protected boolean useDropConnect = false;
-    @Deprecated
-    protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
-    /* Sample if true, otherwise use the straight activation function */
-    @Deprecated
-    protected boolean useRBMPropUpAsActivations = true;
     @Deprecated
     protected double dampingFactor = 100;
-    @Deprecated
-    protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-    @Deprecated
-    protected boolean backward = false;
     protected boolean backprop = false;
 
     /**
@@ -134,8 +123,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         try {
             MultiLayerConfiguration clone = (MultiLayerConfiguration) super.clone();
 
-            if(clone.hiddenLayerSizes != null) clone.hiddenLayerSizes = clone.hiddenLayerSizes.clone();
-
             if(clone.confs != null) {
                 List<NeuralNetConfiguration> list = new ArrayList<>();
                 for(NeuralNetConfiguration conf : clone.confs) {
@@ -152,11 +139,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 clone.inputPreProcessors = map;
             }
 
-            if(clone.outputPostProcessors != null) {
-                // TODO: deep clone of outputPostProcessor
-                clone.outputPostProcessors = new HashMap<>(clone.outputPostProcessors);
-            }
-
             return clone;
 
         } catch (CloneNotSupportedException e) {
@@ -168,24 +150,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return inputPreProcessors.get(curr);
     }
 
-    public OutputPostProcessor getOutputPostProcess(int curr) {
-        return outputPostProcessors.get(curr);
-    }
-
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        @Deprecated
-        protected int[] hiddenLayerSizes;
-        @Deprecated
-        protected boolean useDropConnect = false;
         protected boolean pretrain = true;
-        @Deprecated
-        protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
-        protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-        protected boolean backward = false;
         protected boolean backprop = false;
         @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
@@ -208,18 +178,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder outputPostProcessor(Integer layer, OutputPostProcessor processor) {
-            outputPostProcessors.put(layer, processor);
-            return this;
-        }
-
-        @Deprecated
-        public Builder outputPostProcessors(Map<Integer, OutputPostProcessor> processors) {
-            this.outputPostProcessors = processors;
-            return this;
-        }
-
         /**
          * Whether to do back prop or not
          * @param backprop whether to do back prop or not
@@ -235,14 +193,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             this.dampingFactor = dampingFactor;
             return this;
         }
-
-        @Deprecated
-        public Builder useRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
-            this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
-            return this;
-        }
-
-
+        
         /**
          * Whether to do pre train or not
          * @param pretrain whether to do pre train or not
@@ -253,48 +204,17 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**
-         * Whether to use drop connect or not
-         * @param useDropConnect true if drop connect
-         *                       should applied or not
-         * @return builder pattern
-         */
-        @Deprecated
-        public Builder useDropConnect(boolean useDropConnect) {
-            this.useDropConnect = useDropConnect;
-            return this;
-        }
-
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
 
         }
 
-        /**
-         * Specify the hidden layer sizes.
-         * Note that you can specify the layer sizes in continuous order.
-         * Whereever number of inputs and outputs are used
-         * this will be set for intermediate layers
-         * @param hiddenLayerSizes the hidden layer sizes to use
-         * @return
-         */
-        @Deprecated
-        public Builder hiddenLayerSizes(int...hiddenLayerSizes) {
-            this.hiddenLayerSizes = hiddenLayerSizes;
-            return this;
-        }
-
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            conf.hiddenLayerSizes = this.hiddenLayerSizes;
-            conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
-            conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
-            conf.outputPostProcessors = outputPostProcessors;
-            conf.backward = backward;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
@@ -306,12 +226,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public String toString() {
             return "Builder{" +
                     "confs=" + confs +
-                    ", hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
-                    ", useDropConnect=" + useDropConnect +
                     ", pretrain=" + pretrain +
-                    ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
                     ", dampingFactor=" + dampingFactor +
-                    ", preProcessors=" + outputPostProcessors +
                     '}';
         }
 
@@ -323,10 +239,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             Builder builder = (Builder) o;
 
             return Double.compare(builder.dampingFactor, dampingFactor) == 0
-                    && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
-                    && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
-                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
-                    && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes);
+                    && pretrain == builder.pretrain
+                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null);
 
         }
 
@@ -335,13 +249,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             int result;
             long temp;
             result = confs != null ? confs.hashCode() : 0;
-            result = 31 * result + (hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0);
-            result = 31 * result + (useDropConnect ? 1 : 0);
             result = 31 * result + (pretrain ? 1 : 0);
-            result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
             temp = Double.doubleToLongBits(dampingFactor);
             result = 31 * result + (int) (temp ^ (temp >>> 32));
-            result = 31 * result + (outputPostProcessors != null ? outputPostProcessors.hashCode() : 0);
             return result;
         }
 

@@ -27,8 +27,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import org.deeplearning4j.nn.conf.deserializers.*;
-import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -52,8 +50,6 @@ import java.util.Map;
 @NoArgsConstructor
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
-    @Deprecated
-    private boolean useAdaGrad = true;
     private double lr = 1e-1;
     protected int numIterations = 5;
     /* momentum for learning */
@@ -63,8 +59,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean useRegularization = false;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
-    //reset adagrad historical gradient after n iterations
-    protected int resetAdaGradIterations = -1;
     //number of line search iterations
     protected int maxNumLineSearchIterations = 5;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
@@ -73,17 +67,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //adadelta - weight for how much to consider previous history
     protected double rho;
     protected long seed;
-
     protected StepFunction stepFunction;
     protected Layer layer;
-
-
-
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
-
     protected boolean useDropConnect = false;
-
     // Graves LSTM & RNN
     private int timeSeriesLength = 1;
     //batch size: primarily used for conv nets. Will be reinforced if set.
@@ -92,47 +80,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean minimize = false;
     //l1 regularization
     protected double l1 = 0.0;
-
     protected double rmsDecay = 0.0;
-
-
     protected boolean miniBatch = true;
-
-    public NeuralNetConfiguration(boolean useAdaGrad,
-                                  double lr,
-                                  int numIterations,
-                                  double momentum,
-                                  double l2,
-                                  boolean useRegularization,
-                                  Map<Integer, Double> momentumAfter,
-                                  int resetAdaGradIterations,
-                                  OptimizationAlgorithm optimizationAlgo,
-                                  boolean constrainGradientToUnitNorm,
-                                  long seed,
-                                  int timeSeriesLength,
-                                  int batchSize,
-                                  int maxNumLineSearchIterations,
-                                  boolean minimize,
-                                  Layer layer,
-                                  double l1) {
-        this.minimize = minimize;
-        this.maxNumLineSearchIterations = maxNumLineSearchIterations;
-        this.l1 = l1;
-        this.batchSize = batchSize;
-        this.layer = layer;
-        this.useAdaGrad = useAdaGrad;
-        this.lr = lr;
-        this.numIterations = numIterations;
-        this.momentum = momentum;
-        this.l2 = l2;
-        this.useRegularization = useRegularization;
-        this.momentumAfter = momentumAfter;
-        this.resetAdaGradIterations = resetAdaGradIterations;
-        this.optimizationAlgo = optimizationAlgo;
-        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
-        this.seed = seed;
-        this.timeSeriesLength = timeSeriesLength;
-    }
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -291,14 +240,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private static ObjectMapper initMapperYaml() {
         ObjectMapper ret = new ObjectMapper(new YAMLFactory());
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
-        SimpleModule module = new SimpleModule();
-
-        module.addSerializer(OutputPostProcessor.class,new PreProcessorSerializer());
-        module.addDeserializer(OutputPostProcessor.class,new PreProcessorDeSerializer());
-
-        ret.registerModule(module);
         return ret;
     }
 
@@ -315,27 +258,18 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
-        SimpleModule module = new SimpleModule();
-
-        module.addSerializer(OutputPostProcessor.class,new PreProcessorSerializer());
-        module.addDeserializer(OutputPostProcessor.class,new PreProcessorDeSerializer());
-
-        ret.registerModule(module);
         return ret;
     }
 
     public static class Builder implements Cloneable {
         private double rmsDecay;
-        @Deprecated
-        private boolean useAdaGrad = true;
         private double lr = 1e-1f;
         private double momentum = 0.5f;
         private double l2 = 0f;
         private boolean useRegularization = false;
         private Map<Integer, Double> momentumAfter;
-        private int resetAdaGradIterations = -1;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
         private long seed = System.currentTimeMillis();
@@ -453,12 +387,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder useAdaGrad(boolean useAdaGrad) {
-            this.useAdaGrad = useAdaGrad;
-            return this;
-        }
-
         public Builder learningRate(double lr) {
             this.lr = lr;
             return this;
@@ -471,12 +399,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
-            return this;
-        }
-
-        @Deprecated
-        public Builder adagradResetIterations(int resetAdaGradIterations) {
-            this.resetAdaGradIterations = resetAdaGradIterations;
             return this;
         }
 
@@ -503,12 +425,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder resetAdaGradIterations(int resetAdaGradIterations) {
-            this.resetAdaGradIterations = resetAdaGradIterations;
-            return this;
-        }
-
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
             this.optimizationAlgo = optimizationAlgo;
             return this;
@@ -528,22 +444,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
 
-            NeuralNetConfiguration ret = new NeuralNetConfiguration(useAdaGrad,  lr,
-                    numIterations, momentum, l2, useRegularization, momentumAfter,
-                    resetAdaGradIterations,  optimizationAlgo,
-                    constrainGradientToUnitNorm,  seed,
-                    timeSeriesLength,
-                    batchSize, maxNumLineSearchIterations, minimize, layer,
-                    l1);
+            NeuralNetConfiguration conf = new NeuralNetConfiguration();
 
-            ret.useAdaGrad = this.useAdaGrad;
-            ret.rmsDecay = rmsDecay;
-            ret.stepFunction = stepFunction;
-            ret.useDropConnect = useDropConnect;
-            ret.miniBatch = miniBatch;
-            ret.rho = rho;
+            conf.minimize = minimize;
+            conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
+            conf.l1 = l1;
+            conf.batchSize = batchSize;
+            conf.layer = layer;
+            conf.lr = lr;
+            conf.numIterations = numIterations;
+            conf.momentum = momentum;
+            conf.l2 = l2;
+            conf.useRegularization = useRegularization;
+            conf.momentumAfter = momentumAfter;
+            conf.optimizationAlgo = optimizationAlgo;
+            conf.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+            conf.seed = seed;
+            conf.timeSeriesLength = timeSeriesLength;
+            conf.rmsDecay = rmsDecay;
+            conf.stepFunction = stepFunction;
+            conf.useDropConnect = useDropConnect;
+            conf.miniBatch = miniBatch;
+            conf.rho = rho;
 
-            return ret;
+            return conf;
         }
     }
 }
