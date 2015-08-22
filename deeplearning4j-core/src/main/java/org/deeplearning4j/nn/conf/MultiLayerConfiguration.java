@@ -43,8 +43,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
     @Deprecated
-    protected boolean useDropConnect = false;
-    @Deprecated
     protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
     /* Sample if true, otherwise use the straight activation function */
@@ -171,8 +169,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        @Deprecated
-        protected boolean useDropConnect = false;
         protected boolean pretrain = true;
         @Deprecated
         protected boolean useRBMPropUpAsActivations = false;
@@ -247,18 +243,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**
-         * Whether to use drop connect or not
-         * @param useDropConnect true if drop connect
-         *                       should applied or not
-         * @return builder pattern
-         */
-        @Deprecated
-        public Builder useDropConnect(boolean useDropConnect) {
-            this.useDropConnect = useDropConnect;
-            return this;
-        }
-
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
@@ -268,7 +252,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
             conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
@@ -285,7 +268,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public String toString() {
             return "Builder{" +
                     "confs=" + confs +
-                    ", useDropConnect=" + useDropConnect +
                     ", pretrain=" + pretrain +
                     ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
                     ", dampingFactor=" + dampingFactor +
@@ -301,7 +283,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             Builder builder = (Builder) o;
 
             return Double.compare(builder.dampingFactor, dampingFactor) == 0
-                    && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
+                    && pretrain == builder.pretrain
                     && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
                     && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null);
 
@@ -312,7 +294,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             int result;
             long temp;
             result = confs != null ? confs.hashCode() : 0;
-            result = 31 * result + (useDropConnect ? 1 : 0);
             result = 31 * result + (pretrain ? 1 : 0);
             result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
             temp = Double.doubleToLongBits(dampingFactor);
