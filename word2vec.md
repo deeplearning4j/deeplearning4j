@@ -88,7 +88,7 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     hillary clinton:rick perry::barack obama:[Kinky_Friedman, David_Dewhurst, Farouk_Shami, George_W._Bush]
     //Kinky and Farouk ran for governor of Texas, 
     //Dewhurst served as lieutenant gov, and Bush, you know.
-    //We're not saying Rick Perry's kinky, but Word2vec thinks so...
+    //Not saying Rick Perry's kinky, but Word2vec thinks so...
     
     donald trump:republican::barack obama: [Democratic, GOP, Democrats, McCain]
     
