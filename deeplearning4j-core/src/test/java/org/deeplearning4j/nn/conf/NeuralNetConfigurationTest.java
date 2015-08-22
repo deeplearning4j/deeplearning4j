@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf;
 
 import static org.junit.Assert.*;
 
+import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -32,6 +33,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.junit.Test;
+
+import java.util.HashMap;
 
 /**
  * Created by agibsonccc on 11/27/14.
@@ -63,7 +66,7 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testJson() {
-        NeuralNetConfiguration conf = getRBMConfig(1,1,WeightInit.SIZE);
+        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.SIZE);
 
         assertFalse(conf.useRegularization);
         String json = conf.toJson();
@@ -75,7 +78,7 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testYaml() {
-        NeuralNetConfiguration conf = getRBMConfig(1,1,WeightInit.SIZE);
+        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.SIZE);
 
         assertFalse(conf.useRegularization);
         String json = conf.toYaml();
@@ -85,11 +88,19 @@ public class NeuralNetConfigurationTest {
     }
 
     @Test
-    public void testCopyConstructor() {
-        NeuralNetConfiguration conf = getRBMConfig(1,1,WeightInit.UNIFORM);
+    public void testClone() {
+        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.UNIFORM);
+        conf.setMomentumAfter(new HashMap<Integer,Double>());
+        conf.setStepFunction(new DefaultStepFunction());
 
-        NeuralNetConfiguration conf2 = new NeuralNetConfiguration(conf);
-        assertEquals(conf,conf2);
+        NeuralNetConfiguration conf2 = conf.clone();
+
+        assertEquals(conf, conf2);
+        assertNotSame(conf, conf2);
+        assertNotSame(conf.getMomentumAfter(), conf2.getMomentumAfter());
+        assertNotSame(conf.getLayer(), conf2.getLayer());
+        assertNotSame(conf.getLayer().getDist(), conf2.getLayer().getDist());
+        assertNotSame(conf.getStepFunction(), conf2.getStepFunction());
     }
 
     @Test

@@ -39,7 +39,7 @@ import java.util.*;
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
-public class MultiLayerConfiguration implements Serializable {
+public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     @Deprecated
     protected int[] hiddenLayerSizes;
@@ -60,24 +60,6 @@ public class MultiLayerConfiguration implements Serializable {
     @Deprecated
     protected boolean backward = false;
     protected boolean backprop = false;
-
-
-
-    public MultiLayerConfiguration(MultiLayerConfiguration multiLayerConfiguration) {
-        this.hiddenLayerSizes = multiLayerConfiguration.hiddenLayerSizes;
-        this.confs = new ArrayList<>(multiLayerConfiguration.confs);
-        this.useDropConnect = multiLayerConfiguration.useDropConnect;
-        this.useGaussNewtonVectorProductBackProp = multiLayerConfiguration.useGaussNewtonVectorProductBackProp;
-        this.pretrain = multiLayerConfiguration.pretrain;
-        this.useRBMPropUpAsActivations = multiLayerConfiguration.useRBMPropUpAsActivations;
-        this.dampingFactor = multiLayerConfiguration.dampingFactor;
-        this.outputPostProcessors = new HashMap<>(multiLayerConfiguration.outputPostProcessors);
-        this.backward = multiLayerConfiguration.backward;
-        this.backprop = multiLayerConfiguration.backprop;
-        this.inputPreProcessors = multiLayerConfiguration.inputPreProcessors;
-
-    }
-
 
     /**
      *
@@ -149,7 +131,37 @@ public class MultiLayerConfiguration implements Serializable {
 
     @Override
     public MultiLayerConfiguration clone() {
-        return new MultiLayerConfiguration(this);
+        try {
+            MultiLayerConfiguration clone = (MultiLayerConfiguration) super.clone();
+
+            if(clone.hiddenLayerSizes != null) clone.hiddenLayerSizes = clone.hiddenLayerSizes.clone();
+
+            if(clone.confs != null) {
+                List<NeuralNetConfiguration> list = new ArrayList<>();
+                for(NeuralNetConfiguration conf : clone.confs) {
+                    list.add(conf.clone());
+                }
+                clone.confs = list;
+            }
+
+            if(clone.inputPreProcessors != null) {
+                Map<Integer,InputPreProcessor> map = new HashMap<>();
+                for(Map.Entry<Integer,InputPreProcessor> entry : clone.inputPreProcessors.entrySet()) {
+                    map.put(entry.getKey(), entry.getValue().clone());
+                }
+                clone.inputPreProcessors = map;
+            }
+
+            if(clone.outputPostProcessors != null) {
+                // TODO: deep clone of outputPostProcessor
+                clone.outputPostProcessors = new HashMap<>(clone.outputPostProcessors);
+            }
+
+            return clone;
+
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public InputPreProcessor getInputPreProcess(int curr) {
