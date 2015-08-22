@@ -33,9 +33,23 @@ public class SubsamplingLayer extends Layer {
     private SubsamplingLayer(Builder builder) {
     	super(builder);
         this.poolingType = builder.poolingType;
+        if(builder.kernelSize.length != 2)
+            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
+        if(builder.stride.length != 2)
+            throw new IllegalArgumentException("Invalid stride, must be length 2");
         this.stride = builder.stride;
         this.padding = builder.padding;
+    }
+
+    @Override
+    public SubsamplingLayer clone() {
+        SubsamplingLayer clone = (SubsamplingLayer) super.clone();
+
+        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
+        if(clone.stride != null) clone.stride = clone.stride.clone();
+        if(clone.padding != null) clone.padding = clone.padding.clone();
+        return clone;
     }
 
     @AllArgsConstructor
@@ -104,17 +118,17 @@ public class SubsamplingLayer extends Layer {
             return this;
         }
 
-        public Builder kernelSize(int[] kernelSize){
+        public Builder kernelSize(int... kernelSize){
             this.kernelSize = kernelSize;
             return this;
         }
 
-        public Builder stride(int[] stride){
+        public Builder stride(int... stride){
             this.stride = stride;
             return this;
         }
 
-        public Builder padding(int[] padding){
+        public Builder padding(int... padding){
             this.padding = padding;
             return this;
         }

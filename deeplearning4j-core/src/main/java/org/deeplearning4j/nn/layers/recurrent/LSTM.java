@@ -52,7 +52,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.tanh;
  *
  * @author Adam Gibson
  */
-public class LSTM extends BaseLayer {
+public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     //recurrent weights (iFogZ = iFog & iFogA = iFogF & memCellActivations = c & outputActivations = hOut)
     private INDArray iFogZ, iFogA, memCellActivations, hIn, outputActivations;
     // update values for drop connect
@@ -100,7 +100,7 @@ public class LSTM extends BaseLayer {
         INDArray biasGradients = Nd4j.sum(inputWeightGradients,0); // dbd
         INDArray dHout = dY.mmul(inputWeights.transpose()); //TODO is this nextEpsilon?
 
-        if(conf.isUseDropConnect() & conf.getDropOut() > 0)
+        if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
             dHout.muli(u2);
 
         //backprop the LSTM
@@ -117,7 +117,7 @@ public class LSTM extends BaseLayer {
 
 
         for(int t = sequenceLen -1; t > 0; t--) {
-            if(conf.getActivationFunction().equals("tanh")) {
+            if(conf.getLayer().getActivationFunction().equals("tanh")) {
                 INDArray tanhCt = tanh(memCellActivations.slice(t));
                 dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},tanhCt.mul(dHout.slice(t)));
                 dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(dHout.slice(t))));
@@ -149,7 +149,7 @@ public class LSTM extends BaseLayer {
                 dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns())));
 
 
-            if(conf.isUseDropConnect() & conf.getDropOut() > 0)
+            if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
                 dX.muli(u);
 
         }
@@ -176,9 +176,9 @@ public class LSTM extends BaseLayer {
         INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
 
 
-        if(conf.getDropOut() > 0) {
-            double scale = 1 / (1 - conf.getDropOut());
-            u = Nd4j.rand(input.shape()).lti(1 - conf.getDropOut()).muli(scale);
+        if(conf.getLayer().getDropOut() > 0) {
+            double scale = 1 / (1 - conf.getLayer().getDropOut());
+            u = Nd4j.rand(input.shape()).lti(1 - conf.getLayer().getDropOut()).muli(scale);
             input.muli(u);
         }
 
@@ -221,7 +221,7 @@ public class LSTM extends BaseLayer {
                 memCellActivations.slice(t).addi(iFogA.slice(t).get(interval(hiddenLayerSize, 2 * hiddenLayerSize)).mul(prevMemCellActivations));
 
             // mt hidden out or output before activation
-            if(conf.getActivationFunction().equals("tanh")) {
+            if(conf.getLayer().getActivationFunction().equals("tanh")) {
                 outputActivations.slice(t).assign(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(tanh(memCellActivations.getRow(t))));
             } else {
                 outputActivations.slice(t).assign(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(memCellActivations.getRow(t)));
@@ -229,8 +229,8 @@ public class LSTM extends BaseLayer {
         }
 
         if(conf.isUseDropConnect() && training) {
-            if (conf.getDropOut() > 0) {
-                u2 = Dropout.applyDropout(outputActivations, conf.getDropOut(), u2);
+            if (conf.getLayer().getDropOut() > 0) {
+                u2 = Dropout.applyDropout(outputActivations, conf.getLayer().getDropOut(), u2);
                 outputActivations.muli(u2);
             }
         }
@@ -436,7 +436,7 @@ public class LSTM extends BaseLayer {
         iFogf.slice(t).put(after,tanh(iFogf.slice(t).get(after)));
         c.slice(t).assign(iFogf.slice(t).get(interval(0,d)).mul(iFogf.slice(t).get(interval(3 * d,iFogf.columns()))).addi(iFogf.slice(t).get(interval(d, 2 * d))).muli(cPrev));
 
-        if(conf.getActivationFunction().equals("tanh"))
+        if(conf.getLayer().getActivationFunction().equals("tanh"))
             outputActivations.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(tanh(c.slice(t))));
         else
             outputActivations.slice(t).assign(iFogf.slice(t).get(interval(2 * d,3 * d)).mul(c.slice(t)));

@@ -399,31 +399,33 @@ public class BackPropMLPTest {
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, String activationFunction) {
     	NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0, 0.1))
-                .activationFunction(activationFunction)
                 .iterations(1)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
-                .corruptionLevel(0.0)
                 .learningRate(0.1)
-                .updater(Updater.SGD)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
-                .dropOut(0.0)
                 .momentum(0.0)
-                .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
                 .list(hiddenLayerSizes.length + 1);
     	
     	for( int i=0; i<hiddenLayerSizes.length; i++) {
     		int nIn = (i == 0 ? 4 : hiddenLayerSizes[i-1]);
-    		lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).build());
+    		lb.layer(i, new DenseLayer.Builder()
+                    .nIn(nIn).nOut(hiddenLayerSizes[i])
+                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                    .updater(Updater.SGD)
+                    .activation(activationFunction)
+                    .build());
     	}
     	lb.layer(hiddenLayerSizes.length, new OutputLayer.Builder(LossFunction.MCXENT)
-    			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3).activation("softmax").build());
+    			.nIn(hiddenLayerSizes[hiddenLayerSizes.length-1]).nOut(3)
+                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
+                .updater(Updater.SGD)
+                .activation("softmax")
+                .build());
     	lb.pretrain(false).backprop(true);
     	
         return lb.build();
