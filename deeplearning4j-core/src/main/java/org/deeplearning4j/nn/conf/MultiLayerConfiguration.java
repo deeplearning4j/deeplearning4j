@@ -49,8 +49,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected boolean pretrain = true;
     @Deprecated
     protected double dampingFactor = 100;
-    @Deprecated
-    protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean backprop = false;
 
@@ -143,11 +141,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 clone.inputPreProcessors = map;
             }
 
-            if(clone.outputPostProcessors != null) {
-                // TODO: deep clone of outputPostProcessor
-                clone.outputPostProcessors = new HashMap<>(clone.outputPostProcessors);
-            }
-
             return clone;
 
         } catch (CloneNotSupportedException e) {
@@ -159,16 +152,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return inputPreProcessors.get(curr);
     }
 
-    public OutputPostProcessor getOutputPostProcess(int curr) {
-        return outputPostProcessors.get(curr);
-    }
-
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
         protected boolean pretrain = true;
         protected double dampingFactor = 100;
-        protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backprop = false;
         @Deprecated
@@ -189,18 +177,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         public Builder inputPreProcessors(Map<Integer,InputPreProcessor> processors) {
             this.inputPreProcessors = processors;
-            return this;
-        }
-
-        @Deprecated
-        public Builder outputPostProcessor(Integer layer, OutputPostProcessor processor) {
-            outputPostProcessors.put(layer, processor);
-            return this;
-        }
-
-        @Deprecated
-        public Builder outputPostProcessors(Map<Integer, OutputPostProcessor> processors) {
-            this.outputPostProcessors = processors;
             return this;
         }
 
@@ -241,7 +217,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.confs = this.confs;
             conf.pretrain = pretrain;
             conf.dampingFactor = dampingFactor;
-            conf.outputPostProcessors = outputPostProcessors;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
@@ -255,7 +230,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     "confs=" + confs +
                     ", pretrain=" + pretrain +
                     ", dampingFactor=" + dampingFactor +
-                    ", preProcessors=" + outputPostProcessors +
                     '}';
         }
 
@@ -280,7 +254,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             result = 31 * result + (pretrain ? 1 : 0);
             temp = Double.doubleToLongBits(dampingFactor);
             result = 31 * result + (int) (temp ^ (temp >>> 32));
-            result = 31 * result + (outputPostProcessors != null ? outputPostProcessors.hashCode() : 0);
             return result;
         }
 
