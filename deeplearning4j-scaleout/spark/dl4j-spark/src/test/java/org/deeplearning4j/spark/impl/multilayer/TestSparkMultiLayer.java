@@ -81,7 +81,7 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                         .activation("softmax")
                         .weightInit(WeightInit.XAVIER)
                         .build())
-                .hiddenLayerSizes(3).backprop(false)
+                .backprop(false)
                 .build();
 
 
@@ -125,7 +125,6 @@ public class TestSparkMultiLayer extends BaseSparkTest {
                         .nIn(3).nOut(3)
                         .activation("softmax")
                         .build())
-                .hiddenLayerSizes(3)
                 .build();
 
         DataSet dataSet = new IrisDataSetIterator(150,150).next();
