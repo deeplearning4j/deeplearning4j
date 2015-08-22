@@ -115,7 +115,7 @@ public class GRU extends BaseLayer {
 			}
 
 			INDArray zr = zSlice.get(NDArrayIndex.all(),interval(0,layerSize));
-			INDArray sigmaPrimeR = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zr.dup()).derivative());
+			INDArray sigmaPrimeZr = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zr.dup()).derivative());
 
 			INDArray dOutNextdOut;
 			if( t == timeSeriesLength-1 ){
@@ -133,9 +133,8 @@ public class GRU extends BaseLayer {
 				INDArray sigmaPrimeCNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zcNext.dup()).derivative());
 
 				INDArray temp = arNext.mulRowVector(wCdiag)
-						.addi(wC.mmul(aOut.transpose()).transpose()
-								.muliRowVector(wRdiag)
-								.muli(sigmaPrimeR) );
+						.addi(wC.mmul(aOut.mul(sigmaPrimeZr).transpose()).transpose()
+								.muliRowVector(wRdiag) );
 
 				dOutNextdOut = auNext.add(aOut.sub(acNext).muli(sigmaPrimeUNext).muliRowVector(wUdiag));
 				dOutNextdOut.addi(auNext.rsub(1.0)
@@ -164,7 +163,7 @@ public class GRU extends BaseLayer {
 			INDArray deltaC = deltaOut.mul(sigmaPrimeZc).muli(au.rsub(1.0));
 			
 			//Delta at reset gate
-			INDArray deltaR = deltaC.mulRowVector(wCdiag).muli(prevOut).muli(sigmaPrimeR);
+			INDArray deltaR = deltaC.mulRowVector(wCdiag).muli(prevOut).muli(sigmaPrimeZr);
 			
 			//Add input gradients for this time step:
 			INDArray prevLayerActivationSlice = (is2dInput ? input : input.tensorAlongDimension(t,1,0));
