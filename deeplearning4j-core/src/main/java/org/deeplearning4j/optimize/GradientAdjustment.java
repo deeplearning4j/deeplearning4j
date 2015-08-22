@@ -62,12 +62,6 @@ public class GradientAdjustment {
         if(lastStep == null)
             lastStep = Nd4j.ones((params.shape()));
 
-        //reset adagrad history
-        if(iteration != 0 && conf.getResetAdaGradIterations() > 0 &&  iteration % conf.getResetAdaGradIterations() == 0) {
-            //adaGrad.historicalGradient = null;
-            log.info("Resetting adagrad");
-        }
-
         //change up momentum after so many iterations if specified
         double momentum = conf.getMomentum();
         if(conf.getMomentumAfter() != null && !conf.getMomentumAfter().isEmpty()) {
@@ -83,11 +77,9 @@ public class GradientAdjustment {
             gradient = gradient.mul(conf.getLr()).negi().divi(Transforms.sqrt(lastStep.add(Nd4j.EPS_THRESHOLD)));
         }
 
-        if (conf.isUseAdaGrad()) {
-            gradient = adaGrad.getGradient(gradient,0);
-        } else {
-            gradient.muli(conf.getLr());
-        }
+        //calculate gradient
+        gradient = adaGrad.getGradient(gradient,0);
+
 
         //apply nesterov's AFTER learning rate update
         if (momentum > 0) {
