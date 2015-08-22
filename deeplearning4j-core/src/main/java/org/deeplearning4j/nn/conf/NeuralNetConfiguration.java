@@ -52,8 +52,6 @@ import java.util.Map;
 @NoArgsConstructor
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
-    @Deprecated
-    private boolean useAdaGrad = true;
     private double lr = 1e-1;
     protected int numIterations = 5;
     /* momentum for learning */
@@ -63,8 +61,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean useRegularization = false;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
-    //reset adagrad historical gradient after n iterations
-    protected int resetAdaGradIterations = -1;
     //number of line search iterations
     protected int maxNumLineSearchIterations = 5;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
@@ -98,14 +94,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     protected boolean miniBatch = true;
 
-    public NeuralNetConfiguration(boolean useAdaGrad,
-                                  double lr,
+    public NeuralNetConfiguration(double lr,
                                   int numIterations,
                                   double momentum,
                                   double l2,
                                   boolean useRegularization,
                                   Map<Integer, Double> momentumAfter,
-                                  int resetAdaGradIterations,
                                   OptimizationAlgorithm optimizationAlgo,
                                   boolean constrainGradientToUnitNorm,
                                   long seed,
@@ -120,14 +114,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.l1 = l1;
         this.batchSize = batchSize;
         this.layer = layer;
-        this.useAdaGrad = useAdaGrad;
         this.lr = lr;
         this.numIterations = numIterations;
         this.momentum = momentum;
         this.l2 = l2;
         this.useRegularization = useRegularization;
         this.momentumAfter = momentumAfter;
-        this.resetAdaGradIterations = resetAdaGradIterations;
         this.optimizationAlgo = optimizationAlgo;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
         this.seed = seed;
@@ -328,14 +320,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     public static class Builder implements Cloneable {
         private double rmsDecay;
-        @Deprecated
-        private boolean useAdaGrad = true;
         private double lr = 1e-1f;
         private double momentum = 0.5f;
         private double l2 = 0f;
         private boolean useRegularization = false;
         private Map<Integer, Double> momentumAfter;
-        private int resetAdaGradIterations = -1;
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
         private long seed = System.currentTimeMillis();
@@ -453,12 +442,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder useAdaGrad(boolean useAdaGrad) {
-            this.useAdaGrad = useAdaGrad;
-            return this;
-        }
-
         public Builder learningRate(double lr) {
             this.lr = lr;
             return this;
@@ -471,12 +454,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
-            return this;
-        }
-
-        @Deprecated
-        public Builder adagradResetIterations(int resetAdaGradIterations) {
-            this.resetAdaGradIterations = resetAdaGradIterations;
             return this;
         }
 
@@ -503,12 +480,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        @Deprecated
-        public Builder resetAdaGradIterations(int resetAdaGradIterations) {
-            this.resetAdaGradIterations = resetAdaGradIterations;
-            return this;
-        }
-
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
             this.optimizationAlgo = optimizationAlgo;
             return this;
@@ -528,15 +499,14 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
 
-            NeuralNetConfiguration ret = new NeuralNetConfiguration(useAdaGrad,  lr,
+            NeuralNetConfiguration ret = new NeuralNetConfiguration(lr,
                     numIterations, momentum, l2, useRegularization, momentumAfter,
-                    resetAdaGradIterations,  optimizationAlgo,
+                    optimizationAlgo,
                     constrainGradientToUnitNorm,  seed,
                     timeSeriesLength,
                     batchSize, maxNumLineSearchIterations, minimize, layer,
                     l1);
 
-            ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
             ret.stepFunction = stepFunction;
             ret.useDropConnect = useDropConnect;
