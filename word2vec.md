@@ -214,9 +214,17 @@ The next step is to evaluate the quality of your feature vectors.
         
         //output: [night, week, year, game, season, during, office, until, -]
 
-The line `vec.similarity("word1","word2")` will return the cosine similarity of the two words you enter. The closer it is to 1, the more similar the net perceives those words to be (see the Sweden-Norway example above). 
+The line `vec.similarity("word1","word2")` will return the cosine similarity of the two words you enter. The closer it is to 1, the more similar the net perceives those words to be (see the Sweden-Norway example above). For example:
 
-With `vec.wordsNearest("word1", numWordsNearest)`, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest.
+        double cosSim = vec.similarity("day", "night");
+        System.out.println(cosSim);
+        //output: 0.7704452276229858
+
+With `vec.wordsNearest("word1", numWordsNearest)`, the words printed to the screen allow you to eyeball whether the net has clustered semantically similar words. You can set the number of nearest words you want with the second parameter of wordsNearest. For example:
+
+        Collection<String> lst3 = vec.wordsNearest("man", 10);
+        System.out.println(lst3);
+        //output: [director, company, program, former, university, family, group, such, general]
 
 ### Visualizing the Model
 
@@ -246,11 +254,11 @@ This will save the vectors to a file called `words.txt` that will appear in the 
 
 To keep working with the vectors, simply call methods on `vec` like this:
 
-        vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
+        Collection<String> kingList = vec.wordsNearest(Arrays.asList("king", "woman"), Arrays.asList("queen"), 10);
 
 The classic example of Word2vec's arithmetic of words is "king - queen = man - woman" and its logical extension "king - queen + woman = man". 
 
-The example above will output the 10 nearest words to the vector `king - queen + woman`, which should include `man`. The first parameter for wordsNearest has to include the "positive" words `king` and `woman`; the second parameter includes the negative word `queen`; the third is the length of the list of nearest words you would like to see. 
+The example above will output the 10 nearest words to the vector `king - queen + woman`, which should include `man`. The first parameter for wordsNearest has to include the "positive" words `king` and `woman`; the second parameter includes the negative word `queen`; the third is the length of the list of nearest words you would like to see. Remember to add this to the top of the file: `import java.util.Arrays;`
 
 Any number of combinations is possible, but they will only return sensible results if the words you query occurred with enough frequency in the corpus. Obviously, the ability to return similar words (or documents) is at the foundation of both search and recommendation engines. 
 
