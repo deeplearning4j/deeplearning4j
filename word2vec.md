@@ -85,8 +85,7 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     //some of these results fit into indifference 
     //as a cold response to love, others as a co-occuring feeling.
     
-    hillary clinton:rick perry::barack obama:[Kinky_Friedman, David_Dewhurst, 
-    Farouk_Shami, George_W._Bush]
+    hillary clinton:rick perry::barack obama:[Kinky_Friedman, David_Dewhurst, Farouk_Shami, George_W._Bush]
     //Kinky and Farouk ran for governor of Texas, 
     //Dewhurst served as lieutenant gov, and Bush, you know.
     //We're not saying Rick Perry's kinky, but Word2vec thinks so...
@@ -94,8 +93,8 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     donald trump:republican::barack obama: [Democratic, GOP, Democrats, McCain]
     
     monkey:human::dinosaur:[fossil, fossilized, Ice_Age_mammals, fossilization]
-    //humans are fossilized monkeys? humans are what's left over from monkeys? 
-    //humans are the species that beat monkeys?
+    //humans are fossilized monkeys? humans are what's left 
+    //over from monkeys? humans are the species that beat monkeys?
     
     building:architect::software:[programmer, SecurityCenter, WinPcap]
 
