@@ -131,14 +131,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (defaultConfiguration == null)
             defaultConfiguration = new NeuralNetConfiguration.Builder()
                     .build();
-
-        //add a default configuration for each hidden layer + output layer
-        if (layerWiseConfigurations == null || layerWiseConfigurations.getConfs().isEmpty())
-            for (int i = 0; i < layerWiseConfigurations.getHiddenLayerSizes().length + 1; i++) {
-                layerWiseConfigurations.getConfs().add(defaultConfiguration.clone());
-            }
-
-
     }
 
 

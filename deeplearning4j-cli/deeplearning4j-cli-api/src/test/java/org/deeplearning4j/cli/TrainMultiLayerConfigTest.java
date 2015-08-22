@@ -61,7 +61,6 @@ public class TrainMultiLayerConfigTest {
                         .activation("softmax")
                         .weightInit(WeightInit.ZERO).dist(new UniformDistribution(0, 1))
                         .build())
-                .hiddenLayerSizes(3)
                 .build();
         String json = conf.toJson();
 
