@@ -197,11 +197,11 @@ public class GradientCheckTests {
     	//Basic test of GRU RNN
     	Nd4j.getRandom().setSeed(12345L);
     	
-    	int timeSeriesLength = 5;
-    	int nIn = 5;
-    	int gruLayerSize = 7;
-    	int nOut = 3;
-    	int miniBatchSize = 12;
+    	int timeSeriesLength = 2;
+    	int nIn = 2;
+    	int gruLayerSize = 2;
+    	int nOut = 2;
+    	int miniBatchSize = 2;
     	
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0))
@@ -212,7 +212,7 @@ public class GradientCheckTests {
 	        .layer(0, new GRU.Builder().nIn(nIn).nOut(gruLayerSize).activation("tanh").build())
 	        .layer(1, new GRU.Builder().nIn(gruLayerSize).nOut(gruLayerSize).activation("tanh").build())
 	        .layer(2, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(gruLayerSize).nOut(nOut).build())
-	        .inputPreProcessor(2, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+	        .inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
 	        .pretrain(false).backprop(true)
 	        .build();
     	
@@ -294,7 +294,7 @@ public class GradientCheckTests {
 			                .list(2)
 			                .layer(0, new GRU.Builder().nIn(nIn).nOut(layerSize).build())
 			                .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize).nOut(nOut).build())
-			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
 			                .pretrain(false).backprop(true)
 			                .build();
 			
@@ -354,7 +354,7 @@ public class GradientCheckTests {
 	            .list(2)
 	            .layer(0, new GRU.Builder().nIn(nIn).nOut(layerSize).build())
 	            .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut).build())
-	            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength[i]))
+	            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
 	            .pretrain(false).backprop(true)
 	            .build();
     		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -388,7 +388,7 @@ public class GradientCheckTests {
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("tanh").build())
 	        .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation("tanh").build())
 	        .layer(2, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut).build())
-	        .inputPreProcessor(2, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+	        .inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
 	        .pretrain(false).backprop(true)
 	        .build();
     	
@@ -470,7 +470,7 @@ public class GradientCheckTests {
 			                .list(2)
 			                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).build())
 			                .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize).nOut(nOut).build())
-			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
 			                .pretrain(false).backprop(true)
 			                .build();
 			
@@ -530,7 +530,7 @@ public class GradientCheckTests {
 	            .list(2)
 	            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).build())
 	            .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut).build())
-	            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength[i]))
+	            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
 	            .pretrain(false).backprop(true)
 	            .build();
     		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
