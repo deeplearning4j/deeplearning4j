@@ -45,7 +45,8 @@ import java.util.*;
  * and activation function
  * @author Adam Gibson
  */
-public abstract class BaseLayer implements Layer {
+public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer>
+        implements Layer {
 
     protected INDArray input;
     protected Map<String,INDArray> params;
@@ -68,13 +69,17 @@ public abstract class BaseLayer implements Layer {
         this.conf = conf;
     }
 
+    protected LayerConfT layerConf() {
+        return (LayerConfT) this.conf.getLayer();
+    }
+
     public INDArray getInput() {
         return input;
     }
 
     public void setInput(INDArray input,boolean training) {
-        if(conf.getDropOut() > 0 && training)
-            this.dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
+        if(conf.getLayer().getDropOut() > 0 && training)
+            this.dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         this.input = input;
     }
 
@@ -122,7 +127,7 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public INDArray derivativeActivation(INDArray input) {
-        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), input).derivative());
+        INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
         return deriv;
     }
 
@@ -142,7 +147,7 @@ public abstract class BaseLayer implements Layer {
     public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
-        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), z).derivative());
+        INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
         INDArray delta = epsilon.muli(activationDerivative);
 
         Gradient ret = new DefaultGradient();
@@ -170,19 +175,6 @@ public abstract class BaseLayer implements Layer {
 
 
     protected void setScoreWithZ(INDArray z) {
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
-            create.exec();
-            score = create.currentResult().doubleValue();
-        }
-
-        else {
-            score = LossCalculation.builder()
-                    .l1(calcL1()).l2(calcL2())
-                    .labels(input).z(z).lossFunction(conf.getLossFunction())
-                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
-                    .useRegularization(conf.isUseRegularization()).build().score();
-        }
     }
 
 
@@ -325,7 +317,7 @@ public abstract class BaseLayer implements Layer {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect() && training) {
-            if (conf.getDropOut() > 0) {
+            if (conf.getLayer().getDropOut() > 0) {
                 W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
             }
         }
@@ -342,7 +334,7 @@ public abstract class BaseLayer implements Layer {
             W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
         }
 
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input().mmul(W).addiRowVector(b)));
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input().mmul(W).addiRowVector(b)));
         return ret;
     }
 
@@ -417,8 +409,8 @@ public abstract class BaseLayer implements Layer {
     }
 
     protected void applyDropOutIfNecessary(INDArray input,boolean training) {
-        if(conf.getDropOut() > 0 && !conf.isUseDropConnect() && training) {
-            dropoutMask = Dropout.applyDropout(input,conf.getDropOut(),dropoutMask);
+        if(conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training) {
+            dropoutMask = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
         }
     }
 
@@ -534,18 +526,25 @@ public abstract class BaseLayer implements Layer {
 
     @Override
     public Layer transpose() {
+        if(!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
+            throw new UnsupportedOperationException("unsupported layer type: " + conf.getLayer().getClass().getName());
+
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        Layer layer = null;
+        Layer layer;
         try {
             Constructor c = getClass().getConstructor(NeuralNetConfiguration.class, INDArray.class, INDArray.class, INDArray.class);
-            NeuralNetConfiguration clone = conf.clone();
-            int nIn = clone.getNOut(),nOut = clone.getNIn();
-            clone.setNIn(nIn);
-            clone.setNOut(nOut);
+            NeuralNetConfiguration clone = conf.clone();  // assume a deep clone here
+
+            org.deeplearning4j.nn.conf.layers.FeedForwardLayer clonedLayerConf =
+                    (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) clone.getLayer();
+            int nIn = clonedLayerConf.getNOut(), nOut = clonedLayerConf.getNIn();
+            clonedLayerConf.setNIn(nIn);
+            clonedLayerConf.setNOut(nOut);
+
             layer = (Layer) c.newInstance(conf, W.transpose(), b.transpose(), input != null ? input.transpose() : null);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("unable to construct transposed layer", e);
         }
 
         return layer;

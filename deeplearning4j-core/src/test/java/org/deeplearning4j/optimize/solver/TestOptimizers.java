@@ -114,20 +114,24 @@ public class TestOptimizers {
 
     private static MultiLayerConfiguration getMLPConfigIris( OptimizationAlgorithm oa, int nIterations) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .activationFunction("relu")
                 .optimizationAlgo(oa)
-                .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
                 .iterations(nIterations)
                 .constrainGradientToUnitNorm(false)
                 .regularization(false)
                 .learningRate(0.1)
-                .applySparsity(false).sparsity(0.0)
                 .seed(12345L)
                 .list(2)
-                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).build())
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3)
+                        .weightInit(WeightInit.XAVIER)
+                        .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
+                        .activation("relu")
+                        .build())
                 .layer(1, new OutputLayer.Builder(LossFunction.MCXENT)
-                        .activation("softmax").nIn(3).nOut(3).build())
+                        .nIn(3).nOut(3)
+                        .weightInit(WeightInit.XAVIER)
+                        .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
+                        .activation("softmax")
+                        .build())
                 .backprop(true).pretrain(false)
                 .build();
 
@@ -195,10 +199,10 @@ public class TestOptimizers {
                 .maxNumLineSearchIterations(numLineSearchIter)
                 .iterations(100)
                 .learningRate(1e-2)
-                .updater(Updater.SGD)
                 .layer(new RBM.Builder()
                         .nIn(1)
                         .nOut(1)
+                        .updater(Updater.SGD)
                         .build())
                 .batchSize(1)
                 .build();
@@ -291,9 +295,9 @@ public class TestOptimizers {
                     .maxNumLineSearchIterations(maxNumLineSearchIter)
                     .iterations(i)
                     .learningRate(0.1)
-                    .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.ADAGRAD))
                     .layer(new RBM.Builder()
                             .nIn(1).nOut(1)
+                            .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.ADAGRAD))
                             .build())
                     .batchSize(1).build();
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
@@ -397,9 +401,9 @@ public class TestOptimizers {
                     .maxNumLineSearchIterations(maxNumLineSearchIter)
                     .iterations(i)
                     .learningRate(1e-2)
-                    .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
                     .layer(new RBM.Builder()
                             .nIn(1).nOut(1)
+                            .updater((oa == OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT ? Updater.SGD : Updater.NONE))
                             .build())
                     .batchSize(1).build();
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here
@@ -536,9 +540,10 @@ public class TestOptimizers {
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                     .maxNumLineSearchIterations(maxNumLineSearchIter)
                     .iterations(i).stepFunction(new org.deeplearning4j.nn.conf.stepfunctions.NegativeDefaultStepFunction())
-                    .learningRate(1e-1).updater(Updater.SGD)
+                    .learningRate(1e-1)
                     .layer(new RBM.Builder()
                             .nIn(1).nOut(1)
+                            .updater(Updater.SGD)
                             .build())
                     .batchSize(1).build();
             conf.addVariable("x");	//Normally done by ParamInitializers, but obviously that isn't done here

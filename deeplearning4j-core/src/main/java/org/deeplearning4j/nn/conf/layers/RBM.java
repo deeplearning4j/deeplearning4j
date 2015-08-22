@@ -55,6 +55,7 @@ public class RBM extends BasePretrainNetwork {
     protected HiddenUnit hiddenUnit;
     protected VisibleUnit visibleUnit;
     protected int k;
+    protected double sparsity;
 
     public enum VisibleUnit {
         BINARY, GAUSSIAN, SOFTMAX, LINEAR
@@ -68,13 +69,15 @@ public class RBM extends BasePretrainNetwork {
         this.hiddenUnit = builder.hiddenUnit;
         this.visibleUnit = builder.visibleUnit;
         this.k = builder.k;
+        this.sparsity = builder.sparsity;
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
+    public static class Builder extends BasePretrainNetwork.Builder {
         private HiddenUnit hiddenUnit= RBM.HiddenUnit.BINARY;
         private VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
-        private int k = Integer.MIN_VALUE;
+        private int k = 1;
+        private double sparsity = 0f;
 
         public Builder(HiddenUnit hiddenUnit, VisibleUnit visibleUnit) {
             this.hiddenUnit = hiddenUnit;
@@ -135,6 +138,11 @@ public class RBM extends BasePretrainNetwork {
         public Builder visibleUnit(VisibleUnit visibleUnit){
         	this.visibleUnit = visibleUnit;
         	return this;
+        }
+
+        public Builder sparsity(double sparsity){
+            this.sparsity = sparsity;
+            return this;
         }
 
         @Override

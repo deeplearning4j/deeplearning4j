@@ -52,4 +52,17 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
             output = inputPreProcessor.backprop(output);
         return output;
     }
+
+    @Override
+    public ComposableInputPreProcessor clone() {
+        ComposableInputPreProcessor clone = (ComposableInputPreProcessor) super.clone();
+        if(clone.inputPreProcessors != null) {
+            InputPreProcessor[] processors = new InputPreProcessor[clone.inputPreProcessors.length];
+            for(int i = 0; i < clone.inputPreProcessors.length; i++) {
+                processors[i] = clone.inputPreProcessors[i].clone();
+            }
+            clone.inputPreProcessors = processors;
+        }
+        return clone;
+    }
 }

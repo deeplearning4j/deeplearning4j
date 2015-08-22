@@ -36,17 +36,34 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 @EqualsAndHashCode(callSuper = true)
 public class OutputLayer extends FeedForwardLayer {
     private LossFunction lossFunction;
+    private String customLossFunction;
 
     private OutputLayer(Builder builder) {
     	super(builder);
         this.lossFunction = builder.lossFunction;
+        this.customLossFunction = builder.customLossFunction;
     }
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
         private LossFunction lossFunction = LossFunction.RMSE_XENT;
+        private String customLossFunction;
 
         public Builder() {}
+
+        public Builder(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+        }
+
+        public Builder lossFunction(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
+
+        public Builder customLossFunction(String customLossFunction) {
+            this.customLossFunction = customLossFunction;
+            return this;
+        }
 
         @Override
         public Builder nIn(int nIn) {

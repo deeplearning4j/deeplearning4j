@@ -30,9 +30,11 @@ public class TestUpdaters {
 		double lr = 0.1;
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.updater(org.deeplearning4j.nn.conf.Updater.SGD)
 				.learningRate(lr)
-				.layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
+				.layer(new DenseLayer.Builder()
+						.nIn(nIn).nOut(nOut)
+						.updater(org.deeplearning4j.nn.conf.Updater.SGD)
+						.build())
 				.build();
 		
 		Layer layer = LayerFactories.getFactory(conf).create(conf, null, 0);
@@ -65,9 +67,11 @@ public class TestUpdaters {
 		double lr = 0.1;
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.updater(org.deeplearning4j.nn.conf.Updater.NONE)
 				.learningRate(lr)
-				.layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).build())
+				.layer(new DenseLayer.Builder()
+						.nIn(nIn).nOut(nOut)
+						.updater(org.deeplearning4j.nn.conf.Updater.NONE)
+						.build())
 				.build();
 		
 		
