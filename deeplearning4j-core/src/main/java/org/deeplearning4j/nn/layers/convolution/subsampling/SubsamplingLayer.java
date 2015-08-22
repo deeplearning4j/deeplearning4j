@@ -170,7 +170,7 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public INDArray activationMean() {
-        throw new UnsupportedOperationException();
+        return Nd4j.create(0);
     }
 
     @Override
@@ -198,7 +198,7 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public void computeGradientAndScore() {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -212,7 +212,7 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -222,11 +222,12 @@ public class SubsamplingLayer extends BaseLayer {
 
     @Override
     public INDArray getParam(String param) {
-        throw new UnsupportedOperationException();
+        return params();
     }
+
     @Override
     public void setParams(INDArray params) {
-        throw new UnsupportedOperationException();
+
     }
 
 
