@@ -297,7 +297,7 @@ To keep working with the vectors, simply call methods on `vec` like this:
 
 The classic example of Word2vec's arithmetic of words is "king - queen = man - woman" and its logical extension "king - queen + woman = man". 
 
-The example above will output the 10 nearest words to the vector `king - queen + woman`, which should include `man`. The first parameter for wordsNearest has to include the "positive" words `king` and `woman`; the second parameter includes the negative word `queen`; the third is the length of the list of nearest words you would like to see. Remember to add this to the top of the file: `import java.util.Arrays;`
+The example above will output the 10 nearest words to the vector `king - queen + woman`, which should include `man`. The first parameter for wordsNearest has to include the "positive" words `king` and `woman`, which have a + sign associated with them; the second parameter includes the "negative" word `queen`, which is associated with the minus sign (positive and negative here have no emotional connotation); the third is the length of the list of nearest words you would like to see. Remember to add this to the top of the file: `import java.util.Arrays;`.
 
 Any number of combinations is possible, but they will only return sensible results if the words you query occurred with enough frequency in the corpus. Obviously, the ability to return similar words (or documents) is at the foundation of both search and recommendation engines. 
 
