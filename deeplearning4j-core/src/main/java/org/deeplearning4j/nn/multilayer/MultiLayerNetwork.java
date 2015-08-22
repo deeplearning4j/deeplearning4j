@@ -622,25 +622,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return new Pair<>(gradient(), score());
     }
 
-    /**
-     * Applies drop connect relative to connections.
-     * This should be used on the activation of a neural net. (Post sigmoid layer)
-     *
-     * @param input the input to apply drop connect to
-     */
-    @Deprecated
-    protected void applyDropConnectIfNecessary(INDArray input) {
-        if (layerWiseConfigurations.isUseDropConnect()) {
-            INDArray mean = Nd4j.valueArrayOf(input.slices(), input.columns(), 0.5);
-            INDArray mask = Nd4j.getDistributions().createBinomial(1, mean).sample(mean.shape());
-            input.muli(mask);
-            //apply l2 for drop connect
-            if (defaultConfiguration.getL2() > 0)
-                input.muli(defaultConfiguration.getL2());
-        }
-    }
-
-
     /* delta computation for back prop with the R operator */
     protected List<INDArray> computeDeltasR(INDArray v) {
         List<INDArray> deltaRet = new ArrayList<>();
