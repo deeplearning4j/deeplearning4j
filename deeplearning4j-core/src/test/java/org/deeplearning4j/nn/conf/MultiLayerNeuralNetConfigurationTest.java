@@ -107,7 +107,28 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     }
 
+    @Test
+    public void testClone() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list(2)
+                .layer(0, new RBM.Builder().build())
+                .layer(1, new OutputLayer.Builder().build())
+                .inputPreProcessor(1, new ReshapePreProcessor(new int[] {1,2}, new int[] {3,4}))
+                .build();
 
+        MultiLayerConfiguration conf2 = conf.clone();
+
+        assertEquals(conf, conf2);
+        assertNotSame(conf, conf2);
+        assertNotSame(conf.getConfs(), conf2.getConfs());
+        for(int i = 0; i < conf.getConfs().size(); i++) {
+            assertNotSame(conf.getConf(i), conf2.getConf(i));
+        }
+        assertNotSame(conf.getInputPreProcessors(), conf2.getInputPreProcessors());
+        for(Integer layer : conf.getInputPreProcessors().keySet()) {
+            assertNotSame(conf.getInputPreProcess(layer), conf2.getInputPreProcess(layer));
+        }
+    }
 
     @Test
     public void testRandomWeightInit() {
