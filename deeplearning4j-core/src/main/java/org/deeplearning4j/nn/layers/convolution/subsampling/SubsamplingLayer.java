@@ -189,6 +189,11 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
+    public int numParams() {
+        return 0;
+    }
+
+    @Override
     public void fit(INDArray input) {}
 
     @Override
@@ -211,7 +216,9 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray params() { throw new UnsupportedOperationException();}
+    public INDArray params() {
+        return Nd4j.create(0);
+    }
 
     @Override
     public INDArray getParam(String param) {

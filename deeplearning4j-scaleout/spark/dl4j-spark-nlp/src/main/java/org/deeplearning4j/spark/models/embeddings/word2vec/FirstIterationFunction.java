@@ -1,15 +1,18 @@
-package org.deeplearning4j.spark.text.functions;
+package org.deeplearning4j.spark.models.embeddings.word2vec;
 
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.util.random.XORShiftRandom;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import scala.Tuple2;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author jeffreytang
@@ -17,7 +20,7 @@ import java.util.Map.Entry;
 public class FirstIterationFunction
         implements FlatMapFunction< Iterator<Tuple2<List<VocabWord>, Long>>, Entry<Integer, INDArray> > {
 
-    private int ithIteration;
+    private int ithIteration = 1;
     private int vectorLength;
     private boolean useAdaGrad;
     private int negative;
@@ -28,6 +31,10 @@ public class FirstIterationFunction
     private long seed;
     private int maxExp;
     private double[] expTable;
+    private Map<Integer, INDArray> indexSyn0VecMap;
+    private Map<Integer, INDArray> pointSyn1VecMap;
+    private AtomicLong nextRandom = new AtomicLong(5);
+
 
     public FirstIterationFunction(Broadcast<Map<String, Object>> word2vecVarMapBroadcast,
                                   Broadcast<double[]> expTableBroadcast) {
@@ -43,14 +50,12 @@ public class FirstIterationFunction
         this.totalWordCount = (long) word2vecVarMap.get("totalWordCount");
         this.seed = (long) word2vecVarMap.get("seed");
         this.maxExp = (int) word2vecVarMap.get("maxExp");
+        this.indexSyn0VecMap = new HashMap<>();
+        this.pointSyn1VecMap = new HashMap<>();
     }
 
     @Override
     public Iterable<Entry<Integer, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
-
-        Map<Integer, INDArray> indexSyn0VecMap = new HashMap<>();
-        Map<Integer, INDArray> pointSyn1VecMap = new HashMap<>();
-        Map<Integer, List<Integer>> pointIndexListMap = new HashMap<>();
 
         while (pairIter.hasNext()) {
             Tuple2<List<VocabWord>, Long> pair = pairIter.next();
@@ -58,33 +63,28 @@ public class FirstIterationFunction
             Long sentenceCumSumCount = pair._2();
             double currentSentenceAlpha = Math.max(minAlpha,
                                           alpha - (alpha - minAlpha) * (sentenceCumSumCount / (double) totalWordCount));
-            trainSentence(vocabWordsList, currentSentenceAlpha, indexSyn0VecMap, pointSyn1VecMap, pointIndexListMap);
+            trainSentence(vocabWordsList, currentSentenceAlpha);
         }
-        return groupMap(indexSyn0VecMap, pointIndexListMap).entrySet();
+        return indexSyn0VecMap.entrySet();
     }
 
 
-    public void trainSentence(List<VocabWord> vocabWordsList, double currentSentenceAlpha,
-                              Map<Integer, INDArray> indexSyn0VecMap, Map<Integer, INDArray> pointSyn1VecMap,
-                              Map<Integer, List<Integer>> pointIndexListMap) {
+    public void trainSentence(List<VocabWord> vocabWordsList, double currentSentenceAlpha) {
 
         if (vocabWordsList != null && !vocabWordsList.isEmpty()) {
             for (int ithWordInSentence = 0; ithWordInSentence < vocabWordsList.size(); ithWordInSentence++) {
                 // Random value ranging from 0 to window size
-                XORShiftRandom rand = new XORShiftRandom(seed ^ ((1 + ithWordInSentence) << 16) ^ ((-2 - ithIteration) << 8));
-                int b = rand.nextInt(window);
+                nextRandom.set(nextRandom.get() * 25214903917L + 11);
+                int b = (int) (long) this.nextRandom.get() % window;
                 VocabWord currentWord = vocabWordsList.get(ithWordInSentence);
                 if (currentWord != null) {
-                    skipGram(ithWordInSentence, vocabWordsList, b,
-                            currentSentenceAlpha, indexSyn0VecMap, pointSyn1VecMap, pointIndexListMap);
+                    skipGram(ithWordInSentence, vocabWordsList, b, currentSentenceAlpha);
                 }
             }
         }
     }
 
-    public void skipGram(int ithWordInSentence, List<VocabWord> vocabWordsList, int b, double currentSentenceAlpha,
-                         Map<Integer, INDArray> indexSyn0VecMap,  Map<Integer, INDArray> pointSyn1VecMap,
-                         Map<Integer, List<Integer>> pointIndexListMap) {
+    public void skipGram(int ithWordInSentence, List<VocabWord> vocabWordsList, int b, double currentSentenceAlpha) {
 
         VocabWord currentWord = vocabWordsList.get(ithWordInSentence);
         if (currentWord != null && !vocabWordsList.isEmpty()) {
@@ -94,17 +94,14 @@ public class FirstIterationFunction
                     int c = ithWordInSentence - window + a;
                     if (c >= 0 && c < vocabWordsList.size()) {
                         VocabWord lastWord = vocabWordsList.get(c);
-                        iterateSample(currentWord, lastWord, currentSentenceAlpha,
-                                      indexSyn0VecMap, pointSyn1VecMap, pointIndexListMap);
+                        iterateSample(currentWord, lastWord, currentSentenceAlpha);
                     }
                 }
             }
         }
     }
 
-    public void iterateSample(VocabWord currentWord, VocabWord w2, double currentSentenceAlpha,
-                              Map<Integer, INDArray> indexSyn0VecMap,  Map<Integer, INDArray> pointSyn1VecMap,
-                              Map<Integer, List<Integer>> pointIndexListMap) {
+    public void iterateSample(VocabWord currentWord, VocabWord w2, double currentSentenceAlpha) {
 
         final int currentWordIndex = currentWord.getIndex();
         if (w2 == null || w2.getIndex() < 0 || currentWordIndex == w2.getIndex())
@@ -120,13 +117,6 @@ public class FirstIterationFunction
         for (int i = 0; i < currentWord.getCodeLength(); i++) {
             int code = currentWord.getCodes().get(i);
             int point = currentWord.getPoints().get(i);
-
-            // Point to index
-            if (pointIndexListMap.containsKey(point)) {
-                pointIndexListMap.get(point).add(currentWordIndex);
-            } else {
-                pointIndexListMap.put(point, new ArrayList<Integer>() {{ add(currentWordIndex); }});
-            }
 
             // Point to
             INDArray syn1VecCurrentIndex;
@@ -161,29 +151,7 @@ public class FirstIterationFunction
         indexSyn0VecMap.put(currentWordIndex, randomSyn0Vec);
     }
 
-    public Map<Integer, INDArray> groupMap(Map<Integer, INDArray> indexSyn0VecMap,
-                                           Map<Integer, List<Integer>> pointIndexListMap) {
-
-        Map<Integer, INDArray> pointSyn0VecMap = new HashMap<>();
-        for (Entry<Integer, List<Integer>> pointIndexList : pointIndexListMap.entrySet()) {
-            int point = pointIndexList.getKey();
-            List<Integer> indexList = pointIndexList.getValue();
-            for (int i=0; i < indexList.size(); i++) {
-                int index = indexList.get(i);
-                INDArray syn0Vec = indexSyn0VecMap.get(index);
-                if (!pointSyn0VecMap.containsKey(point)) {
-                    pointSyn0VecMap.put(point, syn0Vec);
-                } else {
-                    pointSyn0VecMap.get(point).addi(syn0Vec);
-                }
-            }
-        }
-        return pointSyn0VecMap;
-    }
-
     public INDArray getRandomSyn0Vec(int vectorLength) {
         return Nd4j.rand(seed, new int[]{1 ,vectorLength}).subi(0.5).divi(vectorLength);
     }
-
-
 }

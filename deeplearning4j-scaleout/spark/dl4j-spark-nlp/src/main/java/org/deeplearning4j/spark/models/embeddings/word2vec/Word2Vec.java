@@ -25,16 +25,15 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.models.embeddings.WeightLookupTable;
+import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.text.functions.CountCumSum;
-import org.deeplearning4j.spark.text.functions.FirstIterationFunction;
-import org.deeplearning4j.spark.text.functions.MapToPairFunction;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +114,7 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
     }
 
     // Training word2vec based on corpus
-    public Pair<VocabCache,WeightLookupTable> train(JavaRDD<String> corpusRDD) throws Exception {
+    public void train(JavaRDD<String> corpusRDD) throws Exception {
         log.info("Start training ...");
 
         // SparkContext
@@ -130,7 +129,6 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         final JavaRDD<List<VocabWord>> vocabWordListRDD;
         final JavaPairRDD<List<VocabWord>, Long> vocabWordListSentenceCumSumRDD;
         final VocabCache vocabCache;
-        final Broadcast<VocabCache> vocabCacheBroadcast;
         final JavaRDD<Long> sentenceCumSumCountRDD;
 
         // Start Training //
@@ -150,8 +148,8 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         vocabWordListRDD = pipeline.getVocabWordListRDD();
 
         // Get vocabCache and broad-casted vocabCache
-        vocabCache = pipeline.getVocabCache();
-        vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
+        Broadcast<VocabCache> vocabCacheBroadcast = pipeline.getBroadCastVocabCache();
+        vocabCache = vocabCacheBroadcast.getValue();
 
         //////////////////////////////////////
         log.info("Building Huffman Tree ...");
@@ -178,21 +176,28 @@ public class Word2Vec extends WordVectorsImpl implements Serializable  {
         /////////////////////////////////////
         log.info("Training word2vec sentences ...");
         FlatMapFunction firstIterFunc = new FirstIterationFunction(word2vecVarMapBroadcast, expTableBroadcast);
-        JavaRDD< Pair<Integer, INDArray> > pointSyn0Vec = vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc)
+        @SuppressWarnings("unchecked")
+        JavaRDD< Pair<Integer, INDArray> > indexSyn0UpdateEntryRDD =
+                vocabWordListSentenceCumSumRDD.mapPartitions(firstIterFunc)
                 .map(new MapToPairFunction());
 
+        // Get all the syn0 updates into a list in driver
+        List<Pair<Integer, INDArray>> syn0UpdateEntries = indexSyn0UpdateEntryRDD.collect();
 
-//        final Accumulator<Pair<Integer, INDArray>> syn0Acc =
-//                sc.accumulator(new Pair<>(0, Nd4j.zeros(vocabCache.numWords(), vectorLength)),
-//                new Syn0Accumulator(vocabCache.numWords(), vectorLength));
-//        pointSyn0Vec.foreach(new UpdateSyn0AccumulatorFunction(syn0Acc));
-//        INDArray syn0 = syn0Acc.value().getSecond();
-//        InMemoryLookupTable inMemoryLookupTable = new InMemoryLookupTable();
-//        inMemoryLookupTable.setSyn0(syn0);
-//        inMemoryLookupTable.setVocab(vocabCache);
-//        lookupTable = inMemoryLookupTable;
+        // Instantiate syn0
+        INDArray syn0 = Nd4j.create(vocabCache.numWords(), vectorLength);
 
-        return new Pair<>(vocabCacheBroadcast.getValue(), this.lookupTable);
+        // Updating syn0
+        for (Pair<Integer, INDArray> syn0UpdateEntry : syn0UpdateEntries) {
+            syn0.getRow(syn0UpdateEntry.getFirst()).addi(syn0UpdateEntry.getSecond());
+        }
+
+        vocab = vocabCache;
+        InMemoryLookupTable inMemoryLookupTable = new InMemoryLookupTable();
+        inMemoryLookupTable.setVocab(vocabCache);
+        inMemoryLookupTable.setVectorLength(vectorLength);
+        inMemoryLookupTable.setSyn0(syn0);
+        lookupTable = inMemoryLookupTable;
     }
 
     public int getVectorLength() {

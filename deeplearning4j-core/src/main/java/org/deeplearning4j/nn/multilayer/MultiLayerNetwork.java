@@ -78,6 +78,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected MultiLayerConfiguration layerWiseConfigurations;
     protected Gradient gradient;
     protected double score;
+    private INDArray params;
     /*
       Binary drop connect mask
      */
@@ -361,6 +362,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 defaultConfiguration.addVariable(i+"_"+s);
             }
         }
+
+        //all params are views
+        reDistributeParams();
     }
 
 
@@ -411,6 +415,34 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 //        return Nd4j.toFlattened(avgActivations);
     }
 
+
+    /**
+     * Redistribute parameters handles
+     * having parameters as a view
+     */
+    public void reDistributeParams() {
+        List<INDArray> params = new ArrayList<>();
+        for(Layer l : layers) {
+            INDArray paramsForL = l.params();
+            params.add(paramsForL);
+        }
+
+        this.params = Nd4j.toFlattened(params);
+        int idx = 0;
+        for(Layer l : layers) {
+            INDArray paramsForL = l.params();
+            params.add(paramsForL);
+            int range = l.numParams();
+            INDArray get = this.params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
+            if (get.length() < 1)
+               continue;
+            l.setParams(get);
+            idx += range;
+        }
+
+
+    }
+
     /**
      * Sets the input and labels from this dataset
      *
@@ -455,7 +487,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray activationFromPrevLayer(int curr, INDArray input,boolean training) {
         if(getLayerWiseConfigurations().getInputPreProcess(curr) != null)
             input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input);
-        INDArray ret = layers[curr].activate(input,training);
+        INDArray ret = layers[curr].activate(input, training);
         return ret;
     }
 
@@ -799,26 +831,53 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public INDArray params() {
+        if(params != null)
+            return params;
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers())
             if(!(layer instanceof SubsamplingLayer)) {
                 params.add(layer.params());
             }
-            return Nd4j.toFlattened(params);
+
+        return Nd4j.toFlattened(params);
     }
 
     /**
      * Set the parameters for this model.
-     * This expects a linear ndarray which then be unpacked internally
+     * This expects a linear ndarray
+     * which then be unpacked internally
      * relative to the expected ordering of the model
      *
      * @param params the parameters for the model
      */
     @Override
     public void setParams(INDArray params) {
-        setParameters(params);
+        if(this.params != null) {
+            this.params = params;
+            int idx = 0;
+            for (int i = 0; i < getLayers().length; i++) {
+                Layer layer = getLayer(i);
+                int range = layer.numParams();
+                INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
+                if (get.length() < 1)
+                    throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
+                layer.setParams(get);
+                idx += range;
 
+            }
+        }
+        int idx = 0;
+        for (int i = 0; i < getLayers().length; i++) {
+            Layer layer = getLayer(i);
+            int range = layer.numParams();
+            INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
+            if (get.length() < 1)
+                throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
+            layer.setParams(get);
+            idx += range;
+
+        }
     }
 
 
@@ -1189,13 +1248,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             finetune();
         }
 
-        if(layerWiseConfigurations.isBackprop()){
+        if(layerWiseConfigurations.isBackprop()) {
             if( solver == null ){
                 solver = new Solver.Builder()
                         .configure(conf())
                         .listeners(getListeners())
                         .model(this).build();
             }
+
             solver.optimize();
         }
     }

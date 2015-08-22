@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
 
     private static double MAX_EXP = 6;
