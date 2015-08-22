@@ -28,18 +28,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.conf.deserializers.*;
-import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.util.Dl4jReflection;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.springframework.util.ClassUtils;
 
 import java.io.IOException;
@@ -245,67 +239,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     
     public void clearVariables(){
     	variables.clear();
-    }
-
-    @Deprecated
-    private static <T> T overrideFields(T configInst, Layer layer) {
-        // overwrite builder with fields with layer fields
-        Class<?> layerClazz = layer.getClass();
-        Field[] neuralNetConfFields = Dl4jReflection.getAllFields(configInst.getClass());
-        Field[] layerFields = Dl4jReflection.getAllFields(layerClazz);
-        for(Field neuralNetField : neuralNetConfFields) {
-            neuralNetField.setAccessible(true);
-            for(Field layerField : layerFields) {
-                layerField.setAccessible(true);
-                if(neuralNetField.getName().equals(layerField.getName())) {
-                    try {
-                        Object layerFieldValue = layerField.get(layer);
-                        if(layerFieldValue != null ) {
-                            if(neuralNetField.getType().isAssignableFrom(layerField.getType())){
-                                //Same class, or neuralNetField is superclass/superinterface of layer field
-                                if(!ClassUtils.isPrimitiveOrWrapper(layerField.getType()) ){
-                                    neuralNetField.set(configInst, layerFieldValue);
-                                } else {
-                                    //Primitive -> autoboxed by Field.get(...). Hence layerFieldValue is never null for primitive fields,
-                                    // even if not explicitly set (due to default value for primitives)
-                                    //Convention here is to use Double.NaN, Float.NaN, Integer.MIN_VALUE, etc. as defaults in layer configs
-                                    // to signify 'not set'
-                                    Class<?> primitiveClass = layerField.getType();
-                                    if( primitiveClass == double.class || primitiveClass == Double.class ){
-                                        if( !Double.isNaN((double)layerFieldValue) ){
-                                            neuralNetField.set(configInst, layerFieldValue);
-                                        }
-                                    } else if( primitiveClass == float.class || primitiveClass == Float.class ){
-                                        if( !Float.isNaN((float)layerFieldValue) ){
-                                            neuralNetField.set(configInst, layerFieldValue);
-                                        }
-                                    } else if( primitiveClass == int.class || primitiveClass == Integer.class ){
-                                        if( ((int)layerFieldValue) != Integer.MIN_VALUE ){
-                                            neuralNetField.set(configInst, layerFieldValue);
-                                        }
-                                    } else if( primitiveClass == long.class || primitiveClass == Long.class ){
-                                        if( ((long)layerFieldValue) != Long.MIN_VALUE ){
-                                            neuralNetField.set(configInst, layerFieldValue);
-                                        }
-                                    } else if( primitiveClass == char.class || primitiveClass == Character.class ){
-                                        if( ((char)layerFieldValue) != Character.MIN_VALUE ){
-                                            neuralNetField.set(configInst, layerFieldValue);
-                                        }
-                                    } else {
-                                        //Boolean: can only be true/false. No usable 'not set' value -> need some other workaround
-                                        //Short, Byte: probably never used
-                                        throw new RuntimeException("Primitive type not settable via reflection");
-                                    }
-                                }
-                            }
-                        }
-                    } catch(Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-        return configInst;
     }
 
     /**
@@ -675,8 +608,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             ret.miniBatch = miniBatch;
             ret.rho = rho;
 
-            //override the properties from the layer
-            ret = overrideFields(ret, layer);
             return ret;
         }
     }
