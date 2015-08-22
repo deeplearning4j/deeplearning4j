@@ -70,7 +70,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     /* L2 Regularization constant */
     protected double l2 = 0;
     protected boolean useRegularization = false;
-    private String customLossFunction;
     //momentum after n iterations
     protected Map<Integer,Double> momentumAfter = new HashMap<>();
     //reset adagrad historical gradient after n iterations
@@ -124,9 +123,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   int maxNumLineSearchIterations,
                                   boolean minimize,
                                   Layer layer,
-                                  double l1,String customLossFunction) {
+                                  double l1) {
         this.minimize = minimize;
-        this.customLossFunction = customLossFunction;
         this.maxNumLineSearchIterations = maxNumLineSearchIterations;
         this.l1 = l1;
         this.batchSize = batchSize;
@@ -461,7 +459,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public static class Builder {
-        private String customLossFunction;
         private double rmsDecay;
         @Deprecated
         private boolean useAdaGrad = true;
@@ -533,11 +530,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
         public Builder rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
-            return this;
-        }
-
-        public Builder customLossFunction(String customLossFunction) {
-            this.customLossFunction = customLossFunction;
             return this;
         }
 
@@ -674,7 +666,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                     constrainGradientToUnitNorm,  seed,
                     timeSeriesLength,
                     batchSize, maxNumLineSearchIterations, minimize, layer,
-                    l1,customLossFunction);
+                    l1);
 
             ret.useAdaGrad = this.useAdaGrad;
             ret.rmsDecay = rmsDecay;
