@@ -44,8 +44,6 @@ import java.util.*;
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     protected List<NeuralNetConfiguration> confs;
-    @Deprecated
-    protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
     @Deprecated
     protected double dampingFactor = 100;
