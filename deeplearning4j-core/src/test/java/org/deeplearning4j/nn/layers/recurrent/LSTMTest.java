@@ -47,7 +47,6 @@ public class LSTMTest {
                         .nIn(4).nOut(4)
                         .activation("tanh").build())
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
                 .build();
         LSTM l = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(10)),0);
         INDArray predict = FeatureUtil.toOutcomeMatrix(new int[]{0,1,2,3},4);

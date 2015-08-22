@@ -54,13 +54,12 @@ public class RenderTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(10).constrainGradientToUnitNorm(true)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .learningRate(1e-1f)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .nIn(784).nOut(600)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1e-3, 1e-1))
                         .dropOut(0.5)
-                        .build())
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
 

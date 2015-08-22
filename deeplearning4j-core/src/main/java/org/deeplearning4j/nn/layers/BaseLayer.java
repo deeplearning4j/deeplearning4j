@@ -45,7 +45,8 @@ import java.util.*;
  * and activation function
  * @author Adam Gibson
  */
-public abstract class BaseLayer<LayerConfT> implements Layer {
+public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer>
+        implements Layer {
 
     protected INDArray input;
     protected Map<String,INDArray> params;
@@ -174,19 +175,6 @@ public abstract class BaseLayer<LayerConfT> implements Layer {
 
 
     protected void setScoreWithZ(INDArray z) {
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
-            create.exec();
-            score = create.currentResult().doubleValue();
-        }
-
-        else {
-            score = LossCalculation.builder()
-                    .l1(calcL1()).l2(calcL2())
-                    .labels(input).z(z).lossFunction(conf.getLossFunction())
-                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
-                    .useRegularization(conf.isUseRegularization()).build().score();
-        }
     }
 
 

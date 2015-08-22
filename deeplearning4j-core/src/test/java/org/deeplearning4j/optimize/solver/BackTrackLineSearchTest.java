@@ -192,7 +192,6 @@ public class BackTrackLineSearchTest {
 
     private static MultiLayerConfiguration getIrisMultiLayerConfig( String activationFunction, int iterations,  OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .lossFunction(LossFunctions.LossFunction.MCXENT)
                 .optimizationAlgo(optimizer)
                 .iterations(iterations)
                 .batchSize(1)
@@ -210,7 +209,7 @@ public class BackTrackLineSearchTest {
                         .nOut(5)
                         .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 0.1))
                         .activation(activationFunction)
-                        .build())
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.RMSE_XENT)
                         .nIn(5)
                         .nOut(3)

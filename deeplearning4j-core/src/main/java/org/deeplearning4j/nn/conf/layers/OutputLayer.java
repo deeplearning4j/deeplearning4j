@@ -48,6 +48,11 @@ public class OutputLayer extends FeedForwardLayer {
 
         public Builder() {}
 
+        public Builder lossFunction(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
+
         @Override
         public Builder nIn(int nIn) {
             this.nIn = nIn;

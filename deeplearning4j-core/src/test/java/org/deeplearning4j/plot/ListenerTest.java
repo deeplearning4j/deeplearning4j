@@ -118,15 +118,11 @@ public class ListenerTest {
 
     private static MultiLayerConfiguration getIrisSimpleConfig(String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-
                 .iterations(iterations)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
                 .learningRate(0.1)
-
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
@@ -137,12 +133,12 @@ public class ListenerTest {
                         .nIn(4).nOut(10)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
                         .activation(activationFunction)
-                        .build())
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(1, new RBM.Builder()
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
                         .nIn(10).nOut(5)
                         .activation(activationFunction)
-                        .build())
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .layer(2, new OutputLayer.Builder()
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 0.1))
                         .nIn(5).nOut(3)
@@ -153,22 +149,16 @@ public class ListenerTest {
 
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(String activationFunction, int iterations ) {
         MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-
                 .iterations(iterations)
                 .batchSize(1)
                 .constrainGradientToUnitNorm(false)
-
                 .learningRate(0.1)
-
                 .regularization(false)
                 .l1(0.0)
                 .l2(0.0)
                 .momentum(0.0)
                 .seed(12345L)
-
                 .list(2)
                 .layer(0, new DenseLayer.Builder()
                         .nIn(4).nOut(5)
