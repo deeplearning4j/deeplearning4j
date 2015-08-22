@@ -95,48 +95,4 @@ public class IRUnitIrisDBNWorkerTests {
 
 
     }
-
-
-    @Test
-    public void testConfIssues() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().layer(new RBM())
-                .list(3).hiddenLayerSizes(new int[]{3,2}).build();
-        String json = conf.toJson();
-
-        Configuration c = new Configuration();
-        c.set( "test_json", json );
-
-        String key = c.get("test_json");
-        assertEquals(json,key);
-
-        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( key );
-        MultiLayerNetwork multiLayerNetwork = new MultiLayerNetwork(conf2);
-        assertEquals(3, multiLayerNetwork.getnLayers());
-        assertArrayEquals(new int[]{3,2}, multiLayerNetwork.getLayerWiseConfigurations().getHiddenLayerSizes());
-    }
-
-    @Test
-    public void loadFromFileProps() throws Exception {
-
-        String props_file = new ClassPathResource("/yarn/configurations/svmLightWorkerIRUnitTest.properties").getFile().getAbsolutePath();
-
-        Properties props = new Properties();
-
-        try {
-            FileInputStream fis = new FileInputStream( props_file );
-            props.load(fis);
-            fis.close();
-        } catch (IOException ex) {
-            // throw ex; // TODO: be nice
-            System.out.println(ex);
-        }
-
-        String json = props.getProperty("org.deeplearning4j.scaleout.multilayerconf");
-
-        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( json );
-        MultiLayerNetwork multiLayerNetwork = new MultiLayerNetwork(conf2);
-        assertArrayEquals(new int[]{2,2}, multiLayerNetwork.getLayerWiseConfigurations().getHiddenLayerSizes());
-
-    }
-
 }
