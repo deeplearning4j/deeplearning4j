@@ -62,7 +62,7 @@ These vectors are the basis of a more comprehensive geometry of words. Not only 
 
 ##<a name="crazy">Crazy Word2Vec Results</a>
 
-Let's look at some other associations. Instead of the pluses, minus and equals signs, we'll give you the results in the notation of logical analogies, where `:` means "is to" and `::` means as; e.g. Rome:Italy::Beijing:China. But in the last spot, we'll give you the list of words that Word2vec proposes, when given the first three elements:
+Let's look at some other associations. Instead of the pluses, minus and equals signs, we'll give you the results in the notation of logical analogies, where `:` means "is to" and `::` means as; e.g. Rome:Italy::Beijing:China. But in the last spot, we'll give you the list of words that a Word2vec model proposes, when given the first three elements:
 
     king:queen::man:[woman, Attempted abduction, teenager, girl] 
     //Weird, but you can kind of see it
@@ -97,6 +97,8 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     //over from monkeys? humans are the species that beat monkeys?
     
     building:architect::software:[programmer, SecurityCenter, WinPcap]
+
+This model was trained on the Google News vocab, which you can [import](#import) and play with.
 
 You can also query a Word2vec model for other assocations. Not everything has to be two analogies that mirror each other. ([We explain how below....](#eval))
 
@@ -312,7 +314,7 @@ You can then use Word2vec as a lookup table:
 
 If the word isn't in the vocabulary, Word2vec returns zeros.
 
-### Importing Word2vec Models
+### <a name="import">Importing Word2vec Models</a>
 
 The [Google News Corpus model](https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz) we use to test the accuracy of our trained nets is hosted on S3. Users whose current hardware takes a long time to train on large corpora can simply download it to explore a Word2vec model without the prelude.
 
