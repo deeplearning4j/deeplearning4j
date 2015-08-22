@@ -32,11 +32,12 @@ public class TestRenders extends BaseUiServerTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .corruptionLevel(0.6)
                 .iterations(100)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(784).nOut(600)
+                        .corruptionLevel(0.6)
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
                 .build();
 
 
@@ -61,11 +62,12 @@ public class TestRenders extends BaseUiServerTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .corruptionLevel(0.6)
                 .iterations(100)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(784).nOut(600)
+                        .corruptionLevel(0.6)
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
                 .build();
 
 
@@ -83,11 +85,13 @@ public class TestRenders extends BaseUiServerTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .corruptionLevel(0.6)
-                .iterations(100).weightInit(WeightInit.XAVIER)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-                .learningRate(1e-1f).nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                .iterations(100)
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(784).nOut(600)
+                        .corruptionLevel(0.6)
+                        .weightInit(WeightInit.XAVIER)
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
 

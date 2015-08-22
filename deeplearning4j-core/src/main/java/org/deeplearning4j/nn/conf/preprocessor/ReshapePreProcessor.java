@@ -72,4 +72,12 @@ public class ReshapePreProcessor extends BaseInputPreProcessor {
 	if( fromShape == null || output.shape().length == fromShape.length) return output;	//no-op
 	return output.reshape(fromShape);
     }
+
+    @Override
+    public ReshapePreProcessor clone() {
+        ReshapePreProcessor clone = (ReshapePreProcessor) super.clone();
+        if(clone.fromShape != null) clone.fromShape = clone.fromShape.clone();
+        if(clone.toShape != null) clone.toShape = clone.toShape.clone();
+        return clone;
+    }
 }

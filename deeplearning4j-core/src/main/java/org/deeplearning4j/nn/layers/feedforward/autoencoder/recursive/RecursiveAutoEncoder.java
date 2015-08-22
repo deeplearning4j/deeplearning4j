@@ -35,7 +35,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  *
  * @author Adam Gibson
  */
-public class RecursiveAutoEncoder extends BaseLayer {
+public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder> {
     private INDArray currInput = null,
                      allInput = null,
                      visibleLoss = null,
@@ -74,12 +74,12 @@ public class RecursiveAutoEncoder extends BaseLayer {
         INDArray w = getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY);
         INDArray c = getParam(RecursiveParamInitializer.DECODER_WEIGHT_KEY);
         INDArray inputTimesW = data.mmul(w);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputTimesW.addiRowVector(c)));
     }
 
 
     public INDArray decode(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.DECODER_WEIGHT_KEY).addiRowVector(params.get(RecursiveParamInitializer.HIDDEN_BIAS_KEY)))));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.DECODER_WEIGHT_KEY).addiRowVector(params.get(RecursiveParamInitializer.HIDDEN_BIAS_KEY)))));
     }
 
 

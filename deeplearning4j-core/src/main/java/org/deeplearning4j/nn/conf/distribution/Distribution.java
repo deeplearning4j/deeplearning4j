@@ -35,7 +35,16 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
         @JsonSubTypes.Type(value = NormalDistribution.class, name = "normal"),
         @JsonSubTypes.Type(value = UniformDistribution.class, name = "uniform"),
         })
-public abstract class Distribution implements Serializable {
+public abstract class Distribution implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 5401741214954998498L;
+
+    @Override
+    public Distribution clone() {
+        try {
+            return (Distribution) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
