@@ -72,7 +72,7 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     
     house:roof::castle:[dome, bell_tower, spire, crenellations, turrets]
     
-    knee:leg::elbow: [forearm, arm, ulna_bone]
+    knee:leg::elbow:[forearm, arm, ulna_bone]
     
     new york times:sulzberger::fox:[Murdoch, Chernin, Bancroft, Ailes]
     //The Sulzberger-Ochs family owns and runs the NYT.
@@ -90,7 +90,7 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     //Dewhurst served as lieutenant gov, and Bush, you know.
     //Not saying Rick Perry's kinky, but Word2vec thinks so...
     
-    donald trump:republican::barack obama: [Democratic, GOP, Democrats, McCain]
+    donald trump:republican::barack obama:[Democratic, GOP, Democrats, McCain]
     
     monkey:human::dinosaur:[fossil, fossilized, Ice_Age_mammals, fossilization]
     //humans are fossilized monkeys? humans are what's left 
