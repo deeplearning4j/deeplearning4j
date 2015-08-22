@@ -67,17 +67,11 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //adadelta - weight for how much to consider previous history
     protected double rho;
     protected long seed;
-
     protected StepFunction stepFunction;
     protected Layer layer;
-
-
-
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
-
     protected boolean useDropConnect = false;
-
     // Graves LSTM & RNN
     private int timeSeriesLength = 1;
     //batch size: primarily used for conv nets. Will be reinforced if set.
@@ -86,43 +80,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean minimize = false;
     //l1 regularization
     protected double l1 = 0.0;
-
     protected double rmsDecay = 0.0;
-
-
     protected boolean miniBatch = true;
-
-    public NeuralNetConfiguration(double lr,
-                                  int numIterations,
-                                  double momentum,
-                                  double l2,
-                                  boolean useRegularization,
-                                  Map<Integer, Double> momentumAfter,
-                                  OptimizationAlgorithm optimizationAlgo,
-                                  boolean constrainGradientToUnitNorm,
-                                  long seed,
-                                  int timeSeriesLength,
-                                  int batchSize,
-                                  int maxNumLineSearchIterations,
-                                  boolean minimize,
-                                  Layer layer,
-                                  double l1) {
-        this.minimize = minimize;
-        this.maxNumLineSearchIterations = maxNumLineSearchIterations;
-        this.l1 = l1;
-        this.batchSize = batchSize;
-        this.layer = layer;
-        this.lr = lr;
-        this.numIterations = numIterations;
-        this.momentum = momentum;
-        this.l2 = l2;
-        this.useRegularization = useRegularization;
-        this.momentumAfter = momentumAfter;
-        this.optimizationAlgo = optimizationAlgo;
-        this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
-        this.seed = seed;
-        this.timeSeriesLength = timeSeriesLength;
-    }
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -281,7 +240,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private static ObjectMapper initMapperYaml() {
         ObjectMapper ret = new ObjectMapper(new YAMLFactory());
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
         return ret;
     }
@@ -299,7 +258,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
         return ret;
     }
@@ -485,21 +444,30 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if (layer == null)
                 throw new IllegalStateException("No layer defined.");
 
-            NeuralNetConfiguration ret = new NeuralNetConfiguration(lr,
-                    numIterations, momentum, l2, useRegularization, momentumAfter,
-                    optimizationAlgo,
-                    constrainGradientToUnitNorm,  seed,
-                    timeSeriesLength,
-                    batchSize, maxNumLineSearchIterations, minimize, layer,
-                    l1);
+            NeuralNetConfiguration conf = new NeuralNetConfiguration();
 
-            ret.rmsDecay = rmsDecay;
-            ret.stepFunction = stepFunction;
-            ret.useDropConnect = useDropConnect;
-            ret.miniBatch = miniBatch;
-            ret.rho = rho;
+            conf.minimize = minimize;
+            conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
+            conf.l1 = l1;
+            conf.batchSize = batchSize;
+            conf.layer = layer;
+            conf.lr = lr;
+            conf.numIterations = numIterations;
+            conf.momentum = momentum;
+            conf.l2 = l2;
+            conf.useRegularization = useRegularization;
+            conf.momentumAfter = momentumAfter;
+            conf.optimizationAlgo = optimizationAlgo;
+            conf.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
+            conf.seed = seed;
+            conf.timeSeriesLength = timeSeriesLength;
+            conf.rmsDecay = rmsDecay;
+            conf.stepFunction = stepFunction;
+            conf.useDropConnect = useDropConnect;
+            conf.miniBatch = miniBatch;
+            conf.rho = rho;
 
-            return ret;
+            return conf;
         }
     }
 }
