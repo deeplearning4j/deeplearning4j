@@ -59,10 +59,32 @@ These vectors are the basis of a more comprehensive geometry of words. Not only 
 
 ![Alt text](../img/countries_capitals.png) 
 
-Let's imagine some other associations:
+Let's look at some other associations. Instead of the pluses, minus and equals signs, we'll give you the results in the notation of logical analogies, where `:` means "is to" and `::` means as; e.g. Rome:Italy::Beijing:China. But in the last spot, we'll give you the list of words that Word2vec proposes, when given the first three elements:
 
-* Gender: *King - Queen = Man - Woman*
-* Filiation: *George H. W. Bush - George W. Bush = John Adams - John Quincy Adams.*
+king:queen::man:[woman, Attempted abduction, teenager, teenage girl, girl] 
+//Weird, but you can kind of see it
+china:taiwan::russia:[ukraine, Moscow, Moldova, Armenia]
+//Two large countries and their small, estranged neighbors
+house:roof::castle:[dome, bell_tower, spire, crenellations, turrets]
+knee:leg::elbow: [forearm, arm, ulna_bone]
+new york times:sulzberger::fox:[Murdoch, Chernin, Bancroft, Ailes]
+//The Sulzberger-Ochs family owns and runs the NYT.
+//The Murdoch family owns News Corp., which owns Fox News. 
+//Peter Chernin was News Corp.'s COO for 13 yrs.
+//Roger Ailes is president of Fox News. 
+//The Bancroft family sold the Wall St. Journal to News Corp.
+love:indifference::fear:[apathy, callousness, timidity, helplessness, inaction]
+//some of these results fit into indifference as a cold response to love, others as a co-occuring feeling.
+hillary clinton:rick perry::barack obama:[Kinky_Friedman, David_Dewhurst, Farouk_Shami, George_W._Bush]
+//Kinky and Farouk ran for governor of Texas, Dewhurst served as lieutenant gov, and Bush, you know.
+//we're not saying rick perry's kinky, but word2vec thinks so...
+donald trump:republican::barack obama: [Democratic, Democrat, GOP, Democrats, McCain]
+monkey:human::dinosaur:[fossil, fossilized, Ice_Age_mammals, fossilization]
+//humans are fossilized monkeys? humans are what's left over from monkeys? humans are the species that beat monkeys?
+building:architect::software:[programmer, SecurityCenter, WinPcap]
+
+You can also query a Word2vec model for other assocations. Not everything has to be two analogies that mirror each other. ([We explain how below....](#eval))
+
 * Geopolitics: *Iraq - Violence = Jordan*
 * Distinction: *Human - Animal = Ethics*
 * *President - Power = Prime Minister*
@@ -202,7 +224,7 @@ This configuration accepts a number of hyperparameters. A few require some expla
 * *tokenizer* feeds it the words from the current batch. 
 * *vec.fit()* tells the configured net to begin training. 
 
-### Evaluating the Model
+### <a name="eval">Evaluating the Model, Using Word2vec</a> 
 
 The next step is to evaluate the quality of your feature vectors. 
 
