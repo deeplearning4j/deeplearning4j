@@ -27,19 +27,27 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     protected LossFunctions.LossFunction lossFunction;
+    protected String customLossFunction;
 
     public BasePretrainNetwork(Builder builder){
     	super(builder);
         this.lossFunction = builder.lossFunction;
+        this.customLossFunction = builder.customLossFunction;
     }
 
     public static abstract class Builder extends FeedForwardLayer.Builder {
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        protected String customLossFunction = null;
 
         public Builder() {}
 
         public Builder lossFunction(LossFunctions.LossFunction lossFunction) {
             this.lossFunction = lossFunction;
+            return this;
+        }
+
+        public Builder customLossFunction(String customLossFunction) {
+            this.customLossFunction = customLossFunction;
             return this;
         }
     }

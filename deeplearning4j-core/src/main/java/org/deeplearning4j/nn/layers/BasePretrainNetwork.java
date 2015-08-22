@@ -88,7 +88,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     @Override
     protected void setScoreWithZ(INDArray z) {
         if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
             create.exec();
             score = create.currentResult().doubleValue();
         }
