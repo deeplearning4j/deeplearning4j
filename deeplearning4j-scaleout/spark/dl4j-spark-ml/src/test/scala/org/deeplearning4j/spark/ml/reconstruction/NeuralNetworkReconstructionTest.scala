@@ -24,7 +24,6 @@ class NeuralNetworkReconstructionTest
     new NeuralNetConfiguration.Builder()
       .seed(11L)
       .iterations(100)
-      .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
       .learningRate(1e-3f)
       .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
       .momentum(0.9)
@@ -32,7 +31,8 @@ class NeuralNetworkReconstructionTest
       .useDropConnect(true)
       .list(2)
       .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-        .nIn(4).nOut(3).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD).activation("relu").dropOut(0.5).build())
+        .nIn(4).nOut(3).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD).activation("relu").dropOut(0.5)
+        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
       .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
         .nIn(3).nOut(3).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD).activation("softmax").dropOut(0.5).build())
       .build();

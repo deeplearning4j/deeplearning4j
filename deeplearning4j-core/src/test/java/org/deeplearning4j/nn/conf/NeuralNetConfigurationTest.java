@@ -101,12 +101,12 @@ public class NeuralNetConfigurationTest {
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activation("tanh")
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(123)
                 .iterations(3)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(layer)
                 .build();
@@ -193,13 +193,13 @@ public class NeuralNetConfigurationTest {
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activation("tanh")
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(3)
                 .timeSeriesLength(1)
                 .regularization(false)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(layer)
                 .build();
@@ -216,12 +216,12 @@ public class NeuralNetConfigurationTest {
                 .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
                 .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
                 .activation("tanh")
+                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(3)
                 .regularization(false)
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .layer(layer)
                 .build();

@@ -95,7 +95,7 @@ public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Out
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
             LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
             create.exec();
             score = create.currentResult().doubleValue();
@@ -104,7 +104,7 @@ public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Out
         else {
             score = LossCalculation.builder()
                     .l1(fullNetworkL1).l2(fullNetworkL2)
-                    .labels(labels).z(z).lossFunction(conf.getLossFunction())
+                    .labels(labels).z(z).lossFunction(layerConf().getLossFunction())
                     .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
@@ -141,7 +141,7 @@ public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Out
     	INDArray outSubLabels = output.sub(labels);
     	Gradient gradient = new DefaultGradient();
     	
-    	switch (conf.getLossFunction()) {
+    	switch (layerConf().getLossFunction()) {
     	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
     		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
     		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
@@ -179,7 +179,7 @@ public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Out
         	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
             return new Triple<>(gradient,outSubLabels,output);
         default:
-        	throw new IllegalStateException("Invalid loss function: " + conf.getLossFunction());
+        	throw new IllegalStateException("Invalid loss function: " + layerConf().getLossFunction());
     	}
     }
 

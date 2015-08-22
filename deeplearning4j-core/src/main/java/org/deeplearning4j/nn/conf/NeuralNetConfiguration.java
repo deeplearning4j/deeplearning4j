@@ -78,7 +78,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     //number of line search iterations
     protected int maxNumLineSearchIterations = 5;
     protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-    public LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
     //whether to constrain the gradient to unit norm or not
     protected boolean constrainGradientToUnitNorm = false;
     //adadelta - weight for how much to consider previous history
@@ -118,7 +117,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                                   Map<Integer, Double> momentumAfter,
                                   int resetAdaGradIterations,
                                   OptimizationAlgorithm optimizationAlgo,
-                                  LossFunctions.LossFunction lossFunction,
                                   boolean constrainGradientToUnitNorm,
                                   long seed,
                                   int timeSeriesLength,
@@ -142,7 +140,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         this.momentumAfter = momentumAfter;
         this.resetAdaGradIterations = resetAdaGradIterations;
         this.optimizationAlgo = optimizationAlgo;
-        this.lossFunction = lossFunction;
         this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
         this.seed = seed;
         this.timeSeriesLength = timeSeriesLength;
@@ -477,7 +474,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
         private long seed = System.currentTimeMillis();
-        private LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         private int numIterations = 5;
         private int timeSeriesLength = 1;
         private StepFunction stepFunction = null;
@@ -658,11 +654,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder lossFunction(LossFunctions.LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
-            return this;
-        }
-
         public Builder constrainGradientToUnitNorm(boolean constrainGradientToUnitNorm) {
             this.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
             return this;
@@ -679,7 +670,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             NeuralNetConfiguration ret = new NeuralNetConfiguration(useAdaGrad,  lr,
                     numIterations, momentum, l2, useRegularization, momentumAfter,
-                    resetAdaGradIterations,  optimizationAlgo, lossFunction,
+                    resetAdaGradIterations,  optimizationAlgo,
                     constrainGradientToUnitNorm,  seed,
                     timeSeriesLength,
                     batchSize, maxNumLineSearchIterations, minimize, layer,

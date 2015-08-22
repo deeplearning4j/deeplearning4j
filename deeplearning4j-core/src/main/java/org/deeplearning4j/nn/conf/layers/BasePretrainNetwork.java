@@ -19,13 +19,28 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
-    public BasePretrainNetwork(FeedForwardLayer.Builder builder){
+    protected LossFunctions.LossFunction lossFunction;
+
+    public BasePretrainNetwork(Builder builder){
     	super(builder);
+        this.lossFunction = builder.lossFunction;
+    }
+
+    public static abstract class Builder extends FeedForwardLayer.Builder {
+        protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+
+        public Builder() {}
+
+        public Builder lossFunction(LossFunctions.LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
     }
 }
