@@ -41,8 +41,6 @@ import java.util.*;
 @NoArgsConstructor
 public class MultiLayerConfiguration implements Serializable, Cloneable {
 
-    @Deprecated
-    protected int[] hiddenLayerSizes;
     protected List<NeuralNetConfiguration> confs;
     @Deprecated
     protected boolean useDropConnect = false;
@@ -134,8 +132,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         try {
             MultiLayerConfiguration clone = (MultiLayerConfiguration) super.clone();
 
-            if(clone.hiddenLayerSizes != null) clone.hiddenLayerSizes = clone.hiddenLayerSizes.clone();
-
             if(clone.confs != null) {
                 List<NeuralNetConfiguration> list = new ArrayList<>();
                 for(NeuralNetConfiguration conf : clone.confs) {
@@ -175,8 +171,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        @Deprecated
-        protected int[] hiddenLayerSizes;
         @Deprecated
         protected boolean useDropConnect = false;
         protected boolean pretrain = true;
@@ -271,24 +265,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         }
 
-        /**
-         * Specify the hidden layer sizes.
-         * Note that you can specify the layer sizes in continuous order.
-         * Whereever number of inputs and outputs are used
-         * this will be set for intermediate layers
-         * @param hiddenLayerSizes the hidden layer sizes to use
-         * @return
-         */
-        @Deprecated
-        public Builder hiddenLayerSizes(int...hiddenLayerSizes) {
-            this.hiddenLayerSizes = hiddenLayerSizes;
-            return this;
-        }
-
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            conf.hiddenLayerSizes = this.hiddenLayerSizes;
             conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
             conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
@@ -306,7 +285,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public String toString() {
             return "Builder{" +
                     "confs=" + confs +
-                    ", hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
                     ", useDropConnect=" + useDropConnect +
                     ", pretrain=" + pretrain +
                     ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
@@ -325,8 +303,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return Double.compare(builder.dampingFactor, dampingFactor) == 0
                     && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
                     && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
-                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
-                    && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes);
+                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null);
 
         }
 
@@ -335,7 +312,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             int result;
             long temp;
             result = confs != null ? confs.hashCode() : 0;
-            result = 31 * result + (hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0);
             result = 31 * result + (useDropConnect ? 1 : 0);
             result = 31 * result + (pretrain ? 1 : 0);
             result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);

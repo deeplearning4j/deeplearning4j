@@ -54,7 +54,6 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
                         .nIn(3).nOut(3)
                         .activation("softmax")
                         .weightInit(WeightInit.ZERO).build())
-                .hiddenLayerSizes(new int[]{3})
                 .build();
 
         String json = conf.toJson();
