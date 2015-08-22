@@ -35,6 +35,15 @@ public class ConvolutionLayer extends FeedForwardLayer {
         FULL, VALID, SAME
     }
 
+    @Override
+    public ConvolutionLayer clone() {
+        ConvolutionLayer clone = (ConvolutionLayer) super.clone();
+        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
+        if(clone.stride != null) clone.stride = clone.stride.clone();
+        if(clone.padding != null) clone.padding = clone.padding.clone();
+        return clone;
+    }
+
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder {
         private Convolution.Type convolutionType = Convolution.Type.VALID;

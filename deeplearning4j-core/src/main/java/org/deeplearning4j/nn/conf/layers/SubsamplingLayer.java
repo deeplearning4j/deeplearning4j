@@ -42,6 +42,16 @@ public class SubsamplingLayer extends Layer {
         this.padding = builder.padding;
     }
 
+    @Override
+    public SubsamplingLayer clone() {
+        SubsamplingLayer clone = (SubsamplingLayer) super.clone();
+
+        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
+        if(clone.stride != null) clone.stride = clone.stride.clone();
+        if(clone.padding != null) clone.padding = clone.padding.clone();
+        return clone;
+    }
+
     @AllArgsConstructor
     public static class Builder extends Layer.Builder {
         private PoolingType poolingType = PoolingType.MAX;

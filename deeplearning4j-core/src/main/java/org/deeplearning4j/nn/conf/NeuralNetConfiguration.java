@@ -32,13 +32,10 @@ import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.util.Dl4jReflection;
 import org.nd4j.linalg.factory.Nd4j;
-import org.springframework.util.ClassUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -138,94 +135,20 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     /**
-     * Copy constructor
-     * @param neuralNetConfiguration
-     */
-    public NeuralNetConfiguration(NeuralNetConfiguration neuralNetConfiguration) {
-        Field[] fields = NeuralNetConfiguration.class.getDeclaredFields();
-        for(Field f : fields) {
-            try {
-                f.setAccessible(true);
-                
-                //Copy lists, maps etc. to avoid same object being in 
-                Object o = f.get(neuralNetConfiguration);
-                if( o instanceof List ){
-                	f.set(this, new ArrayList<>((List<?>)o));
-                } else if( o instanceof Map ){
-                	f.set(this, new HashMap<>((Map<?,?>)o));
-                } else {
-                	f.set(this,o);
-                }
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
-    /**
-     * Creates and returns a copy of this object.  The precise meaning
-     * of "copy" may depend on the class of the object. The general
-     * intent is that, for any object {@code x}, the expression:
-     * <blockquote>
-     * <pre>
-     * x.clone() != x</pre></blockquote>
-     * will be true, and that the expression:
-     * <blockquote>
-     * <pre>
-     * x.clone().getClass() == x.getClass()</pre></blockquote>
-     * will be {@code true}, but these are not absolute requirements.
-     * While it is typically the case that:
-     * <blockquote>
-     * <pre>
-     * x.clone().equals(x)</pre></blockquote>
-     * will be {@code true}, this is not an absolute requirement.
-     *
-     * By convention, the returned object should be obtained by calling
-     * {@code super.clone}.  If a class and all of its superclasses (except
-     * {@code Object}) obey this convention, it will be the case that
-     * {@code x.clone().getClass() == x.getClass()}.
-     *
-     * By convention, the object returned by this method should be independent
-     * of this object (which is being cloned).  To achieve this independence,
-     * it may be necessary to modify one or more fields of the object returned
-     * by {@code super.clone} before returning it.  Typically, this means
-     * copying any mutable objects that comprise the internal "deep structure"
-     * of the object being cloned and replacing the references to these
-     * objects with references to the copies.  If a class contains only
-     * primitive fields or references to immutable objects, then it is usually
-     * the case that no fields in the object returned by {@code super.clone}
-     * need to be modified.
-     *
-     * The method {@code clone} for class {@code Object} performs a
-     * specific cloning operation. First, if the class of this object does
-     * not implement the interface {@code Cloneable}, then a
-     * {@code CloneNotSupportedException} is thrown. Note that all arrays
-     * are considered to implement the interface {@code Cloneable} and that
-     * the return type of the {@code clone} method of an array type {@code T[]}
-     * is {@code T[]} where T is any reference or primitive type.
-     * Otherwise, this method creates a new instance of the class of this
-     * object and initializes all its fields with exactly the contents of
-     * the corresponding fields of this object, as if by assignment; the
-     * contents of the fields are not themselves cloned. Thus, this method
-     * performs a "shallow copy" of this object, not a "deep copy" operation.
-     *
-     * The class {@code Object} does not itself implement the interface
-     * {@code Cloneable}, so calling the {@code clone} method on an object
-     * whose class is {@code Object} will result in throwing an
-     * exception at run time.
-     *
-     * @return a clone of this instance.
-     * @throws CloneNotSupportedException if the object's class does not
-     *                                    support the {@code Cloneable} interface. Subclasses
-     *                                    that overrideLayer the {@code clone} method can also
-     *                                    throw this exception to indicate that an instance cannot
-     *                                    be cloned.
-     * @see Cloneable
+     * Creates and returns a deep copy of the configuration.
      */
     @Override
     public NeuralNetConfiguration clone()  {
-        return new NeuralNetConfiguration(this);
+        try {
+            NeuralNetConfiguration clone = (NeuralNetConfiguration) super.clone();
+            if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
+            if(clone.layer != null) clone.layer = clone.layer.clone();
+            if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
+
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public List<String> variables() {
@@ -360,6 +283,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      * @return
      */
     public static ObjectMapper mapperYaml() {
+        return mapperYaml;
+    }
+
+    private static final ObjectMapper mapperYaml = initMapperYaml();
+
+    private static ObjectMapper initMapperYaml() {
         ObjectMapper ret = new ObjectMapper(new YAMLFactory());
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
@@ -378,6 +307,12 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
      * @return
      */
     public static ObjectMapper mapper() {
+        return mapper;
+    }
+
+    private static final ObjectMapper mapper = initMapper();
+
+    private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
@@ -391,7 +326,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return ret;
     }
 
-    public static class Builder {
+    public static class Builder implements Cloneable {
         private double rmsDecay;
         @Deprecated
         private boolean useAdaGrad = true;
@@ -498,19 +433,19 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return new ListBuilder(layerMap);
         }
 
+        @Override
         public Builder clone() {
-            Builder b = new Builder();
-            Field[] fields = Builder.class.getDeclaredFields();
-            for(Field f : fields) {
-                try {
-                    f.setAccessible(true);
-                    f.set(b,f.get(this));
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
+            try {
+                Builder clone = (Builder) super.clone();
+                if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
+                if(clone.layer != null) clone.layer = clone.layer.clone();
+                if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
 
-            return b;
+                return clone;
+
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         public Builder iterations(int numIterations) {

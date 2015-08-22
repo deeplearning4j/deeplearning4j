@@ -51,7 +51,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
         })
 @Data
 @NoArgsConstructor
-public abstract class Layer implements Serializable {
+public abstract class Layer implements Serializable, Cloneable {
     protected String activationFunction;
     protected WeightInit weightInit;
     protected Distribution dist;
@@ -64,6 +64,17 @@ public abstract class Layer implements Serializable {
     	this.dist = builder.dist;
     	this.dropOut = builder.dropOut;
     	this.updater = builder.updater;
+    }
+
+    @Override
+    public Layer clone() {
+        try {
+            Layer clone = (Layer) super.clone();
+            if(clone.dist != null) clone.dist = clone.dist.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public abstract static class Builder {
