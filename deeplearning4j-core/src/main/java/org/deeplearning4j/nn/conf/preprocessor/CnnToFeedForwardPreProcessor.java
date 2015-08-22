@@ -20,7 +20,10 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
+
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -71,7 +74,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     // return 2 dimensions
-    public INDArray preProcess(INDArray input) {
+    public INDArray preProcess(INDArray input, Layer layer) {
         int[] otherOutputs = null;
         this.inputHeight = input.size(-2);
         this.inputWidth = input.size(-1);
@@ -91,7 +94,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output){
+    public INDArray backprop(INDArray output, Layer layer){
         if (output.shape().length == 4)
             return output;
         if (output.columns() != inputWidth * inputHeight * numChannels)

@@ -19,7 +19,9 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import lombok.Data;
+
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -32,14 +34,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
 
 	@Override
-    public INDArray preProcess(INDArray input) {
+    public INDArray preProcess(INDArray input, Layer layer) {
         INDArray columnMeans = input.mean(0);
         input.subiRowVector(columnMeans);
         return input;
     }
 
     @Override
-    public INDArray backprop(INDArray output) {
+    public INDArray backprop(INDArray output, Layer layer) {
         return output;
     }
 }

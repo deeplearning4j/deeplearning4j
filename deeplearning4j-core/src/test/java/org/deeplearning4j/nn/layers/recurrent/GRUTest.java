@@ -142,7 +142,7 @@ public class GRUTest {
             	.nIn(nIn).nOut(gruNUnits).build())
         	.layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
         			.nIn(gruNUnits).nOut(nOut).build())
-        	.inputPreProcessor(1, new RnnToFeedForwardPreProcessor(timeSeriesLength))
+        	.inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
         	.build();
 		
 		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
