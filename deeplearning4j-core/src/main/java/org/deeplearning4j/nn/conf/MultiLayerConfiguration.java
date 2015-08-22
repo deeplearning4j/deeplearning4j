@@ -52,8 +52,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     @Deprecated
     protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-    @Deprecated
-    protected boolean backward = false;
     protected boolean backprop = false;
 
     /**
@@ -172,7 +170,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected double dampingFactor = 100;
         protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-        protected boolean backward = false;
         protected boolean backprop = false;
         @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
@@ -245,7 +242,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.pretrain = pretrain;
             conf.dampingFactor = dampingFactor;
             conf.outputPostProcessors = outputPostProcessors;
-            conf.backward = backward;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
