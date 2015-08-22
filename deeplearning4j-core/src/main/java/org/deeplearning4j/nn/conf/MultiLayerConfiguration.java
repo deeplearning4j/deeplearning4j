@@ -16,6 +16,8 @@
  *
  */
 
+
+
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,9 +47,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     @Deprecated
     protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
-    /* Sample if true, otherwise use the straight activation function */
-    @Deprecated
-    protected boolean useRBMPropUpAsActivations = true;
     @Deprecated
     protected double dampingFactor = 100;
     @Deprecated
@@ -170,8 +169,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
         protected boolean pretrain = true;
-        @Deprecated
-        protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
         protected Map<Integer,OutputPostProcessor> outputPostProcessors = new HashMap<>();
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
@@ -225,14 +222,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             this.dampingFactor = dampingFactor;
             return this;
         }
-
-        @Deprecated
-        public Builder useRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
-            this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
-            return this;
-        }
-
-
+        
         /**
          * Whether to do pre train or not
          * @param pretrain whether to do pre train or not
@@ -253,7 +243,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
             conf.pretrain = pretrain;
-            conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
             conf.outputPostProcessors = outputPostProcessors;
             conf.backward = backward;
@@ -269,7 +258,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return "Builder{" +
                     "confs=" + confs +
                     ", pretrain=" + pretrain +
-                    ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
                     ", dampingFactor=" + dampingFactor +
                     ", preProcessors=" + outputPostProcessors +
                     '}';
@@ -284,7 +272,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
             return Double.compare(builder.dampingFactor, dampingFactor) == 0
                     && pretrain == builder.pretrain
-                    && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
                     && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null);
 
         }
@@ -295,7 +282,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             long temp;
             result = confs != null ? confs.hashCode() : 0;
             result = 31 * result + (pretrain ? 1 : 0);
-            result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
             temp = Double.doubleToLongBits(dampingFactor);
             result = 31 * result + (int) (temp ^ (temp >>> 32));
             result = 31 * result + (outputPostProcessors != null ? outputPostProcessors.hashCode() : 0);
