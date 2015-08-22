@@ -22,14 +22,14 @@ public class ReshapePreProcessorTest {
         public void testPreProcessor2to4() {
                 ReshapePreProcessor processor = new ReshapePreProcessor(new int[]{1, 784}, new int[]{1, 1, 28, 28});
 
-                INDArray check2to4 = processor.preProcess(in2D);
+                INDArray check2to4 = processor.preProcess(in2D,null);
                 int val2to4 = check2to4.shape().length;
                 assertTrue(val2to4 == 4);
         }
         @Test
         public void testPreProcessor4to2() {
                 ReshapePreProcessor processor = new ReshapePreProcessor(new int[] {20, 1, 28, 28}, new int[]{20, 784});
-                INDArray result2 = processor.preProcess(in4D);
+                INDArray result2 = processor.preProcess(in4D,null);
                 int val4to4 = result2.shape().length;
                 assertTrue(val4to4 == 2);
         }
@@ -39,7 +39,7 @@ public class ReshapePreProcessorTest {
         public void testPreProcessorBackprop2to4() {
                 ReshapePreProcessor processor = new ReshapePreProcessor(new int[]{1, 784}, new int[]{1, 1, 28, 28});
 
-                INDArray check2to2 = processor.backprop(in2D);
+                INDArray check2to2 = processor.backprop(in2D,null);
                 int val2to2 = check2to2.shape().length;
                 assertTrue(val2to2 == 2);
         }
@@ -48,7 +48,7 @@ public class ReshapePreProcessorTest {
         public void testPreProcessorBackprop3to2() {
                 ReshapePreProcessor processor = new ReshapePreProcessor(new int[]{1, 784, 7}, new int[] {1, 5488});
 
-                INDArray check3to2 = processor.backprop(in4D);
+                INDArray check3to2 = processor.backprop(in4D,null);
                 int val3to2 = check3to2.shape().length;
                 assertTrue(val3to2 == 3);
 
