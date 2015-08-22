@@ -27,8 +27,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import org.deeplearning4j.nn.conf.deserializers.*;
-import org.deeplearning4j.nn.conf.serializers.*;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -285,12 +283,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
-        SimpleModule module = new SimpleModule();
-
-        module.addSerializer(OutputPostProcessor.class,new PreProcessorSerializer());
-        module.addDeserializer(OutputPostProcessor.class,new PreProcessorDeSerializer());
-
-        ret.registerModule(module);
         return ret;
     }
 
@@ -309,12 +301,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS,false);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
-        SimpleModule module = new SimpleModule();
-
-        module.addSerializer(OutputPostProcessor.class,new PreProcessorSerializer());
-        module.addDeserializer(OutputPostProcessor.class,new PreProcessorDeSerializer());
-
-        ret.registerModule(module);
         return ret;
     }
 
