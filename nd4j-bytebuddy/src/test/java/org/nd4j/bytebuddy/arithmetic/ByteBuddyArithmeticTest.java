@@ -16,6 +16,7 @@ public class ByteBuddyArithmeticTest {
         int[] results = new int[]{
                 5,1,6,1,1
         };
+
         //ADD,SUB,MUL,DIV,MOD
         ByteBuddyIntArithmetic.Operation[] ops = ByteBuddyIntArithmetic.Operation.values();
 

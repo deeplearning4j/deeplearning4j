@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arrays.create;
+package org.nd4j.bytebuddy.arrays.create.noreturn;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;

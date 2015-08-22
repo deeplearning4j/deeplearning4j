@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arrays.create;
+package org.nd4j.bytebuddy.arrays.create.noreturn;
 
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.implementation.Implementation;
@@ -26,18 +26,11 @@ public class CreateArrayByteCodeAppender implements ByteCodeAppender {
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
         StackManipulation createArray = IntArrayCreation.intCreationOfLength(length);
         StackManipulation.Compound size = new StackManipulation.Compound(
-                createArray,
-                MethodReturn.REFERENCE
+                createArray
         );
 
         StackManipulation.Size size1 = size.apply(methodVisitor, implementationContext);
         return new Size(size1.getMaximalSize(), instrumentedMethod.getStackSize());
 
     }
-
-    public StackManipulation stackManipulationForLength() {
-        StackManipulation createArray = IntArrayCreation.intCreationOfLength(length);
-        return createArray;
-    }
-
 }
