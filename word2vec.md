@@ -9,7 +9,7 @@ Contents
 
 * <a href="#intro">Introduction</a>
 * <a href="#embed">Neural Word Embeddings</a>
-* <a href="#crazy">Crazy Word2vec Results</a>
+* <a href="#crazy">Amusing Word2vec Results</a>
 * <a href="#just">**Just Give Me the Code**</a>
 * <a href="#anatomy">Anatomy of Word2Vec</a>
 * <a href="#setup">Setup, Load and Train</a>
@@ -98,7 +98,7 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     
     building:architect::software:[programmer, SecurityCenter, WinPcap]
 
-This model was trained on the Google News vocab, which you can [import](#import) and play with.
+This model was trained on the Google News vocab, which you can [import](#import) and play with. Contemplate, for a moment, that the Word2vec algorithm has never been taught a single rule of English syntax. It comes to the vocabulary as a blank slate, and by the end of training, it can compute complex analogies. 
 
 You can also query a Word2vec model for other assocations. Not everything has to be two analogies that mirror each other. ([We explain how below....](#eval))
 
