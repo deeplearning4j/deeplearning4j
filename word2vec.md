@@ -69,14 +69,14 @@ Instead of the pluses, minus and equals signs, we'll give you the results in the
     king:queen::man:[woman, Attempted abduction, teenager, girl] 
     //Weird, but you can kind of see it
     
-    china:taiwan::russia:[ukraine, Moscow, Moldova, Armenia]
+    China:Taiwan::Russia:[Ukraine, Moscow, Moldova, Armenia]
     //Two large countries and their small, estranged neighbors
     
     house:roof::castle:[dome, bell_tower, spire, crenellations, turrets]
     
     knee:leg::elbow:[forearm, arm, ulna_bone]
     
-    new york times:sulzberger::fox:[Murdoch, Chernin, Bancroft, Ailes]
+    New York Times:Sulzberger::Fox:[Murdoch, Chernin, Bancroft, Ailes]
     //The Sulzberger-Ochs family owns and runs the NYT.
     //The Murdoch family owns News Corp., which owns Fox News. 
     //Peter Chernin was News Corp.'s COO for 13 yrs.
@@ -86,16 +86,20 @@ Instead of the pluses, minus and equals signs, we'll give you the results in the
     love:indifference::fear:[apathy, callousness, timidity, helplessness, inaction]
     //the poetry of this single array is simply amazing...
     
-    hillary clinton:rick perry::barack obama:[Kinky_Friedman, David_Dewhurst, Farouk_Shami, George_W._Bush]
+    Hillary Clinton:Rick Perry::Barack Obama:[Kinky_Friedman, David_Dewhurst, Farouk_Shami, George_W._Bush]
+    //Perry is a Republican presidential hopeful and former governor of Texas.
     //Kinky and Farouk once ran for governor of Texas, 
     //Dewhurst served as TX Lieutenant Gov., and Bush, you know.
     //Not saying Rick Perry's kinky, but Word2vec thinks so.
     
-    donald trump:republican::barack obama:[Democratic, GOP, Democrats, McCain]
+    Donald Trump:Republican::Barack Obama:[Democratic, GOP, Democrats, McCain]
+    //It's interesting to note that, just as Obama and McCain were rivals,
+    //so too, Word2vec thinks Trump has a rivalry with the idea Republican.
     
     monkey:human::dinosaur:[fossil, fossilized, Ice_Age_mammals, fossilization]
-    //humans are fossilized monkeys? humans are what's left 
-    //over from monkeys? humans are the species that beat monkeys?
+    //Humans are fossilized monkeys? Humans are what's left 
+    //over from monkeys? Humans are the species that beat monkeys
+    //just as Ice Age mammals beat dinosaurs? Plausible.
     
     building:architect::software:[programmer, SecurityCenter, WinPcap]
 
