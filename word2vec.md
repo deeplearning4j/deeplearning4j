@@ -60,9 +60,11 @@ These vectors are the basis of a more comprehensive geometry of words. Not only 
 
 ![Alt text](../img/countries_capitals.png) 
 
-##<a name="crazy">Crazy Word2Vec Results</a>
+##<a name="crazy">Amusing Word2Vec Results</a>
 
-Let's look at some other associations. Instead of the pluses, minus and equals signs, we'll give you the results in the notation of logical analogies, where `:` means "is to" and `::` means "as"; e.g. Rome is to Italy as China is to Beijing =  Rome:Italy::Beijing:China. But in the last spot, we'll give you the list of words that a Word2vec model proposes, when given the first three elements:
+Let's look at some other associations Word2vec can produce. 
+
+Instead of the pluses, minus and equals signs, we'll give you the results in the notation of logical analogies, where `:` means "is to" and `::` means "as"; e.g. "Rome is to Italy as China is to Beijing" =  `Rome:Italy::Beijing:China`. In the last spot, rather than supplying the "answer", we'll give you the list of words that a Word2vec model proposes, when given the first three elements:
 
     king:queen::man:[woman, Attempted abduction, teenager, girl] 
     //Weird, but you can kind of see it
@@ -82,13 +84,12 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     //The Bancroft family sold the Wall St. Journal to News Corp.
     
     love:indifference::fear:[apathy, callousness, timidity, helplessness, inaction]
-    //some of these results fit into indifference 
-    //as a cold response to love, others as a co-occuring feeling.
+    //the poetry of this single array is simply amazing...
     
     hillary clinton:rick perry::barack obama:[Kinky_Friedman, David_Dewhurst, Farouk_Shami, George_W._Bush]
-    //Kinky and Farouk ran for governor of Texas, 
-    //Dewhurst served as lieutenant gov, and Bush, you know.
-    //Not saying Rick Perry's kinky, but Word2vec thinks so...
+    //Kinky and Farouk once ran for governor of Texas, 
+    //Dewhurst served as TX Lieutenant Gov., and Bush, you know.
+    //Not saying Rick Perry's kinky, but Word2vec thinks so.
     
     donald trump:republican::barack obama:[Democratic, GOP, Democrats, McCain]
     
@@ -98,7 +99,7 @@ Let's look at some other associations. Instead of the pluses, minus and equals s
     
     building:architect::software:[programmer, SecurityCenter, WinPcap]
 
-This model was trained on the Google News vocab, which you can [import](#import) and play with. Contemplate, for a moment, that the Word2vec algorithm has never been taught a single rule of English syntax. It comes to the vocabulary as a blank slate, and by the end of training, it can compute complex analogies. 
+This model was trained on the Google News vocab, which you can [import](#import) and play with. Contemplate, for a moment, that the Word2vec algorithm has never been taught a single rule of English syntax. It knows nothing about the world. It comes to the Google News documents as a blank slate, and by the end of training, it can compute complex analogies that mean something to humans. 
 
 You can also query a Word2vec model for other assocations. Not everything has to be two analogies that mirror each other. ([We explain how below....](#eval))
 
