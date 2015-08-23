@@ -93,7 +93,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
             if(clone.layer != null) clone.layer = clone.layer.clone();
             if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
-
+            if(clone.variables != null ) clone.variables = new ArrayList<>(clone.variables);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
