@@ -18,7 +18,7 @@ trait SliceableNDArray [A <: INDArray]{
   def subMatrix[B](target: IndexRange*)(implicit ev:NDArrayEvidence[A,B],ev2:Manifest[B]): A = {
     require(target.size <= underlying.shape().length, "Matrix dimension must be equal or larger than shape's dimension to extract.")
 
-    if(underlying.isRowVector || target.exists(_.hasNegative)) {
+//    if(underlying.isRowVector || target.exists(_.hasNegative)) {
       val SubMatrixIndices(indices,targetShape) = indicesFrom(target:_*)
 
       val lv = ev.linearView(underlying)
@@ -26,9 +26,9 @@ trait SliceableNDArray [A <: INDArray]{
 
       ev.create(filtered, targetShape, NDOrdering(underlying.ordering()),0)
 
-    }else{
-      ev.get(underlying,getINDArrayIndexfrom(target:_*):_*)
-    }
+//    }else{
+//      ev.get(underlying,getINDArrayIndexfrom(target:_*):_*)
+//    }
   }
 
   def indicesFrom(target:IndexRange*):SubMatrixIndices = {
