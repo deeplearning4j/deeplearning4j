@@ -73,7 +73,7 @@ public class RBM extends BasePretrainNetwork {
     }
 
     @AllArgsConstructor
-    public static class Builder extends BasePretrainNetwork.Builder {
+    public static class Builder extends BasePretrainNetwork.Builder<Builder> {
         private HiddenUnit hiddenUnit= RBM.HiddenUnit.BINARY;
         private VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
         private int k = 1;
@@ -86,38 +86,6 @@ public class RBM extends BasePretrainNetwork {
 
         public Builder() {}
 
-        @Override
-        public Builder nIn(int nIn) {
-            this.nIn = nIn;
-            return this;
-        }
-        @Override
-        public Builder nOut(int nOut) {
-            this.nOut = nOut;
-            return this;
-        }
-        @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        
-        @Override
-        public Builder dist(Distribution dist){
-        	super.dist(dist);
-        	return this;
-        }
-        
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
         @Override
         @SuppressWarnings("unchecked")
         public RBM build() {
@@ -144,12 +112,5 @@ public class RBM extends BasePretrainNetwork {
             this.sparsity = sparsity;
             return this;
         }
-
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
-        }
-
     }
 }

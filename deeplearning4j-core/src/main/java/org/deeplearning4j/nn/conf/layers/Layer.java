@@ -77,39 +77,39 @@ public abstract class Layer implements Serializable, Cloneable {
         }
     }
 
-    public abstract static class Builder {
+    public abstract static class Builder<T extends Builder<T>> {
         protected String activationFunction = "sigmoid";
         protected WeightInit weightInit = WeightInit.VI;
         protected Distribution dist = new NormalDistribution(1e-3,1);
         protected double dropOut = 0;
         protected Updater updater = Updater.ADAGRAD;
 
-        public Builder activation(String activationFunction) {
+        public T activation(String activationFunction) {
             this.activationFunction = activationFunction;
-            return this;
+            return (T) this;
         }
 
-        public Builder weightInit(WeightInit weightInit) {
+        public T weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
-            return this;
+            return (T) this;
         }
         
         /** Distribution to sample initial weights from. Used in conjunction with
          * .weightInit(WeightInit.DISTRIBUTION)
          */
-        public Builder dist(Distribution dist){
+        public T dist(Distribution dist){
         	this.dist = dist;
-        	return this;
+        	return (T) this;
         }
 
-        public Builder dropOut(double dropOut) {
+        public T dropOut(double dropOut) {
             this.dropOut = dropOut;
-            return this;
+            return (T) this;
         }
         
-        public Builder updater(Updater updater){
+        public T updater(Updater updater){
         	this.updater = updater;
-        	return this;
+        	return (T) this;
         }
 
         public abstract <E extends Layer> E build();
