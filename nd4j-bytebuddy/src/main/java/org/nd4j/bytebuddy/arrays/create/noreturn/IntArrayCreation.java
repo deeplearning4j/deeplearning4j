@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arrays.create;
+package org.nd4j.bytebuddy.arrays.create.noreturn;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
@@ -13,8 +13,6 @@ import java.util.List;
 
 /**
  * Creates int arrays
- * of a specified length
- *
  *
  * @author Adam Gibson
  */
@@ -23,11 +21,6 @@ public class IntArrayCreation implements Implementation {
     private static TypePool typePool = TypePool.Default.ofClassPath();
     private static ArrayFactory factory = ArrayFactory.forType(typePool.describe("int").resolve());
 
-    /**
-     * Specify the length
-     * of the array to create
-     * @param length the length of the array to create
-     */
     public IntArrayCreation(int length) {
         this.length = length;
     }
