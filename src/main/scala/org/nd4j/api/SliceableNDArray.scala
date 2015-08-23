@@ -3,6 +3,7 @@ package org.nd4j.api
 import org.nd4j.api.Implicits._
 import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.indexing.{NDArrayIndex, INDArrayIndex}
 import org.slf4j.LoggerFactory
 
@@ -74,7 +75,7 @@ trait SliceableNDArray [A <: INDArray]{
       }
     }
 
-    val indices = calcIndices(modifiedTarget.toList, underlying.stride().toList)
+    val indices = calcIndices(modifiedTarget.toList, Nd4j.getStrides(originalShape,underlying.ordering()).toList)
     log.trace(s"${target.mkString("[", ",", "]")} means $modifiedTarget at ${originalShape.mkString("[", "x", s"]${underlying.ordering}")} matrix with stride:${underlying.stride.mkString(",")}. Target shape:${targetShape.mkString("[", "x", s"]${underlying.ordering}")} indices:$indices")
     SubMatrixIndices(indices,targetShape)
   }

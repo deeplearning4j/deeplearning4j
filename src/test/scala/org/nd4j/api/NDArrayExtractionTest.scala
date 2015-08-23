@@ -239,6 +239,10 @@ class NDArrayExtractionTest extends FlatSpec{
     val result = complexNDArray(0,0)
 
     assert(result == (1 + i).toScalar)
+
+    val result2 = complexNDArray(->,0)
+
+    assert(result2 == Array(Array(1 + i),Array(1 + 3*i)).toNDArray)
   }
 
   it should "be able to update with specified indices" in {
