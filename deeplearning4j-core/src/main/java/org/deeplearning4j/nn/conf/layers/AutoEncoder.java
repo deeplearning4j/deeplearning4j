@@ -45,9 +45,11 @@ public class AutoEncoder extends BasePretrainNetwork {
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
-        private double corruptionLevel = Double.NaN;
-        private double sparsity = Double.NaN;
+    public static class Builder extends BasePretrainNetwork.Builder {
+        private double corruptionLevel = 3e-1f;
+        private double sparsity = 0f;
+
+        public Builder() {}
 
         public Builder(double corruptionLevel) {
             this.corruptionLevel = corruptionLevel;

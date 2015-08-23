@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.iterativereduce.impl.reader.RecordReaderDataSetIterator;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.scaleout.api.ir.ParameterVectorUpdateable;
 import org.deeplearning4j.iterativereduce.runtime.ComputableWorker;
 
@@ -141,8 +142,9 @@ public class WorkerNode implements ComputableWorker<ParameterVectorUpdateable>,D
         log.info("Worker-Conf: " + conf.get(MULTI_LAYER_CONF));
 
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson( conf.get(MULTI_LAYER_CONF));
+        FeedForwardLayer outputLayer = (FeedForwardLayer) conf2.getConf(conf2.getConfs().size() - 1).getLayer();
         this.batchSize = conf2.getConf(0).getBatchSize();
-        this.numberClasses = conf2.getConf(conf2.getConfs().size() - 1).getNOut();
+        this.numberClasses = outputLayer.getNOut();
         labelIndex = conf.getInt(LABEL_INDEX,-1);
         if(labelIndex < 0)
             throw new IllegalStateException("Illegal label index");
