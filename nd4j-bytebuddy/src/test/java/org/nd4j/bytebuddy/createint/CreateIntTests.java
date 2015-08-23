@@ -11,7 +11,6 @@ import org.nd4j.bytebuddy.load.LoadIntegerImplementation;
 import org.nd4j.bytebuddy.returnref.ReturnAppender;
 import org.nd4j.bytebuddy.returnref.ReturnAppenderImplementation;
 
-import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 

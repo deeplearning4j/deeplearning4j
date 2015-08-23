@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.load;
+package org.nd4j.bytebuddy.loadref.relative;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
@@ -10,10 +10,10 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
  *
  * @author Adam Gibson
  */
-public class LoadIntegerImplementation implements Implementation {
+public class RelativeLoadDeclaredReferenceImplementation implements Implementation {
     private int id = -1;
 
-    public LoadIntegerImplementation(int id) {
+    public RelativeLoadDeclaredReferenceImplementation(int id) {
         this.id = id;
     }
 
@@ -24,6 +24,6 @@ public class LoadIntegerImplementation implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new LoadDeclaredInternalInteger(id);
+        return new RelativeLoadDeclaredInternalReference(id);
     }
 }

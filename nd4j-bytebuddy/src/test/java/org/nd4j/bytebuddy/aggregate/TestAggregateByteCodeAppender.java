@@ -6,7 +6,7 @@ import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.junit.Test;
-import org.nd4j.bytebuddy.arrays.assign.relative.RelativeAssignImplementation;
+import org.nd4j.bytebuddy.arrays.assign.relative.withvalue.RelativeArrayAssignWithValueImplementation;
 import org.nd4j.bytebuddy.arrays.create.noreturn.IntArrayCreation;
 import org.nd4j.bytebuddy.dup.DuplicateImplementation;
 import org.nd4j.bytebuddy.returnref.ReturnAppender;
@@ -26,7 +26,7 @@ public class TestAggregateByteCodeAppender {
                 .intercept(new Implementation.Compound(
                         new IntArrayCreation(5),
                         new DuplicateImplementation(),
-                        new RelativeAssignImplementation(0, 5),
+                        new RelativeArrayAssignWithValueImplementation(0, 5),
                         new ReturnAppenderImplementation(ReturnAppender.ReturnType.REFERENCE)))
                 .make();
 

@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arithmetic;
+package org.nd4j.bytebuddy.arithmetic.relative.op;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
@@ -21,21 +21,15 @@ import net.bytebuddy.jar.asm.Opcodes;
  *
  * @author Adam Gibson
  */
-public class ByteBuddyIntArithmetic implements Implementation {
-    private int val1,val2;
+public class RelativeOperationImplementation implements Implementation {
     private Operation op;
 
 
     /**
-     * Initialize with 2 values
      * and an operation to do on them
-     * @param val1
-     * @param val2
      * @param op
      */
-    public ByteBuddyIntArithmetic(int val1,int val2,Operation op) {
-        this.val1 = val1;
-        this.val2 = val2;
+    public RelativeOperationImplementation(Operation op) {
         this.op = op;
     }
 
@@ -65,7 +59,7 @@ public class ByteBuddyIntArithmetic implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new IntegerArithmeticByteCodeAppender(val1,val2,op);
+        return new RelativeOperationByteCodeAppender(op);
     }
 
     public enum Operation {
@@ -82,9 +76,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.ISUB);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -98,9 +92,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IADD);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -114,9 +108,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IMUL);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -130,9 +124,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IDIV);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -146,51 +140,12 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IREM);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
-    /**
-     * Modulus operator between 2 ints
-     * @param val1
-     * @param val2
-     * @return
-     */
-    public static StackManipulation[] mod(int val1,int val2) {
-        return new StackManipulation[] {IntegerConstant.forValue(val1),
-                IntegerConstant.forValue(val2),
-                IntegerMod.INSTANCE,
-                MethodReturn.INTEGER};
-    }
-
-    /**
-     * Division operator between 2 ints
-     * @param val1
-     * @param val2
-     * @return
-     */
-    public static StackManipulation[] div(int val1,int val2) {
-        return new StackManipulation[] {IntegerConstant.forValue(val1),
-                IntegerConstant.forValue(val2),
-                IntegerDivision.INSTANCE,
-                MethodReturn.INTEGER};
-    }
-
-
-    /**
-     * Multiplication operator between 2 ints
-     * @param val1
-     * @param val2
-     * @return
-     */
-    public static StackManipulation[] times(int val1,int val2) {
-        return new StackManipulation[] {IntegerConstant.forValue(val1),
-                IntegerConstant.forValue(val2),
-                IntegerMultiplication.INSTANCE,
-                MethodReturn.INTEGER};
-    }
 
 
 

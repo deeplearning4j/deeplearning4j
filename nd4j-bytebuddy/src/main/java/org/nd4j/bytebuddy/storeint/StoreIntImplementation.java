@@ -1,20 +1,17 @@
-package org.nd4j.bytebuddy.load;
+package org.nd4j.bytebuddy.storeint;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 
 /**
- * Load a reference from the stack
- * that was not apart of a method header.
- *
  * @author Adam Gibson
  */
-public class LoadIntegerImplementation implements Implementation {
-    private int id = -1;
+public class StoreIntImplementation implements Implementation {
+    private int storeId = -1;
 
-    public LoadIntegerImplementation(int id) {
-        this.id = id;
+    public StoreIntImplementation(int storeId) {
+        this.storeId = storeId;
     }
 
     @Override
@@ -24,6 +21,6 @@ public class LoadIntegerImplementation implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new LoadDeclaredInternalInteger(id);
+        return new StoreInt(storeId);
     }
 }

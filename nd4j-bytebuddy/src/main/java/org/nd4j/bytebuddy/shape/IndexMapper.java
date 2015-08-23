@@ -12,8 +12,9 @@ public interface IndexMapper {
      * @param shape the shape of the matrix
      * @param index the index to map
      * @param numIndices the number of indices
+     * @param ordering the ordering for the array
      * @return the coordinates
      */
-    int[] map(int[] shape,int index,int numIndices);
+    int[] ind2sub(int[] shape,int index,int numIndices,char ordering);
 
 }

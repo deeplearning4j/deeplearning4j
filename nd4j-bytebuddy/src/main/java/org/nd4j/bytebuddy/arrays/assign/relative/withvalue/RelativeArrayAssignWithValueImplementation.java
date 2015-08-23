@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arrays.assign.relative;
+package org.nd4j.bytebuddy.arrays.assign.relative.withvalue;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
@@ -7,10 +7,10 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 /**
  * @author Adam Gibson
  */
-public class RelativeAssignImplementation implements Implementation {
+public class RelativeArrayAssignWithValueImplementation implements Implementation {
     private int index,val;
 
-    public RelativeAssignImplementation(int index, int val) {
+    public RelativeArrayAssignWithValueImplementation(int index, int val) {
         this.index = index;
         this.val = val;
     }
@@ -22,15 +22,15 @@ public class RelativeAssignImplementation implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new RelativeAssignArrayValueAppender(index,val);
+        return new RelativeArrayAssignWithValueValueAppender(index,val);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof RelativeAssignImplementation)) return false;
+        if (!(o instanceof RelativeArrayAssignWithValueImplementation)) return false;
 
-        RelativeAssignImplementation that = (RelativeAssignImplementation) o;
+        RelativeArrayAssignWithValueImplementation that = (RelativeArrayAssignWithValueImplementation) o;
 
         if (index != that.index) return false;
         return val == that.val;
