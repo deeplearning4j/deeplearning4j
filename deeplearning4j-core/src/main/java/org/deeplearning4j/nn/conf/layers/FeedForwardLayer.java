@@ -18,18 +18,18 @@ public abstract class FeedForwardLayer extends Layer {
     	this.nOut = builder.nOut;
     }
 
-    public abstract static class Builder extends Layer.Builder {
+    public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
         protected int nIn = 0;
         protected int nOut = 0;
 
-        public Builder nIn(int nIn) {
+        public T nIn(int nIn) {
             this.nIn = nIn;
-            return this;
+            return (T) this;
         }
 
-        public Builder nOut(int nOut) {
+        public T nOut(int nOut) {
             this.nOut = nOut;
-            return this;
+            return (T) this;
         }
     }
 }

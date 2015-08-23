@@ -45,7 +45,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private Convolution.Type convolutionType = Convolution.Type.VALID;
         private int[] kernelSize = new int[] {5, 5};
         private int[] stride = new int[] {2, 2};
@@ -94,46 +94,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         public Builder padding(int... padding){
             this.padding = padding;
             return this;
-        }
-
-        @Override
-        public Builder nIn(int nIn) {
-            super.nIn(nIn);
-            return this;
-        }
-
-        @Override
-        public Builder nOut(int nOut) {
-            super.nOut(nOut);
-            return this;
-        }
-
-        @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-
-        @Override
-        public Builder dist(Distribution dist){
-        	super.dist(dist);
-        	return this;
-        }
-        
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
         }
 
         @Override
