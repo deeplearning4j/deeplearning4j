@@ -108,26 +108,6 @@ trait OperatableNDArray[A <: INDArray] {
 
   def get[B](indices: Array[Int])(implicit ev:NDArrayEvidence[A,B]): B = ev.get(underlying,indices: _*)
 
-  def update[B](i: Int, element: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.put(underlying,i, element)
-
-  def update[B](indices: Array[Int], element: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.put(underlying, indices, element)
-
-  def update(indices: Array[INDArrayIndex], element: INDArray): INDArray = underlying.put(indices, element)
-
-  def update(i: Int, j: Int, element: INDArray): INDArray = underlying.put(i, j, element)
-
-  def update(i: Int, value: Double): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Int, value: Float): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Int, value: Int): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Array[Int], value: Double): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Array[Int], value: Float): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Array[Int], value: Int): INDArray = underlying.putScalar(i, value)
-
   def unary_-(): INDArray = underlying.neg()
 
   def T: INDArray = underlying.transpose()

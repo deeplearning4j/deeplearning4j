@@ -134,6 +134,8 @@ object Implicits {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }
 
+  implicit def intArray2IndexRangeArray(arr:Array[Int]):Array[IndexRange] = arr.map(new IntRange(_))
+
   case object -> extends IndexRange{
     override def hasNegative: Boolean = false
   }
@@ -177,6 +179,16 @@ object Implicits {
     override def toString: String = s"${underlying.start}->${underlying.end} by ${underlying.step}"
 
     override def hasNegative: Boolean = underlying.start < 0 || underlying.end < 0 || underlying.step < 0
+  }
+
+  implicit class NDArrayIndexWrapper(val underlying: INDArrayIndex) extends IndexNumberRange {
+    protected[api] override def asRange(max: => Int): DRange = DRange(underlying.current(),underlying.end(),false,underlying.stride(),max)
+
+    override protected[api] def asNDArrayIndex(max: => Int): INDArrayIndex = underlying
+
+    override def toString: String = s"${underlying.current}->${underlying.end} by ${underlying.stride}"
+
+    override def hasNegative: Boolean = false
   }
 
   lazy val NDOrdering = org.nd4j.api.NDOrdering

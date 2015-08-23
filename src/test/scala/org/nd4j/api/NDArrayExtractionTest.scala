@@ -3,6 +3,7 @@ package org.nd4j.api
 import org.nd4j.api.Implicits._
 import org.scalatest.FlatSpec
 
+
 class NDArrayExtractionTest extends FlatSpec{
   "org.nd4j.api.Implicits.RichNDArray" should "provides forall checker" in {
     val ndArray =
@@ -224,6 +225,23 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(nStep.getFloat(1) == 6)
     assert(nStep.getFloat(2) == 5)
     assert(nStep.getFloat(3) == 4)
+  }
+
+  it should "be able to update with specified indices" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    ndArray(0 -> 3 by 2, ->) = 0
+
+    assert(ndArray == Array(
+      Array(0, 0, 0),
+      Array(4, 5, 6),
+      Array(0, 0, 0)
+    ).toNDArray)
   }
 
   "num2Scalar" should "convert number to Scalar INDArray" in {
