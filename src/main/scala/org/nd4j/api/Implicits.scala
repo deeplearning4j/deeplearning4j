@@ -134,6 +134,10 @@ object Implicits {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }
 
+  implicit class icomplexNum2Scalar(val underlying: IComplexNumber){
+    def toScalar: IComplexNDArray = Nd4j.scalar(underlying)
+  }
+
   implicit def intArray2IndexRangeArray(arr:Array[Int]):Array[IndexRange] = arr.map(new IntRange(_))
 
   case object -> extends IndexRange{
