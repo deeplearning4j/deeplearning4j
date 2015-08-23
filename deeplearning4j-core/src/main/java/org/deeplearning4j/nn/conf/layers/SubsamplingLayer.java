@@ -53,7 +53,7 @@ public class SubsamplingLayer extends Layer {
     }
 
     @AllArgsConstructor
-    public static class Builder extends Layer.Builder {
+    public static class Builder extends Layer.Builder<Builder> {
         private PoolingType poolingType = PoolingType.MAX;
         private int[] kernelSize = new int[] {2, 2}; // Same as filter size from the last conv layer
         private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
@@ -88,26 +88,6 @@ public class SubsamplingLayer extends Layer {
         public Builder() {}
 
         @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        @Override
-        public Builder dist(Distribution dist){
-            this.dist = dist;
-            return this;
-        }
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-        @Override
         @SuppressWarnings("unchecked")
         public SubsamplingLayer build() {
             return new SubsamplingLayer(this);
@@ -131,12 +111,6 @@ public class SubsamplingLayer extends Layer {
         public Builder padding(int... padding){
             this.padding = padding;
             return this;
-        }
-
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
         }
     }
 
