@@ -490,7 +490,7 @@ public class GradientCheckTests {
 			                		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                		.activation(afn).updater(Updater.NONE).build())
 			                .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nIn(layerSize).nOut(nOut)
-			                		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1)).activation(afn)
+			                		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                		.updater(Updater.NONE).build())
 			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
 			                .pretrain(false).backprop(true)
@@ -498,7 +498,7 @@ public class GradientCheckTests {
 			
 			        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
 			        mln.init();
-			
+
 			        if( PRINT_RESULTS ){
 			        	System.out.println("testGradientGravesLSTMFull() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
 			        		+", l2="+l2+", l1="+l1 );
