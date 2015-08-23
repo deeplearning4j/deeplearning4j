@@ -189,19 +189,23 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         INDArray first10a = row.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, 10));
         assertArrayEquals(first10a.shape(),new int[]{1,10});
-        for( int i=0; i<10; i++ ) assertTrue(first10a.getDouble(i) == i);
+        for( int i = 0; i < 10; i++ )
+            assertTrue(first10a.getDouble(i) == i);
 
         INDArray first10b = row.get(NDArrayIndex.interval(0,10));
         assertArrayEquals(first10b.shape(),new int[]{1,10});
-        for( int i=0; i<10; i++ ) assertTrue(first10b.getDouble(i) == i);
+        for( int i = 0; i < 10; i++ )
+            assertTrue(first10b.getDouble(i) == i);
 
         INDArray last10a = row.get(NDArrayIndex.point(0),NDArrayIndex.interval(20,30));
         assertArrayEquals(last10a.shape(),new int[]{1,10});
-        for( int i=0; i<10; i++ ) assertTrue(last10a.getDouble(i) == 20+i);
+        for( int i = 0; i < 10; i++ )
+            assertTrue(last10a.getDouble(i) == 20+i);
 
         INDArray last10b = row.get(NDArrayIndex.interval(20, 30));
         assertArrayEquals(last10b.shape(),new int[]{1,10});
-        for( int i=0; i<10; i++ ) assertTrue(last10b.getDouble(i) == 20+i);
+        for( int i = 0; i < 10; i++ )
+            assertTrue(last10b.getDouble(i) == 20+i);
     }
 
     @Override
