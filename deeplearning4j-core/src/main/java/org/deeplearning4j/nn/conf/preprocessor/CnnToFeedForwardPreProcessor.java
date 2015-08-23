@@ -102,4 +102,13 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         return output.reshape(output.size(0), numChannels, inputHeight, inputWidth);
     }
 
+     @Override
+     public CnnToFeedForwardPreProcessor clone() {
+         try {
+             CnnToFeedForwardPreProcessor clone = (CnnToFeedForwardPreProcessor) super.clone();
+             return clone;
+         } catch (CloneNotSupportedException e) {
+             throw new RuntimeException(e);
+         }
+     }
 }

@@ -52,7 +52,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  * @author Adam Gibson
  *
  */
-public class OutputLayer extends BaseLayer implements Serializable,Classifier {
+public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> implements Serializable,Classifier {
 
     //current input and label matrices
     private INDArray labels;
@@ -94,8 +94,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, z);
+        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
             create.exec();
             score = create.currentResult().doubleValue();
         }
@@ -103,7 +103,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         else {
             score = LossCalculation.builder()
                     .l1(fullNetworkL1).l2(fullNetworkL2)
-                    .labels(labels).z(z).lossFunction(conf.getLossFunction())
+                    .labels(labels).z(z).lossFunction(layerConf().getLossFunction())
                     .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
                     .useRegularization(conf.isUseRegularization()).build().score();
         }
@@ -136,11 +136,11 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
     private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut){
-    	INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getActivationFunction(), preOut.dup()));
+    	INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
     	INDArray outSubLabels = output.sub(labels);
     	Gradient gradient = new DefaultGradient();
     	
-    	switch (conf.getLossFunction()) {
+    	switch (layerConf().getLossFunction()) {
     	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
     		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
     		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
@@ -178,7 +178,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
             return new Triple<>(gradient,outSubLabels,output);
         default:
-        	throw new IllegalStateException("Invalid loss function: " + conf.getLossFunction());
+        	throw new IllegalStateException("Invalid loss function: " + layerConf().getLossFunction());
     	}
     }
 
@@ -224,7 +224,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             throw new IllegalArgumentException("No null input allowed");
 
         INDArray preOutput = preOutput(input, training);
-        if(conf.getActivationFunction().equals("softmax")) {
+        if(conf.getLayer().getActivationFunction().equals("softmax")) {
             SoftMax softMax = new SoftMax(preOutput);
             softMax.exec(1);
             return softMax.z();
@@ -370,7 +370,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void setParams(INDArray params) {
-        INDArray wParams = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
+        INDArray wParams = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, layerConf().getNIn() * layerConf().getNOut()));
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);

@@ -17,8 +17,17 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
         @JsonSubTypes.Type(value = NegativeDefaultStepFunction.class, name = "negativeDefault"),
         @JsonSubTypes.Type(value = NegativeGradientStepFunction.class, name = "negativeGradient"),
         })
-public class StepFunction implements Serializable {
+public class StepFunction implements Serializable, Cloneable {
 
     private static final long serialVersionUID = -1884835867123371330L;
 
+    @Override
+    public StepFunction clone() {
+        try {
+            StepFunction clone = (StepFunction) super.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

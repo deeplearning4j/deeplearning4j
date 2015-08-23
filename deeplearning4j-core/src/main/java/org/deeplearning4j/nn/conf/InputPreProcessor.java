@@ -48,7 +48,7 @@ import java.io.Serializable;
         @JsonSubTypes.Type(value = ZeroMeanAndUnitVariancePreProcessor.class, name = "zeroMeanAndUnitVariance"),
         @JsonSubTypes.Type(value = ZeroMeanPrePreProcessor.class, name = "zeroMean"),
 })
-public interface InputPreProcessor extends Serializable {
+public interface InputPreProcessor extends Serializable, Cloneable {
 
 
     /**
@@ -65,4 +65,5 @@ public interface InputPreProcessor extends Serializable {
      */
     INDArray backprop(INDArray output, Layer layer);
 
+    InputPreProcessor clone();
 }

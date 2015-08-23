@@ -38,7 +38,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * @author Adam Gibson
  *
  */
-public class AutoEncoder extends BasePretrainNetwork  {
+public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder>  {
 
     private static final long serialVersionUID = -6445530486350763837L;
 
@@ -67,8 +67,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
     // Encode
     public INDArray encode(boolean training) {
-        if(conf.getDropOut() > 0 && training) {
-            dropoutMask = Dropout.applyDropout(input, conf.getDropOut(),dropoutMask);
+        if(conf.getLayer().getDropOut() > 0 && training) {
+            dropoutMask = Dropout.applyDropout(input, conf.getLayer().getDropOut(),dropoutMask);
         }
 
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
@@ -76,7 +76,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
         INDArray preAct = input.mmul(W).addiRowVector(hBias);
 
-        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
+        INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
 
         return ret;
     }
@@ -87,7 +87,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         INDArray preAct = y.mmul(W.transposei());
         preAct.addiRowVector(vBias);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), preAct));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
 
     }
 
@@ -117,7 +117,7 @@ public class AutoEncoder extends BasePretrainNetwork  {
     public void computeGradientAndScore() {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
 
-        double corruptionLevel = conf.getCorruptionLevel();
+        double corruptionLevel = layerConf().getCorruptionLevel();
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
         setInput(corruptedX);
@@ -125,8 +125,8 @@ public class AutoEncoder extends BasePretrainNetwork  {
 
         INDArray z = decode(y);
         INDArray visibleLoss =  input.sub(z);
-        INDArray hiddenLoss = conf.getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1)) :
-                visibleLoss.mmul(W).muli(y).muli(y.add(-conf.getSparsity()));
+        INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1)) :
+                visibleLoss.mmul(W).muli(y).muli(y.add(-layerConf().getSparsity()));
 
 
         INDArray wGradient = corruptedX.transposei().mmul(hiddenLoss).addi(visibleLoss.transposei().mmul(y));

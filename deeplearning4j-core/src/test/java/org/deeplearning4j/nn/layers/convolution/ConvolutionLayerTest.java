@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -24,20 +23,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.NDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -204,10 +195,10 @@ public class ConvolutionLayerTest {
         ConvolutionLayer layer = new ConvolutionLayer.Builder(kernelSize, stride, padding)
                 .nIn(nIn)
                 .nOut(nOut)
+                .activation("sigmoid")
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activationFunction("sigmoid")
                 .iterations(1)
                 .layer(layer)
                 .build();
@@ -317,8 +308,6 @@ public class ConvolutionLayerTest {
                 .seed(seed)
                 .batchSize(batchSize)
                 .iterations(iterations)
-                .weightInit(WeightInit.XAVIER)
-                .activationFunction("relu")
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
                 .layer(0, new ConvolutionLayer.Builder(new int[]{10, 10})
@@ -326,10 +315,13 @@ public class ConvolutionLayerTest {
                         .nOut(6)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nIn(150)
                         .nOut(outputNum)
+                        .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
                 .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))

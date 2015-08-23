@@ -7,7 +7,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 /**
  * @author Adam Gibson
  */
-public class DenseLayer extends BaseLayer {
+public class DenseLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.DenseLayer> {
     public DenseLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
