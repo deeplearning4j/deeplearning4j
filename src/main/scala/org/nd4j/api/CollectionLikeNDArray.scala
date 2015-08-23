@@ -6,34 +6,35 @@ import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 
-trait CollectionLikeNDArray {
-  val underlying: INDArray
+trait CollectionLikeNDArray [A <: INDArray]{
+  val underlying: A
   
-  def filteri(f: Double => Boolean): INDArray = notCleanedUp { array =>
+  def filteri(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,Double]): A = notCleanedUp { array =>
     val shape = underlying.shape()
-    Nd4j.getExecutioner.exec(FilterOps(underlying.linearView(), f)).z().reshape(shape:_*)
+    ev.reshape(Nd4j.getExecutioner.exec(FilterOps(ev.linearView(underlying), f)).z().asInstanceOf[A],shape:_*)
   }
-  def filter(f: Double => Boolean): INDArray = underlying.dup().filteri(f)
+  def filter(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,Double]): A = ev.dup(underlying).filteri(f)(ev)
 
-  def filterBiti(f: Double => Boolean): INDArray = notCleanedUp { array =>
+  def filterBiti(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,_]): A = notCleanedUp { array =>
     val shape = underlying.shape()
-    Nd4j.getExecutioner.exec(BitFilterOps(underlying.linearView(), f)).z().reshape(shape:_*)
+    ev.reshape(Nd4j.getExecutioner.exec(BitFilterOps(underlying.linearView(), f)).z().asInstanceOf[A],shape:_*)
   }
 
-  def filterBit(f: Double => Boolean): INDArray = underlying.dup().filterBiti(f)
+  def filterBit(f: Double => Boolean)(implicit ev:NDArrayEvidence[A,_]): A = ev.dup(underlying).filterBiti(f)(ev)
 
-  def mapRCi(f: Double => Double)(g:IComplexNumber => IComplexNumber): INDArray = notCleanedUp { array =>
-    Nd4j.getExecutioner.exec(MapOps(underlying.linearView(), f,g)).z().reshape(underlying.shape():_*)
+  def mapRCi(f: Double => Double)(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]): A = notCleanedUp { array =>
+    val shape = underlying.shape()
+    ev.reshape(Nd4j.getExecutioner.exec(MapOps(underlying.linearView(), f,g)).z().asInstanceOf[A],shape:_*)
   }
-  def mapRC(f: Double => Double)(g:IComplexNumber => IComplexNumber): INDArray = underlying.dup().mapRCi(f)(g)
+  def mapRC(f: Double => Double)(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]): A = ev.dup(underlying).mapRCi(f)(g)(ev)
 
-  def mapi(f: Double => Double): INDArray = mapRCi(f)(g => g)
-  def map(f: Double => Double): INDArray = mapRC(f)(g => g)
+  def mapi(f: Double => Double)(implicit ev:NDArrayEvidence[A,_]): A = mapRCi(f)(g => g)(ev)
+  def map(f: Double => Double)(implicit ev:NDArrayEvidence[A,_]): A = mapRC(f)(g => g)(ev)
 
-  def mapCi(g:IComplexNumber => IComplexNumber): INDArray = mapRCi(f => f)(g)
-  def mapC(g:IComplexNumber => IComplexNumber): INDArray = mapRC(f => f)(g)
+  def mapCi(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]):A = mapRCi(f => f)(g)(ev)
+  def mapC(g:IComplexNumber => IComplexNumber)(implicit ev:NDArrayEvidence[A,_]):A = mapRC(f => f)(g)(ev)
 
-  def notCleanedUp[A](f: INDArray => A): A = {
+  def notCleanedUp[B](f: INDArray => B): B = {
     if (underlying.isCleanedUp)
       throw new IllegalStateException("Invalid operation: already collected")
     f(underlying)

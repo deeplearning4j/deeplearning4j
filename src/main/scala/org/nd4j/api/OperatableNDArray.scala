@@ -31,65 +31,65 @@ trait OperatableNDArray[A <: INDArray] {
   val underlying: A
 
   // --- INDArray operators
-  def +(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.add(underlying,that)
+  def +[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.add(underlying,that)
 
-  def -(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.sub(underlying,that)
+  def -[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.sub(underlying,that)
 
   /** element-by-element multiplication */
-  def *(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mul(underlying,that)
-
+  def *[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mul(underlying,that)
+                                                        
   /** matrix multiplication */
-  def **(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mmul(underlying,that)
+  def **[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mmul(underlying,that)
 
   /** matrix multiplication using Numpy syntax for arrays */
-  def dot(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mmul(underlying,that)
+  def dot[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mmul(underlying,that)
 
-  def /(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray  = ev.div(underlying,that)
+  def /[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A  = ev.div(underlying,that)
 
   /** right division ... is this the correct symbol? */
-  def \(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray  = ev.rdiv(underlying,that)
+  def \[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A  = ev.rdiv(underlying,that)
 
   // --- In-place INDArray opertors
   /** In-place addition */
-  def +=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.addi(underlying,that)
+  def +=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.addi(underlying,that)
 
   /** In-place subtraction */
-  def -=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.subi(underlying,that)
+  def -=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.subi(underlying,that)
 
   /** In-placeelement-by-element multiplication */
-  def *=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.muli(underlying,that)
+  def *=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.muli(underlying,that)
 
   /** In-place matrix multiplication */
-  def **=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mmuli(underlying,that)
+  def **=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.mmuli(underlying,that)
 
   /** In-place division */
-  def /=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.divi(underlying,that)
+  def /=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.divi(underlying,that)
 
   /** In-place right division */
-  def \=(that: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.rdivi(underlying,that)
+  def \=[B](that: INDArray)(implicit ev:NDArrayEvidence[A,B]): A = ev.rdivi(underlying,that)
 
   // --- Number operators
-  def +(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.add(underlying,that)
+  def +[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.add(underlying,that)
 
-  def -(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.sub(underlying,that)
+  def -[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.sub(underlying,that)
 
-  def *(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.mul(underlying,that)
+  def *[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.mul(underlying,that)
 
-  def /(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.div(underlying,that)
+  def /[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.div(underlying,that)
 
-  def \(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.rdiv(underlying,that)
+  def \[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.rdiv(underlying,that)
 
   // --- In-place Number operators
-  def +=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.addi(underlying,that)
+  def +=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.addi(underlying,that)
 
-  def -=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.subi(underlying,that)
+  def -=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.subi(underlying,that)
 
-  def *=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.muli(underlying,that)
+  def *=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.muli(underlying,that)
 
-  def /=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.divi(underlying,that)
+  def /=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.divi(underlying,that)
 
   /** right division ... is this the correct symbol? */
-  def \=(that: Number)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.rdivi(underlying,that)
+  def \=[B](that: Number)(implicit ev:NDArrayEvidence[A,B]): A = ev.rdivi(underlying,that)
 
   // --- Complex operators
   def +(that: IComplexNumber): IComplexNDArray = underlying.add(that)
@@ -100,33 +100,13 @@ trait OperatableNDArray[A <: INDArray] {
 
   def /(that: IComplexNumber): IComplexNDArray = underlying.div(that)
 
-  def get(i: Int)(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,i)
+  def get[B](i: Int)(implicit ev:NDArrayEvidence[A,B]): B = ev.get(underlying,i)
 
-  def get(i: Int, j: Int)(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,i, j)
+  def get[B](i: Int, j: Int)(implicit ev:NDArrayEvidence[A,B]): B = ev.get(underlying,i, j)
 
-  def get(indices: Int*)(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,indices: _*)
+  def get[B](indices: Int*)(implicit ev:NDArrayEvidence[A,B]): B = ev.get(underlying,indices: _*)
 
-  def get(indices: Array[Int])(implicit ev:NDArrayEvidence[A]): ev.Value = ev.get(underlying,indices: _*)
-
-  def update(i: Int, element: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.put(underlying,i, element)
-
-  def update(indices: Array[Int], element: INDArray)(implicit ev:NDArrayEvidence[A]): ev.NDArray = ev.put(underlying, indices, element)
-
-  def update(indices: Array[INDArrayIndex], element: INDArray): INDArray = underlying.put(indices, element)
-
-  def update(i: Int, j: Int, element: INDArray): INDArray = underlying.put(i, j, element)
-
-  def update(i: Int, value: Double): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Int, value: Float): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Int, value: Int): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Array[Int], value: Double): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Array[Int], value: Float): INDArray = underlying.putScalar(i, value)
-
-  def update(i: Array[Int], value: Int): INDArray = underlying.putScalar(i, value)
+  def get[B](indices: Array[Int])(implicit ev:NDArrayEvidence[A,B]): B = ev.get(underlying,indices: _*)
 
   def unary_-(): INDArray = underlying.neg()
 
@@ -136,23 +116,23 @@ trait OperatableNDArray[A <: INDArray] {
 
   def ===(other: INDArray): INDArray = underlying.eq(other)
 
-  def sumT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.sum(underlying)
+  def sumT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.sum(underlying)
 
-  def meanT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.sum(underlying)
+  def meanT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.sum(underlying)
 
-  def normMaxT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.normMax(underlying)
+  def normMaxT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.normMax(underlying)
 
-  def norm1T(implicit ev: NDArrayEvidence[A]): ev.Value = ev.norm1(underlying)
+  def norm1T[B](implicit ev: NDArrayEvidence[A,B]): B = ev.norm1(underlying)
 
-  def norm2T(implicit ev: NDArrayEvidence[A]): ev.Value = ev.norm2(underlying)
+  def norm2T[B](implicit ev: NDArrayEvidence[A,B]): B = ev.norm2(underlying)
 
-  def maxT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.max(underlying)
+  def maxT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.max(underlying)
 
-  def minT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.min(underlying)
+  def minT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.min(underlying)
 
-  def stdT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.standardDeviation(underlying)
+  def stdT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.standardDeviation(underlying)
 
-  def prodT(implicit ev: NDArrayEvidence[A]): ev.Value = ev.product(underlying)
+  def prodT[B](implicit ev: NDArrayEvidence[A,B]): B = ev.product(underlying)
 
-  def varT()(implicit ev: NDArrayEvidence[A]): ev.Value = ev.variance(underlying)
+  def varT[B]()(implicit ev: NDArrayEvidence[A,B]): B = ev.variance(underlying)
 }

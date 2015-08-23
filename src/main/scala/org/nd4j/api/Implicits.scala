@@ -9,7 +9,7 @@ import _root_.scala.util.control.Breaks._
 
 object Implicits {
 
-  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray with OperatableNDArray[A] with CollectionLikeNDArray {
+  implicit class RichINDArray[A <: INDArray](val underlying: A) extends SliceableNDArray[A] with OperatableNDArray[A] with CollectionLikeNDArray[A] {
     def forall(f: Double => Boolean): Boolean = {
       var result = true
       val lv = underlying.linearView()
@@ -32,7 +32,7 @@ object Implicits {
 
     def <=(d: Double): Boolean = forall(_ <= d)
 
-    def apply(target: IndexRange*): INDArray = subMatrix(target: _*)
+    def apply[B](target: IndexRange*)(implicit ev:NDArrayEvidence[A,B],ev2:Manifest[B]):A = subMatrix(target: _*)(ev,ev2)
 
     def columnP:ColumnProjectedNDArray = new ColumnProjectedNDArray(underlying)
 
@@ -134,6 +134,12 @@ object Implicits {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }
 
+  implicit class icomplexNum2Scalar(val underlying: IComplexNumber){
+    def toScalar: IComplexNDArray = Nd4j.scalar(underlying)
+  }
+
+  implicit def intArray2IndexRangeArray(arr:Array[Int]):Array[IndexRange] = arr.map(new IntRange(_))
+
   case object -> extends IndexRange{
     override def hasNegative: Boolean = false
   }
@@ -177,6 +183,16 @@ object Implicits {
     override def toString: String = s"${underlying.start}->${underlying.end} by ${underlying.step}"
 
     override def hasNegative: Boolean = underlying.start < 0 || underlying.end < 0 || underlying.step < 0
+  }
+
+  implicit class NDArrayIndexWrapper(val underlying: INDArrayIndex) extends IndexNumberRange {
+    protected[api] override def asRange(max: => Int): DRange = DRange(underlying.current(),underlying.end(),false,underlying.stride(),max)
+
+    override protected[api] def asNDArrayIndex(max: => Int): INDArrayIndex = underlying
+
+    override def toString: String = s"${underlying.current}->${underlying.end} by ${underlying.stride}"
+
+    override def hasNegative: Boolean = false
   }
 
   lazy val NDOrdering = org.nd4j.api.NDOrdering

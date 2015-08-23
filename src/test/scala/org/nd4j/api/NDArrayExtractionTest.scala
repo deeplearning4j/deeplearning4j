@@ -1,7 +1,10 @@
 package org.nd4j.api
 
 import org.nd4j.api.Implicits._
+import org.nd4j.linalg.api.complex.IComplexNDArray
+import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.FlatSpec
+
 
 class NDArrayExtractionTest extends FlatSpec{
   "org.nd4j.api.Implicits.RichNDArray" should "provides forall checker" in {
@@ -224,6 +227,35 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(nStep.getFloat(1) == 6)
     assert(nStep.getFloat(2) == 5)
     assert(nStep.getFloat(3) == 4)
+  }
+
+  it should "work with ComplexNDArray correctly" in {
+    val complexNDArray =
+      Array(
+        Array(1 + i, 1 + i),
+        Array(1 + 3 * i, 1 + 3 * i)
+      ).toNDArray
+
+    val result = complexNDArray(0,0)
+
+    assert(result == (1 + i).toScalar)
+  }
+
+  it should "be able to update with specified indices" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    ndArray(0 -> 3 by 2, ->) = 0
+
+    assert(ndArray == Array(
+      Array(0, 0, 0),
+      Array(4, 5, 6),
+      Array(0, 0, 0)
+    ).toNDArray)
   }
 
   "num2Scalar" should "convert number to Scalar INDArray" in {
