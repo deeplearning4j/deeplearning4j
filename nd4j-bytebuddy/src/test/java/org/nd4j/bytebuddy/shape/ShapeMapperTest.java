@@ -15,13 +15,13 @@ import java.io.File;
 public class ShapeMapperTest  {
     @Test
     public void testShapeMapper() throws Exception {
-        Implementation impl = ShapeMapper.getInd2Sub('c', 4);
+        Implementation impl = ShapeMapper.getInd2Sub2('c', 4);
         DynamicType.Unloaded<IndexMapper> arr = new ByteBuddy()
                 .subclass(IndexMapper.class).method(ElementMatchers.isDeclaredBy(IndexMapper.class))
                 .intercept(impl)
                 .make();
 
-        arr.saveIn(new File("/home/agibsonccc/code/nd4j/indexmapper"));
+        arr.saveIn(new File("target/indexmapper"));
 
         Class<?> dynamicType = arr.load(IndexMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();

@@ -1,33 +1,19 @@
 package org.nd4j.bytebuddy.arrays.assign;
 
-import com.sun.org.apache.xpath.internal.operations.Div;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
-import net.bytebuddy.implementation.Implementation;
+import net.bytebuddy.implementation.bytecode.Duplication;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.member.MethodReturn;
 import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.junit.Test;
-import org.nd4j.bytebuddy.arithmetic.relative.op.RelativeOperationImplementation;
-import org.nd4j.bytebuddy.arrays.assign.relative.novalue.RelativeAssignNoValueImplementation;
-import org.nd4j.bytebuddy.arrays.assign.relative.novalue.noindex.ArrayStoreImplementation;
-import org.nd4j.bytebuddy.arrays.retrieve.relative.RelativeRetrieveArrayImplementation;
+import org.nd4j.bytebuddy.arithmetic.stackmanipulation.OpStackManipulation;
 import org.nd4j.bytebuddy.arrays.stackmanipulation.ArrayStackManipulation;
-import org.nd4j.bytebuddy.constant.ConstantIntImplementation;
-import org.nd4j.bytebuddy.dup.Duplicate2Implementation;
-import org.nd4j.bytebuddy.dup.DuplicateImplementation;
-import org.nd4j.bytebuddy.loadref.relative.RelativeLoadDeclaredReferenceImplementation;
-import org.nd4j.bytebuddy.method.args.LoadArgsImplementation;
-import org.nd4j.bytebuddy.method.integer.LoadIntParamImplementation;
-import org.nd4j.bytebuddy.method.reference.LoadReferenceParamImplementation;
-import org.nd4j.bytebuddy.returnref.ReturnAppender;
-import org.nd4j.bytebuddy.returnref.ReturnAppenderImplementation;
 import org.nd4j.bytebuddy.stackmanipulation.StackManipulationImplementation;
 
 import java.io.File;
-import java.lang.reflect.Method;
 
 import static org.junit.Assert.*;
 /**
@@ -52,10 +38,10 @@ public class AssignImplementationTest {
     }
 
     @Test
-    public void inPlaceDivision() throws Exception {
-        DynamicType.Unloaded<DivideInPlace> val =  new ByteBuddy()
-                .subclass(DivideInPlace.class)
-                .method(ElementMatchers.isDeclaredBy(DivideInPlace.class))
+    public void inPlaceSet() throws Exception {
+        DynamicType.Unloaded<SetValueInPlace> val =  new ByteBuddy()
+                .subclass(SetValueInPlace.class)
+                .method(ElementMatchers.isDeclaredBy(SetValueInPlace.class))
                 .intercept(new StackManipulationImplementation(
                         new StackManipulation.Compound(
                                 MethodVariableAccess.REFERENCE.loadOffset(1),
@@ -66,14 +52,40 @@ public class AssignImplementationTest {
                         ))).make();
 
         val.saveIn(new File("target"));
-        DivideInPlace dv =  val.load(getClass().getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded().newInstance();
+        SetValueInPlace dv =  val.load(getClass().getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded().newInstance();
         int[] ret = {2,4};
         int[] assertion = {1,4};
-        dv.update(ret,0,1);
+        dv.update(ret, 0, 1);
+        assertArrayEquals(assertion, ret);
+    }
+
+
+    @Test
+    public void inPlaceDivide() throws Exception {
+        DynamicType.Unloaded<SetValueInPlace> val =  new ByteBuddy()
+                .subclass(SetValueInPlace.class)
+                .method(ElementMatchers.isDeclaredBy(SetValueInPlace.class))
+                .intercept(new StackManipulationImplementation(
+                        new StackManipulation.Compound(
+                                MethodVariableAccess.REFERENCE.loadOffset(1),
+                                MethodVariableAccess.INTEGER.loadOffset(2),
+                                Duplication.DOUBLE,
+                                ArrayStackManipulation.load(),
+                                MethodVariableAccess.INTEGER.loadOffset(3),
+                                OpStackManipulation.div(),
+                                ArrayStackManipulation.store(),
+                                MethodReturn.VOID
+                        ))).make();
+
+        val.saveIn(new File("target"));
+        SetValueInPlace dv =  val.load(getClass().getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded().newInstance();
+        int[] ret = {2,4};
+        int[] assertion = {1,4};
+        dv.update(ret,0,2);
         assertArrayEquals(assertion,ret);
     }
 
-    public interface DivideInPlace {
+    public interface SetValueInPlace {
         void update(int[] values,int index,int divideBy);
     }
 
