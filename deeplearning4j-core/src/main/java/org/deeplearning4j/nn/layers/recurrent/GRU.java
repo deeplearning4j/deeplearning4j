@@ -110,8 +110,8 @@ public class GRU extends BaseLayer {
 				aSliceNext = Nd4j.zeros(miniBatchSize,3*layerSize);
 				zSliceNext = Nd4j.zeros(miniBatchSize,3*layerSize);
 			} else {
-				aSliceNext = rucAs.tensorAlongDimension(t,1,0);
-				zSliceNext = rucZs.tensorAlongDimension(t,1,0);
+				aSliceNext = rucAs.tensorAlongDimension(t+1,1,0);
+				zSliceNext = rucZs.tensorAlongDimension(t+1,1,0);
 			}
 
 			INDArray zr = zSlice.get(NDArrayIndex.all(),interval(0,layerSize));
@@ -129,16 +129,16 @@ public class GRU extends BaseLayer {
 				INDArray zuNext = zSliceNext.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
 				INDArray zcNext = zSliceNext.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
 				
-				INDArray sigmaPrimeUNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zuNext.dup()).derivative());
-				INDArray sigmaPrimeCNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zcNext.dup()).derivative());
+				INDArray sigmaPrimeZuNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zuNext.dup()).derivative());
+				INDArray sigmaPrimeZcNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zcNext.dup()).derivative());
 
 				INDArray temp = arNext.mulRowVector(wCdiag)
 						.addi(wC.mmul(aOut.mul(sigmaPrimeZr).transpose()).transpose()
 								.muliRowVector(wRdiag) );
 
-				dOutNextdOut = auNext.add(aOut.sub(acNext).muli(sigmaPrimeUNext).muliRowVector(wUdiag));
+				dOutNextdOut = auNext.add(aOut.sub(acNext).muli(sigmaPrimeZuNext).muliRowVector(wUdiag));
 				dOutNextdOut.addi(auNext.rsub(1.0)
-						.muli(sigmaPrimeCNext)
+						.muli(sigmaPrimeZcNext)
 						.muli(temp));
 			}
 			

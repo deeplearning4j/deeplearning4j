@@ -201,7 +201,7 @@ public class GradientCheckTests {
     	int nIn = 2;
     	int gruLayerSize = 2;
     	int nOut = 2;
-    	int miniBatchSize = 2;
+    	int miniBatchSize = 1;
     	
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 	        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0))
@@ -235,7 +235,7 @@ public class GradientCheckTests {
     	}
     	
     	if( PRINT_RESULTS ){
-    		System.out.println("testGRURNNBasic()");
+    		System.out.println("testGRURNNBasicMultiLayer()");
     		for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
     	}
     	
