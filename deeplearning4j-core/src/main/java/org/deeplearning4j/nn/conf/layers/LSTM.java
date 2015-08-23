@@ -38,46 +38,7 @@ public class LSTM extends FeedForwardLayer {
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
-
-        @Override
-        public Builder nIn(int nIn) {
-            this.nIn = nIn;
-            return this;
-        }
-        @Override
-        public Builder nOut(int nOut) {
-            this.nOut = nOut;
-            return this;
-        }
-        @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        
-        @Override
-        public Builder dist(Distribution dist){
-        	super.dist(dist);
-        	return this;
-        }
-        
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-        
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
-        }
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
         
         @Override
         @SuppressWarnings("unchecked")

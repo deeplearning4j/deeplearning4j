@@ -35,20 +35,20 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
         this.customLossFunction = builder.customLossFunction;
     }
 
-    public static abstract class Builder extends FeedForwardLayer.Builder {
+    public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         protected String customLossFunction = null;
 
         public Builder() {}
 
-        public Builder lossFunction(LossFunctions.LossFunction lossFunction) {
+        public T lossFunction(LossFunctions.LossFunction lossFunction) {
             this.lossFunction = lossFunction;
-            return this;
+            return (T) this;
         }
 
-        public Builder customLossFunction(String customLossFunction) {
+        public T customLossFunction(String customLossFunction) {
             this.customLossFunction = customLossFunction;
-            return this;
+            return (T) this;
         }
     }
 }

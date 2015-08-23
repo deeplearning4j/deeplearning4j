@@ -45,7 +45,7 @@ public class OutputLayer extends FeedForwardLayer {
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private LossFunction lossFunction = LossFunction.RMSE_XENT;
         private String customLossFunction;
 
@@ -63,45 +63,6 @@ public class OutputLayer extends FeedForwardLayer {
         public Builder customLossFunction(String customLossFunction) {
             this.customLossFunction = customLossFunction;
             return this;
-        }
-
-        @Override
-        public Builder nIn(int nIn) {
-            this.nIn = nIn;
-            return this;
-        }
-        @Override
-        public Builder nOut(int nOut) {
-            this.nOut = nOut;
-            return this;
-        }
-        @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        
-        @Override
-        public Builder dist(Distribution dist){
-        	super.dist(dist);
-        	return this;
-        }
-        
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-        
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
         }
         
         @Override
