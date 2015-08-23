@@ -1040,6 +1040,34 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testFTimesCAddiRow(){
+
+        INDArray arrF = Nd4j.create(2,3,'f').addi(1.0);
+        INDArray arrC = Nd4j.create(2,3,'c').addi(1.0);
+        INDArray arr2 = Nd4j.ones(3,4);
+
+        INDArray mmulC = arrC.mmul(arr2);   //[2,4] with elements 3.0
+        INDArray mmulF = arrF.mmul(arr2);   //[2,4] with elements 3.0
+        assertArrayEquals(mmulC.shape(),new int[]{2,4});
+        assertArrayEquals(mmulF.shape(),new int[]{2,4});
+        assertTrue(arrC.equals(arrF));
+
+        INDArray row = Nd4j.zeros(1,4).addi(0.5);
+        mmulC.addiRowVector(row);   //OK
+        mmulF.addiRowVector(row);   //Exception
+
+        assertTrue(mmulC.equals(mmulF));
+
+        for( int i = 0; i < mmulC.length(); i++ )
+            assertEquals(mmulC.getDouble(i),3.5,1e-1);    //OK
+        for( int i = 0; i < mmulF.length(); i++)
+            assertEquals(mmulF.getDouble(i),3.5,1e-1);    //Exception
+    }
+
+
+
+
+    @Test
     public void testMmulGet(){
         Nd4j.getRandom().setSeed(12345L);
         INDArray elevenByTwo = Nd4j.rand(new int[]{11,2});

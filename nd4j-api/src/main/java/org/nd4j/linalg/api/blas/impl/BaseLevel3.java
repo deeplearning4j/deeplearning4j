@@ -70,10 +70,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     , params.getLdc());
 
         //when order clashes reverse stride
-        if(A.ordering() != B.ordering() && A.ordering() == 'f' && B.ordering() == 'c') {
+   /*     if(A.ordering() != B.ordering() && A.ordering() == 'f' && B.ordering() == 'c') {
             C.setStride(ArrayUtil.reverseCopy(C.stride()));
         }
-
+*/
     }
 
 

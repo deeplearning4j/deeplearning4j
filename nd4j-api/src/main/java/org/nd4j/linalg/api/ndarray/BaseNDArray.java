@@ -2362,7 +2362,7 @@ public abstract class BaseNDArray implements INDArray {
     public INDArray mmul(INDArray other) {
 
         int[] shape = {rows(), other.columns()};
-        INDArray result = create(shape);
+        INDArray result = create(shape,ordering());
         return mmuli(other, result);
     }
 
