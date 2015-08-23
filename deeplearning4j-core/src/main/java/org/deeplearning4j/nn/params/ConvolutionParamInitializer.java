@@ -42,7 +42,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        if(conf.getKernelSize().length < 2)
+        if(((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length < 2)
             throw new IllegalArgumentException("Filter size must be == 2");
 
         params.put(BIAS_KEY,createBias(conf));
@@ -60,7 +60,9 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf) {
         //the bias is a 1D tensor -- one bias per output feature map
-        return Nd4j.zeros(conf.getNOut());
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        return Nd4j.zeros(layerConf.getNOut());
     }
 
 
@@ -74,9 +76,14 @@ public class ConvolutionParamInitializer implements ParamInitializer {
          image height, image width)
 
          */
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
-        Distribution dist = Distributions.createDistribution(conf.getDist());
-        return WeightInitUtil.initWeights(Ints.concat(new int[] {conf.getNOut(), conf.getNIn()}, conf.getKernelSize()), conf.getWeightInit(), dist);
+        Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
+        return WeightInitUtil.initWeights(
+                Ints.concat(new int[] {layerConf.getNOut(), layerConf.getNIn()}, layerConf.getKernelSize()),
+                layerConf.getWeightInit(),
+                dist);
     }
 
 }

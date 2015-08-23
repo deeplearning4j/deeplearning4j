@@ -22,13 +22,26 @@ public class ConvolutionLayer extends FeedForwardLayer {
     private ConvolutionLayer(Builder builder) {
     	super(builder);
         this.convolutionType = builder.convolutionType;
+        if(builder.kernelSize.length != 2)
+            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
+        if(builder.stride.length != 2)
+            throw new IllegalArgumentException("Invalid stride, must be length 2");
         this.stride = builder.stride;
         this.padding = builder.padding;
     }
 
     public enum PoolingType {
         FULL, VALID, SAME
+    }
+
+    @Override
+    public ConvolutionLayer clone() {
+        ConvolutionLayer clone = (ConvolutionLayer) super.clone();
+        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
+        if(clone.stride != null) clone.stride = clone.stride.clone();
+        if(clone.padding != null) clone.padding = clone.padding.clone();
+        return clone;
     }
 
     @AllArgsConstructor
@@ -50,7 +63,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.stride = stride;
         }
 
-        public Builder(int...kernelSize) {
+        public Builder(int... kernelSize) {
             this.kernelSize = kernelSize;
         }
 
@@ -58,6 +71,28 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder convolutionType(Convolution.Type convolutionType) {
             this.convolutionType = convolutionType;
+            return this;
+        }
+
+        /**
+         * Size of the convolution
+         * rows/columns
+         * @param kernelSize the height and width of the
+         *                   kernel
+         * @return
+         */
+        public Builder kernelSize(int... kernelSize){
+            this.kernelSize = kernelSize;
+            return this;
+        }
+
+        public Builder stride(int... stride){
+            this.stride = stride;
+            return this;
+        }
+
+        public Builder padding(int... padding){
+            this.padding = padding;
             return this;
         }
 

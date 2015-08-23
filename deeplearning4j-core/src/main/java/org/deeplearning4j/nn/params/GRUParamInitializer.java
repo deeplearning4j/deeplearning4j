@@ -38,20 +38,21 @@ public class GRUParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+    	org.deeplearning4j.nn.conf.layers.GRU layerConf =
+                (org.deeplearning4j.nn.conf.layers.GRU) conf.getLayer();
+        Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
-        int nL = conf.getNOut();	//i.e., n neurons in this layer
-        int nLast = conf.getNIn();	//i.e., n neurons in previous layer
+        int nL = layerConf.getNOut();	//i.e., n neurons in this layer
+        int nLast = layerConf.getNIn();	//i.e., n neurons in previous layer
         
-        
-        conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(INPUT_WEIGHT_KEY);
+        conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
         
         
         //Order: RUC - i.e., reset, update, candidate
-        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 3 * nL, conf.getWeightInit(), dist));
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 3 * nL, conf.getWeightInit(), dist));
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 3 * nL, layerConf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 3 * nL, layerConf.getWeightInit(), dist));
         params.put(BIAS_KEY, Nd4j.zeros(1,3*nL));
 
         params.get(INPUT_WEIGHT_KEY).data().persist();

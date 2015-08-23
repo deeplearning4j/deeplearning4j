@@ -37,8 +37,8 @@ public class GRUTest {
 				.layer(new org.deeplearning4j.nn.conf.layers.GRU.Builder()
 						.nIn(nIn)
 						.nOut(nHiddenUnits)
+						.activation("tanh")
 						.build())
-				.activationFunction("tanh")
 				.build();
 	
 		GRU layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
@@ -79,12 +79,12 @@ public class GRUTest {
 		INDArray inputData = Nd4j.ones(miniBatchSize,nIn,timeSeriesLength);
 		
 		NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-				.activationFunction("tanh")
-				.dist(new UniformDistribution(0, 1))
                 .layer(new org.deeplearning4j.nn.conf.layers.GRU.Builder()
 						.nIn(nIn)
 						.nOut(gruNHiddenUnits)
 						.weightInit(WeightInit.DISTRIBUTION)
+						.dist(new UniformDistribution(0, 1))
+						.activation("tanh")
 						.build())
 				.build();
 		
@@ -135,12 +135,13 @@ public class GRUTest {
 		}
 		
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
 			.regularization(false)
 			.list(2)
 			.layer(0, new org.deeplearning4j.nn.conf.layers.GRU.Builder().activation("tanh")
+				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
             	.nIn(nIn).nOut(gruNUnits).build())
         	.layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
+        			.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
         			.nIn(gruNUnits).nOut(nOut).build())
         	.inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
         	.build();

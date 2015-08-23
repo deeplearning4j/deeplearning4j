@@ -130,7 +130,7 @@ public class GRU extends BaseLayer {
 				INDArray zcNext = zSliceNext.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
 				
 				INDArray sigmaPrimeZuNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zuNext.dup()).derivative());
-				INDArray sigmaPrimeZcNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zcNext.dup()).derivative());
+				INDArray sigmaPrimeZcNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zcNext.dup()).derivative());
 
 				INDArray temp = arNext.mulRowVector(wCdiag)
 						.addi(wC.mmul(aOut.mul(sigmaPrimeZr).transpose()).transpose()
@@ -158,7 +158,7 @@ public class GRU extends BaseLayer {
 			
 			//Delta for candidate activation
 			INDArray zc = zSlice.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
-			INDArray sigmaPrimeZc = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zc.dup()).derivative());
+			INDArray sigmaPrimeZc = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zc.dup()).derivative());
 			INDArray au = aSlice.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
 			INDArray deltaC = deltaOut.mul(sigmaPrimeZc).muli(au.rsub(1.0));
 			
@@ -257,7 +257,7 @@ public class GRU extends BaseLayer {
 		
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
-			if (conf.getDropOut() > 0) {
+			if (conf.getLayer().getDropOut() > 0) {
 				inputWeights = Dropout.applyDropConnect(this,GRUParamInitializer.INPUT_WEIGHT_KEY);
 			}
 		}
@@ -290,7 +290,7 @@ public class GRU extends BaseLayer {
 			
 			INDArray ac = as.get(NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize, 3*hiddenLayerSize));
 			ac.assign(zc);
-			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(),ac));
+			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),ac));
 			
 			//Finally, calculate output activation:
 			INDArray au = as.get(NDArrayIndex.all(),NDArrayIndex.interval(hiddenLayerSize, 2*hiddenLayerSize));

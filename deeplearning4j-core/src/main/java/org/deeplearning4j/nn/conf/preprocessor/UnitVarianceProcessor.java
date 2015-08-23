@@ -54,5 +54,10 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
         return output;	//no-op
     }
 
-
+    @Override
+    public UnitVarianceProcessor clone() {
+        UnitVarianceProcessor clone = (UnitVarianceProcessor) super.clone();
+        if(clone.columnStds != null) clone.columnStds = clone.columnStds.dup();
+        return clone;
+    }
 }

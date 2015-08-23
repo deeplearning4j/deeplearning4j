@@ -42,8 +42,7 @@ public class TrainConfigTest {
         Model testModelFlag = new Model();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .dist(new NormalDistribution(1e-1,1))
-                .layer(new RBM())
+                .layer(new RBM.Builder().dist(new NormalDistribution(1e-1,1)).build())
                 .build();
         String json = conf.toJson();
         FileUtils.writeStringToFile(new File("model.json"),json);

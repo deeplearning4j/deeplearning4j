@@ -43,7 +43,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  *
  * @author Alex Black
  */
-public class GravesLSTM extends BaseLayer {
+public class GravesLSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
 
 	public GravesLSTM(NeuralNetConfiguration conf) {
 		super(conf);
@@ -141,7 +141,7 @@ public class GravesLSTM extends BaseLayer {
 			//Shape: [m,n^L]
 
 			//Output gate deltas:
-			INDArray sigmahOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), currMemCellState.dup()));//	shape: [m,n^L]
+			INDArray sigmahOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup()));//	shape: [m,n^L]
 			INDArray zo;
 			if( is2dInput ) zo = ifogZs.get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
 			else zo = ifogZs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
@@ -149,7 +149,7 @@ public class GravesLSTM extends BaseLayer {
 			INDArray deltao = nablaOut.mul(sigmahOfS).muli(sigmaoPrimeOfZo); //Shape: [m,n^L]
 
 			//Memory cell error:
-			INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), currMemCellState.dup()).derivative());//	shape: [m,n^L]
+			INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup()).derivative());//	shape: [m,n^L]
 			INDArray ao;
 			if( is2dInput ) ao = ifogAs.get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
 			else ao = ifogAs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
@@ -184,7 +184,7 @@ public class GravesLSTM extends BaseLayer {
 			INDArray ag = (is2dInput ? ifogAs.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)) //a_g^{Lt}	shape: [m,n^L]
 					: ifogAs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)) );	
 			INDArray deltai = nablaCellState.mul(ag)
-					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), zi.dup()).derivative()));
+					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi.dup()).derivative()));
 			//Shape: [m,n^L]
 
 			INDArray prevLayerActivationSlice = (is2dInput ? input : input.tensorAlongDimension(t,1,0));
@@ -292,7 +292,7 @@ public class GravesLSTM extends BaseLayer {
 
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
-			if (conf.getDropOut() > 0) {
+			if (conf.getLayer().getDropOut() > 0) {
 				inputWeights = Dropout.applyDropConnect(this,GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
 			}
 		}
@@ -335,7 +335,7 @@ public class GravesLSTM extends BaseLayer {
 					.addiRowVector(bi);
 			INDArrayIndex[] iIndexes = new INDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)};
 			ifogZ.tensorAlongDimension(t,1,0).put(iIndexes, inputActivations);
-			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputActivations));
+			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
 			ifogA.tensorAlongDimension(t,1,0).put(iIndexes, inputActivations);
 
 			INDArray forgetGateActivations = miniBatchData.mmul(wf)
@@ -370,7 +370,7 @@ public class GravesLSTM extends BaseLayer {
 			ifogA.tensorAlongDimension(t,1,0).put(oIndexes, outputGateActivations);
 
 			//LSTM unit outputs:
-			INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), currentMemoryCellState.dup()));
+			INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup()));
 			INDArray currHiddenUnitActivations = outputGateActivations.mul(currMemoryCellActivation);	//Expected shape: [m,hiddenLayerSize]
 
 			outputActivations.tensorAlongDimension(t,1,0).assign(currHiddenUnitActivations);

@@ -44,4 +44,13 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 		return permuted.reshape(shape[0]*shape[2],shape[1]);
 	}
 
+	@Override
+	public FeedForwardToRnnPreProcessor clone() {
+		try {
+			FeedForwardToRnnPreProcessor clone = (FeedForwardToRnnPreProcessor) super.clone();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }
