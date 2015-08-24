@@ -4,6 +4,8 @@ layout: default
 
 # Sentiment Analysis With Word2vec
 
+*This page is a work in progess.*
+
 Contents
 
 * <a href="#vectors">Vectors</a>
@@ -119,3 +121,7 @@ By maximizing the log likelihood of the parameters with regard to the ground-tru
 We then flip log likelihood to be negative, because most optimization algorithms attempt to minimize a cost or error function, and negative log likelihood plugs in better to a more general framework for optimization, like Deeplearning4j.
 
 Once the weights can no longer be adjusted to reduce error — i.e. once the likelihood of the parameters reaches its peak — the model can be used to categorize input for which no labels exist, inferring the sentiment expressed by text in the wild. 
+
+## <a name="code">Just Give Me the Code</a>
+
+## <a name="resource">Other Resources</a>
