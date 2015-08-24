@@ -14,12 +14,11 @@
   ~    limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>spark</artifactId>
-		<version>0.0.3.3.5.alpha2-SNAPSHOT</version>
+		<version>0.4-rc0</version>
 	</parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -103,17 +102,17 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>${canova.version}</version>
+            <version>0.0.0.5</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>${nd4j.version}</version>
+            <version>0.4-rc0</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
-            <version>${nd4j.version}</version>
+            <version>0.4-rc0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
