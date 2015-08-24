@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -65,27 +66,23 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                .momentum(0.9).seed(123)
-                .activationFunction("relu")
-                .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100)
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
-                .weightInit(WeightInit.XAVIER)
                 .maxNumLineSearchIterations(10)
                 .constrainGradientToUnitNorm(true)
-                .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(2).hiddenLayerSizes(3).backprop(false)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.weightInit(WeightInit.XAVIER);
-                        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                    }
-                }).build();
+                .list(2)
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(4).nOut(3)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3)
+                        .activation("softmax")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .backprop(false)
+                .build();
 
 
 
@@ -120,19 +117,15 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     public void testStaticInvocation() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .activationFunction("tanh").list(2).hiddenLayerSizes(3)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 1) {
-                            builder.activationFunction("softmax");
-                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                        }
-                    }
-                }).build();
+                .list(2)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                        .nIn(4).nOut(3)
+                        .activation("tanh").build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3)
+                        .activation("softmax")
+                        .build())
+                .build();
 
         DataSet dataSet = new IrisDataSetIterator(150,150).next();
         List<DataSet> list = dataSet.asList();

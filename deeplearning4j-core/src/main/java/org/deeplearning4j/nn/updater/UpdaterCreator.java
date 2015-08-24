@@ -18,7 +18,7 @@ public class UpdaterCreator {
      * @return the updater for the configuration
      */
     private static org.deeplearning4j.nn.api.Updater getUpdater(NeuralNetConfiguration conf) {
-        Updater updater = conf.getUpdater();
+        Updater updater = conf.getLayer().getUpdater();
 
         switch(updater) {
             case ADADELTA: return new AdaDeltaUpdater();
