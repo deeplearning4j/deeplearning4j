@@ -35,7 +35,9 @@ These vectors relate mathematically, and similarities between them (and therefor
 
 ![Alt text](../img/two_vectors2.png)
 
-As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. Like ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*.
+As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. 
+
+Like ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*.
 
 ![Alt text](../img/angular_distance.png)
 
@@ -63,17 +65,17 @@ Let's do a quick trig review.
 
 Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
 
-![Alt text](../img/trigfunctions2.png)
+![Alt text](../img/trig_functions.png)
 
 we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
 
-Cosine is the angle attached to the origin, which makes it useful here. Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. (We normalize them so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular, and bear no relation to each other.)
+Cosine is the angle attached to the origin, which makes it useful here. (We normalize the measurements so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular, bearing no relation to each other.)
 
 ## <a name="bow">Bag of Words vs. Word2vec</a>
 
 For this tutorial, we are interested in sentiment analysis and classification on the document level. 
 
-Typically, people rely on word count to create vectors representing documents, and measure their similarities and differences by the frequency with which terms appear. To illustrate the word count approach with a toy example, let’s say we care about two words, Moscow and Beijing. 
+Typically, people rely on word count to create vectors representing documents, and measure their similarities and differences by the frequency with which terms appear. To illustrate this word count approach with a toy example, let’s say we care about two words, Moscow and Beijing. 
 
 First, we count the number of times those words appear in two documents. Let’s say the x axis represents Moscow and the y axis Beijing. If Moscow appears once in document one and five times in document two, while Beijing appears three times in the first and twice in the second, then we have our two vectors: doc1 = (1,3) and doc2 = (5,2).
 
@@ -95,7 +97,11 @@ Word2vec imitates sparse in that words that don't occur don't get counted, but a
 
 ## <a name="count">Beyond Word Count</a>
 
-Bag of Words has a weakness, which is that it doesn’t necessarily know whether you’re drinking a Coca-Cola or investing in Coca-Cola or worse yet, a millionaire investing in Coca-Cola who’s drinking a Coca-Cola; i.e. it gathers information about usage by measuring frequency, and doesn’t understand context. But Word2vec does, because the algorithm learns to reconstruct the context surrounding each word. (Word2vec has two forms, one of which infers a target word from its context, while the other infers the context from the target word.)
+Bag of Words has a weakness, which is that it doesn’t necessarily know whether you’re drinking a Coca-Cola or investing in Coca-Cola or worse yet, a millionaire investing in Coca-Cola who’s drinking a Coca-Cola; i.e. it gathers information about usage by measuring frequency, and doesn’t understand context. 
+
+Or to return to the example above, mere word count wouldn't necessarily tell us if a document was about an alliance between Moscow and Beijing and conflict with a third party, or alliances with third parties and conflict between Moscow and Beijing. 
+
+But Word2vec *does* grasp context, because the algorithm learns to reconstruct the context surrounding each word. (Word2vec has two forms, one of which infers a target word from its context, while the other infers the context from the target word. We use the latter.)
 
 ![Alt text](../img/word2vec_diagrams.png)
 
@@ -121,9 +127,11 @@ CODE HERE
 
 [Logistic regression](http://gormanalysis.com/logistic-regression-fundamentals/), despite its misleading name, classifies things. 
 
+![Alt text](../img/logistic_regression2.png)
 
+Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, one of the feature vectors mentioned above. Imagine a feature vector of Betas, the weights that modify the input.
 
-Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, one of the feature vectors mentioned above.
+![Alt text](../img/logistic_regression3.png)
 
 The simplest form of logistic regression is binary, predicting categories such as *spam* or *not_spam*. 
 
