@@ -22,15 +22,16 @@ public class TestSetGetParameters {
 	@Test
 	public void testSetParameters(){
 		//Set up a MLN, then do set(get) on parameters. Results should be identical compared to before doing this.
-		
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-			.weightInit(WeightInit.DISTRIBUTION)
-			.dist(new NormalDistribution(0,1))
 			.list(4)
-			.layer(0, new DenseLayer.Builder().nIn(9).nOut(10).build())
-			.layer(1, new RBM.Builder().nIn(10).nOut(11).build())
-			.layer(2, new AutoEncoder.Builder(0.5).nIn(11).nOut(12).build())
-			.layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(12).nOut(12).build())
+			.layer(0, new DenseLayer.Builder().nIn(9).nOut(10)
+					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
+			.layer(1, new RBM.Builder().nIn(10).nOut(11)
+					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
+			.layer(2, new AutoEncoder.Builder().corruptionLevel(0.5).nIn(11).nOut(12)
+					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
+			.layer(3, new OutputLayer.Builder(LossFunction.MSE).nIn(12).nOut(12)
+					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())
 			.build();
 		
 		MultiLayerNetwork net = new MultiLayerNetwork(conf);

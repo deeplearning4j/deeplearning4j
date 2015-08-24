@@ -22,7 +22,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
     private ConvolutionLayer(Builder builder) {
     	super(builder);
         this.convolutionType = builder.convolutionType;
+        if(builder.kernelSize.length != 2)
+            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
+        if(builder.stride.length != 2)
+            throw new IllegalArgumentException("Invalid stride, must be length 2");
         this.stride = builder.stride;
         this.padding = builder.padding;
     }
@@ -31,8 +35,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
         FULL, VALID, SAME
     }
 
+    @Override
+    public ConvolutionLayer clone() {
+        ConvolutionLayer clone = (ConvolutionLayer) super.clone();
+        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
+        if(clone.stride != null) clone.stride = clone.stride.clone();
+        if(clone.padding != null) clone.padding = clone.padding.clone();
+        return clone;
+    }
+
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private Convolution.Type convolutionType = Convolution.Type.VALID;
         private int[] kernelSize = new int[] {5, 5};
         private int[] stride = new int[] {2, 2};
@@ -50,7 +63,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             this.stride = stride;
         }
 
-        public Builder(int...kernelSize) {
+        public Builder(int... kernelSize) {
             this.kernelSize = kernelSize;
         }
 
@@ -61,44 +74,26 @@ public class ConvolutionLayer extends FeedForwardLayer {
             return this;
         }
 
-        @Override
-        public Builder nIn(int nIn) {
-            super.nIn(nIn);
+        /**
+         * Size of the convolution
+         * rows/columns
+         * @param kernelSize the height and width of the
+         *                   kernel
+         * @return
+         */
+        public Builder kernelSize(int... kernelSize){
+            this.kernelSize = kernelSize;
             return this;
         }
 
-        @Override
-        public Builder nOut(int nOut) {
-            super.nOut(nOut);
+        public Builder stride(int... stride){
+            this.stride = stride;
             return this;
         }
 
-        @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
+        public Builder padding(int... padding){
+            this.padding = padding;
             return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-
-        @Override
-        public Builder dist(Distribution dist){
-        	super.dist(dist);
-        	return this;
-        }
-        
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
         }
 
         @Override

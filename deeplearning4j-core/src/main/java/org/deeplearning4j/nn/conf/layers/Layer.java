@@ -30,6 +30,7 @@ import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.weights.WeightInit;
 
 /**
@@ -50,7 +51,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
         })
 @Data
 @NoArgsConstructor
-public abstract class Layer implements Serializable {
+public abstract class Layer implements Serializable, Cloneable {
     protected String activationFunction;
     protected WeightInit weightInit;
     protected Distribution dist;
@@ -65,39 +66,50 @@ public abstract class Layer implements Serializable {
     	this.updater = builder.updater;
     }
 
-    public abstract static class Builder {
-        protected String activationFunction;
-        protected WeightInit weightInit;
-        protected Distribution dist;
-        protected double dropOut = Double.NaN;	//Use in place of null = "not set" for primitives
-        protected Updater updater;
+    @Override
+    public Layer clone() {
+        try {
+            Layer clone = (Layer) super.clone();
+            if(clone.dist != null) clone.dist = clone.dist.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        public Builder activation(String activationFunction) {
+    public abstract static class Builder<T extends Builder<T>> {
+        protected String activationFunction = "sigmoid";
+        protected WeightInit weightInit = WeightInit.VI;
+        protected Distribution dist = new NormalDistribution(1e-3,1);
+        protected double dropOut = 0;
+        protected Updater updater = Updater.ADAGRAD;
+
+        public T activation(String activationFunction) {
             this.activationFunction = activationFunction;
-            return this;
+            return (T) this;
         }
 
-        public Builder weightInit(WeightInit weightInit) {
+        public T weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
-            return this;
+            return (T) this;
         }
         
         /** Distribution to sample initial weights from. Used in conjunction with
          * .weightInit(WeightInit.DISTRIBUTION)
          */
-        public Builder dist(Distribution dist){
+        public T dist(Distribution dist){
         	this.dist = dist;
-        	return this;
+        	return (T) this;
         }
 
-        public Builder dropOut(double dropOut) {
+        public T dropOut(double dropOut) {
             this.dropOut = dropOut;
-            return this;
+            return (T) this;
         }
         
-        public Builder updater(Updater updater){
+        public T updater(Updater updater){
         	this.updater = updater;
-        	return this;
+        	return (T) this;
         }
 
         public abstract <E extends Layer> E build();

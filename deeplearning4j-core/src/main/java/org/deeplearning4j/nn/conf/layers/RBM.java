@@ -55,6 +55,7 @@ public class RBM extends BasePretrainNetwork {
     protected HiddenUnit hiddenUnit;
     protected VisibleUnit visibleUnit;
     protected int k;
+    protected double sparsity;
 
     public enum VisibleUnit {
         BINARY, GAUSSIAN, SOFTMAX, LINEAR
@@ -68,13 +69,15 @@ public class RBM extends BasePretrainNetwork {
         this.hiddenUnit = builder.hiddenUnit;
         this.visibleUnit = builder.visibleUnit;
         this.k = builder.k;
+        this.sparsity = builder.sparsity;
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
+    public static class Builder extends BasePretrainNetwork.Builder<Builder> {
         private HiddenUnit hiddenUnit= RBM.HiddenUnit.BINARY;
         private VisibleUnit visibleUnit = RBM.VisibleUnit.BINARY;
-        private int k = Integer.MIN_VALUE;
+        private int k = 1;
+        private double sparsity = 0f;
 
         public Builder(HiddenUnit hiddenUnit, VisibleUnit visibleUnit) {
             this.hiddenUnit = hiddenUnit;
@@ -83,38 +86,6 @@ public class RBM extends BasePretrainNetwork {
 
         public Builder() {}
 
-        @Override
-        public Builder nIn(int nIn) {
-            this.nIn = nIn;
-            return this;
-        }
-        @Override
-        public Builder nOut(int nOut) {
-            this.nOut = nOut;
-            return this;
-        }
-        @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        
-        @Override
-        public Builder dist(Distribution dist){
-        	super.dist(dist);
-        	return this;
-        }
-        
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
         @Override
         @SuppressWarnings("unchecked")
         public RBM build() {
@@ -137,11 +108,9 @@ public class RBM extends BasePretrainNetwork {
         	return this;
         }
 
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
+        public Builder sparsity(double sparsity){
+            this.sparsity = sparsity;
+            return this;
         }
-
     }
 }

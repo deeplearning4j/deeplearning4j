@@ -43,15 +43,18 @@ public class RecursiveParamInitializer extends DefaultParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+        org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder layerConf =
+                (org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder) conf.getLayer();
 
-        int vis = conf.getNIn();
+        Distribution dist = Distributions.createDistribution(layerConf.getDist());
+
+        int vis = layerConf.getNIn();
         int out = vis * 2;
 
-        params.put(ENCODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{out,vis},conf.getWeightInit(), dist));
-        params.put(DECODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{vis,out},conf.getWeightInit(), dist));
-        params.put(HIDDEN_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,out},conf.getWeightInit(), dist));
-        params.put(VISIBLE_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,vis},conf.getWeightInit(), dist));
+        params.put(ENCODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{out,vis},layerConf.getWeightInit(), dist));
+        params.put(DECODER_WEIGHT_KEY, WeightInitUtil.initWeights(new int[]{vis,out},layerConf.getWeightInit(), dist));
+        params.put(HIDDEN_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,out},layerConf.getWeightInit(), dist));
+        params.put(VISIBLE_BIAS_KEY, WeightInitUtil.initWeights(new int[]{1,vis},layerConf.getWeightInit(), dist));
 
         conf.addVariable(ENCODER_WEIGHT_KEY);
         conf.addVariable(DECODER_WEIGHT_KEY);

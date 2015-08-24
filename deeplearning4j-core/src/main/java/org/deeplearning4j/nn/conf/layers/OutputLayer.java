@@ -36,55 +36,33 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 @EqualsAndHashCode(callSuper = true)
 public class OutputLayer extends FeedForwardLayer {
     private LossFunction lossFunction;
+    private String customLossFunction;
 
     private OutputLayer(Builder builder) {
     	super(builder);
         this.lossFunction = builder.lossFunction;
+        this.customLossFunction = builder.customLossFunction;
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder {
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private LossFunction lossFunction = LossFunction.RMSE_XENT;
+        private String customLossFunction;
 
         public Builder() {}
 
-        @Override
-        public Builder nIn(int nIn) {
-            this.nIn = nIn;
+        public Builder(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+        }
+
+        public Builder lossFunction(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
             return this;
         }
-        @Override
-        public Builder nOut(int nOut) {
-            this.nOut = nOut;
+
+        public Builder customLossFunction(String customLossFunction) {
+            this.customLossFunction = customLossFunction;
             return this;
-        }
-        @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        
-        @Override
-        public Builder dist(Distribution dist){
-        	super.dist(dist);
-        	return this;
-        }
-        
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-        
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
         }
         
         @Override

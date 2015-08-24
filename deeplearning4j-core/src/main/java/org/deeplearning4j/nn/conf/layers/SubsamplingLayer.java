@@ -33,13 +33,27 @@ public class SubsamplingLayer extends Layer {
     private SubsamplingLayer(Builder builder) {
     	super(builder);
         this.poolingType = builder.poolingType;
+        if(builder.kernelSize.length != 2)
+            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
+        if(builder.stride.length != 2)
+            throw new IllegalArgumentException("Invalid stride, must be length 2");
         this.stride = builder.stride;
         this.padding = builder.padding;
     }
 
+    @Override
+    public SubsamplingLayer clone() {
+        SubsamplingLayer clone = (SubsamplingLayer) super.clone();
+
+        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
+        if(clone.stride != null) clone.stride = clone.stride.clone();
+        if(clone.padding != null) clone.padding = clone.padding.clone();
+        return clone;
+    }
+
     @AllArgsConstructor
-    public static class Builder extends Layer.Builder {
+    public static class Builder extends Layer.Builder<Builder> {
         private PoolingType poolingType = PoolingType.MAX;
         private int[] kernelSize = new int[] {2, 2}; // Same as filter size from the last conv layer
         private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
@@ -74,26 +88,6 @@ public class SubsamplingLayer extends Layer {
         public Builder() {}
 
         @Override
-        public Builder activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return this;
-        }
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            this.weightInit = weightInit;
-            return this;
-        }
-        @Override
-        public Builder dist(Distribution dist){
-            this.dist = dist;
-            return this;
-        }
-        @Override
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return this;
-        }
-        @Override
         @SuppressWarnings("unchecked")
         public SubsamplingLayer build() {
             return new SubsamplingLayer(this);
@@ -104,25 +98,19 @@ public class SubsamplingLayer extends Layer {
             return this;
         }
 
-        public Builder kernelSize(int[] kernelSize){
+        public Builder kernelSize(int... kernelSize){
             this.kernelSize = kernelSize;
             return this;
         }
 
-        public Builder stride(int[] stride){
+        public Builder stride(int... stride){
             this.stride = stride;
             return this;
         }
 
-        public Builder padding(int[] padding){
+        public Builder padding(int... padding){
             this.padding = padding;
             return this;
-        }
-
-        @Override
-        public Builder updater(Updater updater){
-        	this.updater = updater;
-        	return this;
         }
     }
 

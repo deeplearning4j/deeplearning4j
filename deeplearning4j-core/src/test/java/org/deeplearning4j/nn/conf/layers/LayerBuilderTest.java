@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.layers;
+package org.deeplearning4j.nn.conf.layers;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -82,13 +82,14 @@ public class LayerBuilderTest {
 
     @Test
     public void testRBM() throws Exception {
-        RBM rbm = new RBM.Builder(hidden, visible, k).build();
+        RBM rbm = new RBM.Builder(hidden, visible).sparsity(sparsity).k(k).build();
 
         checkSerialization(rbm);
 
         assertEquals(hidden, rbm.getHiddenUnit());
         assertEquals(visible, rbm.getVisibleUnit());
         assertEquals(k, rbm.getK());
+        assertEquals(sparsity, rbm.getSparsity(), DELTA);
     }
 
     @Test
@@ -117,7 +118,7 @@ public class LayerBuilderTest {
 
     @Test
     public void testAutoEncoder() throws Exception {
-        AutoEncoder enc = new AutoEncoder.Builder(corruptionLevel).sparsity(sparsity).build();
+        AutoEncoder enc = new AutoEncoder.Builder().corruptionLevel(corruptionLevel).sparsity(sparsity).build();
 
         checkSerialization(enc);
 
