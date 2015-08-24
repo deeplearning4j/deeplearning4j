@@ -1,9 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.0.3.5.5.6-SNAPSHOT</version>
+        <version>0.4-rc0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,8 +16,8 @@
         <generate-sources.skip>false</generate-sources.skip> <!-- To skip header file parsing phase: -Dgenerate-sources.skip=true  -->
         <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
         <platform>${os.name}-${os.arch}</platform> <!-- For Android: -Dplatform=android-arm                                        -->
-        <platform.root></platform.root>            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
-        <platform.compiler></platform.compiler>    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
+        <platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
         <platform.properties>${platform}</platform.properties>
         <javacpp.version>0.11</javacpp.version>
     </properties>
@@ -65,7 +64,7 @@
                                     <addClasspath>true</addClasspath>
                                 </manifest>
                                 <manifestEntries>
-                                    <!-- <addClasspath/> is broken: http://jira.codehaus.org/browse/MJAR-61 -->
+                                    <!-- <addClasspath /> is broken: http://jira.codehaus.org/browse/MJAR-61 -->
                                     <Class-Path>./javacpp.jar ${project.artifactId}.jar</Class-Path>
                                     <Name>org/nd4j/linalg/cpu/javacpp</Name>
                                     <Implementation-Title>${project.name}</Implementation-Title>
