@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.0.3.3.5.alpha2-SNAPSHOT</version>
+    <version>0.4-rc0</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -153,7 +153,7 @@
         <connection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</connection>
         <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git</developerConnection>
         <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
-        <tag>HEAD</tag>
+        <tag>deeplearning4j-parent-0.4-rc0</tag>
     </scm>
 
     <modules>
@@ -316,7 +316,7 @@
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>canova-api</artifactId>
-                <version>${canova.version}</version>
+                <version>0.0.0.5</version>
             </dependency>
 
 
