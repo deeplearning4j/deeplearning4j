@@ -65,7 +65,7 @@ Let's do a quick trig review.
 
 Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
 
-![Alt text](../img/trig_functions.png)
+![Alt text](../img/trig_functions2.png)
 
 we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
 
