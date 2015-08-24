@@ -61,7 +61,7 @@ In Java, you can think of the formula to measure cosine similarity like this:
 
 ## <a name="trig">Trigonometric Functions</a>
 
-Let's do a quick trig review. 
+It turns out two vectors are just two-thirds of a triangle, so let's do a quick trig review. 
 
 Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
 
@@ -109,7 +109,7 @@ So the vectors produced by Word2vec are not populated with word counts. They are
 
 Creating a document-vector representation for sentiment analysis is as simple as adding together the feature vectors for each word in the document and dividing that vector by the number of word vectors extracted from the document. 
 
-EQUATION HERE // Jeff?
+        EQUATION HERE
 
 This document vector (not to be confused with doc2vec) can then be compared to vectors representing documents in, say, a labeled set.
 
@@ -121,7 +121,7 @@ So the first step is to pick the categories you care about. Then you create a da
 
 Once you've pulled together a labeled corpus, then you feed the words into Word2vec to generate feature vectors. Those feature vectors are added and the aggregate word vector is divided by the number of words. That "document vector"  serves as the input for logistic regression. 
 
-CODE HERE
+        CODE HERE
 
 ## <a name="softmax">Softmax Logistic Regression</a>
 
