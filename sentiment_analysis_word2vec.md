@@ -27,16 +27,15 @@ A vector is a data structure with at least two components, as opposed to a *scal
 
 Therefore, we can represent two-dimensional vectors as arrows on an x-y graph, with the coordinates x and y each representing one of the vector's values. 
 
-PICTURE OF VECTOR
+![Alt text](../img/vector.jpeg)
 
 These vectors relate mathematically, and therefore similarities between them (and therefore between anything you can vectorize, including words) can be established. One way to do that is with a dot product, or a form of vector multiplication. 
 
-PICTURE OF TWO VECTORS
+![Alt text](../img/twovectors2.png)
 
 As you can see, these vectors differ from one another in both their length, or magnitude, and their angle, or direction. The angle is what concerns us here, and two find its difference, we need to know the formula for vector dot multiplication (multiplying two vectors to produce a single, scalar value).
 
-VECTOR DOT PRODUCT FORMULA - COLOR CODED
-FORMULA REWRITTEN
+![Alt text](../img/dot_product_defs.png)
 
 TKTKTK Explain the terms….
 
@@ -60,10 +59,9 @@ Let's do a quick trig review.
 
 Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
 
-INSERT: opposite over hypotenuse, adjacent over hypotenuse, opposite over adjacent.
-NAME  
+![Alt text](../img/trigfunctions2.png)
 
-SOH-CAH-TOA
+TKTKTK SOH-CAH-TOA
 
 we can also know the angles at which those sides intersect. 
 
@@ -80,6 +78,8 @@ PICTURE VECTORS
 With Bag of Words, you can add as many dimensions as there are unique words in your documents, placing vectors in an n-dimensional space. And you would measure the difference in the angle between those vectors to arrive at one expression of similarity. 
 
 There are other nuances to wordcount, such as term frequency-inverse document frequency (TF-IDF), but since that is not our focus in this tutorial, we will simply link to the Wikipedia page.
+
+Bag of Words is sparse. Word2vec imitates sparse in that words that don't occur don't get counted in the mean. You don't get the overhead of all the words all the time. They both give usage information, albeit different types. There's less noise because it's dense. 
 
 ## <a name="count">Beyond Word Count</a>
 
