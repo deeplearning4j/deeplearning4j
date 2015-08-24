@@ -4,15 +4,16 @@ layout: default
 
 # Sentiment Analysis With Word2vec
 
-Contents:
+Contents
 
-* Vectors
-* Trigonometric Functions
-* Bag of Words v. Word2vec
-* Beyond Word Counts
-* Sentiment Analysis
-* Softmax Logistic Regression
-* Just Give Me The Code
+* <a href="#vectors">Vectors</a>
+* <a href="#trig">Trigonometric Functions</a>
+* <a href="#bow">Bag of Words v. Word2vec</a>
+* <a href="#count">Beyond Word Counts</a>
+* <a href="#sentiment">Sentiment Analysis</a>
+* <a href="#softmax">Softmax Logistic Regression</a>
+* <a href="#code">Just Give Me The Code</a>
+* <a href="#resource">Other Resources</a>
 
 This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how word2vec can be used for opinion mining on text in the wild. 
 
@@ -33,24 +34,23 @@ PICTURE OF TWO VECTORS
 As you can see, these vectors differ from one another in both their length, or magnitude, and their angle, or direction. The angle is what concerns us here, and two find its difference, we need to know the formula for vector dot multiplication (multiplying two vectors to produce a single, scalar value).
 
 VECTOR DOT PRODUCT FORMULA - COLOR CODED
-REWRITTEN
+FORMULA REWRITTEN
 
 TKTKTK Explain the terms….
 
 In Java, you can think of the same formula like this:
 
-public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
-    double dotProduct = 0.0;
-    double normA = 0.0;
-    double normB = 0.0;
-    for (int i = 0; i < vectorA.length; i++) {
-        dotProduct += vectorA[i] * vectorB[i];
-        normA += Math.pow(vectorA[i], 2);
-        normB += Math.pow(vectorB[i], 2);
-    }   
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
+    public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
+        double dotProduct = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+        for (int i = 0; i < vectorA.length; i++) {
+            dotProduct += vectorA[i] * vectorB[i];
+            normA += Math.pow(vectorA[i], 2);
+            normB += Math.pow(vectorB[i], 2);
+        }   
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
 
 ## Trigonometric Functions
 
