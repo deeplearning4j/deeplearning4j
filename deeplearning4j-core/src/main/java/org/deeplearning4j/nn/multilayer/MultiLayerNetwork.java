@@ -435,7 +435,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             int range = l.numParams();
             INDArray get = this.params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
             if (get.length() < 1)
-               continue;
+                continue;
             l.setParams(get);
             idx += range;
         }

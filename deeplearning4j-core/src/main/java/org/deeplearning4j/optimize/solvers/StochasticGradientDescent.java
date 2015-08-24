@@ -55,6 +55,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
             Pair<Gradient,Double> pair = gradientAndScore();
             Gradient gradient = pair.getFirst();
+            //TODO: write test for this
+            stepFunction.step(model.params(),gradient.gradient());
             for(Map.Entry<String,INDArray> variables : model.paramTable().entrySet()) {
                 stepFunction.step(variables.getValue(), gradient.getGradientFor(variables.getKey()));
             }
