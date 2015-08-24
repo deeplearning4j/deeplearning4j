@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
 
 

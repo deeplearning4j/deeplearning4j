@@ -23,25 +23,22 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import javax.naming.directory.SearchControls;
+
 /**
  * Inverse step function
  * @author Adam Gibson
  */
 public class NegativeDefaultStepFunction implements StepFunction {
+
     @Override
-    public void step(INDArray x, INDArray line, Object[] params) {
-        double alam = (double) params[0];
-        double oldAlam = (double) params[1];
-        if(x.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(alam - oldAlam,line,x);
-        else if(x.data().dataType() == DataBuffer.Type.FLOAT)
-            Nd4j.getBlasWrapper().axpy((float) (alam - oldAlam),line,x);
-        x.subi(line.mul(alam - oldAlam));
+    public void step(INDArray parameters, INDArray searchDirection, double step) {
+        Nd4j.getBlasWrapper().level1().axpy(searchDirection.length(), -step, searchDirection, parameters);
     }
 
     @Override
     public void step(INDArray x, INDArray line) {
-        throw new UnsupportedOperationException();
+        step(x,line,1.0);
     }
 
     @Override

@@ -6,24 +6,15 @@ import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -40,10 +31,10 @@ public class BaseLayerTest {
         DataSet data = irisIter.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM())
-                .nIn(4)
-                .nOut(3)
-                .activationFunction("tanh")
+                .layer(new RBM.Builder()
+                        .nIn(4)
+                        .nOut(3)
+                        .activation("tanh").build())
                 .iterations(1)
                 .seed(123)
                 .build();
@@ -54,6 +45,7 @@ public class BaseLayerTest {
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
+        layer.computeGradientAndScore();
         double score2 = layer.score();
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-3);
@@ -65,10 +57,10 @@ public class BaseLayerTest {
         DataSet data = irisIter.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RecursiveAutoEncoder())
-                .nIn(4)
-                .nOut(3)
-                .activationFunction("sigmoid")
+                .layer(new RecursiveAutoEncoder.Builder()
+                        .nIn(4)
+                        .nOut(3)
+                        .activation("sigmoid").build())
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .iterations(1)
                 .seed(123)
@@ -89,10 +81,11 @@ public class BaseLayerTest {
         DataSet data = irisIter.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new LSTM())
-                .nIn(4)
-                .nOut(3)
-                .activationFunction("sigmoid")
+                .layer(new LSTM.Builder()
+                        .nIn(4)
+                        .nOut(3)
+                        .activation("sigmoid")
+                        .build())
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .iterations(1)
                 .seed(123)
@@ -104,6 +97,7 @@ public class BaseLayerTest {
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
+        layer.computeGradientAndScore();
         double score2 = layer.score();
         assertEquals(parameters, layer.params());
         assertEquals(score, score2, 1e-3);
@@ -113,22 +107,19 @@ public class BaseLayerTest {
     public void testOutputParamsAndScores() {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM())
-                .nIn(4)
-                .nOut(3)
                 .iterations(1)
-                .activationFunction("sigmoid")
                 .seed(123)
                 .list(2)
-                .hiddenLayerSizes(10)
-                .override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        builder.activationFunction("softmax");
-                        builder.layer(new OutputLayer());
-                        builder.lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
-                    }
-                })
+                .layer(0, new RBM.Builder()
+                        .nIn(4)
+                        .nOut(10)
+                        .activation("sigmoid")
+                        .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nIn(10)
+                        .nOut(3)
+                        .activation("sigmoid")
+                        .build())
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -137,6 +128,7 @@ public class BaseLayerTest {
         double score = network.getLayer(1).score();
         INDArray parameters = network.getLayer(1).params();
         network.getLayer(1).setParams(parameters);
+        network.getLayer(1).computeGradientAndScore();
 
         double score2 = network.getLayer(1).score();
         assertEquals(parameters, network.getLayer(1).params());

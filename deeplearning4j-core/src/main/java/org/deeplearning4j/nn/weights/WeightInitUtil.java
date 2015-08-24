@@ -19,10 +19,12 @@
 package org.deeplearning4j.nn.weights;
 
 
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 
 /**
@@ -81,8 +83,7 @@ public class WeightInitUtil {
         ret = Nd4j.rand(shape, Nd4j.getRandom());
         return ret.subi(0.5).divi(shape[0]);
       case XAVIER:
-        double var = 2 / (double) shape[0];
-        ret = Nd4j.getDistributions().createNormal(0,var).sample(shape);
+        ret = Nd4j.randn(shape).divi(FastMath.sqrt(shape[0] + shape[1]));
         return ret;
       case UNIFORM:
         double a = 1 / (double) shape[0];

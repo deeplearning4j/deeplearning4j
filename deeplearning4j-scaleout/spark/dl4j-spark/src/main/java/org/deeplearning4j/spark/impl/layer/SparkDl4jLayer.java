@@ -28,6 +28,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
 import org.deeplearning4j.spark.impl.common.Add;
@@ -75,10 +76,12 @@ public class SparkDl4jLayer implements Serializable {
      * @return the fit layer
      */
     public Layer fit(String path,int labelIndex,RecordReader recordReader) {
+        FeedForwardLayer ffLayer = (FeedForwardLayer) conf.getLayer();
+
         JavaRDD<String> lines = sc.textFile(path);
         // gotta map this to a Matrix/INDArray
         JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(recordReader
-                , labelIndex, conf.getNOut()));
+                , labelIndex, ffLayer.getNOut()));
         return fitDataSet(points);
 
     }
@@ -92,7 +95,8 @@ public class SparkDl4jLayer implements Serializable {
      * @return the multi layer network that was fitDataSet
      */
     public Layer fit(JavaSparkContext sc,JavaRDD<LabeledPoint> rdd) {
-        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, conf.getNOut()));
+        FeedForwardLayer ffLayer = (FeedForwardLayer) conf.getLayer();
+        return fitDataSet(MLLibUtil.fromLabeledPoint(sc, rdd, ffLayer.getNOut()));
     }
 
     /**

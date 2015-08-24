@@ -58,8 +58,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Adam Gibson
  */
-public class WordVectorSerializer
-{
+public class WordVectorSerializer {
     private static final boolean DEFAULT_LINEBREAKS = false;
     private static final int MAX_SIZE = 50;
     private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);

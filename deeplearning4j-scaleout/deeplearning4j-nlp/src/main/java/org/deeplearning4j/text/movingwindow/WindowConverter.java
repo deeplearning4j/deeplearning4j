@@ -21,6 +21,7 @@ package org.deeplearning4j.text.movingwindow;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.List;
@@ -65,7 +66,7 @@ public class WindowConverter {
         for(int i = 0; i < words.size(); i++) {
             String word = words.get(i);
             INDArray n = normalize ? vec.getWordVectorMatrixNormalized(word) :  vec.getWordVectorMatrix(word);
-            ret.put(new NDArrayIndex[]{NDArrayIndex.interval(i * vec.lookupTable().layerSize(),i * vec.lookupTable().layerSize() + vec.lookupTable().layerSize())},n);
+            ret.put(new INDArrayIndex[]{NDArrayIndex.interval(i * vec.lookupTable().layerSize(),i * vec.lookupTable().layerSize() + vec.lookupTable().layerSize())},n);
         }
 
         return ret;

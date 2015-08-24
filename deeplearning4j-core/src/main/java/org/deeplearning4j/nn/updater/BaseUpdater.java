@@ -23,7 +23,9 @@ public abstract class BaseUpdater implements Updater {
     public void update(Layer layer, Gradient gradient,int iteration) {
         for(Map.Entry<String,INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             GradientUpdater updater = init(gradientPair.getKey(),gradientPair.getValue(),layer);
-            postApply(layer,updater.getGradient(gradientPair.getValue(),iteration),gradientPair.getKey());
+            INDArray gradient2 = updater.getGradient(gradientPair.getValue(), iteration);
+            postApply(layer,gradient2,gradientPair.getKey());
+            gradient.setGradientFor(gradientPair.getKey(),gradient2);
         }
     }
 
@@ -37,15 +39,15 @@ public abstract class BaseUpdater implements Updater {
         NeuralNetConfiguration conf = layer.conf();
         INDArray params = layer.getParam(param);
         if(conf.isUseRegularization() && conf.getL2() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(params.mul(conf.getL2()));
-        else if(conf.isUseRegularization() && conf.getL1() < 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(Transforms.sign(params).muli(conf.getL1()));
-
+        	gradient.addi(params.mul(conf.getL2()));	//dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function 
+        if(conf.isUseRegularization() && conf.getL1() > 0 && !(param.equals(DefaultParamInitializer.BIAS_KEY)))
+        	gradient.addi(Transforms.sign(params).muli(conf.getL1()));
+        if(conf.isMiniBatch())
+            gradient.divi(layer.getInputMiniBatchSize());
 
         if(conf.isConstrainGradientToUnitNorm())
             gradient.divi(gradient.norm2(Integer.MAX_VALUE));
 
-        gradient.divi((double) layer.input().size(0));
     }
 
     public abstract void init();

@@ -18,33 +18,59 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.*;
+
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+
 /**
  * Output layer with different objective co-occurrences for different objectives.
  * This includes classification as well as prediction
  *
  */
-public class OutputLayer extends Layer {
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class OutputLayer extends FeedForwardLayer {
+    private LossFunction lossFunction;
+    private String customLossFunction;
 
-    private static final long serialVersionUID = 8554480736972510788L;
-
-    @Override
-    public int hashCode() {
-        return 0;
+    private OutputLayer(Builder builder) {
+    	super(builder);
+        this.lossFunction = builder.lossFunction;
+        this.customLossFunction = builder.customLossFunction;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
+        private LossFunction lossFunction = LossFunction.RMSE_XENT;
+        private String customLossFunction;
 
-    public String toString() {
-        return "OutputLayer{" +
-                '}';
+        public Builder() {}
+
+        public Builder(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+        }
+
+        public Builder lossFunction(LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
+
+        public Builder customLossFunction(String customLossFunction) {
+            this.customLossFunction = customLossFunction;
+            return this;
+        }
+        
+        @Override
+        @SuppressWarnings("unchecked")
+        public OutputLayer build() {
+            return new OutputLayer(this);
+        }
+
     }
 }
+

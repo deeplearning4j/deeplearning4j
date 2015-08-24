@@ -63,7 +63,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.max;
  * @author Adam Gibson
  *
  */
-public  class RBM extends BasePretrainNetwork {
+public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.RBM> {
 
     private transient Random rng;
 
@@ -77,12 +77,9 @@ public  class RBM extends BasePretrainNetwork {
         this.rng = Nd4j.getRandom();
     }
 
-
-
     /**
      *
      */
-    private static final long serialVersionUID = 6189188205731511957L;
     //variance matrices for gaussian visible/hidden units
     protected INDArray sigma,hiddenSigma;
 
@@ -108,9 +105,8 @@ public  class RBM extends BasePretrainNetwork {
 
 
     @Override
-    public Gradient gradient() {
-
-        int k = conf.getK();
+    public void computeGradientAndScore() {
+        int k = layerConf().getK();
 
         //POSITIVE PHASE
         Pair<INDArray,INDArray> probHidden = sampleHiddenGivenVisible(input());
@@ -121,7 +117,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray chainStart = probHidden.getSecond();
 
 		/*
-		 * Note that at a later date, we can explore alternative methods of 
+		 * Note that at a later date, we can explore alternative methods of
 		 * storing the chain transitions for different kinds of sampling
 		 * and exploring the search space.
 		 */
@@ -137,11 +133,11 @@ public  class RBM extends BasePretrainNetwork {
 
 		/*
 		 * K steps of gibbs sampling. This is the positive phase of contrastive divergence.
-		 * 
+		 *
 		 * There are 4 matrices being computed for each gibbs sampling.
-		 * The samples from both the positive and negative phases and their expected values 
+		 * The samples from both the positive and negative phases and their expected values
 		 * or averages.
-		 * 
+		 *
 		 */
 
         for(int i = 0; i < k; i++) {
@@ -170,34 +166,38 @@ public  class RBM extends BasePretrainNetwork {
 
         INDArray hBiasGradient;
 
-        if(conf.getSparsity() != 0)
+        if(layerConf().getSparsity() != 0)
             //all hidden units must stay around this number
-            hBiasGradient = probHidden.getSecond().rsub(conf.getSparsity()).sum(0);
+            hBiasGradient = probHidden.getSecond().rsub(layerConf().getSparsity()).sum(0);
         else
             //update rule: the expected values of the hidden input - the negative hidden  means adjusted by the learning rate
             hBiasGradient = probHidden.getSecond().sub(nhMeans).sum(0);
 
         //update rule: the expected values of the input - the negative samples adjusted by the learning rate
-        INDArray  vBiasGradient = input.sub(nvSamples).sum(0);
+        INDArray  delta = input.sub(nvSamples);
+        INDArray  vBiasGradient =delta.sum(0);
+
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
-
-        return ret;
+        gradient = ret;
+        setScoreWithZ(delta);
     }
+
+
 
 
 
     @Override
     public Layer transpose() {
         RBM r = (RBM) super.transpose();
-        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit h = RBMUtil.inverse(conf.getVisibleUnit());
-        org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit v = RBMUtil.inverse(conf.getHiddenUnit());
+        org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit h = RBMUtil.inverse(layerConf().getVisibleUnit());
+        org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit v = RBMUtil.inverse(layerConf().getHiddenUnit());
         if(h == null)
-            h = conf.getHiddenUnit();
+            h = layerConf().getHiddenUnit();
         if(v == null)
-            v = conf.getVisibleUnit();
+            v = layerConf().getVisibleUnit();
 
         r.sigma = sigma;
         r.hiddenSigma = hiddenSigma;
@@ -215,7 +215,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray h1Mean = propUp(v);
         INDArray h1Sample;
 
-        switch (conf.getHiddenUnit()) {
+        switch (layerConf().getHiddenUnit()) {
             case RECTIFIED: {
                 INDArray sigH1Mean = sigmoid(h1Mean);
 		/*
@@ -226,24 +226,18 @@ public  class RBM extends BasePretrainNetwork {
                 sample.muli(sqrtSigH1Mean);
                 h1Sample = h1Mean.add(sample);
                 h1Sample = max(h1Sample, 0.0);
-                //apply dropout
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case GAUSSIAN: {
                 h1Sample = h1Mean.add(Nd4j.randn(h1Mean.rows(), h1Mean.columns(), rng));
-                //apply dropout
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case SOFTMAX: {
                 h1Sample = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", h1Mean), 0);
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             case BINARY: {
                 h1Sample = Nd4j.getDistributions().createBinomial(1, h1Mean).sample(h1Mean.shape());
-                applyDropOutIfNecessary(h1Sample);
                 break;
             }
             default:
@@ -279,7 +273,7 @@ public  class RBM extends BasePretrainNetwork {
         INDArray v1Mean = propDown(h);
         INDArray v1Sample;
 
-        switch (conf.getVisibleUnit()) {
+        switch (layerConf().getVisibleUnit()) {
             case GAUSSIAN: {
                 v1Sample = v1Mean.add(Nd4j.randn(v1Mean.rows(), v1Mean.columns(), rng));
                 break;
@@ -314,24 +308,23 @@ public  class RBM extends BasePretrainNetwork {
     public INDArray propUp(INDArray v) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect()) {
-            if (conf.getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getDropOut()).sample(W.shape()).divi(conf.getDropOut()));
+            if (conf.getLayer().getDropOut() > 0) {
+                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getLayer().getDropOut()).sample(W.shape()).divi(conf.getLayer().getDropOut()));
             }
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
 
-        if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+        if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
             this.sigma = v.var(0).divi(input.rows());
 
         INDArray preSig = v.mmul(W).addiRowVector(hBias);
 
-        switch (conf.getHiddenUnit()) {
+        switch (layerConf().getHiddenUnit()) {
             case RECTIFIED:
                 preSig = max(preSig, 0.0);
                 return preSig;
             case GAUSSIAN:
-                INDArray add = preSig.add(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
-                preSig.addi(add);
+                preSig.addi(Nd4j.randn(preSig.rows(), preSig.columns(), rng));
                 return preSig;
             case BINARY:
                 return sigmoid(preSig);
@@ -355,7 +348,7 @@ public  class RBM extends BasePretrainNetwork {
 
         INDArray vMean = h.mmul(W).addiRowVector(vBias);
 
-        switch (conf.getVisibleUnit()) {
+        switch (layerConf().getVisibleUnit()) {
             case GAUSSIAN:
                 INDArray sample = Nd4j.getDistributions().createNormal(vMean, 1).sample(vMean.shape());
                 vMean.addi(sample);
@@ -374,16 +367,16 @@ public  class RBM extends BasePretrainNetwork {
 
 
     /**
-     * Reconstructs the visible input.
+     * Reconstructs the visible INPUT.
      * A reconstruction is a propdown of the reconstructed hidden input.
-     * @param v the visible input
+     * @param  training true or false
      * @return the reconstruction of the visible input
      */
     @Override
-    public INDArray transform(INDArray v) {
+    public INDArray activate(boolean training) {
         //reconstructed: propUp ----> hidden propDown to transform
-        INDArray propUp = propUp(v);
-        return propDown(propUp);
+        INDArray propUp = propUp(input);
+        return propUp;
     }
 
     /**
@@ -391,7 +384,7 @@ public  class RBM extends BasePretrainNetwork {
      */
     @Override
     public void fit(INDArray input) {
-        if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN) {
+        if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN) {
             this.sigma = input.var(0);
             this.sigma.divi(input.rows());
         }
@@ -403,11 +396,11 @@ public  class RBM extends BasePretrainNetwork {
 
     @Override
     public void iterate(INDArray input) {
-        if(conf.getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
+        if(layerConf().getVisibleUnit() == org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
             this.sigma = input.var(0).divi(input.rows());
 
         this.input = input.dup();
-        applyDropOutIfNecessary(this.input);
+        applyDropOutIfNecessary(this.input,true);
         contrastiveDivergence();
     }
 

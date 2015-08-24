@@ -24,17 +24,18 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
+import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.GradientUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,10 +60,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected double step;
     private int batchSize = 10;
     protected double score,oldScore;
-    protected double stpMax = Double.MAX_VALUE;
+    protected double stepMax = Double.MAX_VALUE;
     public final static String GRADIENT_KEY = "g";
     public final static String SCORE_KEY = "score";
     public final static String PARAMS_KEY = "params";
+    public final static String SEARCH_DIR = "searchDirection";
     protected Map<String,Object> searchState = new ConcurrentHashMap<>();
 
     /**
@@ -73,7 +75,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      * @param model
      */
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Model model) {
-        this(conf,stepFunction,iterationListeners, Arrays.asList(new ZeroDirection(),new EpsTermination()),model);
+        this(conf, stepFunction, iterationListeners, Arrays.asList(new ZeroDirection(), new EpsTermination()), model);
     }
 
 
@@ -87,134 +89,122 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     public BaseOptimizer(NeuralNetConfiguration conf,StepFunction stepFunction,Collection<IterationListener> iterationListeners,Collection<TerminationCondition> terminationConditions,Model model) {
         this.conf = conf;
-        this.stepFunction = stepFunction;
+        this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
         this.iterationListeners = iterationListeners != null ? iterationListeners : new ArrayList<IterationListener>();
         this.terminationConditions = terminationConditions;
         this.model = model;
-        lineMaximizer = new BackTrackLineSearch(model,stepFunction,this);
-        lineMaximizer.setStpmax(stpMax);
-        lineMaximizer.setMaxIterations(conf.getNumLineSearchIterations());
+        lineMaximizer = new BackTrackLineSearch(model,this.stepFunction,this);
+        lineMaximizer.setStepMax(stepMax);
+        lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
 
     }
 
 
     @Override
     public double score() {
-        model.setScore();
+        model.computeGradientAndScore();
         return model.score();
     }
 
 
     @Override
-    public Pair<Gradient,Double> gradientAndScore() {
-        model.setScore();
-        Pair<Gradient,Double> pair = model.gradientAndScore();
-        for(String paramType : pair.getFirst().gradientForVariable().keySet()) {
-            INDArray gradient = pair.getFirst().getGradientFor(paramType);
-            updateGradientAccordingToParams(gradient, model, model.batchSize(), paramType,iteration);
-        }
-        return pair;
+    public Updater getUpdater() {
+        return updater;
     }
 
+    @Override
+    public Pair<Gradient,Double> gradientAndScore() {
+        model.computeGradientAndScore();
+        Pair<Gradient,Double> pair = model.gradientAndScore();
+        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
+        return pair;
+    }
 
     /**
      * Optimize call. This runs the optimizer.
      * @return whether it converged or not
      */
+    // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
     public  boolean optimize() {
         //validate the input before training
+        INDArray gradient;
+        INDArray searchDirection;
+        INDArray parameters = null;
         model.validateInput();
         Pair<Gradient,Double> pair = gradientAndScore();
-        setupSearchState(pair);
-        //get initial score
         score = pair.getSecond();
-        //check initial gradient
-        INDArray gradient = (INDArray) searchState.get(GRADIENT_KEY);
+        if(searchState.isEmpty()){
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+        	setupSearchState(pair);		//Only do this once
+        } else {
+        	searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
+        }
 
         //pre existing termination conditions
-        for(TerminationCondition condition : terminationConditions)
+        /*
+         * Commented out for now; this has been problematic for testing/debugging
+         * Revisit & re-enable later.
+        for(TerminationCondition condition : terminationConditions){
             if(condition.terminate(0.0,0.0,new Object[]{gradient})) {
                 log.info("Hit termination condition " + condition.getClass().getName());
                 return true;
             }
+        }*/
 
-        //some algorithms do pre processing of gradient and
-        //need to test possible directions. (LBFGS)
-        boolean testLineSearch = preFirstStepProcess(gradient);
-        if(testLineSearch) {
-            //ensure we can take a step
-            try {
-                INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, params, gradient);
-            } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration");
-
-            }
-            gradient = (INDArray) searchState.get(GRADIENT_KEY);
-            postFirstStep(gradient);
-
-            if(step == 0.0) {
-                log.warn("Unable to step in direction");
-                return false;
-            }
-        }
-
+        //calculate initial search direction
+        preProcessLine();
 
         for(int i = 0; i < conf.getNumIterations(); i++) {
-            int v = conf.getNumIterations();
-            //line normalization where relevant
-            preProcessLine(gradient);
+            gradient = (INDArray) searchState.get(GRADIENT_KEY);
+            searchDirection = (INDArray) searchState.get(SEARCH_DIR);
+            parameters = (INDArray) searchState.get(PARAMS_KEY);
 
-            //perform one step
+            //perform one line search optimization
             try {
-                INDArray params = (INDArray) searchState.get(PARAMS_KEY);
-                step = lineMaximizer.optimize(step, params, gradient);
+                step = lineMaximizer.optimize(parameters, gradient, searchDirection);
             } catch (InvalidStepException e) {
-                log.warn("Invalid step...continuing another iteration");
+                log.warn("Invalid step...continuing another iteration: {}",e.getMessage());
+                step = 0.0;
+            }
+
+            //Update parameters based on final/best step size returned by line search:
+            if(step != 0.0) {
+                stepFunction.step(parameters, searchDirection, step);	//Calculate params. given step size
+                model.setParams(parameters);
+            }else {
+                log.debug("Step size returned by line search is 0.0.");
             }
 
             //record old score for deltas and other termination conditions
             oldScore = score;
             pair = gradientAndScore();
-            setupSearchState(pair);
+
+            //updates searchDirection
+            postStep(pair.getFirst().gradient());
+            score = pair.getSecond();
 
             //invoke listeners for debugging
             for(IterationListener listener : iterationListeners)
                 listener.iterationDone(model,i);
 
-
             //check for termination conditions based on absolute change in score
-            for(TerminationCondition condition : terminationConditions)
-                if(condition.terminate(score,oldScore,new Object[]{gradient}))
+            for(TerminationCondition condition : terminationConditions){
+                if(condition.terminate(score,oldScore,new Object[]{pair.getFirst().gradient()})){
+                    log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}",i,score,oldScore,condition);
                     return true;
+                }
+            }
 
-            //post step updates to other search parameters
-            postStep();
             this.iteration++;
-
-            //check for termination conditions based on absolute change in score
-            for(TerminationCondition condition : terminationConditions)
-                if(condition.terminate(score,oldScore,new Object[]{gradient}))
-                    return true;
-
-
-
         }
 
         return true;
     }
 
-
     protected  void postFirstStep(INDArray gradient) {
         //no-op
     }
-
-    protected  boolean preFirstStepProcess(INDArray gradient) {
-        //no-op
-        return false;
-    }
-
 
     @Override
     public int batchSize() {
@@ -227,37 +217,28 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
 
-
-
     /**
-     * Pre process the line (scaling and the like)
-     * @param line the line to pre process
+     * Pre preProcess to setup initial searchDirection approximation
      */
     @Override
-    public  void preProcessLine(INDArray line) {
+    public  void preProcessLine() {
         //no-op
     }
     /**
-     * Post step (conjugate gradient among other methods needs this)
-
+     * Post step to update searchDirection with new gradient and parameter information
      */
     @Override
-    public  void postStep() {
+    public  void postStep(INDArray gradient) {
         //no-op
     }
 
 
-
-
     @Override
-    public void updateGradientAccordingToParams(INDArray gradient, Model model, int batchSize, String paramType, int iteration) {
+    public void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize) {
         if(updater == null)
-            updater = UpdaterCreator.getUpdater(model.conf());
+            updater = UpdaterCreator.getUpdater(model);
         Layer layer = (Layer) model;
-        Gradient g = new DefaultGradient();
-        g.setGradientFor(paramType,gradient);
-        updater.update(layer,g,iteration);
-
+        updater.update(layer, gradient, iteration);
     }
 
     /**
@@ -271,11 +252,16 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         searchState.put(GRADIENT_KEY,gradient);
         searchState.put(SCORE_KEY,pair.getSecond());
         searchState.put(PARAMS_KEY,params);
-        score = pair.getSecond();
-
     }
 
 
-
+    public static StepFunction getDefaultStepFunctionForOptimizer( Class<? extends ConvexOptimizer> optimizerClass ){
+        log.warn("Objective function automatically set to minimize. Set stepFunction in neural net configuration to change default settings.");
+    	if( optimizerClass == StochasticGradientDescent.class ){
+    		return new NegativeGradientStepFunction();
+    	} else {
+    		return new NegativeDefaultStepFunction();
+    	}
+    }
 
 }

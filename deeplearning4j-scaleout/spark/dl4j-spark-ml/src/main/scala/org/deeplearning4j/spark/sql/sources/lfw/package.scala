@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.spark.sql.sources
 
-import org.apache.spark.sql.{SQLContext, DataFrame}
+import org.apache.spark.sql.{DataFrameReader, SQLContext, DataFrame}
 
 package object lfw {
 
@@ -24,7 +24,16 @@ package object lfw {
    * Adds a method, `lfw`, to SQLContext that allows reading the LFW dataset.
    */
   implicit class LfwContext(sqlContext: SQLContext) {
+    @Deprecated
     def lfw(rootImageDirectory: String) =
-      sqlContext.read.format(classOf[DefaultSource].getName).load(rootImageDirectory)
+      sqlContext.read.lfw(rootImageDirectory)
+  }
+
+  /**
+   * Adds a method, `lfw`, to DataFrameReader that allows reading the LFW dataset.
+   */
+  implicit class LfwDataFrameReader(read: DataFrameReader) {
+    def lfw(rootImageDirectory: String) =
+      read.format(classOf[DefaultSource].getName).load(rootImageDirectory)
   }
 }

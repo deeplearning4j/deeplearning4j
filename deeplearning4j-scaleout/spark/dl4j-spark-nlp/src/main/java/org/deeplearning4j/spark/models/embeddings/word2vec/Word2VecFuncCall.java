@@ -29,6 +29,7 @@ import java.util.List;
  *
  * @author dAdam Gibson
  */
+@Deprecated
 public class Word2VecFuncCall implements Serializable {
     private Broadcast<Word2VecParam> param;
     private Long wordsSeen;

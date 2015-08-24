@@ -78,6 +78,22 @@ public class AccuracyPlotterIterationListener implements IterationListener {
 
     }
 
+
+    /**
+     *
+     * @param epochs the number of iterations to render every plot
+     * @param network the model which must be multiple layers
+     * @param data the training data input
+     */
+    public AccuracyPlotterIterationListener(int epochs, MultiLayerNetwork network, DataSet data, boolean renderFirst) {
+        this.epochs = epochs;
+        this.network = network;
+        this.input = data.getFeatures();
+        this.labels = data.getLabels();
+        this.renderFirst = renderFirst;
+
+    }
+
     /**
      *
      * @param epochs the number of iterations to render every plot

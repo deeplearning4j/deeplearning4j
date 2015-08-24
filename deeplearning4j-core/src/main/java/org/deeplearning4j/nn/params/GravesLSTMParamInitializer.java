@@ -26,42 +26,41 @@ import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Map;
 
-/**
- * LSTM Parameters.
- * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
+/**LSTM Parameter initializer, for LSTM based on
+ * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
  */
 public class GravesLSTMParamInitializer implements ParamInitializer {
 	/** Weights for previous time step -> current time step connections */
-    public final static String RECURRENT_WEIGHTS = "RW";
-    public final static String BIAS = DefaultParamInitializer.BIAS_KEY;
-    /** Weights for previous layer -> this layer (current time step).
-     * Specifically set to same value af DefaultParamInitializer, as other layers will
-     * want to use these during back-prop. For example, in BaseLayer.backwardGradient(...)
-     * */
-    public final static String INPUT_WEIGHTS = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String RECURRENT_WEIGHT_KEY = "RW";
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
+    public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
+                (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
 
-        int nL = conf.getNOut();	//i.e., n neurons in this layer
-        int nLast = conf.getNIn();	//i.e., n neurons in previous layer
+        Distribution dist = Distributions.createDistribution(layerConf.getDist());
+
+        int nL = layerConf.getNOut();	//i.e., n neurons in this layer
+        int nLast = layerConf.getNIn();	//i.e., n neurons in previous layer
         
         
-        conf.addVariable(RECURRENT_WEIGHTS);
-        conf.addVariable(INPUT_WEIGHTS);
-        conf.addVariable(BIAS);
+        conf.addVariable(RECURRENT_WEIGHT_KEY);
+        conf.addVariable(INPUT_WEIGHT_KEY);
+        conf.addVariable(BIAS_KEY);
         
         
-        params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(nL, 4 * nL + 3, conf.getWeightInit(), dist));
-        params.put(INPUT_WEIGHTS,WeightInitUtil.initWeights(nLast, 4 * nL, conf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist));
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist));
         INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
-        biases.put(new NDArrayIndex[]{NDArrayIndex.interval(nL, 2*nL),new NDArrayIndex(0)}, Nd4j.ones(1,nL).muli(5));
+        biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
         /*The above line initializes the forget gate biases to 5.
          * See Sutskever PhD thesis, pg19:
          * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
@@ -70,11 +69,11 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
          *  gates will create a vanishing gradients problem."
          *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
          */
-        params.put(BIAS, biases);
+        params.put(BIAS_KEY, biases);
 
-        params.get(RECURRENT_WEIGHTS).data().persist();
-        params.get(INPUT_WEIGHTS).data().persist();
-        params.get(BIAS).data().persist();
+        params.get(RECURRENT_WEIGHT_KEY).data().persist();
+        params.get(INPUT_WEIGHT_KEY).data().persist();
+        params.get(BIAS_KEY).data().persist();
     }
 
     @Override

@@ -22,9 +22,11 @@ import static org.junit.Assert.*;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
-import org.deeplearning4j.nn.layers.convolution.preprocessor.ConvolutionPostProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -45,9 +47,10 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
-                .list(2).preProcessor(0,new ConvolutionPostProcessor())
-                .hiddenLayerSizes(3).build();
+                .layer(new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                .list(2).inputPreProcessor(1, new ReshapePreProcessor())
+                .build();
+
         String json = conf.toJson();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);
         assertEquals(conf.getConf(1),from.getConf(1));
@@ -76,9 +79,9 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM()).dist(new NormalDistribution(1,1e-1))
-                .list(2).preProcessor(0,new ConvolutionPostProcessor())
-                .hiddenLayerSizes(3).build();
+                .layer(new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                .list(2).inputPreProcessor(1, new ReshapePreProcessor())
+                .build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
         assertEquals(conf.getConf(1),from.getConf(1));
@@ -104,7 +107,28 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     }
 
+    @Test
+    public void testClone() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list(2)
+                .layer(0, new RBM.Builder().build())
+                .layer(1, new OutputLayer.Builder().build())
+                .inputPreProcessor(1, new ReshapePreProcessor(new int[] {1,2}, new int[] {3,4}))
+                .build();
 
+        MultiLayerConfiguration conf2 = conf.clone();
+
+        assertEquals(conf, conf2);
+        assertNotSame(conf, conf2);
+        assertNotSame(conf.getConfs(), conf2.getConfs());
+        for(int i = 0; i < conf.getConfs().size(); i++) {
+            assertNotSame(conf.getConf(i), conf2.getConf(i));
+        }
+        assertNotSame(conf.getInputPreProcessors(), conf2.getInputPreProcessors());
+        for(Integer layer : conf.getInputPreProcessors().keySet()) {
+            assertNotSame(conf.getInputPreProcess(layer), conf2.getInputPreProcess(layer));
+        }
+    }
 
     @Test
     public void testRandomWeightInit() {
@@ -135,25 +159,26 @@ public class MultiLayerNeuralNetConfigurationTest {
 
         Layer[] l1 = model1.getLayers();
         for( int i = 0; i < l1.length; i++ )
-            assertTrue(l1[i].getIterationListeners() != null && l1[i].getIterationListeners().size() == 1);
+            assertTrue(l1[i].getListeners() != null && l1[i].getListeners().size() == 1);
 
         Layer[] l2 = model2.getLayers();
         for( int i = 0; i < l2.length; i++ )
-            assertTrue(l2[i].getIterationListeners() != null && l2[i].getIterationListeners().size() == 1);
+            assertTrue(l2[i].getListeners() != null && l2[i].getListeners().size() == 1);
     }
 
 
     private static MultiLayerConfiguration getConf(){
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new RBM())
-                .nIn(2)
-                .nOut(1)
-                .weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0,1))
                 .seed(12345l)
                 .list(2)
-                .hiddenLayerSizes(5)
-                .override(1, new ClassifierOverride())
+                .layer(0, new RBM.Builder()
+                        .nIn(2).nOut(2)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .build())
+                .layer(1, new OutputLayer.Builder()
+                        .nIn(2).nOut(1)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .build())
                 .build();
         return conf;
     }

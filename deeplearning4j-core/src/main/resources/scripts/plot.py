@@ -29,7 +29,7 @@ def render_plot(values, plot_type='histogram', chart_title=''):
 
     if plot_type == 'histogram':
         hist(values)
-    elif "scatter":
+    elif plot_type == "scatter":
         scatter(values)
     else:
         print "The " + plot_type + " format is not supported. Please choose histogram or scatter."

@@ -324,7 +324,6 @@ public class NeuralNetPlotter implements Serializable {
     public void plotNetworkGradient(Layer layer, Gradient gradient) {
         plotWeightHistograms(layer, gradient);
         plotActivations(layer);
-
     }
 
     public void plotNetworkGradient(Layer layer,INDArray gradient) {

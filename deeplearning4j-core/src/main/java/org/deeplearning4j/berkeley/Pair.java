@@ -187,7 +187,7 @@ public class Pair<F, S> implements Serializable,Comparable<Pair<F,S>> {
 			if (firstCompare != 0) {
 				return firstCompare;
 			}
-			return o2.getSecond().compareTo(o2.getSecond());
+			return o1.getSecond().compareTo(o2.getSecond());
 		}
 
 	}

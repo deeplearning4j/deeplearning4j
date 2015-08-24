@@ -318,7 +318,7 @@ public class StringGrid extends ArrayList<List<String>> {
      * Cleans up the rows specified that haven't already been deduplified
      * @param alreadyDeDupped the already dedupped rows
      * @param column the column to homogenize
-     * @param rows the rows to process
+     * @param rows the rows to preProcess
      * @param cluster the cluster of values
      */
     private void modifyRows(Set<Integer> alreadyDeDupped,Integer column,List<Integer> rows,Map<String,Integer> cluster) {

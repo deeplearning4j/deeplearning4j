@@ -1,3 +1,4 @@
+.DS_Store
 pom.xml.releaseBackup 
 target/
 dependency-reduced-pom.xml
@@ -24,3 +25,5 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 .project
 .classpath
 metastore_db
+*.ipynb*
+*.html

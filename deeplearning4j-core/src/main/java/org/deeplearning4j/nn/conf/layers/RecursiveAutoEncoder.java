@@ -18,34 +18,33 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.*;
+
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
 *
 * Recursive AutoEncoder.
 * Uses back propagation through structure.
 *
 */
-public class RecursiveAutoEncoder extends Layer {
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class RecursiveAutoEncoder extends FeedForwardLayer {
 
-    private static final long serialVersionUID = -2963611662325083203L;
-
-    @Override
-    public int hashCode() {
-        return 0;
+    private RecursiveAutoEncoder(Builder builder) {
+    	super(builder);
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
 
-    public String toString() {
-        return "RecursiveAutoEncoder{" +
-                '}';
+        @Override
+        @SuppressWarnings("unchecked")
+        public RecursiveAutoEncoder build() {
+            return new RecursiveAutoEncoder(this);
+        }
     }
 }

@@ -235,19 +235,19 @@ public class StochasticHessianFree extends BaseOptimizer {
 
            Triple<INDArray,List<INDArray>,INDArray>  cg = runConjugateGradient(preCon,conf.getNumIterations());
 
-           INDArray p = cg.getFirst();
+           INDArray searchDirection = cg.getFirst();
 
-           Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),p);
+           Pair<INDArray,Double> cgBackTrack = cgBackTrack(cg.getSecond(),searchDirection);
 
-           p = cgBackTrack.getFirst();
+           searchDirection = cgBackTrack.getFirst();
 
            double rho = network.reductionRatio(cgBackTrack.getFirst(), network.score(), cgBackTrack.getSecond(), gradient);
            double newScore = network.score(cgBackTrack.getFirst());
 
-           double step = lineSearch(newScore,gradient,p);
+           double step = lineSearch(newScore,gradient,searchDirection);
            network.dampingUpdate(rho,boost,decrease);
 
-           INDArray proposedUpdate = xi.add(p.mul(1.0f * step));
+           INDArray proposedUpdate = xi.add(searchDirection.mul(1.0f * step));
            network.setParameters(proposedUpdate);
            log.info("Score at iteration " + i + " was " + newScore);
        }

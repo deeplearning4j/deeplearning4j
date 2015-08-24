@@ -30,12 +30,14 @@ public class TestSerialization {
     public void testModelSerde() throws Exception {
         ObjectMapper mapper = getMapper();
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.ITERATION_GRADIENT_DESCENT)
-                .corruptionLevel(0.6)
-                .iterations(1000).constrainGradientToUnitNorm(true).applySparsity(true).sparsity(0.5)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .iterations(1000).constrainGradientToUnitNorm(true)
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(4).nOut(3)
+                        .corruptionLevel(0.6)
+                        .sparsity(0.5)
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
                 .build();
 
 

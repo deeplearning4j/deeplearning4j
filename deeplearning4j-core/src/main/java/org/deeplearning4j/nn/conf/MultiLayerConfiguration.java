@@ -16,6 +16,8 @@
  *
  */
 
+
+
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,12 +25,12 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.security.Key;
 import java.util.*;
 
 /**
@@ -39,37 +41,14 @@ import java.util.*;
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
-public class MultiLayerConfiguration implements Serializable {
+public class MultiLayerConfiguration implements Serializable, Cloneable {
 
-    protected int[] hiddenLayerSizes;
     protected List<NeuralNetConfiguration> confs;
-    @Deprecated
-    protected boolean useDropConnect = false;
-    protected boolean useGaussNewtonVectorProductBackProp = false;
     protected boolean pretrain = true;
-    /* Sample if true, otherwise use the straight activation function */
-    protected boolean useRBMPropUpAsActivations = true;
+    @Deprecated
     protected double dampingFactor = 100;
-    protected Map<Integer,OutputPreProcessor> processors = new HashMap<>();
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
-    protected boolean backward = false;
-
-
-
-    public MultiLayerConfiguration(MultiLayerConfiguration multiLayerConfiguration) {
-        this.hiddenLayerSizes = multiLayerConfiguration.hiddenLayerSizes;
-        this.confs = new ArrayList<>(multiLayerConfiguration.confs);
-        this.useDropConnect = multiLayerConfiguration.useDropConnect;
-        this.useGaussNewtonVectorProductBackProp = multiLayerConfiguration.useGaussNewtonVectorProductBackProp;
-        this.pretrain = multiLayerConfiguration.pretrain;
-        this.useRBMPropUpAsActivations = multiLayerConfiguration.useRBMPropUpAsActivations;
-        this.dampingFactor = multiLayerConfiguration.dampingFactor;
-        this.processors = new HashMap<>(multiLayerConfiguration.processors);
-        this.backward = multiLayerConfiguration.backward;
-        this.inputPreProcessors = multiLayerConfiguration.inputPreProcessors;
-
-    }
-
+    protected boolean backprop = false;
 
     /**
      *
@@ -141,79 +120,80 @@ public class MultiLayerConfiguration implements Serializable {
 
     @Override
     public MultiLayerConfiguration clone() {
-        return new MultiLayerConfiguration(this);
+        try {
+            MultiLayerConfiguration clone = (MultiLayerConfiguration) super.clone();
+
+            if(clone.confs != null) {
+                List<NeuralNetConfiguration> list = new ArrayList<>();
+                for(NeuralNetConfiguration conf : clone.confs) {
+                    list.add(conf.clone());
+                }
+                clone.confs = list;
+            }
+
+            if(clone.inputPreProcessors != null) {
+                Map<Integer,InputPreProcessor> map = new HashMap<>();
+                for(Map.Entry<Integer,InputPreProcessor> entry : clone.inputPreProcessors.entrySet()) {
+                    map.put(entry.getKey(), entry.getValue().clone());
+                }
+                clone.inputPreProcessors = map;
+            }
+
+            return clone;
+
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public InputPreProcessor getInputPreProcess(int i) {
-        return inputPreProcessors.get(i);
-    }
-
-    public OutputPreProcessor getPreProcessor(int curr) {
-        return this.getProcessors().get(curr);
+    public InputPreProcessor getInputPreProcess(int curr) {
+        return inputPreProcessors.get(curr);
     }
 
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        protected int[] hiddenLayerSizes;
-        protected boolean useDropConnect = false;
         protected boolean pretrain = true;
-        protected boolean useRBMPropUpAsActivations = false;
         protected double dampingFactor = 100;
-        protected Map<Integer,OutputPreProcessor> preProcessors = new HashMap<>();
-        protected Map<Integer,InputPreProcessor> inputPreProcessor = new HashMap<>();
-        protected boolean backward = false;
+        protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
+        protected boolean backprop = false;
+        @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
 
         /**
-         * Specify the input pre processors.
+         * Specify the processors.
          * These are used at each layer for doing things like normalization and
          * shaping of input.
-         * @param inputPreProcessor the input pre processor to use.
+         * @param processor what to use to preProcess the data.
          * @return builder pattern
          */
-        public Builder inputPreProcessors(Map<Integer,InputPreProcessor> inputPreProcessor) {
-            this.inputPreProcessor = inputPreProcessor;
+        public Builder inputPreProcessor(Integer layer, InputPreProcessor processor) {
+            inputPreProcessors.put(layer,processor);
+            return this;
+        }
+
+        public Builder inputPreProcessors(Map<Integer,InputPreProcessor> processors) {
+            this.inputPreProcessors = processors;
             return this;
         }
 
         /**
          * Whether to do back prop or not
-         * @param backward whether to do back prop or not
+         * @param backprop whether to do back prop or not
          * @return
          */
-        public Builder backward(boolean backward) {
-            this.backward = backward;
+        public Builder backprop(boolean backprop) {
+            this.backprop = backprop;
             return this;
         }
 
-        public Builder inputPreProcessor(Integer layer,InputPreProcessor preProcessor) {
-            inputPreProcessor.put(layer,preProcessor);
-            return this;
-        }
-
-        public Builder preProcessor(Integer layer,OutputPreProcessor preProcessor) {
-            preProcessors.put(layer,preProcessor);
-            return this;
-        }
-
-        public Builder preProcessors(Map<Integer,OutputPreProcessor> preProcessors) {
-            this.preProcessors = preProcessors;
-            return this;
-        }
-
+        @Deprecated
         public Builder dampingFactor(double dampingFactor) {
             this.dampingFactor = dampingFactor;
             return this;
         }
-
-        public Builder useRBMPropUpAsActivations(boolean useRBMPropUpAsActivations) {
-            this.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
-            return this;
-        }
-
-
+        
         /**
          * Whether to do pre train or not
          * @param pretrain whether to do pre train or not
@@ -224,51 +204,19 @@ public class MultiLayerConfiguration implements Serializable {
             return this;
         }
 
-        /**
-         * Whether to use drop connect or not
-         * @param useDropConnect true if drop connect
-         *                       should applied or not
-         * @return builder pattern
-         */
-        public Builder useDropConnect(boolean useDropConnect) {
-            this.useDropConnect = useDropConnect;
-            return this;
-        }
-
-
-
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
 
         }
 
-        /**
-         * Specify the hidden layer sizes.
-         * Note that you can specify the layer sizes in continuous order.
-         * Whereever number of inputs and outputs are used
-         * this will be set for intermediate layers
-         * @param hiddenLayerSizes the hidden layer sizes to use
-         * @return
-         */
-        public Builder hiddenLayerSizes(int...hiddenLayerSizes) {
-            this.hiddenLayerSizes = hiddenLayerSizes;
-            return this;
-        }
-
         public MultiLayerConfiguration build() {
             MultiLayerConfiguration conf = new MultiLayerConfiguration();
             conf.confs = this.confs;
-            if(hiddenLayerSizes == null)
-                throw new IllegalStateException("Please specify hidden layer sizes");
-            conf.hiddenLayerSizes = this.hiddenLayerSizes;
-            conf.useDropConnect = useDropConnect;
             conf.pretrain = pretrain;
-            conf.useRBMPropUpAsActivations = useRBMPropUpAsActivations;
             conf.dampingFactor = dampingFactor;
-            conf.processors = preProcessors;
-            conf.backward = backward;
-            conf.inputPreProcessors = inputPreProcessor;
+            conf.backprop = backprop;
+            conf.inputPreProcessors = inputPreProcessors;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 
@@ -278,12 +226,8 @@ public class MultiLayerConfiguration implements Serializable {
         public String toString() {
             return "Builder{" +
                     "confs=" + confs +
-                    ", hiddenLayerSizes=" + Arrays.toString(hiddenLayerSizes) +
-                    ", useDropConnect=" + useDropConnect +
                     ", pretrain=" + pretrain +
-                    ", useRBMPropUpAsActivations=" + useRBMPropUpAsActivations +
                     ", dampingFactor=" + dampingFactor +
-                    ", preProcessors=" + preProcessors +
                     '}';
         }
 
@@ -295,10 +239,8 @@ public class MultiLayerConfiguration implements Serializable {
             Builder builder = (Builder) o;
 
             return Double.compare(builder.dampingFactor, dampingFactor) == 0
-                    && pretrain == builder.pretrain && useDropConnect == builder.useDropConnect
-                    && useRBMPropUpAsActivations == builder.useRBMPropUpAsActivations
-                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null)
-                    && Arrays.equals(hiddenLayerSizes, builder.hiddenLayerSizes);
+                    && pretrain == builder.pretrain
+                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null);
 
         }
 
@@ -307,30 +249,23 @@ public class MultiLayerConfiguration implements Serializable {
             int result;
             long temp;
             result = confs != null ? confs.hashCode() : 0;
-            result = 31 * result + (hiddenLayerSizes != null ? Arrays.hashCode(hiddenLayerSizes) : 0);
-            result = 31 * result + (useDropConnect ? 1 : 0);
             result = 31 * result + (pretrain ? 1 : 0);
-            result = 31 * result + (useRBMPropUpAsActivations ? 1 : 0);
             temp = Double.doubleToLongBits(dampingFactor);
             result = 31 * result + (int) (temp ^ (temp >>> 32));
-            result = 31 * result + (preProcessors != null ? preProcessors.hashCode() : 0);
             return result;
         }
 
+        @Deprecated
         public Builder override(ConfOverride override) {
             confOverrides.put(confOverrides.size(),override);
             return this;
         }
 
+        @Deprecated
         public Builder override(int layer,ConfOverride override) {
             confOverrides.put(layer,override);
             return this;
         }
 
-
     }
-
-
-
-
 }

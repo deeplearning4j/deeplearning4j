@@ -30,6 +30,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class Word2VecSetup implements Function<Tuple2<List<VocabWord>, Long>, Word2VecFuncCall> {
     private Broadcast<Word2VecParam> param;
 

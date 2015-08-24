@@ -25,9 +25,10 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
 
 
 /**
@@ -36,23 +37,13 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * @author Adam Gibson
  *
  */
-public abstract class BasePretrainNetwork extends BaseLayer {
+public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
+        extends BaseLayer<LayerConfT> {
 
-    private static final long serialVersionUID = -7074102204433996574L;
-
-    /**
-     *
-     * @param conf
-     */
     public BasePretrainNetwork(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    /**
-     *
-     * @param conf
-     * @param input
-     */
     public BasePretrainNetwork(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
@@ -72,12 +63,11 @@ public abstract class BasePretrainNetwork extends BaseLayer {
     }
 
 
-
     protected Gradient createGradient(INDArray wGradient,INDArray vBiasGradient,INDArray hBiasGradient) {
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY,vBiasGradient);
         ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY,hBiasGradient);
-        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY,wGradient);
+        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY, wGradient);
         return ret;
     }
 
@@ -94,5 +84,22 @@ public abstract class BasePretrainNetwork extends BaseLayer {
      * @return the mean and sample
      */
     public abstract Pair<INDArray,INDArray> sampleVisibleGivenHidden(INDArray h);
+
+    @Override
+    protected void setScoreWithZ(INDArray z) {
+        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
+            create.exec();
+            score = create.currentResult().doubleValue();
+        }
+
+        else {
+            score = LossCalculation.builder()
+                    .l1(calcL1()).l2(calcL2())
+                    .labels(input).z(z).lossFunction(layerConf().getLossFunction())
+                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
+                    .useRegularization(conf.isUseRegularization()).build().score();
+        }
+    }
 
 }

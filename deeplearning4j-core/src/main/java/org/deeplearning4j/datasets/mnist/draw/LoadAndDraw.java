@@ -44,7 +44,7 @@ public class LoadAndDraw {
 		
 		DataSet test = null;
 		while(iter.hasNext()) {
-			INDArray reconstructed = network.transform(test.getFeatureMatrix());
+			INDArray reconstructed = network.activate(test.getFeatureMatrix());
 			for(int i = 0; i < test.numExamples(); i++) {
 				INDArray draw1 = test.get(i).getFeatureMatrix().mul(255);
 				INDArray reconstructed2 = reconstructed.getRow(i);

@@ -19,17 +19,20 @@
 package org.deeplearning4j.plot;
 
 
+import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.indexing.functions.Zero;
 import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -137,8 +140,8 @@ public class Tsne implements Serializable {
 
             double betaMin = Double.NEGATIVE_INFINITY;
             double betaMax = Double.POSITIVE_INFINITY;
-            NDArrayIndex[] range = new NDArrayIndex[]{
-                    NDArrayIndex.concat(NDArrayIndex.interval(0, i),NDArrayIndex.interval(i + 1, d.columns()))};
+            int[] vals = Ints.concat(ArrayUtil.range(0,i),ArrayUtil.range(i + 1,d.columns()));
+            INDArrayIndex[] range = new INDArrayIndex[]{new NDArrayIndex(vals)};
 
             INDArray row = d.slice(i).get(range);
             Pair<INDArray,INDArray> pair =  hBeta(row,beta.getDouble(i));

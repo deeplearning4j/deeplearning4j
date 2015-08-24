@@ -27,6 +27,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * Classifier over ride
  * @author Adam Gibson
  */
+@Deprecated
 public class ClassifierOverride implements ConfOverride {
     private int finalLayer = -1;
 
@@ -38,10 +39,10 @@ public class ClassifierOverride implements ConfOverride {
     }
     @Override
     public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-        builder.activationFunction("softmax");
-        builder.weightInit(WeightInit.ZERO);
-        builder.layer(new OutputLayer());
-        builder.lossFunction(LossFunctions.LossFunction.MCXENT);
+        builder.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                .weightInit(WeightInit.ZERO)
+                .activation("softmax")
+                .build());
 
     }
 }

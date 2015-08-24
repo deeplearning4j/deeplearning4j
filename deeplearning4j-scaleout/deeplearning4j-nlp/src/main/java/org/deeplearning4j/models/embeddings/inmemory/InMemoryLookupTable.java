@@ -19,9 +19,6 @@
 package org.deeplearning4j.models.embeddings.inmemory;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import it.unimi.dsi.util.XorShift64StarRandomGenerator;
-import org.apache.commons.math3.random.MersenneTwister;
-import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -63,6 +60,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
     protected Map<Integer,INDArray> codes = new ConcurrentHashMap<>();
 
 
+    public InMemoryLookupTable() {}
 
     public InMemoryLookupTable(VocabCache vocab,int vectorLength,boolean useAdaGrad,double lr,Random gen,double negative) {
         this.vocab = vocab;
@@ -133,7 +131,7 @@ public class InMemoryLookupTable implements WeightLookupTable {
             for(String s : vocab.words()) {
                 plot.add(s);
             }
-            tsne.plot(syn0,2,plot);
+            tsne.plot(syn0, 2, plot);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -226,8 +224,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
             double g = useAdaGrad ?  w1.getGradient(i, (1 - code - f)) : (1 - code - f) * alpha;
 
             if(neu1e.data().dataType() == DataBuffer.Type.FLOAT) {
-                Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, syn1, neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(syn1.length(), g, l1, syn1);
 
             }
 
@@ -291,12 +289,6 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
         else
             Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
-
-
-
-
-
-
     }
 
     public boolean isUseAdaGrad() {
@@ -375,10 +367,10 @@ public class InMemoryLookupTable implements WeightLookupTable {
 
 
         if(syn0.data().dataType() == DataBuffer.Type.DOUBLE)
-            Nd4j.getBlasWrapper().axpy(1.0,neu1e,l1);
+            Nd4j.getBlasWrapper().level1().axpy(l1.length(), 1.0,neu1e,l1);
 
         else
-            Nd4j.getBlasWrapper().axpy(1.0f,neu1e,l1);
+            Nd4j.getBlasWrapper().level1().axpy(l1.length(), 1.0f, neu1e, l1);
 
 
 
@@ -396,8 +388,8 @@ public class InMemoryLookupTable implements WeightLookupTable {
         this.rng = Nd4j.getRandom();
 
         syn0  = Nd4j.rand(new int[]{vocab.numWords() + 1,vectorLength},rng).subi(0.5).divi(vectorLength);
-        INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
-        putVector(Word2Vec.UNK,randUnk);
+//        INDArray randUnk = Nd4j.rand(1,vectorLength,rng).subi(0.5).divi(vectorLength);
+//        putVector(Word2Vec.UNK,randUnk);
 
         syn1 = Nd4j.create(syn0.shape());
         initNegative();
@@ -413,22 +405,26 @@ public class InMemoryLookupTable implements WeightLookupTable {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);
         }
 
-        int wordIdx = 0;
-        double d1 = Math.pow(vocab.wordFrequency(vocab.wordAtIndex(wordIdx)),power) / trainWordsPow;
-        for(int i = 0; i < tableSize; i++) {
-            table.putScalar(i,wordIdx);
-            double mul = i * 1.0 / (double) tableSize;
-            if(mul > d1) {
-                wordIdx++;
-                String wordAtIndex = vocab.wordAtIndex(wordIdx);
-                if(wordAtIndex == null)
+
+        for(String word : vocab.words()) {
+            double d1 = Math.pow(vocab.wordFrequency(word),power) / trainWordsPow;
+            for(int i = 0; i < tableSize; i++) {
+                int wordIdx = vocab.indexOf(word);
+                if(wordIdx < 0)
                     continue;
-                d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
+
+                table.putScalar(i,wordIdx);
+                double mul = i * 1.0 / (double) tableSize;
+                if(mul > d1) {
+                    wordIdx++;
+                    String wordAtIndex = vocab.wordAtIndex(wordIdx);
+                    if(wordAtIndex == null)
+                        continue;
+                    d1 += Math.pow(vocab.wordFrequency(wordAtIndex),power) / trainWordsPow;
+
+                }
 
             }
-
-            if(wordIdx >= vocabSize)
-                wordIdx = vocabSize - 1;
 
         }
 

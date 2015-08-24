@@ -37,26 +37,28 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class LSTMParamInitializer implements ParamInitializer {
-    public final static String RECURRENT_WEIGHTS = "recurrentweights";
-    public final static String DECODER_BIAS = "decoderbias";
-    public final static String DECODER_WEIGHTS = "decoderweights";
-
+    public final static String RECURRENT_WEIGHT_KEY = "RW";
+    public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        Distribution dist = Distributions.createDistribution(conf.getDist());
+        org.deeplearning4j.nn.conf.layers.LSTM layerConf =
+                (org.deeplearning4j.nn.conf.layers.LSTM) conf.getLayer();
 
-        int inputSize = conf.getNIn();
-        int hiddenSize = conf.getNIn();
-        int outputSize = conf.getNOut();
-        conf.addVariable(RECURRENT_WEIGHTS);
-        conf.addVariable(DECODER_WEIGHTS);
-        conf.addVariable(DECODER_BIAS);
-        params.put(RECURRENT_WEIGHTS,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, conf.getWeightInit(), dist));
-        params.put(DECODER_WEIGHTS,WeightInitUtil.initWeights(hiddenSize,outputSize,conf.getWeightInit(), dist));
-        params.put(DECODER_BIAS, Nd4j.zeros(outputSize));
-        params.get(RECURRENT_WEIGHTS).data().persist();
-        params.get(DECODER_BIAS).data().persist();
-        params.get(DECODER_WEIGHTS).data().persist();
+        Distribution dist = Distributions.createDistribution(layerConf.getDist());
+
+        int inputSize = layerConf.getNIn();
+        int hiddenSize = layerConf.getNIn();
+        int outputSize = layerConf.getNOut();
+        conf.addVariable(RECURRENT_WEIGHT_KEY);
+        conf.addVariable(INPUT_WEIGHT_KEY);
+        conf.addVariable(BIAS_KEY);
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, layerConf.getWeightInit(), dist));
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(hiddenSize,outputSize,layerConf.getWeightInit(), dist));
+        params.put(BIAS_KEY, Nd4j.zeros(outputSize));
+        params.get(RECURRENT_WEIGHT_KEY).data().persist();
+        params.get(BIAS_KEY).data().persist();
+        params.get(INPUT_WEIGHT_KEY).data().persist();
 
     }
 

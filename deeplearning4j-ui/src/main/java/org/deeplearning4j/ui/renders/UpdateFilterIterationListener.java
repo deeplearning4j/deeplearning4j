@@ -2,6 +2,7 @@ package org.deeplearning4j.ui.renders;
 
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.plot.iterationlistener.PlotFiltersIterationListener;
 
 import javax.ws.rs.client.Client;
@@ -25,8 +26,8 @@ public class UpdateFilterIterationListener implements IterationListener {
      * @param variables the variables ot render filters for
      * @param iterations the number of iterations to update on
      */
-    public UpdateFilterIterationListener(List<String> variables,int iterations) {
-        listener = new PlotFiltersIterationListener(variables);
+    public UpdateFilterIterationListener(PlotFilters filters,List<String> variables,int iterations) {
+        listener = new PlotFiltersIterationListener(filters,variables,0);
         this.iterations = iterations;
     }
 

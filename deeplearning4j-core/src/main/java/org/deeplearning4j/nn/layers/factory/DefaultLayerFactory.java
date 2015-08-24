@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,7 +58,7 @@ public class DefaultLayerFactory implements LayerFactory {
     @Override
     public <E extends Layer> E create(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int index) {
         Layer ret = getInstance(conf);
-        ret.setIterationListeners(iterationListeners);
+        ret.setListeners(iterationListeners);
         ret.setIndex(index);
         Map<String,INDArray> params = getParams(conf);
         ret.setParamTable(params);
@@ -66,12 +67,12 @@ public class DefaultLayerFactory implements LayerFactory {
     }
     
     protected Layer getInstance(NeuralNetConfiguration conf) {
+        if(layerConfig instanceof DenseLayer)
+            return new org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.AutoEncoder)
             return new org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.RBM)
             return new org.deeplearning4j.nn.layers.feedforward.rbm.RBM(conf);
-        if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionDownSampleLayer)
-            return new org.deeplearning4j.nn.layers.convolution.ConvolutionDownSampleLayer(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.LSTM)
             return new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM)
@@ -83,8 +84,8 @@ public class DefaultLayerFactory implements LayerFactory {
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.ConvolutionLayer)
             return new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf);   
         if(layerConfig instanceof org.deeplearning4j.nn.conf.layers.SubsamplingLayer)
-            return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);   
-        
+            return new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf);
+
         throw new RuntimeException("unknown layer type: " + layerConfig);
     }
 

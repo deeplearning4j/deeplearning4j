@@ -25,6 +25,7 @@ import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
+import org.deeplearning4j.nn.conf.layers.{OutputLayer, FeedForwardLayer}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.spark.ml.nn.ParameterAveragingTrainingStrategy
@@ -85,20 +86,23 @@ class NeuralNetworkClassification(override val uid: String)
     if (handlePersistence) prepared.persist(StorageLevel.MEMORY_AND_DISK)
 
     // resolve the number of classes/outcomes
-    val outputLayer = c.getConf(c.getConfs.size() - 1)
-    val numClasses = outputLayer.getNOut match {
-      case 0 => {
-        Attribute.fromStructField(dataset.schema($(labelCol))) match {
-          case (attr: NominalAttribute) => attr.getNumValues match {
-            case Some(value: Int) => value
-            case _ => throw new UnsupportedOperationException("expected numValues on nominal attribute")
+    val numClasses = c.getConf(c.getConfs.size() - 1).getLayer match {
+      case layer: OutputLayer => layer.getNOut match {
+        case 0 => {
+          val numClasses = NominalAttribute.fromStructField(dataset.schema($(labelCol))) match {
+            case (attr: NominalAttribute) => attr.getNumValues match {
+              case Some(value: Int) => value
+              case _ => throw new UnsupportedOperationException("expected numValues on nominal attribute")
+            }
+            case _ => throw new UnsupportedOperationException(s"column ${$(labelCol)} must be indexed")
           }
-          case _ => throw new UnsupportedOperationException(s"column ${$(labelCol)} must be indexed")
+          layer.setNOut(numClasses)
+          numClasses
         }
+        case nOut => nOut
       }
-      case n => n
+      case _ => throw new UnsupportedOperationException(s"classification requires an output layer")
     }
-    outputLayer.setNOut(numClasses)
 
     // devise a training strategy for the distributed neural network
     val trainingStrategy = new ParameterAveragingTrainingStrategy[Row](c, $(epochs))
@@ -124,23 +128,6 @@ class NeuralNetworkClassification(override val uid: String)
     if (handlePersistence) prepared.unpersist()
 
     new NeuralNetworkClassificationModel(uid, numClasses, sc.broadcast(networkParams)).setParent(this)
-  }
-}
-
-/**
- * Companion object for running of classification process.
- */
-object NeuralNetworkClassification {
-  def apply(uid: String) = new NeuralNetworkClassification(uid)
-
-  def apply() = new NeuralNetworkClassification()
-
-  def train(dataset: DataFrame): NeuralNetworkClassificationModel = {
-    NeuralNetworkClassification().train(dataset)
-  }
-
-  def train(uid: String, dataset: DataFrame): NeuralNetworkClassificationModel = {
-    NeuralNetworkClassification(uid).train(dataset)
   }
 }
 
@@ -178,7 +165,7 @@ class NeuralNetworkClassificationModel private[ml] (
       networkHolder = new ThreadLocal[MultiLayerNetwork] {
         override def initialValue(): MultiLayerNetwork = {
           val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson($(conf)))
-          network.setListeners(JavaConversions.seqAsJavaList(List(new ScoreIterationListener(1))))
+          network.setListeners(new ScoreIterationListener(1))
           network.init()
           network.setParameters(networkParams.value)
           network

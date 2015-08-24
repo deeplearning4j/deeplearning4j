@@ -18,12 +18,13 @@
 
 package org.deeplearning4j.nn.layers;
 
-import java.io.Serializable;
-
+import java.io.*;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Classifier;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -31,15 +32,16 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.LossFunction;
+import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossCalculation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
-import static org.nd4j.linalg.ops.transforms.Transforms.log;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
@@ -51,11 +53,15 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  * @author Adam Gibson
  *
  */
-public class OutputLayer extends BaseLayer implements Serializable,Classifier {
+public class OutputLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> implements Serializable,Classifier {
 
-    private static final long serialVersionUID = -7065564817460914364L;
     //current input and label matrices
     private INDArray labels;
+    
+    private transient Solver solver;
+    
+    private double fullNetworkL1;
+    private double fullNetworkL2;
 
     public OutputLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -64,29 +70,44 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     public OutputLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
+    
+    /** Compute score after labels and input have been set.
+     */
+    public double computeScore( double fullNetworkL1, double fullNetworkL2 ){
+    	if( input == null || labels == null )
+    		throw new IllegalStateException("Cannot calculate score without input and labels");
+    	this.fullNetworkL1 = fullNetworkL1;
+    	this.fullNetworkL2 = fullNetworkL2;
+    	setScoreWithZ(output(input));
+    	return score;
+    }
 
     @Override
-    public void setScore() {
-        LinAlgExceptions.assertRows(input, labels);
-        if(input == null)
+    public void computeGradientAndScore() {
+        if(input == null || labels == null)
             return;
-        INDArray output = output(input);
-        if (conf.getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
-            LossFunction create = Nd4j.getOpFactory().createLossFunction(conf.getCustomLossFunction(), input, output);
+
+        INDArray z = preOutput(input);
+        Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(z);
+        this.gradient = triple.getFirst();
+        setScoreWithZ(triple.getThird());
+    }
+
+    @Override
+    protected void setScoreWithZ(INDArray z) {
+        if (layerConf().getLossFunction() == LossFunctions.LossFunction.CUSTOM) {
+            LossFunction create = Nd4j.getOpFactory().createLossFunction(layerConf().getCustomLossFunction(), input, z);
             create.exec();
             score = create.currentResult().doubleValue();
-        } else {
-            score = LossFunctions.score(
-                    labels,
-                    conf.getLossFunction(),
-                    output,
-                    conf.getL2(),
-                    conf.isUseRegularization());
         }
 
-        //maximize target
-        if(conf.isMinimize())
-            score = -score;
+        else {
+            score = LossCalculation.builder()
+                    .l1(fullNetworkL1).l2(fullNetworkL2)
+                    .labels(labels).z(z).lossFunction(layerConf().getLossFunction())
+                    .miniBatch(conf.isMiniBatch()).miniBatchSize(getInputMiniBatchSize())
+                    .useRegularization(conf.isUseRegularization()).build().score();
+        }
     }
 
     @Override
@@ -94,6 +115,14 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
         return new Pair<>(gradient(),score());
     }
 
+    @Override
+    public Pair<Gradient,INDArray> backpropGradient(INDArray epsilon) {
+    	Triple<Gradient,INDArray,INDArray> triple = getGradientsAndDelta(preOutput(input));	//Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+    	INDArray delta = triple.getSecond();
+
+        INDArray epsilonNext = params.get(DefaultParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+        return new Pair<>(triple.getFirst(),epsilonNext);
+    }
 
     /**
      * Gets the gradient from one training iteration
@@ -102,74 +131,112 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     @Override
     public Gradient gradient() {
         LinAlgExceptions.assertRows(input, labels);
-
-
-        //input activation
-        INDArray netOut = activate(input);
-        //difference of outputs
-        INDArray dy = netOut.sub(labels);
-
-
-        INDArray wGradient = getWeightGradient();
-        INDArray bGradient = dy.sum(0);
-        Gradient g = new DefaultGradient();
-
-        g.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY,wGradient);
-        g.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bGradient);
-
-        return g;
+        return gradient;
 
     }
+    
+    /** Returns tuple: {Gradient,Delta,Output} given preOut */
+    private Triple<Gradient,INDArray,INDArray> getGradientsAndDelta(INDArray preOut){
+    	INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), preOut.dup()));
+    	INDArray outSubLabels = output.sub(labels);
+    	Gradient gradient = new DefaultGradient();
+    	
+    	switch (layerConf().getLossFunction()) {
+    	case MCXENT:	//cross-entropy (multi-class, with one-hot encoding)
+    		gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+    		gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+    		return new Triple<>(gradient,outSubLabels,output);
+        case XENT: // cross-entropy (single binary output variable)
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels.div(output.mul(output.rsub(1)))));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+        	return new Triple<>(gradient,outSubLabels,output);
 
-
-
-    private INDArray getWeightGradient() {
-        INDArray z = output(input);
-
-        switch (conf.getLossFunction()) {
-            case MCXENT:
-                INDArray preOut = preOutput(input);
-                //input activation
-                INDArray pYGivenX = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax",preOut),1);
-                //difference of outputs
-                INDArray dy = pYGivenX.sub(labels);
-                return input.transpose().mmul(dy);
-
-            case XENT:
-                INDArray xEntDiff = labels.sub(z);
-                return input.transpose().mmul(xEntDiff.div(z.mul(z.rsub(1))));
-            case MSE:
-                INDArray mseDelta = labels.sub(z);
-                return input.transpose().mmul(mseDelta.neg());
-            case EXPLL:
-                return input.transpose().mmul(labels.rsub(1).divi(z));
-            case RMSE_XENT:
-                INDArray rmseXentDiff = labels.sub(z);
-                INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
-                INDArray sqrt = sqrt(squaredrmseXentDiff);
-                return input.transpose().mmul(sqrt);
-            case SQUARED_LOSS:
-                return input.transpose().mmul(pow(labels.sub(z),2));
-            case NEGATIVELOGLIKELIHOOD:
-                return input.transpose().mmul(log(z).negi());
-
-
-        }
-
-        throw new IllegalStateException("Invalid loss function");
-
+        case MSE: // mean squared error
+        	INDArray delta = outSubLabels.mul(derivativeActivation(preOut));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(delta));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, delta.sum(0));
+            return new Triple<>(gradient,delta,output);
+        	
+        case EXPLL: // exponential logarithmic
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(labels.rsub(1).divi(output)));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
+            
+        case RMSE_XENT: // root mean squared error cross entropy
+        	INDArray squaredrmseXentDiff = pow(outSubLabels, 2.0);
+        	INDArray sqrt = sqrt(squaredrmseXentDiff);
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(sqrt));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
+        	
+        case SQUARED_LOSS:
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(input.transpose().mmul(pow(outSubLabels,2))));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
+            
+        case NEGATIVELOGLIKELIHOOD: // multi-class cross-entropy
+        	gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, input.transpose().mmul(outSubLabels));
+        	gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, outSubLabels.sum(0));
+            return new Triple<>(gradient,outSubLabels,output);
+        default:
+        	throw new IllegalStateException("Invalid loss function: " + layerConf().getLossFunction());
+    	}
     }
 
 
     @Override
+    public INDArray activate(INDArray input, boolean training) {
+        setInput(input, training);
+        return output(training);
+    }
+
+    @Override
     public INDArray activate(INDArray input) {
-        return output(input);
+        setInput(input);
+        return output(true);
     }
 
     @Override
     public INDArray activate() {
-        return output(input);
+        return output(false);
     }
+
+    public  INDArray output(INDArray input, boolean training) {
+        setInput(input, training);
+        return output(training);
+    }
+
+    public  INDArray output(INDArray input) {
+        setInput(input, false);
+        return output(false);
+    }
+
+    /**
+     * Classify input
+     * @param training determines if its training
+     * the input (can either be a matrix or vector)
+     * If it's a matrix, each row is considered an example
+     * and associated rows are classified accordingly.
+     * Each row will be the likelihood of a label given that example
+     * @return a probability distribution for each row
+     */
+    public  INDArray output(boolean training) {
+        if(input == null)
+            throw new IllegalArgumentException("No null input allowed");
+
+        INDArray preOutput = preOutput(input, training);
+        if(conf.getLayer().getActivationFunction().equals("softmax")) {
+            SoftMax softMax = new SoftMax(preOutput);
+            softMax.exec(1);
+            return softMax.z();
+        }
+
+        if(training)
+            applyDropOutIfNecessary(input(),training);
+
+        return super.activate(true);
+    }
+
 
     /**
      * Sets the input and labels and returns a score for the prediction
@@ -178,8 +245,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    public double score(DataSet data) {
-        return score(data.getFeatureMatrix(), data.getLabels());
+    public double f1Score(DataSet data) {
+        return f1Score(data.getFeatureMatrix(), data.getLabels());
     }
 
     /**
@@ -192,7 +259,7 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      * @param labels   the true labels
      * @return the scores for each ndarray
      */
-    public double score(INDArray examples, INDArray labels) {
+    public double f1Score(INDArray examples, INDArray labels) {
         Evaluation eval = new Evaluation();
         eval.eval(labels,labelProbabilities(examples));
         return  eval.f1();
@@ -217,13 +284,13 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     /**
      * Returns the predictions for each example in the dataset
-     * @param d the matrix to predict
+     * @param input the matrix to predict
      * @return the prediction for the dataset
      */
     @Override
-    public int[] predict(INDArray d) {
-        INDArray output = output(d);
-        int[] ret = new int[d.rows()];
+    public int[] predict(INDArray input) {
+        INDArray output = output(input);
+        int[] ret = new int[input.rows()];
         for(int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
         return ret;
@@ -244,18 +311,20 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
     /**
      * Fit the model
      *
-     * @param examples the examples to classify (one example in each row)
+     * @param input the examples to classify (one example in each row)
      * @param labels   the example labels(a binary outcome matrix)
      */
     @Override
-    public void fit(INDArray examples, INDArray labels) {
-        this.input = examples.dup();
-        applyDropOutIfNecessary(this.input);
-        this.labels = labels;
-        Solver solver = new Solver.Builder()
+    public void fit(INDArray input, INDArray labels) {
+        setInput(input);
+        setLabels(labels);
+        applyDropOutIfNecessary(this.input, true);
+        if( solver == null ){
+        	solver = new Solver.Builder()
                 .configure(conf())
-                .listeners(getIterationListeners())
+                .listeners(getListeners())
                 .model(this).build();
+        }
         solver.optimize();
     }
 
@@ -289,20 +358,8 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
             labels.data().destroy();
             labels = null;
         }
+        solver = null;
     }
-
-    /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     *
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    @Override
-    public INDArray transform(INDArray data) {
-        return preOutput(data);
-    }
-
 
 
     /**
@@ -314,13 +371,13 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
      */
     @Override
     public void setParams(INDArray params) {
-        INDArray wParams = params.get(NDArrayIndex.interval(0, conf.getNIn() * conf.getNOut()));
+        INDArray wParams = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, layerConf().getNIn() * layerConf().getNOut()));
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         W.assign(wParams);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
         int biasBegin = params.length() - bias.length();
         int biasEnd = params.length();
-        INDArray biasAssign = params.get(NDArrayIndex.interval(biasBegin, biasEnd));
+        INDArray biasAssign = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(biasBegin, biasEnd));
         bias.assign(biasAssign);
     }
     /**
@@ -336,48 +393,9 @@ public class OutputLayer extends BaseLayer implements Serializable,Classifier {
 
     @Override
     public void iterate(INDArray input) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    public  INDArray output(INDArray x) {
-        return output(x,false);
-
-    }
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    public  INDArray output(INDArray x,boolean test) {
-        if(x == null)
-            throw new IllegalArgumentException("No null input allowed");
-
-        INDArray preOutput = preOutput(x);
-        if(conf.getActivationFunction().equals("softmax")) {
-            INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preOutput), 1);
-            return ret;
-        }
-
-        this.input = x.dup();
-        if(!test)
-            applyDropOutIfNecessary(input());
-
-        return super.activate();
-
-    }
 
     public  INDArray getLabels() {
         return labels;

@@ -12,6 +12,7 @@ public enum Updater {
     ,ADADELTA
     ,NESTEROVS
     ,ADAGRAD
-    ,RMSPROP,
-    CUSTOM
+    ,RMSPROP
+    ,NONE
+    ,CUSTOM
 }

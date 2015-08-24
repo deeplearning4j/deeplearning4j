@@ -37,9 +37,22 @@ import java.util.Collection;
 public interface Layer extends Serializable,Cloneable,Model {
 
     enum Type {
-       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,RECURSIVE
+       FEED_FORWARD,RECURRENT,CONVOLUTIONAL,SUBSAMPLING,RECURSIVE,MULTILAYER
     }
 
+    /**Calculate the l2 regularization term<br>
+     * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l2 regularization term for this layer.
+     */
+    double calcL2();
+
+    /**Calculate the l1 regularization term<br>
+     * 0.0 if regularization is not used. Or l1Coeff * l1Magnitude otherwise.<br>
+     * Note that this does not divide by mini-batch size
+     * @return the l1 regularization term for this layer.
+     */
+    double calcL1();
 
     /**
      * Returns the layer type
@@ -81,33 +94,14 @@ public interface Layer extends Serializable,Cloneable,Model {
     Gradient calcGradient(Gradient layerError, INDArray indArray);
 
 
-    /**
-     * Error signal for this layer
-     *
-     * Using the amount of error
-     * caused by this layer
-     * calculate the error signal used
-     * as input in to the next layer.
-     * This is used for actually calculating the
-     * gradient of the layer
-     *
-     * @param error
-     * @param input
-     * @return
+    /**Calculate the gradient relative to the error in the next layer
+     * @param epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)/(dz/da) = dC/da, where C 
+     * 	is cost function a=sigma(z) is activation.
+     * @return Pair<Gradient,INDArray> where Gradient is gradient for this layer, INDArray is epsilon needed by next
+     *  layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
+     *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
-    @Deprecated
-    Gradient errorSignal(Gradient error, INDArray input);
-
-    /**
-     * Calculate the gradient relative to the
-     * error in the next layer
-     * @param z the activation from the network
-     * @param nextLayer the next layer in the network.
-     * @param nextGradient
-     * @param activation the activation from the network
-     * @return
-     */
-    Gradient backwardGradient(INDArray z, Layer nextLayer, Gradient nextGradient, INDArray activation);
+    Pair<Gradient,INDArray> backpropGradient(INDArray epsilon);
 
 
     /**
@@ -130,6 +124,11 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Update layer weights and biases with gradient change
      */
 
+    void update(Gradient gradient);
+    /**
+     * Update layer weights and biases with gradient change
+     */
+
     void update(INDArray gradient, String paramType);
 
     /**
@@ -139,6 +138,32 @@ public interface Layer extends Serializable,Cloneable,Model {
      * for this layer
      */
     INDArray preOutput(INDArray x);
+
+    /**
+     * Raw activations
+     * @param x the input to transform
+     * @return the raw activation
+     * for this layer
+     */
+    INDArray preOutput(INDArray x,boolean training);
+
+
+    /**
+     * Trigger an activation with the last specified input
+     * @param training  training or test mode
+     * @return the activation of the last specified input
+     */
+    INDArray activate(boolean training);
+
+    /**
+     * Initialize the layer with the given input
+     * and return the activation for this layer
+     * given this input
+     * @param input the input to use
+     * @param training  train or test mode
+     * @return
+     */
+    INDArray activate(INDArray input,boolean training);
 
     /**
      * Trigger an activation with the last specified input
@@ -170,27 +195,21 @@ public interface Layer extends Serializable,Cloneable,Model {
     Layer clone();
 
 
-    /**
-     * Propagate errors backwards for a particular layer.
-     * This calculates the node error for a given true output.
-     * @param errors the errors to propagate
-     * @param deltas the previous deltas
-     * @param previousActivation the previous layer's activation
-     * @param activation  the activation from the previous layer
-     */
-    @Deprecated
-    Pair<Gradient, Gradient> backWard(Gradient errors, Gradient deltas, INDArray activation,String previousActivation);
 
 
     /**
      * Get the iteration listeners for this layer.
      */
-    Collection<IterationListener> getIterationListeners();
+    Collection<IterationListener> getListeners();
 
     /**
      * Set the iteration listeners for this layer.
      */
-    void setIterationListeners(Collection<IterationListener> listeners);
+    void setListeners(IterationListener...listeners);
+    /**
+     * Set the iteration listeners for this layer.
+     */
+    void setListeners(Collection<IterationListener> listeners);
 
     /**
      * Set the layer index.
@@ -201,5 +220,22 @@ public interface Layer extends Serializable,Cloneable,Model {
      * Get the layer index.
      */
     int getIndex();
+
+    /**
+     * Get the layer input.
+     */
+    void setInput(INDArray input);
+
+    /** Set current/last input mini-batch size.<br>
+     * Used for score and gradient calculations. Mini batch size may be different from
+     * getInput().size(0) due to reshaping operations - for example, when using RNNs with
+     * DenseLayer and OutputLayer. Called automatically during forward pass.
+     */
+    void setInputMiniBatchSize(int size);
+    
+    /** Get current/last input mini-batch size, as set by setInputMiniBatchSize(int)
+     * @see Layer#setInputMiniBatchSize(int)
+     */
+    int getInputMiniBatchSize();
 
 }

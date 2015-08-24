@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.0.3.3.5.alpha2-SNAPSHOT</version>
+    <version>0.4-rc1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
@@ -58,6 +58,8 @@
         <canova.version>0.0.0.5-SNAPSHOT</canova.version>
         <nd4j.version>0.0.3.5.5.6-SNAPSHOT</nd4j.version>
         <spring.version>3.2.5.RELEASE</spring.version>
+
+        <failIfNoTests>false</failIfNoTests>
     </properties>
 
 
@@ -175,16 +177,27 @@
         <developer>
             <id>smarthi</id>
             <name>Suneel Marthi</name>
-
         </developer>
         <developer>
             <id>agibsonccc</id>
             <name>Adam Gibson</name>
-            <email>0@blix.io</email>
+            <email>adam@skymind.io</email>
         </developer>
         <developer>
             <id>jpatanooga</id>
             <name>Josh Patterson</name>
+        </developer>
+        <developer>
+            <id>AlexDBlack</id>
+            <name>Alex Black</name>
+        </developer>
+        <developer>
+            <id>EronWright</id>
+            <name>Eron Wright</name>
+        </developer>
+        <developer>
+            <id>nyghtowl</id>
+            <name>Melanie Warrick</name>
         </developer>
     </developers>
 
@@ -303,7 +316,7 @@
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>canova-api</artifactId>
-                <version>${canova.version}</version>
+                <version>0.0.0.5</version>
             </dependency>
 
 

@@ -18,33 +18,33 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.*;
+
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
  * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
- *
  */
-public class GravesLSTM extends Layer {
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class GravesLSTM extends FeedForwardLayer {
 
-	private static final long serialVersionUID = -6075431033806074674L;
-
-	@Override
-    public int hashCode() {
-        return 0;
+    private GravesLSTM(Builder builder) {
+    	super(builder);
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public GravesLSTM build() {
+            return new GravesLSTM(this);
+        }
     }
 
-    public String toString() {
-        return "GravesLSTM{" +
-                '}';
-    }
 }

@@ -18,12 +18,13 @@
 
 package org.deeplearning4j.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -48,6 +49,20 @@ public class Dl4jReflection {
         return c;
     }
 
+
+    public static Field[] getAllFields(Class<?> clazz) {
+        // Keep backing up the inheritance hierarchy.
+        Class<?> targetClass = clazz;
+        List<Field> fields = new ArrayList<>();
+
+        do {
+            fields.addAll(Arrays.asList(targetClass.getDeclaredFields()));
+            targetClass = targetClass.getSuperclass();
+        }
+        while (targetClass != null && targetClass != Object.class);
+
+        return fields.toArray(new Field[fields.size()]);
+    }
 
     /**
      * Sets the properties of the given object

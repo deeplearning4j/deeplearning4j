@@ -56,7 +56,7 @@ public interface Model {
     /**
      * Update the score
      */
-    void setScore();
+    void computeGradientAndScore();
 
     /**
      * Sets a rolling tally for the score. This is useful for mini batch learning when
@@ -65,14 +65,6 @@ public interface Model {
      */
     void accumulateScore(double accum);
 
-
-    /**
-     * Transform the data based on the model's output.
-     * This can be anything from a number to reconstructions.
-     * @param data the data to transform
-     * @return the transformed data
-     */
-    INDArray transform(INDArray data);
 
     /**
      * Parameters of the model (if any)
@@ -147,6 +139,7 @@ public interface Model {
      * @return the input/feature matrix for the model
      */
     INDArray input();
+
 
     /**
      * Validate the input

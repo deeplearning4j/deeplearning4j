@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class Word2Vec extends WordVectorsImpl  {
+public class Word2Vec extends WordVectorsImpl {
 
 
     protected static final long serialVersionUID = -2367495638286018038L;

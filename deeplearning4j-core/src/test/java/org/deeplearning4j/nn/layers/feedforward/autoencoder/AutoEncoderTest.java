@@ -48,12 +48,13 @@ public class AutoEncoderTest {
 
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-                .corruptionLevel(0.6)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(1)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600)
-                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder())
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(784).nOut(600)
+                        .corruptionLevel(0.6)
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
                 .build();
 
 
@@ -77,11 +78,14 @@ public class AutoEncoderTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         LayerFactory layerFactory = LayerFactories.getFactory(new org.deeplearning4j.nn.conf.layers.AutoEncoder());
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
-                .optimizationAlgo(OptimizationAlgorithm.GRADIENT_DESCENT)
-                .corruptionLevel(0.6)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100)
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY)
-                .learningRate(1e-1f).nIn(784).nOut(600).layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder()).build();
+                .learningRate(1e-1f)
+                .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                        .nIn(784).nOut(600)
+                        .corruptionLevel(0.6)
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
+                .build();
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();

@@ -28,6 +28,7 @@ import org.apache.commons.math3.linear.CholeskyDecomposition;
 import org.apache.commons.math3.linear.NonSquareMatrixException;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.berkeley.Counter;
 
 
@@ -161,7 +162,7 @@ public class MathUtils  {
      * @return
      */
     public static double sigmoid(double x) {
-        return 1.0 / (1.0 + Math.pow(Math.E, -x));
+        return 1.0 / (1.0 + FastMath.exp(-x));
     }
 
 

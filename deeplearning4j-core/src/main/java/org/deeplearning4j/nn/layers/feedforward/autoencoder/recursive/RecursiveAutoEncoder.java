@@ -35,7 +35,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.*;
  *
  * @author Adam Gibson
  */
-public class RecursiveAutoEncoder extends BaseLayer {
+public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.layers.RecursiveAutoEncoder> {
     private INDArray currInput = null,
                      allInput = null,
                      visibleLoss = null,
@@ -64,22 +64,22 @@ public class RecursiveAutoEncoder extends BaseLayer {
     }
 
     @Override
-    public void setScore() {
+    public void computeGradientAndScore() {
         gradient();
-        score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);;
+        score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
-    public INDArray transform(INDArray data) {
-        INDArray w = getParam(RecursiveParamInitializer.W);
-        INDArray c = getParam(RecursiveParamInitializer.C);
+    public INDArray activate(INDArray data) {
+        INDArray w = getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY);
+        INDArray c = getParam(RecursiveParamInitializer.DECODER_WEIGHT_KEY);
         INDArray inputTimesW = data.mmul(w);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), inputTimesW.addiRowVector(c)));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputTimesW.addiRowVector(c)));
     }
 
 
     public INDArray decode(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.U).addiRowVector(params.get(RecursiveParamInitializer.BIAS)))));
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.DECODER_WEIGHT_KEY).addiRowVector(params.get(RecursiveParamInitializer.HIDDEN_BIAS_KEY)))));
     }
 
 
@@ -109,11 +109,11 @@ public class RecursiveAutoEncoder extends BaseLayer {
 
             currInput = combined;
             allInput = combined;
-            INDArray encoded = transform(combined);
+            INDArray encoded = activate(combined);
             y = decode(encoded);
 
             INDArray currVisibleLoss = currInput.sub(y);
-            INDArray currHiddenLoss = currVisibleLoss.mmul(getParam(RecursiveParamInitializer.W)).muli(encoded).muli(encoded.rsub(1));
+            INDArray currHiddenLoss = currVisibleLoss.mmul(getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY)).muli(encoded).muli(encoded.rsub(1));
 
             INDArray hiddenGradient = y.transpose().mmul(currHiddenLoss);
             INDArray visibleGradient = encoded.transpose().mmul(currVisibleLoss);

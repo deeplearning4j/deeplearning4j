@@ -20,7 +20,7 @@
     <parent>
         <artifactId>deeplearning4j-cli</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.0.3.3.5.alpha2-SNAPSHOT</version>
+        <version>0.4-rc1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -47,7 +47,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
-            <version>${nd4j.version}</version>
+            <version>0.4-rc0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -83,13 +83,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-test-resources</artifactId>
-            <version>${project.version}</version>
+            <version>0.4-rc0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -122,7 +116,16 @@
                 </configuration>
             </plugin>
 
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.18.1</version>
+                <configuration>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
+                    </additionalClasspathElements>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

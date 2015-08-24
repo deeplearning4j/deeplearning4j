@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.mapreduce.lib.input.{CombineFileInputFormat, CombineFileRecordReader, CombineFileSplit}
 import org.apache.spark.Logging
+import org.apache.spark.ml.attribute.{NominalAttribute, Attribute}
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.rdd.RDD
@@ -41,8 +42,11 @@ case class IrisRelation(location: String)(@transient val sqlContext: SQLContext)
   extends BaseRelation
   with PrunedScan with Logging {
 
+  private val labelMetadata = new MetadataBuilder().putMetadata("ml_attr",
+    new MetadataBuilder().putLong("num_vals", 3).build()).build()
+
   override def schema: StructType = StructType(
-    StructField("label", DoubleType, nullable = false) ::
+    StructField("label", DoubleType, nullable = false, metadata = labelMetadata) ::
       StructField("features", VectorUDT(), nullable = false) :: Nil)
 
   override def buildScan(requiredColumns: Array[String]): RDD[Row] = {

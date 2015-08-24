@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class NegativeGradientStepFunction implements StepFunction {
     @Override
-    public void step(INDArray x, INDArray line, Object[] params) {
+    public void step(INDArray x, INDArray line, double step) {
         step(x,line);
     }
 

@@ -79,7 +79,7 @@ public class UimaTokenizerFactory implements TokenizerFactory {
 
 	@Override
 	public  Tokenizer create(String toTokenize) {
-		if(toTokenize == null || toTokenize.isEmpty())
+		if(toTokenize == null)
 			throw new IllegalArgumentException("Unable to proceed; on sentence to tokenize");
 		Tokenizer ret = new UimaTokenizer(toTokenize,uimaResource,checkForLabel);
         ret.setTokenPreProcessor(preProcess);

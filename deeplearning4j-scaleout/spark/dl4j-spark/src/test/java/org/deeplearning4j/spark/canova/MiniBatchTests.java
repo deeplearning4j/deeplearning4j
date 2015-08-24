@@ -41,7 +41,7 @@ public class MiniBatchTests extends BaseSparkTest {
     public void testMiniBatches() throws Exception {
         log.info("Setting up Spark Context...");
 
-        JavaRDD<String> lines = sc.textFile(new ClassPathResource("data/svmLight/iris_svmLight_0.txt").getFile().toURI().toString()).cache();
+        JavaRDD<String> lines = sc.textFile(new ClassPathResource("svmLight/iris_svmLight_0.txt").getFile().toURI().toString()).cache();
         long count = lines.count();
         assertEquals(300,count);
         // gotta map this to a Matrix/INDArray

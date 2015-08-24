@@ -1,9 +1,10 @@
 package org.deeplearning4j.spark.ml.reconstruction
 
 import org.apache.spark.Logging
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration
-import org.deeplearning4j.nn.conf.`override`.ConfOverride
+import org.deeplearning4j.nn.api.OptimizationAlgorithm
+import org.deeplearning4j.nn.conf.{Updater, MultiLayerConfiguration, NeuralNetConfiguration}
 import org.deeplearning4j.nn.conf.layers.{OutputLayer, RBM}
+import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.spark.sql.sources.iris.DefaultSource
 import org.deeplearning4j.spark.util.TestSparkContext
 import org.junit.runner.RunWith
@@ -19,26 +20,26 @@ import org.springframework.core.io.ClassPathResource
 class NeuralNetworkReconstructionTest
   extends FunSuite with TestSparkContext with Logging with Matchers {
 
-  test("iris") {
-    val conf = new NeuralNetConfiguration.Builder()
+  private def getConfiguration(): MultiLayerConfiguration = {
+    new NeuralNetConfiguration.Builder()
       .seed(11L)
-      .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-      .nIn(4).nOut(3)
-      .layer(new RBM)
-      .visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-      .hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-      .activationFunction("tanh")
+      .iterations(100)
+      .learningRate(1e-3f)
+      .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+      .momentum(0.9)
+      .constrainGradientToUnitNorm(true)
+      .useDropConnect(true)
       .list(2)
-      .hiddenLayerSizes(3)
-      .`override`(1, new ConfOverride() {
-      def overrideLayer(i: Int, builder: NeuralNetConfiguration.Builder) {
-        if (i == 1) {
-          builder.activationFunction("softmax")
-          builder.layer(new OutputLayer)
-          builder.lossFunction(LossFunctions.LossFunction.MCXENT)
-        }
-      }
-    }).build
+      .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+        .nIn(4).nOut(3).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD).activation("relu").dropOut(0.5)
+        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+      .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+        .nIn(3).nOut(3).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD).activation("softmax").dropOut(0.5).build())
+      .build();
+  }
+
+  test("iris") {
+    val conf = getConfiguration()
 
     val path = new ClassPathResource("data/irisSvmLight.txt").getFile.toURI.toString
     val dataFrame = sqlContext.read.format(classOf[DefaultSource].getName).load(path)

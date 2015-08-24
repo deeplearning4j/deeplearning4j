@@ -42,20 +42,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,AtomicLong>> {
-
-
-    public final static String NAME_SPACE = "org.deeplearning4j.scaleout.perform.models.word2vec";
-    public final static String VECTOR_LENGTH = NAME_SPACE + ".length";
-    public final static String ADAGRAD = NAME_SPACE + ".adagrad";
-    public final static String NEGATIVE = NAME_SPACE + ".negative";
-    public final static String NUM_WORDS = NAME_SPACE + ".numwords";
-    public final static String TABLE = NAME_SPACE + ".table";
-    public final static String WINDOW = NAME_SPACE + ".window";
-    public final static String ALPHA = NAME_SPACE + ".alpha";
-    public final static String MIN_ALPHA = NAME_SPACE + ".minalpha";
-    public final static String ITERATIONS = NAME_SPACE + ".iterations";
-    public final static String N_GRAMS = NAME_SPACE + ".ngrams";
 
     private static double MAX_EXP = 6;
     private boolean useAdaGrad = false;
@@ -82,20 +70,19 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
     }
 
     public void setup(SparkConf conf) {
-        useAdaGrad = conf.getBoolean(ADAGRAD, false);
-        negative = conf.getDouble(NEGATIVE, 5);
-        numWords = conf.getInt(NUM_WORDS, 1);
-        window = conf.getInt(WINDOW, 5);
-        alpha = conf.getDouble(ALPHA, 0.025f);
-        minAlpha = conf.getDouble(MIN_ALPHA, 1e-2f);
-        totalWords = conf.getInt(NUM_WORDS, 1);
-        vectorLength = conf.getInt(VECTOR_LENGTH,100);
-
+        useAdaGrad = conf.getBoolean(Word2VecVariables.ADAGRAD, false);
+        negative = conf.getDouble(Word2VecVariables.NEGATIVE, 5);
+        numWords = conf.getInt(Word2VecVariables.NUM_WORDS, 1);
+        window = conf.getInt(Word2VecVariables.WINDOW, 5);
+        alpha = conf.getDouble(Word2VecVariables.ALPHA, 0.025f);
+        minAlpha = conf.getDouble(Word2VecVariables.MIN_ALPHA, 1e-2f);
+        totalWords = conf.getInt(Word2VecVariables.NUM_WORDS, 1);
+        vectorLength = conf.getInt(Word2VecVariables.VECTOR_LENGTH,100);
         initExpTable();
 
-        if(negative > 0 && conf.contains(TABLE)) {
+        if(negative > 0 && conf.contains(Word2VecVariables.TABLE)) {
             try {
-                ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
+                ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(Word2VecVariables.TABLE).getBytes());
                 DataInputStream dis = new DataInputStream(bis);
                 table = Nd4j.read(dis);
             } catch (IOException e) {
@@ -185,14 +172,8 @@ public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>,Atom
                 //gradient
                 double g = (1 - code - f) * (useAdaGrad ? w1.getGradient(i, alpha) : alpha);
 
-
-                if (neu1e.data().dataType() == DataBuffer.Type.DOUBLE) {
-                    Nd4j.getBlasWrapper().axpy(g, syn1, neu1e);
-                    Nd4j.getBlasWrapper().axpy(g, l1, syn1);
-                } else {
-                    Nd4j.getBlasWrapper().axpy((float) g, syn1, neu1e);
-                    Nd4j.getBlasWrapper().axpy((float) g, l1, syn1);
-                }
+                Nd4j.getBlasWrapper().level1().axpy(l1.length(), g, syn1, neu1e);
+                Nd4j.getBlasWrapper().level1().axpy(l1.length(), g, l1, syn1);
             }
 
 

@@ -18,34 +18,57 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.*;
+
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.weights.WeightInit;
+
 /**
  *  Autoencoder.
  * Add Gaussian noise to input and learn
  * a reconstruction function.
  *
  */
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class AutoEncoder extends BasePretrainNetwork {
+    protected double corruptionLevel;
+    protected double sparsity;
 
-    private static final long serialVersionUID = -7624965662728637504L;
-
-    @Override
-    public int hashCode() {
-        return 0;
+    // Builder
+    private AutoEncoder(Builder builder) {
+    	super(builder);
+        this.corruptionLevel = builder.corruptionLevel;
+        this.sparsity = builder.sparsity;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
+    @AllArgsConstructor
+    public static class Builder extends BasePretrainNetwork.Builder<Builder> {
+        private double corruptionLevel = 3e-1f;
+        private double sparsity = 0f;
 
-    public String toString() {
-        return "AutoEncoder{" +
-                '}';
+        public Builder() {}
+
+        public Builder(double corruptionLevel) {
+            this.corruptionLevel = corruptionLevel;
+        }
+        
+        public Builder corruptionLevel(double corruptionLevel){
+        	this.corruptionLevel = corruptionLevel;
+        	return this;
+        }
+        
+        public Builder sparsity(double sparsity){
+        	this.sparsity = sparsity;
+        	return this;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public AutoEncoder build() {
+            return new AutoEncoder(this);
+        }
     }
 }

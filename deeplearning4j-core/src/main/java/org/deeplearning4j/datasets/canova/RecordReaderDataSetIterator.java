@@ -53,11 +53,23 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private DataSet last;
     private boolean useCurrent = false;
     private boolean regression = false;
+
+    /**
+     * Use the record reader and batch size; no labels
+     * @param recordReader the record reader to use
+     * @param batchSize the batch size of the data
+     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize) {
         this(recordReader, new SelfWritableConverter(), batchSize, -1, -1);
     }
 
-
+    /**
+     * Main constructor
+     * @param recordReader the recorder to use for the dataset
+     * @param batchSize the batch size
+     * @param labelIndex the index of the label to use
+     * @param numPossibleLabels the number of posible
+     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), batchSize, labelIndex, numPossibleLabels);
     }
@@ -70,6 +82,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), 10, labelIndex, numPossibleLabels);
     }
+
+
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize, int labelIndex, int numPossibleLabels,boolean regression) {
         this.recordReader = recordReader;
         this.converter = converter;

@@ -39,7 +39,7 @@ public interface Classifier extends Model {
      * @param data the data to score
      * @return the score for the given input,label pairs
      */
-    double score(DataSet data);
+    double f1Score(DataSet data);
 
     /**
      * Returns the f1 score for the given examples.
@@ -50,7 +50,7 @@ public interface Classifier extends Model {
      * @param labels the true labels
      * @return the scores for each ndarray
      */
-    double score(INDArray examples, INDArray labels);
+    double f1Score(INDArray examples, INDArray labels);
 
     /**
      * Returns the number of possible labels
@@ -87,7 +87,7 @@ public interface Classifier extends Model {
      * @param examples the examples to classify (one example in each row)
      * @param labels the example labels(a binary outcome matrix)
      */
-    void fit(INDArray examples,INDArray labels);
+    void fit(INDArray examples, INDArray labels);
 
     /**
      * Fit the model

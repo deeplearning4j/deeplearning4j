@@ -18,8 +18,37 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-public abstract class BasePretrainNetwork extends Layer {
+import lombok.*;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-    private static final long serialVersionUID = -6945800646970810896L;
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
+    protected LossFunctions.LossFunction lossFunction;
+    protected String customLossFunction;
+
+    public BasePretrainNetwork(Builder builder){
+    	super(builder);
+        this.lossFunction = builder.lossFunction;
+        this.customLossFunction = builder.customLossFunction;
+    }
+
+    public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+        protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
+        protected String customLossFunction = null;
+
+        public Builder() {}
+
+        public T lossFunction(LossFunctions.LossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return (T) this;
+        }
+
+        public T customLossFunction(String customLossFunction) {
+            this.customLossFunction = customLossFunction;
+            return (T) this;
+        }
+    }
 }

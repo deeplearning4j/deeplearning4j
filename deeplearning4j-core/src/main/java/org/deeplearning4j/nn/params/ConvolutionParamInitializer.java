@@ -19,13 +19,13 @@
 package org.deeplearning4j.nn.params;
 
 
+import com.google.common.primitives.Ints;
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -37,17 +37,18 @@ import java.util.Map;
  */
 public class ConvolutionParamInitializer implements ParamInitializer {
 
-    public final static String CONVOLUTION_BIAS = "convbias";
-    public final static String CONVOLUTION_WEIGHTS = "convweights";
+    public final static String WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
+
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        if(conf.getFilterSize().length < 4)
-            throw new IllegalArgumentException("Filter size must be == 4");
+        if(((org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer()).getKernelSize().length < 2)
+            throw new IllegalArgumentException("Filter size must be == 2");
 
-        params.put(CONVOLUTION_BIAS,createBias(conf));
-        params.put(CONVOLUTION_WEIGHTS,createWeightMatrix(conf));
-        conf.addVariable(CONVOLUTION_WEIGHTS);
-        conf.addVariable(CONVOLUTION_BIAS);
+        params.put(BIAS_KEY,createBias(conf));
+        params.put(WEIGHT_KEY,createWeightMatrix(conf));
+        conf.addVariable(WEIGHT_KEY);
+        conf.addVariable(BIAS_KEY);
 
     }
 
@@ -59,23 +60,30 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     //1 bias per feature map
     protected INDArray createBias(NeuralNetConfiguration conf) {
         //the bias is a 1D tensor -- one bias per output feature map
-        return Nd4j.zeros(conf.getFilterSize()[0]);
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
+        return Nd4j.zeros(layerConf.getNOut());
     }
 
 
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf) {
         /**
          * Create a 4d weight matrix of:
-         *   (number of filters, num input feature maps,
-         filter height, filter width)
+         *   (number of kernels, num input channels,
+         kernel height, kernel width)
          Inputs to the convolution layer are:
          (batch size, num input feature maps,
          image height, image width)
 
          */
+        org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
+                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
 
-        Distribution dist = Distributions.createDistribution(conf.getDist());
-        return WeightInitUtil.initWeights(conf.getFilterSize(),conf.getWeightInit(), dist);
+        Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
+        return WeightInitUtil.initWeights(
+                Ints.concat(new int[] {layerConf.getNOut(), layerConf.getNIn()}, layerConf.getKernelSize()),
+                layerConf.getWeightInit(),
+                dist);
     }
 
 }
