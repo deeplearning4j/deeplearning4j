@@ -17,7 +17,7 @@ Contents
 * <a href="#code">Just Give Me The Code</a>
 * <a href="#resource">Other Resources</a>
 
-This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how Word2vec can be used for opinion mining on text in the wild. 
+This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how Word2vec can be used for opinion mining on text in the wild. Sentiment has obvious applications for market research, business intelligence, product development, reputation management, political campaigns, and sociological studies. 
 
 ## <a name="vectors">Vectors</a>
 
@@ -33,7 +33,7 @@ These vectors relate mathematically, and therefore similarities between them (an
 
 ![Alt text](../img/two_vectors2.png)
 
-As you can see, these vectors differ from one another in both their length, or magnitude, and their angle, or direction. The angle is what concerns us here, and two find its difference, we need to know the formula for vector dot multiplication (multiplying two vectors to produce a single, scalar value).
+As you can see, these vectors differ from one another in both their length, or magnitude, and their angle, or direction. The angle is what concerns us here, and to find its difference, we need to know the formula for vector dot multiplication (multiplying two vectors to produce a single, scalar value).
 
 ![Alt text](../img/dot_product_defs.png)
 
