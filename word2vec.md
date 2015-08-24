@@ -115,8 +115,6 @@ You can also query a Word2vec model for other assocations. Not everything has to
 
 By building a sense of one word's proximity to other similar words, which do not necessarily contain the same letters, we have moved beyond hard tokens to a smoother and more general sense of meaning. 
 
-![Alt text](../img/man_woman_king_queen.png) 
-
 # <a name="just">Just Give Me the Code</a>
 
 ##<a name="anatomy">Anatomy of Word2vec in DL4J</a>
