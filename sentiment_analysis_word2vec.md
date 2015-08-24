@@ -31,7 +31,7 @@ Therefore, we can represent two-dimensional vectors as arrows on an x-y graph, w
 
 These vectors relate mathematically, and therefore similarities between them (and therefore between anything you can vectorize, including words) can be established. One way to do that is with a dot product, or a form of vector multiplication. 
 
-![Alt text](../img/twovectors2.png)
+![Alt text](../img/two_vectors2.png)
 
 As you can see, these vectors differ from one another in both their length, or magnitude, and their angle, or direction. The angle is what concerns us here, and two find its difference, we need to know the formula for vector dot multiplication (multiplying two vectors to produce a single, scalar value).
 
