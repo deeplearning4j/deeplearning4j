@@ -1735,9 +1735,10 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public int slices() {
-
         if (shape.length < 1)
             return 0;
+        if(isRowVector())
+            return length();
 
         return shape[0];
     }

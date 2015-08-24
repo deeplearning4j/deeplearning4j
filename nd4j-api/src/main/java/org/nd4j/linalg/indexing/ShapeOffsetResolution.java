@@ -225,9 +225,18 @@ public class ShapeOffsetResolution implements Serializable {
             else
                 accumOffsets.add(0);
         }
+
+
+        if(Shape.isMatrix(shape)) {
+            if(indexes[0] instanceof PointIndex && indexes[1] instanceof NDArrayIndexAll)
+                Collections.reverse(accumShape);
+        }
+
+        this.shapes = Ints.toArray(accumShape);
+        boolean isColumnVector = Shape.isColumnVectorShape(this.shapes);
         //finally fill in teh rest of the strides if any are left over
         while(accumStrides.size() < accumOffsets.size()) {
-            if(arr.isRowVector())
+            if(!isColumnVector)
                 accumStrides.add(0,arr.elementStride());
             else
                 accumStrides.add(arr.elementStride());
@@ -237,7 +246,6 @@ public class ShapeOffsetResolution implements Serializable {
 
 
         this.strides = Ints.toArray(accumStrides);
-        this.shapes = Ints.toArray(accumShape);
         this.offsets = Ints.toArray(accumOffsets);
 
         //compute point offsets differently

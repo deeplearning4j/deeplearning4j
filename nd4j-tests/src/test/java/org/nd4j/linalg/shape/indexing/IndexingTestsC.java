@@ -180,12 +180,6 @@ public class IndexingTestsC extends BaseNd4jTest {
         for( int i=0; i<len; i++ ){
             row.putScalar(i,i);
         }
-        INDArray idx = Nd4j.zeros(1,2,3).slice(2,2);
-        System.out.println(row.get(NDArrayIndex.point(0),NDArrayIndex.interval(0,10)));
-        System.out.println(row.get(NDArrayIndex.point(0),NDArrayIndex.interval(20,30)));
-
-        System.out.println(row.get(NDArrayIndex.interval(0, 10)));
-        System.out.println(row.get(NDArrayIndex.interval(20,30)));
 
         INDArray first10a = row.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, 10));
         assertArrayEquals(first10a.shape(),new int[]{1,10});

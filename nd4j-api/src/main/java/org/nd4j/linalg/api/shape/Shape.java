@@ -535,6 +535,7 @@ public class Shape {
         if(arr instanceof IComplexNDArray)
             return Nd4j.createComplex(arr.data(),newShape,newStrides,arr.offset());
 
+
         return Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
     }
 

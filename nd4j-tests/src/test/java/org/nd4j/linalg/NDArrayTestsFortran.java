@@ -281,6 +281,10 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         INDArray n = Nd4j.create(Nd4j.linspace(1, 30, 30).data(), new int[]{3, 5, 2});
         for(int i = 0; i < n.slices(); i++) {
             INDArray nSlice = n.slice(i);
+            for(int j = 0; j < nSlice.slices(); j++) {
+                INDArray sliceJ = nSlice.slice(j);
+                System.out.println(sliceJ);
+            }
             System.out.println(nSlice);
         }
         INDArray slice = n.swapAxes(2, 1);

@@ -61,7 +61,7 @@ public class IndexingTests extends BaseNd4jTest  {
         assertTrue(subarray.isRowVector());
         int[] shape = subarray.shape();
         assertEquals(shape[0],1);
-        assertEquals(shape[0],2);
+        assertEquals(shape[1],2);
     }
 
     @Test
