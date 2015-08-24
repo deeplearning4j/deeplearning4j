@@ -2,12 +2,17 @@
 layout: default
 ---
 
-Sentiment Analysis With Word2vec
-
+# Sentiment Analysis With Word2vec
 
 Contents:
 
-* 
+* Vectors
+* Trigonometric Functions
+* Bag of Words v. Word2vec
+* Beyond Word Counts
+* Sentiment Analysis
+* Softmax Logistic Regression
+* Just Give Me The Code
 
 This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how word2vec can be used for opinion mining on text in the wild. 
 
@@ -61,7 +66,6 @@ SOH-CAH-TOA
 we can also know the angles at which those sides intersect. 
 
 Cosine is the angle attached to the origin, which makes it useful here. Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. (We normalize them so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular; i.e. bear no relation to each other.)
-
 
 ## Bag of Words vs. Word2vec
 
