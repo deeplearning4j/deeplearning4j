@@ -25,7 +25,7 @@ import net.bytebuddy.jar.asm.MethodVisitor;
  *
  * @author Adam Gibson
  */
-public class LoadDeclaredInternalReference implements ByteCodeAppender {
+public class LoadDeclaredInternalInteger implements ByteCodeAppender {
     private int refId = -1;
 
     /**
@@ -33,23 +33,15 @@ public class LoadDeclaredInternalReference implements ByteCodeAppender {
      * for loading a reference off the stack.
      * @param refId
      */
-    public LoadDeclaredInternalReference(int refId) {
+    public LoadDeclaredInternalInteger(int refId) {
         this.refId = refId;
     }
 
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
-        int numArgs = instrumentedMethod.getParameters().asTypeList().getStackSize();
-        /**
-         * Load the desired id
-         * relative to the method arguments.
-         * The idea here would be to load references
-         * to declared variables
-         */
         //references start with zero if its an instance or zero if its static
         //think of it like an implicit self in python without actually being defined
-        int start = instrumentedMethod.isStatic() ? 1 : 0;
-        StackManipulation arg0 = MethodVariableAccess.INTEGER.loadOffset(numArgs + start + refId);
+        StackManipulation arg0 = MethodVariableAccess.INTEGER.loadOffset(refId);
         StackManipulation.Size size =  arg0.apply(methodVisitor, implementationContext);
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
     }

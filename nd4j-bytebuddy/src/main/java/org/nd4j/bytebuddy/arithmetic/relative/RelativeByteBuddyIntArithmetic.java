@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arithmetic;
+package org.nd4j.bytebuddy.arithmetic.relative;
 
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
@@ -21,7 +21,7 @@ import net.bytebuddy.jar.asm.Opcodes;
  *
  * @author Adam Gibson
  */
-public class ByteBuddyIntArithmetic implements Implementation {
+public class RelativeByteBuddyIntArithmetic implements Implementation {
     private int val1,val2;
     private Operation op;
 
@@ -33,7 +33,7 @@ public class ByteBuddyIntArithmetic implements Implementation {
      * @param val2
      * @param op
      */
-    public ByteBuddyIntArithmetic(int val1,int val2,Operation op) {
+    public RelativeByteBuddyIntArithmetic(int val1, int val2, Operation op) {
         this.val1 = val1;
         this.val2 = val2;
         this.op = op;
@@ -65,7 +65,7 @@ public class ByteBuddyIntArithmetic implements Implementation {
 
     @Override
     public ByteCodeAppender appender(Target implementationTarget) {
-        return new IntegerArithmeticByteCodeAppender(val1,val2,op);
+        return new RelativeIntegerArithmeticByteCodeAppender(val1,val2,op);
     }
 
     public enum Operation {
@@ -82,9 +82,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.ISUB);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -98,9 +98,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IADD);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -114,9 +114,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IMUL);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -130,9 +130,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IDIV);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 
@@ -146,9 +146,9 @@ public class ByteBuddyIntArithmetic implements Implementation {
         }
 
         @Override
-        public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext) {
+        public Size apply(MethodVisitor methodVisitor, Context implementationContext) {
             methodVisitor.visitInsn(Opcodes.IREM);
-            return new StackManipulation.Size(-1, 0);
+            return new Size(-1, 0);
         }
     }
 

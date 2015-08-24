@@ -1,4 +1,4 @@
-package org.nd4j.bytebuddy.arrays.assign.relative;
+package org.nd4j.bytebuddy.arrays.assign.relative.novalue;
 
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.implementation.Implementation;
@@ -6,8 +6,6 @@ import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.collection.ArrayAccess;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
-import net.bytebuddy.implementation.bytecode.member.MethodReturn;
-import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import net.bytebuddy.pool.TypePool;
 
@@ -30,20 +28,18 @@ import net.bytebuddy.pool.TypePool;
  *
  * @author Adam Gibson
  */
-public class RelativeAssignArrayValueAppender implements ByteCodeAppender {
+public class RelativeAssignNoValueArrayValueAppender implements ByteCodeAppender {
     private int index;
-    private int newVal;
     private static TypePool typePool = TypePool.Default.ofClassPath();
+
+
 
     /**
      *
      * @param index the index to enqueue
-     * @param newVal the new value to assign to
-     *               the index in the array
      */
-    public RelativeAssignArrayValueAppender(int index, int newVal) {
+    public RelativeAssignNoValueArrayValueAppender(int index) {
         this.index = index;
-        this.newVal = newVal;
     }
 
     @Override
@@ -58,12 +54,10 @@ public class RelativeAssignArrayValueAppender implements ByteCodeAppender {
     }
 
     public StackManipulation assignOperation() {
-        //load the value to be assigned
-        StackManipulation val = IntegerConstant.forValue(newVal);
         //load the index
         StackManipulation indexToAssign = IntegerConstant.forValue(index);
        //set the return type
-        StackManipulation.Compound compound = new StackManipulation.Compound(indexToAssign,val);
+        StackManipulation.Compound compound = new StackManipulation.Compound(indexToAssign);
         return compound;
     }
 }

@@ -18,7 +18,7 @@ public class StoreRef implements ByteCodeAppender {
 
     @Override
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
-        methodVisitor.visitInsn(Opcodes.AASTORE);
+        methodVisitor.visitVarInsn(Opcodes.ASTORE,storeId);
         return new Size(instrumentedMethod.getStackSize(), 1);
 
     }
