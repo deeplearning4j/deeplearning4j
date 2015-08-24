@@ -48,8 +48,17 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
 		if( output.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3 (i.e., epsilons from RNN layer)");
 		int[] shape = output.shape();
 		
-		INDArray permuted = output.permute(0,2,1);	//Permute, so we get correct order after reshaping
-		return permuted.reshape(shape[0]*timeSeriesLength,shape[1]);
+		INDArray permuted = output.permute(0, 2, 1);	//Permute, so we get correct order after reshaping
+		return permuted.reshape(shape[0] * timeSeriesLength, shape[1]);
 	}
 
+	@Override
+	public FeedForwardToRnnPreProcessor clone() {
+		try {
+			FeedForwardToRnnPreProcessor clone = (FeedForwardToRnnPreProcessor) super.clone();
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
+	}
 }

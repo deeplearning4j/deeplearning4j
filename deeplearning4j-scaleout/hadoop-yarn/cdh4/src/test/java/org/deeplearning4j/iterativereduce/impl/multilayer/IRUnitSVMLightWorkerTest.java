@@ -28,24 +28,6 @@ import org.junit.Test;
 
 
 public class IRUnitSVMLightWorkerTest {
-
-
-	@Test
-	public void createSynthJSONConf() {
-		
-		 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().nIn(4).nOut(3)
-				 .layer(new RBM())
-         .list(3).hiddenLayerSizes(new int[]{2,2}).build();
-		 String json = conf.toJson();
-		 
-		 System.out.println( json );
-		 
-		 
-		 MultiLayerConfiguration from = MultiLayerConfiguration.fromJson(json);
-		 assertEquals(conf,from);		
-		
-	}
-	
 	@Test
 	public void testLearnIrisFunctionViaIRNN_MLP() throws Exception {
 		IRUnitDriver polr_ir = new IRUnitDriver("src/test/resources/yarn/configurations/svmLightWorkerIRUnitTest.properties");

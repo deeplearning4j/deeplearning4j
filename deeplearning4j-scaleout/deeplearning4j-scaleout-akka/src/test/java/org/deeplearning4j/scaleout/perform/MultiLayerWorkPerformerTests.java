@@ -42,22 +42,19 @@ public class MultiLayerWorkPerformerTests extends NeuralNetWorkPerformerTest {
     @Test
     public void testDbn() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(9e-1f).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1e-1,1))
-                .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).iterations(10)
-                .learningRate(1e-1f).nIn(4).nOut(3)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(2).hiddenLayerSizes(new int[]{3}).override(1, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-
-                        if (i == 1) {
-                            builder.weightInit(WeightInit.ZERO);
-                            builder.activationFunction("softmax");
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-
-                        }
-                    }
-                }).build();
+                .momentum(9e-1f)
+                .iterations(10)
+                .learningRate(1e-1f)
+                .list(2)
+                .layer(0, new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                        .nIn(4).nOut(3)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(1e-1, 1))
+                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3)
+                        .activation("softmax")
+                        .weightInit(WeightInit.ZERO).build())
+                .build();
 
         String json = conf.toJson();
 

@@ -27,14 +27,11 @@ public class MultiLayerTestRNN {
         int nOut = 25;
         int nHiddenUnits = 17;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM())
-                .nIn(nIn).nOut(nOut)
-                .activationFunction("tanh")
                 .list(2)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-                        .nIn(nIn).nOut(nHiddenUnits).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(nIn).nOut(nHiddenUnits).weightInit(WeightInit.DISTRIBUTION).activation("tanh").build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
-                        .nIn(nHiddenUnits).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(nHiddenUnits).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).activation("tanh").build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -67,16 +64,15 @@ public class MultiLayerTestRNN {
         int nOut = 25;
         int[] nHiddenUnits = {17,19,23};
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activationFunction("tanh")
                 .list(4)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-                        .nIn(nIn).nOut(17).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(nIn).nOut(17).weightInit(WeightInit.DISTRIBUTION).activation("tanh").build())
                 .layer(1, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-                        .nIn(17).nOut(19).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(17).nOut(19).weightInit(WeightInit.DISTRIBUTION).activation("tanh").build())
                 .layer(2, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
-                        .nIn(19).nOut(23).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(19).nOut(23).weightInit(WeightInit.DISTRIBUTION).activation("tanh").build())
                 .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS)
-                        .nIn(23).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).build())
+                        .nIn(23).nOut(nOut).weightInit(WeightInit.DISTRIBUTION).activation("tanh").build())
                 .build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
