@@ -20,6 +20,8 @@
 package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
+import org.nd4j.bytebuddy.shape.IndexMapper;
+import org.nd4j.bytebuddy.shape.ShapeMapper;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -28,9 +30,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * Encapsulates all shape related logic (vector of 0 dimension is a scalar is equivalent to
@@ -39,6 +39,19 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class Shape {
+
+    private static Map<Integer,IndexMapper> indexMappers = Collections.synchronizedMap(new HashMap<Integer, IndexMapper>());
+    private static Map<Integer,IndexMapper> indexMappersC = Collections.synchronizedMap(new HashMap<Integer, IndexMapper>());
+
+    static {
+        for(int i = 0; i < 10; i++) {
+            indexMappersC.put(i,ShapeMapper.getInd2SubInstance('c',i));
+            indexMappers.put(i,ShapeMapper.getInd2SubInstance('f',i));
+
+        }
+    }
+
+
     /**
      * Create a copy of the matrix
      * where the new offset is zero
@@ -620,15 +633,25 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(int[] shape,int index,int numIndices) {
-        int denom = numIndices;
+        IndexMapper mapper = indexMappers.get(shape.length);
+        if(mapper == null) {
+            mapper = ShapeMapper.getInd2SubInstance('f',shape.length);
+            indexMappers.put(index,mapper);
+            mapper = ShapeMapper.getInd2SubInstance('c',shape.length);
+            indexMappersC.put(index,mapper);
+        }
+
+
+
+     /*   int denom = numIndices;
         int[] ret = new int[shape.length];
         for(int i = ret.length - 1; i >= 0; i--) {
             denom /= shape[i];
             ret[i] = index / denom;
             index %= denom;
 
-        }
-        return ret;
+        }*/
+        return mapper.ind2sub(shape,index,numIndices,'f');
     }
 
     /**
@@ -670,6 +693,15 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2subC(int[] shape,int index,int numIndices) {
+        IndexMapper mapper = indexMappersC.get(shape.length);
+        if(mapper == null) {
+            mapper = ShapeMapper.getInd2SubInstance('f',shape.length);
+            indexMappers.put(index,mapper);
+            mapper = ShapeMapper.getInd2SubInstance('c',shape.length);
+            indexMappersC.put(index,mapper);
+        }
+
+      /*
         int denom = numIndices;
         int[] ret = new int[shape.length];
         for(int i = 0; i < shape.length; i++) {
@@ -678,7 +710,8 @@ public class Shape {
             index %= denom;
 
         }
-        return ret;
+        return ret;*/
+        return mapper.ind2sub(shape,index,numIndices,'c');
     }
 
     /**

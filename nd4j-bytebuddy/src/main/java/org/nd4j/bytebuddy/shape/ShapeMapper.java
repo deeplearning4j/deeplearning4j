@@ -1,10 +1,14 @@
 package org.nd4j.bytebuddy.shape;
 
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.implementation.bytecode.member.MethodReturn;
 import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
+import net.bytebuddy.matcher.ElementMatchers;
 import org.nd4j.bytebuddy.arithmetic.relative.op.RelativeOperationImplementation;
 import org.nd4j.bytebuddy.arithmetic.stackmanipulation.OpStackManipulation;
 import org.nd4j.bytebuddy.arrays.assign.relative.op.AssignOpImplementation;
@@ -32,6 +36,31 @@ import java.util.List;
  */
 public class ShapeMapper {
 
+
+    /**
+     * Get an ind2sub instance
+     * based on the ordering and rank
+     * @param ordering the ordering
+     * @param rank the rank
+     * @return the ind2sub instance
+     */
+    public static IndexMapper getInd2SubInstance(char ordering,int rank) {
+        Implementation impl = ShapeMapper.getInd2Sub(ordering, rank);
+        DynamicType.Unloaded<IndexMapper> c = new ByteBuddy()
+                .subclass(IndexMapper.class).method(ElementMatchers.isDeclaredBy(IndexMapper.class))
+                .intercept(impl)
+                .make();
+
+        Class<IndexMapper> dynamicType = (Class<IndexMapper>)
+                c.load(IndexMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                .getLoaded();
+        try {
+            return dynamicType.newInstance();
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to get index mapper for rank " + rank);
+        }
+
+    }
     /**
      * Get an implementation of
      * ind2sub
