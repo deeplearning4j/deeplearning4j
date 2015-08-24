@@ -17,9 +17,9 @@ Contents
 
 This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how word2vec can be used for opinion mining on text in the wild. 
 
-## Vectors
+## <a name="vectors">Vectors</a>
 
-Word2vec learns to represent words as vectors.
+[Word2vec](../word2vec.html) learns to represent words as vectors.
 
 A vector is a data structure with at least two components, as opposed to a *scalar*, which has just one. For example, a vector can represent velocity, an idea that combines speed and direction: *wind velocity* = (50mph, 35 North East). A scalar, on the other hand, can represent something with one value like temperature or height: 50 degrees Celsius, 180 centimeters.
 
@@ -38,7 +38,7 @@ FORMULA REWRITTEN
 
 TKTKTK Explain the terms….
 
-In Java, you can think of the same formula like this:
+In Java, you can think of the formula to measure cosine similarity like this:
 
     public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
         double dotProduct = 0.0;
@@ -52,7 +52,7 @@ In Java, you can think of the same formula like this:
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-## Trigonometric Functions
+## <a name="trig">Trigonometric Functions</a>
 
 Let's do a quick trig review. 
 
@@ -67,7 +67,7 @@ we can also know the angles at which those sides intersect.
 
 Cosine is the angle attached to the origin, which makes it useful here. Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. (We normalize them so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular; i.e. bear no relation to each other.)
 
-## Bag of Words vs. Word2vec
+## <a name="bow">Bag of Words vs. Word2vec</a>
 
 We are interested in sentiment analysis and classification on the document level. Typically, people rely on wordcount to create vectors representing documents, and to measure their similarities and differences. To illustrate this with a toy example, let’s say we just cared about two words, Moscow and Beijing.
 
@@ -79,7 +79,7 @@ With Bag of Words, you can add as many dimensions as there are unique words in y
 
 There are other nuances to wordcount, such as term frequency-inverse document frequency (TF-IDF), but since that is not our focus in this tutorial, we will simply link to the Wikipedia page.
 
-## Beyond Word Count
+## <a name="count">Beyond Word Count</a>
 
 There’s a problem with Bag of Words, which is that it doesn’t necessarily know whether you’re drinking a Coca-Cola or investing in Coca-Cola or worse yet, an investor who’s drinking a Coke; i.e. it doesn’t understand context. But Word2vec does, because the algorithm learns to reconstruct the context surrounding each word. 
 
@@ -91,7 +91,7 @@ EQUATION HERE
 
 This document vector (not to be confused with doc2vec) can then be compared to vectors representing documents in, say, a labeled set.
 
-## Sentiment Analysis 
+## <a name="sentiment">Sentiment Analysis </a>
 
 For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive*, *negative* and *neutral*, or as nuanced as frustration, anger, delight and satisfaction.
 So the first step is to pick the categories you care about. 
@@ -102,7 +102,7 @@ Word2vec can be used in place of typical Bag-of-Words or TF-IDF techniques to ge
 
 CODE HERE
 
-## Softmax Logistic Regression
+## <a name="softmax">Softmax Logistic Regression</a>
 
 Logistic regression, despite its misleading name, classifies things. Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, a feature vector fed into the classifier. 
 
