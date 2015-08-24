@@ -17,7 +17,7 @@ Contents
 * <a href="#code">Just Give Me The Code</a>
 * <a href="#resource">Other Resources</a>
 
-This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how word2vec can be used for opinion mining on text in the wild. 
+This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how Word2vec can be used for opinion mining on text in the wild. 
 
 ## <a name="vectors">Vectors</a>
 
@@ -125,3 +125,5 @@ Once the weights can no longer be adjusted to reduce error — i.e. once the lik
 ## <a name="code">Just Give Me the Code</a>
 
 ## <a name="resource">Other Resources</a>
+
+* 
