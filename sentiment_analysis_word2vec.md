@@ -2,330 +2,116 @@
 layout: default
 ---
 
-# Movie Review Sentiment Analysis With Word2Vec and DBNs
-
-(*The code in this tutorial is out of date, so we'll be updating it soon. The [Word2vec page](../word2vec.html), however, is current.*)
-
-In this post, we're going to walk through a sentiment analysis of movie reviews using the Rotten Tomatoes dataset. 
-
-You'll need to download the dataset from Kaggle (registration required):
-
-    https://www.kaggle.com/c/sentiment-analysis-on-movie-reviews/data
-
-The dataset is split into a training set and a test set already, which makes our lives easier.  Let's download the data and load it into our nets. 
-
-You'll probably want to gather the files in a new folder, cd into it, then unzip the training set:
-
-    unzip train.tsv.zip
-
-In the new folder, we see a train.tsv file. What does the data look like? Just type this one-word command:
-
-    head train.tsv
-
-The command 'head' should output the following table:
-
-<table id="first_table" class="display">
-    <thead>
-        <tr>
-            <th>PhraseId</th>
-            <th>SentenceId</th>
-            <th>Phrase</th>
-            <th>Sentiment</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>1</td>
-            <td>1</td>
-            <td>A series of escapades demonstrating the adage that what is good for the goose is also good for the gander , some of which occasionally amuses but none of which amounts to much of a story .</td>
-            <td>1</td>
-        </tr>
-        <tr>
-            <td>2</td>
-            <td>1</td>
-            <td>A series of escapades demonstrating the adage that what is good for the goose</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>3</td>
-            <td>1</td>
-            <td>A series</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>4</td>
-            <td>1</td>
-            <td>A</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>5</td>
-            <td>1</td>
-            <td>series</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>6</td>
-            <td>1</td>
-            <td>of escapades demonstrating the adage that what is good for the goose</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>7</td>
-            <td>1</td>
-            <td>of</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>8</td>
-            <td>1</td>
-            <td>escapades demonstrating the adage that what is good for the goose</td>
-            <td>2</td>
-        </tr>
-        <tr>
-            <td>9</td>
-            <td>1</td>
-            <td>escapades</td>
-            <td>2</td>
-        </tr>
-    </tbody>
-</table>
+Sentiment Analysis With Word2vec
 
-Let's walk through this. 
 
-Two columns describe the sentence: PhraseID and SentenceID. A PhraseID is a sub-window that takes just one piece of a larger passage, such that each sub-window of a sentence is an example of a "context"; i.e. usually a group of words together.  
+Contents:
 
-In the table above, we have a SentenceID of 1 in every row, which means we are dealing with the same sentence throughout. The entire sentence is presented as a single phrase in Row 2, Column 3. Each subsequent phrase shown is Column 3 is a subset of that original sentence: the sub-windows by which we measure sentiment at a more granular level. 
+* 
 
-Our table is only a partial preview of the sentence's subsets, as it happens to end before presenting the phrases that constitute the second half of the sentence. 
+This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how word2vec can be used for opinion mining on text in the wild. 
 
-This is a supervised dataset, each sub-window has been assigned a label denoting its sentiment by a real, live human being. Here's a table mapping sentiment to numeric labels:
+## Vectors
 
-| Label |  Sentiment |
-|:----------:|:-------------:|
-|  0 |  negative |
-|  1 |    somewhat negative   |
-| 2 | neutral |
-| 3 |    somewhat positive   |
-| 4 | positive |
+Word2vec learns to represent words as vectors.
 
-This label system is fairly nuanced: many sentiment analysis problems are binary classifications; that is, 1 or 0, positive or negative, with no finer gradations.
+A vector is a data structure with at least two components, as opposed to a *scalar*, which has just one. For example, a vector can represent velocity, an idea that combines speed and direction: *wind velocity* = (50mph, 35 North East). A scalar, on the other hand, can represent something with one value like temperature or height: 50 degrees Celsius, 180 centimeters.
 
-In our preview of Sentence 1, the sentence itself has been assigned the label of "somewhat negative," which is appropriate, given the second half of the sentence is critical of the film in question. The first half is not critical, however, and its subphrases have all been labeled "neutral," or 2. 
+Therefore, we can represent two-dimensional vectors as arrows on an x-y graph, with the coordinates x and y each representing one of the vector's values. 
 
-From Kaggle:
+PICTURE OF VECTOR
 
-*The dataset is comprised of tab-separated files with phrases from the Rotten Tomatoes dataset. The train/test split has been preserved for the purposes of benchmarking, but the sentences have been shuffled from their original order. Each Sentence has been parsed into many phrases by the Stanford parser. Each phrase has a PhraseId. Each sentence has a SentenceId. Phrases that are repeated (such as short/common words) are only included once in the data.*
+These vectors relate mathematically, and therefore similarities between them (and therefore between anything you can vectorize, including words) can be established. One way to do that is with a dot product, or a form of vector multiplication. 
 
-* *train.tsv contains the phrases and their associated sentiment labels. We have additionally provided a SentenceId so that you can track which phrases belong to a single sentence.*
+PICTURE OF TWO VECTORS
 
-* *test.tsv contains just phrases. You must assign a sentiment label to each phrase.*
+As you can see, these vectors differ from one another in both their length, or magnitude, and their angle, or direction. The angle is what concerns us here, and two find its difference, we need to know the formula for vector dot multiplication (multiplying two vectors to produce a single, scalar value).
 
-On to the next step.
+VECTOR DOT PRODUCT FORMULA - COLOR CODED
+REWRITTEN
 
-## Dataset: How to Approach the Problem
+TKTKTK Explain the terms….
 
-We want to build tools to break the sentences in the reviews into sub-windows or contexts, grouping them by their SentenceID.
+In Java, you can think of the same formula like this:
 
-* For deep-belief networks (DBNs), we'll build a simple moving window and label each window within a sentence by sentiment. We'll be using a "sequence moving window" approach with the Viterbi algorithm to label phrases. This is similar to the approach used by Ronan Collobert et al in the paper [Natural Language Processing (Almost) From Scratch](https://static.googleusercontent.com/media/research.google.com/en/us/pubs/archive/35671.pdf). The features are word vectors, which will be explained below.
+public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
+    double dotProduct = 0.0;
+    double normA = 0.0;
+    double normB = 0.0;
+    for (int i = 0; i < vectorA.length; i++) {
+        dotProduct += vectorA[i] * vectorB[i];
+        normA += Math.pow(vectorA[i], 2);
+        normB += Math.pow(vectorB[i], 2);
+    }   
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
 
-We focus on sub-contexts for sentiment analysis because context and subcontexts, not isolated words, are what capture sentiment signals best. A context including "not" or "no" will nullify a positive word, requiring a negative label for the whole word group. We need to be able to capture this sentiment in our feature space, otherwise it is nearly useless. 
 
-The vectorization code to capture context is already written, allowing us to concentrate on the high-level logic of word vectors matched to sub-contexts, and then turn our attention to benchmarking the accuracy of our models.
+## Trigonometric Functions
 
-## Definitions
+Let's do a quick trig review. 
 
-Before we dive into these approaches, let's define some terms.
+Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
 
-### Bag of Words (BoW)
+INSERT: opposite over hypotenuse, adjacent over hypotenuse, opposite over adjacent.
+NAME  
 
-Bag of Words is the baseline representation used in many natural-language processing tasks. It's useful at the "document" level, but not at the level of sentences and their subsets.
+SOH-CAH-TOA
 
-With Bag of Words, a document is the atomic unit of text. BoW doesn't dig deeper. It retains no context for individual words or phrases within the document. Bag of Words is essentially a word count contained in a vector. 
+we can also know the angles at which those sides intersect. 
 
-A slightly more sophisticated version of BoW is "term frequency–inverse document frequency," or TF-IDF. TF-IDF lends weight to a single term's frequency within a given document, while discounting terms that are common to all documents (e.g. a, the, and, Ignatz). Just kidding -- not Ignatz. The number of columns in the feature vector will vary with the size of the vocabulary, but you will have one column per word. This produces a very sparse feature set, with a lot of 0s for words that do not appear in the document, and a few positive real numbers for those that do. 
+Cosine is the angle attached to the origin, which makes it useful here. Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. (We normalize them so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular; i.e. bear no relation to each other.)
 
-### Natural-Language Processing (NLP) Pipelines
 
-NLP pipelines pre-process text into a format you can use for classification with a neural net. We'll be doing two things: breaking the dataset into documents, then computing a vocabulary. This will be used for Bag of Words (word-count vectors) as well as word vectors, which include context. 
+## Bag of Words vs. Word2vec
 
-Word-count vectors and word vectors are two radically different things, which represent two different approaches to NLP, so don't confuse the two terms even though they are similar. Word-count vectors contain only the count of each word that appears; word vectors capture contexts; the words surrounding a word. In machine learning, a word's meaning is usually determined by looking at the words around it. 
+We are interested in sentiment analysis and classification on the document level. Typically, people rely on wordcount to create vectors representing documents, and to measure their similarities and differences. To illustrate this with a toy example, let’s say we just cared about two words, Moscow and Beijing.
 
-### Vocabulary Computation
+First, we count the number of times those words appear in two documents. Let’s say the x axis represents Moscow and the y axis Beijing. If Moscow appears once in document one and five times in document two, while Beijing appears three times in the first and twice in the second, then we have our two vectors: doc1 = (1,3) and doc2 = (5,2).
 
-A textual dataset is known as a corpus, and the vocabulary of a corpus consists of the unique set of words that the corpus's documents contain. Deeplearning4j has tools to compute vocabulary in different ways. 
+PICTURE VECTORS
 
-### Breaking Out the Corpus
+With Bag of Words, you can add as many dimensions as there are unique words in your documents, placing vectors in an n-dimensional space. And you would measure the difference in the angle between those vectors to arrive at one expression of similarity. 
 
-In the Kaggle data, each phrase is held in a CSV. We need to parse the text into a different form. We do that with a DatasetIterator, which will give you a reproducible and testable data pipeline.
+There are other nuances to wordcount, such as term frequency-inverse document frequency (TF-IDF), but since that is not our focus in this tutorial, we will simply link to the Wikipedia page.
 
-### DataSetIterator
+## Beyond Word Count
 
-When you create a machine-learning model, you need to vectorize the data, because vectors are what machine-learning algorithms understand. 
+There’s a problem with Bag of Words, which is that it doesn’t necessarily know whether you’re drinking a Coca-Cola or investing in Coca-Cola or worse yet, an investor who’s drinking a Coke; i.e. it doesn’t understand context. But Word2vec does, because the algorithm learns to reconstruct the context surrounding each word. 
 
-Vectorization is the process of breaking unstructured data up into a set of features, each of them distinct aspects of the raw data, and then converting every feature into a column of numbers. That is, each feature is a vector in itself. Again, the two feature representations are word vectors (context, one vector per word to capture its proximity to other words around it) and word-count vectors (document level, no context, captures the presence or absence of words).
+So the vectors produced by Word2vec are not populated with word counts. They are neural word embeddings that allow Word2vec to predict, given a certain word, what the most likely surrounding words are.
 
-### DataFetcher
+Creating a document-vector representation for sentiment analysis is as simple as adding together the feature vectors for each word in the document and dividing that vector by the number of word vectors extracted from the document. 
 
-When we iterate over a dataset, we retrieve data in a certain order. That data is often taken from multiple locations. So we want to make the data pipeline retrieval process for each potential end point isolated and testable, and we can do that with a DataFetcher.
+EQUATION HERE
 
-As its name implies, a DataFetcher handles data retrieval. Data may live on Amazon Web Services, your local file system, or MySQL. The DataFetcher handles feature vector composition with a process specific to each data source. With this in mind, let's fetch data from a CSV and parse it.
+This document vector (not to be confused with doc2vec) can then be compared to vectors representing documents in, say, a labeled set.
 
-## CSV Processing
+## Sentiment Analysis 
 
-Deeplearning4j has a CSV library that allows us to handle CSV values in the following way:
+For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive*, *negative* and *neutral*, or as nuanced as frustration, anger, delight and satisfaction.
+So the first step is to pick the categories you care about. 
 
-        CSV csv1 = CSV.separator('\t')
-                .ignoreLeadingWhiteSpace().skipLines(1)
-                .create();
-        csv1.read(csv,new CSVReadProc() {
-            @Override
-            public void procRow(int rowIndex, String... values) {
-                
-            }
-        });
+Logistic regression will learn to classify documents, and then to manually associate those labels with a dataset for training. (Mechanical Turk is useful here...)
 
-In the above code snippet, CSV is a file object.
+Word2vec can be used in place of typical Bag-of-Words or TF-IDF techniques to generate a vector representation of a document. Basically, you add up the vectors of all the words in the document, and then divide that aggregate vector by the number of words. That document vector serves as the input for logistic regression. 
 
-The callback lets us access the data. Our goal is to collect the text and create what amounts to a corpus. In the callback, where we're passing in CSVReadProc as an argument to the read method, we want to grab the text and treat each line as a document (that's the job of procRow, or "process row"). Due to the nature of this dataset, we'll just create a list of  documents. 
+CODE HERE
 
-Since the Kaggle competition is about classifying phrases, we'll be saving each phrase as a row in the list. 
+## Softmax Logistic Regression
 
-That leads us to a class with an abstract data type called a TextRetriever that contains the following:
+Logistic regression, despite its misleading name, classifies things. Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, a feature vector fed into the classifier. 
 
-    Map<String,Pair<String,String>> //mapping the phraseID to the content and the associated label.
+The simplest form of logistic regression is binary, predicting categories such as *spam* or *not_spam*. A more complex form that buckets input in more than two categories is called multinomial logistic regression, or softmax. That’s what we’ll be using here. 
 
-The body of our CSV parser in procRow, cited above, will then be:
+Softmax dot multiplies an input vector by a weight vector, using separate weight vectors for each respective output. It then squashes the results into a narrow range, and assumes the category whose weight vector produces the highest result is the correct classification. Thus the *max*.
 
-    pair.put(values[0],new Pair<>(values[2],values[3]));
+With supervised learning, we adjust the weight vectors of softmax until they properly categorize input based on the human labels in the training set. Those adjustments minimize a cost function using negative log likelihood. 
 
-That's how we map phrases and labels, and we can use it without coupling it to any particular implementation of our classifier. Now let's test it.
+Log likelihood estimates the likelihood of a model’s parameters (the weight vectors of softmax, in this case), given output x, the classifications of the training set. It is an inversion of the probability function of output x given certain parameters. 
 
-## Testing
+By maximizing the log likelihood of the parameters with regard to the ground-truth labels x, we train a model that can classify new input better. Taking the logarithm of x, or finding the exponent of 10 that produces x, is a useful way to map very low likelihoods into a narrower and more manageable space; i.e. log(0.0001) can be expressed as -4. It’s a great way to prevent numerical underflow…
 
-Given that we're separating concerns and testing, we'll build a unit test. Since our dataset is on our class path, we have a few neat tricks to retrieve it. Deeplearning4j uses Spring for a few reflection utilities as well as a more robust version of the classpath discovery of components. With that in mind, our test looks like the following:
+We then flip log likelihood to be negative, because most optimization algorithms attempt to minimize a cost or error function, and negative log likelihood plugs in better to a more general framework for optimization, like Deeplearning4j.
 
-    @Test
-    public void testRetrieval() throws  Exception {
-         Map<String,Pair<String,String>> data = retriever.data();
-        Pair<String,String> phrase2 = data.get("2");
-        assertEquals("A series of escapades demonstrating the adage that what is good for the goose",phrase2.getFirst());
-        assertEquals("2",phrase2.getSecond());
-    }
-
-Our goal is to build a set of abstractions that we can think of as components, and not as individual steps. (One thing we might want to do later is get only phrases, or only labels.) For brevity, I'll let the associated test speak for itself:
-
-    @Test
-    public void testNumPhrasesAndLabels() {
-        assertEquals(NUM_TRAINING_EXAMPLES,retriever.phrases().size());
-        assertEquals(NUM_TRAINING_EXAMPLES,retriever.labels().size());
-    }
-
-With many problems, you want to test multiple methods of classification to determine which works best (or use several of them in a so-called ensemble that performs better than any one method alone).
-
-## Sentence Iterator
-
-Now that we have basic CSV processing, let's make this into the beginnings of a data pipeline. A sentence iterator will help create a corpus that will lay the groundwork for further processing later. In this particular case, each sentence serves as a "document" in the corpus. 
-
-So what does this corpus look like? 
-
-Our documents have labels, because the data is supervised, and we're implementing a label-aware sentence iterator. The core concept of a sentence iterator is that **it knows where it is in the corpus, will always be able to retrieve the next sentence and can tell us when it's done**. That's a lot of responsibility, so we'll isolate these functions. The core bits of logic are here:
-
-        private List<String> phrases;
-        private List<String> labels;
-        private int currRecord;
-        private SentencePreProcessor preProcessor;
-
-Our goal is to keep track of which sentence we're on as well as the current label. We do that with the currRecord position, and we use the text retriever that we built earlier to retrieve the data. This separates the responsibilities of data retrieval and iteration.
-
-Here are the code's juicy parts:
-
-        try {
-            TextRetriever retriever = new TextRetriever();
-            this.phrases = retriever.phrases();
-            this.labels = retriever.labels();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-Pretty easy. It gives us exactly what we need to iterate over, and we've wrapped it in an interface that's standard across any data pipeline you build with Deeplearning4j.
-
-The test:
-
-    @Test
-    public void testIter() {
-        LabelAwareSentenceIterator iter = new RottenTomatoesLabelAwareSentenceIterator();
-        assertTrue(iter.hasNext());
-        //due to the nature of a hashmap internally, this may not be the same everytime
-        String sentence = iter.nextSentence();
-        assertTrue(!sentence.isEmpty());
-    }
-
-This will verify that one of our building blocks works, so now we can worry about higher-level concepts like word vectors and Bag of Words. Let's build a BoW DataFetcher first. (It's easier than you think.)
-
-    public class RottenTomatoesBagOfWordsDataFetcher extends BaseDataFetcher {
-    private LabelAwareSentenceIterator iter;
-    private BagOfWordsVectorizer countVectorizer;
-    private TokenizerFactory factory = new DefaultTokenizerFactory();
-    private DataSet data;
-        
-    public RottenTomatoesBagOfWordsDataFetcher() {
-        iter = new RottenTomatoesLabelAwareSentenceIterator();
-        countVectorizer = new BagOfWordsVectorizer(iter, factory, Arrays.asList("0", "1", "2", "3", "4"));
-        data = countVectorizer.vectorize();
-    }
-        
-    @Override
-    public void fetch(int numExamples) {
-        //set the current dataset
-        curr = data.get(ArrayUtil.range(cursor, numExamples));
-    }    
-    }
-
-Just a few lines, but we'll break them down into their components. 
-
-* The iterator. We built it earlier to track where we are currently when iterating over the data. It associates a string with a dataseet. 
-* The count vectorizer. This is the workhorse for Bag of Words. Let's load the data in to memory with vectorize, and iterate as necessary. 
-
-*N.B.: The process above is **RAM-intensive**, so only run it on a fairly robust server. Pruning words from your vocabulary based on TF-IDF gives a good approximation of your data, but we'll skip over that step here. (ND4J only supports dense matrices for the moment, though we're working ways to handle sparse formats.) Since ND4J is a Blas-focused framework, that's what we'll be supporting.* 
-
-So what exactly have we done so far? We wrote code to parse CSVs, take the text, map it to labels and iterate through it to produce a matrix. In the process, we built a key component: the vocabulary. It has around 17,500 words and 150,000 sentences. For bag-of-words matrices, this produces a sparse representation of 150,000 rows by 17,000 columns, one column per word. Not a toy matrix...
-
-That said, Bag of Words doesn't give us a lot to work with, because we're just checking boxes to see if words are there. After we explore Word2vec, we'll see how the DBN classifier performs with both.
-
-## Word Vectors
-
-Let's set *word-count vectors* aside and consider *word vectors*. Remember, word vectors serve to **featurize  textual contexts**. We use the [Viterbi algorithm](https://en.wikipedia.org/wiki/Viterbi_algorithm) with voting on moving windows for document classification.
-
-Since this is a word-vector-based approach, we're going to use Word2vec, and while we're at it, we'll look at how well it trains. Unlike Bag of Words, where features are deterministic (rules based), Word2vec is an actual neural net that processes data for other neural nets, which means we're dealing with probabilities and training coefficients. Remember, Word2vec represents word usage, and usage is a matter of probabilities rather than of lockstep rules.
-
-Since seeing is understanding, we use D3 to visualize the 16,000-word vocabulary. We use an algorithm called t-SNE to gauge the proximity of words to other words. Doing that lets us ensure that the word clusters themselves are coherent.
-
-Word vectors are useful with sequential applications for text. They can be used in document classification with a proper ensemble method (voting) as well with optimizing for a maximum likelihood estimator over the windows and labels.
-
-So what does Word2vec look like in code? The key code snippet is here:
-
-    Word2vec vec = new Word2Vec.Builder().iterate(iter).tokenizerFactory(factory)
-        .learningRate(1e-3).vocabCache(new InMemoryLookupCache(300))
-        .layerSize(300).windowSize(5).build();
-    vec.fit();
-
-You'll notice we specify a document iterator, a tokenizer factory, a learning rate, layer size and window size, among other things. In the second part of this walkthrough, we'll go over these parameters as they apply to a deep-belief network:
-
-* iter: DocumentIterator this is our raw textual pipeline
-* factory: our tokenizer factory, handles tokenizing text
-* learning rate: step size
-* cache: this is where all of our metadata about vocabulary is stored including word vectors, tfidf scores, document frequencies as well as where documents occurred.
-* layer size: this is the number of features per word
-* window size: the window size for iterating over text, this is how long of contexts to train on.
-
-## A Few Results
-
-How do you evaluate how well feature vectors perform? Unlike classification nets, there's no f1 score for unsupervised, generative learning. A quick and dirty technique is *words nearest*. The first word is the search term, and the words in the array are those Word2Vec has determined to be closest in meaning.
-
-* **amusing** [sometimes, characters, cast, often, funny, flat-out, Slackers, many, clever, wars, either]
-* **chilling** [luck, effectively, oozing, severely, grew, guilty, talented, pleasure, guys, Ice, tongue-tied]
-
-In the examples above, amusing has positive connotations and is related to performance, while chilling is partially negative, and partically physical. If we reflect semantically about the domain of each keyword, it makes sense that characters and funny would be near amusing. 
-
-You should play around with the vocabulary yourself to get an idea and search for similarities. Results can be rendered visually using t-SNE. We'll get to that in another post.
+Once the weights can no longer be adjusted to reduce error — i.e. once the likelihood of the parameters reaches its peak — the model can be used to categorize input for which no labels exist, inferring the sentiment expressed by text in the wild. 
