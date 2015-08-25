@@ -84,7 +84,9 @@ In Java, you can think of the formula to measure cosine similarity like this:
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
 
-Cosine is the angle attached to the origin, which makes it useful here. (We normalize the measurements so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular, bearing no relation to each other.) A perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
+Cosine is the angle attached to the origin, which makes it useful here. (We normalize the measurements so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular, bearing no relation to each other.) 
+
+A perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
 
 Here's a list of words associated with "Sweden" using Word2vec, in order of proximity:
 
@@ -96,7 +98,11 @@ The nations of Scandinavia and several wealthy, northern European, Germanic coun
 
 The vectors we use to represent words are called *neural word embeddings*, and representations are strange. One thing describes another, even though those two things are radically different. As Elvis Costello said: "Writing about music is like dancing about architecture." Word2vec "vectorizes" about words, and by doing so it makes natural language computer-readable -- we can start to perform powerful mathematical operations on words to detect their similarities. 
 
-So a neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through [reconstruction](../restrictedboltzmannmachine.html#reconstruct), as a [restricted Boltzmann machine](../restrictedboltzmannmachine.html) does, word2vec trains words against other words that neighbor them in the input corpus. 
+So a neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. 
+
+Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through [reconstruction](../restrictedboltzmannmachine.html#reconstruct), as a [restricted Boltzmann machine](../restrictedboltzmannmachine.html) does, word2vec trains words against other words that neighbor them in the input corpus. 
+
+It does so in one of two ways, either using context to predict a target word (a method known as continuous bag of words, or CBOW), or using a word to predict a target context, which is called skip-gram. We use the latter method because it produces more accurate results on large datasets.
 
 ![Alt text](../img/word2vec_diagrams.png) 
 
