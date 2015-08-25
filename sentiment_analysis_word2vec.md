@@ -97,17 +97,17 @@ With supervised learning, we adjust the weight vectors of softmax until they pro
 
 Let's talk about likelihoods and logs. 
 
-The probability of an event will be calculated based on input variables and the weights used to adjust them. It's easy to understand that you feed observations into a model to come up with a prediction. 
+The probability of an event is calculated based on input variables and the weights used to adjust them. It's easy to understand that you feed observations into a model to come up with a prediction. 
 
-But what if the predictions are given and the weights are unknown? Likelihood is the probability that certain weights will occur, given the outcomes you know, which is particularly useful when you have a training set where the labels and observations are fixed, and the weights have yet to be determined. 
+But what if the predictions are given and the weights are unknown? *Likelihood* is the probability that certain weights will occur, given the outcomes you know, which is particularly useful when you have a training set where the labels and observations are fixed, and the weights have yet to be determined. 
 
-Our optimization algorithm attempts to find the weights with the maximum likelihood, given the labels and input. It estimates the likelihood of a model’s parameters (the weight vectors of softmax, in this case), given output x, the classifications of the training set. It is an inversion of the probability function of output given certain parameters. 
+The optimization algorithm used here attempts to find the weights with the maximum likelihood, given the labels and input. It estimates the likelihood of a model’s parameters (the weight vectors of softmax, in this case), given the output, or the ground-truth classifications of the training set. It is an inversion of the probability function of output given certain parameters. 
 
-By maximizing the log likelihood of the parameters with regard to the ground-truth labels, we train a model that can classify unseen data better. 
+By maximizing the likelihood of the parameters with regard to the ground-truth labels, we train a model that can classify unseen data better. 
 
-Taking the logarithm of input *x* -- i.e. finding the exponent of 10 that produces *x* -- is a useful way to map very low likelihoods into a narrower and more manageable space; i.e. log(0.0001) can be expressed as -4. It’s a great way to prevent [arithmetic underflow](https://en.wikipedia.org/wiki/Arithmetic_underflow), which is a risk when you deal with very low probabilities.
+Taking the logarithm of input *x* -- i.e. finding the exponent of 10 that produces *x* -- is a useful way to map very low likelihoods into a narrower and more manageable space; i.e. log(0.0001) can be expressed as -4. Using log likelihoods prevents [arithmetic underflow](https://en.wikipedia.org/wiki/Arithmetic_underflow), which is a risk when you deal with very low probabilities.
 
-We then flip log likelihood to be negative, because most optimization algorithms attempt to minimize a cost or error function, and negative log likelihood plays nice with a more general framework for optimization, like Deeplearning4j.
+We then flip the log likelihoods to be negative, because most optimization algorithms attempt to *minimize* a cost or error function, and negative log likelihood plays nice with a more general framework for optimization, like Deeplearning4j.
 
 Once the weights can no longer be adjusted to reduce error — i.e. once the likelihood of the parameters given the output reaches its peak — the model can be used to categorize input for which no labels exist, inferring sentiment expressed by text in the wild. 
 
