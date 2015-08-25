@@ -52,7 +52,7 @@ As you can see, these vectors differ from one another in both their length, or m
 
 ## <a name="trig">Trigonometric Functions</a>
 
-It turns out two vectors are just two-thirds of a triangle, so let's do a quick trig review. 
+It turns out two vectors are just 66% of a triangle, so let's do a quick trig review. 
 
 Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like these 
 
@@ -60,9 +60,9 @@ Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use 
 
 we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
 
-Differences between word vectors, as they swing around the origin like arms on a clock, can be thought of as differences in degrees. 
+Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. 
 
-And similar to ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*. You can think of words as points of light in a dark canopy, clustered together in constellations of meaning. 
+And similar to ancient navigators gauging the stars by a sextant, we will measure the *angular distance* between words using something called *cosine similarity*. You can think of words as points of light in a dark canopy, clustered together in constellations of meaning. 
 
 ![Alt text](../img/angular_dist_cosine.png)
 
@@ -96,9 +96,11 @@ The nations of Scandinavia and several wealthy, northern European, Germanic coun
 
 The vectors we use to represent words are called *neural word embeddings*, and representations are strange. One thing describes another, even though those two things are radically different. As Elvis Costello said: "Writing about music is like dancing about architecture." Word2vec "vectorizes" about words, and by doing so it makes natural language computer-readable -- we can start to perform powerful mathematical operations on words to detect their similarities. 
 
-So a neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through reconstruction, as a [restricted Boltzmann machine](../restrictedboltzmannmachine.html) does, word2vec trains words against other words that neighbor them in the input corpus. 
+So a neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through [reconstruction](../restrictedboltzmannmachine.html#reconstruct), as a [restricted Boltzmann machine](../restrictedboltzmannmachine.html) does, word2vec trains words against other words that neighbor them in the input corpus. 
 
 ![Alt text](../img/word2vec_diagrams.png) 
+
+When the feature vector assigned to a word cannot be used to accurately predict that word's context, the components of the vector are adjusted. We nudge the stars. :)
 
 Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so 500 numbers arranged in a vector can represent a word or group of words.
 
