@@ -78,6 +78,8 @@ For users who have never `git cloned` Deeplearning4j before, you should be able 
 
 ### <a name="source">Working With Source</a>
 
+If you are not planning to contribute to Deeplearnin4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc0.
+
 To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
 
 Our [Github repo is here](https://github.com/deeplearning4j/deeplearning4j/). Install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then *git clone* the repository, and run this command for Maven:
@@ -118,7 +120,7 @@ which will import the source and set everything up.
 
 After many years using Eclipse, we recommend IntelliJ, which has a similar interface. Eclipse's monolithic architecture has a tendency to cause strange errors in our code and others'. 
 
-If you use Eclipse, you will need to install the [Lombok plugin](https://projectlombok.org/). 
+If you use Eclipse, you will need to install the [Lombok plugin](https://projectlombok.org/). You will also need the Maven plugin for Eclipse: [eclipse.org/m2e/](https://eclipse.org/m2e/).
 
 ### <a name="trouble">Troubleshooting</a>
 
