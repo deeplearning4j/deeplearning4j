@@ -8,8 +8,6 @@ layout: default
 
 Contents
 
-* <a href="#vectors">Vectors</a>
-* <a href="#trig">Trigonometric Functions</a>
 * <a href="#bow">Bag of Words v. Word2vec</a>
 * <a href="#count">Beyond Word Counts</a>
 * <a href="#sentiment">Sentiment Analysis</a>
@@ -75,15 +73,21 @@ Once you've pulled together a labeled corpus, then you feed the words into Word2
 
 ## <a name="softmax">Softmax Logistic Regression</a>
 
-[Logistic regression](http://gormanalysis.com/logistic-regression-fundamentals/), despite its misleading name, classifies things. 
+[Logistic regression](http://gormanalysis.com/logistic-regression-fundamentals/), despite its misleading name, classifies things. The simplest form of logistic regression is binary, predicting categories such as *spam* or *not_spam*. It does so by mapping input to a sigmoid space where large numbers asymptotically approach 1, and small ones approach zero.
+
+![Alt text](../img/sigmoid2.png)
+
+The equation that maps continuous input to sigmoid looks like this:
 
 ![Alt text](../img/logistic_regression2.png)
+
+With the slider in your mind, imagine that as *t* grows larger, so does *e*'s negative exponent, which means that *e^-t* approaches zero and the formula leaves us with 1; and vice versa with increasingly small *t*'s, which leave us with 0.
 
 Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, one of the feature vectors mentioned above. Imagine a feature vector of Betas, the weights that modify the input.
 
 ![Alt text](../img/logistic_regression3.png)
 
-The simplest form of logistic regression is binary, predicting categories such as *spam* or *not_spam*. 
+
 
 A more complex form that buckets input into more than two categories is called multinomial logistic regression, or *softmax*. That’s what we’ll be using here. 
 
