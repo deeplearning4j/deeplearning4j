@@ -201,7 +201,7 @@ That transfer of information, from *what we don't know* about the system to *wha
 
 So each principal component cutting through the scatterplot represents a decrease in the system's entropy, in its unpredictability. 
 
-It so happens that explaining the shape of the data one principal component at a time, beginning with the component that accounts for the most variance, is similar to walking data through a decision tree. The first component of PCA, like the first split in a properly formed decision tree, will be along the dimension that reduces unpredictability the most. 
+It so happens that explaining the shape of the data one principal component at a time, beginning with the component that accounts for the most variance, is similar to walking data through a decision tree. The first component of PCA, like the first if-then-else split in a properly formed decision tree, will be along the dimension that reduces unpredictability the most. 
 
 ## <a name="resources">Other Resources</a>
 
