@@ -59,10 +59,10 @@ class NDArrayIndexingTest extends FlatSpec{
 
     val columnI = indices(1)
     assert(columnI.isInstanceOf[NDArrayIndexAll])
-//    assert(columnI.hasNext)
+    assert(columnI.hasNext)
     assert(columnI.next() == 0)
     assert(columnI.next() == 1)
     assert(columnI.next() == 2)
-//    assert(!columnI.hasNext)
+    assert(!columnI.hasNext)
   }
 }

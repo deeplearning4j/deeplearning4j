@@ -94,7 +94,10 @@ trait SliceableNDArray [A <: INDArray]{
 
     @tailrec
     def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[INDArrayIndex]): List[INDArrayIndex] = input match {
-      case -> :: t => modifyTargetIndices(t, i + 1, NDArrayIndex.all() :: acc)
+      case -> :: t =>
+        val all =  NDArrayIndex.all()
+        all.init(underlying,i)
+        modifyTargetIndices(t, i + 1, all :: acc)
       case ---> :: t =>
         val ellipsised = List.fill(originalShape.length - i - t.size)(->)
         modifyTargetIndices(ellipsised ::: t, i, acc)
