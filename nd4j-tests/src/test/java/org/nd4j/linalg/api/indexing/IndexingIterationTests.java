@@ -54,6 +54,20 @@ public class IndexingIterationTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testIntervalInclusive() {
+        INDArrayIndex interval = NDArrayIndex.interval(0,1,2,true);
+        assertTrue(interval.hasNext());
+        assertEquals(3,interval.end());
+        assertEquals(3,interval.length());
+        assertEquals(0,interval.next());
+        assertEquals(1,interval.next());
+        assertTrue(interval.hasNext());
+        assertEquals(2,interval.next());
+        assertFalse(interval.hasNext());
+
+    }
+
+    @Test
     public void testIntervalWithStride() {
         INDArrayIndex interval = NDArrayIndex.interval(3,2,6);
         assertTrue(interval.hasNext());
