@@ -48,7 +48,19 @@ These vectors relate mathematically, and similarities between them (and therefor
 
 ![Alt text](../img/two_vectors2.png)
 
-As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. 
+As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. 
+
+## <a name="trig">Trigonometric Functions</a>
+
+It turns out two vectors are just two-thirds of a triangle, so let's do a quick trig review. 
+
+Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
+
+![Alt text](../img/trig_functions2.png)
+
+we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
+
+Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. 
 
 Like ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*.
 
@@ -71,16 +83,6 @@ In Java, you can think of the formula to measure cosine similarity like this:
         }   
         return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
     }
-
-## <a name="trig">Trigonometric Functions</a>
-
-It turns out two vectors are just two-thirds of a triangle, so let's do a quick trig review. 
-
-Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
-
-![Alt text](../img/trig_functions2.png)
-
-we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
 
 Cosine is the angle attached to the origin, which makes it useful here. (We normalize the measurements so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular, bearing no relation to each other.) A perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
 
