@@ -83,19 +83,25 @@ The equation that maps continuous input to sigmoid looks like this:
 
 With the slider in your mind, imagine that as *t* grows larger, so does *e*'s negative exponent, which means that *e^-t* approaches zero and the formula leaves us with 1; and vice versa with increasingly small *t*'s, which leave us with 0.
 
-Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, one of the feature vectors mentioned above. Imagine a feature vector of Betas, the weights that modify the input.
+Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, one of the feature vectors mentioned above. Imagine a feature vector of Betas, the weights that modify an input vector of x's. 
 
 ![Alt text](../img/logistic_regression3.png)
 
-
-
 A more complex form that buckets input into more than two categories is called multinomial logistic regression, or *softmax*. That’s what we’ll be using here. 
 
-Softmax dot multiplies an input vector by a weight vector, using separate weight vectors for each respective output. It then squashes the results into a narrow range, and assumes the category whose weight vector produces the highest result is the correct classification. Thus the *max*.
+Softmax dot multiplies an input vector by a weight vector, using separate weight vectors for each respective output. It then squashes the results into a narrow range, and assumes the category whose weight vector produces the highest result is the correct classification. Thus the *max*. 
 
 With supervised learning, we adjust the weight vectors of softmax until they properly categorize input based on the human-labelled training set. Those adjustments minimize a cost function using something called *negative log likelihood*. 
 
-Log likelihood estimates the likelihood of a model’s parameters (the weight vectors of softmax, in this case), given output x, the classifications of the training set. It is an inversion of the probability function of output x given certain parameters. 
+## Log likelihood
+
+Let's talk about likelihoods and logs. 
+
+The probability of an event will be calculated based on input variables and the weights used to adjust them. It's easy to understand that you feed observations into a model to come up with a prediction. 
+
+But what if the predictions are given and the weights are unknown? Likelihood is the probability that certain weights will occur, given the outcomes you know, which is particularly useful when you have a training set where the labels and observations are fixed, and the weights have yet to be determined. 
+
+Our optimization algorithm attempts to find the weights with the maximum likelihood, given the labels and input. It estimates the likelihood of a model’s parameters (the weight vectors of softmax, in this case), given output x, the classifications of the training set. It is an inversion of the probability function of output x given certain parameters. 
 
 By maximizing the log likelihood of the parameters with regard to the ground-truth labels x, we train a model that can classify new input better. 
 
