@@ -60,7 +60,9 @@ Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use 
 
 we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
 
-Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. And like ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*.
+Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. 
+
+And like ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*. You can think of words as points of light in a dark canopy, clustered together in constellations of meaning. 
 
 ![Alt text](../img/angular_distance.png)
 
