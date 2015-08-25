@@ -98,6 +98,8 @@ The vectors we use to represent words are called *neural word embeddings*, and r
 
 So a neural word embedding represents a word with numbers. It's a simple, yet unlikely, translation. Word2vec is similar to an autoencoder, encoding each word in a vector, but rather than training against the input words through reconstruction, as a [restricted Boltzmann machine](../restrictedboltzmannmachine.html) does, word2vec trains words against other words that neighbor them in the input corpus. 
 
+![Alt text](../img/word2vec_diagrams.png) 
+
 Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so 500 numbers arranged in a vector can represent a word or group of words.
 
 Those numbers locate each word as a point in 500-dimensional vectorspace. (Geoff Hinton, teaching people to imagine 13-dimensional space, suggests that students first picture 3-dimensional space and then say to themselves: "Thirteen, thirteen, thirteen." :) 
