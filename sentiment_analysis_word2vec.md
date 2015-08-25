@@ -105,9 +105,9 @@ The optimization algorithm used here attempts to find the weights with the maxim
 
 By maximizing the likelihood of the parameters with regard to the ground-truth labels, we train a model that can classify unseen data better. 
 
-Taking the logarithm of input *x* -- i.e. finding the exponent of 10 that produces *x* -- is a useful way to map very low likelihoods into a narrower and more manageable space; i.e. log(0.0001) can be expressed as -4. Using log likelihoods prevents [arithmetic underflow](https://en.wikipedia.org/wiki/Arithmetic_underflow), which is a risk when you deal with very low probabilities.
+Taking the logarithm of input *x* -- i.e. finding the exponent of 10 that produces *x* -- is a useful way to map very low likelihoods into a narrower and more manageable space. For example, *log(0.0001)* can be expressed as -4. Using log likelihoods prevents [arithmetic underflow](https://en.wikipedia.org/wiki/Arithmetic_underflow), which is a risk when you deal with very low probabilities.
 
-We then flip the log likelihoods to be negative, because most optimization algorithms attempt to *minimize* a cost or error function, and negative log likelihood plays nice with a more general framework for optimization, like Deeplearning4j.
+We then flip the log likelihoods to the negative, because most optimization algorithms attempt to *minimize* a cost or error function, and negative log likelihood plays nice with a more general framework for optimization, like Deeplearning4j.
 
 Once the weights can no longer be adjusted to reduce error — i.e. once the likelihood of the parameters given the output reaches its peak — the model can be used to categorize input for which no labels exist, inferring sentiment expressed by text in the wild. 
 
