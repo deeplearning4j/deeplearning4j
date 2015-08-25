@@ -12,7 +12,7 @@ Contents
 * <a href="#count">Beyond Word Counts</a>
 * <a href="#sentiment">Sentiment Analysis</a>
 * <a href="#softmax">Softmax Logistic Regression</a>
-* <a href="#code">Just Give Me The Code</a>
+* <a href="#code">**Just Give Me The Code**</a>
 * <a href="#resource">Other Resources</a>
 
 This tutorial covers sentiment analysis with Word2vec and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how Word2vec can be used for opinion mining on text in the wild. 
