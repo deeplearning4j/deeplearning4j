@@ -224,12 +224,12 @@ object IndexNumberRange{
   def toNDArrayIndex(startR:Int,endR:Int,isInclusive:Boolean,step:Int,max:Int):INDArrayIndex = {
     val (start, end) = {
       val start = if (startR >= 0) startR else max + startR
-      val diff = if (isInclusive) 0 else if (step >= 0) -1 else +1
-      val endInclusive = if (endR >= 0) endR + diff else max + endR + diff
-      (start, endInclusive)
+      val diff = if(isInclusive) 1 else 0
+      val endExclusive = if (endR >= 0) endR + diff else max + endR + diff
+      (start, endExclusive)
     }
 
-    NDArrayIndex.interval(start,step,end,true)
+    NDArrayIndex.interval(start,step,end,false)
   }
 }
 
