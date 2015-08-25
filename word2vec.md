@@ -54,15 +54,13 @@ As you can see, these vectors differ from one another in both their length, or m
 
 It turns out two vectors are just two-thirds of a triangle, so let's do a quick trig review. 
 
-Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like 
+Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like these 
 
 ![Alt text](../img/trig_functions2.png)
 
 we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
 
-Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. 
-
-Like ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*.
+Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. And like ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*.
 
 ![Alt text](../img/angular_distance.png)
 
