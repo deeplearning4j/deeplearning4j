@@ -103,9 +103,9 @@ But what if the predictions are given and the weights are unknown? Likelihood is
 
 Our optimization algorithm attempts to find the weights with the maximum likelihood, given the labels and input. It estimates the likelihood of a model’s parameters (the weight vectors of softmax, in this case), given output x, the classifications of the training set. It is an inversion of the probability function of output x given certain parameters. 
 
-By maximizing the log likelihood of the parameters with regard to the ground-truth labels x, we train a model that can classify new input better. 
+By maximizing the log likelihood of the parameters with regard to the ground-truth labels, we train a model that can classify new input better. 
 
-Taking the logarithm of x, or finding the exponent of 10 that produces x, is a useful way to map very low likelihoods into a narrower and more manageable space; i.e. log(0.0001) can be expressed as -4. It’s a great way to prevent [arithmetic underflow](https://en.wikipedia.org/wiki/Arithmetic_underflow), which is a risk when you deal with very low probabilities.
+Taking the logarithm of input x -- i.e. finding the exponent of 10 that produces x -- is a useful way to map very low likelihoods into a narrower and more manageable space; i.e. log(0.0001) can be expressed as -4. It’s a great way to prevent [arithmetic underflow](https://en.wikipedia.org/wiki/Arithmetic_underflow), which is a risk when you deal with very low probabilities.
 
 We then flip log likelihood to be negative, because most optimization algorithms attempt to minimize a cost or error function, and negative log likelihood plays nice with a more general framework for optimization, like Deeplearning4j.
 
