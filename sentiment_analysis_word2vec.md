@@ -25,7 +25,7 @@ For this tutorial, we are interested in sentiment analysis and classification on
 
 Typically, people rely on word count to create vectors representing documents, and measure their similarities and differences by the frequency with which terms appear. To illustrate this word count approach with a toy example, let’s say we care about two words, Moscow and Beijing. 
 
-First, we count the number of times those words appear in two documents. Let’s say the x axis represents Moscow and the y axis Beijing. If Moscow appears once in document one and five times in document two, while Beijing appears three times in the first and twice in the second, then we have our two vectors: doc1 = (1,3) and doc2 = (5,2).
+First, we count the number of times those words appear in two documents. Let’s say the x axis represents Moscow and the y axis Beijing. If Moscow appears once in document one and five times in document two, while Beijing appears three times in the first and twice in the second, then we have our two vectors: *doc1 = (1,3)* and *doc2 = (5,2)*.
 
 ![Alt text](../img/sentiment_analysis_vectors.png)
 
@@ -65,7 +65,7 @@ This document vector (not to be confused with doc2vec) can then be compared to v
 
 For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality.
 
-So the first step is to pick the categories you care about. Then you create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's categories, you can download TKTKTK.
+So the first step is to pick the categories you care about. Then you create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's categories, you can download this set of [sentiment-labeled Tweets](http://www.sananalytics.com/lab/twitter-sentiment/).
 
 Once you've pulled together a labeled corpus, then you feed the words into Word2vec to generate feature vectors. Those feature vectors are added and the aggregate word vector is divided by the number of words. That "document vector"  serves as the input for logistic regression. 
 
