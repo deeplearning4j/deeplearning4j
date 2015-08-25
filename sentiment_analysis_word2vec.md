@@ -81,7 +81,7 @@ The equation that maps continuous input to sigmoid looks like this:
 
 ![Alt text](../img/logistic_regression2.png)
 
-With the slider in your mind, imagine that as *t* grows larger, so does *e*'s negative exponent, which means that *e^-t* approaches zero and the formula leaves us with 1; and vice versa with increasingly small *t*'s, which leave us with 0.
+With the slider in your mind, imagine that as *t* grows larger, so does *e*'s negative exponent, which means that *e^-t* approaches zero and the formula leaves us with 1; and vice versa with increasingly large negative *t*'s, which leave us with 0.
 
 Given one or more input variables, it estimates the probability that the input belongs to one category or another. Each variable of the input is a component of a vector, one of the feature vectors mentioned above. Imagine a feature vector of Betas, the weights that modify an input vector of x's. 
 
