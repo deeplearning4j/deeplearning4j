@@ -64,7 +64,7 @@ Differences between word vectors, as they swing around the origin like arms on a
 
 And similar to ancient navigators gauging the stars by a sextant, we will measure the angular distance between words using something called *cosine similarity*. You can think of words as points of light in a dark canopy, clustered together in constellations of meaning. 
 
-![Alt text](../img/angular_distance.png)
+![Alt text](../img/angular_dist_cosine.png)
 
 To find that distance knowing only the word vectors, we need the equation for vector dot multiplication (multiplying two vectors to produce a single, scalar value). 
 
