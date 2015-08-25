@@ -44,7 +44,7 @@ Therefore, we can represent two-dimensional vectors as arrows on an x-y graph, w
 
 ![Alt text](../img/vector.jpeg)
 
-These vectors relate mathematically, and similarities between them (and therefore between anything you can vectorize, including words) can be measured with precision. 
+Two vectors can relate to one another mathematically, and similarities between them (and therefore between anything you can vectorize, including words) can be measured with precision. 
 
 ![Alt text](../img/two_vectors2.png)
 
