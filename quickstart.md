@@ -23,7 +23,7 @@ We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearni
 
 After those installs, if you can follow these five steps, you'll be up and running:
 
-1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples). We are currently on examples version 0.0.3.3.x.
+1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.4-examples). We are currently on examples version 0.0.4.x.
 2. From your console, run "mvn clean install -DskipTests -Dmaven.javadoc.skip=true" on *each* of those directories
 3. Import the examples as a project into IntelliJ with Maven.
 4. The default [backend](http://nd4j.org/dependencies.html) in the examples POM.xml is set to *nd4j-jblas* (For an easier install, Windows users should change that to *nd4j-java* in the dependencies.)
@@ -66,7 +66,7 @@ Here is a template:
 
 And here is a concrete example, to show you roughly what your command should look like:
 
-    java -cp target/deeplearning4j-examples-0.0.3.3.3-SNAPSHOT.jar org.deeplearning4j.MLPBackpropIrisExample
+    java -cp target/dl4j-0.4-examples.jar org.deeplearning4j.MLPBackpropIrisExample
 
 That is, there are two wild cards that will change as we update and you go through the examples:
 
