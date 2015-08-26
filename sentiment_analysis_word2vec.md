@@ -55,9 +55,9 @@ But Word2vec *does* grasp context, because the algorithm learns to reconstruct t
 
 So the vectors produced by Word2vec are not populated with word counts. They are neural word embeddings that allow Word2vec to predict, given a certain word, what the most likely words around it are. 
 
-Creating a document-vector representation for sentiment analysis is as simple as adding together the feature vectors for each word in the document and dividing that vector by the number of word vectors extracted from the document. 
+Creating a representation of those words for sentiment analysis is as simple as adding together the feature vectors for each word in the document and dividing that vector by the number of word vectors extracted from the document. 
 
-        EQUATION HERE
+![Alt text](../img/avg_word_vector.png)
 
 This document vector (not to be confused with doc2vec) can then be compared to vectors representing documents in, say, a labeled set. 
 
@@ -75,8 +75,6 @@ We help you load the Tweets with this code:
                 "sentiment140twitter", "sentiment140_train.csv");
 
 Once you've pulled together a labeled corpus, then you feed the words into Word2vec to generate feature vectors. Those feature vectors are added and the aggregate word vector is divided by the number of words. That "average word vector" serves as the input for logistic regression. 
-
-![Alt text](../img/avg_word_vector.png)
 
 ## <a name="softmax">Softmax Logistic Regression</a>
 
@@ -124,4 +122,4 @@ You can find our full implementation of [sentiment analysis with Word2vec here](
 
 ## <a name="resource">Other Resources</a>
 
-* 
+* [Natural Language Processing on Coursera](https://class.coursera.org/nlp/) (Chris Manning and Dan Jurafsky)
