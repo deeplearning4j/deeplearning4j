@@ -64,19 +64,23 @@ This document vector (not to be confused with doc2vec) can then be compared to v
 
 ## <a name="sentiment">Sentiment Analysis </a>
 
-Sentiment is a kind of text classification. Is the movie review positive or negative? It can also help answer the secondary question of how people felt about specific aspects of a thing. A printer, for example, might be judged according to its speed, reliability, ease of use, tech support and connectivity. 
+Sentiment analysis goes by many names: opinion extraction, opinion mining, sentiment mining and subjectivity analysis. Whatever the name, it is a kind of text classification: Is the movie review positive or negative? 
 
-For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality.
+It can also help answer the secondary question of how people felt about specific aspects of a thing. A printer, for example, might be judged according to its speed, reliability, ease of use, tech support and connectivity. 
 
-So the first step is to pick the categories you care about. Then you create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's categories, you can download this set of [sentiment-labeled Tweets](http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip).
+In addition, the stream of comments harvested from social media can be used for tasks as diverse as stock market or election predictions and brand monitoring. In the code example below, we will show you how to analyze Twitter with regard to company names. 
 
-We help you load the Tweets with this code:
+For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality. (See Scherer's Typology of Affective States for a more rigorous categorization...)
+
+So the first step is to pick the categories you care about. The second is to create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's corpus and categories, you can download this set of [Tweets](http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip) labeled by their positive and negative sentiment, as we show below.
+
+We use this code to parse a CSV file of Tweets:
 
         log.info("Parse CSV file from s3 bucket");
         CsvSentencePreprocessor csvSentencePreprocessor = new CsvSentencePreprocessor();
         S3SentenceIterator it = new S3SentenceIterator(csvSentencePreprocessor, "sentiment140twitter", "sentiment140_train.csv");
 
-Once you've pulled together a labeled corpus, then you feed the words into Word2vec to generate feature vectors. Those feature vectors are added and the aggregate word vector is divided by the number of words. That "average word vector" serves as the input for logistic regression. 
+Once you have a corpus, you feed its words into Word2vec to generate feature vectors. For each Tweet, those feature vectors are added and the aggregate word vector is divided by the number of words. That "average word vector" serves as the input for logistic regression. When you have the corpus labeled by sentiment, you can conduct supervised training to obtain a model that can predict those labels. 
 
 ## <a name="softmax">Softmax Logistic Regression</a>
 
@@ -146,3 +150,5 @@ Here you can find our full implementation of the methods used in [sentiment anal
 
 * [Natural Language Processing on Coursera](https://class.coursera.org/nlp/) (Chris Manning and Dan Jurafsky)
 * [Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf)
+* [Twitter Sentiment Classification using Distant Supervision](https://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf); Alec Go et al
+* [Thumbs up? Sentiment classification using machine learning techniques](http://www.cs.cornell.edu/home/llee/papers/sentiment.home.html); Bo Pang et al
