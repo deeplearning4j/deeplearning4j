@@ -21,14 +21,16 @@ We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearni
 
 ## DL4J in a Few Easy Steps
 
-After those installs, if you can follow these five steps, you'll be up and running:
-
+After those installs, if you can follow these steps, you'll be up and running:
+<!--
 1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.4-examples). We are currently on examples version 0.0.4.x.
 2. From your console, run "mvn clean install -DskipTests -Dmaven.javadoc.skip=true" on *each* of those directories
-3. Import the examples as a project into IntelliJ with Maven.
-4. The default [backend](http://nd4j.org/dependencies.html) in the examples POM.xml is set to *nd4j-jblas* (For an easier install, Windows users should change that to *nd4j-java* in the dependencies.)
-5. Select DBNIrisExample.java from the lefthand file tree
-6. Hit run! (It's the green button)
+-->
+* Create a new project in IntelliJ with Maven. 
+* Copy and paste to make sure your POM.xml file looks like [this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml).
+* For an easier install, Windows users should replace *nd4j-jblas* with *nd4j-java* in the dependencies. 
+* Select `DBNIrisExample.java` from the lefthand file tree.
+* Hit run! (It's the green button.)
 
 You should get an F1 score of about 0.66, which is good for a small dataset like Iris. For a line by line walkthrough of the example, please refer to our [Iris DBN tutorial](../iris-flower-dataset-tutorial.html).
 
