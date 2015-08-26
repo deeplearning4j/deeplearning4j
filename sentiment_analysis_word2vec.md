@@ -135,6 +135,7 @@ Below is the `main` method of our program. The comments
             // String trainDataFileName = "sentiment140_train.csv";
             
             // Smaller dataset saves training time, produces less accurate output
+            // Separates the test set from the training set for supervised learning
             String trainDataFileName = "sentiment140_train_sample50th.csv";
             String testDataFileName = "sentiment140_test.csv";
             
