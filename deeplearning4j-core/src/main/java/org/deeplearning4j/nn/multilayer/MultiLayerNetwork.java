@@ -366,7 +366,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the activation of the last hidden layer given the last input to the network
      */
     public INDArray activate() {
-        return getLayers()[getLayers().length - 1].activate();
+    	if( layerWiseConfigurations.getOutputProcessor() != null ){
+    		return layerWiseConfigurations.getOutputProcessor().processOutput(getLayer(getLayers().length - 1).activate(), this);
+    	} else return getLayer(getLayers().length - 1).activate();
     }
 
     /**
@@ -376,7 +378,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the activation for a given layer
      */
     public INDArray activate(int layer) {
-        return getLayers()[layer].activate();
+    	if( layer == layers.length-1 && layerWiseConfigurations.getOutputProcessor() != null ){
+    		return layerWiseConfigurations.getOutputProcessor().processOutput(getLayer(getLayers().length - 1).activate(), this);
+    	}
+        return getLayer(layer).activate();
     }
 
     @Override
@@ -392,7 +397,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the activation of the layer based on the input
      */
     public INDArray activate(int layer, INDArray input) {
-        return getLayers()[layer].activate(input);
+    	if( layer == layers.length-1 && layerWiseConfigurations.getOutputProcessor() != null ){
+    		return layerWiseConfigurations.getOutputProcessor().processOutput(getLayer(layer).activate(input), this);
+    	}
+        return getLayer(layer).activate(input);
     }
 
     @Override
@@ -543,6 +551,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for (int i = 0; i < layers.length; i++) {
             currInput = activationFromPrevLayer(i, currInput,test);
             //applies drop connect to the activation
+            if(i==layers.length-1 && layerWiseConfigurations.getOutputProcessor() != null ){
+            	currInput = layerWiseConfigurations.getOutputProcessor().processOutput(currInput, this);
+            }
             activations.add(currInput);
         }
         return activations;
@@ -1073,7 +1084,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
         }
 
-        outputLayer.setLabels(labels);
+        if( layerWiseConfigurations.getOutputProcessor() != null ){
+        	INDArray processedLabels = layerWiseConfigurations.getOutputProcessor().processLabels(labels, this);
+        	outputLayer.setLabels(processedLabels);
+        } else {
+        	outputLayer.setLabels(labels);
+        }
 
         //calculate and apply the backward gradient for every layer
         /**

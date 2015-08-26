@@ -21,11 +21,14 @@
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import org.deeplearning4j.nn.conf.override.ConfOverride;
+import org.deeplearning4j.nn.conf.preprocessor.output.NetworkOutputProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -49,6 +52,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected double dampingFactor = 100;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean backprop = false;
+    protected NetworkOutputProcessor outputProcessor;
 
     /**
      *
@@ -157,6 +161,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected double dampingFactor = 100;
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backprop = false;
+        protected NetworkOutputProcessor outputProcessor = null;
         @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
@@ -207,7 +212,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public Builder confs(List<NeuralNetConfiguration> confs) {
             this.confs = confs;
             return this;
+        }
 
+        public Builder outputProcessor(NetworkOutputProcessor processor){
+        	this.outputProcessor = processor;
+        	return this;
         }
 
         public MultiLayerConfiguration build() {
@@ -217,9 +226,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.dampingFactor = dampingFactor;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
+            conf.outputProcessor = outputProcessor;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
-
         }
 
         @Override
