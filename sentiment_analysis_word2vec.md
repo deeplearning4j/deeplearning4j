@@ -134,8 +134,8 @@ Below is the `main` method of our program. The comments
         // Full set of data, takes ~20 mins to train
         // String trainDataFileName = "sentiment140_train.csv";
         
-        // Smaller dataset saves training time, produces less accurate output
-        // Separates the test set from the training set for supervised learning
+        // Smaller dataset saves training time, lessens accuracy
+        // Separates the test set from the training set 
         String trainDataFileName = "sentiment140_train_sample50th.csv";
         String testDataFileName = "sentiment140_test.csv";
         
@@ -152,7 +152,7 @@ Below is the `main` method of our program. The comments
         
         //supervised training of word vectors against sentiment labels
         MultiLayerNetwork model = runAnalysis.trainSentimentClassifier(targetFeaturePair);
-    }
+      }
     }
 
 Here you can find our full implementation of the methods used in [sentiment analysis with Word2vec](https://github.com/deeplearning4j/twitter_sentiment_analysis).
