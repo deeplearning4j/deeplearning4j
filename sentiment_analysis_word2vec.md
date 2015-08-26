@@ -71,8 +71,7 @@ We help you load the Tweets with this code:
 
         log.info("Parse CSV file from s3 bucket");
         CsvSentencePreprocessor csvSentencePreprocessor = new CsvSentencePreprocessor();
-        S3SentenceIterator it = new S3SentenceIterator(csvSentencePreprocessor,
-                "sentiment140twitter", "sentiment140_train.csv");
+        S3SentenceIterator it = new S3SentenceIterator(csvSentencePreprocessor, "sentiment140twitter", "sentiment140_train.csv");
 
 Once you've pulled together a labeled corpus, then you feed the words into Word2vec to generate feature vectors. Those feature vectors are added and the aggregate word vector is divided by the number of words. That "average word vector" serves as the input for logistic regression. 
 
