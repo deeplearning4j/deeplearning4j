@@ -8,8 +8,8 @@ layout: default
 Contents
 
 * <a href="#intro">Introduction</a>
-* <a href="#vectors">Vectors</a>
-* <a href="#trig">Trigonometric Functions</a>
+* <a href="#vectors">Vectors Review</a>
+* <a href="#trig">Cosine Similarity</a>
 * <a href="#embed">Neural Word Embeddings</a>
 * <a href="#crazy">Amusing Word2vec Results</a>
 * <a href="#just">**Just Give Me the Code**</a>
