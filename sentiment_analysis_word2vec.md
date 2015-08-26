@@ -129,7 +129,7 @@ Once the weights can no longer be adjusted to reduce error — i.e. once the lik
         public static void main(String args[]) throws Exception {
             String s3BucketName = "sentiment140twitter";
             
-            // Full set of data. Take ~20 mins to train
+            // Full set of data, takes ~20 mins to train
             // String trainDataFileName = "sentiment140_train.csv";
             
             // Smaller dataset saves training time, produces less accurate output
