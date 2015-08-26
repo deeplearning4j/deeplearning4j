@@ -459,7 +459,7 @@ Marketers might seek to establish relationships among products to build a recomm
 
 ### <a name="next">Next Steps</a>
 
-(We are still testing our recent implementation. of Doc2vec. An [example of Global Vectors (GLoVE) is here](https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/glove/GloveRawSentenceExample.java).)
+We're working on a tutorial for performing [sentiment analysis with Word2vec here](../sentiment_analysis_word2vec.html).
 
 ###<a name="patent">Google's Word2vec Patent</a>
 
