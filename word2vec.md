@@ -18,8 +18,6 @@ Contents
 * <a href="#code">A Code Example</a>
 * <a href="#trouble">Troubleshooting & Tuning Word2Vec</a>
 * <a href="#use">Word2vec Use Cases</a>
-* <a href="#next">Next Steps</a>
-* <a href="#patent">Word2vec Patent</a>
 * <a href="#foreign">Foreign Languages</a>
 
 ##<a name="intro">Introduction to Word2Vec</a>
