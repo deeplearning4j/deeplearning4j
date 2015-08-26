@@ -124,3 +124,4 @@ You can find our full implementation of [sentiment analysis with Word2vec here](
 ## <a name="resource">Other Resources</a>
 
 * [Natural Language Processing on Coursera](https://class.coursera.org/nlp/) (Chris Manning and Dan Jurafsky)
+* [Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf)
