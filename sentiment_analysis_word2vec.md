@@ -12,6 +12,7 @@ Contents
 * <a href="#count">Beyond Word Counts</a>
 * <a href="#sentiment">Sentiment Analysis</a>
 * <a href="#softmax">Softmax Logistic Regression</a>
+* <a href="#log">Log Likelihood</a>
 * <a href="#code">**Just Give Me The Code**</a>
 * <a href="#resource">Other Resources</a>
 
@@ -97,7 +98,7 @@ Softmax dot multiplies an input vector by a weight vector, using separate weight
 
 With supervised learning, we adjust the weight vectors of softmax until they properly categorize input based on the human-labelled training set. Those adjustments minimize a cost function using something called *negative log likelihood*. 
 
-## Log Likelihood
+## <a name="log">Log Likelihood</a>
 
 Let's talk about likelihoods and logs. 
 
@@ -119,7 +120,7 @@ Once the weights can no longer be adjusted to reduce error — i.e. once the lik
 
 You can find our full implementation of [sentiment analysis with Word2vec here](https://github.com/deeplearning4j/twitter_sentiment_analysis).
 
- <script src="https://github.com/deeplearning4j/twitter_sentiment_analysis/blob/master/src/main/java/RunAnalysis.java?slice=14:46"></script>
+<script src="https://github.com/deeplearning4j/twitter_sentiment_analysis/blob/master/src/main/java/RunAnalysis.java?slice=14:46"></script>
 
 ## <a name="resource">Other Resources</a>
 
