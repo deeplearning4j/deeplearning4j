@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -54,14 +56,14 @@ public interface InputPreProcessor extends Serializable, Cloneable {
      * @param input the input to pre preProcess
      * @return the processed input
      */
-    INDArray preProcess(INDArray input);
+    INDArray preProcess(INDArray input, Layer layer);
 
     /**Reverse the preProcess during backprop. Process Gradient/epsilons before
      * passing them to the layer below.
      * @param output which is a pair of the gradient and epsilon 
      * @return the reverse of the pre preProcess step (if any)
      */
-    INDArray backprop(INDArray output);
+    INDArray backprop(INDArray output, Layer layer);
 
     InputPreProcessor clone();
 }
