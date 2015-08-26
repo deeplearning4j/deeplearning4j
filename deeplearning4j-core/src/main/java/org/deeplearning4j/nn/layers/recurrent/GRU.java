@@ -46,10 +46,12 @@ public class GRU extends BaseLayer {
 
 	public GRU(NeuralNetConfiguration conf) {
 		super(conf);
+		throw new UnsupportedOperationException("GRU layer disabled: Backprop implementation is incorrect in this version. Consider using GravesLSTM instead");
 	}
 	
 	public GRU(NeuralNetConfiguration conf, INDArray input) {
 		super(conf, input);
+		throw new UnsupportedOperationException("GRU layer disabled: Backprop implementation is incorrect in this version. Consider using GravesLSTM instead");
 	}
 	@Override
 	public Gradient gradient() {
@@ -85,7 +87,7 @@ public class GRU extends BaseLayer {
 		INDArray wU = recurrentWeights.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
 		INDArray wC = recurrentWeights.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
 		INDArray wRdiag = Nd4j.diag(wR).transpose();
-		INDArray wUdiag = Nd4j.diag(wU).transpose();
+//		INDArray wUdiag = Nd4j.diag(wU).transpose();
 		INDArray wCdiag = Nd4j.diag(wC).transpose();
 		
 		//Parameter gradients: Stores sum over each time step here
@@ -96,9 +98,6 @@ public class GRU extends BaseLayer {
 		INDArray epsilonNext = Nd4j.zeros(miniBatchSize,prevLayerSize,timeSeriesLength);	//i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 		
 		INDArray deltaOutNext = Nd4j.zeros(miniBatchSize,layerSize);
-		INDArray deltaRNext = deltaOutNext;
-		INDArray deltaUNext = deltaOutNext;
-		INDArray deltaCNext = deltaOutNext;
 		for( int t=timeSeriesLength-1; t>=0; t-- ){
 			INDArray prevOut = (t==0 ? Nd4j.zeros(miniBatchSize,layerSize) : outputActivations.tensorAlongDimension(t-1,1,0));	//Shape: [m,n^L]
 			
@@ -116,39 +115,30 @@ public class GRU extends BaseLayer {
 
 			INDArray zr = zSlice.get(NDArrayIndex.all(),interval(0,layerSize));
 			INDArray sigmaPrimeZr = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zr.dup()).derivative());
-
-			INDArray dOutNextdOut;
-			if( t == timeSeriesLength-1 ){
-				//No need to calculate, as next delta is null
-				dOutNextdOut = Nd4j.zeros(miniBatchSize,layerSize);
-			} else {
+			
+			INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(t,1,0));		//(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
+			INDArray deltaOut = epsilonSlice.dup();
+			if( t < timeSeriesLength-1 ){
 				INDArray aOut = (is2dInput ? outputActivations : outputActivations.tensorAlongDimension(t,1,0));
 				INDArray arNext = aSliceNext.get(NDArrayIndex.all(),interval(0,layerSize));
 				INDArray auNext = aSliceNext.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
 				INDArray acNext = aSliceNext.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
+				INDArray zrNext = zSliceNext.get(NDArrayIndex.all(),interval(0,layerSize));
 				INDArray zuNext = zSliceNext.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
 				INDArray zcNext = zSliceNext.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
 				
+				INDArray sigmaPrimeZrNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zrNext.dup()).derivative());
 				INDArray sigmaPrimeZuNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zuNext.dup()).derivative());
 				INDArray sigmaPrimeZcNext = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zcNext.dup()).derivative());
-
-				INDArray temp = arNext.mulRowVector(wCdiag)
-						.addi(wC.mmul(aOut.mul(sigmaPrimeZr).transpose()).transpose()
-								.muliRowVector(wRdiag) );
-
-				dOutNextdOut = auNext.add(aOut.sub(acNext).muli(sigmaPrimeZuNext).muliRowVector(wUdiag));
-				dOutNextdOut.addi(auNext.rsub(1.0)
-						.muli(sigmaPrimeZcNext)
-						.muli(temp));
+				
+				deltaOut.addi(auNext.mul(deltaOutNext));
+				deltaOut.addi(aOut.sub(acNext).muli(sigmaPrimeZuNext).muli( wU.mmul(deltaOutNext.transpose()).transpose() ) );
+				deltaOut.addi(auNext.rsub(1.0)
+						.muli( sigmaPrimeZcNext )
+						.muli( arNext.add(aOut.mul(sigmaPrimeZrNext).muliRowVector(wRdiag)) )
+						.muli( wC.mmul(deltaOutNext.transpose()).transpose() )
+						);
 			}
-			
-			//First: Calculate deltas at output (d^{Lt}_h)
-			INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(t,1,0));		//(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
-			INDArray deltaOut = epsilonSlice
-					.add(deltaOutNext.mul(dOutNextdOut.transpose()))
-					.addi(deltaRNext.mmul(wR.transpose()))
-					.addi(deltaUNext.mmul(wU.transpose()))
-					.addi(deltaCNext.mmul(wC.transpose()));
 			
 			//Delta at update gate
 			INDArray zu = zSlice.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
@@ -180,8 +170,9 @@ public class GRU extends BaseLayer {
 					.addi(deltaR.transpose().mmul(prevOut).transpose());
 				recurrentWeightGradients.get(NDArrayIndex.all(),interval(layerSize,2*layerSize))
 					.addi(deltaU.transpose().mmul(prevOut).transpose());
+				INDArray ar = aSlice.get(NDArrayIndex.all(),interval(0,layerSize));
 				recurrentWeightGradients.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize))
-					.addi(deltaC.transpose().mmul(prevOut).transpose());
+					.addi(deltaC.transpose().mmul(prevOut.mul(ar)).transpose());
 			}
 			
 			//Add bias gradients for this time step:
@@ -195,9 +186,6 @@ public class GRU extends BaseLayer {
 			epsilonNext.tensorAlongDimension(t,1,0).assign(epsilonNextSlice);
 			
 			deltaOutNext = deltaOut;
-			deltaRNext = deltaR;
-			deltaUNext = deltaU;
-			deltaCNext = deltaC;
 		}
 		
 		Gradient g = new DefaultGradient();
@@ -247,13 +235,25 @@ public class GRU extends BaseLayer {
 		INDArray recurrentWeights = getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [n^L,3*n^L]; order: [wR,wU,wC]
 		INDArray biases = getParam(GRUParamInitializer.BIAS_KEY); //Shape: [1,3*n^L]; order: [br,bu,bc]
 		
+		
+		
 		boolean is2dInput = input.rank() < 3;		//Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
 		int timeSeriesLength = (is2dInput ? 1 : input.size(2));
 		int hiddenLayerSize = recurrentWeights.size(0);
 		int miniBatchSize = input.size(0);
 		
-		INDArray wRAndU = recurrentWeights.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 2*hiddenLayerSize));
-		INDArray wC = recurrentWeights.get(NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
+		int layerSize = hiddenLayerSize;
+		INDArray wr = inputWeights.get(NDArrayIndex.all(),interval(0,layerSize));
+		INDArray wu = inputWeights.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
+		INDArray wc = inputWeights.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
+		INDArray wR = recurrentWeights.get(NDArrayIndex.all(),interval(0,layerSize));
+		INDArray wU = recurrentWeights.get(NDArrayIndex.all(),interval(layerSize,2*layerSize));
+		INDArray wC = recurrentWeights.get(NDArrayIndex.all(),interval(2*layerSize,3*layerSize));
+		INDArray br = biases.get(NDArrayIndex.point(0),interval(0,layerSize));
+		INDArray bu = biases.get(NDArrayIndex.point(0),interval(layerSize,2*layerSize));
+		INDArray bc = biases.get(NDArrayIndex.point(0),interval(2*layerSize,3*layerSize));
+//		INDArray wRAndU = recurrentWeights.get(NDArrayIndex.all(),NDArrayIndex.interval(0, 2*hiddenLayerSize));
+//		INDArray wC = recurrentWeights.get(NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize,3*hiddenLayerSize));
 		
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
@@ -271,6 +271,9 @@ public class GRU extends BaseLayer {
 			INDArray prevLayerInputSlice = (is2dInput ? input : input.tensorAlongDimension(t,1,0));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
 			INDArray prevOutputActivations = (t==0 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) : outputActivations.tensorAlongDimension(t-1,1,0));	//Shape: [m,nL]
 			
+			/* This commented out implementation: should be same as 'naive' implementation that follows.
+			 * Using naive approach at present for debugging purposes
+			 * 
 			//Calculate reset gate, update gate and candidate zs
 				//First: inputs + biases for all (reset gate, update gate, candidate activation)
 			INDArray zs = prevLayerInputSlice.mmul(inputWeights).addiRowVector(biases);	//Shape: [m,3n^L]
@@ -295,10 +298,32 @@ public class GRU extends BaseLayer {
 			//Finally, calculate output activation:
 			INDArray au = as.get(NDArrayIndex.all(),NDArrayIndex.interval(hiddenLayerSize, 2*hiddenLayerSize));
 			INDArray outputASlice = au.mul(prevOutputActivations).addi(au.rsub(1).muli(ac));
+			*/
+			
+			INDArray zs = Nd4j.zeros(miniBatchSize,3*hiddenLayerSize);
+			INDArray as = Nd4j.zeros(miniBatchSize,3*hiddenLayerSize);
+			
+			INDArray zr = prevLayerInputSlice.mmul(wr).addi(prevOutputActivations.mmul(wR)).addiRowVector(br);
+			INDArray ar = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid",zr.dup()));
+			zs.get(NDArrayIndex.all(),NDArrayIndex.interval(0, hiddenLayerSize)).assign(zr);
+			as.get(NDArrayIndex.all(),NDArrayIndex.interval(0, hiddenLayerSize)).assign(ar);
+			
+			INDArray zu = prevLayerInputSlice.mmul(wu).addi(prevOutputActivations.mmul(wU)).addiRowVector(bu);
+			INDArray au = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid",zu.dup()));
+			zs.get(NDArrayIndex.all(),NDArrayIndex.interval(hiddenLayerSize, 2*hiddenLayerSize)).assign(zu);
+			as.get(NDArrayIndex.all(),NDArrayIndex.interval(hiddenLayerSize, 2*hiddenLayerSize)).assign(au);
+			
+			INDArray zc = prevLayerInputSlice.mmul(wc).addi(prevOutputActivations.mul(ar).mmul(wC)).addiRowVector(bc);
+			INDArray ac = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),zc.dup()));
+			zs.get(NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize, 3*hiddenLayerSize)).assign(zc);
+			as.get(NDArrayIndex.all(),NDArrayIndex.interval(2*hiddenLayerSize, 3*hiddenLayerSize)).assign(ac);
+			
+			INDArray aOut = au.mul(prevOutputActivations).addi(au.rsub(1).mul(ac));
+			
 			
 			rucZs.tensorAlongDimension(t,1,0).assign(zs);
 			rucAs.tensorAlongDimension(t,1,0).assign(as);
-			outputActivations.tensorAlongDimension(t,1,0).assign(outputASlice);
+			outputActivations.tensorAlongDimension(t,1,0).assign(aOut);
 		}
 		
 		return new INDArray[]{outputActivations,rucZs,rucAs};
