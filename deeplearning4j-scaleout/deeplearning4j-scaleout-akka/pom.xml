@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.0.3.3.5.alpha2-SNAPSHOT</version>
+		<version>0.4-rc1-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-akka</artifactId>
 	<name>deeplearning4j-scaleout-akka</name>
@@ -323,7 +323,7 @@
         <dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>nd4j-jblas</artifactId>
-			<version>${nd4j.version}</version>
+			<version>0.4-rc0</version>
 			<scope>test</scope>
 		</dependency>
 
