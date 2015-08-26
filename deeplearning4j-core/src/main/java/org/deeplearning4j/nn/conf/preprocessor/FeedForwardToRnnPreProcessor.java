@@ -1,10 +1,9 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -20,36 +19,29 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  * @see RnnToFeedForwardPreProcessor for opposite case (i.e., GravesLSTM -> DenseLayer etc)
  */
-@Data
+@Data @NoArgsConstructor
 public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
-	private static final long serialVersionUID = -6900959538072178994L;
-	private final int timeSeriesLength;
-	
-	/**@param timeSeriesLength Length of time series training data
-	 */
-	@JsonCreator
-	public FeedForwardToRnnPreProcessor(@JsonProperty("timeSeriesLength") int timeSeriesLength ){
-		this.timeSeriesLength = timeSeriesLength;
-	}
+	private static final long serialVersionUID = 7696179434618200847L;
 
 	@Override
-	public INDArray preProcess(INDArray input) {
+	public INDArray preProcess(INDArray input, Layer layer) {
 		//Need to reshape FF activations (2d) activations to 3d (for input into RNN layer)
 		if( input.rank() != 2 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2 (i.e., activations for FF layer)");
 		
 		int[] shape = input.shape();
-		INDArray reshaped = input.reshape(shape[0]/timeSeriesLength,timeSeriesLength,shape[1]);
+		int miniBatchSize = layer.getInputMiniBatchSize();
+		INDArray reshaped = input.reshape(miniBatchSize,shape[0]/miniBatchSize,shape[1]);
 		return reshaped.permute(0,2,1);
 	}
 
 	@Override
-	public INDArray backprop(INDArray output) {
+	public INDArray backprop(INDArray output, Layer layer) {
 		//Need to reshape RNN epsilons (3d) to 2d (for use in FF layer backprop calculations)
 		if( output.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3 (i.e., epsilons from RNN layer)");
 		int[] shape = output.shape();
 		
-		INDArray permuted = output.permute(0, 2, 1);	//Permute, so we get correct order after reshaping
-		return permuted.reshape(shape[0] * timeSeriesLength, shape[1]);
+		INDArray permuted = output.permute(0,2,1);	//Permute, so we get correct order after reshaping
+		return permuted.reshape(shape[0]*shape[2],shape[1]);
 	}
 
 	@Override
