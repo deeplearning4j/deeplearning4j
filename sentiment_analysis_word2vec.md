@@ -53,23 +53,30 @@ But Word2vec *does* grasp context, because the algorithm learns to reconstruct t
 
 ![Alt text](../img/word2vec_diagrams.png)
 
-So the vectors produced by Word2vec are not populated with word counts. They are neural word embeddings that allow Word2vec to predict, given a certain word, what the most likely words around it are.
+So the vectors produced by Word2vec are not populated with word counts. They are neural word embeddings that allow Word2vec to predict, given a certain word, what the most likely words around it are. 
 
 Creating a document-vector representation for sentiment analysis is as simple as adding together the feature vectors for each word in the document and dividing that vector by the number of word vectors extracted from the document. 
 
         EQUATION HERE
 
-This document vector (not to be confused with doc2vec) can then be compared to vectors representing documents in, say, a labeled set.
+This document vector (not to be confused with doc2vec) can then be compared to vectors representing documents in, say, a labeled set. 
 
 ## <a name="sentiment">Sentiment Analysis </a>
 
 For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality.
 
-So the first step is to pick the categories you care about. Then you create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's categories, you can download this set of [sentiment-labeled Tweets](http://www.sananalytics.com/lab/twitter-sentiment/).
+So the first step is to pick the categories you care about. Then you create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's categories, you can download this set of [sentiment-labeled Tweets](http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip).
 
-Once you've pulled together a labeled corpus, then you feed the words into Word2vec to generate feature vectors. Those feature vectors are added and the aggregate word vector is divided by the number of words. That "document vector"  serves as the input for logistic regression. 
+We help you load the Tweets with this code:
 
-        CODE HERE
+        log.info("Parse CSV file from s3 bucket");
+        CsvSentencePreprocessor csvSentencePreprocessor = new CsvSentencePreprocessor();
+        S3SentenceIterator it = new S3SentenceIterator(csvSentencePreprocessor,
+                "sentiment140twitter", "sentiment140_train.csv");
+
+Once you've pulled together a labeled corpus, then you feed the words into Word2vec to generate feature vectors. Those feature vectors are added and the aggregate word vector is divided by the number of words. That "average word vector" serves as the input for logistic regression. 
+
+![Alt text](../img/avg_word_vector.png)
 
 ## <a name="softmax">Softmax Logistic Regression</a>
 
@@ -93,7 +100,7 @@ Softmax dot multiplies an input vector by a weight vector, using separate weight
 
 With supervised learning, we adjust the weight vectors of softmax until they properly categorize input based on the human-labelled training set. Those adjustments minimize a cost function using something called *negative log likelihood*. 
 
-## Log likelihood
+## Log Likelihood
 
 Let's talk about likelihoods and logs. 
 
@@ -112,6 +119,8 @@ We then flip the log likelihoods to the negative, because most optimization algo
 Once the weights can no longer be adjusted to reduce error — i.e. once the likelihood of the parameters given the output reaches its peak — the model can be used to categorize input for which no labels exist, inferring sentiment expressed by text in the wild. 
 
 ## <a name="code">Just Give Me the Code</a>
+
+You can find our full implementation of [sentiment analysis with Word2vec here](https://github.com/deeplearning4j/twitter_sentiment_analysis).
 
 ## <a name="resource">Other Resources</a>
 
