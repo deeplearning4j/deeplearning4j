@@ -34,7 +34,7 @@ Given enough data, usage and contexts, Word2vec can make highly accurate guesses
 
 The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net or simply queried to detect relationships between words. 
 
-## <a name="vectors">Vectors</a>
+## <a name="vectors">Vectors Review</a>
 
 [Word2vec](../word2vec.html) learns to represent words as vectors.
 
@@ -50,7 +50,7 @@ Two vectors can relate to one another mathematically, and similarities between t
 
 As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. 
 
-## <a name="trig">Trigonometric Functions</a>
+## <a name="trig">Cosine Similarity</a>
 
 It turns out two vectors are just 66% of a triangle, so let's do a quick trig review. 
 
