@@ -64,6 +64,8 @@ This document vector (not to be confused with doc2vec) can then be compared to v
 
 ## <a name="sentiment">Sentiment Analysis </a>
 
+Sentiment is a kind of text classification. Is the movie review positive or negative? It can also help answer the secondary question of how people felt about specific aspects of a thing. A printer, for example, might be judged according to its speed, reliability, ease of use, tech support and connectivity. 
+
 For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality.
 
 So the first step is to pick the categories you care about. Then you create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's categories, you can download this set of [sentiment-labeled Tweets](http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip).
@@ -118,142 +120,27 @@ Once the weights can no longer be adjusted to reduce error — i.e. once the lik
 
 ## <a name="code">Just Give Me the Code</a>
 
-You can find our full implementation of [sentiment analysis with Word2vec here](https://github.com/deeplearning4j/twitter_sentiment_analysis).
 
-    public class RunAnalysis {
-        private static Logger log = LoggerFactory.getLogger(RunAnalysis.class);
-        private String word2vecTxtFilePath;
-        private String bucketName;
-        private String trainFileName;
-        private String testFileName;
-        private File wordVectorFile;
-        private String averageTweetVectorsFileName;
-        private int vectorLength;
-          
-        public RunAnalysis(String bucketName, String trainFileName, String testFileName, int vectorLength) {
-            this.bucketName = bucketName;
-            this.trainFileName = trainFileName;
-            this.testFileName = testFileName;
-            String fileName = trainFileName.split("\\.")[0];
-            this.word2vecTxtFilePath = fileName + "_word_vectors.txt";
-            this.wordVectorFile = new File(word2vecTxtFilePath);
-            this.averageTweetVectorsFileName = fileName + "_tweet_vectors.csv";
-            this.vectorLength = vectorLength;
-        }
-            
-        public void runWord2Vec() throws Exception {
-            if (!wordVectorFile.isFile()) {
-                  
-                log.info("Parse CSV file from s3 bucket...");
-                GetSecondColumnCsvPreprocessor csvSentencePreprocessor = new GetSecondColumnCsvPreprocessor();
-                S3SentenceIterator it = new S3SentenceIterator(csvSentencePreprocessor, bucketName, trainFileName);
-                InMemoryLookupCache cache = new InMemoryLookupCache();
-                WeightLookupTable table = new InMemoryLookupTable.Builder()
-                        .vectorLength(vectorLength)
-                        .useAdaGrad(false)
-                        .cache(cache)
-                        .lr(0.025f).build();
-    
-                log.info("Building model....");
-                Word2Vec vec = new Word2Vec.Builder()
-                        .minWordFrequency(5).iterations(3)
-                        .layerSize(vectorLength).lookupTable(table)
-                        .vocabCache(cache).seed(42)
-                        .windowSize(5).iterate(it).build();
-    
-                log.info("Training model...");
-                vec.fit();
-    
-                log.info("Writing word vectors to file...");
-                WordVectorSerializer.writeWordVectors(vec, word2vecTxtFilePath);
-            }
-        }
-            
-        public Pair<List<INDArray>, List<INDArray>> computeAvgWordVector()
-                throws Exception {
-            if (wordVectorFile.isFile()) {
-              
-                ArrayList<INDArray> labelVectorList = new ArrayList<>();
-                ArrayList<INDArray> avgTweetVectorList = new ArrayList<>();
-            
-                // Load word vectors from runWord2Vec()
-                WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(wordVectorFile);
-              
-                // Parse the csv file again to get label and average word vector
-                ParseCsvPreprocessor parseCsvPreprocessor = new ParseCsvPreprocessor();
-                S3SentenceIterator it = new S3SentenceIterator(parseCsvPreprocessor, bucketName, trainFileName);
-                while (it.hasNext()) {
-                    // Add label to list
-                    Pair<double[], String[]> labelAndTweet = it.nextSentenceParsedCsv();
-                    // First column is if it is a pos sentiment, second column is whether it's neg
-                    INDArray labelVector = Nd4j.create(labelAndTweet.getKey());
-                    labelVectorList.add(labelVector);
-    
-                    // Add avg tweet vector to list
-                    String[] words = labelAndTweet.getValue();
-                    INDArray sumTweetVector = Nd4j.zeros(1, vectorLength);
-                    for (String word : words) {
-                        sumTweetVector.addi(wordVectors.getWordVectorMatrix(word));
-                    }
-                    INDArray averageTweetVector = sumTweetVector.div(words.length);
-                    avgTweetVectorList.add(averageTweetVector);
-                }
-            
-                return new Pair<>(avgTweetVectorList, labelVectorList);
-            } else {
-                throw new IllegalStateException("Run runWord2Vec() first to get the word vectors.");
-            }
-        }
-            
-        public MultiLayerNetwork trainSentimentClassifier(Pair<List<INDArray>, List<INDArray>> pair) throws Exception {
-            
-            List<INDArray> featureList = pair.getKey();
-            List<INDArray> targetList = pair.getValue();
-            
-            log.info("Build model....");
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .seed(42)
-                    .iterations(1)
-                    .learningRate(1e-3)
-                    .l1(0.3).regularization(true).l2(1e-3)
-                    .list(2)
-                    .layer(0, new OutputLayer.Builder().activation("softmax").nIn(vectorLength).nOut(2).build())
-                    .build();
-            
-            MultiLayerNetwork model = new MultiLayerNetwork(conf);
-            model.init();
-            for (int i=0; i < featureList.size(); i++) {
-                INDArray featureRow = featureList.get(i);
-                INDArray labelRow = targetList.get(i);
-                model.fit(featureRow, labelRow);
-            }
-            
-            Evaluation eval = new Evaluation();
-            for (int i=0; i < featureList.size(); i++) {
-                INDArray featureRow = featureList.get(i);
-                INDArray labelRow = targetList.get(i);
-                INDArray output = model.output(featureRow);
-                eval.eval(labelRow, output);
-            }
-            log.info(eval.stats());
-          
-            return model;
-        }
-            
+
         public static void main(String args[]) throws Exception {
             String s3BucketName = "sentiment140twitter";
-    //        String trainDataFileName = "sentiment140_train.csv";
-            // Smaller dataset to train to save time. But less accurate
+            
+            // Full set of data. Take ~20 mins to train
+            // String trainDataFileName = "sentiment140_train.csv";
+            
+            // Smaller dataset saves training time, produces less accurate output
             String trainDataFileName = "sentiment140_train_sample50th.csv";
             String testDataFileName = "sentiment140_test.csv";
             int vectorLength = 200;
-    
+                        
             RunAnalysis runAnalysis = new RunAnalysis(s3BucketName, trainDataFileName, testDataFileName, vectorLength);
             runAnalysis.runWord2Vec();
             Pair<List<INDArray>, List<INDArray>> targetFeaturePair = runAnalysis.computeAvgWordVector();
             MultiLayerNetwork model = runAnalysis.trainSentimentClassifier(targetFeaturePair);
         }
     }
+
+Here you can find our full implementation of the methods used in [sentiment analysis with Word2vec](https://github.com/deeplearning4j/twitter_sentiment_analysis).
 
 ## <a name="resource">Other Resources</a>
 
