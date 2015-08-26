@@ -126,33 +126,33 @@ Once the weights can no longer be adjusted to reduce error — i.e. once the lik
 
 Below is the `main` method of our program. The comments
 
-        public static void main(String args[]) throws Exception {
-            String s3BucketName = "sentiment140twitter";
-            
-            //Load the data
-            
-            // Full set of data, takes ~20 mins to train
-            // String trainDataFileName = "sentiment140_train.csv";
-            
-            // Smaller dataset saves training time, produces less accurate output
-            // Separates the test set from the training set for supervised learning
-            String trainDataFileName = "sentiment140_train_sample50th.csv";
-            String testDataFileName = "sentiment140_test.csv";
-            
-            // declare how many features we want per word vector
-            int vectorLength = 200;
-                 
-            RunAnalysis runAnalysis = new RunAnalysis(s3BucketName, trainDataFileName, testDataFileName, vectorLength);
-            
-            //creates the feature vector for each word
-            runAnalysis.runWord2Vec();
-            
-            //computes average word vector per tweet
-            Pair<List<INDArray>, List<INDArray>> targetFeaturePair = runAnalysis.computeAvgWordVector();
-            
-            //supervised training of word vectors against sentiment labels
-            MultiLayerNetwork model = runAnalysis.trainSentimentClassifier(targetFeaturePair);
-        }
+    public static void main(String args[]) throws Exception {
+        String s3BucketName = "sentiment140twitter";
+        
+        //Load the data
+        
+        // Full set of data, takes ~20 mins to train
+        // String trainDataFileName = "sentiment140_train.csv";
+        
+        // Smaller dataset saves training time, produces less accurate output
+        // Separates the test set from the training set for supervised learning
+        String trainDataFileName = "sentiment140_train_sample50th.csv";
+        String testDataFileName = "sentiment140_test.csv";
+        
+        // declare how many features we want per word vector
+        int vectorLength = 200;
+             
+        RunAnalysis runAnalysis = new RunAnalysis(s3BucketName, trainDataFileName, testDataFileName, vectorLength);
+        
+        //creates the feature vector for each word
+        runAnalysis.runWord2Vec();
+        
+        //computes average word vector per tweet
+        Pair<List<INDArray>, List<INDArray>> targetFeaturePair = runAnalysis.computeAvgWordVector();
+        
+        //supervised training of word vectors against sentiment labels
+        MultiLayerNetwork model = runAnalysis.trainSentimentClassifier(targetFeaturePair);
+    }
     }
 
 Here you can find our full implementation of the methods used in [sentiment analysis with Word2vec](https://github.com/deeplearning4j/twitter_sentiment_analysis).
