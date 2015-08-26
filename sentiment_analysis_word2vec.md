@@ -68,7 +68,7 @@ Sentiment analysis goes by many names: opinion extraction, opinion mining, senti
 
 It can also help answer the secondary question of how people felt about specific aspects of a thing. A printer, for example, might be judged according to its speed, reliability, ease of use, tech support and connectivity. 
 
-In addition, the stream of comments harvested from social media can be used for tasks as diverse as stock market or election predictions and brand monitoring. In the code example below, we will show you how to analyze Twitter with regard to company names. 
+In addition, the stream of comments harvested from social media can be used for tasks as diverse as stock market or election predictions and brand monitoring. In the code example below, we will show you how to analyze Tweets with regard to company names. The analysis is conducted on the sentence level with regard to a supervised training set, rather than using a lexicon sentiment-labeled words. 
 
 For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality. (See Scherer's Typology of Affective States for a more rigorous categorization...)
 
