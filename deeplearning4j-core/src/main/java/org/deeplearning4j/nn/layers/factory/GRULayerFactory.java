@@ -16,30 +16,22 @@
  *
  */
 
-package org.deeplearning4j.nn.conf.preprocessor;
+package org.deeplearning4j.nn.layers.factory;
 
+import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.params.GRUParamInitializer;
 
-import lombok.Data;
-
-import org.deeplearning4j.nn.api.Layer;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-
-/**
- * Binomial sampling pre processor
- * @author Adam Gibson
+/**GRU: Gated Recurrent Unit RNN
  */
-@Data
-public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
+public class GRULayerFactory extends DefaultLayerFactory {
 
-	@Override
-    public INDArray preProcess(INDArray input, Layer layer) {
-        return Nd4j.getDistributions().createBinomial(1, input).sample(input.shape());
+    public GRULayerFactory(Class<? extends Layer> layerConfig) {
+        super(layerConfig);
     }
 
-
     @Override
-    public INDArray backprop(INDArray output, Layer layer) {
-        return output;	//No op?
+    public ParamInitializer initializer() {
+        return new GRUParamInitializer();
     }
 }
