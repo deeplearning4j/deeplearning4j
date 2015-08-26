@@ -124,12 +124,12 @@ Once the weights can no longer be adjusted to reduce error — i.e. once the lik
 
 ## <a name="code">Just Give Me the Code</a>
 
-Below is the `main` method of our program. The comments
+Below is the `main` method of our program. The comments give a high-level description of the steps involved. Here you can find our full implementation of the methods used in [sentiment analysis with Word2vec](https://github.com/deeplearning4j/twitter_sentiment_analysis).
 
     public static void main(String args[]) throws Exception {
         String s3BucketName = "sentiment140twitter";
         
-        //Load the data
+        //Load the data...
         
         // Full set of data, takes ~20 mins to train
         // String trainDataFileName = "sentiment140_train.csv";
@@ -155,7 +155,6 @@ Below is the `main` method of our program. The comments
       }
     }
 
-Here you can find our full implementation of the methods used in [sentiment analysis with Word2vec](https://github.com/deeplearning4j/twitter_sentiment_analysis).
 
 ## <a name="resource">Other Resources</a>
 
