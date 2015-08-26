@@ -119,6 +119,8 @@ Once the weights can no longer be adjusted to reduce error — i.e. once the lik
 
 You can find our full implementation of [sentiment analysis with Word2vec here](https://github.com/deeplearning4j/twitter_sentiment_analysis).
 
+ <script src="https://github.com/deeplearning4j/twitter_sentiment_analysis/blob/master/src/main/java/RunAnalysis.java?slice=14:46"></script>
+
 ## <a name="resource">Other Resources</a>
 
 * [Natural Language Processing on Coursera](https://class.coursera.org/nlp/) (Chris Manning and Dan Jurafsky)
