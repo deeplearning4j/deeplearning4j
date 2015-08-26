@@ -127,13 +127,12 @@ Below is the `main` method of our program. The comments give a high-level descri
     public static void main(String args[]) throws Exception {
         String s3BucketName = "sentiment140twitter";
         
-        //Load the data...
+        // Separate the test set from the training set... 
         
         // Full set of data, takes ~20 mins to train
         // String trainDataFileName = "sentiment140_train.csv";
         
         // Smaller dataset saves training time, lessens accuracy
-        // Separates the test set from the training set 
         String trainDataFileName = "sentiment140_train_sample50th.csv";
         String testDataFileName = "sentiment140_test.csv";
         
