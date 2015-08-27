@@ -26,9 +26,6 @@ public class StaticShapeTests extends BaseNd4jTest {
         super(backend);
     }
 
-    public StaticShapeTests(String name, Nd4jBackend backend) {
-        super(name, backend);
-    }
 
     @Test
     public void testShapeInd2Sub() {
