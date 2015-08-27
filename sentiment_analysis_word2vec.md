@@ -4,8 +4,6 @@ layout: default
 
 # Sentiment Analysis With Word2vec
 
-*This page is a work in progess.*
-
 Contents
 
 * <a href="#bow">Bag of Words v. Word2vec</a>
