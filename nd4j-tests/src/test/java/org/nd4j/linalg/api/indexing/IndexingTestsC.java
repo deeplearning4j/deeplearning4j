@@ -89,7 +89,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray input1 = Nd4j.zeros(2, 1);
         INDArray input2 = Nd4j.ones(2, 1);
         INDArray concat = Nd4j.concat(1, input1, input2);
-        INDArray assertion = Nd4j.create(new double[][]{{1,0}, {1,0}});
+        INDArray assertion = Nd4j.create(new double[][]{{0,1}, {0,1}});
         assertEquals(assertion,concat);
     }
 

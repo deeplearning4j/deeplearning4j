@@ -23,6 +23,7 @@ public class IntervalIndex implements INDArrayIndex {
     public IntervalIndex(boolean inclusive, int stride) {
         this.inclusive = inclusive;
         this.stride = stride;
+        this.length = Math.abs((end - begin)) / stride;
     }
 
     @Override

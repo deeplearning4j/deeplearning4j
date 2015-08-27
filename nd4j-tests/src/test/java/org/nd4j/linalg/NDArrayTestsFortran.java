@@ -1089,61 +1089,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         }
     }
 
-    @Test
-    public void testSliceLeadingTrailingOnes(){
-        INDArray arr1 = Nd4j.ones(10,10,10);
-        testSliceHelper(arr1,0,new int[]{10,10});
-        testSliceHelper(arr1,1,new int[]{10,10});
-        testSliceHelper(arr1,2,new int[]{10,10});
 
-        INDArray arr2 = Nd4j.ones(1,10,10);
-        testSliceHelper(arr2,0,new int[]{10,10});
-        testSliceHelper(arr2,1,new int[]{1,10});
-        testSliceHelper(arr2,2,new int[]{1,10});
-
-        INDArray arr3 = Nd4j.ones(10,10,1);
-        testSliceHelper(arr3,0,new int[]{10,1});
-        testSliceHelper(arr3,1,new int[]{10,1});
-        testSliceHelper(arr3,2,new int[]{10,10});
-
-        INDArray arr3a = Nd4j.ones(1,10,1);
-        testSliceHelper(arr3a,0,new int[]{10,1});
-        testSliceHelper(arr3a,1,new int[]{1,1});
-        testSliceHelper(arr3a,2,new int[]{1,10});
-
-        INDArray arr4 = Nd4j.ones(10,10,10,10);
-        testSliceHelper(arr4,0,new int[]{10,10,10});
-        testSliceHelper(arr4,1,new int[]{10,10,10});
-        testSliceHelper(arr4,2,new int[]{10,10,10});
-        testSliceHelper(arr4,3,new int[]{10,10,10});
-
-        INDArray arr5 = Nd4j.ones(1,10,10,10);
-        testSliceHelper(arr5,0,new int[]{10,10,10});
-        testSliceHelper(arr5,1,new int[]{1,10,10});
-        testSliceHelper(arr5,2,new int[]{1,10,10});
-        testSliceHelper(arr5,3,new int[]{1,10,10});
-
-        INDArray arr6 = Nd4j.ones(10,10,10,1);
-        testSliceHelper(arr6,0,new int[]{10,10,1});
-        testSliceHelper(arr6,1,new int[]{10,10,1});
-        testSliceHelper(arr6,2,new int[]{10,10,1});
-        testSliceHelper(arr6,3,new int[]{10,10,10});
-
-        INDArray arr7 = Nd4j.ones(1,10,10,1);
-        testSliceHelper(arr7,0,new int[]{10,10,1});
-        testSliceHelper(arr7,1,new int[]{1,10,1});
-        testSliceHelper(arr7,2,new int[]{1,10,1});
-        testSliceHelper(arr7,3,new int[]{1,10,10});
-    }
-
-    private static void testSliceHelper(INDArray in, int dimension, int[] expectedShape ){
-        int[] shape = in.shape();
-        for( int i=0; i<shape[dimension]; i++ ){
-            INDArray slice = in.slice(i,dimension);
-            int[] sliceShape = slice.shape();
-            assertArrayEquals(sliceShape,expectedShape);
-        }
-    }
 
 
 

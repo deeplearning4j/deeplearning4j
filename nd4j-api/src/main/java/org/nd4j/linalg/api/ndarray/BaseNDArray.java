@@ -3688,9 +3688,11 @@ public abstract class BaseNDArray implements INDArray {
             INDArray ret = create(shape);
             int count = 0;
             if(isVector()) {
+                indexes[0].reset();
                 while(indexes[0].hasNext()) {
                     ret.putScalar(count++,getDouble(indexes[0].next()));
                 }
+
             }
             else {
                 while(indexes[0].hasNext()) {
