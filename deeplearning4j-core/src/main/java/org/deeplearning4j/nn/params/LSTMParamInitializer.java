@@ -48,12 +48,14 @@ public class LSTMParamInitializer implements ParamInitializer {
         Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
         int inputSize = layerConf.getNIn();
-        int hiddenSize = layerConf.getNIn();
+        int hiddenSize = 8; //layerConf.getNIn(); // TODO add attribute to pass in hiddenSize
         int outputSize = layerConf.getNOut();
+
         conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(INPUT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(inputSize + hiddenSize + 1, 4 * hiddenSize, layerConf.getWeightInit(), dist));
+
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(inputSize + hiddenSize, 4 * hiddenSize, layerConf.getWeightInit(), dist));
         params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(hiddenSize,outputSize,layerConf.getWeightInit(), dist));
         params.put(BIAS_KEY, Nd4j.zeros(outputSize));
         params.get(RECURRENT_WEIGHT_KEY).data().persist();
