@@ -66,7 +66,9 @@ It can also help answer the secondary question of how people felt about specific
 
 In addition, the stream of comments harvested from social media can be used for tasks as diverse as stock market or election predictions and brand monitoring. In the code example below, we will show you how to analyze Tweets with regard to company names. The analysis is conducted on the sentence level with regard to a supervised training set, rather than using a lexicon of sentiment-labeled words. 
 
-For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality. (See Scherer's Typology of Affective States for a more rigorous categorization...)
+For neural networks to learn sentiment, you need a labeled dataset to conduct supervised learning; i.e. you must have a set of documents or words that humans have associated with emotional signals, be they as simple as *positive* and *negative*, or as nuanced as frustration, anger, delight, satisfaction and lacadaisical whimsicality. (See [Scherer](http://www.affective-sciences.org/user/scherer)'s [Typology of Affective States](http://www.amazon.com/Handbook-Affective-Sciences-Science/dp/0195126017) for a more rigorous categorization.)
+
+![Alt text](../img/scherer.png)
 
 So the first step is to pick the categories you care about. The second is to create a dataset in which the examples have been tagged with those labels. (Mechanical Turk is useful here...) If you don't mind using someone else's corpus and categories, you can download this set of [Tweets](http://cs.stanford.edu/people/alecmgo/trainingandtestdata.zip) labeled by their positive and negative sentiment, as we show below.
 
