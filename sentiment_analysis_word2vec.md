@@ -154,10 +154,6 @@ Below is the `main` method of our program. The comments give a high-level descri
       }
     }
 
-The output should look like this. 
-
-![Alt text](../img/sent_results.png)
-
 ## <a name="resource">Other Resources</a>
 
 * [Natural Language Processing on Coursera](https://class.coursera.org/nlp/) (Chris Manning and Dan Jurafsky)
