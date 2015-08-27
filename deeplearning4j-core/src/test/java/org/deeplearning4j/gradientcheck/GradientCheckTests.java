@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.conf.layers.GRU;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.output.RnnOutputProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -232,6 +233,7 @@ public class GradientCheckTests {
 	        		.nOut(nOut).weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0))
 	        		.updater(Updater.NONE).build())
 	        .inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
+	        .outputProcessor(new RnnOutputProcessor())
 	        .pretrain(false).backprop(true)
 	        .build();
     	
@@ -247,10 +249,12 @@ public class GradientCheckTests {
     			}
     		}
     	}
-    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
-    	for( int i=0; i<labels.size(0); i++){
-    		int idx = r.nextInt(nOut);
-    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<timeSeriesLength; j++ ){
+	    		int idx = r.nextInt(nOut);
+	    		labels.putScalar(new int[]{i,idx,j}, 1.0f);
+    		}
     	}
     	
     	if( PRINT_RESULTS ){
@@ -286,10 +290,12 @@ public class GradientCheckTests {
     			}
     		}
     	}
-    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
-    	for( int i=0; i<labels.size(0); i++){
-    		int idx = r.nextInt(nOut);
-    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<timeSeriesLength; j++ ){
+	    		int idx = r.nextInt(nOut);
+	    		labels.putScalar(new int[]{i,idx,j}, 1.0f);
+    		}
     	}
         
         double[] l2vals = {0.0, 0.4, 0.0};
@@ -315,6 +321,7 @@ public class GradientCheckTests {
 			                		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                		.updater(Updater.NONE).build())
 			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
+			                .outputProcessor(new RnnOutputProcessor())
 			                .pretrain(false).backprop(true)
 			                .build();
 			
@@ -360,10 +367,12 @@ public class GradientCheckTests {
         		}
         	}
         	
-        	INDArray labels = Nd4j.zeros(miniBatchSize[i]*timeSeriesLength[i],nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
-        	for( int m=0; m<labels.size(0); m++){
-        		int idx = r.nextInt(nOut);
-        		labels.putScalar(new int[]{m,idx}, 1.0f);
+        	INDArray labels = Nd4j.zeros(miniBatchSize[i],nOut,timeSeriesLength[i]);
+        	for( int m=0; m<miniBatchSize[i]; m++ ){
+        		for( int j=0; j<timeSeriesLength[i]; j++ ){
+    	    		int idx = r.nextInt(nOut);
+    	    		labels.putScalar(new int[]{m,idx,j}, 1.0f);
+        		}
         	}
     		
     		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -375,6 +384,7 @@ public class GradientCheckTests {
 	            .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
 	            		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1)).updater(Updater.NONE).build())
 	            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
+	            .outputProcessor(new RnnOutputProcessor())
 	            .pretrain(false).backprop(true)
 	            .build();
     		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
@@ -410,6 +420,7 @@ public class GradientCheckTests {
 	        .layer(2, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
 	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
+	        .outputProcessor(new RnnOutputProcessor())
 	        .pretrain(false).backprop(true)
 	        .build();
     	
@@ -425,10 +436,12 @@ public class GradientCheckTests {
     			}
     		}
     	}
-    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
-    	for( int i=0; i<labels.size(0); i++){
-    		int idx = r.nextInt(nOut);
-    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<timeSeriesLength; j++ ){
+	    		int idx = r.nextInt(nOut);
+	    		labels.putScalar(new int[]{i,idx,j}, 1.0f);
+    		}
     	}
     	
     	if( PRINT_RESULTS ){
@@ -453,7 +466,7 @@ public class GradientCheckTests {
     	int nIn = 7;
     	int layerSize = 9;
     	int nOut = 4;
-    	int miniBatchSize = 6;
+    	int miniBatchSize = 5;
     	
     	Random r = new Random(12345L);
     	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
@@ -464,10 +477,12 @@ public class GradientCheckTests {
     			}
     		}
     	}
-    	INDArray labels = Nd4j.zeros(miniBatchSize*timeSeriesLength,nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
-    	for( int i=0; i<labels.size(0); i++){
-    		int idx = r.nextInt(nOut);
-    		labels.putScalar(new int[]{i,idx}, 1.0f);
+    	INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<timeSeriesLength; j++ ){
+	    		int idx = r.nextInt(nOut);
+	    		labels.putScalar(new int[]{i,idx,j}, 1.0f);
+    		}
     	}
         
         double[] l2vals = {0.0, 0.4, 0.0};
@@ -493,6 +508,7 @@ public class GradientCheckTests {
 			                		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
 			                		.updater(Updater.NONE).build())
 			                .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
+			                .outputProcessor(new RnnOutputProcessor())
 			                .pretrain(false).backprop(true)
 			                .build();
 			
@@ -537,11 +553,12 @@ public class GradientCheckTests {
         			}
         		}
         	}
-        	
-        	INDArray labels = Nd4j.zeros(miniBatchSize[i]*timeSeriesLength[i],nOut);	//Would be this shape after reshaping 3d -> 2d for output layer
-        	for( int m=0; m<labels.size(0); m++){
-        		int idx = r.nextInt(nOut);
-        		labels.putScalar(new int[]{m,idx}, 1.0f);
+        	INDArray labels = Nd4j.zeros(miniBatchSize[i],nOut,timeSeriesLength[i]);
+        	for( int m=0; m<miniBatchSize[i]; m++ ){
+        		for( int j=0; j<timeSeriesLength[i]; j++ ){
+    	    		int idx = r.nextInt(nOut);
+    	    		labels.putScalar(new int[]{m,idx,j}, 1.0f);
+        		}
         	}
     		
     		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -553,6 +570,7 @@ public class GradientCheckTests {
 	            .layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
 	            		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1)).updater(Updater.NONE).build())
 	            .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
+	            .outputProcessor(new RnnOutputProcessor())
 	            .pretrain(false).backprop(true)
 	            .build();
     		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
