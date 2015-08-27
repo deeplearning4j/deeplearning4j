@@ -16,7 +16,9 @@ Contents
 
 This tutorial covers sentiment analysis with [Word2vec](../word2vec.html) and logistic regression. It is written for programmers, but assumes knowledge of only basic mathematical concepts. Its purpose is to demonstrate how Word2vec can be used for opinion mining on text in the wild. 
 
-Sentiment has obvious applications for market research, business intelligence, product development, reputation management, political campaigns and sociological studies. Broadly speaking, sentiment analysis has three stages: tokenization, feature extraction and classification. The first divides a document up into words, the second creates representations of words or documents, the third learns to bucket them by type. For this tutorial, we are interested in feature extraction and classification on the document level. 
+Sentiment has obvious applications for market research, business intelligence, product development, reputation management, political campaigns and sociological studies. 
+
+Broadly speaking, sentiment analysis has three stages: tokenization, feature extraction and classification. The first divides a document up into words, the second creates representations of words or documents, the third learns to bucket them by type. For this tutorial, we are interested in feature extraction and classification on the document level. 
 
 ## <a name="bow">Bag of Words vs. Word2vec</a>
 
