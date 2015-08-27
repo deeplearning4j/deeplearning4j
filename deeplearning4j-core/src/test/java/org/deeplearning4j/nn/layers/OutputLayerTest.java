@@ -19,18 +19,24 @@
 package org.deeplearning4j.nn.layers;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,6 +44,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -241,5 +248,169 @@ public class OutputLayerTest {
         assertEquals(params,l.params());
     }
 
+    
+    @Test
+    public void testOutputLayerVsRnnOutputLayer(){
+    	Nd4j.getRandom().setSeed(12345);
+		FeedForwardToRnnPreProcessor proc = new FeedForwardToRnnPreProcessor();
+		
+		int nIn = 2;
+		int nOut = 2;
+		int layerSize = 4;
+		int timeSeriesLength = 2;
+		int miniBatchSize = 3;
+		
+		Random r = new Random(12345L);
+    	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<nIn; j++ ){
+    			for( int k=0; k<timeSeriesLength; k++ ){
+    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    			}
+    		}
+    	}
+    	INDArray labels3d = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<timeSeriesLength; j++ ){
+    			int idx = r.nextInt(nOut);
+    			labels3d.putScalar(new int[]{i,idx,j}, 1.0f);
+    		}
+    	}
+    	
+    	INDArray labels2d = proc.backprop(labels3d,null);
+    	
+		
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+	        .seed(12345L)
+	        .list(2)
+	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.activation("tanh").updater(Updater.NONE).build())
+	        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
+	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.updater(Updater.NONE).build())
+	        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
+	        .pretrain(false).backprop(true)
+	        .build();
 
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+		
+		INDArray out2d = mln.feedForward(input).get(2);
+		INDArray out3d = proc.preProcess(out2d, mln.getLayer(0));
+		
+		MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder()
+	        .seed(12345L)
+	        .list(2)
+	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.activation("tanh").updater(Updater.NONE).build())
+	        .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
+	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.updater(Updater.NONE).build())
+	        .pretrain(false).backprop(true)
+	        .build();
+
+		MultiLayerNetwork mlnRnn = new MultiLayerNetwork(confRnn);
+		mlnRnn.init();
+		
+		INDArray outRnn = mlnRnn.feedForward(input).get(2);
+		
+		mln.setLabels(labels2d);
+		mlnRnn.setLabels(labels3d);
+
+		assertTrue(out3d.equals(outRnn));
+		
+		mln.computeGradientAndScore();
+		mlnRnn.computeGradientAndScore();
+		
+		double score = mln.score();
+		double scoreRNN = mlnRnn.score();
+		
+		assertTrue(!Double.isNaN(score));
+		assertTrue(!Double.isNaN(scoreRNN));
+		
+		double relError = Math.abs(score-scoreRNN)/(Math.abs(score)+Math.abs(scoreRNN));
+		assertTrue(relError<1e-6);
+    }
+
+    @Test
+    public void testOutputLayersRnnForwardPass(){
+    	//Test output layer with RNNs (
+    	//Expect all outputs etc. to be 2d
+    	int nIn = 2;
+		int nOut = 5;
+		int layerSize = 4;
+		int timeSeriesLength = 2;
+		int miniBatchSize = 3;
+
+		Random r = new Random(12345L);
+    	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
+    	for( int i=0; i<miniBatchSize; i++ ){
+    		for( int j=0; j<nIn; j++ ){
+    			for( int k=0; k<timeSeriesLength; k++ ){
+    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    			}
+    		}
+    	}
+
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+	        .seed(12345L)
+	        .list(2)
+	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.activation("tanh").updater(Updater.NONE).build())
+	        .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT)
+	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.updater(Updater.NONE).build())
+	        .inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
+	        .build();
+
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+
+		INDArray out2d = mln.feedForward(input).get(2);
+		assertArrayEquals(out2d.shape(),new int[]{miniBatchSize*timeSeriesLength,nOut});
+
+		INDArray out = mln.output(input);
+		assertArrayEquals(out.shape(),new int[]{miniBatchSize*timeSeriesLength,nOut});
+
+		INDArray act = mln.activate();
+		assertArrayEquals(act.shape(),new int[]{miniBatchSize*timeSeriesLength,nOut});
+
+		INDArray preout = mln.preOutput(input);
+		assertArrayEquals(preout.shape(),new int[]{miniBatchSize*timeSeriesLength,nOut});
+
+		//As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
+
+		MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder()
+	        .seed(12345L)
+	        .list(2)
+	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.activation("tanh").updater(Updater.NONE).build())
+	        .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT)
+	        		.activation("softmax").nIn(layerSize).nOut(nOut)
+	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1))
+	        		.updater(Updater.NONE).build())
+	        .build();
+
+		MultiLayerNetwork mlnRnn = new MultiLayerNetwork(confRnn);
+		mln.init();
+
+		INDArray out3d = mlnRnn.feedForward(input).get(2);
+		assertArrayEquals(out3d.shape(),new int[]{miniBatchSize*timeSeriesLength,nOut});
+
+		INDArray outRnn = mlnRnn.output(input);
+		assertArrayEquals(outRnn.shape(),new int[]{miniBatchSize,nOut,timeSeriesLength});
+
+		INDArray actRnn = mlnRnn.activate();
+		assertArrayEquals(actRnn.shape(),new int[]{miniBatchSize,nOut,timeSeriesLength});
+
+		INDArray preoutRnn = mln.preOutput(input);
+		assertArrayEquals(preoutRnn.shape(),new int[]{miniBatchSize,nOut,timeSeriesLength});
+    }
 }
