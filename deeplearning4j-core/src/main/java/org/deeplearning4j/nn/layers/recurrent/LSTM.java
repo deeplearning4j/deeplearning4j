@@ -54,7 +54,7 @@ import static org.nd4j.linalg.ops.transforms.Transforms.tanh;
  */
 public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     //recurrent weights (iFogZ = iFog & iFogA = iFogF & memCellActivations = c & outputActivations = hOut)
-    private INDArray iFogZ, iFogA, memCellActivations, hIn, outputActivations;
+    private INDArray iFogZ, iFogA, memCellActivations, hIn, hOut, outputActivations;
     // update values for drop connect
     private INDArray u, u2;
     //current input // paper has it as image representations
@@ -182,12 +182,12 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
             input.muli(u);
         }
 
-        int sequenceLen = input.rows(); // n, not miniBatch
-        int hiddenLayerSize = decoderWeights.rows(); // hidden layer size
+        int sequenceLen = input.size(0); // n, not miniBatch
+        int hiddenLayerSize = decoderWeights.size(0); // hidden layer size
         int recurrentSize = recurrentWeights.size(0);
 
-        hIn = Nd4j.zeros(sequenceLen, recurrentWeights.rows()); //xt, ht-1, bias
-        outputActivations = Nd4j.zeros(sequenceLen, hiddenLayerSize);
+        hIn = Nd4j.zeros(sequenceLen, recurrentSize); //xt, ht-1, bias
+        hOut = Nd4j.zeros(sequenceLen, hiddenLayerSize);
         //non linearities
         iFogZ = Nd4j.zeros(sequenceLen, hiddenLayerSize * 4);
         iFogA = Nd4j.zeros(iFogZ.shape());
@@ -195,47 +195,52 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
 
 
         for(int t = 0; t < sequenceLen ; t++) {
-            prevOutputActivations = t == 0 ? Nd4j.zeros(hiddenLayerSize) : outputActivations.getRow(t - 1);
-            prevMemCellActivations = t == 0 ? Nd4j.zeros(hiddenLayerSize) : memCellActivations.getRow(t - 1);
+            prevOutputActivations = t == 0 ? Nd4j.zeros(hiddenLayerSize) : hOut.slice(t - 1);
+            prevMemCellActivations = t == 0 ? Nd4j.zeros(hiddenLayerSize) : memCellActivations.slice(t - 1);
 
-            hIn.put(t, 0, 1.0);
-            hIn.slice(t).put(new INDArrayIndex[]{interval(1, 1 + hiddenLayerSize)}, input.slice(t));
-            hIn.slice(t).put(new INDArrayIndex[]{interval(1 + hiddenLayerSize, hIn.columns())}, prevOutputActivations);
+            hIn.slice(t).put(t, 0, 1);
+            hIn.slice(t).put(new INDArrayIndex[] {interval(1, 1 + hiddenLayerSize), interval(t,t+1)}, input.slice(t));
+            hIn.slice(t).put(new INDArrayIndex[] {interval(1 + hiddenLayerSize, hIn.columns()), interval(0, 1)}, prevOutputActivations);
 
-            //compute all gate activations. dots:
-            iFogZ.putRow(t, hIn.slice(t).mmul(recurrentWeights));
+//            compute all gate activations. dots:
+            iFogZ.slice(t).put(new INDArrayIndex[]{interval(0, hiddenLayerSize * 4), interval(0, 1)}, hIn.slice(t).mmul(recurrentWeights));
 
-            //store activations for i, f, o
-            iFogA.slice(t).put(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)}, sigmoid(iFogZ.slice(t).get(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)})));
+//            //store activations for i, f, o
+            iFogA.slice(t).put(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)},
+                    sigmoid(iFogZ.slice(t).get(interval(0, 3 * hiddenLayerSize))));
 
-            // store activations for c
+//            // store activations for c
             iFogA.slice(t).put(new INDArrayIndex[]{interval(3 * hiddenLayerSize, iFogA.columns() - 1)},
                     tanh(iFogZ.slice(t).get(interval(3 * hiddenLayerSize, iFogZ.columns() - 1))));
 
-            //i dot product h(WcxXt + WcmMt-1)
-            memCellActivations.putRow(t, iFogA.slice(t).get(interval(0, hiddenLayerSize)).mul(iFogA.slice(t).get(interval(3 * hiddenLayerSize, iFogA.columns()))));
-
+//            //i dot product h(WcxXt + WcmMt-1)
+            memCellActivations.slice(t).put(new INDArrayIndex[]{interval(0, hiddenLayerSize)},
+                    iFogA.slice(t).get(interval(0, hiddenLayerSize)).mul(iFogA.slice(t).get(interval(3 * hiddenLayerSize, iFogA.columns()))));
 
             if(t > 0)
-                // Ct curr memory cell activations after t 0
-                memCellActivations.slice(t).addi(iFogA.slice(t).get(interval(hiddenLayerSize, 2 * hiddenLayerSize)).mul(prevMemCellActivations));
+//                // Ct curr memory cell activations after t 0
+                memCellActivations.slice(t).addi(iFogA.slice(t).get(
+                        interval(hiddenLayerSize, 2 * hiddenLayerSize)).mul(prevMemCellActivations));
 
-            // mt hidden out or output before activation
+//            // mt hidden out or output before activation
             if(conf.getLayer().getActivationFunction().equals("tanh")) {
-                outputActivations.slice(t).assign(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(tanh(memCellActivations.getRow(t))));
+                hOut.slice(t).assign(
+                        iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(tanh(memCellActivations.slice(t))));
             } else {
-                outputActivations.slice(t).assign(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(memCellActivations.getRow(t)));
+                hOut.slice(t).assign(
+                        iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(memCellActivations.slice(t)));
             }
         }
 
         if(conf.isUseDropConnect() && training) {
             if (conf.getLayer().getDropOut() > 0) {
-                u2 = Dropout.applyDropout(outputActivations, conf.getLayer().getDropOut(), u2);
-                outputActivations.muli(u2);
+                u2 = Dropout.applyDropout(hOut, conf.getLayer().getDropOut(), u2);
+                hOut.muli(u2);
             }
         }
 
-        return outputActivations.get(interval(1, outputActivations.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
+        outputActivations = hOut.get(interval(1, hOut.rows())).mmul(decoderWeights).addiRowVector(decoderBias);
+        return outputActivations;
 
 
     }
