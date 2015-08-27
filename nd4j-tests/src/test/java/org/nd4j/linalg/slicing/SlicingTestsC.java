@@ -117,7 +117,7 @@ public class SlicingTestsC extends BaseNd4jTest  {
     public void testVectorIndexing() {
         INDArray zeros = Nd4j.create(1,400000);
         INDArray get = zeros.get(NDArrayIndex.interval(0,300000));
-        assertArrayEquals(new int[]{300000,1},get.shape());
+        assertArrayEquals(new int[]{1,300000},get.shape());
     }
 
 

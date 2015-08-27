@@ -35,8 +35,8 @@ public class BlasBufferUtil {
         }
 
         if(arr instanceof IComplexNDArray)
-            return arr.majorStride() / 2;
-        return arr.majorStride();
+            return arr.elementWiseStride() / 2;
+        return arr.elementWiseStride();
     }
 
     /**

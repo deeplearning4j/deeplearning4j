@@ -207,7 +207,7 @@ public class ShapeTests extends BaseNd4jTest {
     @Test
     public void testNewAxis() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
-        INDArray newAxisAssertion = Nd4j.create(new double[]{1, 2}).reshape(1,1,2);
+        INDArray newAxisAssertion = Nd4j.create(new double[]{1, 3}).reshape(1,1,2);
         INDArray newAxisGet = arr.get(NDArrayIndex.point(0),NDArrayIndex.newAxis());
         assertEquals(newAxisAssertion,newAxisGet);
 

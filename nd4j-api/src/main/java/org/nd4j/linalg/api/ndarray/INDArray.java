@@ -77,6 +77,12 @@ public interface INDArray extends Serializable  {
      */
     int elementStride();
 
+
+    /**
+     * Element wise stride
+     */
+    int elementWiseStride();
+
     /**
      * Returns true if the ndarray has already been freed
      * @return

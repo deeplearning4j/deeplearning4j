@@ -31,7 +31,7 @@ public class SlicingTests extends BaseNd4jTest  {
         for (int i = 0; i < arr.slices(); i++) {
             INDArray slice  = arr.slice(i).slice(1);
             int slices = slice.slices();
-            assertEquals(1, slices);
+            assertEquals(2, slices);
         }
 
     }

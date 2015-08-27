@@ -105,6 +105,7 @@ public abstract class BaseNDArray implements INDArray {
     protected Boolean isScalar = null;
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
+    protected int elementWiseStride = -1;
 
     public BaseNDArray() {
     }
@@ -635,7 +636,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray linearViewColumnOrder() {
-
         return create(data, new int[]{length, 1}, offset());
     }
 
@@ -656,7 +656,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray linearView() {
-
         return this;
     }
 
@@ -665,7 +664,12 @@ public abstract class BaseNDArray implements INDArray {
 
     }
 
-
+    @Override
+    public int elementWiseStride() {
+        if(elementWiseStride < 0)
+            elementWiseStride = reshape(1,length()).stride(-1);
+        return elementWiseStride;
+    }
 
     @Override
     public int elementStride() {
@@ -3687,9 +3691,6 @@ public abstract class BaseNDArray implements INDArray {
                 while(indexes[0].hasNext()) {
                     ret.putScalar(count++,getDouble(indexes[0].next()));
                 }
-
-                //reset the index to be used elsewhere
-                indexes[0].reset();
             }
             else {
                 while(indexes[0].hasNext()) {
@@ -3697,10 +3698,11 @@ public abstract class BaseNDArray implements INDArray {
                     INDArray next = slice(nextIdx);
                     if(indexes.length > 1)
                         ret.putSlice(count++,next.get(Arrays.copyOfRange(indexes, 1, indexes.length)));
-                    else {
+                    else if(next.isVector())
+                        ret.putSlice(count++,next);
+                    else
                         ret.putSlice(count++, next.get(indexes));
-                        indexes[0].reset();
-                    }
+
 
                 }
             }

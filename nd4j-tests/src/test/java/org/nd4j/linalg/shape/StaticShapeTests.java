@@ -3,6 +3,7 @@ package org.nd4j.linalg.shape;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.Arrays;
 
@@ -10,6 +11,20 @@ import java.util.Arrays;
  * @author Adam Gibson
  */
 public class StaticShapeTests extends BaseNd4jTest {
+    public StaticShapeTests() {
+    }
+
+    public StaticShapeTests(String name) {
+        super(name);
+    }
+
+    public StaticShapeTests(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
+
+    public StaticShapeTests(Nd4jBackend backend) {
+        super(backend);
+    }
 
     @Test
     public void testShapeInd2Sub() {
