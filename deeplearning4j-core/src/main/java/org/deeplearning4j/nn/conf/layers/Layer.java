@@ -44,6 +44,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
         @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
+        @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
         @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
         @JsonSubTypes.Type(value = RecursiveAutoEncoder.class, name = "recursiveAutoEncoder"),
