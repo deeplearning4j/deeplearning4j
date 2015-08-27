@@ -4,7 +4,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM.*;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer.PoolingType;
@@ -114,6 +113,15 @@ public class LayerBuilderTest {
         checkSerialization(out);
 
         assertEquals(loss, out.getLossFunction());
+    }
+    
+    @Test
+    public void testRnnOutputLayer() throws Exception {
+    	RnnOutputLayer out = new RnnOutputLayer.Builder(loss).build();
+    	
+    	checkSerialization(out);
+    	
+    	assertEquals(loss, out.getLossFunction());
     }
 
     @Test
