@@ -47,7 +47,7 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         assertArrayEquals(new int[]{0, 0}, oneIndexOffsets);
         assertEquals(0,resolution.getOffset());
         int[] oneIndexStrides = ArrayUtil.copy(resolution.getStrides());
-        assertArrayEquals(new int[]{2, 1}, oneIndexStrides);
+        assertArrayEquals(new int[]{2,1}, oneIndexStrides);
 
     }
 

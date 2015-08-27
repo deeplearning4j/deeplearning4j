@@ -23,7 +23,7 @@ public class NDArrayMathTests extends BaseNd4jTest {
         assertEquals(4, NDArrayMath.vectorsPerSlice(arr));
 
         INDArray matrix = Nd4j.create(2,2);
-        assertEquals(1,NDArrayMath.vectorsPerSlice(matrix));
+        assertEquals(2,NDArrayMath.vectorsPerSlice(matrix));
 
         INDArray arrSliceZero = arr.slice(0);
         assertEquals(4,NDArrayMath.vectorsPerSlice(arrSliceZero));
@@ -62,7 +62,7 @@ public class NDArrayMathTests extends BaseNd4jTest {
         INDArray arr = Nd4j.create(3,2,2);
         assertEquals(4,NDArrayMath.vectorsPerSlice(arr));
         INDArray matrix = Nd4j.create(2,2);
-        assertEquals(1,NDArrayMath.vectorsPerSlice(matrix));
+        assertEquals(2,NDArrayMath.vectorsPerSlice(matrix));
 
     }
 

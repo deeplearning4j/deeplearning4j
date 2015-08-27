@@ -49,17 +49,6 @@ public class ShapeTest extends BaseNd4jTest {
 
     }
 
-    @Test
-    public void testLeadingOnesAndTrailingOnes() {
-        INDArray arr = Nd4j.ones(1, 10, 1);
-        arr.toString();
-        System.out.println(arr);
-        INDArray array = Nd4j.zeros(new int[]{1, 10, 1});
-        INDArray slice = array.slice(0, 2);
-        assertArrayEquals(new int[]{1, 10}, slice.shape());
-        System.out.println(Arrays.toString(slice.shape())); //Expect: [1,10] -> OK
-        System.out.println(slice);
-    }
 
     @Test
     public void testDupLeadingTrailingZeros(){
