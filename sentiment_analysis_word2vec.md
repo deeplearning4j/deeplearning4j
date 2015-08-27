@@ -156,6 +156,6 @@ Below is the `main` method of our program. The comments give a high-level descri
 ## <a name="resource">Other Resources</a>
 
 * [Natural Language Processing on Coursera](https://class.coursera.org/nlp/) (Chris Manning and Dan Jurafsky)
-* [Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf)
+* [Exploiting Similarities among Languages for Machine Translation](http://arxiv.org/pdf/1309.4168.pdf); Mikolov et al
 * [Twitter Sentiment Classification using Distant Supervision](https://cs.stanford.edu/people/alecmgo/papers/TwitterDistantSupervision09.pdf); Alec Go et al
 * [Thumbs up? Sentiment classification using machine learning techniques](http://www.cs.cornell.edu/home/llee/papers/sentiment.home.html); Bo Pang et al
