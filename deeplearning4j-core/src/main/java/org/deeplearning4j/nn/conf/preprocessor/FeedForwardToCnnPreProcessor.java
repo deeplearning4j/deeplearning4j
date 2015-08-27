@@ -71,7 +71,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
         this.numChannels = numChannels;
     }
 
-    public FeedForwardToCnnPreProcessor(int inputWidth, int inputHeight) {
+    public FeedForwardToCnnPreProcessor(int inputHeight, int inputWidth) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = 1;
