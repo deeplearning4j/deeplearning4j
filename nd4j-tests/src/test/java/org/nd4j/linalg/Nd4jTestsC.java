@@ -37,10 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -266,8 +263,65 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(columnSorted, sorted);
     }
 
+    @Test
+    public void testSortRows(){
+        int nRows = 10;
+        int nCols = 5;
+        java.util.Random r = new java.util.Random(12345);
 
+        for( int i=0; i<nCols; i++ ){
+            INDArray in = Nd4j.rand(new int[]{nRows,nCols});
 
+            List<Integer> order = new ArrayList<>(nRows);
+            //in.row(order(i)) should end up as out.row(i) - ascending
+            //in.row(order(i)) should end up as out.row(nRows-j-1) - descending
+            for( int j=0; j<nRows; j++ ) order.add(j);
+            Collections.shuffle(order, r);
+            for( int j=0; j<nRows; j++ ) in.putScalar(new int[]{j,i},order.get(j));
+
+            INDArray outAsc = Nd4j.sortRows(in, i, true);
+            INDArray outDesc = Nd4j.sortRows(in, i, false);
+
+            for( int j=0; j<nRows; j++ ){
+                assertTrue(outAsc.getDouble(j,i)==j);
+                int origRowIdxAsc = order.indexOf(j);
+                assertTrue(outAsc.getRow(j).equals(in.getRow(origRowIdxAsc)));
+
+                assertTrue(outDesc.getDouble(j,i)==(nRows-j-1));
+                int origRowIdxDesc = order.indexOf(nRows-j-1);
+                assertTrue(outDesc.getRow(j).equals(in.getRow(origRowIdxDesc)));
+            }
+        }
+    }
+
+    @Test
+    public void testSortColumns(){
+        int nRows = 5;
+        int nCols = 10;
+        java.util.Random r = new java.util.Random(12345);
+
+        for( int i=0; i<nRows; i++ ){
+            INDArray in = Nd4j.rand(new int[]{nRows,nCols});
+
+            List<Integer> order = new ArrayList<>(nRows);
+            for( int j=0; j<nCols; j++ ) order.add(j);
+            Collections.shuffle(order, r);
+            for( int j=0; j<nCols; j++ ) in.putScalar(new int[]{i,j},order.get(j));
+
+            INDArray outAsc = Nd4j.sortColumns(in, i, true);
+            INDArray outDesc = Nd4j.sortColumns(in, i, false);
+
+            for( int j=0; j<nCols; j++ ){
+                assertTrue(outAsc.getDouble(i,j)==j);
+                int origColIdxAsc = order.indexOf(j);
+                assertTrue(outAsc.getColumn(j).equals(in.getColumn(origColIdxAsc)));
+
+                assertTrue(outDesc.getDouble(i,j)==(nCols-j-1));
+                int origColIdxDesc = order.indexOf(nCols-j-1);
+                assertTrue(outDesc.getColumn(j).equals(in.getColumn(origColIdxDesc)));
+            }
+        }
+    }
 
 
     @Test
