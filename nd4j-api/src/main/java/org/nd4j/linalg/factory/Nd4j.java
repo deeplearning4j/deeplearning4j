@@ -1175,6 +1175,80 @@ public class Nd4j {
         return ndarray;
     }
 
+    /**Sort (shuffle) the rows of a 2d array according to the value at a specified column.
+	 * Other than the order of the rows, each row is unmodified. Copy operation: original
+	 * INDArray is unmodified<br>
+	 * So if sorting the following on values of column 2 (ascending):<br>
+	 * [a b 2]<br>
+	 * [c d 0]<br>
+	 * [e f -3]<br>
+	 * Then output is<br>
+	 * [e f -3]<br>
+	 * [c d 0]<br>
+	 * [a b 2]<br>
+	 * @param in 2d array to sort
+	 * @param colIdx The column to sort on
+	 * @param ascending true if smallest-to-largest; false if largest-to-smallest
+	 * @return
+	 */
+	public static INDArray sortRows( final INDArray in, final int colIdx, final boolean ascending ){
+		if(in.rank() != 2) throw new IllegalArgumentException("Cannot sort rows on non-2d matrix");
+		if(colIdx<0 || colIdx>=in.columns()) throw new IllegalArgumentException("Cannot sort on values in column " + colIdx + ", nCols="+in.columns());
+
+		INDArray out = Nd4j.create(in.shape());
+		int nRows = in.rows();
+		ArrayList<Integer> list = new ArrayList<>(nRows);
+		for( int i=0; i<nRows; i++ ) list.add(i);
+		Collections.sort(list, new Comparator<Integer>(){
+			@Override
+			public int compare(Integer o1, Integer o2) {
+				if(ascending) return Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
+				else return -Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
+			}
+		});
+		for( int i=0; i<nRows; i++ ){
+			out.putRow(i, in.getRow(list.get(i)));
+		}
+		return out;
+	}
+
+	/**Sort (shuffle) the columns of a 2d array according to the value at a specified row.
+	 * Other than the order of the columns, each column is unmodified. Copy operation: original
+	 * INDArray is unmodified<br>
+	 * So if sorting the following on values of row 1 (ascending):<br>
+	 * [a b c]<br>
+	 * [1 -1 0]<br>
+	 * [d e f]<br>
+	 * Then output is<br>
+	 * [b c a]<br>
+	 * [-1 0 1]<br>
+	 * [e f d]<br>
+	 * @param in 2d array to sort
+	 * @param rowIdx The row to sort on
+	 * @param ascending true if smallest-to-largest; false if largest-to-smallest
+	 * @return
+	 */
+	public static INDArray sortColumns( final INDArray in, final int rowIdx, final boolean ascending ){
+		if(in.rank() != 2 ) throw new IllegalArgumentException("Cannot sort columns on non-2d matrix");
+		if(rowIdx<0 || rowIdx>=in.rows()) throw new IllegalArgumentException("Cannot sort on values in row " + rowIdx + ", nRows="+in.rows());
+
+		INDArray out = Nd4j.create(in.shape());
+		int nCols = in.columns();
+		ArrayList<Integer> list = new ArrayList<>(nCols);
+		for( int i=0; i<nCols; i++ ) list.add(i);
+		Collections.sort(list, new Comparator<Integer>(){
+			@Override
+			public int compare(Integer o1, Integer o2) {
+				if(ascending) return Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
+				else return -Double.compare(in.getDouble(rowIdx, o1), in.getDouble(rowIdx, o2));
+			}
+		});
+		for( int i=0; i<nCols; i++ ){
+			out.putColumn(i, in.getColumn(list.get(i)));
+		}
+		return out;
+	}
+
     /**
      * Create an n x (shape)
      * ndarray where the ndarray is repeated num times
