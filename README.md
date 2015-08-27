@@ -6,6 +6,8 @@ ND4J: Scientific Computing on the JVM
 ND4J is an Apache2 Licensed open-sourced scientific computing library for the JVM. It is meant to be used in production environments
 rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements.
 
+Current latest version in maven central is `0.4-rc0`.
+
 ---
 ## Main Features
 
@@ -67,7 +69,7 @@ Add the local compiled file dependency (choose the module for your backend) to y
     <dependency>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-jblas</artifactId>
-        <version>0.0.3.5.5.4-SNAPSHOT</version>
+        <version>0.4-rc0</version>
     </dependency>
 
 #### Yum Install / Load RPM (Fedora or CentOS)
