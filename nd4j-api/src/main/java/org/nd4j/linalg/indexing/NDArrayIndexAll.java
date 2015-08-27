@@ -22,6 +22,7 @@ public class NDArrayIndexAll extends IntervalIndex {
     public void init(INDArray arr, int begin, int dimension) {
         this.begin = 0;
         this.end = arr.size(dimension);
+        this.length = end;
     }
 
 
