@@ -9,12 +9,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.*;
+import java.util.concurrent.*;
 
+@SuppressWarnings("unchecked")
 @NoArgsConstructor
 @Data
 public class Graph<T extends Node> {
     // Key of adjacency list points to nodes in the list (from bottom to top)
-    private Map<T, Set<T>> adjacencyListMap = new HashMap<>();
+    private Map<T, CopyOnWriteArrayList<T>> adjacencyListMap = new ConcurrentHashMap<>();
     private Set<T> startNodeSet = new ConcurrentSet<>();
     private Set<T> endNodeSet = new ConcurrentSet<>();
 
@@ -22,9 +24,28 @@ public class Graph<T extends Node> {
         return adjacencyListMap.size();
     }
 
+    public void removeNodesFromGraph(List<T> nodesToRemove) {
+        for (Map.Entry entry : adjacencyListMap.entrySet()) {
+            T node = (T) entry.getKey();
+            List<T> neighbors = (List<T>) entry.getValue();
+
+            if (nodesToRemove.contains(node)) {
+                adjacencyListMap.remove(node);
+            }
+
+            for (T neighborNode : neighbors) {
+                if (nodesToRemove.contains(neighborNode)) {
+                    adjacencyListMap.remove(neighborNode);
+                    neighbors.remove(neighborNode);
+                }
+            }
+
+        }
+    }
+
     public void addNode(T node) {
         if (!adjacencyListMap.containsKey(node)) {
-            adjacencyListMap.put(node, new HashSet<T>());
+            adjacencyListMap.put(node, new CopyOnWriteArrayList<T>());
         }
     }
 
@@ -58,7 +79,7 @@ public class Graph<T extends Node> {
         return ret;
     }
 
-    public Set<T> getNeighbors(T node) {
+    public List<T> getNextNodes(T node) {
         return adjacencyListMap.get(node);
     }
 
@@ -80,9 +101,9 @@ public class Graph<T extends Node> {
 
     public void addEndNode(T node) { endNodeSet.add(node); }
 
-    public void removeStartNode(T node) { startNodeSet.remove(node); }
+    public void removeNodeFromStartNodes(T node) { startNodeSet.remove(node); }
 
-    public void removeEndNode(T node) { endNodeSet.remove(node); }
+    public void removeNodeFromEndNodes(T node) { endNodeSet.remove(node); }
 
     /**
      * Return a list of nodes with the given name
@@ -99,14 +120,8 @@ public class Graph<T extends Node> {
         return matchedNodeList;
     }
 
-    /**
-     * Returns a list of nodes a particular node points to
-     *
-     * @param node The query node
-     * @return List of neighbor Node Objects
-     */
-    public Set<T> getNextNodes(T node) {
-        return adjacencyListMap.get(node);
+    public Set<T> getAllNodes() {
+        return adjacencyListMap.keySet();
     }
 
     /**
@@ -118,7 +133,7 @@ public class Graph<T extends Node> {
     public String toString() {
         String sizeString = String.format("\tSize: %s\n", graphSize());
         String adjacencyString = "";
-        for (Map.Entry<T, Set<T>> entry : adjacencyListMap.entrySet()) {
+        for (Map.Entry<T, CopyOnWriteArrayList<T>> entry : adjacencyListMap.entrySet()) {
             String curNode = entry.getKey().toString();
             String listNodes = Arrays.deepToString(entry.getValue().toArray());
             adjacencyString += String.format("\t%s -> %s\n", curNode, listNodes);

@@ -21,18 +21,33 @@ public class CaffeTestUtil {
     public static final CaffeReader reader = new CaffeReader();
 
     // Get a working SolverNetContainer (given the CaffeLoader tests all run)
-    public static SolverNetContainer getSolverNet() throws IOException {
+    public static SolverNetContainer getLogisticSolverNet() throws IOException {
         return new CaffeLoader().binaryNet(getLogisticBinaryNetPath())
                 .textFormatSolver(getLogisticTextFormatSolverPath())
                 .load();
     }
 
-    public static NetParameter getNet() throws IOException {
-        return getSolverNet().getNet();
+    public static SolverNetContainer getImageNetSolverNet() throws IOException {
+        return new CaffeLoader().binaryNet(getImageNetBinaryNetPath())
+                .textFormatSolver(getImageNetTextFormatSolverPath())
+                .load();
     }
 
-    public static SolverParameter getSolver() throws IOException {
-        return getSolverNet().getSolver();
+    public static NetParameter getLogisticNet() throws IOException {
+        return getLogisticSolverNet().getNet();
+    }
+
+    public static SolverParameter getLogisticSolver() throws IOException {
+        return getLogisticSolverNet().getSolver();
+    }
+
+
+    public static NetParameter getImageNetNet() throws IOException {
+        return getImageNetSolverNet().getNet();
+    }
+
+    public static SolverParameter getImageNetSolver() throws IOException {
+        return getImageNetSolverNet().getSolver();
     }
 
     // Define all the paths as String
