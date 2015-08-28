@@ -1,12 +1,37 @@
+/*
+ *
+ *  * Copyright 2015 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ */
 package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/**Recurrent Neural Network Output Layer.<br>
+ * Handles calculation of gradients etc for various objective functions.<br>
+ * Functionally the same as OutputLayer, but handles output and label reshaping
+ * automatically.<br>
+ * Input and output activations are same as other RNN layers: 3 dimensions with shape
+ * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.
+ * @author Alex Black
+ * @see BaseOutputLayer, OutputLayer
+ */
 public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
 
 	public RnnOutputLayer(NeuralNetConfiguration conf) {
@@ -20,7 +45,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 	private INDArray reshape3dTo2d(INDArray in){
 		if( in.rank() != 3 ) throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
 		int[] shape = in.shape();
-		if(shape[0]==1) return in.tensorAlongDimension(0,1,2);
+		if(shape[0]==1) return in.tensorAlongDimension(0,1,2);	//Edge case: miniBatchSize==1
+		if(shape[2]==1) return in.tensorAlongDimension(0,1,0);	//Edge case: timeSeriesLength=1
 		INDArray permuted = in.permute(0,2,1);	//Permute, so we get correct order after reshaping
 		return permuted.reshape(shape[0]*shape[2],shape[1]);
 	}
@@ -49,41 +75,17 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         return reshape2dTo3d(output2d);
     }
 
-    /**
-     * Returns the f1 score for the given examples.
-     * Think of this to be like a percentage right.
-     * The higher the number the more it got right.
-     * This is on a scale from 0 to 1.
-     *
-     * @param examples the examples to classify (one example in each row, may be time series)
-     * @param labels the true labels (may be time series)
-     * @return the scores for each ndarray
+    /**{@inheritDoc}
      */
     @Override
     public double f1Score(INDArray examples, INDArray labels) {
-        Evaluation eval = new Evaluation();
         if(examples.rank() == 3) examples = reshape3dTo2d(examples);
         if(labels.rank() == 3) labels = reshape3dTo2d(labels);
-        eval.eval(labels,labelProbabilities(examples));
-        return  eval.f1();
-
+        return super.f1Score(examples, labels);
     }
-
-
-//    public  void setLabels(INDArray labels) {
-//    	//Reshape labels from 3d to 2d. Similar to RnnToFeedForwardPreprocessor.preProcess()
-//    	if(labels != null && labels.rank() == 3) super.setLabels(reshape3dTo2d(labels));
-//    	else super.setLabels(labels);
-//    }
     
     public INDArray getInput() {
         return input;
-    }
-
-    @Override
-    public void setInput(INDArray input,boolean training) {
-    	if( input != null && input.rank() == 3 ) super.setInput(reshape3dTo2d(input), training);
-    	else super.setInput(input, training);
     }
 
     @Override

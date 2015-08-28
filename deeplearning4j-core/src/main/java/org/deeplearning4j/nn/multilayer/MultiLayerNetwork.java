@@ -1715,7 +1715,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public INDArray preOutput(INDArray x) {
         INDArray lastLayerActivation = x;
-        for( int i=0; i<layers.length-2; i++ ){
+        for( int i=0; i<layers.length-1; i++ ){
         	if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(lastLayerActivation,layers[i]);
             lastLayerActivation = layers[i].activate(lastLayerActivation);
