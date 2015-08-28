@@ -58,7 +58,7 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         assertEquals(1, test.imaginaryComponent(), 1e-1);
         test.subi(1);
         assertEquals(1, test.realComponent().doubleValue(), 1e-1);
-        assertEquals(1, test.imaginaryComponent(), 1e-1);
+        assertEquals(getFailureMessage(),1, test.imaginaryComponent(), 1e-1);
         test.muli(2);
         assertEquals(2, test.realComponent().doubleValue(), 1e-1);
         assertEquals(2, test.imaginaryComponent(), 1e-1);
@@ -69,8 +69,8 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
         assertEquals(2, test.realComponent().doubleValue(), 1e-1);
         assertEquals(2, test.imaginaryComponent(), 1e-1);
         test.rdivi(1);
-        assertEquals(0.25d, test.realComponent().doubleValue(), 1e-1);
-        assertEquals(-0.25d, test.imaginaryComponent(), 1e-1);
+        assertEquals(0.5d, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(2.0d, test.imaginaryComponent(), 1e-1);
     }
 
 
@@ -78,23 +78,23 @@ public  class ComplexNumberTests  extends BaseNd4jTest {
     public void testScalarFloat() {
         IComplexFloat test = Nd4j.createFloat(1, 1);
         test.addi(1);
-        assertEquals(2, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(2, test.realComponent().floatValue(), 1e-1);
         assertEquals(1, test.imaginaryComponent(), 1e-1);
         test.subi(1);
-        assertEquals(1, test.realComponent().doubleValue(), 1e-1);
-        assertEquals(1, test.imaginaryComponent(), 1e-1);
+        assertEquals(1, test.realComponent().floatValue(), 1e-1);
+        assertEquals(getFailureMessage(),1, test.imaginaryComponent(), 1e-1);
         test.muli(2);
-        assertEquals(2, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(2, test.realComponent().floatValue(), 1e-1);
         assertEquals(2, test.imaginaryComponent(), 1e-1);
         test.divi(2);
-        assertEquals(1, test.realComponent().doubleValue(), 1e-1);
+        assertEquals(1, test.realComponent().floatValue(), 1e-1);
         assertEquals(1, test.imaginaryComponent(), 1e-1);
-        test.addi(Nd4j.createFloat(1, 1));
-        assertEquals(2, test.realComponent().doubleValue(), 1e-1);
+        test.addi(Nd4j.createDouble(1, 1));
+        assertEquals(2, test.realComponent().floatValue(), 1e-1);
         assertEquals(2, test.imaginaryComponent(), 1e-1);
         test.rdivi(1);
-        assertEquals(0.25f, test.realComponent().doubleValue(), 1e-1);
-        assertEquals(-0.25f, test.imaginaryComponent(), 1e-1);
+        assertEquals(0.25d, test.realComponent().floatValue(), 1e-1);
+        assertEquals(-0.25d, test.imaginaryComponent(), 1e-1);
     }
 
     @Override

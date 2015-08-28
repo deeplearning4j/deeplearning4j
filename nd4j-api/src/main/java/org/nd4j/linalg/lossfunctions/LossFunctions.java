@@ -88,7 +88,7 @@ public class LossFunctions {
                 break;
             case MCXENT:
                 INDArray sums = log(z);
-                INDArray columnSums = labels.mul(log(sums));
+                INDArray columnSums = labels.mul(sums);
                 ret = -columnSums.sumNumber().doubleValue();
                 break;
             case XENT:
@@ -116,7 +116,7 @@ public class LossFunctions {
                 break;
             case NEGATIVELOGLIKELIHOOD:
                 INDArray sums2 = log(z);
-                INDArray columnSums2 = labels.mul(log(sums2));
+                INDArray columnSums2 = labels.mul(sums2);
                 ret = -columnSums2.sumNumber().doubleValue();
                 break;
 

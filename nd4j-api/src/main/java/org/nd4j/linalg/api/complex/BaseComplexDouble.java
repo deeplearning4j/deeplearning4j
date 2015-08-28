@@ -193,7 +193,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexNumber rdivi(IComplexNumber c, IComplexNumber result) {
-        return result.set(c.realComponent().doubleValue() / result.realComponent().doubleValue(), c.imaginaryComponent().doubleValue() / result.imaginaryComponent().doubleValue());
+        return result.set(c.realComponent().doubleValue() / realComponent().doubleValue(), c.imaginaryComponent().doubleValue() / imaginaryComponent().doubleValue());
     }
 
     @Override
@@ -203,7 +203,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexNumber rdivi(Number v, IComplexNumber result) {
-        double d = result.realComponent().doubleValue() * result.realComponent().doubleValue() + result.imaginaryComponent().doubleValue() * result.imaginaryComponent().doubleValue();
+        double d = realComponent().doubleValue() * realComponent().doubleValue() + imaginaryComponent().doubleValue() * imaginaryComponent().doubleValue();
         return result.set(v.doubleValue() * result.realComponent().doubleValue() / d, -v.doubleValue() * result.imaginaryComponent().doubleValue() / d);
     }
 
@@ -230,8 +230,8 @@ public abstract class BaseComplexDouble implements IComplexDouble {
      */
     @Override
     public IComplexNumber addi(IComplexNumber c, IComplexNumber result) {
-        result.set(result.realComponent().doubleValue() + c.realComponent().doubleValue(),
-                    result.imaginaryComponent().doubleValue() + c.imaginaryComponent().doubleValue());
+        result.set(realComponent().doubleValue() + c.realComponent().doubleValue(),
+                    imaginaryComponent().doubleValue() + c.imaginaryComponent().doubleValue());
         return this;
     }
 
@@ -294,7 +294,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
      */
     @Override
     public IComplexNumber subi(IComplexNumber c, IComplexNumber result) {
-        return result.set(result.realComponent().doubleValue() - c.realComponent().doubleValue(), result.imaginaryComponent().doubleValue() - c.imaginaryComponent().doubleValue());
+        return result.set(realComponent().doubleValue() - c.realComponent().doubleValue(), imaginaryComponent().doubleValue() - c.imaginaryComponent().doubleValue());
     }
 
     @Override
@@ -314,7 +314,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexNumber subi(Number a, IComplexNumber result) {
-        return result.set(result.realComponent().doubleValue() - a.doubleValue(), result.imaginaryComponent().doubleValue());
+        return result.set(realComponent().doubleValue() - a.doubleValue(), imaginaryComponent().doubleValue());
     }
 
     @Override
@@ -363,7 +363,7 @@ public abstract class BaseComplexDouble implements IComplexDouble {
 
     @Override
     public IComplexNumber muli(Number v, IComplexNumber result) {
-        return result.set(result.realComponent().doubleValue() * v.doubleValue(), result.imaginaryComponent().doubleValue() * v.doubleValue());
+        return result.set(realComponent().doubleValue() * v.doubleValue(), imaginaryComponent().doubleValue() * v.doubleValue());
     }
 
     @Override
