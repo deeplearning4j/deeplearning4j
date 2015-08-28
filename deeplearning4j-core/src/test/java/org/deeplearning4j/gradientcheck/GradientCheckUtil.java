@@ -95,9 +95,10 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+            if( backpropGradient == 0.0 && numericalGradient == 0.0 ) relError = 0.0;	//Edge case: i.e., RNNs with time series length of 1.0
 
             if(relError > maxError) maxError = relError;
-            if(relError > maxRelError) {
+            if(relError > maxRelError || Double.isNaN(relError)) {
                 if(print)
                     log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= "+numericalGradient
                             + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);

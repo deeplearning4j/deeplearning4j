@@ -20,8 +20,11 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
+
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,16 +43,16 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input) {
+    public INDArray preProcess(INDArray input, Layer layer) {
         for(InputPreProcessor preProcessor : inputPreProcessors)
-        input = preProcessor.preProcess(input);
+        input = preProcessor.preProcess(input,layer);
         return input;
     }
 
     @Override
-    public INDArray backprop(INDArray output) {
+    public INDArray backprop(INDArray output, Layer layer) {
         for(InputPreProcessor inputPreProcessor : inputPreProcessors)
-            output = inputPreProcessor.backprop(output);
+            output = inputPreProcessor.backprop(output,layer);
         return output;
     }
 
