@@ -7,6 +7,7 @@ Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net li
 
 Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPus. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
+Current version in maven central is `0.4-rc0`.
 
 ---
 ## Main Features
@@ -61,7 +62,7 @@ Add the local compiled file dependencies to your pom.xml file. Here's an example
     <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-cli</artifactId>
-        <version>0.0.3.3.4.alpha1-SNAPSHOT</version>
+        <version>0.4-rc0</version>
     </dependency>
 
 #### Yum Install / Load RPM (Fedora or CentOS)
