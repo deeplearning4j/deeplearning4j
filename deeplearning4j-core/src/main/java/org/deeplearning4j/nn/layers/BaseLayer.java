@@ -238,27 +238,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         this.conf = conf;
     }
 
-    /**
-     * Returns the parameters of the neural network
-     *
+    /**Returns the parameters of the neural network as a flattened row vector
      * @return the parameters of the neural network
      */
     @Override
     public INDArray params() {
-        int length = 0;
-        for(String s : params.keySet()) {
-            length += params.get(s).length();
-        }
-
-        INDArray ret = Nd4j.create(1, length);
-        int count = 0;
-        for(String s : params.keySet()) {
-            INDArray get = params.get(s).linearView();
-            for(int i = 0; i < get.length(); i++) {
-                ret.putScalar(count++,get.getDouble(i));
-            }
-        }
-        return ret;
+        return Nd4j.toFlattened(params.values());
     }
 
     @Override
