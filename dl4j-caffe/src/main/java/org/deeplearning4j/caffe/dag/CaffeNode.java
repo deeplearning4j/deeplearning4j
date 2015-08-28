@@ -12,31 +12,34 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(of = {"name", "layerSubType"})
-@EqualsAndHashCode(exclude = {"bottomNodeSet"})
+@EqualsAndHashCode(exclude = {"bottomNodeList"})
 public class CaffeNode implements Node {
     private String name;
     private LayerType layerType;
     private LayerSubType layerSubType;
     private Map<String, Object> metaData = new HashMap<>();
     private List<INDArray> data = new ArrayList<>();
-    private Set<CaffeNode> bottomNodeSet;
+    private List<CaffeNode> bottomNodeList;
 
     public enum LayerType {
-        HIDDEN, PROCESSING,
-        INNERPRODUCT, CONNECTOR
+        HIDDEN, PROCESSING, VISION,
+        INNERPRODUCT, CONNECTOR, DROPOUT, LOSS
     }
 
     public enum LayerSubType {
         //HIDDEN
         CONVOLUTION, POOLING, RELU, SIGMOID, TANH,
-        SOFTMAX, SOFTMAXWITHLOSS,
+        SOFTMAX, SOFTMAXWITHLOSS, SOFTMAX_LOSS,
         EUCLIDEANLOSS, SIGMOIDCROSSENTROPYLOSS,
         //PROCESSING
         FLATTEN, RESHAPE, CONCAT, SLICE, SPLIT,
         //INNERPRODUCT
         INNERPRODUCT,
         //CONNECTOR
-        CONNECTOR
+        CONNECTOR,
+        //DROPOUT
+        DROPOUT
+
     }
 
     public CaffeNode(String name, LayerType layerType, LayerSubType layerSubType) {
@@ -61,11 +64,11 @@ public class CaffeNode implements Node {
         this.data = data;
     }
 
-    public CaffeNode(String name, LayerType layerType, LayerSubType layerSubType, Set<CaffeNode> bottomNodeSet) {
+    public CaffeNode(String name, LayerType layerType, LayerSubType layerSubType, List<CaffeNode> bottomNodeSet) {
         this.name = name;
         this.layerType = layerType;
         this.layerSubType = layerSubType;
-        this.bottomNodeSet = bottomNodeSet;
+        this.bottomNodeList = bottomNodeSet;
     }
 
 }

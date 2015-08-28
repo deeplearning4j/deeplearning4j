@@ -18,7 +18,7 @@ public class CaffeSolverTranslatorTest {
     @Test
     public void testSolverTranslator() throws IOException, NoSuchFieldException, IllegalAccessException{
         // Get SolverParamter
-        SolverNetContainer container = CaffeTestUtil.getSolverNet();
+        SolverNetContainer container = CaffeTestUtil.getLogisticSolverNet();
         Caffe.SolverParameter solver = container.getSolver();
 
         // Instantiate new BuilderContainer
