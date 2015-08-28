@@ -30,7 +30,7 @@ public class CaffeTranslator {
         }
     }
 
-    protected MultiLayerConfiguration translate() throws IllegalAccessException, NoSuchFieldException {
+    protected MultiLayerConfiguration translate() throws Exception {
 
         CaffeNetTranslator netTranslator = new CaffeNetTranslator();
         CaffeSolverTranslator solverTranslator = new CaffeSolverTranslator();
