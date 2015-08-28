@@ -122,6 +122,8 @@ After many years using Eclipse, we recommend IntelliJ, which has a similar inter
 
 If you use Eclipse, you will need to install the [Lombok plugin](https://projectlombok.org/). You will also need the Maven plugin for Eclipse: [eclipse.org/m2e/](https://eclipse.org/m2e/).
 
+Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
+
 ### <a name="trouble">Troubleshooting</a>
 
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
