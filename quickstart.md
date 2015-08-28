@@ -27,7 +27,7 @@ After those installs, if you can follow these steps, you'll be up and running:
 2. From your console, run "mvn clean install -DskipTests -Dmaven.javadoc.skip=true" on *each* of those directories
 -->
 * Create a new project in IntelliJ with Maven. 
-* Copy and paste to make sure your POM.xml file looks like [this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml).
+* Copy and paste to make sure your POM.xml file looks like [this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). (We're on version 0.4.x)
 * For an easier install, Windows users should replace *nd4j-jblas* with *nd4j-java* in the dependencies. 
 * Select `DBNIrisExample.java` from the lefthand file tree.
 * Hit run! (It's the green button.)
@@ -75,6 +75,10 @@ That is, there are two wild cards that will change as we update and you go throu
     java -cp target/*.jar org.deeplearning4j.*
 
 To make changes to the examples from the command line and run that changed file, you could, for example, tweak *MLPBackpropIrisExample* in *src/main/java/org/deeplearning4j/multilayer* and then maven-build the examples again. 
+
+## Scala 
+
+A [Scala version of the examples is here](https://github.com/kogecoo/dl4j-0.4-examples-scala).
 
 ## Next Steps
 
