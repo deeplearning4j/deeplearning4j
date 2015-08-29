@@ -44,8 +44,6 @@ public class LossFunctions {
      * @param z                 the output function
      * @param l2                the l2 regularization term (0.5 * l2Coeff * sum w^2)
      * @param l1                the l1 regularization term (l1Coeff * sum |w|)
-     * @param l1Magnitude       the l1 magnitude
-     * @param l2Magnitude       the l2 magnitude
      * @param useRegularization whether to use regularization
      * @return the score for the given parameters
      */

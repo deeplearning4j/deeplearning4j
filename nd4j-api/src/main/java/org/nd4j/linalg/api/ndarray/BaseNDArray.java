@@ -1136,7 +1136,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray epsi(INDArray other) {
-
         Nd4j.getExecutioner().exec(new Eps(linearView(), other.linearView(), this, length()));
         return this;
     }
@@ -1172,7 +1171,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(Number other) {
-
         Nd4j.getExecutioner().exec(new ScalarGreaterThan(linearView(), other));
         return this;
     }
@@ -1184,7 +1182,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray lti(INDArray other) {
-
         Nd4j.getExecutioner().exec(new LessThan(linearView(), other, linearView(), length()));
         return this;
     }
@@ -1196,7 +1193,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(Number other) {
-
         Nd4j.getExecutioner().exec(new ScalarNotEquals(linearView(), other));
         return this;
     }
@@ -1208,7 +1204,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray neqi(INDArray other) {
-
         Nd4j.getExecutioner().exec(new NotEqualTo(linearView(), other.linearView(), linearView(), length()));
         return this;
     }
@@ -1220,7 +1215,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray eqi(INDArray other) {
-
         Nd4j.getExecutioner().exec(new EqualTo(linearView(), other.linearView(), linearView(), length()));
         return this;
     }
@@ -1232,7 +1226,6 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray gti(INDArray other) {
-
         Nd4j.getExecutioner().exec(new GreaterThan(linearView(), other.linearView(), linearView(), length()));
         return this;
     }
@@ -1250,7 +1243,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray negi() {
-
         Nd4j.getExecutioner().exec(new Negative(linearView()));
         return this;
     }
