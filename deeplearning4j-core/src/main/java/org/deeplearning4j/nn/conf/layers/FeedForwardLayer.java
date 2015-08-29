@@ -3,7 +3,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 
 /**
- * Created by jeffreytang on 7/21/15.
+ * @author jeffreytang
  */
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
