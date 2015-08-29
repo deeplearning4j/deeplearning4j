@@ -1,10 +1,11 @@
 package org.deeplearning4j.spark.sql.sources.mnist
 
 
+import java.net.URI
 import java.nio.file.Paths
 
 import org.apache.hadoop.fs.Path
-import org.apache.spark.Logging
+import org.apache.spark.{SparkContext, Partition, TaskContext, Logging}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
@@ -19,7 +20,7 @@ import org.nd4j.linalg.util.ArrayUtil
  *
  * @author Kai Sasaki
  */
-case class MnistRelation(imagesPath: Path, labelsPath: Path)
+case class MnistRelation(imagesPath: Path, labelsPath: Path, recordsPerPartition: Int)
     (@transient val sqlContext: SQLContext) extends BaseRelation
     with PrunedScan with Logging  {
 
@@ -30,36 +31,75 @@ case class MnistRelation(imagesPath: Path, labelsPath: Path)
   override def buildScan(requiredColumns: Array[String]): RDD[Row] = {
     val sc = sqlContext.sparkContext
 
-    val manager = {
-      // CAVEAT: MnistManager supports only local files at this time.
-      val imagesFile = Paths.get(imagesPath.toUri).toFile.getAbsolutePath
-      val labelsFile = Paths.get(labelsPath.toUri).toFile.getAbsolutePath
-      new MnistManager(imagesFile, labelsFile)
-    }
+    new MnistRDD(sc, imagesPath.toUri, labelsPath.toUri, requiredColumns, recordsPerPartition)
+  }
+}
+
+private class MnistPartition(override val index: Int, val startIndex: Int, val endIndex: Int)
+  extends Partition with Serializable {
+}
+
+private class MnistRDD(
+    sc: SparkContext,
+    private val imagesPath: URI,
+    private val labelsPath: URI,
+    private val requiredColumns: Array[String],
+    recordsPerPartition: Int = 1000
+  )
+  extends RDD[Row](sc, Nil) {
+
+  override val partitioner = None
+
+  override def getPartitions: Array[Partition] = {
+    val manager = open()
     try {
-      val cols = {
-        val req = requiredColumns.toSet
-        schema.fieldNames flatMap {
-          case "label" if req("label") => Seq(
-            (pt:Int) => manager.readLabel().toDouble)
-          case "features" if req("features") => Seq(
-            (pt:Int) => Vectors.dense(ArrayUtil.flatten(manager.readImage()).map(_.toDouble)))
-          case _ => Seq.empty
-        }
+      val numRecords = manager.getLabels.getCount
+      val numPartitions = Math.ceil(numRecords / (recordsPerPartition: Double)).asInstanceOf[Int]
+      val array = new Array[Partition](numPartitions)
+      for (i <- 0 until numPartitions) {
+        array(i) = new MnistPartition(
+          i,
+          i * recordsPerPartition,
+          Math.min((i + 1) * recordsPerPartition - 1, numRecords - 1))
       }
-
-      val numExamples = manager.getLabels.getCount
-
-      sc.makeRDD((0 until numExamples).map(pt => {
-        Row.fromSeq(cols.map(_(pt)))
-      }))
+      array
     }
     finally {
       manager.close()
     }
   }
-}
 
+  override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
+    val manager = open()
+    context.addTaskCompletionListener((_) => manager.close())
+
+    val msplit = split.asInstanceOf[MnistPartition]
+
+    val cols = {
+      val req = requiredColumns.toSet
+      Seq("label", "features") flatMap {
+        case "label" if req("label") => Seq(
+          () => manager.readLabel().toDouble)
+        case "features" if req("features") => Seq(
+          () => Vectors.dense(ArrayUtil.flatten(manager.readImage()).map(_.toDouble)))
+        case _ => Seq.empty
+      }
+    }
+
+    manager.setCurrent(msplit.startIndex)
+
+    (msplit.startIndex to msplit.endIndex).map((_) => {
+      Row.fromSeq(cols.map(_()))
+    }).iterator
+  }
+
+  private def open(): MnistManager = {
+    // CAVEAT: MnistManager supports only local files at this time.
+    val imagesFile = Paths.get(imagesPath).toFile.getAbsolutePath
+    val labelsFile = Paths.get(labelsPath).toFile.getAbsolutePath
+    new MnistManager(imagesFile, labelsFile)
+  }
+}
 
 /**
  * Mnist dataset provider.
@@ -77,15 +117,24 @@ class DefaultSource extends RelationProvider {
       sys.error("'labelsPath' must be specified for mnist labels"))
   }
 
+  private def checkRecordsPerPartition(parameters: Map[String, String]): Int = {
+    parameters.getOrElse(RecordsPerPartition, 1000) match {
+      case r: String => Integer.parseInt(r)
+      case r: Int => r
+    }
+  }
+
   override def createRelation(sqlContext: SQLContext,
       parameters: Map[String, String]) = {
     val imagesPath = new Path(checkImagesFilePath(parameters))
     val labelsPath = new Path(checkLabelsFilePath(parameters))
-    new MnistRelation(imagesPath, labelsPath)(sqlContext)
+    val recordsPerPartition = checkRecordsPerPartition(parameters)
+    new MnistRelation(imagesPath, labelsPath, recordsPerPartition)(sqlContext)
   }
 }
 
 object DefaultSource {
   val ImagesPath = "imagesPath"
   val LabelsPath = "labelsPath"
+  val RecordsPerPartition = "recordsPerPartition"
 }
