@@ -19,8 +19,10 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -103,11 +105,46 @@ public class LSTMTest {
 
     //////////////////////////////////////////////////////////////////////////////////
 
+    @Test
+    public void testBackpropResultsContained()  {
+        INDArray input = getContainedData();
+        Layer layer = getLSTMConfig(input.shape()[0], 10);
+        INDArray epsilon = Nd4j.ones(8, 10);
+
+//        INDArray expectedBiasGradient = Nd4j.create(new double[]{
+//
+//        }, new int[]{1, 10});
+//
+//        INDArray expectedWeightGradient = Nd4j.create(new double[] {
+//
+//        }, new int[]{8, 10});
+//
+//        INDArray expectedEpsilon = Nd4j.create(new double[] {
+//
+//        },new int[]{9,8});
+
+//        layer.setInput(input);
+// TODO if switch to calling activate in the backprop this can switch to set input
+        layer.activate(input);
+        Pair<Gradient, INDArray> pair = layer.backpropGradient(epsilon);
+
+//        assertArrayEquals(expectedEpsilon.shape(), pair.getSecond().shape());
+//        assertArrayEquals(expectedWeightGradient.shape(), pair.getFirst().getGradientFor("W").shape());
+//        assertArrayEquals(expectedBiasGradient.shape(), pair.getFirst().getGradientFor("b").shape());
+//        assertEquals(expectedEpsilon, pair.getSecond());
+//        assertEquals(expectedWeightGradient, pair.getFirst().getGradientFor("W"));
+//        assertEquals(expectedBiasGradient, pair.getFirst().getGradientFor("b"));
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////
+
     private static Layer getLSTMConfig(int nIn, int nOut){
 
         LSTM layer = new LSTM.Builder()
                 .nIn(nIn)
                 .nOut(nOut)
+                .activation("tanh")
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
