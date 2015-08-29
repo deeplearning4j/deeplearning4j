@@ -1803,8 +1803,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Output activations.
      */
     public INDArray rnnTimeStep(INDArray input){
-    	
-    	throw new UnsupportedOperationException("Not yet implemented");
+    	for( int i=0; i<layers.length; i++ ){
+    		if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
+                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);
+    		if(layers[i] instanceof BaseRecurrentLayer){
+    			input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
+    		} else {
+    			input = layers[i].activate(input, false);
+    		}
+    	}
+    	return input;
     }
     
     /**Get the state of the RNN layer, as used in rnnTimeStep().
@@ -1814,7 +1822,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public Map<String,INDArray> rnnGetPreviousState(int layer){
     	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
     	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
-    	return ((BaseRecurrentLayer)layers[layer]).rnnGetPreviousState();
+    	return ((BaseRecurrentLayer<?>)layers[layer]).rnnGetPreviousState();
     }
     
     /**Set the state of the RNN layer.
@@ -1825,7 +1833,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
     	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
     	
-    	BaseRecurrentLayer r = (BaseRecurrentLayer)layers[layer];
+    	BaseRecurrentLayer<?> r = (BaseRecurrentLayer<?>)layers[layer];
     	r.rnnSetPreviousState(state);
     }
     
@@ -1834,7 +1842,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void rnnClearPreviousState(){
     	if( layers == null ) return;
     	for( int i=0; i<layers.length; i++ ){
-    		if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer)layers[i]).rnnClearPreviousState();
+    		if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer<?>)layers[i]).rnnClearPreviousState();
     	}
     }
 }
