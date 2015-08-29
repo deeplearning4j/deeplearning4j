@@ -43,6 +43,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * @author Alex Black
  */
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
+	public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
+	public static final String STATE_KEY_PREV_MEMCELL = "prevMem";
 
 	public GravesLSTM(NeuralNetConfiguration conf) {
 		super(conf);
@@ -65,7 +67,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 	@Override
 	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 		//First: Do forward pass to get gate activations etc.
-		INDArray[] activations = activateHelper(true);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
+		INDArray[] activations = activateHelper(true,null,null);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
 		INDArray outputActivations = activations[0];
 		INDArray memCellState = activations[1];
 		INDArray ifogZs = activations[2];
@@ -249,18 +251,18 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 	@Override
 	public INDArray activate(INDArray input, boolean training){
 		setInput(input, training);
-		return activateHelper(training)[0];
+		return activateHelper(training,null,null)[0];
 	}
 
 	@Override
 	public INDArray activate(INDArray input){
 		setInput(input);
-		return activateHelper(true)[0];
+		return activateHelper(true,null,null)[0];
 	}
 
 	@Override
 	public INDArray activate(boolean training){
-		return activateHelper(training)[0];
+		return activateHelper(training,null,null)[0];
 	}
 
 	@Override
@@ -269,13 +271,13 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 	}
 
 	private INDArray[] activateHelper() {
-		return activateHelper(false);
+		return activateHelper(false,null,null);
 	}
 
 	/**Returns 4 INDArrays: [outputActivations, memCellState, ifogZs, ifogAs] in that order.
 	 * Need all 4 to do backward pass, but only care about the first one for forward pass.
 	 */
-	private INDArray[] activateHelper(boolean training){
+	private INDArray[] activateHelper(boolean training, INDArray prevOutputActivations, INDArray prevMemCellState){
 		//Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
 		//Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
 
@@ -287,7 +289,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		int timeSeriesLength = (is2dInput ? 1 : input.size(2));
 		int hiddenLayerSize = recurrentWeights.size(0);
 		int miniBatchSize = input.size(0);
-		int nIn = inputWeights.size(0);		//Size of previous layer (or input)
+//		int nIn = inputWeights.size(0);		//Size of previous layer (or input)
 
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
@@ -322,11 +324,14 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		INDArray ifogA = Nd4j.zeros(new int[]{miniBatchSize,4 * hiddenLayerSize,timeSeriesLength});
 		INDArray memCellState = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
 
-
+		if(prevOutputActivations == null) prevOutputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
+		if(prevMemCellState == null) prevMemCellState = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
 		for( int t = 0; t < timeSeriesLength; t++ ){
 			INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(t,1,0));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
-			INDArray prevOutputActivations = (t==0 ? Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize}) : outputActivations.tensorAlongDimension(t-1,1,0));	//Shape: [m,nL]
-			INDArray prevMemCellState = (t==0 ? Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize}) : memCellState.tensorAlongDimension(t-1,1,0));	//Shape: [m,nL]
+			if(t>0){
+				prevOutputActivations = outputActivations.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
+				prevMemCellState = memCellState.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
+			}
 
 			//Calculate activations for: network input + forget, output, input modulation gates.
 			INDArray inputActivations = miniBatchData.mmul(wi)
@@ -412,6 +417,16 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 	@Override
 	public INDArray rnnTimeStep(INDArray input) {
-		throw new UnsupportedOperationException("Not implemented");
+		INDArray[] activations = activateHelper(false,stateMap.get(STATE_KEY_PREV_ACTIVATION),stateMap.get(STATE_KEY_PREV_MEMCELL));
+		INDArray outAct = activations[0];
+		INDArray memCell = activations[1];
+		//Store last time step of output activations and memory cell state for later use:
+		int tLength = outAct.size(2);
+		INDArray lastActSlice = outAct.tensorAlongDimension(tLength-1,1,0);
+		INDArray lastMemSlice = memCell.tensorAlongDimension(tLength-1,1,0);
+		stateMap.put(STATE_KEY_PREV_ACTIVATION, lastActSlice.dup());
+		stateMap.put(STATE_KEY_PREV_MEMCELL, lastMemSlice.dup());
+
+		return outAct;
 	}
 }

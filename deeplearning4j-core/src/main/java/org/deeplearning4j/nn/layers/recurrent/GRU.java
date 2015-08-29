@@ -41,7 +41,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * equal number of parameters) in some cases.
  * @author Alex Black
  */
-public class GRU extends BaseRecurrentLayer {
+public class GRU extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GRU> {
+
+	public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
 
 	public GRU(NeuralNetConfiguration conf) {
 		super(conf);
@@ -65,7 +67,7 @@ public class GRU extends BaseRecurrentLayer {
 	@Override
 	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 		//First: Do forward pass to get gate activations etc.
-		INDArray[] activations = activateHelper(true);	//Order: {outputActivations,rucZs,rucAs}
+		INDArray[] activations = activateHelper(true,null);	//Order: {outputActivations,rucZs,rucAs}
 		INDArray outputActivations = activations[0];
 		INDArray rucZs = activations[1];
 		INDArray rucAs = activations[2];
@@ -208,27 +210,27 @@ public class GRU extends BaseRecurrentLayer {
 	@Override
 	public INDArray activate(INDArray input, boolean training){
 		setInput(input, training);
-		return activateHelper(training)[0];
+		return activateHelper(training,null)[0];
 	}
 
 	@Override
 	public INDArray activate(INDArray input){
 		setInput(input);
-		return activateHelper(true)[0];
+		return activateHelper(true,null)[0];
 	}
 
 	@Override
 	public INDArray activate(boolean training){
-		return activateHelper(training)[0];
+		return activateHelper(training,null)[0];
 	}
 
 	@Override
 	public INDArray activate(){
-		return activateHelper(false)[0];
+		return activateHelper(false,null)[0];
 	}
 
 	/** Returns activations array: {output,rucZs,rucAs} in that order. */
-	private INDArray[] activateHelper(boolean training){
+	private INDArray[] activateHelper(boolean training, INDArray prevOutputActivations){
 		
 		INDArray inputWeights = getParam(GRUParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),3*n^L], order: [wr,wu,wc]
 		INDArray recurrentWeights = getParam(GRUParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [n^L,3*n^L]; order: [wR,wU,wC]
@@ -266,9 +268,10 @@ public class GRU extends BaseRecurrentLayer {
 		INDArray rucZs = Nd4j.zeros(miniBatchSize,3*hiddenLayerSize,timeSeriesLength);	//zs for reset gate, update gate, candidate activation
 		INDArray rucAs = Nd4j.zeros(miniBatchSize,3*hiddenLayerSize,timeSeriesLength);	//activations for above
 		
+		if(prevOutputActivations==null) prevOutputActivations = Nd4j.zeros(miniBatchSize,hiddenLayerSize);
 		for( int t=0; t<timeSeriesLength; t++ ){
 			INDArray prevLayerInputSlice = (is2dInput ? input : input.tensorAlongDimension(t,1,0));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
-			INDArray prevOutputActivations = (t==0 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) : outputActivations.tensorAlongDimension(t-1,1,0));	//Shape: [m,nL]
+			if(t>0) prevOutputActivations = outputActivations.tensorAlongDimension(t-1,1,0); //Shape: [m,nL]
 			
 			/* This commented out implementation: should be same as 'naive' implementation that follows.
 			 * Using naive approach at present for debugging purposes
@@ -361,7 +364,13 @@ public class GRU extends BaseRecurrentLayer {
 
 	@Override
 	public INDArray rnnTimeStep(INDArray input) {
-		throw new UnsupportedOperationException("Not implemented");
+		INDArray[] activations = activateHelper(false,stateMap.get(STATE_KEY_PREV_ACTIVATION));
+		INDArray outAct = activations[0];
+		//Store last time step of output activations for later use:
+		int tLength = outAct.size(2);
+		INDArray lastActSlice = outAct.tensorAlongDimension(tLength-1,1,0);
+		stateMap.put(STATE_KEY_PREV_ACTIVATION, lastActSlice.dup());
+
+		return outAct;
 	}
-	
 }
