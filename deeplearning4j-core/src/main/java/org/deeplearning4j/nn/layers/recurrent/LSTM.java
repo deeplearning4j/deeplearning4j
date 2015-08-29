@@ -83,48 +83,40 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         setInput(Nd4j.vstack(xi,xs));
     }
 
+
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        // TODO fix following backprop to just backpropGradient - how to use epsilon?
-
-        INDArray activations = activate(true);
-
+        INDArray tanhCt, activations;
+        INDArray delta = Nd4j.zeros(epsilon.shape());
         INDArray inputWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
         INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
+        INDArray dHin = Nd4j.zeros(hIn.shape()); // TODO check shape...
+        INDArray dX = Nd4j.zeros(input.shape());
 
-        // Original code with y - output passed in...
-        //add column of zeros since not used in forward pass
-        INDArray dY = Nd4j.vstack(Nd4j.zeros(activations.columns()), activations);
-
-        //backprop the decoder
-        INDArray inputWeightGradients = outputActivations.transpose().mmul(dY); //dWd -- TODO is this epsilon?
-        INDArray biasGradients = Nd4j.sum(inputWeightGradients,0); // dbd
-        INDArray dHout = dY.mmul(inputWeights.transpose()); //TODO is this nextEpsilon?
+        // add column of zeros since not used in forward pass
+        //TODO dHout = epsilon - original equation expects current layer's weights * previous layer delta but we are using previous layer weights * previous layer delta
+        epsilon = Nd4j.vstack(Nd4j.zeros(epsilon.columns()), epsilon);
 
         if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
-            dHout.muli(u2);
+            epsilon.muli(u2);
 
         //backprop the LSTM
         INDArray dIFogZ = Nd4j.zeros(iFogZ.shape());
         INDArray dIFogA = Nd4j.zeros(iFogA.shape());
         INDArray recurrentWeightGradients = Nd4j.zeros(recurrentWeights.shape()); //dWLSTM
-        INDArray dHin = Nd4j.zeros(hIn.shape());
-
         INDArray dC = Nd4j.zeros(memCellActivations.shape());
-        INDArray dX = Nd4j.zeros(input.shape());
 
-        int sequenceLen = outputActivations.rows(); // n
-        int hiddenLayerSize = outputActivations.columns(); // d
-
+        int sequenceLen = hOut.rows(); // n
+        int hiddenLayerSize = hOut.columns(); // d
 
         for(int t = sequenceLen -1; t > 0; t--) {
             if(conf.getLayer().getActivationFunction().equals("tanh")) {
-                INDArray tanhCt = tanh(memCellActivations.slice(t));
-                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},tanhCt.mul(dHout.slice(t)));
-                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(dHout.slice(t))));
+                tanhCt = tanh(memCellActivations.slice(t));
+                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},tanhCt.mul(epsilon.slice(t)));
+                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(epsilon.slice(t))));
             }
             else {
-                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},memCellActivations.slice(t).mul(dHout.slice(t)));
-                dC.slice(t).addi(iFogA.slice(t).get(interval(2 * hiddenLayerSize,3 * hiddenLayerSize)).mul(dHout.slice(t)));
+                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},memCellActivations.slice(t).mul(epsilon.slice(t)));
+                dC.slice(t).addi(iFogA.slice(t).get(interval(2 * hiddenLayerSize,3 * hiddenLayerSize)).mul(epsilon.slice(t)));
             }
 
             if(t > 0) {
@@ -134,27 +126,35 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
             dIFogA.slice(t).put(new INDArrayIndex[]{interval(0, hiddenLayerSize)}, iFogA.slice(t).get(interval(3 * hiddenLayerSize, iFogA.columns())).mul(dC.slice(t)));
             dIFogA.slice(t).put(new INDArrayIndex[]{interval(3 * hiddenLayerSize, dIFogA.columns())},iFogA.slice(t).get(interval(0,hiddenLayerSize)).mul(dC.slice(t)));
 
-            //backprop activation functions
-            dIFogZ.slice(t).put(new INDArrayIndex[]{interval(3 * hiddenLayerSize, dIFogZ.columns())},pow(iFogA.slice(t).get(interval(3 * hiddenLayerSize,iFogA.columns())),2).rsubi(1).mul(dIFogA.slice(t).get(interval(3 * hiddenLayerSize,dIFogA.columns()))));
+            //backprop activation functions - this is the derivate of activation? - o first and then i, f, g? below so tanh first and sigmoid after
+            dIFogZ.slice(t).put(new INDArrayIndex[]{interval(3 * hiddenLayerSize, dIFogZ.columns())},
+                    pow(iFogA.slice(t).get(interval(3 * hiddenLayerSize, iFogA.columns())),2)
+                            .rsubi(1).mul(dIFogA.slice(t).get(interval(3 * hiddenLayerSize, dIFogA.columns()))));
             activations = iFogA.slice(t).get(interval(0,3 * hiddenLayerSize));
-            dIFogA.slice(t).put(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)}, activations.mul(activations.rsub(1)).mul(dIFogA.slice(t).get(interval(0, 3 * hiddenLayerSize))));
+            dIFogZ.slice(t).put(new INDArrayIndex[]{interval(0, 3 * hiddenLayerSize)},
+                    activations.mul(activations.rsub(1)).mul(dIFogA.slice(t).get(interval(0, 3 * hiddenLayerSize))));
 
             //backprop matrix multiply
             recurrentWeightGradients.addi(hIn.slice(t).transpose().mmul(dIFogZ.slice(t)));
-            dHin.slice(t).assign(dIFogZ.slice(t).mmul(recurrentWeights.transpose()));
+            //TODO verify this equation - its not clear this its used for dHin which becomes dX
+//            delta.slice(t).assign(dIFogZ.slice(t).mmul(recurrentWeights.transpose())); //dWd //TODO confirm this is the right approach
 
+            dHin.slice(t).assign(dIFogZ.slice(t).mmul(recurrentWeights.transpose()));
             INDArray get = dHin.slice(t).get(interval(1, 1 + hiddenLayerSize));
             dX.slice(t).assign(get);
-            if(t > 0)
-                dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns())));
-
-
+            if(t > 0) {
+                INDArray v = epsilon.slice(t); //TODO epsilon should be dHout but shape is not mapping to what is list below...
+                INDArray yo = dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns()));
+                epsilon.slice(t - 1).addi(dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns())));
+            }
             if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
                 dX.muli(u);
-
         }
 
-        clear(); //TODO is this still needed
+//        clear(); //TODO is this still needed?
+        //backprop the decoder // TODO hOut vs inputWeights?
+        INDArray inputWeightGradients = inputWeights.transpose().mul(dX);
+        INDArray biasGradients = Nd4j.sum(dX,0); // dbd
 
         Gradient retGradient = new DefaultGradient();
         retGradient.gradientForVariable().put(LSTMParamInitializer.INPUT_WEIGHT_KEY, inputWeightGradients);
