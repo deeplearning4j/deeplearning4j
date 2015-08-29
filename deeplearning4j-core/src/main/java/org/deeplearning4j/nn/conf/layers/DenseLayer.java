@@ -20,10 +20,6 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.weights.WeightInit;
-
 /**Dense layer: fully connected feed forward layer trainable by backprop.
  */
 @Data @NoArgsConstructor

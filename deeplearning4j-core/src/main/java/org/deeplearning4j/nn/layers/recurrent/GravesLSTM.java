@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,7 +42,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  *
  * @author Alex Black
  */
-public class GravesLSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
+public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
 
 	public GravesLSTM(NeuralNetConfiguration conf) {
 		super(conf);
@@ -410,4 +409,9 @@ public class GravesLSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.Grav
         		+ Transforms.abs(getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
         return conf.getL1() * l1;
     }
+
+	@Override
+	public INDArray rnnTimeStep(INDArray input) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
 }
