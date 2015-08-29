@@ -2,12 +2,15 @@ package org.deeplearning4j.nn.multilayer;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
 import java.util.Map;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.layers.recurrent.GRU;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.params.GRUParamInitializer;
@@ -15,9 +18,11 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 public class MultiLayerTestRNN {
 
@@ -177,4 +182,127 @@ public class MultiLayerTestRNN {
         }
     }
 
+    @Test
+    public void testRnnStateMethods(){
+    	Nd4j.getRandom().setSeed(12345);
+    	int timeSeriesLength = 6;
+
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+    		.list(3)
+    		.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+    			.nIn(5).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+    			.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.layer(2, new OutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+    			.nIn(8).nOut(4).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
+    		.build();
+    	MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+
+    	INDArray input = Nd4j.rand(new int[]{3,5,timeSeriesLength});
+
+    	List<INDArray> allOutputActivations = mln.feedForward(input, true);
+    	INDArray outAct = allOutputActivations.get(3);
+
+    	INDArray outRnnTimeStep = mln.rnnTimeStep(input);
+
+    	assertTrue(outAct.equals(outRnnTimeStep));	//Should be identical here
+
+    	Map<String,INDArray> currStateL0 = mln.rnnGetPreviousState(0);
+    	Map<String,INDArray> currStateL1 = mln.rnnGetPreviousState(1);
+
+    	assertTrue(currStateL0.size()==2);
+    	assertTrue(currStateL1.size()==2);
+
+    	INDArray lastActL0 = currStateL0.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+    	INDArray lastMemL0 = currStateL0.get(GravesLSTM.STATE_KEY_PREV_MEMCELL);
+    	assertTrue(lastActL0!=null && lastMemL0!=null);
+
+    	INDArray lastActL1 = currStateL1.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+    	INDArray lastMemL1 = currStateL1.get(GravesLSTM.STATE_KEY_PREV_MEMCELL);
+    	assertTrue(lastActL1!=null && lastMemL1!=null);
+
+    	INDArray expectedLastActL0 = allOutputActivations.get(1).tensorAlongDimension(timeSeriesLength-1,1,0);
+    	assertTrue(expectedLastActL0.equals(lastActL0));
+
+    	INDArray expectedLastActL1 = allOutputActivations.get(2).tensorAlongDimension(timeSeriesLength-1,1,0);
+    	assertTrue(expectedLastActL1.equals(lastActL1)); 
+
+    	//Check clearing and setting of state:
+    	mln.rnnClearPreviousState();
+    	assertTrue(mln.rnnGetPreviousState(0).size()==0);
+    	assertTrue(mln.rnnGetPreviousState(1).size()==0);
+
+    	mln.rnnSetPreviousState(0, currStateL0);
+    	assertTrue(mln.rnnGetPreviousState(0).size()==2);
+    	mln.rnnSetPreviousState(1, currStateL1);
+    	assertTrue(mln.rnnGetPreviousState(1).size()==2);
+    }
+    
+    @Test
+    public void testRnnTimeStepGravesLSTM(){
+    	Nd4j.getRandom().setSeed(12345);
+    	int timeSeriesLength = 12;
+
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+    		.list(3)
+    		.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+    			.nIn(5).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+    			.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.layer(2, new OutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+    			.nIn(8).nOut(4).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
+    		.build();
+    	MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+
+    	INDArray input = Nd4j.rand(new int[]{3,5,timeSeriesLength});
+
+    	List<INDArray> allOutputActivations = mln.feedForward(input, true);
+    	INDArray fullOutL0 = allOutputActivations.get(1);
+    	INDArray fullOutL1 = allOutputActivations.get(2);
+    	INDArray fullOutL2 = allOutputActivations.get(3);
+
+    	int[] inputLengths = {1,2,3,4,6,12};
+
+    	//Do steps of length 1, then of length 2, ..., 12
+    	//Should get the same result regardless of step size
+    	for( int i=0; i<inputLengths.length; i++ ){
+    		int inLength = inputLengths[i];
+    		int nSteps = timeSeriesLength / inLength;	//each of length inLength
+
+    		mln.rnnClearPreviousState();
+
+    		for( int j=0; j<nSteps; j++ ){
+    			int startTimeRange = j*inLength;
+    			int endTimeRange = startTimeRange + inLength;
+
+    			INDArray inputSubset = input.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeRange, endTimeRange));
+    			assertTrue(inputSubset.size(2)==inLength);
+
+    			INDArray out = mln.rnnTimeStep(inputSubset);
+
+    			INDArray expOutSubset = fullOutL2.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeRange, endTimeRange));
+    			assertTrue(out.equals(expOutSubset));
+
+    			Map<String,INDArray> currL0State = mln.rnnGetPreviousState(0);
+    			Map<String,INDArray> currL1State = mln.rnnGetPreviousState(1);
+
+    			INDArray lastActL0 = currL0State.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+    			INDArray lastActL1 = currL1State.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+
+    			INDArray expLastActL0 = fullOutL0.tensorAlongDimension(endTimeRange-1, 1,0);
+    			INDArray expLastActL1 = fullOutL1.tensorAlongDimension(endTimeRange-1, 1,0);
+
+    			assertTrue(lastActL0.equals(expLastActL0));
+    			assertTrue(lastActL1.equals(expLastActL1));
+    		}
+    	}
+    }
 }
