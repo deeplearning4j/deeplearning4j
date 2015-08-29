@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.GRUParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,7 +41,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * equal number of parameters) in some cases.
  * @author Alex Black
  */
-public class GRU extends BaseLayer {
+public class GRU extends BaseRecurrentLayer {
 
 	public GRU(NeuralNetConfiguration conf) {
 		super(conf);
@@ -359,5 +358,10 @@ public class GRU extends BaseLayer {
         		+ Transforms.abs(getParam(GRUParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
         return conf.getL1() * l1;
     }
+
+	@Override
+	public INDArray rnnTimeStep(INDArray input) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
 	
 }

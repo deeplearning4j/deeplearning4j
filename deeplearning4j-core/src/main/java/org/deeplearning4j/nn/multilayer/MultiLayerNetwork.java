@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
@@ -1790,5 +1791,50 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public int getInputMiniBatchSize(){
         return layers[0].getInputMiniBatchSize();
+    }
+    
+    /**If this MultiLayerNetwork contains one or more RNN layers: conduct forward pass (prediction)
+     * but using previous stored state for any RNN layers. The activations for the final step are
+     * also stored in the RNN layers for use next time rnnTimeStep() is called.<br>
+     * If no previous state is present in RNN layers, the default value (typically 0) is used.<br>
+     * This can be used to generate output one or a few step/s at a time instead of always having to do
+     * forward pass from t=0
+     * @param input Input to lowest layer. May be for one or multiple time steps.
+     * @return Output activations.
+     */
+    public INDArray rnnTimeStep(INDArray input){
+    	
+    	throw new UnsupportedOperationException("Not yet implemented");
+    }
+    
+    /**Get the state of the RNN layer, as used in rnnTimeStep().
+     * @param layer Number/index of the layer.
+     * @return Hidden state, or null if layer is not an RNN layer
+     */
+    public Map<String,INDArray> rnnGetPreviousState(int layer){
+    	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
+    	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+    	return ((BaseRecurrentLayer)layers[layer]).rnnGetPreviousState();
+    }
+    
+    /**Set the state of the RNN layer.
+     * @param layer The number/index of the layer.
+     * @param state The state to set the specified layer to
+     */
+	public void rnnSetPreviousState(int layer, Map<String,INDArray> state){
+    	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
+    	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+    	
+    	BaseRecurrentLayer r = (BaseRecurrentLayer)layers[layer];
+    	r.rnnSetPreviousState(state);
+    }
+    
+    /** Clear the previous state of the RNN layers (if any).
+     */
+    public void rnnClearPreviousState(){
+    	if( layers == null ) return;
+    	for( int i=0; i<layers.length; i++ ){
+    		if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer)layers[i]).rnnClearPreviousState();
+    	}
     }
 }
