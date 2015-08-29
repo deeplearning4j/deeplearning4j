@@ -538,7 +538,7 @@ public class GradientCheckTests {
     		
     		Random r = new Random(12345L);
         	INDArray input = Nd4j.zeros(miniBatchSize[i],nIn,timeSeriesLength[i]);
-        	for( int m=0; m<miniBatchSize[m]; m++ ){
+        	for( int m=0; m<miniBatchSize[i]; m++ ){
         		for( int j=0; j<nIn; j++ ){
         			for( int k=0; k<timeSeriesLength[i]; k++ ){
         				input.putScalar(new int[]{m,j,k},r.nextDouble()-0.5);
