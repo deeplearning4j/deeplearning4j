@@ -40,13 +40,13 @@ import java.util.*;
  */
 public class Shape {
 
-    private static Map<Integer,IndexMapper> indexMappers = Collections.synchronizedMap(new HashMap<Integer, IndexMapper>());
-    private static Map<Integer,IndexMapper> indexMappersC = Collections.synchronizedMap(new HashMap<Integer, IndexMapper>());
+    private static IndexMapper[] indexMappers = new IndexMapper[255];
+    private static IndexMapper[] indexMappersC = new IndexMapper[255];
 
     static {
-        for(int i = 0; i < 10; i++) {
-            indexMappersC.put(i,ShapeMapper.getInd2SubInstance('c',i));
-            indexMappers.put(i,ShapeMapper.getInd2SubInstance('f',i));
+        for(int i = 0; i < 255; i++) {
+            indexMappersC[i] = ShapeMapper.getInd2SubInstance('c',i);
+            indexMappers[i] = ShapeMapper.getInd2SubInstance('f',i);
 
         }
     }
@@ -634,13 +634,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(int[] shape,int index,int numIndices) {
-        IndexMapper mapper = indexMappers.get(shape.length);
-        if(mapper == null) {
-            mapper = ShapeMapper.getInd2SubInstance('f',shape.length);
-            indexMappers.put(index,mapper);
-            mapper = ShapeMapper.getInd2SubInstance('c',shape.length);
-            indexMappersC.put(index,mapper);
-        }
+        IndexMapper mapper = indexMappers[shape.length];
 
 
 
@@ -694,14 +688,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2subC(int[] shape,int index,int numIndices) {
-        IndexMapper mapper = indexMappersC.get(shape.length);
-        if(mapper == null) {
-            mapper = ShapeMapper.getInd2SubInstance('f',shape.length);
-            indexMappers.put(index,mapper);
-            mapper = ShapeMapper.getInd2SubInstance('c',shape.length);
-            indexMappersC.put(index,mapper);
-        }
-
+        IndexMapper mapper = indexMappersC[shape.length];
       /*
         int denom = numIndices;
         int[] ret = new int[shape.length];
