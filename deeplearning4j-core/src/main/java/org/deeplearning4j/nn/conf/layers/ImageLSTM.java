@@ -20,20 +20,16 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.weights.WeightInit;
-
 /**
- * LSTM recurrent net.
+ * Image LSTM recurrent net.
  * Based on karpathy et. al's work on generation of image descriptions.
  */
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class LSTM extends FeedForwardLayer {
-    
-    private LSTM(Builder builder) {
+public class ImageLSTM extends FeedForwardLayer {
+
+    private ImageLSTM(Builder builder) {
     	super(builder);
     }
 
@@ -42,8 +38,8 @@ public class LSTM extends FeedForwardLayer {
         
         @Override
         @SuppressWarnings("unchecked")
-        public LSTM build() {
-            return new LSTM(this);
+        public ImageLSTM build() {
+            return new ImageLSTM(this);
         }
     }
 }
