@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * A neural network layer.
@@ -39,9 +40,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 @JsonTypeInfo(use=Id.NAME, include=As.WRAPPER_OBJECT)
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
-        @JsonSubTypes.Type(value = ConvolutionDownSampleLayer.class, name = "convolutionDownSample"),
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
-        @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
+        @JsonSubTypes.Type(value = ImageLSTM.class, name = "imageLSTM"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
@@ -76,6 +76,7 @@ public abstract class Layer implements Serializable, Cloneable {
             throw new RuntimeException(e);
         }
     }
+
 
     public abstract static class Builder<T extends Builder<T>> {
         protected String activationFunction = "sigmoid";
