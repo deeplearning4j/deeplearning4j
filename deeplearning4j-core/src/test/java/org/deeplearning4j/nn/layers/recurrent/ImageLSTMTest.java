@@ -27,7 +27,7 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.nn.api.*;
-import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.ImageLSTM;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -43,14 +43,14 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 12/30/14.
  */
-public class LSTMTest {
+public class ImageLSTMTest {
 
-    private static final Logger log = LoggerFactory.getLogger(LSTMTest.class);
+    private static final Logger log = LoggerFactory.getLogger(ImageLSTMTest.class);
 
     @Test
     public void testTraffic() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new org.deeplearning4j.nn.conf.layers.LSTM.Builder()
+                .layer(new org.deeplearning4j.nn.conf.layers.ImageLSTM.Builder()
                         .nIn(4).nOut(4)
                         .activation("tanh").build())
                 .optimizationAlgo(OptimizationAlgorithm.LBFGS)
@@ -141,7 +141,7 @@ public class LSTMTest {
 
     private static Layer getLSTMConfig(int nIn, int nOut){
 
-        LSTM layer = new LSTM.Builder()
+        ImageLSTM layer = new ImageLSTM.Builder()
                 .nIn(nIn)
                 .nOut(nOut)
                 .activation("tanh")
