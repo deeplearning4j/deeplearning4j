@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
         @JsonSubTypes.Type(value = ImageLSTM.class, name = "imageLSTM"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
+        @JsonSubTypes.Type(value = GRU.class, name = "gru"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
         @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
