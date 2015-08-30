@@ -19,8 +19,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 
-import java.util.*;
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.api.Layer;
@@ -28,7 +26,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.deeplearning4j.nn.params.ImageLSTMParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,22 +35,23 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.ops.transforms.Transforms.exp;
-import static org.nd4j.linalg.ops.transforms.Transforms.log;
-import static org.nd4j.linalg.ops.transforms.Transforms.pow;
-import static org.nd4j.linalg.ops.transforms.Transforms.sigmoid;
-import static org.nd4j.linalg.ops.transforms.Transforms.tanh;
+import static org.nd4j.linalg.ops.transforms.Transforms.*;
 
 /**
- * LSTM recurrent net.
+ * LSTM image recurrent net.
  *
  * Based on karpathy et. al's
  * work on generation of image descriptions.
  *
  * @author Adam Gibson
  */
-public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
+public class ImageLSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.ImageLSTM> {
     //recurrent weights (iFogZ = iFog & iFogA = iFogF & memCellActivations = c & outputActivations = hOut)
     private INDArray iFogZ, iFogA, memCellActivations, hIn, hOut, outputActivations;
     // update values for drop connect
@@ -62,14 +61,16 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     //predicted time series // paper has it as word representations
     private INDArray xs;
 
-    public LSTM(NeuralNetConfiguration conf) {
+    public ImageLSTM(NeuralNetConfiguration conf) {
         super(conf);
+        throw new UnsupportedOperationException("Layer disabled: Version in development and will be provided in a later release.");
+
     }
 
-    public LSTM(NeuralNetConfiguration conf, INDArray input) {
+    public ImageLSTM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        throw new UnsupportedOperationException("Layer disabled: Version in development and will be provided in a later release.");
     }
-
 
     /**
      * SetInput when img and words exist
@@ -83,21 +84,29 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         setInput(Nd4j.vstack(xi,xs));
     }
 
-
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(Gradient gradient, INDArray esilon) {
+        // TODO based on associated math this needs to have the previous gradient passed in
+        // or needs a separate calculation of decode gradients
         INDArray tanhCt, activations;
-        INDArray delta = Nd4j.zeros(epsilon.shape());
-        INDArray inputWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
+
+        INDArray inputWeights = getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray recurrentWeights = getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
         INDArray dHin = Nd4j.zeros(hIn.shape()); // TODO check shape...
         INDArray dX = Nd4j.zeros(input.shape());
 
+         INDArray delta = gradient.getGradientFor(ImageLSTMParamInitializer.BIAS_KEY);
+        // TODO pull out delta from input gradient
+        INDArray inputWeightGradients = hOut.transpose().mul(delta);
+        INDArray biasGradients = Nd4j.sum(delta, 0); // dbd
+        //TODO confirm order of multiply - this is epsilon
+        INDArray dHout = inputWeights.mul(delta);
+
+        //TODO most layers calc epsilon with previous layers weights but this calc usese current which impacts values and shape
         // add column of zeros since not used in forward pass
-        //TODO dHout = epsilon - original equation expects current layer's weights * previous layer delta but we are using previous layer weights * previous layer delta
-        epsilon = Nd4j.vstack(Nd4j.zeros(epsilon.columns()), epsilon);
+        dHout = Nd4j.vstack(Nd4j.zeros(dHout.columns()), dHout);
 
         if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
-            epsilon.muli(u2);
+            dHout.muli(u2);
 
         //backprop the LSTM
         INDArray dIFogZ = Nd4j.zeros(iFogZ.shape());
@@ -111,12 +120,12 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         for(int t = sequenceLen -1; t > 0; t--) {
             if(conf.getLayer().getActivationFunction().equals("tanh")) {
                 tanhCt = tanh(memCellActivations.slice(t));
-                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},tanhCt.mul(epsilon.slice(t)));
-                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(epsilon.slice(t))));
+                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},tanhCt.mul(dHout.slice(t)));
+                dC.slice(t).addi(pow(tanhCt,2).rsubi(1).muli(iFogA.slice(t).get(interval(2 * hiddenLayerSize, 3 * hiddenLayerSize)).mul(dHout.slice(t))));
             }
             else {
-                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},memCellActivations.slice(t).mul(epsilon.slice(t)));
-                dC.slice(t).addi(iFogA.slice(t).get(interval(2 * hiddenLayerSize,3 * hiddenLayerSize)).mul(epsilon.slice(t)));
+                dIFogA.slice(t).put(new INDArrayIndex[]{interval(2 * hiddenLayerSize,3 * hiddenLayerSize)},memCellActivations.slice(t).mul(dHout.slice(t)));
+                dC.slice(t).addi(iFogA.slice(t).get(interval(2 * hiddenLayerSize,3 * hiddenLayerSize)).mul(dHout.slice(t)));
             }
 
             if(t > 0) {
@@ -143,26 +152,22 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
             INDArray get = dHin.slice(t).get(interval(1, 1 + hiddenLayerSize));
             dX.slice(t).assign(get);
             if(t > 0) {
-                INDArray v = epsilon.slice(t); //TODO epsilon should be dHout but shape is not mapping to what is list below...
-                INDArray yo = dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns()));
-                epsilon.slice(t - 1).addi(dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns())));
+                dHout.slice(t - 1).addi(dHin.slice(t).get(interval(1 + hiddenLayerSize, dHin.columns())));
             }
             if(conf.isUseDropConnect() & conf.getLayer().getDropOut() > 0)
                 dX.muli(u);
         }
 
-//        clear(); //TODO is this still needed?
-        //backprop the decoder // TODO hOut vs inputWeights?
-        INDArray inputWeightGradients = inputWeights.transpose().mul(dX);
-        INDArray biasGradients = Nd4j.sum(dX,0); // dbd
-
+        //TODO is this still needed?
+        clear();
+        //backprop the decoder
         Gradient retGradient = new DefaultGradient();
-        retGradient.gradientForVariable().put(LSTMParamInitializer.INPUT_WEIGHT_KEY, inputWeightGradients);
-        retGradient.gradientForVariable().put(LSTMParamInitializer.RECURRENT_WEIGHT_KEY, recurrentWeightGradients);
-        retGradient.gradientForVariable().put(LSTMParamInitializer.BIAS_KEY, biasGradients);
+        retGradient.gradientForVariable().put(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY, inputWeightGradients);
+        retGradient.gradientForVariable().put(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY, recurrentWeightGradients);
+        retGradient.gradientForVariable().put(ImageLSTMParamInitializer.BIAS_KEY, biasGradients);
 
 
-        return new Pair<>(retGradient, inputWeightGradients);
+        return new Pair<>(retGradient, dHout);
 
     }
 
@@ -171,9 +176,9 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     public INDArray activate(boolean training) {
         INDArray prevOutputActivations, prevMemCellActivations;
 
-        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
-        INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
+        INDArray decoderWeights = getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray recurrentWeights = getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
+        INDArray decoderBias = getParam(ImageLSTMParamInitializer.BIAS_KEY);
 
 
         if(conf.getLayer().getDropOut() > 0) {
@@ -245,22 +250,16 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
 
     }
 
-    /**
-     * Prediction with beam search
-     * @param xi
-     * @param ws
-     * @return
-     */
-    //TODO is this deprecated ?
+    //TODO review and update
     public Collection<Pair<List<Integer>,Double>> predict(INDArray xi,INDArray ws) {
-        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray decoderWeights = getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY);
         int d = decoderWeights.rows();
         Triple<INDArray,INDArray,INDArray> yhc = lstmTick(xi, Nd4j.zeros(d), Nd4j.zeros(d));
         BeamSearch search = new BeamSearch(20,ws,yhc.getSecond(),yhc.getThird());
         return search.search();
     }
 
-    //TODO is this deprecated ?
+    //TODO review and update
     @Override
     public  void clear() {
         hIn = null;
@@ -273,7 +272,7 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         outputActivations = null;
     }
 
-    //TODO is this deprecated ?
+    //TODO review and update
     private  class BeamSearch {
         private List<Beam> beams = new ArrayList<>();
         private int nSteps = 0;
@@ -359,7 +358,7 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         }
     }
 
-    //TODO is this deprecated ?
+    //TODO review and update
     private Pair<Integer,Double> yMax(INDArray y) {
         INDArray y1 = y.linearView();
         double max = y.max(Integer.MAX_VALUE).getDouble(0);
@@ -371,7 +370,7 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         return new Pair<>(ix,sorted[1].getDouble(ix));
     }
 
-    //TODO is this deprecated ?
+    //TODO review and update
     private static class Beam {
         private double logProba = 0.0;
         private List<Integer> indices;
@@ -419,9 +418,9 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     }
 
     private Triple<INDArray,INDArray,INDArray> lstmTick(INDArray x,INDArray hPrev,INDArray cPrev) {
-        INDArray decoderWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
-        INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY);
-        INDArray decoderBias = getParam(LSTMParamInitializer.BIAS_KEY);
+        INDArray decoderWeights = getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY);
+        INDArray recurrentWeights = getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY);
+        INDArray decoderBias = getParam(ImageLSTMParamInitializer.BIAS_KEY);
 
         int t = 0;
         int d = decoderWeights.rows();
@@ -454,16 +453,16 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     @Override
     public double calcL2() {
     	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
-    	double l2 = Transforms.pow(getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
-    			+ Transforms.pow(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
+    	double l2 = Transforms.pow(getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0)
+    			+ Transforms.pow(getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY), 2).sum(Integer.MAX_VALUE).getDouble(0);
     	return 0.5 * conf.getL2() * l2;
     }
 
     @Override
     public double calcL1() {
     	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
-        double l1 = Transforms.abs(getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
-        		+ Transforms.abs(getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+        double l1 = Transforms.abs(getParam(ImageLSTMParamInitializer.RECURRENT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0)
+        		+ Transforms.abs(getParam(ImageLSTMParamInitializer.INPUT_WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
         return conf.getL1() * l1;
     }
 
@@ -477,7 +476,7 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    //TODO verfiy this is still needed
+    //TODO review and update
     @Override
     public void fit(INDArray data) {
         xi = data.slice(0);
@@ -491,7 +490,7 @@ public class LSTM extends BaseLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
         solver.optimize();
     }
 
-    //TODO verfiy this is correct
+    //TODO review and update - determine how to work with batch size
     @Override
     public int batchSize() {
         return xi.rows();
