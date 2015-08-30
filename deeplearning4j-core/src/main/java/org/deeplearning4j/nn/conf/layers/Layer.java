@@ -41,7 +41,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @JsonSubTypes(value={
         @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
         @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
-        @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
+        @JsonSubTypes.Type(value = ImageLSTM.class, name = "imageLSTM"),
         @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
         @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
         @JsonSubTypes.Type(value = RBM.class, name = "RBM"),

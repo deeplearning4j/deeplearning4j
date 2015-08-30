@@ -36,14 +36,14 @@ import java.util.Map;
  * The decoder weights are used for predictions.
  * @author Adam Gibson
  */
-public class LSTMParamInitializer implements ParamInitializer {
+public class ImageLSTMParamInitializer implements ParamInitializer {
     public final static String RECURRENT_WEIGHT_KEY = "RW";
     public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        org.deeplearning4j.nn.conf.layers.LSTM layerConf =
-                (org.deeplearning4j.nn.conf.layers.LSTM) conf.getLayer();
+        org.deeplearning4j.nn.conf.layers.ImageLSTM layerConf =
+                (org.deeplearning4j.nn.conf.layers.ImageLSTM) conf.getLayer();
 
         Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
