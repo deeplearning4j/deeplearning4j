@@ -22,7 +22,9 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -40,7 +42,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
 	INDArray columnStds;
 
     @Override
-    public INDArray preProcess(INDArray input) {
+    public INDArray preProcess(INDArray input, Layer layer) {
         columnStds = input.std(0);
         columnStds.addi(Nd4j.EPS_THRESHOLD);
         input.diviRowVector(columnStds);
@@ -48,7 +50,7 @@ public class UnitVarianceProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output) {
+    public INDArray backprop(INDArray output, Layer layer) {
         return output;	//no-op
     }
 
