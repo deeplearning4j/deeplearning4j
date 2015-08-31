@@ -268,43 +268,66 @@ public class NDArrayIndex implements INDArrayIndex {
      * @return the resolved indexes (containing all where nothing is specified, and the intended index
      * for a particular dimension otherwise)
      */
-    public static INDArrayIndex[] resolve(int[] shape, INDArrayIndex...intendedIndexes) {
+    public static INDArrayIndex[] resolve(int[] shape, INDArrayIndex... intendedIndexes) {
         /**
          * If it's a vector and index asking for a scalar just return the array
          */
         if(intendedIndexes.length >= shape.length || Shape.isVector(shape) && intendedIndexes.length == 1) {
-            if(Shape.isRowVectorShape(shape) && intendedIndexes.length ==  1 && intendedIndexes[0] instanceof IntervalIndex) {
+            if (Shape.isRowVectorShape(shape) && intendedIndexes.length == 1) {
                 INDArrayIndex[] ret = new INDArrayIndex[2];
                 ret[0] = NDArrayIndex.point(0);
-                ret[1] = intendedIndexes[0];
+                int size;
+                if(1 == shape[0] && shape.length == 2)
+                    size = shape[1];
+                else
+                    size = shape[0];
+                ret[1] = validate(size , intendedIndexes[0]);
                 return ret;
             }
-            return intendedIndexes;
+            List<INDArrayIndex> retList = new ArrayList<>();
+            for (int i = 0; i < intendedIndexes.length; i++) {
+                if(i < shape.length)
+                    retList.add(validate(shape[i], intendedIndexes[i]));
+                else
+                    retList.add(intendedIndexes[i]);
+            }
+            return retList.toArray(new INDArrayIndex[retList.size()]);
         }
 
         List<INDArrayIndex> retList = new ArrayList<>();
         int numNewAxes = 0;
 
-        if(Shape.isMatrix(shape) && intendedIndexes.length == 1) {
-            retList.add(intendedIndexes[0]);
+        if (Shape.isMatrix(shape) && intendedIndexes.length == 1) {
+            retList.add(validate(shape[0], intendedIndexes[0]));
             retList.add(NDArrayIndex.all());
-        }
-        else {
-            for(int i = 0; i < intendedIndexes.length; i++) {
-                retList.add(intendedIndexes[i]);
-                if(intendedIndexes[i] instanceof NewAxis)
+        } else {
+            for (int i = 0; i < intendedIndexes.length; i++) {
+                retList.add(validate(shape[i], intendedIndexes[i]));
+                if (intendedIndexes[i] instanceof NewAxis)
                     numNewAxes++;
             }
         }
 
         int length = shape.length + numNewAxes;
         //fill the rest with all
-        while(retList.size() < length)
+        while (retList.size() < length)
             retList.add(NDArrayIndex.all());
-
 
         return retList.toArray(new INDArrayIndex[retList.size()]);
     }
+
+    protected static INDArrayIndex validate(int size, INDArrayIndex index) {
+
+        if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current())
+            throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index:" + index.current() + " must be less than its size:" + size);
+        if (index instanceof IntervalIndex && size < index.end()) {
+            int begin = ((IntervalIndex) index).begin;
+            index = NDArrayIndex.interval(begin, index.stride(), size);
+        }
+        return index;
+    }
+
+
     /**
      * Given an all index and
      * the intended indexes, return an

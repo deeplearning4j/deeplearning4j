@@ -7,8 +7,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.PointIndex;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Adam Gibson
@@ -38,7 +40,17 @@ public class NDArrayIndexResolveTests extends BaseNd4jTest {
     public void testResolvePointVector() {
         INDArray arr = Nd4j.linspace(1,4,4);
         INDArrayIndex[] getPoint  = {NDArrayIndex.point(1)};
-        assertArrayEquals(getPoint,NDArrayIndex.resolve(arr.shape(),getPoint));
+        INDArrayIndex[] resolved = NDArrayIndex.resolve(arr.shape(), getPoint);
+        if(getPoint.length == resolved.length)
+            assertArrayEquals(getPoint,resolved);
+        else{
+            assertEquals(2,resolved.length);
+            assertTrue(resolved[0] instanceof PointIndex);
+            assertEquals(0,resolved[0].current());
+            assertTrue(resolved[1] instanceof PointIndex);
+            assertEquals(1,resolved[1].current());
+        }
+
     }
 
     @Override
