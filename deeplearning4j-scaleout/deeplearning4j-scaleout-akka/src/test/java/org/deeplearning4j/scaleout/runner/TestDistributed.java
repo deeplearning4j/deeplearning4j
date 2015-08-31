@@ -54,7 +54,7 @@ public class TestDistributed {
         stateTracker = new HazelCastStateTracker();
         testJobs = new ArrayList<>();
         for(int i = 0; i < 10; i++) {
-            testJobs.add(new Job("hello" + 1,""));
+            testJobs.add(new Job("hello" + i,""));
         }
 
         testIterator = new CollectionJobIterator(testJobs);
