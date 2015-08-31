@@ -142,24 +142,43 @@ public class Shape {
         }
     }
 
+    /**
+     * Get a double based on the array and given indices
+     * @param arr the array to retrieve the double from
+     * @param indices the indices to iterate over
+     * @return the double at the specified index
+     */
     public static double getDouble(INDArray arr,int...indices) {
-         if(indices.length != arr.rank())
-             throw new IllegalStateException("Indexes must be of same length as array");
+        return arr.data().getDouble(getOffset(arr.offset(),arr.shape(),arr.stride(),indices));
+    }
+
+
+    /**
+     * Get an offset for retrieval from a data buffer based on the given
+     * shape stride and given indices
+     * @param baseOffset the array to retrieve the double from
+     * @param shape the shape of the array
+     * @param stride the stride of the array
+     * @param indices the indices to iterate over
+     * @return the double at the specified index
+     */
+    public static int getOffset(int baseOffset,int[] shape,int[] stride,int...indices) {
+        if(indices.length != shape.length)
+            throw new IllegalStateException("Indexes must be of same length as array");
         int offset = 0;
-        DataBuffer data = arr.data();
         for(int i = 0; i < indices.length; i++) {
             /**
              * See:
              * http://docs.scipy.org/doc/numpy/reference/arrays.ndarray.html
              * Basically if the size(i) is 1, the stride shouldn't be counted.
              */
-            if(arr.size(i) == 1)
+            if(shape[i] == 1)
                 continue;
-            offset += indices[i] * arr.stride(i);
+            offset += indices[i] * stride[i];
         }
 
 
-        return data.getDouble(offset + arr.offset());
+        return offset + baseOffset;
     }
 
 
