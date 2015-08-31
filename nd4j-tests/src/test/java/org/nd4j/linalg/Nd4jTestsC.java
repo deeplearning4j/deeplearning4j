@@ -33,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +100,38 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(getFailureMessage(), true, Arrays.equals(new int[]{3, 3}, a.shape()));
 
     }
+
+
+    @Test
+    public void testTensorAlongDimension(){
+        int[] shape = new int[]{4,5,7};
+        int length = ArrayUtil.prod(shape);
+        INDArray arr = Nd4j.linspace(1,length,length).reshape(shape);
+
+
+        int[] dim0s = {0,1,2,0,1,2};
+        int[] dim1s = {1,0,0,2,2,1};
+
+        double[] sums = {1350.,  1350.,  1582,  1582,  630,  630};
+
+        for( int i = 0; i < dim0s.length; i++ ) {
+            int firstDim = dim0s[i];
+            int secondDim = dim1s[i];
+            INDArray tad = arr.tensorAlongDimension(0, firstDim, secondDim);
+            assertEquals(sums[i],tad.sumNumber().doubleValue(),1e-1);
+            char order = tad.ordering();
+            int[] stride = tad.stride();
+
+//          System.out.println("tensorAlongDimension(0," + firstDim + "," + secondDim + ")");
+//          System.out.println(tad);
+//          System.out.println("Order: " + order);
+//          System.out.println("Shape: " + Arrays.toString(tad.shape()));
+//          System.out.println("Stride: " + Arrays.toString(stride));
+//          System.out.println();
+
+        }
+    }
+
 
 
     @Test
@@ -765,7 +798,70 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testTADMMul(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] shape = new int[]{4,5,7};
+        INDArray arr = Nd4j.rand(shape);
 
+        INDArray tad = arr.tensorAlongDimension(0,1,2);
+        assertArrayEquals(tad.shape(),new int[]{7,5});
+
+
+        INDArray copy = Nd4j.zeros(7,5);
+        for( int i=0; i<7; i++ ){
+            for( int j=0; j<5; j++ ){
+                copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
+            }
+        }
+
+//        System.out.println(tad);
+//        System.out.println("\n");
+//        System.out.println(copy);
+
+        assertTrue(tad.equals(copy));
+
+        INDArray first = Nd4j.rand(new int[]{2,7});
+        INDArray mmul = first.mmul(tad);
+        INDArray mmulCopy = first.mmul(copy);
+
+        assertTrue(mmul.equals(mmulCopy));
+
+        INDArray mmul2 = tad.mmul(first);
+        INDArray mmul2copy = copy.mmul(first);
+        assertTrue(mmul2.equals(mmul2copy));
+    }
+
+    @Test
+    public void testTADMMulLeadingOne(){
+        Nd4j.getRandom().setSeed(12345);
+        int[] shape = new int[]{1,5,7};
+        INDArray arr = Nd4j.rand(shape);
+
+        INDArray tad = arr.tensorAlongDimension(0,1,2);
+        boolean order = Shape.cOrFortranOrder(tad.shape(),tad.stride(),tad.elementStride());
+        assertArrayEquals(tad.shape(),new int[]{7,5});
+
+
+        INDArray copy = Nd4j.zeros(7,5);
+        for( int i = 0; i < 7; i++ ){
+            for( int j = 0; j < 5; j++ ){
+                copy.putScalar(new int[]{i,j},tad.getDouble(i,j));
+            }
+        }
+
+        assertTrue(tad.equals(copy));
+
+        INDArray first = Nd4j.rand(new int[]{2,7});
+        INDArray mmul = first.mmul(tad);
+        INDArray mmulCopy = first.mmul(copy);
+
+        assertTrue(mmul.equals(mmulCopy));
+
+        INDArray mmul2 = tad.mmul(first);
+        INDArray mmul2copy = copy.mmul(first);
+        assertTrue(mmul2.equals(mmul2copy));
+    }
 
 
     @Test

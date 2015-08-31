@@ -62,7 +62,9 @@ public class Shape {
      */
     public static INDArray toOffsetZero(INDArray arr) {
         if(arr.offset() < 1 && arr.data().length() == arr.length() || arr instanceof  IComplexNDArray && arr.length() * 2 == arr.data().length())
-            return arr;
+            if(arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride() ||
+                    arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
+                return arr;
 
         if(arr.isRowVector()) {
             if(arr instanceof IComplexNDArray) {
@@ -539,6 +541,54 @@ public class Shape {
         return Nd4j.create(arr.data(),newShape,newStrides,arr.offset());
     }
 
+    /**
+     * Infer order from
+     * @param shape the shape to infer by
+     * @param stride the stride to infer by
+     * @param elementStride the element stride to start at
+     * @return the storage order given shape and element stride
+     */
+    public static boolean cOrFortranOrder(int[] shape,int[] stride,int elementStride) {
+        int sd;
+        int dim;
+        int i;
+        boolean cContiguous = true;
+        boolean isFortran = true;
+
+        sd = 1;
+        for (i = shape.length - 1; i >= 0; --i) {
+            dim = shape[i];
+
+            if (stride[i] != sd) {
+                cContiguous = false;
+                break;
+            }
+        /* contiguous, if it got this far */
+            if (dim == 0) {
+                break;
+            }
+            sd *= dim;
+
+        }
+
+
+    /* check if fortran contiguous */
+        sd = elementStride;
+        for (i = 0; i < shape.length; ++i) {
+            dim = shape[i];
+            if (stride[i] != sd) {
+                isFortran = false;
+            }
+            if (dim == 0) {
+                break;
+            }
+            sd *= dim;
+
+        }
+
+        return cContiguous || isFortran;
+
+    }
 
     /**
      * Infer order from
