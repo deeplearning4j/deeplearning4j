@@ -20,20 +20,18 @@ package org.deeplearning4j.nn.layers.factory;
 
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.deeplearning4j.nn.params.GRUParamInitializer;
 
-/**
- *  LSTM layer initializer
- *  @author Adam Gibson
+/**GRU: Gated Recurrent Unit RNN
  */
-public class LSTMLayerFactory extends DefaultLayerFactory {
+public class GRULayerFactory extends DefaultLayerFactory {
 
-    public LSTMLayerFactory(Class<? extends Layer> layerConfig) {
+    public GRULayerFactory(Class<? extends Layer> layerConfig) {
         super(layerConfig);
     }
 
     @Override
     public ParamInitializer initializer() {
-        return new LSTMParamInitializer();
+        return new GRUParamInitializer();
     }
 }

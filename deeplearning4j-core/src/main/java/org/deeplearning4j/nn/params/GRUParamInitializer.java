@@ -26,16 +26,11 @@ import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Map;
 
-/**LSTM Parameter initializer, for LSTM based on
- * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
- */
-public class GravesLSTMParamInitializer implements ParamInitializer {
+
+public class GRUParamInitializer implements ParamInitializer {
 	/** Weights for previous time step -> current time step connections */
     public final static String RECURRENT_WEIGHT_KEY = "RW";
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
@@ -43,9 +38,8 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
 
     @Override
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
-        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
-                (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
-
+    	org.deeplearning4j.nn.conf.layers.GRU layerConf =
+                (org.deeplearning4j.nn.conf.layers.GRU) conf.getLayer();
         Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
         int nL = layerConf.getNOut();	//i.e., n neurons in this layer
@@ -55,19 +49,11 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         conf.addVariable(RECURRENT_WEIGHT_KEY);
         conf.addVariable(BIAS_KEY);
         
-        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist));
-        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist));
-        INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
-        biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
-        /*The above line initializes the forget gate biases to 5.
-         * See Sutskever PhD thesis, pg19:
-         * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
-         *  which is accomplished by initializing [the forget gate biases] to a large value (such as 5). If it is
-         *  not done, it will be harder to learn long range dependencies because the smaller values of the forget
-         *  gates will create a vanishing gradients problem."
-         *  http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
-         */
-        params.put(BIAS_KEY, biases);
+        
+        //Order: RUC - i.e., reset, update, candidate
+        params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 3 * nL, layerConf.getWeightInit(), dist));
+        params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 3 * nL, layerConf.getWeightInit(), dist));
+        params.put(BIAS_KEY, Nd4j.zeros(1,3*nL));
 
         params.get(INPUT_WEIGHT_KEY).data().persist();
         params.get(RECURRENT_WEIGHT_KEY).data().persist();

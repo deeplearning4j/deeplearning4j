@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -29,9 +28,13 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+<<<<<<< HEAD
 
 import java.util.Arrays;
 
+=======
+import java.util.Arrays;
+>>>>>>> 8d473861b0a80ad7d94226ae4420c818e585776e
 
 import static org.junit.Assert.*;
 

@@ -3,7 +3,7 @@ package org.deeplearning4j.gradientcheck;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -50,7 +50,7 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
         if(maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError );
-        if( !(mln.getOutputLayer() instanceof OutputLayer))
+        if( !(mln.getOutputLayer() instanceof BaseOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
 
         mln.setInput(input);
@@ -95,9 +95,10 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient) / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+            if( backpropGradient == 0.0 && numericalGradient == 0.0 ) relError = 0.0;	//Edge case: i.e., RNNs with time series length of 1.0
 
             if(relError > maxError) maxError = relError;
-            if(relError > maxRelError) {
+            if(relError > maxRelError || Double.isNaN(relError)) {
                 if(print)
                     log.info("Param " + i + " FAILED: grad= " + backpropGradient + ", numericalGrad= "+numericalGradient
                             + ", relError= " + relError + ", scorePlus="+scorePlus+", scoreMinus= " + scoreMinus);

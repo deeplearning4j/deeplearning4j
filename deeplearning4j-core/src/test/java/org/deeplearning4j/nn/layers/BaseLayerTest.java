@@ -51,7 +51,7 @@ public class BaseLayerTest {
         assertEquals(score, score2, 1e-3);
     }
 
-    // TODO fix - seed in LSTM so the score is consistent
+    // TODO fix - seed in AutoEncoder so the score is consistent
     @Test
     public void testRecursiveAutoEncoderScores() {
         DataSet data = irisIter.next();
@@ -81,7 +81,7 @@ public class BaseLayerTest {
         DataSet data = irisIter.next();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                .layer(new LSTM.Builder()
+                .layer(new ImageLSTM.Builder()
                         .nIn(4)
                         .nOut(3)
                         .activation("sigmoid")
