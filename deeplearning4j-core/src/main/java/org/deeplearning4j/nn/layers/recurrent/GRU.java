@@ -42,7 +42,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * equal number of parameters) in some cases.
  * @author Alex Black
  */
-public class GRU extends BaseLayer {
+public class GRU extends BaseLayer<org.deeplearning4j.nn.conf.layers.GRU> {
 
 	public GRU(NeuralNetConfiguration conf) {
 		super(conf);
