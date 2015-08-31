@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
+import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.Solver;
@@ -1292,7 +1293,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray output(INDArray input, boolean test) {
         List<INDArray> activations = feedForward(input, test);
-        //last activation is input
+        //last activation is output
         return activations.get(activations.size() - 1);
     }
 
@@ -1794,5 +1795,73 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public int getInputMiniBatchSize(){
         return layers[0].getInputMiniBatchSize();
+    }
+    
+    /**If this MultiLayerNetwork contains one or more RNN layers: conduct forward pass (prediction)
+     * but using previous stored state for any RNN layers. The activations for the final step are
+     * also stored in the RNN layers for use next time rnnTimeStep() is called.<br>
+     * This method can be used to generate output one or more steps at a time instead of always having to do
+     * forward pass from t=0. Example uses are for streaming data, and for generating samples from network output
+     * one step at a time (where samples are then fed back into the network as input)<br>
+     * If no previous state is present in RNN layers (i.e., initially or after calling rnnClearPreviousState()),
+     * the default initialization (usually 0) is used.<br>
+     * Supports mini-batch (i.e., multiple predictions/forward pass in parallel) as well as for single examples.<br>
+     * @param input Input to network. May be for one or multiple time steps. For single time step:
+     *  input has shape [miniBatchSize,inputSize] or [miniBatchSize,inputSize,1]. miniBatchSize=1 for single example.<br>
+     *  For multiple time steps: [miniBatchSize,inputSize,inputTimeSeriesLength]
+     * @return Output activations. If output is RNN layer (such as RnnOutputLayer): if input has shape [miniBatchSize,inputSize]
+     * i.e., is 2d, output has shape [miniBatchSize,outputSize] (i.e., also 2d).<br>
+     * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
+     * @see rnnClearPreviousState
+     */
+    public INDArray rnnTimeStep(INDArray input){
+    	this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
+    	boolean inputIs2d = input.rank()==2;
+    	for( int i=0; i<layers.length; i++ ){
+    		if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
+                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);
+    		if(layers[i] instanceof BaseRecurrentLayer){
+    			input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
+    		} else {
+    			input = layers[i].activate(input, false);
+    		}
+    	}
+    	if(inputIs2d && input.rank()==3 && layers[layers.length-1].type() == Type.RECURRENT){
+    		//Return 2d output with shape [miniBatchSize,nOut]
+    		// instead of 3d output with shape [miniBatchSize,nOut,1]
+    		return input.tensorAlongDimension(0,1,0);
+    	}
+    	return input;
+    }
+    
+    /**Get the state of the RNN layer, as used in rnnTimeStep().
+     * @param layer Number/index of the layer.
+     * @return Hidden state, or null if layer is not an RNN layer
+     */
+    public Map<String,INDArray> rnnGetPreviousState(int layer){
+    	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
+    	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+    	return ((BaseRecurrentLayer<?>)layers[layer]).rnnGetPreviousState();
+    }
+    
+    /**Set the state of the RNN layer.
+     * @param layer The number/index of the layer.
+     * @param state The state to set the specified layer to
+     */
+	public void rnnSetPreviousState(int layer, Map<String,INDArray> state){
+    	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
+    	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+    	
+    	BaseRecurrentLayer<?> r = (BaseRecurrentLayer<?>)layers[layer];
+    	r.rnnSetPreviousState(state);
+    }
+    
+    /** Clear the previous state of the RNN layers (if any).
+     */
+    public void rnnClearPreviousState(){
+    	if( layers == null ) return;
+    	for( int i=0; i<layers.length; i++ ){
+    		if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer<?>)layers[i]).rnnClearPreviousState();
+    	}
     }
 }
