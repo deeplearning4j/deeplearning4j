@@ -1,6 +1,5 @@
 package org.nd4j.bytebuddy.shape;
 
-import jdk.internal.org.objectweb.asm.util.ASMifier;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
@@ -9,7 +8,6 @@ import net.bytebuddy.matcher.ElementMatchers;
 import org.junit.Test;
 
 
-import java.io.File;
 
 import static org.junit.Assert.*;
 
