@@ -914,6 +914,30 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(get3.equals(tad3));
     }
 
+
+    @Test
+    public void testGetIntervalEdgeCase2(){
+        Nd4j.getRandom().setSeed(12345);
+
+        int[] shape = {3,2,4};
+        INDArray arr3d = Nd4j.rand(shape);
+
+        for(int x = 0; x < 4; x++) {
+            INDArray getInterval = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(x,x + 1));   //3d
+            INDArray getPoint = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(x));             //2d
+            INDArray tad = arr3d.tensorAlongDimension(x,1,0);                                                       //2d
+
+            assertTrue(getPoint.equals(tad));   //OK, comparing 2d with 2d
+            assertArrayEquals(getInterval.shape(),new int[]{3,2,1});
+            for( int i = 0; i < 3; i++ ){
+                for( int j = 0; j < 2; j++ ){
+                    assertEquals(getInterval.getDouble(i,j,0) , getPoint.getDouble(i,j),1e-1);
+                }
+            }
+        }
+    }
+
+
     @Test
     public void testMmul() {
         DataBuffer data = Nd4j.linspace(1, 10, 10).data();

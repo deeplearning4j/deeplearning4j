@@ -64,9 +64,9 @@ public class ShapeMapperTest  {
         assertEquals(verifyImpl(0,new int[]{3,5},new int[]{4,1},new int[]{1,1}),mapper.getOffset(0,new int[]{3,5},new int[]{4,1},new int[]{1,1}));
         long oldImplTotal = 0;
         long newImplTotal = 0;
-        int[] timingShape = {1,5};
-        int[] timingStride = {4,1};
-        int[] timingIndex = {1,1};
+        int[] timingShape = {1,5,1,1};
+        int[] timingStride = {4,1,1,1};
+        int[] timingIndex = {1,1,1,1};
         for(int i = 0; i < 1000; i++) {
             long old = System.nanoTime();
             verifyImpl(0,timingShape,timingStride,timingIndex);

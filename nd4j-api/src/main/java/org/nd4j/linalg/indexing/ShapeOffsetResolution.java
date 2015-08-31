@@ -106,8 +106,7 @@ public class ShapeOffsetResolution implements Serializable {
                     accumStrides.add(arr.stride(strideIndex) * idx.stride());
                     //used in computing an adjusted offset for the augmented strides
                     intervalStrides.add(idx.stride());
-                    if(idx.stride() > 1)
-                        numIntervals++;
+                    numIntervals++;
                 }
                 else
                     accumStrides.add(arr.stride(strideIndex));
@@ -294,7 +293,6 @@ public class ShapeOffsetResolution implements Serializable {
                 this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
         }
         else if(numIntervals > 0) {
-
             this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
         }
         else
