@@ -77,7 +77,6 @@ public class WeightInitUtil {
   public static INDArray initWeights(int[] shape, WeightInit initScheme,
                                      Distribution dist) {
     INDArray ret;
-    Nd4j.getRandom().setSeed(Nd4j.getRandom().getSeed());
     switch (initScheme) {
       case NORMALIZED:
         ret = Nd4j.rand(shape, Nd4j.getRandom());
