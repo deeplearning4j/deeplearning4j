@@ -3,7 +3,7 @@ package org.deeplearning4j.gradientcheck;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.OutputLayer;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -50,7 +50,7 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
         if(maxRelError <= 0.0 || maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError );
-        if( !(mln.getOutputLayer() instanceof OutputLayer))
+        if( !(mln.getOutputLayer() instanceof BaseOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
 
         mln.setInput(input);
