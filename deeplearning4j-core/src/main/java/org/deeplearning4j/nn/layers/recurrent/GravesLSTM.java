@@ -417,6 +417,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 	@Override
 	public INDArray rnnTimeStep(INDArray input) {
+		setInput(input);
 		INDArray[] activations = activateHelper(false,stateMap.get(STATE_KEY_PREV_ACTIVATION),stateMap.get(STATE_KEY_PREV_MEMCELL));
 		INDArray outAct = activations[0];
 		INDArray memCell = activations[1];
