@@ -1293,7 +1293,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public INDArray output(INDArray input, boolean test) {
         List<INDArray> activations = feedForward(input, test);
-        //last activation is input
+        //last activation is output
         return activations.get(activations.size() - 1);
     }
 
@@ -1807,6 +1807,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Output activations.
      */
     public INDArray rnnTimeStep(INDArray input){
+    	this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
     	for( int i=0; i<layers.length; i++ ){
     		if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);

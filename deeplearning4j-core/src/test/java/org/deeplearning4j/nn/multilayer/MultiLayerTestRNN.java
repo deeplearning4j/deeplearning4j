@@ -9,8 +9,9 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.layers.recurrent.GRU;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
@@ -196,10 +197,9 @@ public class MultiLayerTestRNN {
     		.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
     			.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
     			.dist(new NormalDistribution(0,0.5)).build())
-    		.layer(2, new OutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+    		.layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
     			.nIn(8).nOut(4).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
     			.dist(new NormalDistribution(0,0.5)).build())
-    		.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
     		.build();
     	MultiLayerNetwork mln = new MultiLayerNetwork(conf);
 
@@ -248,18 +248,23 @@ public class MultiLayerTestRNN {
     	Nd4j.getRandom().setSeed(12345);
     	int timeSeriesLength = 12;
 
+    	//4 layer network: 2 GravesLSTM + DenseLayer + RnnOutputLayer. Hence also tests preprocessors.
     	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-    		.list(3)
+    		.seed(12345)
+    		.list(4)
     		.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
     			.nIn(5).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
     			.dist(new NormalDistribution(0,0.5)).build())
     		.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
     			.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
     			.dist(new NormalDistribution(0,0.5)).build())
-    		.layer(2, new OutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
-    			.nIn(8).nOut(4).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+			.layer(2, new DenseLayer.Builder().nIn(8).nOut(9).activation("tanh")
+					.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.5)).build())
+    		.layer(3, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+    			.nIn(9).nOut(4).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
     			.dist(new NormalDistribution(0,0.5)).build())
     		.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())
+    		.inputPreProcessor(3, new FeedForwardToRnnPreProcessor())
     		.build();
     	MultiLayerNetwork mln = new MultiLayerNetwork(conf);
 
@@ -268,28 +273,44 @@ public class MultiLayerTestRNN {
     	List<INDArray> allOutputActivations = mln.feedForward(input, true);
     	INDArray fullOutL0 = allOutputActivations.get(1);
     	INDArray fullOutL1 = allOutputActivations.get(2);
-    	INDArray fullOutL2 = allOutputActivations.get(3);
+    	INDArray fullOutL3 = allOutputActivations.get(4);
 
     	int[] inputLengths = {1,2,3,4,6,12};
 
     	//Do steps of length 1, then of length 2, ..., 12
-    	//Should get the same result regardless of step size
+    	//Should get the same result regardless of step size; should be identical to standard forward pass
     	for( int i=0; i<inputLengths.length; i++ ){
     		int inLength = inputLengths[i];
     		int nSteps = timeSeriesLength / inLength;	//each of length inLength
 
     		mln.rnnClearPreviousState();
+    		mln.setInputMiniBatchSize(1);	//Reset; should be set by rnnTimeStep method
 
     		for( int j=0; j<nSteps; j++ ){
     			int startTimeRange = j*inLength;
     			int endTimeRange = startTimeRange + inLength;
 
-    			INDArray inputSubset = input.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeRange, endTimeRange));
-    			assertTrue(inputSubset.size(2)==inLength);
+    			INDArray inputSubset;
+    			if(inLength==1){	//Workaround to nd4j bug
+    				int[] sizes = new int[]{input.size(0),input.size(1),1};
+    				inputSubset = Nd4j.create(sizes);
+    				inputSubset.tensorAlongDimension(0,1,0).assign(input.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(startTimeRange)));
+    			} else {
+    				inputSubset = input.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeRange, endTimeRange));
+    			}
+    			if(inLength>1) assertTrue(inputSubset.size(2)==inLength);
 
     			INDArray out = mln.rnnTimeStep(inputSubset);
 
-    			INDArray expOutSubset = fullOutL2.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeRange, endTimeRange));
+    			INDArray expOutSubset;
+    			if(inLength==1){
+    				int[] sizes = new int[]{fullOutL3.size(0),fullOutL3.size(1),1};
+    				expOutSubset = Nd4j.create(sizes);
+    				expOutSubset.tensorAlongDimension(0,1,0).assign(fullOutL3.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(startTimeRange)));
+    			}else{
+    				expOutSubset = fullOutL3.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeRange, endTimeRange));
+    			}
+
     			assertTrue(out.equals(expOutSubset));
 
     			Map<String,INDArray> currL0State = mln.rnnGetPreviousState(0);
