@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -273,8 +274,8 @@ public class MultiLayerTest {
         //Set inputs/outputs so gradient can be calculated:
         net1.feedForward(x1.getFeatureMatrix());
         net2.feedForward(x2.getFeatureMatrix());
-        ((OutputLayer)net1.getLayers()[1]).setLabels(x1.getLabels());
-        ((OutputLayer)net2.getLayers()[1]).setLabels(x2.getLabels());
+        ((BaseOutputLayer)net1.getLayer(1)).setLabels(x1.getLabels());
+        ((BaseOutputLayer)net2.getLayer(1)).setLabels(x2.getLabels());
 
         net1.gradient();        //OK
         net2.gradient();        //IllegalArgumentException: Buffers must fill up specified length 29

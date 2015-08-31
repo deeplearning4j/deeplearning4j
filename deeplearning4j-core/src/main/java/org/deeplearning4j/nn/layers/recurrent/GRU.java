@@ -42,7 +42,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * @author Alex Black
  */
 public class GRU extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GRU> {
-
 	public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
 
 	public GRU(NeuralNetConfiguration conf) {
