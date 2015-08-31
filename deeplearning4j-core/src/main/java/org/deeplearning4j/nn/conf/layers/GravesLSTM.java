@@ -27,16 +27,15 @@ import lombok.*;
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class GravesLSTM extends FeedForwardLayer {
+public class GravesLSTM extends BaseRecurrentLayer {
 
     private GravesLSTM(Builder builder) {
     	super(builder);
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<Builder> {
+    public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
-        @Override
         @SuppressWarnings("unchecked")
         public GravesLSTM build() {
             return new GravesLSTM(this);

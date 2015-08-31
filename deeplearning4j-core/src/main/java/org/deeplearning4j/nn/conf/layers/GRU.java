@@ -36,20 +36,18 @@ import lombok.ToString;
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class GRU extends FeedForwardLayer {
+public class GRU extends BaseRecurrentLayer {
 
     private GRU(Builder builder) {
     	super(builder);
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        
+    public static class Builder extends BaseRecurrentLayer.Builder<Builder> {      
         @Override
         @SuppressWarnings("unchecked")
         public GRU build() {
             return new GRU(this);
         }
     }
-
 }
