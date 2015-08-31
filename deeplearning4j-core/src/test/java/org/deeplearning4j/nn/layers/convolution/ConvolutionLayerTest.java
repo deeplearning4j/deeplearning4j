@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -289,7 +290,57 @@ public class ConvolutionLayerTest {
 
 
     @Test
-    public void testCNNMLN() throws Exception {
+    public void testCNNMLNPretrain() throws Exception {
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+
+        final int numRows = 28;
+        final int numColumns = 28;
+        int nChannels = 1;
+        int outputNum = 10;
+        int numSamples = 10;
+        int batchSize = 10;
+        int iterations = 10;
+        int seed = 123;
+        int listenerFreq = iterations/5;
+
+        DataSetIterator mnistIter = new MnistDataSetIterator(batchSize,numSamples, true);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(seed)
+                .batchSize(batchSize)
+                .iterations(iterations)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .list(3)
+                .layer(0, new ConvolutionLayer.Builder(new int[]{10, 10})
+                        .nIn(nChannels)
+                        .nOut(6)
+                        .build())
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
+                        .build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nIn(150)
+                        .nOut(outputNum)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .build())
+                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
+                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor())
+                .build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+        model.fit(mnistIter);
+
+        DataSet data = mnistIter.next();
+
+    }
+
+
+    @Test
+    public void testCNNMLNBackprop() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         final int numRows = 28;
@@ -334,8 +385,12 @@ public class ConvolutionLayerTest {
         model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
         model.fit(mnistIter);
 
-        DataSet data = mnistIter.next();
+        Evaluation eval = new Evaluation();
+        INDArray output = model.output(mnistIter.next().getFeatureMatrix());
+        eval.eval(mnistIter.next().getLabels(), output);
+        String results = eval.stats();
 
+        eval.stats();
     }
 
 

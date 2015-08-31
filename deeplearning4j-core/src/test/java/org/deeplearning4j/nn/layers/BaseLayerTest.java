@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -35,6 +36,31 @@ public class BaseLayerTest {
                         .nIn(4)
                         .nOut(3)
                         .activation("tanh").build())
+                .iterations(1)
+                .seed(123)
+                .build();
+
+        Layer layer = LayerFactories.getFactory(conf.getLayer()).create(conf);
+        layer.fit(data.getFeatureMatrix());
+
+        double score = layer.score();
+        INDArray parameters = layer.params();
+        layer.setParams(parameters);
+        layer.computeGradientAndScore();
+        double score2 = layer.score();
+        assertEquals(parameters, layer.params());
+        assertEquals(score, score2, 1e-3);
+    }
+
+    @Test
+    public void testCNNParamsAndScores() {
+        DataSet data = irisIter.next();
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(new ConvolutionLayer.Builder(new int[]{1, 1})
+                        .nIn(1)
+                        .nOut(6)
+                        .build())
                 .iterations(1)
                 .seed(123)
                 .build();
