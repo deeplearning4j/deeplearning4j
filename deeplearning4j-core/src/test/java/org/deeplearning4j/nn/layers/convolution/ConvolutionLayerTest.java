@@ -291,6 +291,7 @@ public class ConvolutionLayerTest {
 
     @Test
     public void testCNNMLNPretrain() throws Exception {
+        // Note CNN does not do pretrain
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         final int numRows = 28;
@@ -334,7 +335,6 @@ public class ConvolutionLayerTest {
         model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
         model.fit(mnistIter);
 
-        DataSet data = mnistIter.next();
 
     }
 
