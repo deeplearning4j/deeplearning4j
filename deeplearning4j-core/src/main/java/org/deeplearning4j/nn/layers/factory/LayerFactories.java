@@ -46,8 +46,8 @@ public class LayerFactories {
         Class<? extends Layer> clazz = layer.getClass();
         if(clazz.equals(ConvolutionDownSampleLayer.class))
             return new ConvolutionLayerFactory(clazz);
-        else if(clazz.equals(LSTM.class))
-            return new LSTMLayerFactory(LSTM.class);
+        else if(clazz.equals(ImageLSTM.class))
+            return new ImageLSTMLayerFactory(ImageLSTM.class);
         else if(clazz.equals(GravesLSTM.class))
         	return new GravesLSTMLayerFactory(GravesLSTM.class);
         else if(clazz.equals(GRU.class))
@@ -73,7 +73,7 @@ public class LayerFactories {
         LayerFactory layerFactory = getFactory(conf);
         if(layerFactory instanceof ConvolutionLayerFactory || layerFactory instanceof SubsampleLayerFactory)
             return org.deeplearning4j.nn.api.Layer.Type.CONVOLUTIONAL;
-        else if(layerFactory instanceof LSTMLayerFactory || layerFactory instanceof GravesLSTMLayerFactory
+        else if(layerFactory instanceof ImageLSTMLayerFactory || layerFactory instanceof GravesLSTMLayerFactory
         		|| layerFactory instanceof GRULayerFactory )
             return org.deeplearning4j.nn.api.Layer.Type.RECURRENT;
         else if(layerFactory instanceof RecursiveAutoEncoderLayerFactory)

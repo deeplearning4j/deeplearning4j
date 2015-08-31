@@ -133,6 +133,30 @@ public class LayerBuilderTest {
         assertEquals(corruptionLevel, enc.getCorruptionLevel(), DELTA);
         assertEquals(sparsity, enc.getSparsity(), DELTA);
     }
+    
+    @Test
+    public void testGravesLSTM() throws Exception {
+    	GravesLSTM glstm = new GravesLSTM.Builder().activation("tanh")
+    			.nIn(numIn).nOut(numOut).build();
+    	
+    	checkSerialization(glstm);
+    	
+    	assertEquals(glstm.nIn,numIn);
+    	assertEquals(glstm.nOut,numOut);
+    	assertEquals(glstm.activationFunction,"tanh");
+    }
+    
+    @Test
+    public void testGRU() throws Exception {
+    	GRU gru = new GRU.Builder().activation("tanh")
+    			.nIn(numIn).nOut(numOut).build();
+    	
+    	checkSerialization(gru);
+    	
+    	assertEquals(gru.nIn,numIn);
+    	assertEquals(gru.nOut,numOut);
+    	assertEquals(gru.activationFunction,"tanh");
+    }
 
     private void checkSerialization(Layer layer) throws Exception {
         NeuralNetConfiguration confExpected = new NeuralNetConfiguration.Builder()
