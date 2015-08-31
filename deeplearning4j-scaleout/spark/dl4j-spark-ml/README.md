@@ -7,16 +7,17 @@ Spark 1.4 provides a standardized API for machine learning called [Spark ML](htt
 
 ## Getting Started
 
-### Install Spark 1.4.0
-Download and install Spark 1.4.0 from [spark.apache.org](http://www.apache.org/dist/spark/spark-1.4.0/).
+### Install Spark 1.4.x
+Download and install Spark 1.4.x from [spark.apache.org](http://spark.apache.org/downloads.html).
 
-Set the following environment variable in `~/.bash_profile`:
-
+#### Mac OS X
+On a Mac, is it recommended that the [Homebrew package manager](http://brew.sh/) be used to install Spark.  After installing Homebrew, install Spark:
 ```
-# set this to whereever you installed spark
-export SPARK_HOME="$HOME/spark-1.4.0"
-
+brew install apache-spark
 ```
+
+#### Linux
+Download and unpack Spark to a location such as `/opt/spark-1.4.x`.  Add the location to your `PATH`.
 
 ### Install dl4j-spark-ml Library
 The `dl4j-spark-ml` library is not yet published to the Maven Central repository and must be built from source.
@@ -39,7 +40,8 @@ Please review the examples at [deeplearning4j/dl4j-spark-ml-examples](https://gi
 
 - `ml.JavaIrisClassification`
 - `ml.JavaLfwClassification`
-
+- `ml.JavaMnistClassification`
+- 
 ### Data Sources
 
 Spark ML supports operating on a variety of data sources through the DataFrame interface.  Load your data into a DataFrame by any means, including:

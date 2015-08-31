@@ -20,20 +20,20 @@ package org.deeplearning4j.nn.layers.factory;
 
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.deeplearning4j.nn.params.ImageLSTMParamInitializer;
 
 /**
  *  LSTM layer initializer
  *  @author Adam Gibson
  */
-public class LSTMLayerFactory extends DefaultLayerFactory {
+public class ImageLSTMLayerFactory extends DefaultLayerFactory {
 
-    public LSTMLayerFactory(Class<? extends Layer> layerConfig) {
+    public ImageLSTMLayerFactory(Class<? extends Layer> layerConfig) {
         super(layerConfig);
     }
 
     @Override
     public ParamInitializer initializer() {
-        return new LSTMParamInitializer();
+        return new ImageLSTMParamInitializer();
     }
 }

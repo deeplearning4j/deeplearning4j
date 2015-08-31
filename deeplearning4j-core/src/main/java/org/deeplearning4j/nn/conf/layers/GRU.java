@@ -43,8 +43,7 @@ public class GRU extends BaseRecurrentLayer {
     }
 
     @AllArgsConstructor
-    public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
-        
+    public static class Builder extends BaseRecurrentLayer.Builder<Builder> {      
         @Override
         @SuppressWarnings("unchecked")
         public GRU build() {
