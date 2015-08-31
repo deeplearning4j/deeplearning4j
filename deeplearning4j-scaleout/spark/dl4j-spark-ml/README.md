@@ -41,7 +41,7 @@ Please review the examples at [deeplearning4j/dl4j-spark-ml-examples](https://gi
 - `ml.JavaIrisClassification`
 - `ml.JavaLfwClassification`
 - `ml.JavaMnistClassification`
-- 
+
 ### Data Sources
 
 Spark ML supports operating on a variety of data sources through the DataFrame interface.  Load your data into a DataFrame by any means, including:
