@@ -1391,20 +1391,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public double getDouble(int... indices) {
-        int offset = 0;
-        for(int i = 0; i < indices.length; i++) {
-            /**
-             * See:
-             * http://docs.scipy.org/doc/numpy/reference/arrays.ndarray.html
-             * Basically if the size(i) is 1, the stride shouldn't be counted.
-             */
-            if(size(i) == 1)
-                continue;
-            offset += indices[i] * stride(i);
-        }
-
-
-        return data.getDouble(offset + this.offset);
+       return Shape.getDouble(this,indices);
     }
 
     /**

@@ -21,7 +21,9 @@ package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
 import org.nd4j.bytebuddy.shape.IndexMapper;
+import org.nd4j.bytebuddy.shape.OffsetMapper;
 import org.nd4j.bytebuddy.shape.ShapeMapper;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,12 +44,12 @@ public class Shape {
 
     private static IndexMapper[] indexMappers = new IndexMapper[255];
     private static IndexMapper[] indexMappersC = new IndexMapper[255];
-
+    private static OffsetMapper[] mappers = new OffsetMapper[255];
     static {
         for(int i = 0; i < 255; i++) {
             indexMappersC[i] = ShapeMapper.getInd2SubInstance('c',i);
             indexMappers[i] = ShapeMapper.getInd2SubInstance('f',i);
-
+            mappers[i] = ShapeMapper.getOffsetMapperInstance(i);
         }
     }
 
@@ -96,6 +98,9 @@ public class Shape {
         }
     }
 
+
+
+
     /**
      * Create a copy of the matrix
      * where the new offset is zero
@@ -136,6 +141,32 @@ public class Shape {
 
             return ret;
         }
+    }
+
+    /**
+     * Get a double based on the array and given indices
+     * @param arr the array to retrieve the double from
+     * @param indices the indices to iterate over
+     * @return the double at the specified index
+     */
+    public static double getDouble(INDArray arr,int...indices) {
+        return arr.data().getDouble(getOffset(arr.offset(),arr.shape(),arr.stride(),indices));
+    }
+
+
+    /**
+     * Get an offset for retrieval
+     * from a data buffer
+     * based on the given
+     * shape stride and given indices
+     * @param baseOffset the offset to start from
+     * @param shape the shape of the array
+     * @param stride the stride of the array
+     * @param indices the indices to iterate over
+     * @return the double at the specified index
+     */
+    public static int getOffset(int baseOffset,int[] shape,int[] stride,int...indices) {
+        return mappers[shape.length].getOffset(baseOffset,shape,stride,indices);
     }
 
 
