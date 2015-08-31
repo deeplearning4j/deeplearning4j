@@ -131,9 +131,9 @@ public class ShapeResolutionTestsC extends BaseNd4jTest {
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(arr);
         try {
             resolution.exec(NDArrayIndex.interval(0, 2), NDArrayIndex.interval(2, 4));
-            assertTrue("Out of range index should throw an IllegalArgumentException",false);
+            fail("Out of range index should throw an IllegalArgumentException");
         }catch (IllegalArgumentException e){
-            assertTrue(true);
+            //do nothing
         }
     }
 
