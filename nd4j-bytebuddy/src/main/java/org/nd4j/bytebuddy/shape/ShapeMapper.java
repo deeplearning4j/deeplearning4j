@@ -8,24 +8,19 @@ import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.implementation.bytecode.member.MethodReturn;
 import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
+import net.bytebuddy.jar.asm.Label;
 import net.bytebuddy.matcher.ElementMatchers;
-import org.nd4j.bytebuddy.arithmetic.relative.op.RelativeOperationImplementation;
+import org.nd4j.bytebuddy.arithmetic.ByteBuddyIntArithmetic;
 import org.nd4j.bytebuddy.arithmetic.stackmanipulation.OpStackManipulation;
-import org.nd4j.bytebuddy.arrays.assign.relative.op.AssignOpImplementation;
-import org.nd4j.bytebuddy.arrays.create.simple.SimpleCreateArrayImplementation;
 import org.nd4j.bytebuddy.arrays.create.stackmanipulation.CreateIntArrayStackManipulation;
-import org.nd4j.bytebuddy.arrays.retrieve.relative.RelativeRetrieveArrayImplementation;
 import org.nd4j.bytebuddy.arrays.stackmanipulation.ArrayStackManipulation;
-import org.nd4j.bytebuddy.constant.ConstantIntImplementation;
-import org.nd4j.bytebuddy.createint.StoreIntImplementation;
-import org.nd4j.bytebuddy.loadref.relative.RelativeLoadDeclaredReferenceImplementation;
-import org.nd4j.bytebuddy.method.integer.relative.RelativeLoadIntParamImplementation;
-import org.nd4j.bytebuddy.method.reference.LoadReferenceParamImplementation;
-import org.nd4j.bytebuddy.returnref.ReturnAppender;
-import org.nd4j.bytebuddy.returnref.ReturnAppenderImplementation;
+import org.nd4j.bytebuddy.branching.stackmanipulation.IfeqNotEquals;
+import org.nd4j.bytebuddy.frame.VisitFrameFullInt;
+import org.nd4j.bytebuddy.frame.VisitFrameSameInt;
+import org.nd4j.bytebuddy.gotoop.GoToOp;
+import org.nd4j.bytebuddy.labelvisit.LabelVisitorStackManipulation;
 import org.nd4j.bytebuddy.stackmanipulation.StackManipulationImplementation;
 import org.nd4j.bytebuddy.storeint.stackmanipulation.StoreIntStackManipulation;
-import org.nd4j.bytebuddy.storeref.StoreImplementation;
 import org.nd4j.bytebuddy.storeref.stackmanipulation.StoreRefStackManipulation;
 
 import java.util.ArrayList;
@@ -35,6 +30,9 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ShapeMapper {
+
+
+
 
 
     /**
@@ -53,7 +51,7 @@ public class ShapeMapper {
 
         Class<IndexMapper> dynamicType = (Class<IndexMapper>)
                 c.load(IndexMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded();
+                        .getLoaded();
         try {
             return dynamicType.newInstance();
         } catch (Exception e) {
@@ -61,6 +59,95 @@ public class ShapeMapper {
         }
 
     }
+
+
+    /**
+     * Get an ind2sub instance
+     * based on the ordering and rank
+     * @param rank the rank
+     * @return the ind2sub instance
+     */
+    public static OffsetMapper getOffsetMapperInstance(int rank) {
+        Implementation impl = ShapeMapper.getOffsetMapper(rank);
+        DynamicType.Unloaded<OffsetMapper> c = new ByteBuddy()
+                .subclass(OffsetMapper.class).method(ElementMatchers.isDeclaredBy(OffsetMapper.class))
+                .intercept(impl)
+                .make();
+
+        Class<OffsetMapper> dynamicType = (Class<OffsetMapper>)
+                c.load(OffsetMapper.class.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                        .getLoaded();
+        try {
+            return dynamicType.newInstance();
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to get index mapper for rank " + rank);
+        }
+
+    }
+
+    /**
+     * Get the offset mapper bytecode
+     * for a particular rank
+     * @param rank the rank of array
+     *             to generate the offset mapper byte code for
+     * @return the implementation of the offset mapper bytecode
+     *
+     */
+    public static Implementation getOffsetMapper(int rank) {
+        /**
+         * Given:
+         * int getOffset(int baseOffset,int[] shape,int[] stride,int[] indices);
+         */
+        //start offset is the base index to start at
+        int startOffsetIndex = 1;
+        //shape index is the index of the argument for shape
+        int shapeIndex = 2;
+        //stride index is the index of the argument for shape
+        int strideIndex = 3;
+        //indicesindex is the index for the indices
+        int indicesIndex = 4;
+        List<StackManipulation> impls = new ArrayList<>();
+
+        for(int i = 0; i < rank; i++) {
+            Label label = new Label();
+            Label goToLabel = new Label();
+            impls.add(MethodVariableAccess.INTEGER.loadOffset(startOffsetIndex));
+            //load the array
+            impls.add(MethodVariableAccess.REFERENCE.loadOffset(shapeIndex));
+            //from the array load the current index
+            impls.add(IntegerConstant.forValue(i));
+            impls.add(ArrayStackManipulation.load());
+            impls.add(new IfeqNotEquals(label));
+            //load the stride  for the current index
+            impls.add(MethodVariableAccess.REFERENCE.loadOffset(strideIndex));
+            impls.add(IntegerConstant.forValue(i));
+            impls.add(ArrayStackManipulation.load());
+            //load the indices array at the current index
+            impls.add(MethodVariableAccess.REFERENCE.loadOffset(indicesIndex));
+            impls.add(IntegerConstant.forValue(i));
+            impls.add(ArrayStackManipulation.load());
+
+            impls.add(ByteBuddyIntArithmetic.IntegerMultiplication.INSTANCE);
+            impls.add(new GoToOp(goToLabel));
+            impls.add(new LabelVisitorStackManipulation(label));
+            impls.add(new VisitFrameSameInt(0,1));
+            impls.add(IntegerConstant.forValue(i));
+            impls.add(new LabelVisitorStackManipulation(goToLabel));
+            impls.add(new VisitFrameFullInt(5,2));
+            //add to the offset +=
+            impls.add(ByteBuddyIntArithmetic.IntegerAddition.INSTANCE);
+            impls.add(new StoreIntStackManipulation(startOffsetIndex));
+
+        }
+
+        impls.add(MethodVariableAccess.INTEGER.loadOffset(startOffsetIndex));
+        impls.add(MethodReturn.INTEGER);
+        return new StackManipulationImplementation(
+                new StackManipulation.Compound(impls.toArray(new StackManipulation[impls.size()]))
+        );
+
+    }
+
     /**
      * Get an implementation of
      * ind2sub
@@ -131,6 +218,9 @@ public class ShapeMapper {
                 impls.add(new StoreIntStackManipulation(linearIndexArg));
 
             }
+
+
+
         }
         else {
             //index of the assignment

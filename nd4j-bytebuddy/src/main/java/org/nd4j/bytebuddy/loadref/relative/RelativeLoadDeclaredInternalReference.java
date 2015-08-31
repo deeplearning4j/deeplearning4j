@@ -42,7 +42,6 @@ public class RelativeLoadDeclaredInternalReference implements ByteCodeAppender {
     public Size apply(MethodVisitor methodVisitor, Implementation.Context implementationContext, MethodDescription instrumentedMethod) {
         //references start with zero if its an instance or zero if its static
         //think of it like an implicit self in python without actually being defined
-        int start = instrumentedMethod.isStatic() ? 1 : 0;
         StackManipulation arg0 = MethodVariableAccess.REFERENCE.loadOffset(refId);
         StackManipulation.Size size =  arg0.apply(methodVisitor, implementationContext);
         return new Size(size.getMaximalSize(), instrumentedMethod.getStackSize());
