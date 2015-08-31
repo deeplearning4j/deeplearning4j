@@ -10,8 +10,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -140,10 +139,9 @@ public class GRUTest {
 			.layer(0, new org.deeplearning4j.nn.conf.layers.GRU.Builder().activation("tanh")
 				.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
             	.nIn(nIn).nOut(gruNUnits).build())
-        	.layer(1, new OutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
+        	.layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax")
         			.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.1))
         			.nIn(gruNUnits).nOut(nOut).build())
-        	.inputPreProcessor(1, new RnnToFeedForwardPreProcessor())
         	.build();
 		
 		MultiLayerNetwork mln = new MultiLayerNetwork(conf);

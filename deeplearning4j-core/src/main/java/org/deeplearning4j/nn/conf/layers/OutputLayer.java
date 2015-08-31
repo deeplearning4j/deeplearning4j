@@ -20,10 +20,6 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 /**
@@ -34,35 +30,17 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class OutputLayer extends FeedForwardLayer {
-    private LossFunction lossFunction;
-    private String customLossFunction;
+public class OutputLayer extends BaseOutputLayer {
 
-    private OutputLayer(Builder builder) {
+    protected OutputLayer(Builder builder) {
     	super(builder);
-        this.lossFunction = builder.lossFunction;
-        this.customLossFunction = builder.customLossFunction;
     }
 
-    @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<Builder> {
-        private LossFunction lossFunction = LossFunction.RMSE_XENT;
-        private String customLossFunction;
-
-        public Builder() {}
+    @NoArgsConstructor
+    public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
         public Builder(LossFunction lossFunction) {
             this.lossFunction = lossFunction;
-        }
-
-        public Builder lossFunction(LossFunction lossFunction) {
-            this.lossFunction = lossFunction;
-            return this;
-        }
-
-        public Builder customLossFunction(String customLossFunction) {
-            this.customLossFunction = customLossFunction;
-            return this;
         }
         
         @Override
@@ -70,7 +48,6 @@ public class OutputLayer extends FeedForwardLayer {
         public OutputLayer build() {
             return new OutputLayer(this);
         }
-
     }
 }
 

@@ -114,6 +114,15 @@ public class LayerBuilderTest {
 
         assertEquals(loss, out.getLossFunction());
     }
+    
+    @Test
+    public void testRnnOutputLayer() throws Exception {
+    	RnnOutputLayer out = new RnnOutputLayer.Builder(loss).build();
+    	
+    	checkSerialization(out);
+    	
+    	assertEquals(loss, out.getLossFunction());
+    }
 
     @Test
     public void testAutoEncoder() throws Exception {

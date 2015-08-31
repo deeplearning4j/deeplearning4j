@@ -147,7 +147,7 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-x86</artifactId>
+            <artifactId>nd4j-jcublas-7.0</artifactId>
         </dependency>
 
         <dependency>
