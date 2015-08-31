@@ -55,11 +55,12 @@ public class ReshapeTests extends BaseNd4jTest {
 
     @Test
     public void testColumnVectorReshape() {
+        double delta = 1e-1;
         INDArray arr = Nd4j.create(1,3);
         INDArray reshaped = arr.reshape('f',3,1);
         assertArrayEquals(new int[]{3,1},reshaped.shape());
-        assertEquals(0.0, reshaped.getDouble(1));
-        assertEquals(0.0,reshaped.getDouble(2));
+        assertEquals(0.0, reshaped.getDouble(1),delta);
+        assertEquals(0.0,reshaped.getDouble(2),delta);
         assumeNotNull(reshaped.toString());
     }
 
