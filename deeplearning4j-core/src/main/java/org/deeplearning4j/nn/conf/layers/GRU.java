@@ -18,28 +18,37 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
-/**
- * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
+/** Gated Recurrent Unit RNN Layer.<br>
+ * The GRU was recently proposed by Cho et al. 2014 - http://arxiv.org/abs/1406.1078<br>
+ * It is similar to the LSTM architecture in that both use a gating structure within each unit
+ * to attempt to capture long-term dependencies and deal with the vanishing gradient problem.
+ * A GRU layer contains fewer parameters than an equivalent size LSTM layer, and some research
+ * (such as http://arxiv.org/abs/1412.3555) suggests it may outperform LSTM layers (given an
+ * equal number of parameters) in some cases.
+ * @author Alex Black
  */
 @Data @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class GravesLSTM extends FeedForwardLayer {
+public class GRU extends FeedForwardLayer {
 
-    private GravesLSTM(Builder builder) {
+    private GRU(Builder builder) {
     	super(builder);
     }
 
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
-
+        
         @Override
         @SuppressWarnings("unchecked")
-        public GravesLSTM build() {
-            return new GravesLSTM(this);
+        public GRU build() {
+            return new GRU(this);
         }
     }
 

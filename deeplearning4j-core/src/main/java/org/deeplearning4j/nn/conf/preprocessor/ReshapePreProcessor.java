@@ -20,8 +20,11 @@ package org.deeplearning4j.nn.conf.preprocessor;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**Reshape post processor.<br>
@@ -61,14 +64,14 @@ public class ReshapePreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input) {
+    public INDArray preProcess(INDArray input, Layer layer) {
         if (dynamic) fromShape[0] = input.shape()[0];
         if (input.shape().length == toShape.length) return input;
         return input.reshape(toShape);
     }
 
     @Override
-    public INDArray backprop(INDArray output){
+    public INDArray backprop(INDArray output, Layer layer){
 	if( fromShape == null || output.shape().length == fromShape.length) return output;	//no-op
 	return output.reshape(fromShape);
     }
