@@ -1800,14 +1800,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     /**If this MultiLayerNetwork contains one or more RNN layers: conduct forward pass (prediction)
      * but using previous stored state for any RNN layers. The activations for the final step are
      * also stored in the RNN layers for use next time rnnTimeStep() is called.<br>
-     * If no previous state is present in RNN layers, the default value (typically 0) is used.<br>
-     * This can be used to generate output one or a few step/s at a time instead of always having to do
-     * forward pass from t=0
-     * @param input Input to lowest layer. May be for one or multiple time steps.
-     * @return Output activations.
+     * This method can be used to generate output one or more steps at a time instead of always having to do
+     * forward pass from t=0. Example uses are for streaming data, and for generating samples from network output
+     * one step at a time (where samples are then fed back into the network as input)<br>
+     * If no previous state is present in RNN layers (i.e., initially or after calling rnnClearPreviousState()),
+     * the default initialization (usually 0) is used.<br>
+     * Supports mini-batch (i.e., multiple predictions/forward pass in parallel) as well as for single examples.<br>
+     * @param input Input to network. May be for one or multiple time steps. For single time step:
+     *  input has shape [miniBatchSize,inputSize] or [miniBatchSize,inputSize,1]. miniBatchSize=1 for single example.<br>
+     *  For multiple time steps: [miniBatchSize,inputSize,inputTimeSeriesLength]
+     * @return Output activations. If output is RNN layer (such as RnnOutputLayer): if input has shape [miniBatchSize,inputSize]
+     * i.e., is 2d, output has shape [miniBatchSize,outputSize] (i.e., also 2d).<br>
+     * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
+     * @see rnnClearPreviousState
      */
     public INDArray rnnTimeStep(INDArray input){
     	this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
+    	boolean inputIs2d = input.rank()==2;
     	for( int i=0; i<layers.length; i++ ){
     		if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);
@@ -1816,6 +1825,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     		} else {
     			input = layers[i].activate(input, false);
     		}
+    	}
+    	if(inputIs2d && input.rank()==3 && layers[layers.length-1].type() == Type.RECURRENT){
+    		//Return 2d output with shape [miniBatchSize,nOut]
+    		// instead of 3d output with shape [miniBatchSize,nOut,1]
+    		return input.tensorAlongDimension(0,1,0);
     	}
     	return input;
     }

@@ -327,4 +327,51 @@ public class MultiLayerTestRNN {
     		}
     	}
     }
+
+    @Test
+    public void testRnnTimeStep2dInput(){
+    	Nd4j.getRandom().setSeed(12345);
+    	int timeSeriesLength = 6;
+
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+    		.list(3)
+    		.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+    			.nIn(5).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+    			.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+    			.nIn(8).nOut(4).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+    			.dist(new NormalDistribution(0,0.5)).build())
+    		.build();
+    	MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+    	mln.init();
+
+    	INDArray input3d = Nd4j.rand(new int[]{3,5,timeSeriesLength});
+    	INDArray out3d = mln.rnnTimeStep(input3d);
+    	assertArrayEquals(out3d.shape(),new int[]{3,4,timeSeriesLength});
+
+    	mln.rnnClearPreviousState();
+    	for( int i=0; i<timeSeriesLength; i++ ){
+    		INDArray input2d = input3d.tensorAlongDimension(i,1,0);
+    		INDArray out2d = mln.rnnTimeStep(input2d);
+
+    		assertArrayEquals(out2d.shape(),new int[]{3,4});
+
+    		INDArray expOut2d = out3d.tensorAlongDimension(i, 1,0);
+    		assertTrue(out2d.equals(expOut2d));
+    	}
+
+    	//Check same but for input of size [3,5,1]. Expect [3,4,1] out
+    	mln.rnnClearPreviousState();
+    	for( int i=0; i<timeSeriesLength; i++ ){
+    		INDArray temp = Nd4j.create(new int[]{3,5,1});
+    		temp.tensorAlongDimension(0, 1,0).assign(input3d.tensorAlongDimension(i, 1,0));
+    		INDArray out3dSlice = mln.rnnTimeStep(temp);
+    		assertArrayEquals(out3dSlice.shape(),new int[]{3,4,1});
+
+    		assertTrue(out3dSlice.tensorAlongDimension(0, 1,0).equals(out3d.tensorAlongDimension(i, 1,0)));
+    	}
+    }
 }
