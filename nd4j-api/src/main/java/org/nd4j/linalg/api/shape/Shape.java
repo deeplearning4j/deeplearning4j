@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.shape;
 import com.google.common.primitives.Ints;
 import org.nd4j.bytebuddy.shape.IndexMapper;
 import org.nd4j.bytebuddy.shape.ShapeMapper;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -96,6 +97,9 @@ public class Shape {
         }
     }
 
+
+
+
     /**
      * Create a copy of the matrix
      * where the new offset is zero
@@ -136,6 +140,26 @@ public class Shape {
 
             return ret;
         }
+    }
+
+    public static double getDouble(INDArray arr,int...indices) {
+         if(indices.length != arr.rank())
+             throw new IllegalStateException("Indexes must be of same length as array");
+        int offset = 0;
+        DataBuffer data = arr.data();
+        for(int i = 0; i < indices.length; i++) {
+            /**
+             * See:
+             * http://docs.scipy.org/doc/numpy/reference/arrays.ndarray.html
+             * Basically if the size(i) is 1, the stride shouldn't be counted.
+             */
+            if(arr.size(i) == 1)
+                continue;
+            offset += indices[i] * arr.stride(i);
+        }
+
+
+        return data.getDouble(offset + arr.offset());
     }
 
 
