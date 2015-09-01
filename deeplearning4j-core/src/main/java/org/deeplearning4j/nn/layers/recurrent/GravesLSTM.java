@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -317,6 +318,24 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		INDArray wG = recurrentWeights.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)); //previous
 		INDArray wGG = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3)); //previous
 		INDArray bg = biases.get(NDArrayIndex.point(0),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
+		
+		if(timeSeriesLength>1){
+			wi = Shape.toOffsetZero(wi);
+			wI = Shape.toOffsetZero(wI);
+			wf = Shape.toOffsetZero(wf);
+			wF = Shape.toOffsetZero(wF);
+			wFF = Shape.toOffsetZero(wFF);
+			wo = Shape.toOffsetZero(wo);
+			wO = Shape.toOffsetZero(wO);
+			wOO = Shape.toOffsetZero(wOO);
+			wg = Shape.toOffsetZero(wg);
+			wG = Shape.toOffsetZero(wG);
+			wGG = Shape.toOffsetZero(wGG);
+			bi = Shape.toOffsetZero(bi);
+			bf = Shape.toOffsetZero(bf);
+			bo = Shape.toOffsetZero(bo);
+			bg = Shape.toOffsetZero(bg);
+		}
 
 		//Allocate arrays for activations:
 		INDArray outputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
@@ -328,10 +347,11 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		if(prevMemCellState == null) prevMemCellState = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
 		for( int t = 0; t < timeSeriesLength; t++ ){
 			INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(t,1,0));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
-			if(t>0){
-				prevOutputActivations = outputActivations.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
-				prevMemCellState = memCellState.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
-			}
+			miniBatchData = Shape.toOffsetZero(miniBatchData);
+//			if(t>0){
+//				prevOutputActivations = outputActivations.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
+//				prevMemCellState = memCellState.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
+//			}
 
 			//Calculate activations for: network input + forget, output, input modulation gates.
 			INDArray inputActivations = miniBatchData.mmul(wi)
@@ -375,10 +395,14 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 			//LSTM unit outputs:
 			INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup()));
-			INDArray currHiddenUnitActivations = outputGateActivations.mul(currMemoryCellActivation);	//Expected shape: [m,hiddenLayerSize]
+//			INDArray currHiddenUnitActivations = outputGateActivations.mul(currMemoryCellActivation);	//Expected shape: [m,hiddenLayerSize]
+			INDArray currHiddenUnitActivations = currMemoryCellActivation.muli(outputGateActivations);	//Expected shape: [m,hiddenLayerSize]
 
 			outputActivations.tensorAlongDimension(t,1,0).assign(currHiddenUnitActivations);
 			memCellState.tensorAlongDimension(t,1,0).assign(currentMemoryCellState);
+			
+			prevOutputActivations = currHiddenUnitActivations;
+			prevMemCellState = currentMemoryCellState;
 		}
 
 		return new INDArray[]{outputActivations,memCellState,ifogZ,ifogA};
