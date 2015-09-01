@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -17,8 +18,6 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -28,16 +27,12 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.*;
 
 /**
  * @author Adam Gibson
  */
 public class ConvolutionLayerTest {
-
-//    private INDArray epsilon = Nd4j.ones(nExamples, depth, featureMapHeight, featureMapWidth);
 
     @Before
     public void before() {
@@ -289,24 +284,78 @@ public class ConvolutionLayerTest {
 
 
     @Test
-    public void testCNNMLN() throws Exception {
+    public void testCNNMLNPretrain() throws Exception {
+        // Note CNN does not do pretrain
+        int numSamples = 10;
+        int batchSize = 10;
+        DataSetIterator mnistIter = new MnistDataSetIterator(batchSize,numSamples, true);
+
+        MultiLayerNetwork model = getCNNMLNConfig(false, true);
+        model.fit(mnistIter);
+
+        MultiLayerNetwork model2 = getCNNMLNConfig(false, true);
+        model2.fit(mnistIter);
+
+        DataSet test = mnistIter.next();
+
+        Evaluation eval = new Evaluation();
+        INDArray output = model.output(test.getFeatureMatrix());
+        eval.eval(test.getLabels(), output);
+        double f1Score = eval.f1();
+
+        Evaluation eval2 = new Evaluation();
+        INDArray output2 = model2.output(test.getFeatureMatrix());
+        eval2.eval(test.getLabels(), output2);
+        double f1Score2 = eval2.f1();
+
+        assertEquals(f1Score, f1Score2, 1e-4);
+
+
+    }
+
+
+    @Test
+    public void testCNNMLNBackprop() throws Exception {
+        int numSamples = 10;
+        int batchSize = 10;
+        DataSetIterator mnistIter = new MnistDataSetIterator(batchSize, numSamples, true);
+
+        MultiLayerNetwork model = getCNNMLNConfig(true, false);
+        model.fit(mnistIter);
+
+        MultiLayerNetwork model2 = getCNNMLNConfig(true, false);
+        model2.fit(mnistIter);
+
+        DataSet test = mnistIter.next();
+
+        Evaluation eval = new Evaluation();
+        INDArray output = model.output(test.getFeatureMatrix());
+        eval.eval(test.getLabels(), output);
+        double f1Score = eval.f1();
+
+        Evaluation eval2 = new Evaluation();
+        INDArray output2 = model2.output(test.getFeatureMatrix());
+        eval2.eval(test.getLabels(), output2);
+        double f1Score2 = eval2.f1();
+
+        assertEquals(f1Score, f1Score2, 1e-4);
+
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////
+
+    private static MultiLayerNetwork getCNNMLNConfig(boolean backprop, boolean pretrain) {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
 
         final int numRows = 28;
         final int numColumns = 28;
         int nChannels = 1;
         int outputNum = 10;
-        int numSamples = 10;
-        int batchSize = 10;
         int iterations = 10;
         int seed = 123;
-        int listenerFreq = iterations/5;
-
-        DataSetIterator mnistIter = new MnistDataSetIterator(batchSize,numSamples, true);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
-                .batchSize(batchSize)
                 .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .list(3)
@@ -326,17 +375,12 @@ public class ConvolutionLayerTest {
                         .build())
                 .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
                 .inputPreProcessor(2, new CnnToFeedForwardPreProcessor())
-                .backprop(true).pretrain(false)
+                .backprop(backprop).pretrain(pretrain)
                 .build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
 
-        model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
-        model.fit(mnistIter);
-
-        DataSet data = mnistIter.next();
+        return model;
 
     }
-
-
 }

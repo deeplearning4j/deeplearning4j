@@ -20,15 +20,11 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossCalculation;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  *  Autoencoder.

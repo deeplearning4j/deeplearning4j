@@ -15,4 +15,8 @@ public class DenseLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dens
     public DenseLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
+
+    @Override
+    public void fit(INDArray input) {}
+
 }
