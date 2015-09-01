@@ -55,7 +55,7 @@ public class JblasBackend extends Nd4jBackend {
 
     @Override
     public int getPriority() {
-        return BACKEND_PRIORITY_CPU;
+        return BACKEND_PRIORITY_CPU-1;
     }
 
     @Override
