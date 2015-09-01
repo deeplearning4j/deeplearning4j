@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
@@ -25,6 +26,10 @@ import org.nd4j.linalg.jcublas.util.PointerUtil;
 public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
+
+
         SimpleJCublas.sync();
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
@@ -92,6 +97,10 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void dgemm(char Order, char TransA, char TransB, int M, int N, int K, double alpha, INDArray A, int lda, INDArray B, int ldb, double beta, INDArray C, int ldc) {
+        A = Shape.toOffsetZero(A);
+        B = Shape.toOffsetZero(B);
+
+
         DataTypeValidation.assertDouble(A, B, C);
 
         SimpleJCublas.sync();

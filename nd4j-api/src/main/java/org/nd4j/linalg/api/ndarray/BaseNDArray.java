@@ -117,7 +117,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     public BaseNDArray(DataBuffer buffer) {
         this.data = buffer;
-        init(new int[]{1, (int) buffer.length()});
+        init(new int[]{1, buffer.length()});
     }
 
     /**
@@ -678,37 +678,8 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public int majorStride() {
-
-        if(stride.length == 0) {
-            majorStride = elementStride();
-            return elementStride();
-        }
-
-        if(ordering() == NDArrayFactory.C) {
-            if(stride[shape().length - 1] == 1 && !isMatrix() || Shape.isRowVectorShape(shape())) {
-                int ret =  getFirstNonOneStride();
-                majorStride = ret;
-                return ret;
-            }
-
-        }
-
-        if(ordering() == NDArrayFactory.FORTRAN && size(0) == 1) {
-            int ret =  getFirstNonOneStride();
-            majorStride = ret;
-            return ret;
-        }
-
-        if(rank() > 2 && (size(0) == length() && getTrailingOnes() > 0  || getLeadingOnes() > 0 && !isVector())) {
-            return elementStride();
-        }
-
-
-
-
-        int majorStride = stride(0);
-        this.majorStride = majorStride;
-        return majorStride;
+        setLinearStride();
+        return stride(-1);
     }
 
     @Override
@@ -1391,7 +1362,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public double getDouble(int... indices) {
-       return Shape.getDouble(this,indices);
+        return Shape.getDouble(this,indices);
     }
 
     /**
@@ -2842,9 +2813,7 @@ public abstract class BaseNDArray implements INDArray {
         if(linearStride >= 0)
             return;
 
-
-        linearStride = majorStride();
-
+        linearStride = ArrayUtil.prod(reshape(1,length()).stride());
     }
 
 
@@ -2935,18 +2904,6 @@ public abstract class BaseNDArray implements INDArray {
         return numLeadingOnes;
     }
 
-
-    protected int calcoffset(int index) {
-        if(getLeadingOnes() > 0 || getTrailingOnes() > 0 && rank() > 2) {
-            if(getLeadingOnes() > 0 && getTrailingOnes() > 0  && rank() > 2) {
-                return offset + index;
-            }
-            else if(rank() > 2)
-                return offset + index * elementStride();
-
-        }
-        return offset + index * majorStride();
-    }
 
 
     /**

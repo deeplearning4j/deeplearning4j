@@ -58,12 +58,7 @@ public class TestDerivatives {
 		}
 	}
 	
-	@Test
-	public void testMaxOutDerivative(){
-		
-		fail("Not implemented");
-	}
-	
+
 	@Test
 	public void testRectifiedLinearDerivative(){
 		assertTrue( Nd4j.getOpFactory().createTransform("relu", Nd4j.ones(1)).derivative() instanceof Step );
@@ -139,10 +134,10 @@ public class TestDerivatives {
 		INDArray zPrime = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z).derivative());
 		System.out.println(Arrays.toString(sm.data().asDouble()));
 		System.out.println(Arrays.toString(zPrime.data().asDouble()));
-		assertFalse(sm.equals(zPrime));
+		assertNotEquals(sm,zPrime);
 		
-		for( int i=0; i<20; i++ ){
-			for( int j=0; j<5; j++ ){
+		for( int i=0; i < 20; i++ ){
+			for( int j=0; j < 5; j++ ){
 				double relError = Math.abs(expOut[i][j]-zPrime.getDouble(i,j)) / (Math.abs(expOut[i][j]) + Math.abs(zPrime.getDouble(i,j)));
 				assertTrue(relError < REL_ERROR_TOLERANCE);
 			}

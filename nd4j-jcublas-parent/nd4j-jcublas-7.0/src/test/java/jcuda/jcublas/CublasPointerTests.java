@@ -47,8 +47,7 @@ public class CublasPointerTests {
         CublasPointer p = new CublasPointer(arr1Offset);
         String s = p.toString();
         float[] data = new float[6];
-        float[] assertion = {2,3,6,7,10,11};
-        float[] wholeThing = p.getFloatBuffer();
+        float[] assertion = {4,5,6,7,8,9};
         JCublas2.cublasGetVector(
                 6
                 , Sizeof.FLOAT
@@ -57,9 +56,6 @@ public class CublasPointerTests {
                 , Pointer.to(data),1);
         for(int i = 0; i < assertion.length;i++)
             assertEquals(data[i],assertion[i],1e-1f);
-
-
-
     }
 
     @Test
@@ -181,14 +177,6 @@ public class CublasPointerTests {
             pointer.copyToHost();
             pointer.close();
         }
-
-        IComplexNDArray arr2 = Nd4j.createComplex(5,5);
-        for(int i = 0; i < arr2.slices(); i++) {
-            CublasPointer pointer = new CublasPointer(arr2.slice(i));
-            pointer.copyToHost();
-            pointer.close();
-        }
-
     }
 
 

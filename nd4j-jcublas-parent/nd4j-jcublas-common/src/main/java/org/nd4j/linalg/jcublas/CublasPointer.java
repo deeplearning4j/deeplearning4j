@@ -129,6 +129,7 @@ public class CublasPointer  implements AutoCloseable {
 
             }
         }
+
         else if(array.length() < array.data().length() && !array.isVector())
             array = Shape.toOffsetZero(array);
 
