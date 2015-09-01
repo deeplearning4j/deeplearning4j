@@ -77,7 +77,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
     @Test
     public void testEuclideanDistance() {
         INDArray arr = Nd4j.create(new double[]{55,55});
-        INDArray arr2 = Nd4j.create(new double[]{60,60});
+        INDArray arr2 = Nd4j.create(new double[]{60, 60});
         double result = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr,arr2)).currentResult().doubleValue();
         assertEquals(getFailureMessage(),7.0710678118654755,result,1e-1);
 
@@ -88,7 +88,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray scalarMax = Nd4j.linspace(1, 6, 6).negi();
         INDArray postMax = Nd4j.ones(6);
         Nd4j.getExecutioner().exec(new ScalarMax(scalarMax, 1));
-        assertEquals(getFailureMessage(),scalarMax, postMax);
+        assertEquals(getFailureMessage(), scalarMax, postMax);
     }
 
     @Test
@@ -115,6 +115,27 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4});
         double normMax = Nd4j.getExecutioner().execAndReturn(new NormMax(arr)).currentResult().doubleValue();
         assertEquals(getFailureMessage(), 4, normMax, 1e-1);
+
+    }
+
+    @Test
+    public void testLog() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray assertion = Nd4j.create(new double[][] {
+                {0., 1.09861229},
+                {0.69314718, 1.38629436}
+        });
+
+        INDArray logTest = Transforms.log(arr);
+        assertEquals(assertion,logTest);
+        arr = Nd4j.linspace(1,6,6).reshape(2,3);
+        assertion = Nd4j.create(new double[][]{
+                {0., 1.09861229, 1.60943791},
+                {0.69314718,  1.38629436,  1.79175947}
+        });
+
+        logTest = Transforms.log(arr);
+        assertEquals(assertion,logTest);
 
     }
 

@@ -61,7 +61,8 @@ class LossCalculation {
                 ret = pow(delta == null ? labels.sub(z) : delta, 2).sumNumber().doubleValue();
                 break;
             case NEGATIVELOGLIKELIHOOD:
-                INDArray sums2 = labels.mul(log(z));
+                INDArray log = log(z);
+                INDArray sums2 = labels.mul(log);
                 ret = -sums2.sumNumber().doubleValue();
                 break;
         }

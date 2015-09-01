@@ -160,19 +160,19 @@ public class CublasPointer  implements AutoCloseable {
          * due to how the striding works out.
          */
         // Copy the data to the device iff the whole buffer hasn't been copied
-        if(!buffer.copied(name)) {
-            JCublas.cublasSetVectorAsync(
-                    buffer.length()
-                    , array.data().getElementSize()
-                    , buffer.getHostPointer()
-                    , 1
-                    , buffer.getPointersToContexts().get(name, new Pair<>(0,buffer.length())).getPointer()
-                    , 1
-                    , ContextHolder.getInstance().getCudaStream());
-            //mark the buffer copied
-            buffer.setCopied(name);
+        // if(!buffer.copied(name)) {
+        JCublas.cublasSetVectorAsync(
+                buffer.length()
+                , array.data().getElementSize()
+                , buffer.getHostPointer()
+                , 1
+                , buffer.getPointersToContexts().get(name, new Pair<>(0,buffer.length())).getPointer()
+                , 1
+                , ContextHolder.getInstance().getCudaStream());
+        //mark the buffer copied
+        buffer.setCopied(name);
 
-        }
+        // }
     }
 
 
