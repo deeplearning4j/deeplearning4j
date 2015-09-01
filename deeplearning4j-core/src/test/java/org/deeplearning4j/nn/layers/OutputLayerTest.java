@@ -119,7 +119,7 @@ public class OutputLayerTest {
 
         NeuralNetConfiguration neuralNetConfiguration = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .constrainGradientToUnitNorm(true)
+                .constrainGradientToUnitNorm(true).miniBatch(false)
                 .seed(123)
                 .iterations(1000)
                 .learningRate(1e-1)
