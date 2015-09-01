@@ -7,9 +7,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -48,8 +46,8 @@ public class CNNGradientCheckTest {
         String[] activFns = {"sigmoid","tanh","relu"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
-        LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.MSE, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD};
-        String[] outputActivations = {"softmax"};	//i.e., lossFunctions[i] used with outputActivations[i] here
+        LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
+        String[] outputActivations = {"softmax", "tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataSet ds = new IrisDataSetIterator(150,150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -129,8 +127,8 @@ public class CNNGradientCheckTest {
         String[] activFns = {"sigmoid","tanh","relu"};
         boolean[] characteristic = {false,true};	//If true: run some backprop steps first
 
-        LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.MSE, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD};
-        String[] outputActivations = {"softmax"};	//i.e., lossFunctions[i] used with outputActivations[i] here
+        LossFunctions.LossFunction[] lossFunctions = {LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE};
+        String[] outputActivations = {"softmax", "tanh"};	//i.e., lossFunctions[i] used with outputActivations[i] here
 
         DataSet ds = new IrisDataSetIterator(150,150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
@@ -138,7 +136,7 @@ public class CNNGradientCheckTest {
         INDArray labels = ds.getLabels();
 
         double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.5, 0.5};	//i.e., use l2vals[i] with l1vals[i]
+        double[] l1vals = {0.0, 0.0, 0.5};	//i.e., use l2vals[i] with l1vals[i]
 
         for( String afn : activFns ){
             for( boolean doLearningFirst : characteristic ){
