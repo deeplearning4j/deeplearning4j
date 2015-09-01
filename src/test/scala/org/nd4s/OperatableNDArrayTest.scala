@@ -17,11 +17,10 @@
  *
  */
 
-package org.nd4j.api.linalg
+package org.nd4s
 
 import org.junit.runner.RunWith
-import org.nd4j.api.Implicits._
-import org.nd4j.api.{FloatNDArrayEvidence, NDArrayEvidence}
+import org.nd4s.Implicits._
 import org.nd4j.linalg.api.complex.{IComplexNDArray, IComplexNumber}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
@@ -168,7 +167,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
     sumValueInFloatExplicit shouldBe a[java.lang.Float]
 
     //switch return value with declaring implicit value but explicit one would be more readable.
-    import org.nd4j.api.Evidences.float
+    import org.nd4s.Evidences.float
     val sumValueInFloatImplicit = ndArray.sumT
     sumValueInFloatImplicit shouldBe a[java.lang.Float]
   }

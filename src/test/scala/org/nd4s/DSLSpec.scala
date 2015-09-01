@@ -17,14 +17,14 @@
  *
  */
 
-package org.nd4j.api.linalg
+package org.nd4s
 
 import org.junit.runner.RunWith
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FlatSpec, Matchers}
-import org.nd4j.api.Implicits._
+import org.nd4s.Implicits._
 
 @RunWith(classOf[JUnitRunner])
 class DSLSpec extends FlatSpec with Matchers {

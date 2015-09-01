@@ -1,7 +1,7 @@
-package org.nd4j.api
+package org.nd4s
 
 import org.scalatest.FlatSpec
-import Implicits._
+import org.nd4s.Implicits._
 
 class NDArrayProjectionAPITest extends FlatSpec {
   "ColumnProjectedNDArray" should "map column correctly" in {

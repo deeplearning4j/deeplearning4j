@@ -1,10 +1,10 @@
-package org.nd4j.api.ops
+package org.nd4s.ops
 
 import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.{BaseScalarOp, Op}
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.api.Implicits._
+import org.nd4s.Implicits._
 
 object FilterOps{
   def apply(x:INDArray,f:Double=>Boolean):FilterOps = new FilterOps(x,x.length(),f)

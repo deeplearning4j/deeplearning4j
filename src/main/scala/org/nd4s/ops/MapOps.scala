@@ -1,9 +1,9 @@
-package org.nd4j.api.ops
+package org.nd4s.ops
 
 import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.{BaseScalarOp, BaseOp, Op}
-import org.nd4j.api.Implicits._
+import org.nd4s.Implicits._
 
 object MapOps{
   def apply(x:INDArray,f:Double=>Double,g:IComplexNumber =>IComplexNumber):MapOps = new MapOps(x,f,g)

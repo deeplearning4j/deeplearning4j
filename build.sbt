@@ -15,5 +15,5 @@ lazy val root = (project in file(".")).settings(
     }
   ),
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-language:implicitConversions", "-language:higherKinds", "-language:postfixOps"),
-  initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4j.api.Implicits._"
+  initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._"
 )
