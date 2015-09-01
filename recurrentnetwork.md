@@ -43,7 +43,6 @@ An explanation of the hyperparameters is given in our [Iris tutorial](http://dee
 
 ### LSTM Implementations in DL4J
 
-* [LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/LSTM.java)
 * [Graves LSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/recurrent/GravesLSTM.java) (Useful for sensor data and time series)
 
 ## Loading Data for LSTMs
