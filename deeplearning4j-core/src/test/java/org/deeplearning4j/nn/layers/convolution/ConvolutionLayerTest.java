@@ -18,8 +18,6 @@ import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -29,15 +27,12 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
 import static org.junit.Assert.*;
 
 /**
  * @author Adam Gibson
  */
 public class ConvolutionLayerTest {
-
-//    private INDArray epsilon = Nd4j.ones(nExamples, depth, featureMapHeight, featureMapWidth);
 
     @Before
     public void before() {

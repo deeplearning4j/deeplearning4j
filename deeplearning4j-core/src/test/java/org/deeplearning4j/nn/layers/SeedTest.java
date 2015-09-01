@@ -56,10 +56,9 @@ public class SeedTest {
         assertEquals(score, score2, 1e-4);
     }
 
-    // TODO fix - seed in AutoEncoder so the score is consistent
     @Test
-    public void testRecursiveAutoEncoderSeed() {
-        RecursiveAutoEncoder layerType = new RecursiveAutoEncoder.Builder()
+    public void testAutoEncoderSeed() {
+        AutoEncoder layerType = new AutoEncoder.Builder()
                 .nIn(4)
                 .nOut(3)
                 .activation("sigmoid")
@@ -67,7 +66,6 @@ public class SeedTest {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(1)
-                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .layer(layerType)
                 .seed(123)
                 .build();
@@ -86,20 +84,23 @@ public class SeedTest {
     }
 
 
+    // TODO finish updating recursive auto encoder
     @Test
-    public void testOutputSeed() {
-         OutputLayer layerType = new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                .nIn(10)
+    public void testRecursiveAutoEncoderSeed() {
+        RecursiveAutoEncoder layerType = new RecursiveAutoEncoder.Builder()
+                .nIn(4)
                 .nOut(3)
+                .activation("sigmoid")
                 .build();
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .iterations(1)
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
                 .layer(layerType)
                 .seed(123)
                 .build();
-        Layer layer = LayerFactories.getFactory(conf).create(conf);
 
+        Layer layer = LayerFactories.getFactory(conf).create(conf);
         layer.fit(data.getFeatureMatrix());
 
         double score = layer.score();

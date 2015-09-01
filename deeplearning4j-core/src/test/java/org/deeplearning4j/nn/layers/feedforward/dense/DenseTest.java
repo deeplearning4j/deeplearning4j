@@ -89,7 +89,7 @@ public class DenseTest {
     //////////////////////////////////////////////////////////////////////////////////
 
     private static MultiLayerNetwork getDenseMLNConfig(boolean backprop, boolean pretrain){
-        int numInputs = 150;
+        int numInputs = 4;
         int outputNum = 3;
         int iterations = 10;
         long seed = 6;

@@ -70,16 +70,17 @@ public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray activate(INDArray data) {
+    public INDArray activate(INDArray input) {
         INDArray w = getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY);
-        INDArray c = getParam(RecursiveParamInitializer.DECODER_WEIGHT_KEY);
-        INDArray inputTimesW = data.mmul(w);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputTimesW.addiRowVector(c)));
+        INDArray b = getParam(RecursiveParamInitializer.HIDDEN_BIAS_KEY);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input.mmul(w).addiRowVector(b)));
     }
 
 
     public INDArray decode(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input.mmul(params.get(RecursiveParamInitializer.DECODER_WEIGHT_KEY).addiRowVector(params.get(RecursiveParamInitializer.HIDDEN_BIAS_KEY)))));
+        INDArray U = getParam(RecursiveParamInitializer.DECODER_WEIGHT_KEY);
+        INDArray vb = getParam(RecursiveParamInitializer.VISIBLE_BIAS_KEY);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input.mmul(U).addiRowVector(vb)));
     }
 
 
@@ -87,6 +88,8 @@ public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.l
     public void iterate(INDArray input) {
 
     }
+
+    // TODO update gradient so it just passes back gradient and move following code into computeGradientAndScore
 
     @Override
     public Gradient gradient() {
@@ -142,7 +145,9 @@ public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.l
                 bLoss = currBLoss;
             else
                 bLoss.addi(currBLoss);
-            currInput = encoded;
+            // TODO is this following line needed - it  needs to be size that maps to the input for the next iteration
+//            currInput = encoded;
+            // TODO fix update to score
             currScore += scoreSnapShot();
         }
 
