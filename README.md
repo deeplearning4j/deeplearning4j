@@ -7,9 +7,7 @@ ND4S is an Apache2 Licensed open-sourced Scala bindings for [ND4J](https://githu
 * NDArray slicing syntax, similar with NumPy.
 
 #Installation
-
 ##Clone from the GitHub Repo
-
 ND4S is actively developed. You can clone the repository, compile it, and reference it in your project.
 
 Clone the repository:
@@ -23,6 +21,29 @@ Compile the project:
 ```
 $ cd nd4s
 $ sbt +publish-local
+```
+
+##Try ND4S in REPL
+The easiest way to play ND4S around is cloning this repository and run the following command.
+
+```
+$ cd nd4s
+$ sbt test:console
+```
+
+It starts REPL with importing `org.nd4s.Implicits._` and `org.nd4j.linalg.factory.Nd4j` automatically. It uses jblas backend at default.
+
+```scala
+scala> val arr = (1 to 9).asNDArray(3,3) 
+arr: org.nd4j.linalg.api.ndarray.INDArray =
+[[1.00,2.00,3.00]
+ [4.00,5.00,6.00]
+ [7.00,8.00,9.00]]
+
+scala> val sub = arr(0->2,1->3)
+sub: org.nd4j.linalg.api.ndarray.INDArray =
+[[2.00,3.00]
+ [5.00,6.00]]
 ```
 
 #CheatSheet(WIP)
@@ -45,3 +66,6 @@ $ sbt +publish-local
 | arr.sumT                                   | np.sum(arr)                                 | 45.0  //returns Double value                                   |
 | val comp = Array(1 + i, 1 + 2 * i).toNDArray | comp = np.array([1 + 1j, 1 + 2j])           | [1.0 + 1.0i ,1.0 + 2.0i]                                       |
 | comp.sumT                                  | np.sum(comp)                                | 2.0 + 3.0i //returns IComplexNumber value                      |
+| for(row <- arr.rowP if row.get(0) > 1) yield row*2 |   | [[1.00,2.00,3.00] [8.00,10.00,12.00] [14.00,16.00,18.00]] |
+| val tensor = (1 to 8).asNDArray(2,2,2) | tensor = np.array([[[1, 2], [3, 4]],[[5,6],[7,8]]]) | [[[1.00,2.00] [3.00,4.00]] [[5.00,6.00] [7.00,8.00]]] |
+| for(slice <- tensor.sliceP if slice.get(0) > 1) yield slice*2 |  |[[[1.00,2.00] [3.00,4.00]] [[10.00,12.00] [14.00,16.00]]] |
