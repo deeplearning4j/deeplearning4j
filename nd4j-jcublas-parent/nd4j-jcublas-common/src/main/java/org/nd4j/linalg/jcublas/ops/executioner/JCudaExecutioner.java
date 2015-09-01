@@ -70,7 +70,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         if(op.x() instanceof LinearViewNDArray
                 || op.x() instanceof IComplexNDArray
                 || op.x().offset() > 0 && op.x().shape().length >= 2
-                || executionMode() == ExecutionMode.JAVA)
+                || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             return super.exec(op);
 
         if (op instanceof TransformOp) {
@@ -127,7 +127,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
     private void invoke(Accumulation op)  {
         checkOp(op);
-        if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA)
+        if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
 
 
@@ -267,7 +267,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
     private void invoke(TransformOp op) {
-        if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray) {
+        if(!KernelFunctionLoader.getInstance().exists(op.name()) || op.x() instanceof IComplexNDArray || op.isPassThrough()) {
             super.exec(op);
             return;
         }
