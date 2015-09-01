@@ -84,7 +84,7 @@ public class SeedTest {
     }
 
 
-    // TODO finish updating recursive auto encoder
+    // TODO finish verifying recursive auto encoder computation
     @Test
     public void testRecursiveAutoEncoderSeed() {
         RecursiveAutoEncoder layerType = new RecursiveAutoEncoder.Builder()
