@@ -221,7 +221,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
         INDArray bias = Nd4j.linspace(1,4,4);
         Bias biaOp = new Bias(bias);
         Nd4j.getExecutioner().exec(biaOp);
-        assertEquals(0.0,biaOp.currentResult().doubleValue());
+        assertEquals(0.0,biaOp.currentResult().doubleValue(),1e-1);
     }
 
     @Test

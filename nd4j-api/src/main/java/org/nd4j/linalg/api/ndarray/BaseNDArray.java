@@ -1710,8 +1710,8 @@ public abstract class BaseNDArray implements INDArray {
             return create(Nd4j.createBuffer(shape));
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
-        if (shape.length != n)
-            throw new IllegalArgumentException("Invalid shape " + Arrays.toString(shape));
+        if (stride.length != n)
+            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
         if (Arrays.equals(shape, this.shape)) {
             if (ArrayUtil.isZero(offsets)) {
@@ -1721,19 +1721,15 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-        //handle strides/offsets < rank
-        if(offsets.length != stride.length)
-            throw new IllegalStateException("Offsets and stride must be same length");
-        if(offset >= data().length())
+        if (offset >= data().length())
             offset = ArrayUtil.sum(offsets);
 
         return create(
                 data
                 , Arrays.copyOf(shape, shape.length)
-                ,stride
+                , stride
                 , offset, ordering
         );
-
     }
 
     @Override
@@ -1744,8 +1740,8 @@ public abstract class BaseNDArray implements INDArray {
             return create(Nd4j.createBuffer(shape));
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
-        if (shape.length != n)
-            throw new IllegalArgumentException("Invalid shape " + Arrays.toString(shape));
+        if (stride.length != n)
+            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
 
         if (Arrays.equals(shape, this.shape)) {
             if (ArrayUtil.isZero(offsets)) {
@@ -1755,35 +1751,19 @@ public abstract class BaseNDArray implements INDArray {
             }
         }
 
-        //handle strides/offsets < rank
-        if(offsets.length != stride.length)
-            throw new IllegalStateException("Offsets and stride must be same length");
         int[] dotProductOffsets = offsets;
         int[] dotProductStride = stride;
 
-        int offset = this.offset + NDArrayIndex.offset(dotProductStride,dotProductOffsets);
-        if(offset >= data().length())
+        int offset = this.offset + NDArrayIndex.offset(dotProductStride, dotProductOffsets);
+        if (offset >= data().length())
             offset = ArrayUtil.sum(offsets);
 
-
-        if(ordering() == NDArrayFactory.C ) {
-            return create(
-                    data
-                    , Arrays.copyOf(shape, shape.length)
-                    ,stride
-                    , offset, ordering
-            );
-        }
-        else if(ordering() == NDArrayFactory.FORTRAN) {
-            return create(
-                    data
-                    , Arrays.copyOf(shape, shape.length)
-                    , stride
-                    , offset, ordering
-            );
-        }
-        throw new IllegalStateException("Illegal ordering");
-
+        return create(
+                data
+                , Arrays.copyOf(shape, shape.length)
+                , stride
+                , offset, ordering
+        );
     }
 
     protected INDArray create(DataBuffer buffer) {
