@@ -1,7 +1,7 @@
-package org.nd4j.api
+package org.nd4s
 
-import org.nd4j.api.ops._
-import org.nd4j.api.Implicits._
+import org.nd4s.ops._
+import org.nd4s.Implicits._
 import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j

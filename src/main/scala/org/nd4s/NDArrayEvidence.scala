@@ -1,10 +1,10 @@
-package org.nd4j.api
+package org.nd4s
 
-import org.nd4j.api.ops.FilterOps
+import org.nd4s.ops.FilterOps
 import org.nd4j.linalg.api.complex.{IComplexNumber, IComplexNDArray}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.indexing.{INDArrayIndex, NDArrayIndex}
-import org.nd4j.api.Implicits._
+import org.nd4s.Implicits._
 
 object Evidences {
   implicit val double = DoubleNDArrayEvidence

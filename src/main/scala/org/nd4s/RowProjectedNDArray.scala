@@ -1,4 +1,4 @@
-package org.nd4j.api
+package org.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
 
