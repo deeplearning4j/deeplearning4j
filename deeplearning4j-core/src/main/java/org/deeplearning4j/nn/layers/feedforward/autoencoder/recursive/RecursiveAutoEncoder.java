@@ -21,7 +21,6 @@ package org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive;
 
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.RecursiveParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,10 +39,12 @@ public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.l
                      allInput = null,
                      visibleLoss = null,
                      hiddenLoss = null,
-                     cLoss = null,
+                     vbLoss = null,
                      bLoss = null,
-                     y = null;
+                     y = null,
+                     z = null;
     double currScore = 0.0;
+
     public RecursiveAutoEncoder(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -58,41 +59,47 @@ public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.l
         return currScore;
     }
 
-    @Deprecated
-    private double scoreSnapShot() {
-        return 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
+    public INDArray encode(boolean training) {
+        INDArray w = getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY);
+        INDArray b = getParam(RecursiveParamInitializer.HIDDEN_BIAS_KEY);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currInput.mmul(w).addiRowVector(b)));
+    }
+
+    public INDArray decode(INDArray activation) {
+        INDArray U = getParam(RecursiveParamInitializer.DECODER_WEIGHT_KEY);
+        INDArray vb = getParam(RecursiveParamInitializer.VISIBLE_BIAS_KEY);
+        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), activation.mmul(U).addiRowVector(vb)));
     }
 
     @Override
-    public void computeGradientAndScore() {
-        gradient();
-        score = 0.5 * pow(y.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
+    public INDArray activate(INDArray input, boolean training) {
+        setInput(input);
+        return encode(training);
     }
 
     @Override
     public INDArray activate(INDArray input) {
-        INDArray w = getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY);
-        INDArray b = getParam(RecursiveParamInitializer.HIDDEN_BIAS_KEY);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input.mmul(w).addiRowVector(b)));
+        setInput(input);
+        return encode(true);
     }
 
-
-    public INDArray decode(INDArray input) {
-        INDArray U = getParam(RecursiveParamInitializer.DECODER_WEIGHT_KEY);
-        INDArray vb = getParam(RecursiveParamInitializer.VISIBLE_BIAS_KEY);
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), input.mmul(U).addiRowVector(vb)));
+    @Override
+    public INDArray activate(boolean training) {
+        return decode(encode(training));
     }
 
+    @Override
+    public INDArray activate() {
+        return decode(encode(false));
+    }
 
     @Override
     public void iterate(INDArray input) {
-
     }
 
-    // TODO update gradient so it just passes back gradient and move following code into computeGradientAndScore
-
+    // TODO review code below to confirm computation
     @Override
-    public Gradient gradient() {
+    public void computeGradientAndScore() {
        /**
          * Going up the tree involves repeated calculations
         * using the output of the previous autoencoder
@@ -112,48 +119,44 @@ public class RecursiveAutoEncoder extends BaseLayer<org.deeplearning4j.nn.conf.l
 
             currInput = combined;
             allInput = combined;
-            INDArray encoded = activate(combined);
-            y = decode(encoded);
+            y = encode(true);
+            z = decode(y);
 
-            INDArray currVisibleLoss = currInput.sub(y);
-            INDArray currHiddenLoss = currVisibleLoss.mmul(getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY)).muli(encoded).muli(encoded.rsub(1));
+            INDArray currVisibleLoss = currInput.sub(z);
+            INDArray currHiddenLoss = currVisibleLoss.mmul(getParam(RecursiveParamInitializer.ENCODER_WEIGHT_KEY)).muli(y).muli(y.rsub(1));
 
-            INDArray hiddenGradient = y.transpose().mmul(currHiddenLoss);
-            INDArray visibleGradient = encoded.transpose().mmul(currVisibleLoss);
+            INDArray hiddenGradient = z.transpose().mmul(currHiddenLoss);
+            INDArray visibleGradient = y.transpose().mmul(currVisibleLoss);
 
             if(visibleLoss == null)
                 visibleLoss = visibleGradient;
             else
                 visibleLoss.addi(visibleGradient);
 
-
-
             if(hiddenLoss == null)
                 hiddenLoss = hiddenGradient;
             else
                 hiddenLoss.addi(hiddenGradient);
 
-            INDArray currCLoss = currVisibleLoss.isMatrix() ? currVisibleLoss.mean(0) : currVisibleLoss;
+            INDArray currVBLoss = currVisibleLoss.isMatrix() ? currVisibleLoss.mean(0) : currVisibleLoss;
             INDArray currBLoss = currHiddenLoss.isMatrix() ? currHiddenLoss.mean(0) : currHiddenLoss;
 
-
-            if(cLoss == null)
-                cLoss = currCLoss;
+            if(vbLoss == null)
+                vbLoss = currVBLoss;
             else
-                cLoss.addi(currCLoss);
+                vbLoss.addi(currVBLoss);
             if(bLoss == null)
                 bLoss = currBLoss;
             else
                 bLoss.addi(currBLoss);
             // TODO is this following line needed - it  needs to be size that maps to the input for the next iteration
 //            currInput = encoded;
-            // TODO fix update to score
-            currScore += scoreSnapShot();
+
+            currScore += 0.5 * pow(z.sub(allInput),2).mean(Integer.MAX_VALUE).getDouble(0);
         }
 
-        return createGradient(hiddenLoss,visibleLoss,cLoss,bLoss);
+        gradient = createGradient(hiddenLoss,visibleLoss,bLoss,vbLoss);
+        score = currScore;
     }
-
-
 
 }
