@@ -44,9 +44,7 @@ public class LayerFactories {
      */
     public static LayerFactory getFactory(Layer layer) {
         Class<? extends Layer> clazz = layer.getClass();
-        if(clazz.equals(ConvolutionDownSampleLayer.class))
-            return new ConvolutionLayerFactory(clazz);
-        else if(clazz.equals(ImageLSTM.class))
+        if(clazz.equals(ImageLSTM.class))
             return new ImageLSTMLayerFactory(ImageLSTM.class);
         else if(clazz.equals(GravesLSTM.class))
         	return new GravesLSTMLayerFactory(GravesLSTM.class);
