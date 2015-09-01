@@ -1,6 +1,6 @@
-package org.nd4j.api
+package org.nd4s
 
-import org.nd4j.api.Implicits._
+import org.nd4s.Implicits._
 import org.nd4j.linalg.indexing.{NDArrayIndexAll, PointIndex, IntervalIndex}
 import org.scalatest.FlatSpec
 
