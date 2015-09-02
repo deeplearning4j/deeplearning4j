@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -66,12 +67,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 	@Override
 	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-		//First: Do forward pass to get gate activations etc.
-		INDArray[] activations = activateHelper(true,null,null);	//Order: {outputActivations,memCellActivations,ifogZs,ifogAs}
-		INDArray outputActivations = activations[0];
-		INDArray memCellState = activations[1];
-		INDArray ifogZs = activations[2];
-		INDArray ifogAs = activations[3];
+		//First: Do forward pass to get gate activations, zs etc.
+		FwdPassReturn fwdPass = activateHelper(true,null,null,true);
 		
 		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
 		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
@@ -82,18 +79,18 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		int miniBatchSize = epsilon.size(0);
 		boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
 		int timeSeriesLength = (is2dInput? 1: epsilon.size(2));
-		
-		INDArray wi = inputWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));	//i.e., want rows 0..nIn, columns 0..hiddenLayerSize
-		INDArray wI = recurrentWeights.get(NDArrayIndex.all(),interval(0,hiddenLayerSize));
-		INDArray wf = inputWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));
-		INDArray wF = recurrentWeights.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize));
-		INDArray wFF = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize,4 * hiddenLayerSize + 1));
-		INDArray wo = inputWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
-		INDArray wO = recurrentWeights.get(NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize));
-		INDArray wOO = recurrentWeights.get(NDArrayIndex.all(),interval(4 * hiddenLayerSize + 1,4 * hiddenLayerSize + 2));
-		INDArray wg = inputWeights.get(NDArrayIndex.all(),interval(3 * hiddenLayerSize,4*hiddenLayerSize));
-		INDArray wG = recurrentWeights.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
-		INDArray wGG = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3));
+
+		INDArray wi = fwdPass.paramsZeroOffset[0];
+		INDArray wI = fwdPass.paramsZeroOffset[1];
+		INDArray wf = fwdPass.paramsZeroOffset[2];
+		INDArray wF = fwdPass.paramsZeroOffset[3];
+		INDArray wFF = fwdPass.paramsZeroOffset[4];
+		INDArray wo = fwdPass.paramsZeroOffset[5];
+		INDArray wO = fwdPass.paramsZeroOffset[6];
+		INDArray wOO = fwdPass.paramsZeroOffset[7];
+		INDArray wg = fwdPass.paramsZeroOffset[8];
+		INDArray wG = fwdPass.paramsZeroOffset[9];
+		INDArray wGG = fwdPass.paramsZeroOffset[10];
 
 		//Parameter gradients, summed across time. bias gradients, input weight gradients, recurrent weight gradients
 		INDArray bGradients = Nd4j.zeros(1,4*hiddenLayerSize);
@@ -117,9 +114,9 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		INDArray deltagNext = Nd4j.zeros(miniBatchSize,hiddenLayerSize);
 		
 		for( int t=timeSeriesLength-1; t>=0; t-- ){
-			INDArray prevMemCellState = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : memCellState.tensorAlongDimension(t-1,1,0) );	//Shape: [m, n^L]
-			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : outputActivations.tensorAlongDimension(t-1,1,0) );	//Shape: [m, n^L]; i.e., layer output at prev. time step.
-			INDArray currMemCellState = (is2dInput ? memCellState : memCellState.tensorAlongDimension(t,1,0) );
+			INDArray prevMemCellState = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : fwdPass.memCellState[t-1] );
+			INDArray prevHiddenUnitActivation = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : fwdPass.fwdPassOutputAsArrays[t-1] );
+			INDArray currMemCellState = fwdPass.memCellState[t];
 
 			//For variable length mini-batch data: Zero out deltas as necessary, so deltas beyond end of each time series are always 0
 			//Not implemented yet, but left here for when this is implemented
@@ -134,28 +131,27 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 			//LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
 			INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(t,1,0));		//(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
-			INDArray nablaOut = epsilonSlice.dup()
-					.addi(deltaiNext.mmul(wI.transpose()))
+			INDArray nablaOut = epsilonSlice; //Shape: [m,n^L]
+			if(t!=timeSeriesLength-1){
+				//if t == timeSeriesLength-1 then deltaiNext etc are zeros
+				nablaOut = nablaOut.dup();
+				nablaOut.addi(deltaiNext.mmul(wI.transpose()))
 					.addi(deltafNext.mmul(wF.transpose()))
 					.addi(deltaoNext.mmul(wO.transpose()))
 					.addi(deltagNext.mmul(wG.transpose()));
-			//Shape: [m,n^L]
+			}
 
 			//Output gate deltas:
 			INDArray sigmahOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup()));//	shape: [m,n^L]
-			INDArray zo;
-			if( is2dInput ) zo = ifogZs.get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-			else zo = ifogZs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-			INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zo.dup()).derivative());//			shape: [m,n^L]
+			INDArray zo = fwdPass.oz[t];
+			INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zo).derivative()); //shape: [m,n^L]
+			//Normally would use zo.dup() in above line, but won't be using zo again (for this time step). Ditto for zf, zg, zi
 			INDArray deltao = nablaOut.mul(sigmahOfS).muli(sigmaoPrimeOfZo); //Shape: [m,n^L]
 
 			//Memory cell error:
 			INDArray sigmahPrimeOfS = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currMemCellState.dup()).derivative());//	shape: [m,n^L]
-			INDArray ao;
-			if( is2dInput ) ao = ifogAs.get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-			else ao = ifogAs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize));
-			INDArray nextForgetGateAs = (t==timeSeriesLength-1 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) :	//t==0 should also cover is2dInput case
-					ifogAs.tensorAlongDimension(t+1,1,0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)) );
+			INDArray ao = fwdPass.oa[t];
+			INDArray nextForgetGateAs = (t==timeSeriesLength-1 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) : fwdPass.fa[t+1]);
 			INDArray nablaCellState = nablaOut.mul(ao).muli(sigmahPrimeOfS)
 					.addi(nextForgetGateAs.mul(nablaCellStateNext))
 					.addi(deltafNext.mulRowVector(wFF.transpose()))
@@ -164,31 +160,26 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 			nablaCellStateNext = nablaCellState;	//Store for use in next iteration
 
 			//Forget gate delta:
-			INDArray zf = (is2dInput ? ifogZs.get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize))	//z_f^{Lt}	shape: [m,n^L] 
-					: ifogZs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)) );
+			INDArray zf = fwdPass.fz[t];
 			INDArray deltaf = nablaCellState.mul(prevMemCellState)
-					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zf.dup()).derivative()));
+					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zf).derivative()));
 			//Shape: [m,n^L]
 
 			//Input modulation gate delta:
-			INDArray zg = (is2dInput ? ifogZs.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize))	//z_g^{Lt}	shape: [m,n^L] 
-					: ifogZs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)) );
-			INDArray ai = (is2dInput ? ifogAs.get(NDArrayIndex.all(),interval(0,hiddenLayerSize)) 	//a_i^{Lt}	shape: [m,n^L]
-					: ifogAs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(0,hiddenLayerSize)) );
+			INDArray zg = fwdPass.gz[t];
+			INDArray ai = fwdPass.ia[t];
 			INDArray deltag = nablaCellState.mul(ai)
-					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zg.dup()).derivative()));
+					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", zg).derivative()));
 			//Shape: [m,n^L]
 
 			//Network input delta:
-			INDArray zi = (is2dInput ? ifogZs.get(NDArrayIndex.all(),interval(0,hiddenLayerSize))	//z_i^{Lt}	shape: [m,n^L]
-					: ifogZs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(0,hiddenLayerSize)) );
-			INDArray ag = (is2dInput ? ifogAs.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)) //a_g^{Lt}	shape: [m,n^L]
-					: ifogAs.tensorAlongDimension(t,1,0).get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)) );	
+			INDArray zi = fwdPass.iz[t];
+			INDArray ag = fwdPass.ga[t];
 			INDArray deltai = nablaCellState.mul(ag)
-					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi.dup()).derivative()));
+					.muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), zi).derivative()));
 			//Shape: [m,n^L]
 
-			INDArray prevLayerActivationSlice = (is2dInput ? input : input.tensorAlongDimension(t,1,0));
+			INDArray prevLayerActivationSlice = Shape.toOffsetZero(is2dInput ? input : input.tensorAlongDimension(t,1,0));
 			iwGradients.get(new INDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)}).addi(deltai.transpose().mmul(prevLayerActivationSlice).transpose());
 			iwGradients.get(new INDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}).addi(deltaf.transpose().mmul(prevLayerActivationSlice).transpose());
 			iwGradients.get(new INDArrayIndex[]{NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)}).addi(deltao.transpose().mmul(prevLayerActivationSlice).transpose());
@@ -200,6 +191,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 				rwGradients.get(new INDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2 * hiddenLayerSize)}).addi(deltaf.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{Fxy} = delta_{fx} * a_{iy}^{L(t-1)}
 				rwGradients.get(new INDArrayIndex[]{NDArrayIndex.all(),interval(2 * hiddenLayerSize,3 * hiddenLayerSize)}).addi(deltao.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{O}
 				rwGradients.get(new INDArrayIndex[]{NDArrayIndex.all(),interval(3 * hiddenLayerSize,4 * hiddenLayerSize)}).addi(deltag.transpose().mmul(prevHiddenUnitActivation).transpose());	//dL/dw_{G}
+				//TODO: Swap order + single transpose?
 
 				//Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
 				INDArray dLdwFF = deltaf.mul(prevMemCellState).sum(0).transpose();	//mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
@@ -251,33 +243,29 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 	@Override
 	public INDArray activate(INDArray input, boolean training){
 		setInput(input, training);
-		return activateHelper(training,null,null)[0];
+		return activateHelper(training,null,null,false).fwdPassOutput;
 	}
 
 	@Override
 	public INDArray activate(INDArray input){
 		setInput(input);
-		return activateHelper(true,null,null)[0];
+		return activateHelper(true,null,null,false).fwdPassOutput;
 	}
 
 	@Override
 	public INDArray activate(boolean training){
-		return activateHelper(training,null,null)[0];
+		return activateHelper(training,null,null,false).fwdPassOutput;
 	}
 
 	@Override
 	public INDArray activate(){
-		return activateHelper()[0];
+		return activateHelper(false,null,null,false).fwdPassOutput;
 	}
 
-	private INDArray[] activateHelper() {
-		return activateHelper(false,null,null);
-	}
-
-	/**Returns 4 INDArrays: [outputActivations, memCellState, ifogZs, ifogAs] in that order.
-	 * Need all 4 to do backward pass, but only care about the first one for forward pass.
+	/**Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
+	 * and rnnTimeStep whilst being reasonably efficient for all
 	 */
-	private INDArray[] activateHelper(boolean training, INDArray prevOutputActivations, INDArray prevMemCellState){
+	private FwdPassReturn activateHelper(boolean training, INDArray prevOutputActivations, INDArray prevMemCellState, boolean forBackprop){
 		//Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
 		//Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
 
@@ -289,7 +277,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		int timeSeriesLength = (is2dInput ? 1 : input.size(2));
 		int hiddenLayerSize = recurrentWeights.size(0);
 		int miniBatchSize = input.size(0);
-//		int nIn = inputWeights.size(0);		//Size of previous layer (or input)
 
 		//Apply dropconnect to input (not recurrent) weights only:
 		if(conf.isUseDropConnect() && training) {
@@ -317,48 +304,76 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		INDArray wG = recurrentWeights.get(NDArrayIndex.all(),interval(3*hiddenLayerSize,4 * hiddenLayerSize)); //previous
 		INDArray wGG = recurrentWeights.get(NDArrayIndex.all(),interval(4*hiddenLayerSize + 2,4 * hiddenLayerSize + 3)); //previous
 		INDArray bg = biases.get(NDArrayIndex.point(0),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
+		
+		if(timeSeriesLength>1 || forBackprop){
+			wi = Shape.toOffsetZero(wi);
+			wI = Shape.toOffsetZero(wI);
+			wf = Shape.toOffsetZero(wf);
+			wF = Shape.toOffsetZero(wF);
+			wFF = Shape.toOffsetZero(wFF);
+			wo = Shape.toOffsetZero(wo);
+			wO = Shape.toOffsetZero(wO);
+			wOO = Shape.toOffsetZero(wOO);
+			wg = Shape.toOffsetZero(wg);
+			wG = Shape.toOffsetZero(wG);
+			wGG = Shape.toOffsetZero(wGG);
+			bi = Shape.toOffsetZero(bi);
+			bf = Shape.toOffsetZero(bf);
+			bo = Shape.toOffsetZero(bo);
+			bg = Shape.toOffsetZero(bg);
+		}
 
 		//Allocate arrays for activations:
-		INDArray outputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
-		INDArray ifogZ = Nd4j.zeros(new int[]{miniBatchSize,4 * hiddenLayerSize,timeSeriesLength});
-		INDArray ifogA = Nd4j.zeros(new int[]{miniBatchSize,4 * hiddenLayerSize,timeSeriesLength});
-		INDArray memCellState = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
+		INDArray outputActivations = null; //Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
+
+		FwdPassReturn toReturn = new FwdPassReturn();
+		if(forBackprop){
+			toReturn.paramsZeroOffset = new INDArray[]{wi,wI,wf,wF,wFF,wo,wO,wOO,wg,wG,wGG};
+			toReturn.fwdPassOutputAsArrays = new INDArray[timeSeriesLength];
+			toReturn.memCellState = new INDArray[timeSeriesLength];
+			toReturn.iz = new INDArray[timeSeriesLength];
+			toReturn.ia = new INDArray[timeSeriesLength];
+			toReturn.fz = new INDArray[timeSeriesLength];
+			toReturn.fa = new INDArray[timeSeriesLength];
+			toReturn.oz = new INDArray[timeSeriesLength];
+			toReturn.oa = new INDArray[timeSeriesLength];
+			toReturn.gz = new INDArray[timeSeriesLength];
+			toReturn.ga = new INDArray[timeSeriesLength];
+		} else {
+			outputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
+			toReturn.fwdPassOutput = outputActivations;
+		}
 
 		if(prevOutputActivations == null) prevOutputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
 		if(prevMemCellState == null) prevMemCellState = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
 		for( int t = 0; t < timeSeriesLength; t++ ){
 			INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(t,1,0));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
-			if(t>0){
-				prevOutputActivations = outputActivations.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
-				prevMemCellState = memCellState.tensorAlongDimension(t-1,1,0);	//Shape: [m,nL]
-			}
+			miniBatchData = Shape.toOffsetZero(miniBatchData);
 
 			//Calculate activations for: network input + forget, output, input modulation gates.
 			INDArray inputActivations = miniBatchData.mmul(wi)
 					.addi(prevOutputActivations.mmul(wI))
 					.addiRowVector(bi);
-			INDArrayIndex[] iIndexes = new INDArrayIndex[]{NDArrayIndex.all(),interval(0,hiddenLayerSize)};
-			ifogZ.tensorAlongDimension(t,1,0).put(iIndexes, inputActivations);
+			if(forBackprop) toReturn.iz[t] = inputActivations.dup();
 			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
-			ifogA.tensorAlongDimension(t,1,0).put(iIndexes, inputActivations);
+			if(forBackprop) toReturn.ia[t] = inputActivations;
 
 			INDArray forgetGateActivations = miniBatchData.mmul(wf)
 					.addi(prevOutputActivations.mmul(wF))
 					.addi(prevMemCellState.mulRowVector(wFF.transpose()))
 					.addiRowVector(bf);
-			INDArrayIndex[] fIndexes = new INDArrayIndex[]{NDArrayIndex.all(),interval(hiddenLayerSize,2*hiddenLayerSize)};
-			ifogZ.tensorAlongDimension(t,1,0).put(fIndexes, forgetGateActivations);
+			if(forBackprop) toReturn.fz[t] = forgetGateActivations.dup();
 			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
-			ifogA.tensorAlongDimension(t,1,0).put(fIndexes, forgetGateActivations);
+			if(forBackprop) toReturn.fa[t] = forgetGateActivations;
+
 
 			INDArray inputModGateActivations = miniBatchData.mmul(wg)
 					.addi(prevOutputActivations.mmul(wG))
 					.addi(prevMemCellState.mulRowVector(wGG.transpose()))
 					.addiRowVector(bg);
-			INDArrayIndex[] gIndexes = new INDArrayIndex[]{NDArrayIndex.all(),interval(3*hiddenLayerSize,4*hiddenLayerSize)};
-			ifogZ.tensorAlongDimension(t,1,0).put(gIndexes, inputModGateActivations);
+			if(forBackprop) toReturn.gz[t] = inputModGateActivations.dup();
 			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
-			ifogA.tensorAlongDimension(t,1,0).put(gIndexes, inputModGateActivations);
+			if(forBackprop) toReturn.ga[t] = inputModGateActivations;
 
 			//Memory cell state
 			INDArray currentMemoryCellState = forgetGateActivations.mul(prevMemCellState)
@@ -368,20 +383,29 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 					.addi(prevOutputActivations.mmul(wO))
 					.addi(currentMemoryCellState.mulRowVector(wOO.transpose()))
 					.addiRowVector(bo);
-			INDArrayIndex[] oIndexes = new INDArrayIndex[]{NDArrayIndex.all(),interval(2*hiddenLayerSize,3*hiddenLayerSize)};
-			ifogZ.tensorAlongDimension(t,1,0).put(oIndexes, outputGateActivations);
+			if(forBackprop) toReturn.oz[t] = outputGateActivations.dup();
 			Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
-			ifogA.tensorAlongDimension(t,1,0).put(oIndexes, outputGateActivations);
+			if(forBackprop) toReturn.oa[t] = outputGateActivations;
 
 			//LSTM unit outputs:
 			INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup()));
-			INDArray currHiddenUnitActivations = outputGateActivations.mul(currMemoryCellActivation);	//Expected shape: [m,hiddenLayerSize]
+			INDArray currHiddenUnitActivations = currMemoryCellActivation.muli(outputGateActivations);	//Expected shape: [m,hiddenLayerSize]
 
-			outputActivations.tensorAlongDimension(t,1,0).assign(currHiddenUnitActivations);
-			memCellState.tensorAlongDimension(t,1,0).assign(currentMemoryCellState);
+			if(forBackprop){
+				toReturn.fwdPassOutputAsArrays[t] = currHiddenUnitActivations;
+				toReturn.memCellState[t] = currentMemoryCellState;
+			} else {
+				outputActivations.tensorAlongDimension(t,1,0).assign(currHiddenUnitActivations);
+			}
+
+			prevOutputActivations = currHiddenUnitActivations;
+			prevMemCellState = currentMemoryCellState;
+
+			toReturn.lastAct = currHiddenUnitActivations;
+			toReturn.lastMemCell = currentMemoryCellState;
 		}
 
-		return new INDArray[]{outputActivations,memCellState,ifogZ,ifogA};
+		return toReturn;
 	}
 
 	@Override
@@ -418,16 +442,32 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 	@Override
 	public INDArray rnnTimeStep(INDArray input) {
 		setInput(input);
-		INDArray[] activations = activateHelper(false,stateMap.get(STATE_KEY_PREV_ACTIVATION),stateMap.get(STATE_KEY_PREV_MEMCELL));
-		INDArray outAct = activations[0];
-		INDArray memCell = activations[1];
+		FwdPassReturn fwdPass = activateHelper(false,stateMap.get(STATE_KEY_PREV_ACTIVATION),stateMap.get(STATE_KEY_PREV_MEMCELL),false);
+		INDArray outAct = fwdPass.fwdPassOutput;
 		//Store last time step of output activations and memory cell state for later use:
-		int tLength = outAct.size(2);
-		INDArray lastActSlice = outAct.tensorAlongDimension(tLength-1,1,0);
-		INDArray lastMemSlice = memCell.tensorAlongDimension(tLength-1,1,0);
-		stateMap.put(STATE_KEY_PREV_ACTIVATION, lastActSlice.dup());
-		stateMap.put(STATE_KEY_PREV_MEMCELL, lastMemSlice.dup());
+		stateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
+		stateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
 
 		return outAct;
+	}
+
+	private static class FwdPassReturn {
+		//First: needed by standard forward pass only
+		private INDArray fwdPassOutput;
+		//Arrays: Needed for backpropGradient only
+		private INDArray[] paramsZeroOffset;	//{wi,wI,wf,wF,wFF,wo,wO,wOO,wg,wG,wGG}
+		private INDArray[] fwdPassOutputAsArrays;
+		private INDArray[] memCellState;
+		private INDArray[] iz;
+		private INDArray[] ia;
+		private INDArray[] fz;
+		private INDArray[] fa;
+		private INDArray[] oz;
+		private INDArray[] oa;
+		private INDArray[] gz;
+		private INDArray[] ga;
+		//Last 2: needed for rnnTimeStep only
+		private INDArray lastAct;
+		private INDArray lastMemCell;
 	}
 }
