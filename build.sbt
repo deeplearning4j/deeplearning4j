@@ -28,36 +28,37 @@ lazy val root = (project in file(".")).settings(
       else
         Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
- pomExtra := {
-   <url>http://nd4s.org/</url>
-     <licenses>
-       <license>
-         <name>Apache License, Version 2.0</name>
-         <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
-         <distribution>repo</distribution>
-       </license>
-     </licenses>
-     <scm>
-       <connection>scm:git@github.com:SkymindIO/nd4s.git</connection>
-       <developerConnection>scm:git:git@github.com:SkymindIO/nd4s.git</developerConnection>
-       <url>git@github.com:deeplearning4j/nd4s.git</url>
-       <tag>HEAD</tag>
-     </scm>
-     <developers>
-       <developer>
-         <id>agibsonccc</id>
-         <name>Adam Gibson</name>
-         <email>adam@skymind.io</email>
-       </developer>
-       <developer>
-         <id>taisukeoe</id>
-         <name>Taisuke Oe</name>
-         <email>oeuia.t@gmail.com</email>
-       </developer>
-     </developers>
- },
+  pomExtra := {
+    <url>http://nd4s.org/</url>
+      <licenses>
+        <license>
+          <name>Apache License, Version 2.0</name>
+          <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+          <distribution>repo</distribution>
+        </license>
+      </licenses>
+      <scm>
+        <connection>scm:git@github.com:SkymindIO/nd4s.git</connection>
+        <developerConnection>scm:git:git@github.com:SkymindIO/nd4s.git</developerConnection>
+        <url>git@github.com:deeplearning4j/nd4s.git</url>
+        <tag>HEAD</tag>
+      </scm>
+      <developers>
+        <developer>
+          <id>agibsonccc</id>
+          <name>Adam Gibson</name>
+          <email>adam@skymind.io</email>
+        </developer>
+        <developer>
+          <id>taisukeoe</id>
+          <name>Taisuke Oe</name>
+          <email>oeuia.t@gmail.com</email>
+        </developer>
+      </developers>
+  },
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   releaseCrossBuild := true,
-  initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._"
+  initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._",
+  addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
 )
