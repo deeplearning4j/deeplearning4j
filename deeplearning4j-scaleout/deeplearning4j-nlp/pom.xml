@@ -101,12 +101,7 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.nd4j</groupId>
-			<artifactId>nd4j-jblas</artifactId>
-			<version>0.4-rc0</version>
-			<scope>test</scope>
-		</dependency>
+
 
 		<dependency>
 			<groupId>junit</groupId>
@@ -148,11 +143,6 @@
             <artifactId>dropwizard-views-freemarker</artifactId>
             <version>${dropwizard.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.jblas</groupId>
-            <artifactId>jblas</artifactId>
-            <version>1.2.4</version>
-            <scope>test</scope>
-        </dependency>
+
 	</dependencies>
 </project>
