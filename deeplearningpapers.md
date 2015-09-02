@@ -181,3 +181,5 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 * [A Neural Network in 11 Lines of Python](https://iamtrask.github.io/2015/07/12/basic-python-network/)
 * [A Step-by-Step Backpropagation Example](http://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/)
 * [Generative Learning algorithms](http://cs229.stanford.edu/notes/cs229-notes2.pdf); Notes by Andrew Ng
+* [Calculus on Computational Graphs: Backpropagation](https://colah.github.io/posts/2015-08-Backprop/index.html)
+* [Understanding LSTM Networks](https://colah.github.io/posts/2015-08-Understanding-LSTMs/index.html)
