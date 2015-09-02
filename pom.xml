@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>0.4-rc1-SNAPSHOT</version>
+    <version>0.4-rc2-SNAPSHOT</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>

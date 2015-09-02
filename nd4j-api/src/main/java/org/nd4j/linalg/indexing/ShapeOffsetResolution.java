@@ -292,7 +292,7 @@ public class ShapeOffsetResolution implements Serializable {
             else
                 this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
         }
-        else if(numIntervals > 0) {
+        else if(numIntervals > 0 && arr.rank() > 2) {
             this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
         }
         else
