@@ -20,10 +20,12 @@
 package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
+
 import org.nd4j.bytebuddy.shape.IndexMapper;
 import org.nd4j.bytebuddy.shape.OffsetMapper;
 import org.nd4j.bytebuddy.shape.ShapeMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataBuffer.AllocationMode;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -134,6 +136,37 @@ public class Shape {
             return ret;
         }
         else {
+        	if(arr.offset()==0 && arr.data().allocationMode() == AllocationMode.HEAP
+        			&& arr.length() == arr.data().length() && arr.ordering() == Nd4j.ORDER ){
+        		//public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        		Object array = arr.data().array();
+        		
+        		if( array instanceof float[] ){
+        			float[] orig = (float[])array;
+        			float[] out = Arrays.copyOf(orig, orig.length);
+        			DataBuffer floatBuffer = Nd4j.createBuffer(out);        			
+        			
+        			int[] newShape = arr.shape();
+        			newShape = Arrays.copyOf(newShape, newShape.length);
+        			int[] newStride = arr.stride();
+        			newStride = Arrays.copyOf(newStride, newStride.length);
+        			
+        			return Nd4j.create(floatBuffer,newShape,newStride,0,arr.ordering());
+        			
+        		} else if( array instanceof double[] ){
+        			double[] orig = (double[])array;
+        			double[] out = Arrays.copyOf(orig, orig.length);
+        			DataBuffer doubleBuffer = Nd4j.createBuffer(out);
+        			
+        			int[] newShape = arr.shape();
+        			newShape = Arrays.copyOf(newShape, newShape.length);
+        			int[] newStride = arr.stride();
+        			newStride = Arrays.copyOf(newStride, newStride.length);
+        			
+        			return Nd4j.create(doubleBuffer,newShape,newStride,0,arr.ordering());
+        		}
+        	}
+        	
             INDArray ret = Nd4j.create(arr.shape());
             for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
                 ret.vectorAlongDimension(i,0).assign(arr.vectorAlongDimension(i,0));
