@@ -59,4 +59,4 @@ lazy val root = (project in file(".")).settings(
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   releaseCrossBuild := true,
-  initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._")im
+  initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._")
