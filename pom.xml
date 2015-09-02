@@ -20,7 +20,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-parent</artifactId>
-    <version>0.4-rc2-SNAPSHOT</version>
+    <version>0.4-rc1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DeepLearning4j</name>
 
