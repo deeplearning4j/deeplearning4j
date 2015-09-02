@@ -158,7 +158,7 @@ public class MultiLayerTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
-        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(4), new NeuralNetPlotterIterationListener(4)));
+        network.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(4)));
         network.fit(next);
 
     }

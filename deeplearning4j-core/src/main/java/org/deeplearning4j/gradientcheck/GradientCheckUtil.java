@@ -32,7 +32,7 @@ public class GradientCheckUtil {
     /**
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
-     * @param epsilon Usually on the order of 1e-4 or so.
+     * @param epsilon Usually on the order/ of 1e-4 or so.
      * @param maxRelError Maximum relative error. Usually < 0.01, though maybe more for deep networks
      * @param print Whether to print full pass/failure details for each parameter gradient
      * @param exitOnFirstError If true: return upon first failure. If false: continue checking even if
