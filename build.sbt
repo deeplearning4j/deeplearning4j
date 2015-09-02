@@ -4,7 +4,7 @@ lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.7",
   crossScalaVersions := Seq("2.10.5", "2.11.7", "2.12.0-M1"),
   name := "nd4s",
-  version := "0.4-rc1",
+  version := "0.4-rc1.1",
   organization := "org.nd4j",
   resolvers += "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
   libraryDependencies ++= Seq(
@@ -60,5 +60,4 @@ lazy val root = (project in file(".")).settings(
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
   releaseCrossBuild := true,
   initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._",
-  addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
-)
+  addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0"))
