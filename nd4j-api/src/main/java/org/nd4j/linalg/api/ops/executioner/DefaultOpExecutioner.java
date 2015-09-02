@@ -76,11 +76,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     op.z().data().put(i, op.op(op.x().data().getDouble(i)));
                 }
             }
+            else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int yStride = op.x().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
+                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                for(int c = 0; c < op.n(); c ++)
+                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride),op.y().data().getDouble(op.y().offset() + c * yStride)));
+            }
+
             else if(Shape.opIsWithMatchingStrides(op)) {
                 int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
                 int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
                 for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride)));
+                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride)));
             }
 
             else {
@@ -102,7 +110,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
                 int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
                 for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().getDouble(i * xStride), op.y().getDouble(i * yStride)));
+                    accumulation.update(op.op(op.x().getDouble(op.x().offset() + i * xStride), op.y().getDouble(op.y().offset() + i * yStride)));
                 }
             }
             else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
@@ -134,7 +142,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
                 int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
                 for(int c = 0; c < op.n(); c ++)
-                    zLinear.data().put(c * zStride, op.op(xLinear.data().getDouble(c * xStride)));
+                    zLinear.data().put(zLinear.offset() + c * zStride, op.op(xLinear.data().getDouble(xLinear.offset() + c * xStride)));
             }
 
             else if (op.x() instanceof IComplexNDArray) {
