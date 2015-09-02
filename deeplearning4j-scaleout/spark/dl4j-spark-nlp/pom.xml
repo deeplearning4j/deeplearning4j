@@ -20,7 +20,7 @@
     <parent>
         <artifactId>spark</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc2-SNAPSHOT</version>
+        <version>0.4-rc1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
