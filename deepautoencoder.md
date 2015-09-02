@@ -114,4 +114,6 @@ The code would look something like this:
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
 
+To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-0.4-examples), which are at 0.4.x.
+
 For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 
