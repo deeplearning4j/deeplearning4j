@@ -140,7 +140,7 @@ public class CNNGradientCheckTest {
 
         for( String afn : activFns ){
             for( boolean doLearningFirst : characteristic ){
-                for( int i=0; i<lossFunctions.length; i++ ) {
+                for( int i=0; i < lossFunctions.length; i++ ) {
                     for (int k = 0; k < l2vals.length; k++) {
                         LossFunctions.LossFunction lf = lossFunctions[i];
                         String outputActivation = outputActivations[i];
