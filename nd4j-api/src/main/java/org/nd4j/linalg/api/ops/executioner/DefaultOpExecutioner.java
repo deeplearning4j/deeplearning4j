@@ -29,8 +29,11 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -55,22 +58,86 @@ public class DefaultOpExecutioner implements OpExecutioner {
             //make assumption x and z are same type
             if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
-            for (int c = 0; c < op.n(); c++) {
-                apply(t, c);
+            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                for(int i = 0; i < op.n(); i++) {
+                    op.z().data().put(i, op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+                }
+
             }
+            else if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
+                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                for(int c = 0; c < op.n(); c ++)
+                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride),op.y().data().getDouble(c * yStride)));
+            }
+            else if(Shape.opIsWholeBufferWithMatchingStrides(op)){
+                for(int i = 0; i < op.n(); i++) {
+                    op.z().data().put(i, op.op(op.x().data().getDouble(i)));
+                }
+            }
+            else if(Shape.opIsWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                for(int c = 0; c < op.n(); c ++)
+                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride)));
+            }
+
+            else {
+                for (int c = 0; c < op.n(); c++) {
+                    apply(t, c);
+                }
+            }
+
         }
         else if (op instanceof Accumulation) {
             Accumulation accumulation = (Accumulation) op;
-            for (int c = 0; c < op.n(); c++)
-                apply(accumulation, c);
-        } else if (op instanceof ScalarOp) {
+            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                for(int i = 0; i < op.n(); i++) {
+                   accumulation.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+                }
+
+            }
+            else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(op.x().getDouble(i * xStride), op.y().getDouble(i * yStride)));
+                }
+            }
+            else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(op.x().getDouble(i)));
+                }
+            }
+
+
+            else {
+                for (int c = 0; c < op.n(); c++)
+                    apply(accumulation, c);
+            }
+
+        }
+
+        else if (op instanceof ScalarOp) {
             ScalarOp scalarOp = (ScalarOp) op;
             if(op.isPassThrough())
                 return scalarOp;
-            INDArray zLinear = op.z().linearView();
-            INDArray xLinear = op.x().linearView();
+            INDArray zLinear = op.z();
+            INDArray xLinear = op.x();
+            if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                for(int c = 0; c < op.n(); c ++)
+                    zLinear.data().put(c, op.op(xLinear.data().getDouble(c)));
+            }
 
-            if (op.x() instanceof IComplexNDArray) {
+            else if(Shape.opIsWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                for(int c = 0; c < op.n(); c ++)
+                    zLinear.data().put(c * zStride, op.op(xLinear.data().getDouble(c * xStride)));
+            }
+
+            else if (op.x() instanceof IComplexNDArray) {
                 IComplexNDArray ndArray = (IComplexNDArray) op.z();
                 for(int c = 0; c < op.n(); c++)
                     ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
@@ -228,7 +295,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
-        
+
         if(op.isPassThrough()) {
             op.exec(dimension);
             return op;
@@ -302,13 +369,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
-        
+
         if(op.isPassThrough()) {
             op.exec(dimension);
             return op.z();
         }
-          
-       
+
+
         if(dimension[0] == Integer.MAX_VALUE) {
             if(op.x() instanceof IComplexNDArray)
                 return Nd4j.scalar(execAndReturn(op).currentResultComplex());
@@ -328,7 +395,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         if(op instanceof IComplexNDArray) {
             IComplexNDArray ret = Nd4j.createComplex(retShape);
-            IComplexNDArray linear = ret.linearView();
+            IComplexNDArray linear = ret;
             for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
                 Op op2 = op.opForDimension(i, dimension);
                 IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
@@ -344,7 +411,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         else {
             INDArray ret = Nd4j.create(retShape);
-            INDArray linear = ret.linearView();
+            INDArray linear = ret;
             for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
                 Op op2 = op.opForDimension(i, dimension);
                 double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
@@ -359,126 +426,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-    protected INDArray execVector(Accumulation op,int dimension) {
-        if(op.isPassThrough()) {
-            op.exec();
-            return op.z();
-        }
-
-
-        if(dimension == Integer.MAX_VALUE) {
-            op.setX(op.x().linearView());
-            if(op.y() != null)
-                op.setY(op.y().linearView());
-            op.setZ(op.z().linearView());
-
-            if(op.x() instanceof IComplexNDArray)
-                return Nd4j.scalar(execAndReturn(op).currentResultComplex());
-            else
-                return Nd4j.scalar(execAndReturn(op).currentResult());
-        }
-        else if(op.x().isScalar())
-            return op.x();
-        if(op.x() instanceof IComplexNDArray) {
-            IComplexNDArray ret = Nd4j.createComplex(ArrayUtil.removeIndex(op.x().shape(), dimension));
-            IComplexNDArray linear = ret.linearView();
-            if(op.x().isRowVector()) {
-                //same shape
-                if(dimension == 0) {
-                    //no reduction
-                    return op.x();
-                }
-                else if(dimension == 1) {
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
-                }
-            }
-            else if(op.x().isColumnVector()) {
-                if(dimension == 0) {
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
-
-                }
-                //row vector
-                else if(dimension == 1) {
-                    //make a row vector
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
-
-                }
-            }
-
-            for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
-                linear.putScalar(i, result);
-
-            }
-
-            return ret;
-        }
-        else {
-            if(op.x().isRowVector()) {
-                //same shape
-                if(dimension == 0) {
-                    //no reduction
-                    return op.x();
-                }
-                else if(dimension == 1) {
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
-                }
-            }
-            else if(op.x().isColumnVector()) {
-                if(dimension == 0) {
-                    return Nd4j.scalar(execAndReturn(op).currentResult());
-
-                }
-                //row vector
-                else if(dimension == 1) {
-                    //make a row vector
-                    return op.z().transpose();
-
-                }
-            }
-
-            if(op.x().isMatrix() || op.x().isVector()) {
-                int[] shape = ArrayUtil.removeIndex(op.x().shape(), dimension);
-                if(shape.length < 2)
-                    shape = new int[]{1,shape[0]};
-                INDArray ret = Nd4j.create(shape);
-                INDArray linear = ret.linearView();
-
-                for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-                    Op op2 = op.opForDimension(i, dimension);
-                    Number result = execAndReturn((Accumulation) op2).currentResult();
-                    linear.putScalar(i,result.doubleValue());
-
-                }
-
-                return ret;
-            }
-            else {
-                int[] shape = ArrayUtil.removeIndex(op.x().shape(), dimension);
-                INDArray ret = Nd4j.create(shape);
-                INDArray linear = ret.linearView();
-                for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-                    Op op2 = op.opForDimension(i, dimension);
-                    Number result = execAndReturn((Accumulation) op2).currentResult();
-                    linear.putScalar(i,result.doubleValue());
-
-                }
-
-                return ret;
-
-            }
-
-
-
-        }
-
-    }
-
     @Override
     public INDArray execAndReturn(TransformOp op, int...dimension) {
         if(dimension.length == op.x().rank())
-             dimension = new int[] {Integer.MAX_VALUE};
+            dimension = new int[] {Integer.MAX_VALUE};
         if(dimension.length == 1)
             return execAndReturnVector(op,dimension[0]);
         else {
@@ -531,21 +482,21 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op.y() != null) {
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x().linearView();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z().linearView();
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
+                IComplexNDArray complexZ = (IComplexNDArray) op.z();
 
                 IComplexNumber curr = complexX.getComplex(c);
                 if (op.y() instanceof IComplexNDArray) {
-                    IComplexNDArray complexY = (IComplexNDArray) op.y().linearView();
+                    IComplexNDArray complexY = (IComplexNDArray) op.y();
                     complexZ.putScalar(c, op.op(curr, complexY.getComplex(c)));
                 } else
                     complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
             }
             //x is real
             else {
-                INDArray zLinear = op.z().linearView();
-                INDArray xLinear = op.x().linearView();
-                INDArray yLinear = op.y().linearView();
+                INDArray zLinear = op.z();
+                INDArray xLinear = op.x();
+                INDArray yLinear = op.y();
                 zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c)));
 
             }
@@ -556,8 +507,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x().linearView();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z().linearView();
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
+                IComplexNDArray complexZ = (IComplexNDArray) op.z();
 
                 if (op.y() instanceof IComplexNDArray)
                     complexZ.putScalar(c, op.op(complexX.getComplex(c)));
@@ -567,7 +518,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
             //x is real
             else
-                op.z().linearView().putScalar(c, op.op(op.x().linearView().getDouble(c)));
+                op.z().putScalar(c, op.op(op.x().getDouble(c)));
         }
 
     }
@@ -580,28 +531,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x().linearView();
-                IComplexNDArray complexY = (IComplexNDArray) op.y().linearView();
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
+                IComplexNDArray complexY = (IComplexNDArray) op.y();
                 IComplexNumber curr = complexX.getComplex(x);
                 if (op.y() instanceof IComplexNDArray)
                     op.update(op.op(curr, complexY.getComplex(x)));
 
                 else
-                    op.update(op.op(curr, op.y().linearView().getDouble(x)));
+                    op.update(op.op(curr, op.y().getDouble(x)));
             }
             //x is real
             else
-                op.update(op.op(op.x().linearView().getDouble(x), op.y().linearView().getDouble(x)));
+                op.update(op.op(op.x().getDouble(x), op.y().getDouble(x)));
         }
 
         else {
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x().linearView();
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
                 op.update(op.op(complexX.getComplex(x)));
             }
             else
-                op.update(op.op(op.x().linearView().getDouble(x)));
+                op.update(op.op(op.x().getDouble(x)));
         }
 
 
