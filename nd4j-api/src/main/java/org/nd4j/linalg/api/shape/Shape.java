@@ -785,6 +785,14 @@ public class Shape {
     }
 
 
+    /**
+     * Checks the following:
+     * each x,y,z is offset zero
+     * op.n() is == data buffer.length()
+     * all strides are equal
+     * @param op the op to check
+     * @return true if the above conditions are met
+     */
     public static boolean opIsWholeBufferWithMatchingStrides(Op op) {
         if(op.y() != null) {
            return op.x().offset() == 0 && op.n() == op.x().data().length()
@@ -798,6 +806,31 @@ public class Shape {
             return op.x().offset() == 0 && op.n() == op.x().data().length()
                     &&
                     op.z().offset() == 0 && op.z().offset() == 0 && op.z().data().length() == op.n() &&
+                    Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
+        }
+    }
+
+    /**
+     * Checks the following:
+     * each x,y,z is offset zero
+     * op.n() is == data buffer.length()
+     * all strides are equal
+     * @param op the op to check
+     * @return true if the above conditions are met
+     */
+    public static boolean opIsWithMatchingStrides(Op op) {
+        if(op.y() != null) {
+            return op.x().offset() == 0 && op.n() == op.x().data().length()
+                    && op.y().offset() == 0
+                    &&
+                    op.z().offset() == 0 && op.z().offset() == 0
+                    && Arrays.equals(op.x().stride(),op.y().stride()) && Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
+
+        }
+        else {
+            return op.x().offset() == 0
+                    &&
+                    op.z().offset() == 0 && op.z().offset() == 0 &&
                     Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
         }
     }

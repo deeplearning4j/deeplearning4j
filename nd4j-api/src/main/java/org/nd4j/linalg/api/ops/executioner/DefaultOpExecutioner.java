@@ -64,10 +64,23 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 }
 
             }
+            else if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
+                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                for(int c = 0; c < op.n(); c ++)
+                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride),op.y().data().getDouble(c * yStride)));
+            }
             else if(Shape.opIsWholeBufferWithMatchingStrides(op)){
                 for(int i = 0; i < op.n(); i++) {
                     op.z().data().put(i, op.op(op.x().data().getDouble(i)));
                 }
+            }
+            else if(Shape.opIsWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                for(int c = 0; c < op.n(); c ++)
+                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride)));
             }
 
             else {
@@ -79,8 +92,31 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         else if (op instanceof Accumulation) {
             Accumulation accumulation = (Accumulation) op;
-            for (int c = 0; c < op.n(); c++)
-                apply(accumulation, c);
+            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                for(int i = 0; i < op.n(); i++) {
+                   accumulation.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+                }
+
+            }
+            else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(op.x().getDouble(i * xStride), op.y().getDouble(i * yStride)));
+                }
+            }
+            else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(op.x().getDouble(i)));
+                }
+            }
+
+
+            else {
+                for (int c = 0; c < op.n(); c++)
+                    apply(accumulation, c);
+            }
+
         }
 
         else if (op instanceof ScalarOp) {
@@ -92,7 +128,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
                 for(int c = 0; c < op.n(); c ++)
                     zLinear.data().put(c, op.op(xLinear.data().getDouble(c)));
+            }
 
+            else if(Shape.opIsWithMatchingStrides(op)) {
+                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                for(int c = 0; c < op.n(); c ++)
+                    zLinear.data().put(c * zStride, op.op(xLinear.data().getDouble(c * xStride)));
             }
 
             else if (op.x() instanceof IComplexNDArray) {
