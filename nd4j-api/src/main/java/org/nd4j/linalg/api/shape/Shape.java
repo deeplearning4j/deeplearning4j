@@ -26,6 +26,7 @@ import org.nd4j.bytebuddy.shape.ShapeMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -166,7 +167,7 @@ public class Shape {
      * @return the double at the specified index
      */
     public static int getOffset(int baseOffset,int[] shape,int[] stride,int...indices) {
-        return mappers[shape.length].getOffset(baseOffset,shape,stride,indices);
+        return mappers[shape.length].getOffset(baseOffset, shape, stride, indices);
     }
 
 
@@ -727,7 +728,7 @@ public class Shape {
             index %= denom;
 
         }*/
-        return mapper.ind2sub(shape,index,numIndices,'f');
+        return mapper.ind2sub(shape, index, numIndices, 'f');
     }
 
     /**
@@ -740,7 +741,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(int[] shape,int index) {
-        return ind2sub(shape,index,ArrayUtil.prod(shape));
+        return ind2sub(shape, index, ArrayUtil.prod(shape));
     }
 
     /**
@@ -780,7 +781,25 @@ public class Shape {
 
         }
         return ret;*/
-        return mapper.ind2sub(shape,index,numIndices,'c');
+        return mapper.ind2sub(shape, index, numIndices, 'c');
+    }
+
+
+    public static boolean opIsWholeBufferWithMatchingStrides(Op op) {
+        if(op.y() != null) {
+           return op.x().offset() == 0 && op.n() == op.x().data().length()
+                   && op.y().offset() == 0 && op.y().data().length() == op.n()
+                   &&
+                   op.z().offset() == 0 && op.z().offset() == 0 && op.z().data().length() == op.n()
+                   && Arrays.equals(op.x().stride(),op.y().stride()) && Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
+
+        }
+        else {
+            return op.x().offset() == 0 && op.n() == op.x().data().length()
+                    &&
+                    op.z().offset() == 0 && op.z().offset() == 0 && op.z().data().length() == op.n() &&
+                    Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
+        }
     }
 
     /**
