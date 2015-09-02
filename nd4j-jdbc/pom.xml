@@ -21,12 +21,12 @@
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.4-rc1.2</version>
+        <version>0.4-rc2.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-jdbc</artifactId>
-    <version>0.4-rc1.2</version>
+    <version>0.4-rc2.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>nd4j-jdbc</name>
