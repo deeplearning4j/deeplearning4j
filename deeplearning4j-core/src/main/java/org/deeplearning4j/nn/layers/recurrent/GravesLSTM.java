@@ -494,4 +494,18 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		private INDArray lastAct;
 		private INDArray lastMemCell;
 	}
+
+	@Override
+	public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+		setInput(input);
+		FwdPassReturn fwdPass = activateHelper(training,stateMap.get(STATE_KEY_PREV_ACTIVATION),stateMap.get(STATE_KEY_PREV_MEMCELL),false);
+		INDArray outAct = fwdPass.fwdPassOutput;
+		if(storeLastForTBPTT){
+			//Store last time step of output activations and memory cell state in tBpttStateMap
+			tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
+			tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
+		}
+
+		return outAct;
+	}
 }
