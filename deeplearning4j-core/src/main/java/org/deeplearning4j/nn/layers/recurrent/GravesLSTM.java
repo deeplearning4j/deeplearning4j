@@ -80,22 +80,19 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
 		int timeSeriesLength = (is2dInput? 1: epsilon.size(2));
 
-		fwdPass.paramsZeroOffset[0] = Shape.toOffsetZero(fwdPass.paramsZeroOffset[0].transpose());
-		fwdPass.paramsZeroOffset[2] = Shape.toOffsetZero(fwdPass.paramsZeroOffset[2].transpose());
-		fwdPass.paramsZeroOffset[5] = Shape.toOffsetZero(fwdPass.paramsZeroOffset[5].transpose());
-		fwdPass.paramsZeroOffset[8] = Shape.toOffsetZero(fwdPass.paramsZeroOffset[8].transpose());
+		for( int i=0; i<fwdPass.paramsZeroOffset.length; i++ ) fwdPass.paramsZeroOffset[i] = Shape.toOffsetZero(fwdPass.paramsZeroOffset[i].transpose());
 
 		INDArray wiTranspose = fwdPass.paramsZeroOffset[0];
-		INDArray wI = fwdPass.paramsZeroOffset[1];
+		INDArray wITranspose = fwdPass.paramsZeroOffset[1];
 		INDArray wfTranspose = fwdPass.paramsZeroOffset[2];
-		INDArray wF = fwdPass.paramsZeroOffset[3];
-		INDArray wFF = fwdPass.paramsZeroOffset[4];
+		INDArray wFTranspose = fwdPass.paramsZeroOffset[3];
+		INDArray wFFTranspose = fwdPass.paramsZeroOffset[4];
 		INDArray woTranspose = fwdPass.paramsZeroOffset[5];
-		INDArray wO = fwdPass.paramsZeroOffset[6];
-		INDArray wOO = fwdPass.paramsZeroOffset[7];
+		INDArray wOTranspose = fwdPass.paramsZeroOffset[6];
+		INDArray wOOTranspose = fwdPass.paramsZeroOffset[7];
 		INDArray wgTranspose = fwdPass.paramsZeroOffset[8];
-		INDArray wG = fwdPass.paramsZeroOffset[9];
-		INDArray wGG = fwdPass.paramsZeroOffset[10];
+		INDArray wGTranspose = fwdPass.paramsZeroOffset[9];
+		INDArray wGGTranspose = fwdPass.paramsZeroOffset[10];
 
 		//Parameter gradients, summed across time. bias gradients, input weight gradients, recurrent weight gradients
 		INDArray[] bGradients = new INDArray[4];
@@ -146,10 +143,10 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 			if(t!=timeSeriesLength-1){
 				//if t == timeSeriesLength-1 then deltaiNext etc are zeros
 				nablaOut = nablaOut.dup();
-				nablaOut.addi(deltaiNext.mmul(wI.transpose()))
-					.addi(deltafNext.mmul(wF.transpose()))
-					.addi(deltaoNext.mmul(wO.transpose()))
-					.addi(deltagNext.mmul(wG.transpose()));
+				nablaOut.addi(deltaiNext.mmul(wITranspose))
+					.addi(deltafNext.mmul(wFTranspose))
+					.addi(deltaoNext.mmul(wOTranspose))
+					.addi(deltagNext.mmul(wGTranspose));
 			}
 
 			//Output gate deltas:
@@ -165,9 +162,9 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 			INDArray nextForgetGateAs = (t==timeSeriesLength-1 ? Nd4j.zeros(miniBatchSize,hiddenLayerSize) : fwdPass.fa[t+1]);
 			INDArray nablaCellState = nablaOut.mul(ao).muli(sigmahPrimeOfS)
 					.addi(nextForgetGateAs.mul(nablaCellStateNext))
-					.addi(deltafNext.mulRowVector(wFF.transpose()))
-					.addi(deltao.mulRowVector(wOO.transpose()))
-					.addi(deltagNext.mulRowVector(wGG.transpose()));
+					.addi(deltafNext.mulRowVector(wFFTranspose))
+					.addi(deltao.mulRowVector(wOOTranspose))
+					.addi(deltagNext.mulRowVector(wGGTranspose));
 			nablaCellStateNext = nablaCellState;	//Store for use in next iteration
 
 			//Forget gate delta:
