@@ -37,7 +37,7 @@ Recurrent nets, like other neural nets, are useful for clustering and anomaly de
 
 Recall that Deeplearning4j's multinetwork configuration lets you create a layer in the API simply by naming it. In this case, you create an LSTM. 
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/recurrent/RecurrentLSTMMnistExample.java?slice=27:64"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java?slice=48:218"></script>
 
 An explanation of the hyperparameters is given in our [Iris tutorial](http://deeplearning4j.org/iris-flower-dataset-tutorial.html). 
 
