@@ -259,7 +259,7 @@ You can shut down your Word2vec application and try to delete them.
 
 Now that you have a basic idea of how to set up Word2Vec, here's one example of how it can be used with DL4J's API:
 
-<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecExample.java?slice=21:90"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=28:97"></script>
 
 There are a couple parameters to pay special attention to here. The first is the number of words to be vectorized in the window, which you enter after WindowSize. The second is the number of nodes contained in the layer, which you'll enter after LayerSize. Those two numbers will be multiplied to obtain the number of inputs.
 
