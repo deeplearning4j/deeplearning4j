@@ -136,9 +136,10 @@ public class Shape {
             return ret;
         }
         else {
+
         	if(arr.offset()==0 && arr.data().allocationMode() == AllocationMode.HEAP
-        			&& arr.length() == arr.data().length() && arr.ordering() == Nd4j.ORDER ){
-        		//public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        			&& arr.length() == arr.data().length() && arr.ordering() == Nd4j.order()
+        			&& strideDescendingCAscendingF(arr.ordering(),arr.stride()) ){
         		Object array = arr.data().array();
         		
         		if( array instanceof float[] ){
@@ -1036,5 +1037,23 @@ public class Shape {
         return scalarEquals(s1, s2) || Arrays.equals(s1, s2);
     }
 
-
+    /** Check if strides are in order suitable for non-strided mmul etc.
+     * Returns true if c order and strides are descending [100,10,1] etc
+     * Returns true if f order and strides are ascending [1,10,100] etc
+     * False otherwise.
+     * @param order Order of INDArray
+     * @param strides Strides of INDArray
+     * @return true if c+descending, f+ascending, false otherwise
+     */
+    public static boolean strideDescendingCAscendingF(char order, int[] strides ){
+    	if(order=='c'){	//Expect descending. [100,10,1] etc
+    		for( int i=1; i<strides.length; i++ ) if(strides[i-1]<=strides[i]) return false;
+    		return true;
+    	} else if(order=='f'){//Expect ascending. [1,10,100] etc
+    		for( int i=1; i<strides.length; i++ ) if(strides[i-1]>=strides[i]) return false;
+    		return true;
+    	} else {
+    		throw new RuntimeException("Invalid order: not c or f");
+    	}
+    }
 }
