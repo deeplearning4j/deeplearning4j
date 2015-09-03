@@ -257,7 +257,7 @@ Uima指的是一个Apache项目——非结构化(Unstructured) 信息(Informati
 
 现在你应该有了一些构建Word2Vec的基本概念了，下面是如何使用DL4J API的一个例子：
 
-<script src="http://gist-it.appspot.com/https://github.com/SkymindIO/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecExample.java?slice=21:90"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/word2vec/Word2VecRawTextExample.java?slice=28:97"></script>
 
 这里有一些参数须要特殊注意。第一个就是窗口中须要向量化的词的数量，也就是WindowSize。第二个就是神经网络隐层包含的数据元的数量，也就是LayerSize。这两个参数会乘以输入的大小。
 
