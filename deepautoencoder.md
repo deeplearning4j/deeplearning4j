@@ -77,43 +77,46 @@ A deep auto encoder can be built by extending Deeplearning4j's [MultiLayerNetwor
 
 The code would look something like this:
 
-        final int numRows = 28;
+final int numRows = 28;
         final int numColumns = 28;
-        int outputNum = 10;
-        
+        int seed = 123;
+        int numSamples = MnistDataFetcher.NUM_EXAMPLES;
+        int batchSize = 1000;
+        int iterations = 1;
+        int listenerFreq = iterations/5;
+
         log.info("Load data....");
         DataSetIterator iter = new MnistDataSetIterator(batchSize,numSamples,true);
 
         log.info("Build model....");
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,0.01))
                 .seed(seed)
-                .constrainGradientToUnitNorm(true)
                 .iterations(iterations)
-                .updater(Updater.ADAGRAD)
-                .momentum(0.5)
-                .momentumAfter(Collections.singletonMap(3, 0.9))
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .visibleUnit(RBM.VisibleUnit.BINARY)
-                .hiddenUnit(RBM.HiddenUnit.BINARY)
-                .list(9)
-                .layer(0, new RBM.Builder().nIn(numRows*numColumns).nOut(1000).build())
-                .layer(1, new RBM.Builder().nIn(1000).nOut(500).build())
-                .layer(2, new RBM.Builder().nIn(500).nOut(250).build())
-                .layer(3, new RBM.Builder().nIn(250).nOut(100).build())
-                .layer(4, new RBM.Builder().nIn(100).nOut(30).build()) //encoding stops
-                .layer(5, new RBM.Builder().nIn(30).nOut(100).build()) //decoding starts
-                .layer(6, new RBM.Builder().nIn(100).nOut(250).build())
-                .layer(7, new RBM.Builder().nIn(250).nOut(500).build())
-                .layer(8, new RBM.Builder().nIn(500).nOut(1000).build())
-                .layer(9, new OutputLayer.Builder(LossFunction.RMSE_XENT).
-                	.nIn(1000).nOut(numRows*numColumns).build())
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .list(10)
+                .layer(0, new RBM.Builder().nIn(numRows * numColumns).nOut(1000).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(1, new RBM.Builder().nIn(1000).nOut(500).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(2, new RBM.Builder().nIn(500).nOut(250).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(3, new RBM.Builder().nIn(250).nOut(100).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(4, new RBM.Builder().nIn(100).nOut(30).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build()) 			//encoding stops
+                .layer(5, new RBM.Builder().nIn(30).nOut(100).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build()) 			//decoding starts
+                .layer(6, new RBM.Builder().nIn(100).nOut(250).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(7, new RBM.Builder().nIn(250).nOut(500).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(8, new RBM.Builder().nIn(500).nOut(1000).lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(9, new OutputLayer.Builder(LossFunctions.LossFunction.RMSE_XENT).nIn(1000).nOut(numRows*numColumns).build())
                 .pretrain(true).backprop(true)
                 .build();
 
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
+         MultiLayerNetwork model = new MultiLayerNetwork(conf);
+         model.init();
 
-To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-0.4-examples), which are at 0.4.x.
+         model.setListeners(Arrays.asList((IterationListener) new ScoreIterationListener(listenerFreq)));
+
+         log.info("Train model....");
+         while(iter.hasNext()) {
+            DataSet next = iter.next();
+            model.fit(new DataSet(next.getFeatureMatrix(),next.getFeatureMatrix()));
+
+To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DeepAutoEncoderExample.java), which are at 0.4.x.
 
 For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 
