@@ -80,7 +80,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     protected boolean minimize = false;
     //l1 regularization
     protected double l1 = 0.0;
-    protected double rmsDecay = 0.0;
+    protected double rmsDecay = 0.95;
     protected boolean miniBatch = true;
 
     /**
@@ -264,7 +264,7 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     }
 
     public static class Builder implements Cloneable {
-        private double rmsDecay;
+        private double rmsDecay = 0.95;
         private double lr = 1e-1f;
         private double momentum = 0.5f;
         private double l2 = 0f;
