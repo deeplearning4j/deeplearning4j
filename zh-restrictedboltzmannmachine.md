@@ -25,7 +25,7 @@ RBM对于维度(dimensionality),降维(reduction),分类(classification),协同(
 
 ## 在Iris启动RBM
 
- <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/4530b123f40645a2c34e650cbfcd6b5139638c9a/deeplearning4j-core/src/test/java/org/deeplearning4j/models/featuredetectors/rbm/RBMTests.java?slice=58:74"></script>
+ <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rbm/RBMIrisExample.java?slice=37:87"></script>
  
  ## 连续RBMs(CRBMs)
  
