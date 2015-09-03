@@ -363,12 +363,28 @@ public class GRU extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GR
 
 	@Override
 	public INDArray rnnTimeStep(INDArray input) {
+		setInput(input);
 		INDArray[] activations = activateHelper(false,stateMap.get(STATE_KEY_PREV_ACTIVATION));
 		INDArray outAct = activations[0];
 		//Store last time step of output activations for later use:
 		int tLength = outAct.size(2);
 		INDArray lastActSlice = outAct.tensorAlongDimension(tLength-1,1,0);
 		stateMap.put(STATE_KEY_PREV_ACTIVATION, lastActSlice.dup());
+
+		return outAct;
+	}
+
+	@Override
+	public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+		setInput(input);
+		INDArray[] activations = activateHelper(false,stateMap.get(STATE_KEY_PREV_ACTIVATION));
+		INDArray outAct = activations[0];
+		if(storeLastForTBPTT){
+			//Store last time step of output activations for later use:
+			int tLength = outAct.size(2);
+			INDArray lastActSlice = outAct.tensorAlongDimension(tLength-1,1,0);
+			tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, lastActSlice.dup());
+		}
 
 		return outAct;
 	}
