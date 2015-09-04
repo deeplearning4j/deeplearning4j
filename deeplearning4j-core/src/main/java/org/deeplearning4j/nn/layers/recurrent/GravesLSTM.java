@@ -67,15 +67,15 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 	@Override
 	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-		return backpropGradientHelper(epsilon,false);
+		return backpropGradientHelper(epsilon,false,-1);
 	}
 
 	@Override
-	public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon){
-		return backpropGradientHelper(epsilon,true);
+	public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength){
+		return backpropGradientHelper(epsilon,true,tbpttBackwardLength);
 	}
 
-	private Pair<Gradient,INDArray> backpropGradientHelper(INDArray epsilon, boolean truncatedBPTT){
+	private Pair<Gradient,INDArray> backpropGradientHelper(INDArray epsilon, boolean truncatedBPTT, int tbpttBackwardLength){
 		//First: Do forward pass to get gate activations, zs etc.
 		FwdPassReturn fwdPass;
 		if(truncatedBPTT){
@@ -138,7 +138,9 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		INDArray deltaoNext = null;
 		INDArray deltagNext = Nd4j.zeros(miniBatchSize,hiddenLayerSize);
 		
-		for( int t=timeSeriesLength-1; t>=0; t-- ){
+		int endIdx = 0;
+		if(truncatedBPTT) endIdx = Math.max(0, timeSeriesLength-tbpttBackwardLength);
+		for( int t=timeSeriesLength-1; t>=endIdx; t-- ){
 			INDArray prevMemCellState = (t==0 ? Nd4j.zeros(miniBatchSize, hiddenLayerSize) : fwdPass.memCellState[t-1]);
 			INDArray prevHiddenUnitActivation = (t==0 ? null : fwdPass.fwdPassOutputAsArrays[t-1] );
 			INDArray currMemCellState = fwdPass.memCellState[t];

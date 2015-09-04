@@ -1136,14 +1136,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     	}
 
     	int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
-    	int backLen = layerWiseConfigurations.getTbpttBackLength();
-
     	int timeSeriesLength = input.size(2);
     	int nSubsets = timeSeriesLength / fwdLen;
+    	if( fwdLen > timeSeriesLength ){
+    		log.warn("Cannot do TBPTT: Truncated BPTT forward length > input time series length.");
+    		return;
+    	}
 
     	rnnClearPreviousState();
-
-    	//TODO check input lengths vs. fwdLen etc.
 
     	for( int i=0; i<nSubsets; i++ ){
     		int startTimeIdx = i*fwdLen;
@@ -1220,7 +1220,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
             if(currLayer instanceof BaseRecurrentLayer){
-            	currPair = ((BaseRecurrentLayer<?>)currLayer).tbpttBackpropGradient(currPair.getSecond());
+            	currPair = ((BaseRecurrentLayer<?>)currLayer).tbpttBackpropGradient(currPair.getSecond(),layerWiseConfigurations.getTbpttBackLength());
             } else {
             	currPair = currLayer.backpropGradient(currPair.getSecond());
             }
@@ -1520,7 +1520,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
         if( getOutputLayer() instanceof BaseOutputLayer ){
-            BaseOutputLayer ol = (BaseOutputLayer)getOutputLayer();
+            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
             ol.setLabels(data.getLabels());
             ol.computeScore(calcL1(),calcL2());
             this.score = ol.score();
@@ -1563,8 +1563,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         	backprop();
         }
         score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2());
-        // Updating activations based on new gradients
-
     }
 
     @Override

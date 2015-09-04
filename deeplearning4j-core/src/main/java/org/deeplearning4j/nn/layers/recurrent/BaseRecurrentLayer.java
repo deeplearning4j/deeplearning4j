@@ -85,5 +85,5 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
 	 * forward pass using stored state for truncated BPTT vs. from zero initialization
 	 * for standard BPTT.
 	 */
-	public abstract Pair<Gradient,INDArray> tbpttBackpropGradient(INDArray epsilon);
+	public abstract Pair<Gradient,INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength);
 }
