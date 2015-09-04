@@ -221,6 +221,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Stabilize(x, y, 1);
             case "tanh":
                 return new Tanh(x, y);
+            case "timesoneminus":
+            	return new TimesOneMinus(x,y);
             case "softmax":
                 return new SoftMax(x, y);
             case "softplus":
@@ -284,6 +286,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Stabilize(x, 1);
             case "tanh":
                 return new Tanh(x);
+            case "timesoneminus":
+            	return new TimesOneMinus(x);
             case "softmax":
                 return new SoftMax(x);
             case "softplus":
@@ -347,6 +351,8 @@ public class DefaultOpFactory implements OpFactory {
                 return new Stabilize(x, z, 1);
             case "tanh":
                 return new Tanh(x, z);
+            case "timesoneminus":
+            	return new TimesOneMinus(x,z);
             case "softmax":
                 return new SoftMax(x, z);
             case "softplus":
