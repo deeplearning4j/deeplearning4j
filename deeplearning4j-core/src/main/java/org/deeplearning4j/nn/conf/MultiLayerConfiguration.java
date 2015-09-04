@@ -160,7 +160,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected double dampingFactor = 100;
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backprop = false;
-        protected BackpropType backpropType;
+        protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
         @Deprecated
@@ -258,6 +258,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.dampingFactor = dampingFactor;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
+            conf.backpropType = backpropType;
+            conf.tbpttFwdLength = tbpttFwdLength;
+            conf.tbpttBackLength = tbpttBackLength;
             
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
