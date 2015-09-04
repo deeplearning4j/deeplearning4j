@@ -1999,11 +1999,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     /** Similar to rnnTimeStep and feedForward() methods. Difference here is that this method:<br>
      * (a) like rnnTimeStep does forward pass using stored state for RNN layers, and<br>
      * (b) unlike rnnTimeStep does not modify the RNN layer state<br>
-     * Therefore multiple calls to this method with the same input should have the same output.
-     * @param input
+     * Therefore multiple calls to this method with the same input should have the same output.<br>
+     * Typically used during training only. Use rnnTimeStep for prediction/forward pass at test time.
+     * @param input Input to network
      * @param training Whether training or not
      * @param storeLastForTBPPT set to true if used as part of truncated BPTT training
      * @return Activations for each layer (including input, as per feedforward() etc)
+     * @see rnnTimeStep
      */
     public List<INDArray> rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT ){
     	this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
