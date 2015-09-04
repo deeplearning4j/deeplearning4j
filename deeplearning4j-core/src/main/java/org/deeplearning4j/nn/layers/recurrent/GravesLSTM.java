@@ -67,8 +67,25 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 	@Override
 	public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+		return backpropGradientHelper(epsilon,false);
+	}
+
+	@Override
+	public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon){
+		return backpropGradientHelper(epsilon,true);
+	}
+
+	private Pair<Gradient,INDArray> backpropGradientHelper(INDArray epsilon, boolean truncatedBPTT){
 		//First: Do forward pass to get gate activations, zs etc.
-		FwdPassReturn fwdPass = activateHelper(true,null,null,true);
+		FwdPassReturn fwdPass;
+		if(truncatedBPTT){
+			fwdPass = activateHelper(true,stateMap.get(STATE_KEY_PREV_ACTIVATION),stateMap.get(STATE_KEY_PREV_MEMCELL),true);
+			//Store last time step of output activations and memory cell state in tBpttStateMap
+			tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
+			tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
+		} else {
+			fwdPass = activateHelper(true,null,null,true);
+		}
 		
 		INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
 		INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY);	//Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]

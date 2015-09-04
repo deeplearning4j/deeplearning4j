@@ -1180,10 +1180,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     		}
     	}
     }
-    
+
     /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
     protected void truncatedBPTTGradient(){
-    	
     	String multiGradientKey;
         gradient = new DefaultGradient();
         Layer currLayer;
@@ -1208,8 +1207,38 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         LinkedList<Pair<String,INDArray>> gradientList = new LinkedList<>();
 
         Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null);
-    	
-    	throw new UnsupportedOperationException("Not yet implemented");
+
+        for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+            multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
+            gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
+        }
+
+        if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
+            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),layers[numLayers-1]));
+
+        // Calculate gradients for previous layers & drops output layer in count
+        for(int j = numLayers - 2; j >= 0; j--) {
+            currLayer = getLayer(j);
+            if(currLayer instanceof BaseRecurrentLayer){
+            	currPair = ((BaseRecurrentLayer<?>)currLayer).tbpttBackpropGradient(currPair.getSecond());
+            } else {
+            	currPair = currLayer.backpropGradient(currPair.getSecond());
+            }
+
+            LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
+            for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
+                multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
+                tempList.addFirst(new Pair<>(multiGradientKey,entry.getValue()));
+            }
+            for(Pair<String,INDArray> pair : tempList) gradientList.addFirst(pair);
+
+            //Pass epsilon through input processor before passing to next layer (if applicable)
+            if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
+                currPair = new Pair<> (currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair.getSecond(),layers[j]));
+        }
+
+        //Add gradients to Gradients, in correct order
+        for( Pair<String,INDArray> pair : gradientList ) gradient.setGradientFor(pair.getFirst(), pair.getSecond());
     }
 
 
