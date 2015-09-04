@@ -78,7 +78,7 @@ For users who have never `git cloned` Deeplearning4j before, you should be able 
 
 ### <a name="source">Working With Source</a>
 
-If you are not planning to contribute to Deeplearnin4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc0.
+If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc1.x.
 
 To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
 
@@ -90,7 +90,7 @@ If you want to run Deeplearning4j examples after installing from trunk, you shou
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-Following these steps, you should be able to run the 0.0.3.3 examples. 
+Following these steps, you should be able to run the 0.4-rc1.x examples. 
 
 If you have an existing project, you can build Deeplearning4j's source files yourself and then add dependencies as JAR files to your project. Each dependency used with Deeplearning4j and [ND4J](http://nd4j.org/dependencies.html) can be included in your project's POM.xml as a jar like this, specifying the most recent version of ND4J or Deeplearning4j between the `properties` tags. 
 
@@ -112,7 +112,7 @@ If you have an existing project, you can build Deeplearning4j's source files you
 
 ###<a name="eclipse">Eclipse</a> 
 
-After running a *git clone*, enter this command
+After running a `git clone`, enter this command
 
       mvn eclipse:eclipse 
   
