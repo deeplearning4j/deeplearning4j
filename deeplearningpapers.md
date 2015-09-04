@@ -154,7 +154,7 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 **[How transferable are features in deep neural
 networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, Yoshua Bengio and Hod Lipson
 
-**[Learning Internal Representations by Error Propagation](http://psych.stanford.edu/~jlm/papers/PDP/Volume%201/Chap8_PDP86.pdf); Rumelhart, Hinton and Williams
+**[Learning Internal Representations by Error Propagation](http://psych.stanford.edu/~jlm/papers/PDP/Volume%201/Chap8_PDP86.pdf)**; Rumelhart, Hinton and Williams
 
 ## Researchers' Personal Websites
 
