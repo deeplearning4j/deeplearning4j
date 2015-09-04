@@ -589,10 +589,4 @@ public class MultiLayerTestRNN {
 
 		mln.fit(inputLong, labelsLong);
     }
-
-    @Test
-    public void testBackpropGradientCalc(){
-    	
-    	fail("Not yet implemented");
-    }
 }
