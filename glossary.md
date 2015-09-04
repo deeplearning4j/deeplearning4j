@@ -78,6 +78,9 @@ Used in classification and bag of words. The label for each example is all 0s, e
 ###<a name="reconstructionentropy">Reconstruction Entropy</a> 
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
 
+###<a name="recurrent">Recurrent Neural Networks</a> 
+While "a multilayer perceptron (MLP) can only map from input to output vectors, whereas an RNN can in principle map from the entire history of previous inputs to each output. Indeed, the equivalent result to the universal approximation theory for MLPs is that an RNN with a sufficient number of hidden units can approximate any measurable sequenceto-sequence mapping to arbitrary accuracy (Hammer, 2000). The key point is that the recurrent connections allow a ‘memory’ of previous inputs to persist in the network’s internal state, which can then be used to influence the network output. The forward pass of an RNN is the same as that of an MLP with a single hidden layer, except that activations arrive at the hidden layer from both the current external input and the hidden layer activations one step back in time. " -Graves
+
 ###<a name="serialization">Serialization</a> 
 Serialization is how you translate data structures or object state into storable formats. DL4J's nets are serialized, which means they can operate on devices with limited memory.
 
