@@ -2,10 +2,14 @@ package org.deeplearning4j.nn.multilayer;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -13,6 +17,8 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
 import org.deeplearning4j.nn.layers.recurrent.GRU;
 import org.deeplearning4j.nn.layers.recurrent.GravesLSTM;
 import org.deeplearning4j.nn.params.GRUParamInitializer;
@@ -373,5 +379,220 @@ public class MultiLayerTestRNN {
 
     		assertTrue(out3dSlice.tensorAlongDimension(0, 1,0).equals(out3d.tensorAlongDimension(i, 1,0)));
     	}
+    }
+
+    @Test
+    public void testTruncatedBPTTVsBPTT(){
+    	//Under some (limited) circumstances, we expect BPTT and truncated BPTT to be identical
+    	//Specifically TBPTT over entire data vector
+
+    	int timeSeriesLength = 12;
+    	int miniBatchSize = 7;
+    	int nIn = 5;
+    	int nOut = 4;
+
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+    		.seed(12345)
+			.list(3)
+			.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+				.nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.backprop(true)
+		.build();
+    	assertTrue(conf.getBackpropType() == BackpropType.Standard);
+
+    	MultiLayerConfiguration confTBPTT = new NeuralNetConfiguration.Builder()
+    		.seed(12345)
+			.list(3)
+			.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+				.nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.backprop(true)
+			.backpropType(BackpropType.TruncatedBPTT)
+			.tBPTTBackwardLength(timeSeriesLength).tBPTTForwardLength(timeSeriesLength)
+		.build();
+
+    	Nd4j.getRandom().setSeed(12345);
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+
+		Nd4j.getRandom().setSeed(12345);
+		MultiLayerNetwork mlnTBPTT = new MultiLayerNetwork(confTBPTT);
+		mlnTBPTT.init();
+
+		assertTrue(mlnTBPTT.getLayerWiseConfigurations().getBackpropType() == BackpropType.TruncatedBPTT);
+		assertTrue(mlnTBPTT.getLayerWiseConfigurations().getTbpttFwdLength() == timeSeriesLength);
+		assertTrue(mlnTBPTT.getLayerWiseConfigurations().getTbpttBackLength() == timeSeriesLength);
+
+		INDArray inputData = Nd4j.rand(new int[]{miniBatchSize,nIn,timeSeriesLength});
+		INDArray labels = Nd4j.rand(new int[]{miniBatchSize,nOut,timeSeriesLength});
+
+		mln.setInput(inputData);
+		mln.setLabels(labels);
+
+		mlnTBPTT.setInput(inputData);
+		mlnTBPTT.setLabels(labels);
+
+		mln.computeGradientAndScore();
+		mlnTBPTT.computeGradientAndScore();
+
+		Pair<Gradient,Double> mlnPair = mln.gradientAndScore();
+		Pair<Gradient,Double> tbpttPair = mln.gradientAndScore();
+
+		assertTrue(mlnPair.getFirst().equals(tbpttPair.getFirst()));
+		assertTrue(mlnPair.getSecond().equals(tbpttPair.getSecond()));
+
+		//Check states: expect stateMap to be empty but tBpttStateMap to not be
+		Map<String,INDArray> l0StateMLN = mln.rnnGetPreviousState(0);
+		Map<String,INDArray> l0StateTBPTT = mlnTBPTT.rnnGetPreviousState(0);
+		Map<String,INDArray> l1StateMLN = mln.rnnGetPreviousState(0);
+		Map<String,INDArray> l1StateTBPTT = mlnTBPTT.rnnGetPreviousState(0);
+
+		Map<String,INDArray> l0TBPTTStateMLN = ((BaseRecurrentLayer<?>)mln.getLayer(0)).rnnGetTBPTTState();
+		Map<String,INDArray> l0TBPTTStateTBPTT = ((BaseRecurrentLayer<?>)mlnTBPTT.getLayer(0)).rnnGetTBPTTState();
+		Map<String,INDArray> l1TBPTTStateMLN = ((BaseRecurrentLayer<?>)mln.getLayer(1)).rnnGetTBPTTState();
+		Map<String,INDArray> l1TBPTTStateTBPTT = ((BaseRecurrentLayer<?>)mlnTBPTT.getLayer(1)).rnnGetTBPTTState();
+
+		assertTrue(l0StateMLN.isEmpty());
+		assertTrue(l0StateTBPTT.isEmpty());
+		assertTrue(l1StateMLN.isEmpty());
+		assertTrue(l1StateTBPTT.isEmpty());
+
+		assertTrue(l0TBPTTStateMLN.isEmpty());
+		assertTrue(l0TBPTTStateTBPTT.size()==2);
+		assertTrue(l1TBPTTStateMLN.isEmpty());
+		assertTrue(l1TBPTTStateTBPTT.size()==2);
+
+		INDArray tbpttActL0 = l0TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+		INDArray tbpttActL1 = l1TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
+
+		List<INDArray> activations = mln.feedForward(inputData, true);
+		INDArray l0Act = activations.get(1);
+		INDArray l1Act = activations.get(2);
+		INDArray expL0Act = l0Act.tensorAlongDimension(timeSeriesLength-1, 1,0);
+		INDArray expL1Act = l1Act.tensorAlongDimension(timeSeriesLength-1, 1,0);
+		assertTrue(tbpttActL0.equals(expL0Act));
+		assertTrue(tbpttActL1.equals(expL1Act));
+    }
+
+    @Test
+    public void testRnnActivateUsingStoredState(){
+    	int timeSeriesLength = 12;
+    	int miniBatchSize = 7;
+    	int nIn = 5;
+    	int nOut = 4;
+
+    	int nTimeSlices = 5;
+
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+    		.seed(12345)
+			.list(3)
+			.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+				.nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+		.build();
+
+    	Nd4j.getRandom().setSeed(12345);
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+
+		INDArray inputLong = Nd4j.rand(new int[]{miniBatchSize,nIn,nTimeSlices*timeSeriesLength});
+		INDArray input = inputLong.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(0,timeSeriesLength));
+
+		List<INDArray> outStandard = mln.feedForward(input, true);
+		List<INDArray> outRnnAct = mln.rnnActivateUsingStoredState(input, true, true);
+
+		//As initially state is zeros: expect these to be the same
+		assertTrue(outStandard.equals(outRnnAct));
+
+		//Furthermore, expect multiple calls to this function to be the same:
+		for( int i=0; i<3; i++ ){
+			assertTrue(outStandard.equals(mln.rnnActivateUsingStoredState(input, true, true)));
+		}
+
+		List<INDArray> outStandardLong = mln.feedForward(inputLong,true);
+		BaseRecurrentLayer<?> l0 = ((BaseRecurrentLayer<?>)mln.getLayer(0));
+		BaseRecurrentLayer<?> l1 = ((BaseRecurrentLayer<?>)mln.getLayer(1));
+
+		for( int i=0; i<nTimeSlices; i++ ){
+			INDArray inSlice = inputLong.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(i*timeSeriesLength,(i+1)*timeSeriesLength));
+			List<INDArray> outSlice = mln.rnnActivateUsingStoredState(inSlice, true, true);
+			List<INDArray> expOut = new ArrayList<>();
+			for( INDArray temp : outStandardLong ){
+				expOut.add(temp.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(i*timeSeriesLength,(i+1)*timeSeriesLength)));
+			}
+			assertTrue(expOut.equals(outSlice));
+
+			//Again, expect multiple calls to give the same output
+			for( int j=0; j<3; j++ ){
+				outSlice = mln.rnnActivateUsingStoredState(inSlice, true, true);
+				assertTrue(expOut.equals(outSlice));
+			}
+
+			l0.rnnSetPreviousState(l0.rnnGetTBPTTState());
+			l1.rnnSetPreviousState(l1.rnnGetTBPTTState());
+		}
+    }
+
+    @Test
+    public void testTruncatedBPTTSimple(){
+    	//Extremely simple test of the 'does it throw an exception' variety
+    	int timeSeriesLength = 12;
+    	int miniBatchSize = 7;
+    	int nIn = 5;
+    	int nOut = 4;
+
+    	int nTimeSlices = 20;
+
+    	MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+    		.seed(12345)
+    		.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+			.list(3)
+			.layer(0,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(nIn).nOut(7).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(1,new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
+				.nIn(7).nOut(8).activation("tanh").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).weightInit(WeightInit.DISTRIBUTION)
+				.nIn(8).nOut(nOut).activation("softmax").weightInit(WeightInit.DISTRIBUTION)
+				.dist(new NormalDistribution(0,0.5)).build())
+			.pretrain(false).backprop(true)
+			.backpropType(BackpropType.TruncatedBPTT)
+			.tBPTTBackwardLength(timeSeriesLength).tBPTTForwardLength(timeSeriesLength)
+		.build();
+
+    	Nd4j.getRandom().setSeed(12345);
+		MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+		mln.init();
+
+		INDArray inputLong = Nd4j.rand(new int[]{miniBatchSize,nIn,nTimeSlices*timeSeriesLength});
+		INDArray labelsLong = Nd4j.rand(new int[]{miniBatchSize,nOut,nTimeSlices*timeSeriesLength});
+
+		mln.fit(inputLong, labelsLong);
+    }
+
+    @Test
+    public void testBackpropGradientCalc(){
+    	
+    	fail("Not yet implemented");
     }
 }
