@@ -33,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class IAMax extends BaseAccumulation {
     private int currIndexOfMax = 0;
+    private double currentResult = Double.MIN_VALUE;
 
     public IAMax() {
     }
@@ -51,8 +52,15 @@ public class IAMax extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        currIndexOfMax = Nd4j.getBlasWrapper().iamax(x) / x.length();
+        if(result.doubleValue() > currentResult) {
+            currentResult = result.doubleValue();
+            currIndexOfMax = numProcessed;
+        }
 
+        //done; accumulate final result
+        if(numProcessed() == n()) {
+            currentResult = currIndexOfMax;
+        }
     }
 
     @Override
@@ -70,7 +78,7 @@ public class IAMax extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        exec();
+        // exec();
     }
 
 
@@ -107,7 +115,12 @@ public class IAMax extends BaseAccumulation {
         currentResult = idx;
     }
 
-
+    @Override
+    public Number currentResult() {
+        if(currIndexOfMax == 0)
+            return 0;
+        return currIndexOfMax - 1;
+    }
 
     @Override
     public Op opForDimension(int index, int... dimension) {

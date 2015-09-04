@@ -608,6 +608,7 @@ public class Nd4j {
             n3 *= b.size(axes[1][i]);
         }
 
+
         int[] newShapeB = {n3,-1};
         int[] oldShapeB = Ints.toArray(listB);
         for(int i = 0; i < oldShapeB.length; i++)

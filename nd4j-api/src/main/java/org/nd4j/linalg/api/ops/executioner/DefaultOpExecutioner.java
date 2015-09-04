@@ -116,7 +116,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }*/
             else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
                 for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().getDouble(i)));
+                    accumulation.update(op.op(op.x().data().getDouble(i)));
                 }
             }
 
