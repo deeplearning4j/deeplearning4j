@@ -145,7 +145,7 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 
 **[Geometry of the restricted Boltzmann machine](http://arxiv.org/abs/0908.4425)**; Maria Angelica Cueto, Jason Morton, Bernd Sturmfels
 
-**[Untersuchungen zu dynamischen neuronalen Netzen](http://people.idsia.ch/~juergen/SeppHochreiter1991ThesisAdvisorSchmidhuber.pdf); Josef "Sepp" Hochreiter und Juergen Schmidhuber
+**[Untersuchungen zu dynamischen neuronalen Netzen](http://people.idsia.ch/~juergen/SeppHochreiter1991ThesisAdvisorSchmidhuber.pdf)**; Josef "Sepp" Hochreiter und Juergen Schmidhuber
 
 **[Notes on Contrastive Divergence](http://www.robots.ox.ac.uk/~ojw/files/NotesOnCD.pdf)**
 
