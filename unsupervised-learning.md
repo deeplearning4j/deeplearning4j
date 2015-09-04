@@ -38,6 +38,8 @@ Transfer learning takes the activations of one neural network and puts them to u
 
 ## <a name="knn">K-Nearest Neighbors</a>
 
+Mike Depies has written a tutorial about how to combine [Deeplearning4j and K-Nearest Neighbor here](https://depiesml.wordpress.com/2015/09/03/learn-by-implementation-k-nearest-neighbor/).
+
 This algorithm serves the purposes of classification and regression, and relies on a kd-tree. A [kd-tree](https://en.wikipedia.org/wiki/K-d_tree) is a data structure for storing a finite set of points from a k-dimensional space. It partitions a space of arbitrary dimensions into a tree, which may also be called a *vantage point tree*. kd-trees subdivide a space with a tree structure, and you navigate the tree to find the closest points. The label associated with the closest points is applied to input. 
 
 Let your input and training examples be vectors. Training vectors might be arranged in a binary tree like so:
