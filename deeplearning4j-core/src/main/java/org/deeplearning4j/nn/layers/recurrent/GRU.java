@@ -390,7 +390,7 @@ public class GRU extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GR
 	}
 
 	@Override
-	public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon){
+	public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength){
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 }
