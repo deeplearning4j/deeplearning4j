@@ -28,10 +28,10 @@ In machine-learning parlance, an epoch is a complete pass through a given datase
 Extract, transform, load: Data is loaded from disk or other sources into memory with the proper transforms such as [binarization](#binarization) and [normalization](#normalization). Broadly, you can think of a datapipeline as the process over gathering data from disparate sources and locations, putting it into a form that your algorithms can learn from, and then placing it in a data structure that they can iterate through. 
 
 ###<a name="f1">f1 Score</a>
-The f1 score is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It’s basically the probability that your net’s guesses are correct.
+The f1 score is a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. f1 is basically the probability that your net’s guesses are correct.
 
 ### <a name="feedforwardneuralnetwork">Feed-Forward Network</a>
-A neural network that takes the initial input and triggers the [activation](#activation) of each layer of the network successively, without circulating. Feed-forward nets contrast with recurrent and recursive nets.
+A neural network that takes the initial input and triggers the [activation](#activation) of each layer of the network successively, without circulating. Feed-forward nets contrast with recurrent and recursive nets in that feed-forward nets never let the output of one node circle back to the same or previous nodes.
 
 ### <a name="gaussian">Gaussian Distribution</a>
 A Gaussian, or [normal](https://en.wikipedia.org/wiki/Normal_distribution), distribution, is a continuous probability distribution that represents the probability that any given observation will occur on different points of a range. Visually, it resembles what's usually called a Bell curve. 
@@ -53,6 +53,9 @@ The process of transforming the data to span a range from 0 to 1.
 
 ###<a name="objectivefunction">Objective Function</a> 
 Also called a Loss Function. An objective function is a heuristic function for reducing prediction error in a machine-learning algorithm.
+
+###<a name="hot">One-Hot Encoding</a> 
+Used in classification and bag of words. The label for each example is all 0s, except for a 1 at the index of the actual class to which the example belongs. For BOW, the one represents the word encountered. 
 
 ###<a name="reconstructionentropy">Reconstruction Entropy</a> 
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
