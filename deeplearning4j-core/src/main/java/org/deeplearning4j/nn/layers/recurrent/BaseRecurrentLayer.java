@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -77,4 +79,11 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
 		tBpttStateMap.clear();
 		tBpttStateMap.putAll(state);
 	}
+
+	/**Truncated BPTT equivalent of Layer.backpropGradient().
+	 * Primary difference here is that forward pass in the context of BPTT is that we do
+	 * forward pass using stored state for truncated BPTT vs. from zero initialization
+	 * for standard BPTT.
+	 */
+	public abstract Pair<Gradient,INDArray> tbpttBackpropGradient(INDArray epsilon);
 }
