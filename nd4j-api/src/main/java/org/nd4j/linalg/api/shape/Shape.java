@@ -20,10 +20,12 @@
 package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
+
 import org.nd4j.bytebuddy.shape.IndexMapper;
 import org.nd4j.bytebuddy.shape.OffsetMapper;
 import org.nd4j.bytebuddy.shape.ShapeMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataBuffer.AllocationMode;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -134,6 +136,38 @@ public class Shape {
             return ret;
         }
         else {
+
+        	if(arr.offset()==0 && arr.data().allocationMode() == AllocationMode.HEAP
+        			&& arr.length() == arr.data().length() && arr.ordering() == Nd4j.order()
+        			&& strideDescendingCAscendingF(arr.ordering(),arr.stride()) ){
+        		Object array = arr.data().array();
+        		
+        		if( array instanceof float[] ){
+        			float[] orig = (float[])array;
+        			float[] out = Arrays.copyOf(orig, orig.length);
+        			DataBuffer floatBuffer = Nd4j.createBuffer(out);        			
+        			
+        			int[] newShape = arr.shape();
+        			newShape = Arrays.copyOf(newShape, newShape.length);
+        			int[] newStride = arr.stride();
+        			newStride = Arrays.copyOf(newStride, newStride.length);
+        			
+        			return Nd4j.create(floatBuffer,newShape,newStride,0,arr.ordering());
+        			
+        		} else if( array instanceof double[] ){
+        			double[] orig = (double[])array;
+        			double[] out = Arrays.copyOf(orig, orig.length);
+        			DataBuffer doubleBuffer = Nd4j.createBuffer(out);
+        			
+        			int[] newShape = arr.shape();
+        			newShape = Arrays.copyOf(newShape, newShape.length);
+        			int[] newStride = arr.stride();
+        			newStride = Arrays.copyOf(newStride, newStride.length);
+        			
+        			return Nd4j.create(doubleBuffer,newShape,newStride,0,arr.ordering());
+        		}
+        	}
+        	
             INDArray ret = Nd4j.create(arr.shape());
             for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
                 ret.vectorAlongDimension(i,0).assign(arr.vectorAlongDimension(i,0));
@@ -1003,5 +1037,23 @@ public class Shape {
         return scalarEquals(s1, s2) || Arrays.equals(s1, s2);
     }
 
-
+    /** Check if strides are in order suitable for non-strided mmul etc.
+     * Returns true if c order and strides are descending [100,10,1] etc
+     * Returns true if f order and strides are ascending [1,10,100] etc
+     * False otherwise.
+     * @param order Order of INDArray
+     * @param strides Strides of INDArray
+     * @return true if c+descending, f+ascending, false otherwise
+     */
+    public static boolean strideDescendingCAscendingF(char order, int[] strides ){
+    	if(order=='c'){	//Expect descending. [100,10,1] etc
+    		for( int i=1; i<strides.length; i++ ) if(strides[i-1]<=strides[i]) return false;
+    		return true;
+    	} else if(order=='f'){//Expect ascending. [1,10,100] etc
+    		for( int i=1; i<strides.length; i++ ) if(strides[i-1]>=strides[i]) return false;
+    		return true;
+    	} else {
+    		throw new RuntimeException("Invalid order: not c or f");
+    	}
+    }
 }
