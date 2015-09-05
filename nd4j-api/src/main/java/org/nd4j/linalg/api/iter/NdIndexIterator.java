@@ -56,8 +56,8 @@ public class NdIndexIterator implements Iterator<int[]> {
     @Override
     public int[] next() {
         switch(order) {
-            case 'c':  return Shape.ind2subC(shape,i++);
-            case 'f':  return Shape.ind2sub(shape, i++);
+            case 'c':  return Shape.ind2subC(shape,i++,length);
+            case 'f':  return Shape.ind2sub(shape, i++,length);
             default: throw new IllegalArgumentException("Illegal ordering " + order);
         }
 

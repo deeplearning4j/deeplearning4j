@@ -789,7 +789,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(INDArray arr,int index) {
-        return ind2sub(arr.shape(), index, ArrayUtil.prod(arr.shape()));
+        return ind2sub(arr.shape(), index, arr.length());
     }
 
 
@@ -893,7 +893,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2subC(INDArray arr,int index) {
-        return ind2subC(arr.shape(), index, ArrayUtil.prod(arr.shape()));
+        return ind2subC(arr.shape(), index, arr.length());
     }
 
     /**
