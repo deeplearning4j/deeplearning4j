@@ -49,6 +49,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected double dampingFactor = 100;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean backprop = false;
+    //whether to redistribute params or not
+    protected boolean redistributeParams = false;
 
     /**
      *
@@ -157,9 +159,21 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected double dampingFactor = 100;
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backprop = false;
+        protected boolean redistributeParams = false;
         @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
+
+        /**
+         * Whether to redistribute parameters as a view or not
+         * @param redistributeParams whether to redistribute parameters
+         *                           as a view or not
+         * @return
+         */
+        public Builder redistributeParams(boolean redistributeParams) {
+            this.redistributeParams = redistributeParams;
+            return this;
+        }
 
         /**
          * Specify the processors.
