@@ -126,7 +126,7 @@ class OperatableNDArrayTest extends FlatSpec with Matchers {
     b.get(1) should be(-3)
   }
 
-  it should "workd with ComplexNDArray correctly" in {
+  it should "worked with ComplexNDArray correctly" in {
     val complexNDArray =
       Array(
         Array(1 + i, 1 + i),

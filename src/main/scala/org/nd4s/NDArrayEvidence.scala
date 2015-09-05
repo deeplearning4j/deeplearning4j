@@ -107,6 +107,10 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
   def create(arr: Array[Value], shape: Int*): NDArray
 
   def create(arr: Array[Value], shape: Array[Int], ordering: NDOrdering, offset: Int): NDArray
+
+  def update(a:NDArray,indices:Array[IndexRange], i:Value):NDArray
+
+  def update(a:NDArray,indices:Array[IndexRange], i:NDArray):NDArray
 }
 
 trait RealNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
@@ -165,6 +169,16 @@ trait RealNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
   override def linearView(a: INDArray): INDArray = a.linearView()
 
   override def dup(a: INDArray): INDArray = a.dup()
+
+  override def update(underlying: INDArray, ir: Array[IndexRange], num: INDArray): INDArray = {
+    if (ir.exists(_.hasNegative))
+      underlying.indicesFrom(ir: _*).indices.foreach { i =>
+        underlying.put(i, num)
+      }
+    else
+      underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
+    underlying
+  }
 }
 
 case object DoubleNDArrayEvidence extends RealNDArrayEvidence[Double] {
@@ -200,6 +214,18 @@ case object DoubleNDArrayEvidence extends RealNDArrayEvidence[Double] {
   override def create(arr: Array[Double], shape: Int*): INDArray = arr.asNDArray(shape: _*)
 
   override def create(arr: Array[Double], shape: Array[Int], ordering: NDOrdering, offset: Int): INDArray = arr.mkNDArray(shape, ordering, offset)
+
+  override def update(underlying: INDArray, ir: Array[IndexRange], num: Double): INDArray = {
+    if (ir.length == 1 && !ir.head.hasNegative && ir.head.isInstanceOf[IntRange])
+      underlying.putScalar(ir.head.asInstanceOf[IntRange].underlying, num)
+    else if(ir.exists(_.hasNegative))
+      underlying.indicesFrom(ir: _*).indices.foreach { i =>
+        underlying.putScalar(i, num)
+      }
+    else
+      underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
+    underlying
+  }
 }
 
 case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
@@ -235,6 +261,18 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
   override def create(arr: Array[Float], shape: Int*): INDArray = arr.asNDArray(shape: _*)
 
   override def create(arr: Array[Float], shape: Array[Int], ordering: NDOrdering, offset: Int): INDArray = arr.mkNDArray(shape, ordering, offset)
+
+  override def update(underlying: INDArray, ir: Array[IndexRange], num: Float): INDArray = {
+    if (ir.length == 1 && !ir.head.hasNegative && ir.head.isInstanceOf[IntRange])
+      underlying.putScalar(ir.head.asInstanceOf[IntRange].underlying, num)
+    else if(ir.exists(_.hasNegative))
+      underlying.indicesFrom(ir: _*).indices.foreach { i =>
+        underlying.putScalar(i, num)
+      }
+    else
+      underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
+    underlying
+  }
 }
 
 case object ComplexNDArrayEvidence extends NDArrayEvidence[IComplexNDArray, IComplexNumber] {
@@ -325,4 +363,26 @@ case object ComplexNDArrayEvidence extends NDArrayEvidence[IComplexNDArray, ICom
   override def create(arr: Array[IComplexNumber], shape: Int*):IComplexNDArray = arr.asNDArray(shape: _*)
 
   override def create(arr: Array[IComplexNumber], shape: Array[Int], ordering: NDOrdering, offset: Int): IComplexNDArray = arr.mkNDArray(shape, ordering, offset)
+
+  def update(underlying:IComplexNDArray, ir:Array[IndexRange],num:IComplexNumber):IComplexNDArray = {
+    val u = underlying.asInstanceOf[IComplexNDArray]
+    if(ir.exists(_.hasNegative))
+      underlying.indicesFrom(ir: _*).indices.foreach { i =>
+        u.putScalar(i, num)
+      }
+    else
+      underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
+    u
+  }
+
+  override def update(underlying: IComplexNDArray, ir: Array[IndexRange], num: IComplexNDArray): IComplexNDArray = {
+    import Implicits._
+    if (ir.exists(_.hasNegative))
+      underlying.indicesFrom(ir: _*).indices.foreach { i =>
+        underlying.put(i, num)
+      }
+    else
+      underlying.put(underlying.getINDArrayIndexfrom(ir:_*).toArray, num)
+    underlying
+  }
 }
