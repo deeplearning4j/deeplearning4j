@@ -18,7 +18,6 @@ After those installs, please read the following:
     * <a href="#linux">Linux</a>
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
-7. <a href="#one">Magical One-Line Install</a>
 8. [GitHub](http://nd4j.org/getstarted.html#github)
 9. <a href="#source">Working With Source</a>
 10. <a href="#eclipse">Eclipse</a>
@@ -70,14 +69,6 @@ If you're using IntelliJ as your IDE, this should work already.
 
 * Cygwin is not supported. You must install DL4J from **DOS Windows**.  
 
-### <a name="one">Magical One-Line Install</a>
-
-For users who have never `git cloned` Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
-
-      git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh
-
-
-
 ### <a name="source">Working With Source</a>
 
 If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc1.x. That's as simple as adding dependencies to your POM.xml file in IntelliJ.
@@ -111,6 +102,12 @@ If you have an existing project, you can build Deeplearning4j's source files you
         </dependency>
 
 To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
+
+#### <a name="one">Magical One-Line Install</a>
+
+For users who have never `git cloned` Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
+
+      git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh
 
 ###<a name="eclipse">Eclipse</a> 
 
