@@ -1,15 +1,13 @@
-import com.typesafe.sbt.pgp.PgpKeys
-
 lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.7",
   crossScalaVersions := Seq("2.10.5", "2.11.7", "2.12.0-M1"),
   name := "nd4s",
-  version := "0.4-rc1.1",
+  version := "0.4-rc2.2-SNAPSHOT",
   organization := "org.nd4j",
   resolvers += "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
   libraryDependencies ++= Seq(
-    "org.nd4j" % "nd4j-api" % "0.4-rc1.1",
-    "org.nd4j" % "nd4j-jblas" % "0.4-rc1.1" % Test,
+    "org.nd4j" % "nd4j-api" % "0.4-rc2.2-SNAPSHOT",
+    "org.nd4j" % "nd4j-jblas" % "0.4-rc2.2-SNAPSHOT" % Test,
     "ch.qos.logback" % "logback-classic" %  "1.1.3" % Test,
     "org.scalatest" %% "scalatest" % "2.2.4" % Test cross CrossVersion.binaryMapped {
       case x if x startsWith "2.12" => "2.11"
@@ -57,6 +55,7 @@ lazy val root = (project in file(".")).settings(
       </developers>
   },
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
+  releasePublishArtifactsAction := com.typesafe.sbt.pgp.PgpKeys.publishSigned.value,
   releaseCrossBuild := true,
   initialCommands in console := "import org.nd4j.linalg.factory.Nd4j; import org.nd4s.Implicits._")
+

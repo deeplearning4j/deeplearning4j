@@ -116,44 +116,32 @@ trait SliceableNDArray [A <: INDArray]{
     modifiedTarget
   }
 
-  def update(ir:Array[IndexRange],num:Double):INDArray = {
-    indicesFrom(ir: _*).indices.foreach { i =>
-      underlying.putScalar(i, num)
-    }
-    underlying
-  }
-  def update(i1:IndexRange,num:Double):INDArray = update(Array(i1),num)
-  def update(i1:IndexRange,i2:IndexRange,num:Double):INDArray = update(Array(i1,i2),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,num:Double):INDArray = update(Array(i1,i2,i3),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,num:Double):INDArray =  update(Array(i1,i2,i3,i4),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,num:Double):INDArray =  update(Array(i1,i2,i3,i4,i5),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,num:Double):INDArray = update(Array(i1,i2,i3,i4,i5,i6),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,num:Double):INDArray = update(Array(i1,i2,i3,i4,i5,i6,i7),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,num:Double):INDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,num:Double):INDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,num:Double):INDArray  = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,num:Double):INDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,i12:IndexRange,num:Double):INDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12),num)
+  def update[T,T1](indices:Array[IndexRange],num:T)(implicit ev:NDArrayEvidence[A,T1],ev2:T => T1):INDArray = ev.update(underlying,indices,num)
+  def update[T,T1](i1:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1],ev2:T => T1):INDArray = ev.update(underlying,Array(i1),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2,i3),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray =  ev.update(underlying,Array(i1,i2,i3,i4),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray =  ev.update(underlying,Array(i1,i2,i3,i4,i5),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray  = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11),num)
+  def update[T,T1](i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,i12:IndexRange,num:T)(implicit ev:NDArrayEvidence[A,T1], ev2:T => T1):INDArray = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12),num)
 
-
-  def update(ir:Array[IndexRange],num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = {
-    val u = underlying.asInstanceOf[IComplexNDArray]
-    indicesFrom(ir: _*).indices.foreach { i =>
-      u.putScalar(i, num)
-    }
-    u
-  }
-  def update(i1:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1),num)
-  def update(i1:IndexRange,i2:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2,i3),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray =  update(Array(i1,i2,i3,i4),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray =  update(Array(i1,i2,i3,i4,i5),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2,i3,i4,i5,i6),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2,i3,i4,i5,i6,i7),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray  = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11),num)
-  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,i12:IndexRange,num:IComplexNumber)(implicit ev: A =:= IComplexNDArray):IComplexNDArray = update(Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12),num)
+  def update(indices:Array[IndexRange],num:A)(implicit ev:NDArrayEvidence[A,_]):INDArray = ev.update(underlying,indices,num)
+  def update(i1:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1),num)
+  def update(i1:IndexRange,i2:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2,i3),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A =  ev.update(underlying,Array(i1,i2,i3,i4),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A =  ev.update(underlying,Array(i1,i2,i3,i4,i5),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A  = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11),num)
+  def update(i1:IndexRange,i2:IndexRange,i3:IndexRange,i4:IndexRange,i5:IndexRange,i6:IndexRange,i7:IndexRange,i8:IndexRange,i9:IndexRange,i10:IndexRange,i11:IndexRange,i12:IndexRange,num:A)(implicit ev:NDArrayEvidence[A,_]):A = ev.update(underlying,Array(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12),num)
 }
 case class SubMatrixIndices(indices:List[Int],targetShape:Array[Int])

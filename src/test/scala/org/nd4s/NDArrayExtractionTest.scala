@@ -245,7 +245,7 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(result2 == Array(Array(1 + i),Array(1 + 3*i)).toNDArray)
   }
 
-  it should "be able to update with specified indices" in {
+  it should "be able to update value with specified indices" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
@@ -259,6 +259,23 @@ class NDArrayExtractionTest extends FlatSpec{
       Array(0, 0, 0),
       Array(4, 5, 6),
       Array(0, 0, 0)
+    ).toNDArray)
+  }
+
+  it should "be able to update INDArray with specified indices" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    ndArray(0 -> 2, 0 -> 2) = Array(Array(0,1),Array(2,3)).toNDArray
+
+    assert(ndArray == Array(
+      Array(0, 1, 3),
+      Array(2, 3, 6),
+      Array(7, 8, 9)
     ).toNDArray)
   }
 
