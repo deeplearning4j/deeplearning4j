@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.api.shape.Shape;
@@ -839,7 +840,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.rand(shape);
 
         INDArray tad = arr.tensorAlongDimension(0, 1, 2);
-        boolean order = Shape.cOrFortranOrder(tad.shape(),tad.stride(),tad.elementStride());
+        boolean order = Shape.cOrFortranOrder(tad.shape(), tad.stride(), tad.elementStride());
         assertArrayEquals(tad.shape(),new int[]{7,5});
 
 
@@ -870,8 +871,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray sum = test.sum(1);
         INDArray assertion = Nd4j.create(new float[]{3, 7});
         assertEquals(assertion, sum);
-        INDArray sum0 = Nd4j.create(new double[]{4,6});
-        assertEquals(sum0,test.sum(0));
+        INDArray sum0 = Nd4j.create(new double[]{4, 6});
+        assertEquals(sum0, test.sum(0));
     }
 
 
@@ -1213,6 +1214,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testPutAtIntervalIndexWithStride(){
+        INDArray n1 = Nd4j.create(3, 3);
+        INDArrayIndex[] indices = {NDArrayIndex.interval(0,2,3),NDArrayIndex.all()};
+        n1.put(indices,1);
+        INDArray expected = Nd4j.create(new double[][]{{1d,1d,1d},{0d,0d,0d},{1d,1d,1d}});
+        assertEquals(expected,n1);
+    }
 
 
     @Test
