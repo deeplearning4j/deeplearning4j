@@ -358,7 +358,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         //all params are views
-        reDistributeParams();
+        if(getLayerWiseConfigurations().isRedistributeParams())
+            reDistributeParams();
     }
 
 
@@ -1717,7 +1718,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray preOutput(INDArray x) {
         INDArray lastLayerActivation = x;
         for( int i=0; i<layers.length-1; i++ ){
-        	if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
+            if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(lastLayerActivation,layers[i]);
             lastLayerActivation = layers[i].activate(lastLayerActivation);
         }
@@ -1796,8 +1797,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public int getInputMiniBatchSize(){
         return layers[0].getInputMiniBatchSize();
     }
-    
-    /**If this MultiLayerNetwork contains one or more RNN layers: conduct forward pass (prediction)
+
+    /**
+     *
+     * If this MultiLayerNetwork contains one or more RNN layers: conduct forward pass (prediction)
      * but using previous stored state for any RNN layers. The activations for the final step are
      * also stored in the RNN layers for use next time rnnTimeStep() is called.<br>
      * This method can be used to generate output one or more steps at a time instead of always having to do
@@ -1812,56 +1815,57 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Output activations. If output is RNN layer (such as RnnOutputLayer): if input has shape [miniBatchSize,inputSize]
      * i.e., is 2d, output has shape [miniBatchSize,outputSize] (i.e., also 2d).<br>
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
-     * @see rnnClearPreviousState
+     * @see input
      */
-    public INDArray rnnTimeStep(INDArray input){
-    	this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
-    	boolean inputIs2d = input.rank()==2;
-    	for( int i=0; i<layers.length; i++ ){
-    		if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
+    public INDArray rnnTimeStep(INDArray input) {
+        this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
+        boolean inputIs2d = input.rank()==2;
+        for( int i = 0; i < layers.length; i++) {
+            if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);
-    		if(layers[i] instanceof BaseRecurrentLayer){
-    			input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
-    		} else {
-    			input = layers[i].activate(input, false);
-    		}
-    	}
-    	if(inputIs2d && input.rank()==3 && layers[layers.length-1].type() == Type.RECURRENT){
-    		//Return 2d output with shape [miniBatchSize,nOut]
-    		// instead of 3d output with shape [miniBatchSize,nOut,1]
-    		return input.tensorAlongDimension(0,1,0);
-    	}
-    	return input;
+            if(layers[i] instanceof BaseRecurrentLayer){
+                input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
+            } else {
+                input = layers[i].activate(input, false);
+            }
+        }
+        
+        if(inputIs2d && input.rank() == 3 && layers[layers.length-1].type() == Type.RECURRENT){
+            //Return 2d output with shape [miniBatchSize,nOut]
+            // instead of 3d output with shape [miniBatchSize,nOut,1]
+            return input.tensorAlongDimension(0,1,0);
+        }
+        return input;
     }
-    
+
     /**Get the state of the RNN layer, as used in rnnTimeStep().
      * @param layer Number/index of the layer.
      * @return Hidden state, or null if layer is not an RNN layer
      */
     public Map<String,INDArray> rnnGetPreviousState(int layer){
-    	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
-    	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
-    	return ((BaseRecurrentLayer<?>)layers[layer]).rnnGetPreviousState();
+        if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
+        if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+        return ((BaseRecurrentLayer<?>)layers[layer]).rnnGetPreviousState();
     }
-    
+
     /**Set the state of the RNN layer.
      * @param layer The number/index of the layer.
      * @param state The state to set the specified layer to
      */
-	public void rnnSetPreviousState(int layer, Map<String,INDArray> state){
-    	if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
-    	if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
-    	
-    	BaseRecurrentLayer<?> r = (BaseRecurrentLayer<?>)layers[layer];
-    	r.rnnSetPreviousState(state);
+    public void rnnSetPreviousState(int layer, Map<String,INDArray> state){
+        if(layer < 0 || layer >= layers.length ) throw new IllegalArgumentException("Invalid layer number");
+        if( !(layers[layer] instanceof BaseRecurrentLayer) ) throw new IllegalArgumentException("Layer is not an RNN layer");
+
+        BaseRecurrentLayer<?> r = (BaseRecurrentLayer<?>)layers[layer];
+        r.rnnSetPreviousState(state);
     }
-    
+
     /** Clear the previous state of the RNN layers (if any).
      */
     public void rnnClearPreviousState(){
-    	if( layers == null ) return;
-    	for( int i=0; i<layers.length; i++ ){
-    		if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer<?>)layers[i]).rnnClearPreviousState();
-    	}
+        if( layers == null ) return;
+        for( int i=0; i<layers.length; i++ ){
+            if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer<?>)layers[i]).rnnClearPreviousState();
+        }
     }
 }
