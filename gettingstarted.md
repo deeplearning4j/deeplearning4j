@@ -11,7 +11,6 @@ The prerequisites installs for Deeplearning4j are documented on the ["Getting St
 1. [Java 7 or above](http://nd4j.org/getstarted.html#java) 
 2. [Integrated Development Environment: IntelliJ](http://nd4j.org/getstarted.html#ide-for-java) 
 3. [Maven](http://nd4j.org/getstarted.html#maven)
-5. [GitHub](http://nd4j.org/getstarted.html#github)
 
 After those installs, please read the following:
 
@@ -20,11 +19,12 @@ After those installs, please read the following:
     * <a href="#osx">OSX</a>
     * <a href="#windows">Windows</a>
 7. <a href="#one">Magical One-Line Install</a>
-8. <a href="#source">Working With Source</a>
-9. <a href="#eclipse">Eclipse</a>
-10. <a href="#trouble">Troubleshooting</a>
-11. <a href="#results">Reproducible Results</a>
-12. <a href="#next">Next Steps</a>
+8. [GitHub](http://nd4j.org/getstarted.html#github)
+9. <a href="#source">Working With Source</a>
+10. <a href="#eclipse">Eclipse</a>
+11. <a href="#trouble">Troubleshooting</a>
+12. <a href="#results">Reproducible Results</a>
+13. <a href="#next">Next Steps</a>
 
 ### <a name="linux">Linux</a>
 
@@ -76,13 +76,13 @@ For users who have never `git cloned` Deeplearning4j before, you should be able 
 
       git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh
 
+
+
 ### <a name="source">Working With Source</a>
 
-If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc1.x.
+If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc1.x. That's as simple as adding dependencies to your POM.xml file in IntelliJ.
 
-To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
-
-Our [Github repo is here](https://github.com/deeplearning4j/deeplearning4j/). Install Github for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then *git clone* the repository, and run this command for Maven:
+On the other hand, our [Github repo is here](https://github.com/deeplearning4j/deeplearning4j/). Install [Github](http://nd4j.org/getstarted.html) for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then 'git clone' the repository, and run this command for Maven:
 
       mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
@@ -109,6 +109,8 @@ If you have an existing project, you can build Deeplearning4j's source files you
             <artifactId>deeplearning4j-nlp</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
+
+To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
 
 ###<a name="eclipse">Eclipse</a> 
 
