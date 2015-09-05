@@ -18,12 +18,12 @@ Current version in maven central is `0.4-rc0`.
 ---
 ## Modules
 - cli = command line interface for deeplearning4j
-- core = core neural net structures and supporting components such as datasets, iterators, clustoring algorithms, optimization methods, evaluation tools and plots.
+- core = core neural net structures and supporting components such as datasets, iterators, clustering algorithms, optimization methods, evaluation tools and plots.
 - scaleout = integrations
     - aws = loading data to and from aws resources EC2 and S3
     - nlp = natural language processing components including vecotrizers, models, sample datasets and renders
     - akka = setup concurrent and distributed applications on the JVM
-    - api = core components like workers and mult-threading
+    - api = core components like workers and multi-threading
     - zookeeper = maintain configuration for distributed systems
     - hadoop-yarn = common map-reduce distributed system
     - spark = integration with spark
@@ -38,22 +38,31 @@ Documentation is available at [deeplearning4j.org](http://deeplearning4j.org/) a
 
 ---
 ## Installation
-To install Deeplearning4J, there are a couple approaches (briefly described below). More information can be found on the  [ND4J website](http://nd4j.org/getstarted.html).
+To install Deeplearning4J, there are a couple approaches (briefly described below). More information can be found on the  [ND4J website](http://nd4j.org/getstarted.html) and [here](http://deeplearning4j.org/gettingstarted.html).
 
 #### Use Maven Central Repository
 
-    Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of jars you can use
+Search for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of jars you can use.
 
-    Add the dependency information into your pom.xml
+Add the dependency information into your `pom.xml`. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.**
 
 #### Clone from the GitHub Repo
+
 Deeplearning4J is being actively developed and you can clone the repository, compile it and reference it in your project.
 
-Clone the repository:
+For users who have never git cloned Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
 
-    $ git clone git://github.com/deeplearning4j/deeplearning4j.git
+   git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh
 
-Compile the project:
+This command will also get you ND4J and Canova, which you need. 
+
+To get the most recent updates from Github after an initial clone, pull the ND4J, Canova and DL4J repositories:
+
+    $ git pull git://github.com/deeplearning4j/nd4j.git
+    $ git pull git://github.com/deeplearning4j/Canova.git
+    $ git pull git://github.com/deeplearning4j/deeplearning4j.git
+
+Compile the project from within each of the three directories, starting with ND4J:
 
     $ cd deeplearning4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 

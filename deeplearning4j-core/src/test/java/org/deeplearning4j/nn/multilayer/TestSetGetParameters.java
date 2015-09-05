@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.layers.GRU;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -70,7 +71,7 @@ public class TestSetGetParameters {
 					.dist(new NormalDistribution(0,1)).build())
 			.layer(1, new GRU.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
 					.dist(new NormalDistribution(0,1)).build())
-			.layer(2, new OutputLayer.Builder(LossFunction.MSE).weightInit(WeightInit.DISTRIBUTION)
+			.layer(2, new RnnOutputLayer.Builder(LossFunction.MSE).weightInit(WeightInit.DISTRIBUTION)
 					.dist(new NormalDistribution(0,1)).nIn(11).nOut(12).build())
 			.build();
 		

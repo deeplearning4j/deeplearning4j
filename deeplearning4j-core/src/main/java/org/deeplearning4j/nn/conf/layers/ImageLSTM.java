@@ -18,33 +18,28 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
+import lombok.*;
+
 /**
- * Convolutional and pooling layer
- *
+ * Image LSTM recurrent net.
+ * Based on karpathy et. al's work on generation of image descriptions.
  */
-@Deprecated
-public class ConvolutionDownSampleLayer extends ConvolutionLayer {
+@Data @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class ImageLSTM extends FeedForwardLayer {
 
-    private static final long serialVersionUID = 7524152911435120057L;
-
-    @Override
-    public int hashCode() {
-        return 0;
+    private ImageLSTM(Builder builder) {
+    	super(builder);
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        return true;
-    }
-
-    public String toString() {
-        return "ConvolutionDownSampleLayer{" +
-                '}';
+    @AllArgsConstructor
+    public static class Builder extends FeedForwardLayer.Builder<Builder> {
+        
+        @Override
+        @SuppressWarnings("unchecked")
+        public ImageLSTM build() {
+            return new ImageLSTM(this);
+        }
     }
 }

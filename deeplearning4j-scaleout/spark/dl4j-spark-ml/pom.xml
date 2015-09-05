@@ -18,7 +18,7 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>spark</artifactId>
-		<version>0.4-rc1-SNAPSHOT</version>
+		<version>0.4-rc2.2-SNAPSHOT</version>
 	</parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -76,6 +76,16 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.18.1</version>
+                <configuration>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>../../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
+                    </additionalClasspathElements>
+                </configuration>
             </plugin>
         </plugins>
     </build>
