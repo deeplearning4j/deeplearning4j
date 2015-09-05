@@ -1016,10 +1016,10 @@ public abstract class BaseNDArray implements INDArray {
             return this;
         }
 
-        if(ordering == 'c' && length() == data().length()) {
-            data.put(offset + i,value);
-            return this;
-        }
+//        if(ordering == 'c' && length() == data().length()) {
+//            data.put(offset + i,value);
+//            return this;
+//        }
 
         if(isRowVector())
             return putScalar(new int[]{0,i},value);
@@ -3104,9 +3104,9 @@ public abstract class BaseNDArray implements INDArray {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
 
-        if(ordering == 'c' && length() == data().length()) {
-            return data.getDouble(offset + i);
-        }
+//        if(ordering == 'c' && length() == data().length()) {
+//            return data.getDouble(offset + i);
+//        }
 
         int[] dimensions = ordering == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions,shape());
