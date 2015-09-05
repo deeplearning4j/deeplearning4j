@@ -1,19 +1,21 @@
 package org.nd4s
 
 import org.nd4s.Implicits._
-import org.nd4j.linalg.api.complex.IComplexNDArray
-import org.nd4j.linalg.factory.Nd4j
 import org.scalatest.FlatSpec
 
 
-class NDArrayExtractionTest extends FlatSpec{
+class NDArrayExtractionInCOrderingTest extends NDArrayExtractionTestBase with COrderingForTest
+class NDArrayExtractionInFortranOrderingTest extends NDArrayExtractionTestBase with FortranOrderingForTest
+
+trait NDArrayExtractionTestBase extends FlatSpec{self:OrderingForTest =>
+
   "org.nd4j.api.Implicits.RichNDArray" should "provides forall checker" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(ordering)
 
     //check if all elements in nd meet the criteria.
     assert(ndArray > 0)
@@ -21,13 +23,20 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(!(ndArray > 5))
   }
 
-  it should "be able to extract a part of 2d matrix in C ordering" in {
+  it should "be able to extract a value in specified indices" in {
+    val ndArray = Array(
+      Array(1, 2),
+      Array(3, 4)
+    ).mkNDArray(ordering)
+  }
+
+  it should "be able to extract a part of 2d matrix" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).mkNDArray(NDOrdering.C)
+      ).mkNDArray(ordering)
 
     val extracted = ndArray(1 -> 3, 0 -> 2)
 
@@ -35,17 +44,17 @@ class NDArrayExtractionTest extends FlatSpec{
       Array(
         Array(4, 5),
         Array(7, 8)
-      ).toNDArray
+      ).mkNDArray(ordering)
     assert(extracted == expected)
   }
 
-  it should "be able to extract a part of 2d matrix in C ordering with offset" in {
+  it should "be able to extract a part of 2d matrix with offset" in {
     val ndArray = (1 to 9).mkNDArray(Array(2, 2), NDOrdering.C, offset = 4)
 
     val expectedArray = Array(
       Array(5, 6),
       Array(7, 8)
-    ).toNDArray
+    ).mkNDArray(ordering)
     assert(ndArray == expectedArray)
 
     val expectedSlice = Array(
@@ -55,91 +64,54 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(ndArray(->, 0) == expectedSlice)
   }
 
-  it should "be able to extract a part of 2d matrix in F ordering with offset" in {
-    val ndArray = (1 to 9).mkNDArray(Array(2, 2), NDOrdering.Fortran, offset = 4)
-
-    val expectedArray = Array(
-      Array(5, 7),
-      Array(6, 8)
-    ).toNDArray
-    assert(ndArray == expectedArray)
-
-    val expectedSlice = Array(
-      Array(5),
-      Array(6)
-    ).toNDArray
-    assert(ndArray(->, 0) == expectedSlice)
-  }
-
-  it should "be able to extract a part of vertically long matrix in C ordering" in {
+  it should "be able to extract a part of vertically long matrix in" in {
     val ndArray =
       Array(
         Array(1, 2),
         Array(3, 4),
         Array(5, 6),
         Array(7, 8)
-      ).mkNDArray(NDOrdering.C)
+      ).mkNDArray(ordering)
 
     assert(ndArray(0 -> 2, ->) ==
       Array(
         Array(1, 2),
         Array(3, 4)
-      ).toNDArray)
+      ).mkNDArray(ordering))
 
     assert(ndArray(2 -> 4, ->) ==
       Array(
         Array(5, 6),
         Array(7, 8)
-      ).toNDArray)
+      ).mkNDArray(ordering))
   }
 
-  it should "be able to extract a part of horizontally long matrix in C ordering" in {
+  it should "be able to extract a part of horizontally long matrix" in {
     val ndArray =
       Array(
         Array(1, 2, 3, 4),
         Array(5, 6, 7, 8)
-      ).mkNDArray(NDOrdering.C)
+      ).mkNDArray(ordering)
 
     assert(ndArray(->, 0 -> 2) ==
       Array(
         Array(1, 2),
         Array(5, 6)
-      ).toNDArray)
+      ).mkNDArray(ordering))
 
     assert(ndArray(->, 2 -> 4) ==
       Array(
         Array(3, 4),
         Array(7, 8)
-      ).toNDArray)
+      ).mkNDArray(ordering))
   }
 
-  it should "be able to extract a part of 2d matrix in Fortran ordering" in {
-    val ndArray =
-      Array(
-        Array(1, 2, 3),
-        Array(4, 5, 6),
-        Array(7, 8, 9)
-      ).mkNDArray(NDOrdering.Fortran)
-
-    val extracted = ndArray(1 -> 3, 0 -> 2)
-
-    val expected =
-      Array(
-        Array(4, 5),
-        Array(7, 8)
-      ).toNDArray
-    assert(extracted == expected)
-  }
-
-  it should "be able to extract a part of 3d matrix in C ordering" in {
-    val ndArray = (1 to 8).mkNDArray(Array(2, 2, 2),NDOrdering.C)
+  it should "be able to extract a part of 3d matrix" in {
+    val ndArray = (1 to 8).mkNDArray(Array(2, 2, 2),ordering)
 
     val extracted = ndArray(0, ->, ->)
-    val lv = extracted.linearView()
-    assert(lv.getFloat(0) == 1)
-    assert(lv.getFloat(1) == 2)
-    assert(lv.getFloat(2) == 3)
-    assert(lv.getFloat(3) == 4)
+    val expected = ndArray.slice(0)
+    assert(extracted == expected)
   }
 
   it should "return original NDArray if indexRange is all in 2d matrix" in {
@@ -148,7 +120,7 @@ class NDArrayExtractionTest extends FlatSpec{
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(ordering)
     val extracted = ndArray(->, ->)
     assert(ndArray == extracted)
 
@@ -157,7 +129,7 @@ class NDArrayExtractionTest extends FlatSpec{
   }
 
   it should "return original NDArray if indexRange is all in 3d matrix" in {
-    val ndArray = (1f to 8f by 1).asNDArray(2, 2, 2)
+    val ndArray = (1f to 8f by 1).mkNDArray(Array(2, 2, 2),ordering)
     val extracted = ndArray(->, ->, ->)
     assert(ndArray == extracted)
 
@@ -165,8 +137,8 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(ellipsised == ndArray)
   }
 
-  it should "accept partially ellipsis indices in C ordering" in {
-    val ndArray = (1f to 8f by 1).asNDArray(2, 2, 2)
+  it should "accept partially ellipsis indices" in {
+    val ndArray = (1f to 8f by 1).mkNDArray(Array(2, 2, 2),ordering)
 
     val ellipsised = ndArray(--->, 0)
     val notEllipsised = ndArray(->, ->, 0)
@@ -181,13 +153,13 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(ellipsisedOneHand == notEllipsisedOneHand)
   }
 
-  it should "be able to extract submatrix with index range by step in C ordering" in {
+  it should "be able to extract submatrix with index range by step" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(ordering)
 
     val extracted = ndArray(0 -> 3 by 2, ->)
     val extractedWithRange = ndArray(0 until 3 by 2, ->)
@@ -197,7 +169,7 @@ class NDArrayExtractionTest extends FlatSpec{
       Array(
         Array(1, 2, 3),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(ordering)
 
     assert(extracted == expected)
     assert(extractedWithRange == expected)
@@ -211,8 +183,8 @@ class NDArrayExtractionTest extends FlatSpec{
     val step = list(1 -> 7 by 2).linearView()
     assert(step.length() == 3)
     assert(step.getFloat(0) == 1)
-    assert(step(0) == 1.toScalar)
-    assert(step(0,0) == 1.toScalar)
+    assert(step(0) == 1)
+    assert(step(0,0) == 1)
     assert(step.getFloat(1) == 3)
     assert(step.getFloat(2) == 5)
 
@@ -229,29 +201,13 @@ class NDArrayExtractionTest extends FlatSpec{
     assert(nStep.getFloat(3) == 4)
   }
 
-  it should "work with ComplexNDArray correctly" in {
-    val complexNDArray =
-      Array(
-        Array(1 + i, 1 + i),
-        Array(1 + 3 * i, 1 + 3 * i)
-      ).toNDArray
-
-    val result = complexNDArray(0,0)
-
-    assert(result == (1 + i).toScalar)
-
-    val result2 = complexNDArray(->,0)
-
-    assert(result2 == Array(Array(1 + i),Array(1 + 3*i)).toNDArray)
-  }
-
   it should "be able to update value with specified indices" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(ordering)
 
     ndArray(0 -> 3 by 2, ->) = 0
 
@@ -259,7 +215,7 @@ class NDArrayExtractionTest extends FlatSpec{
       Array(0, 0, 0),
       Array(4, 5, 6),
       Array(0, 0, 0)
-    ).toNDArray)
+    ).mkNDArray(ordering))
   }
 
   it should "be able to update INDArray with specified indices" in {
@@ -268,15 +224,15 @@ class NDArrayExtractionTest extends FlatSpec{
         Array(1, 2, 3),
         Array(4, 5, 6),
         Array(7, 8, 9)
-      ).toNDArray
+      ).mkNDArray(ordering)
 
-    ndArray(0 -> 2, 0 -> 2) = Array(Array(0,1),Array(2,3)).toNDArray
+    ndArray(0 -> 2, 0 -> 2) = Array(Array(0,1),Array(2,3)).mkNDArray(ordering)
 
     assert(ndArray == Array(
       Array(0, 1, 3),
       Array(2, 3, 6),
       Array(7, 8, 9)
-    ).toNDArray)
+    ).mkNDArray(ordering))
   }
 
   "num2Scalar" should "convert number to Scalar INDArray" in {
