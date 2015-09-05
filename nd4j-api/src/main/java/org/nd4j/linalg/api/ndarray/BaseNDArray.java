@@ -997,7 +997,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray assign(INDArray arr) {
-
         if (!arr.isVector() && !isVector())
             LinAlgExceptions.assertSameShape(this, arr);
         else if (isVector() && arr.isVector() && length() != arr.length())
@@ -1016,6 +1015,12 @@ public abstract class BaseNDArray implements INDArray {
             data.put(offset + i,value);
             return this;
         }
+
+        if(ordering == 'c' && length() == data().length()) {
+            data.put(offset + i,value);
+            return this;
+        }
+
         if(isRowVector())
             return putScalar(new int[]{0,i},value);
         else if(isColumnVector())
@@ -1660,7 +1665,6 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray swapAxes(int dimension, int with) {
-
         int[] shape = ArrayUtil.range(0, shape().length);
         shape[dimension] = with;
         shape[with] = dimension;
@@ -1671,13 +1675,11 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public DataBuffer data() {
-
         return data;
     }
 
     @Override
     public void setData(DataBuffer data) {
-
         this.data = data;
     }
 
@@ -3102,6 +3104,9 @@ public abstract class BaseNDArray implements INDArray {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
 
+        if(ordering == 'c' && length() == data().length()) {
+            return data.getDouble(offset + i);
+        }
 
         int[] dimensions = ordering == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions,shape());
@@ -3139,74 +3144,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public INDArray transposei() {
-        if (isRowVector()) {
-            INDArray ret = create(shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()));
-            if(ret instanceof IComplexNDArray) {
-                IComplexNDArray arr = (IComplexNDArray) ret;
-                IComplexNDArray thisArr = (IComplexNDArray) this;
-                for(int i = 0; i < ret.length(); i++) {
-                    arr.putScalar(i,thisArr.getComplex(i));
-                }
-
-            }
-            else {
-                for(int i = 0; i < ret.length(); i++) {
-                    ret.putScalar(i,getDouble(i));
-                }
-            }
-
-            return ret;
-
-        }
-        else if (isColumnVector()) {
-            INDArray ret = create(new int[]{1,shape[0]});
-            if(ret instanceof IComplexNDArray) {
-                IComplexNDArray arr = (IComplexNDArray) ret;
-                IComplexNDArray thisArr = (IComplexNDArray) this;
-                for(int i = 0; i < ret.length(); i++) {
-                    arr.putScalar(i,thisArr.getComplex(i));
-                }
-
-            }
-            else {
-                for(int i = 0; i < ret.length(); i++) {
-                    ret.putScalar(i,getDouble(i));
-                }
-            }
-
-            return ret;
-        }
-        if(isMatrix()) {
-            if(this instanceof IComplexNDArray) {
-                IComplexNDArray arr = (IComplexNDArray) create(new int[]{columns(), rows()});
-                IComplexNDArray arrThis = (IComplexNDArray) this;
-                for(int i = 0; i < arr.rows(); i++) {
-                    for(int j = 0; j < arr.columns(); j++)
-                        arr.put(i,j,arrThis.getComplex(j, i));
-                }
-
-                return arr;
-            }
-            else {
-                INDArray arr = create(columns(),rows());
-                for(int i = 0; i < arr.rows(); i++) {
-                    for(int j = 0; j < arr.columns(); j++)
-                        arr.put(i,j,getDouble(j, i));
-                }
-
-                return arr;
-            }
-
-        }
-
-        INDArray arr = create(ArrayUtil.reverseCopy(shape()));
-        for(int i = 0; i < arr.slices(); i++) {
-            arr.putSlice(i,arr.slice(i).transpose());
-        }
-
-        return arr;
-
-
+       return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0,rank())));
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {

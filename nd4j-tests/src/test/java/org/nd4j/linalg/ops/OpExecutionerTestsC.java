@@ -66,8 +66,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testCosineSimilarity() {
-        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4,5});
-        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4,5});
+        INDArray vec1 = Nd4j.create(new float[]{1, 2, 3, 4, 5});
+        INDArray vec2 = Nd4j.create(new float[]{1, 2, 3, 4, 5});
         double sim = Transforms.cosineSim(vec1, vec2);
         assertEquals(getFailureMessage(), 1, sim, 1e-1);
 
@@ -81,6 +81,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 1.79175947});
         assertEquals(assertion, transformed);
     }
+
+
 
 
     @Test
@@ -243,6 +245,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     public void testIamax() {
         INDArray linspace = Nd4j.linspace(1, 4, 4);
         assertEquals(getFailureMessage(),3,Nd4j.getBlasWrapper().iamax(linspace));
+        int iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(linspace)).currentResult().intValue();
+        assertEquals(3,iamax);
     }
 
 
