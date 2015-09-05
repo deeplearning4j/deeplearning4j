@@ -15,6 +15,7 @@ layout: default
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
 * [Machine Learning and Probabilistic Graphical Models](http://www.cedar.buffalo.edu/~srihari/CSE574/index.html)
+* ["Deep Learning" @CMU](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/); Bhiksha Raj
 
 ## Deep- and Machine-Learning Fora
 
@@ -155,6 +156,8 @@ Matthieu Devin, Quoc V. Le, Mark Z. Mao, Marc’Aurelio Ranzato, Andrew Senior, 
 networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, Yoshua Bengio and Hod Lipson
 
 **[Learning Internal Representations by Error Propagation](http://psych.stanford.edu/~jlm/papers/PDP/Volume%201/Chap8_PDP86.pdf)**; Rumelhart, Hinton and Williams
+
+**[Backpropagation Through Time: What It Does and How to Do It](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf)**; Paul Werbos
 
 ## Researchers' Personal Websites
 
