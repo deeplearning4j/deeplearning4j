@@ -106,6 +106,12 @@ trait OperatableNDArray[A <: INDArray] {
 
   def get[B](indices: Int*)(implicit ev:NDArrayEvidence[A,B]): B = ev.get(underlying,indices: _*)
 
+  def apply[B](i: Int)(implicit ev:NDArrayEvidence[A,B]): B = get(i)
+
+  def apply[B](i: Int, j: Int)(implicit ev:NDArrayEvidence[A,B]): B = get(i,j)
+
+  def apply[B](indices: Int*)(implicit ev:NDArrayEvidence[A,B]): B = get(indices: _*)
+
   def get[B](indices: Array[Int])(implicit ev:NDArrayEvidence[A,B]): B = ev.get(underlying,indices: _*)
 
   def unary_-(): INDArray = underlying.neg()
