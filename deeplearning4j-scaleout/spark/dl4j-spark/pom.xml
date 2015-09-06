@@ -163,7 +163,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>0.0.0.5</version>
+            <version>${canova.version}</version>
         </dependency>
     </dependencies>
 
