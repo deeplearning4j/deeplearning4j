@@ -159,6 +159,9 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 
 **[Backpropagation Through Time: What It Does and How to Do It](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf)**; Paul Werbos
 
+**[Learning Phrase Representations using RNN Encoder–Decoder
+for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Cho et al
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
