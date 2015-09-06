@@ -71,11 +71,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() {
         super.before();
+        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+        Nd4j.getRandom().setSeed(123);
+
     }
 
     @After
     public void after() {
         super.after();
+        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
+        Nd4j.dtype = DataBuffer.Type.DOUBLE;
+
     }
 
     @Test
@@ -765,7 +772,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMulRowVector() {
         INDArray arr = Nd4j.linspace(1,4,4).reshape(2, 2);
-        arr.muliRowVector(Nd4j.linspace(1,2,2));
+        arr.muliRowVector(Nd4j.linspace(1, 2, 2));
         INDArray assertion = Nd4j.create(new double[][]{
                 {1, 4}, {3, 8}
         });
@@ -884,7 +891,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         int[] shape = {3,2,4};
         INDArray arr3d = Nd4j.rand(shape);
 
-        INDArray get0 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(0,1));
+        INDArray get0 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 1));
         INDArray getPoint0 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(0));
         INDArray tad0 = arr3d.tensorAlongDimension(0,1,0);
 
@@ -900,16 +907,16 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(get1.equals(tad1));
 
         INDArray get2 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(2,3));
-        INDArray getPoint2 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(2));
+        INDArray getPoint2 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(2));
         INDArray tad2 = arr3d.tensorAlongDimension(2,1,0);
 
         assertTrue(getPoint2.equals(tad2)); //OK
         assertTrue(get2.equals(getPoint2)); //Fails
         assertTrue(get2.equals(tad2));
 
-        INDArray get3 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(3,4));
-        INDArray getPoint3 = arr3d.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.point(3));
-        INDArray tad3 = arr3d.tensorAlongDimension(3,1,0);
+        INDArray get3 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(3, 4));
+        INDArray getPoint3 = arr3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(3));
+        INDArray tad3 = arr3d.tensorAlongDimension(3, 1, 0);
 
         assertTrue(getPoint3.equals(tad3)); //OK
         assertTrue(get3.equals(getPoint3)); //Fails
@@ -1198,8 +1205,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }, new int[]{1, 1, 2, 2, 4, 4});
 
         INDArray test = Nd4j.tensorMmul(col, w, new int[][]{{1, 2, 3}, {1, 2, 3}});
-        INDArray assertion2 = Nd4j.create(new double[]{3.,3.,3.,3.,3.,3.,3.,3.,7.,7.,7.,7.,7.,7.,7.,7.,3.,3.
-                ,3.,3.,3.,3.,3.,3.,7.,7.,7.,7.,7.,7.,7.,7.},new int[]{1, 4, 4, 2},new int[]{16, 8, 2, 1},0,'f');
+        INDArray assertion2 = Nd4j.create(new double[]{3., 3., 3., 3., 3., 3., 3., 3., 7., 7., 7., 7., 7., 7., 7., 7., 3., 3.
+                , 3., 3., 3., 3., 3., 3., 7., 7., 7., 7., 7., 7., 7., 7.}, new int[]{1, 4, 4, 2}, new int[]{16, 8, 2, 1}, 0, 'f');
         assertion2.setOrder('f');
         assertEquals(assertion2,test);
     }
@@ -1241,14 +1248,54 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testPutAtIntervalIndexWithStride(){
         INDArray n1 = Nd4j.create(3, 3);
         INDArrayIndex[] indices = {NDArrayIndex.interval(0,2,3),NDArrayIndex.all()};
-        n1.put(indices,1);
+        n1.put(indices, 1);
         INDArray expected = Nd4j.create(new double[][]{{1d,1d,1d},{0d,0d,0d},{1d,1d,1d}});
-        assertEquals(expected,n1);
+        assertEquals(expected, n1);
     }
 
 
 
-    
+    @Test
+    public void testTransposeGet(){
+        INDArray first = CheckUtil.getTransposedMatrixWithShape(3, 4);
+        INDArray second = CheckUtil.getTensorAlongDimensionMatricesWithShape(4, 2)[0];
+
+        INDArray firstCopy = Shape.toOffsetZeroCopy(first);
+        INDArray secondCopy = Shape.toOffsetZeroCopy(second);
+        assertTrue(CheckUtil.checkMmul(firstCopy, secondCopy, 1e-6, 1e-1));
+        assertTrue(first.equals(firstCopy));
+        assertTrue(second.equals(secondCopy));
+
+        assertTrue(CheckUtil.checkMmul(first, second, 1e-1, 1e-1));
+    }
+
+    @Test
+    public void testTransposePermute(){
+        INDArray first = CheckUtil.getTransposedMatrixWithShape(3, 4);
+        INDArray second = CheckUtil.getPermutedWithShape(4,2);
+
+        INDArray firstCopy = Shape.toOffsetZeroCopy(first);
+        INDArray secondCopy = Shape.toOffsetZeroCopy(second);
+        assertTrue(CheckUtil.checkMmul(firstCopy, secondCopy, 1e-1, 1e-1));
+        assertTrue(first.equals(firstCopy));
+        assertTrue(second.equals(secondCopy));
+
+        assertTrue(CheckUtil.checkMmul(first, second, 1e-1, 1e-1));
+    }
+
+    @Test
+    public void testTADStandard(){
+        INDArray first = CheckUtil.getTensorAlongDimensionMatricesWithShape(3, 4)[0];
+        INDArray second = Nd4j.rand(new int[]{4,2});
+
+        INDArray firstCopy = Shape.toOffsetZeroCopy(first);
+        INDArray secondCopy = Shape.toOffsetZeroCopy(second);
+        assertTrue(CheckUtil.checkMmul(firstCopy, secondCopy, 1e-1, 1e-1));
+        assertTrue(first.equals(firstCopy));
+        assertTrue(second.equals(secondCopy));
+
+        assertTrue(CheckUtil.checkMmul(first, second, 1e-1, 1e-1));
+    }
 
     @Test
     public void testMMulMatrixTimesColVector(){
@@ -1307,7 +1354,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(mmulC.equals(mmulF));
 
         for( int i = 0; i < mmulC.length(); i++ )
-            assertEquals(mmulC.getDouble(i),3.5,1e-1);    //OK
+            assertEquals(mmulC.getDouble(i),3.5, 1e-1);    //OK
         for( int i = 0; i < mmulF.length(); i++)
             assertEquals(mmulF.getDouble(i),3.5,1e-1);    //Exception
     }
@@ -1318,8 +1365,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testMmulGet(){
         Nd4j.getRandom().setSeed(12345L);
-        INDArray elevenByTwo = Nd4j.rand(new int[]{11,2});
-        INDArray twoByEight = Nd4j.rand(new int[]{2,8});
+        INDArray elevenByTwo = Nd4j.rand(new int[]{11, 2});
+        INDArray twoByEight = Nd4j.rand(new int[]{2, 8});
 
         INDArray view = twoByEight.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2));
         INDArray viewCopy = view.dup();
@@ -1341,9 +1388,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray colVectorC = Nd4j.create(new int[]{5, 1}, 'c');
         INDArray rowVectorF = Nd4j.create(new int[]{1, 3}, 'f');
-        for(int i = 0; i < colVectorC.length(); i++ )
+        for(int i = 0; i < colVectorC.length(); i++)
             colVectorC.putScalar(i, 1.0);
-        for(int i = 0 ; i < rowVectorF.length(); i++)
+        for (int i = 0; i < rowVectorF.length(); i++)
             rowVectorF.putScalar(i, 1.0);
         assertTrue(colVec.equals(colVectorC));
         assertTrue(rowVec.equals(rowVectorF));
@@ -1404,24 +1451,24 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     	INDArray[] second = CheckUtil.getAllTestMatricesWithShape(7, 6);
     	for( int i=0; i<first.length; i++ ){
     		for( int j=0; j<second.length; j++ ){
-    			assertTrue(getTestWithOpsErrorMsg(i, j, first[i], second[j]), CheckUtil.checkMmul(first[i], second[j], 1e-6, 1e-15));
+    			assertTrue(getTestWithOpsErrorMsg(i, j, first[i], second[j]), CheckUtil.checkMmul(first[i], second[j], 1e-1, 1e-1));
     		}
     	}
     }
     
     @Test
-    public void testAddSubtractWithOps(){
+    public void testAddSubtractWithOps() {
     	INDArray[] first = CheckUtil.getAllTestMatricesWithShape(5, 7);
     	INDArray[] second = CheckUtil.getAllTestMatricesWithShape(5, 7);
-    	for( int i=0; i<first.length; i++ ){
-    		for( int j=0; j<second.length; j++ ){
-    			assertTrue(getTestWithOpsErrorMsg(i,j,first[i],second[j]),CheckUtil.checkAdd(first[i], second[j], 1e-6, 1e-15));
-                assertTrue(getTestWithOpsErrorMsg(i,j,first[i],second[j]),CheckUtil.checkSubtract(first[i], second[j], 1e-6, 1e-15));
+    	for( int i = 0; i < first.length; i++) {
+    		for( int j = 0; j < second.length; j++) {
+    			assertTrue(getTestWithOpsErrorMsg(i,j,first[i],second[j]),CheckUtil.checkAdd(first[i], second[j], 1e-1, 1e-1));
+                assertTrue(getTestWithOpsErrorMsg(i,j,first[i],second[j]),CheckUtil.checkSubtract(first[i], second[j], 1e-1, 1e-1));
     		}
     	}
     }
 
-    private static String getTestWithOpsErrorMsg(int i, int j, INDArray first, INDArray second){
+    private static String getTestWithOpsErrorMsg(int i, int j, INDArray first, INDArray second) {
         return i + "," + j + "\n" + first + "\n" + second;
     }
 
@@ -1775,7 +1822,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
    @Test
    public void testNdArrayCreation(){
        double delta = 1e-1;
-       INDArray n1 = Nd4j.create(new double[]{0d,1d,2d,3d},new int[]{2,2},'c');
+       INDArray n1 = Nd4j.create(new double[]{0d,1d,2d,3d},new int[]{2,2},0,'c');
        INDArray lv = n1.linearView();
        assertEquals(0d,lv.getDouble(0),delta);
        assertEquals(1d,lv.getDouble(1),delta);

@@ -75,14 +75,15 @@ public class CheckUtil {
 
 	private static boolean checkEntries(RealMatrix rmResult, INDArray result, double maxRelativeDifference, double minAbsDifference){
 		int[] outShape = {rmResult.getRowDimension(),rmResult.getColumnDimension()};
-		for( int i=0; i<outShape[0]; i++ ){
-			for( int j=0; j<outShape[1]; j++ ){
+		for( int i = 0; i < outShape[0]; i++) {
+			for( int j = 0; j < outShape[1]; j++) {
 				double expOut = rmResult.getEntry(i, j);
 				double actOut = result.getDouble(i,j);
-				if(expOut==0.0 && actOut==0.0) continue;
-				double absError = Math.abs(expOut-actOut);
-				double relError = absError / (Math.abs(expOut)+Math.abs(actOut));
-				if(relError > maxRelativeDifference && absError > minAbsDifference ){
+				if(expOut==0.0 && actOut==0.0)
+                    continue;
+				double absError = Math.abs(expOut - actOut);
+				double relError = absError / (Math.abs(expOut) + Math.abs(actOut));
+				if(relError > maxRelativeDifference && absError > minAbsDifference) {
 					System.out.println("Failure on value: ("+i+","+j+" exp="+expOut + ", act="+actOut + ", absError="+absError + ", relError="+relError);
 					return false;
 				}
@@ -108,15 +109,17 @@ public class CheckUtil {
 	 * returned array has been obtained by applying an operation such as transpose, tensorAlongDimension,
 	 * etc to an original array.
 	 */
-	public static INDArray[] getAllTestMatricesWithShape(int rows, int cols){
+	public static INDArray[] getAllTestMatricesWithShape(int rows, int cols) {
 		List<INDArray> all = new ArrayList<>();
 		all.add(getTransposedMatrixWithShape(rows,cols));
 
 		INDArray[] temp = getSubMatricesWithShape(rows,cols);
-		for( int i=0; i<temp.length; i++ ) all.add(temp[i]);
+		for( int i = 0; i<temp.length; i++ )
+			all.add(temp[i]);
 
 		temp = getTensorAlongDimensionMatricesWithShape(rows, cols);
-		for( int i=0; i<temp.length; i++ ) all.add(temp[i]);
+		for(int i = 0; i < temp.length; i++ )
+			all.add(temp[i]);
 
 		all.add(getPermutedWithShape(rows,cols));
 		all.add(getReshapedWithShape(rows,cols));

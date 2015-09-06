@@ -185,7 +185,8 @@ public class Shape {
      * @return the double at the specified index
      */
     public static double getDouble(INDArray arr,int...indices) {
-        return arr.data().getDouble(getOffset(arr.offset(),arr.shape(),arr.stride(),indices));
+        int offset = getOffset(arr.offset(),arr.shape(),arr.stride(),indices);
+        return arr.data().getDouble(offset);
     }
 
 
