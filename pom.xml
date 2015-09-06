@@ -58,7 +58,6 @@
         <canova.version>0.0.0.6-SNAPSHOT</canova.version>
         <nd4j.version>0.4-rc2.2-SNAPSHOT</nd4j.version>
         <spring.version>3.2.5.RELEASE</spring.version>
-
         <failIfNoTests>false</failIfNoTests>
     </properties>
 
