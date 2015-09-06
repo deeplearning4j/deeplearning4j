@@ -382,7 +382,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
-        this(buffer, shape, Nd4j.getStrides(shape), offset);
+        this(buffer, shape, Nd4j.getStrides(shape), offset, Nd4j.order());
+    }
+
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param ordering
+     */
+    public BaseNDArray(DataBuffer buffer, int[] shape, char ordering) {
+        this(buffer, shape, Nd4j.getStrides(shape,ordering), 0, ordering);
     }
 
     /**
