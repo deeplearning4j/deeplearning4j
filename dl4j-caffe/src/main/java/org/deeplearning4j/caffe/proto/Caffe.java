@@ -5343,6 +5343,7 @@ public final class Caffe {
         makeExtensionsImmutable();
       }
     }
+
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return Caffe.internal_static_caffe_NetParameter_descriptor;

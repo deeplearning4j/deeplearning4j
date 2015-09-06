@@ -1,6 +1,7 @@
 package org.deeplearning4j.caffe.translate;
 
 import org.deeplearning4j.caffe.CaffeTestUtil;
+import org.deeplearning4j.caffe.dag.CaffeNode;
 import org.deeplearning4j.caffe.dag.Graph;
 import org.deeplearning4j.caffe.proto.Caffe.NetParameter;
 import org.junit.Test;
@@ -27,7 +28,7 @@ public class CaffeLayerGraphConversionTest {
     @Test
     public void convertImageNetTest() throws Exception {
         NetParameter net = CaffeTestUtil.getImageNetNet();
-        Graph graph = new CaffeLayerGraphConversion(net).convert();
+        Graph<CaffeNode> graph = new CaffeLayerGraphConversion(net).convert();
         System.out.println(graph);
         assertTrue(graph != null);
         System.out.println("Start Nodes: " + graph.getStartNodeSet());

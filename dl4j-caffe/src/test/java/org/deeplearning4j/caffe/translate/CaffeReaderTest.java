@@ -25,7 +25,6 @@ public class CaffeReaderTest extends CaffeTestUtil {
      */
     @Test
     public void testBinaryCaffeModelToJavaClassLogistic() throws Exception {
-
         // Read the Binary File to a Java Class
         NetParameter net = reader.readBinaryNet(getLogisticBinaryNetPath(), 1000);
 
@@ -180,8 +179,6 @@ public class CaffeReaderTest extends CaffeTestUtil {
      */
     @Test
     public void testTextFormatNetProtoToJavaClassImageNet() throws IOException {
-
-
         // Read the Net proto-text File to a Java Class
         NetParameter net = reader.readTextFormatNet(getImageNetTextFormatNetPath());
 
@@ -199,8 +196,6 @@ public class CaffeReaderTest extends CaffeTestUtil {
      */
     @Test
     public void testTextFormatSolverProtoToJavaClassImageNet() throws IOException {
-
-
         // Read the Solver proto-text File to a Java Class
         SolverParameter solver = reader.readTextFormatSolver(getImageNetTextFormatSolverPath());
 

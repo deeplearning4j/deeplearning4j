@@ -85,11 +85,21 @@ public class CaffeNetTranslator {
         }};
     }
 
+
+    /**
+     *
+     */
     public CaffeNetTranslator() {
         populateLayerMapping();
         populateLayerParamMapping();
     }
 
+    /**
+     *
+     * @param fieldName
+     * @param fieldValue
+     * @return
+     */
     public Object convertCaffeValue(String fieldName, Object fieldValue) {
         if (fieldName.equals("kernelSize_")) {
             return new int[]{(Integer) fieldValue, (Integer) fieldValue};
@@ -99,9 +109,7 @@ public class CaffeNetTranslator {
             return new int[]{(Integer) fieldValue, (Integer) fieldValue};
         } else if (fieldName.equals("pool_")) {
             if (fieldValue.equals("STOCHASTIC")) {
-
                 fieldValue = SubsamplingLayer.PoolingType.MAX;
-
             } else if (fieldValue.equals("MAX")) {
                 fieldValue = SubsamplingLayer.PoolingType.MAX;
             } else {
@@ -121,7 +129,7 @@ public class CaffeNetTranslator {
         // Do a breath first search to traverse and convert each node in the graph
         List<CaffeNode> seen = new ArrayList<>();
         Stack<CaffeNode> queue = new Stack<CaffeNode>() {{ add(firstNode); }};
-        ArrayList<org.deeplearning4j.nn.conf.layers.Layer> dl4jLayerList = new ArrayList<>();
+        List<org.deeplearning4j.nn.conf.layers.Layer> dl4jLayerList = new ArrayList<>();
 
         // Execute BFS
         while (!queue.empty()) {
@@ -160,6 +168,13 @@ public class CaffeNetTranslator {
                         }
                     } // End of if (writing DL4J layer parameters
 
+                    if(dl4jLayer instanceof ConvolutionLayer) {
+                        //set the in and out on the layer to be the size of the data
+                        ConvolutionLayer layer = (ConvolutionLayer) dl4jLayer;
+                        layer.setNIn(currentNode.getData().get(0).size(1));
+                        layer.setNOut(currentNode.getData().get(0).size(0));
+                    }
+
                     // Put DL4J layer into a list
                     dl4jLayerList.add(dl4jLayer);
                 }
@@ -174,6 +189,12 @@ public class CaffeNetTranslator {
         return dl4jLayerList;
     }
 
+    /**
+     *
+     * @param net
+     * @param builderContainer
+     * @throws Exception
+     */
     public void translate(NetParameter net, NNCofigBuilderContainer builderContainer)
             throws Exception {
 

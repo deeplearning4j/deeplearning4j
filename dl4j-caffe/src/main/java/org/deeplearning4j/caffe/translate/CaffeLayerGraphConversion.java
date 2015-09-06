@@ -32,9 +32,8 @@ public class CaffeLayerGraphConversion {
 
     protected static Logger log = LoggerFactory.getLogger(CaffeLayerGraphConversion.class);
 
-    NetParameter net;
-    Map<LayerSubType, Map<String, String>> layerParamMapping;
-    Nd4j nd4j = new Nd4j();
+    private NetParameter net;
+    private Map<LayerSubType, Map<String, String>> layerParamMapping;
 
 
     public CaffeLayerGraphConversion(NetParameter net) {
@@ -129,7 +128,7 @@ public class CaffeLayerGraphConversion {
         if (!isSupported(subType)) {
             throw new IllegalArgumentException(
                     String.format("The LayerSubType %s is not " +
-                    "supported or does not exist.", subType));
+                            "supported or does not exist.", subType));
         } else {
             try {
                 LayerSubType.valueOf(subType);
@@ -353,9 +352,9 @@ public class CaffeLayerGraphConversion {
     }
 
     // Converts Net to Caffe Node Graph
-    public Graph convert() throws Exception {
+    public Graph<CaffeNode> convert() throws Exception {
         List<Map<String, List<CaffeNode>>> nodeMapList = convertNetToNodeMapList();
-        Graph graph = convertNodeMapSetToGraph(nodeMapList);
+        Graph<CaffeNode> graph = convertNodeMapSetToGraph(nodeMapList);
         addStartEndNodesToGraph(graph);
         trimGraph(graph);
         return graph;
