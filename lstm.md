@@ -15,19 +15,17 @@ In the case of feedforward networks, input examples are fed to the network and t
 
 A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, it sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. That is, it has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
 
-Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, simple recurrent net proposed by Elman, where *BTSXPE* represents the input example and the current moment, and *Context* represents the output of the previous moment. 
+Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where *BTSXPE* represents the input example and the current moment, and *Context* represents the output of the previous moment. 
 
 ![Alt text](../img/srn_elman.png)
 
-They decision a recurrent net reached at time step t-1 affects the decision it will reach one moment later at time step t. So recurrent networks have two sources of input, the present and the recent past, which combine to determine how they respond to new data, much as in life. 
+The decision a recurrent net reached at time step t-1 affects the decision it will reach one moment later at time step t. So recurrent networks have two sources of input, the present and the recent past, which combine to determine how they respond to new data, much as in life. 
 
-So recurrent networks are distinguished from feedforward networks by that feedback loop, ingesting their own outputs moment after moment as input. 
-
-It is often said that recurrent networks have memory.[*](#*) There is information in the sequence itself, and recurrent nets use it to perform tasks that feedforward networks can't. 
+They are distinguished from feedforward networks by that feedback loop, ingesting their own outputs moment after moment as input. It is often said that recurrent networks have memory.[*](#*) Adding memory to neural networks has a purpose: There is information in the sequence itself, and recurrent nets use it to perform tasks that feedforward networks can't. 
 
 That sequential information is preserved in the recurrent network's hidden state, which manages to span many time steps as it cascades forward to affect the processing of each new example. 
 
-What is human memory but information circulating invisibly within a body, affecting our behavior without revealing its full shape. The English language is full of words the describe the feedback loops of memory. When we say a person is haunted by their deeds, for example, we are simply talking about the consequences that past outputs wreak on present time. The French call this "Le passé qui ne passe pas," or "The past that does not pass away."
+What is human memory but information circulating invisibly within a body, affecting our behavior without revealing its full shape. The English language is full of words the describe the feedback loops of memory. When we say a person is haunted by their deeds, for example, we are simply talking about the consequences that past outputs wreak on present time. The French call this "*Le passé qui ne passe pas*," or "The past that does not pass away."
 
 We'll describe the process of carrying memory forward mathematically:
 
