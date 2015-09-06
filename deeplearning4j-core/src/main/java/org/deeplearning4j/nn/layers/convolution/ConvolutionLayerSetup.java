@@ -1,13 +1,11 @@
 package org.deeplearning4j.nn.layers.convolution;
 
-import javassist.bytecode.analysis.SubroutineScanner;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
-import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  *
@@ -107,28 +105,58 @@ public class ConvolutionLayerSetup {
                 Layer next = conf.getLayerwise().get(i + 1).getLayer();
                 //2d -> 4d
                 if(next instanceof ConvolutionLayer || next instanceof SubsamplingLayer) {
-                    ConvolutionLayer convolutionLayer = (ConvolutionLayer) next;
-                    int inputHeight = lastHeight - convolutionLayer.getKernelSize()[0]  + convolutionLayer.getPadding()[0];
-                    int inputWidth = lastWidth - convolutionLayer.getKernelSize()[1] + convolutionLayer.getPadding()[1];
-                    //set the number of out such that the 2d output of
-                    //this layer match the width and height of the kernel
-                    /**
-                     * We need to either set the number of in channels in the convolution layer
-                     * to be equal to the outs of the dense/output layer
-                     * or we need to set the number of outs
-                     * equal to the kernel width and height.
-                     *
-                     * This allows the user flexibility in how they'd
-                     * like to set the values.
-                     * 
-                     */
-                    if(d.getNOut() > 0) {
+                    if(next instanceof ConvolutionLayer) {
+                        ConvolutionLayer convolutionLayer = (ConvolutionLayer) next;
+                        int inputHeight = lastHeight - convolutionLayer.getKernelSize()[0]  + convolutionLayer.getPadding()[0];
+                        int inputWidth = lastWidth - convolutionLayer.getKernelSize()[1] + convolutionLayer.getPadding()[1];
+                        //set the number of out such that the 2d output of
+                        //this layer match the width and height of the kernel
+                        /**
+                         * We need to either set the number of in channels in the convolution layer
+                         * to be equal to the outs of the dense/output layer
+                         * or we need to set the number of outs
+                         * equal to the kernel width and height.
+                         *
+                         * This allows the user flexibility in how they'd
+                         * like to set the values.
+                         *
+                         */
+                        if(convolutionLayer.getKernelSize() != null){
+                            d.setNOut(inputHeight * inputWidth * convolutionLayer.getNOut());
+                        }
+                        else
+                            throw new IllegalStateException("Unable to infer width and height without convolution layer kernel size");
+                        //set the input pre processor automatically for reshaping
+                        conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(inputHeight,inputWidth,lastOutChannels));
 
                     }
-                    else if(convolutionLayer.getKernelSize() != null){
+                    else if(next instanceof SubsamplingLayer) {
+                        SubsamplingLayer convolutionLayer = (SubsamplingLayer) next;
+                        int inputHeight = lastHeight - convolutionLayer.getKernelSize()[0]  + convolutionLayer.getPadding()[0];
+                        int inputWidth = lastWidth - convolutionLayer.getKernelSize()[1] + convolutionLayer.getPadding()[1];
+                        //set the number of out such that the 2d output of
+                        //this layer match the width and height of the kernel
+                        /**
+                         * We need to either set the number of in channels in the convolution layer
+                         * to be equal to the outs of the dense/output layer
+                         * or we need to set the number of outs
+                         * equal to the kernel width and height.
+                         *
+                         * This allows the user flexibility in how they'd
+                         * like to set the values.
+                         *
+                         */
+                        if(convolutionLayer.getKernelSize() != null){
+                            d.setNOut(inputHeight * inputWidth * lastOutChannels);
+                        }
+                        else
+                            throw new IllegalStateException("Unable to infer width and height without convolution layer kernel size");
+
+                        //set the input pre processor automatically for reshaping
+                        conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(inputHeight,inputWidth,lastOutChannels));
+
 
                     }
-                    d.setNOut(inputHeight * inputWidth * convolutionLayer.getNOut());
 
                 }
             }
@@ -141,6 +169,9 @@ public class ConvolutionLayerSetup {
             //subsampling to cnn
             //subsampling to feedforward
             //feedforward to subsampling
+            //update the output size for a given activation
+            //this allows us to track outputs for automatic setting
+            //of certain values in teh conv net
             if(curr instanceof ConvolutionLayer) {
                 ConvolutionLayer convolutionLayer = (ConvolutionLayer) curr;
                 lastHeight -=  convolutionLayer.getKernelSize()[0] + convolutionLayer.getPadding()[0];
@@ -148,6 +179,10 @@ public class ConvolutionLayerSetup {
                 lastOutChannels = convolutionLayer.getNOut();
 
             }
+            //update the output size for a given
+            //activation
+            //this allows us to track outputs for automatic setting
+            //of certain values in teh conv net
             else if(curr instanceof SubsamplingLayer) {
                 SubsamplingLayer subsamplingLayer = (SubsamplingLayer) curr;
                 lastHeight /= subsamplingLayer.getStride()[0];
@@ -161,6 +196,7 @@ public class ConvolutionLayerSetup {
         if(conf.getLayerwise().get(0).getLayer() instanceof ConvolutionLayer || conf.getLayerwise().get(0).getLayer() instanceof SubsamplingLayer) {
             conf.inputPreProcessor(0,new FeedForwardToCnnPreProcessor(height,width,channels));
         }
+
 
     }
 
