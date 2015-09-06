@@ -55,7 +55,7 @@
         <junit.version>4.12</junit.version>
         <logback.version>1.1.2</logback.version>
         <jackson.version>2.5.1</jackson.version>
-        <canova.version>0.0.0.5</canova.version>
+        <canova.version>0.0.0.6-SNAPSHOT</canova.version>
         <nd4j.version>0.4-rc2.2-SNAPSHOT</nd4j.version>
         <spring.version>3.2.5.RELEASE</spring.version>
 
