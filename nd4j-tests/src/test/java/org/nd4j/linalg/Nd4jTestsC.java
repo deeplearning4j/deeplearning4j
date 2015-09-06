@@ -1246,6 +1246,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+
+    
+
     @Test
     public void testMMulMatrixTimesColVector(){
         //[1 1 1 1 1; 10 10 10 10 10; 100 100 100 100 100] x [1; 1; 1; 1; 1] = [5; 50; 500]
