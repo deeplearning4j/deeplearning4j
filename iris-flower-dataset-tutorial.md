@@ -82,7 +82,7 @@ To create a neural network, we'll declare the variables and then feed them into 
 
 Here's the configuration in full -- we'll step through it line by line below:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:97"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:84"></script>
 
 There's a lot to discuss here. The entire configuration is united in one snippet above, and now we'll go through it one parameter at a time:
 
@@ -174,13 +174,7 @@ A *NeuralNetConfiguration* object is the fundamental object used to construct La
 
 **Line 18** sets the size of the hidden layer(s), measured in the number of nodes each contains, at three. This number can vary layer by layer, and often does. Small numbers of nodes like this are the exception -- in other deep nets, you will see layers with hundreds of nodes, or more. To add hidden layers and set their sizes, you would first increase the number in the list; e.g. .list(5). Then you would add a layer size, the number of nodes per layer, for each additional layer. So for .list(5) you would do something like this .hiddenLayerSizes(3,4,5,6). 
 
-     .override(1, new ConfOverride() {
-        @Override
-        public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-            builder.activationFunction("softmax");
-            builder.layer(new OutputLayer());
-            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-        }
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=84:90"></script>
 
 **Lines 19-25** override the default layer type of RBM to create an output layer that classifies input by Iris label using a multinomial sigmoid classifier called softmax. The loss function for this layer is Monte Carlo cross entropy. 
 
