@@ -162,6 +162,8 @@ networks?](http://arxiv.org/pdf/1411.1792v1.pdf)**; Jason Yosinski, Jeff Clune, 
 **[Learning Phrase Representations using RNN Encoder–Decoder
 for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Cho et al
 
+**[Explorations in Parallel Distributed Processing: A Handbook of Models, Programs, and Exercises](https://web.stanford.edu/group/pdplab/pdphandbook/handbookli1.html)**; James L. McClelland
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
