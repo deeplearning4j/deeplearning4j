@@ -82,33 +82,7 @@ To create a neural network, we'll declare the variables and then feed them into 
 
 Here's the configuration in full -- we'll step through it line by line below:
 
-     log.info("Build model....");
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-            .layer(new RBM()) // NN layer type
-            .nIn(numRows * numColumns) // # input nodes
-            .nOut(outputNum) // # output nodes
-            .seed(seed) 
-            .visibleUnit(RBM.VisibleUnit.GAUSSIAN) 
-            .hiddenUnit(RBM.HiddenUnit.RECTIFIED) 
-            .iterations(iterations) 
-            .weightInit(WeightInit.XAVIER) 
-            .activationFunction("relu") 
-            .l2(2e-4).regularization(true).momentum(0.9).constrainGradientToUnitNorm(true)
-            .k(1) // # contrastive divergence iterations
-            .lossFunction(LossFunctions.LossFunction.RMSE_XENT) 
-            .learningRate(1e-3f) // Backprop step size
-            .optimizationAlgo(OptimizationAlgorithm.LBFGS) 
-            .list(2) // # NN layers (does not count input layer)
-            .hiddenLayerSizes(3) 
-            .override(1, new ConfOverride() {
-                @Override
-                public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                    builder.activationFunction("softmax");
-                    builder.layer(new OutputLayer());
-                    builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-                }
-            }).useDropConnect(true)
-            .build();
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:97"></script>
 
 There's a lot to discuss here. The entire configuration is united in one snippet above, and now we'll go through it one parameter at a time:
 
