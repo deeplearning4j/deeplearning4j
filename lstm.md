@@ -53,6 +53,10 @@ Because the layers and time steps of deep neural networks relate to each other t
 
 Exploding gradients are like the butterfly effect. The smallest change in a distant weight can set off a catastrophic chain of events. But exploding gradients are solved relatively easily, because they can be truncated or squashed, while vanishing gradients can become too small for computers to work with or for networks to learn. 
 
+Below you see the effects of applying a sigmoid function over and over again. The data is flattened until, for large stretches, it has no detectable slope. This is analogous to a gradient vanishing after passing through many layers. 
+
+![Alt text](../img/sigmoid_vanishing_gradient.png)
+
 ## Long Short-Term Memory Units (LSTMs)
 
 In the mid-90s, a variation of recurrent net with so-called Long Short-Term Memory units, or LSTMs, was proposed by the German researchers Sepp Hochreiter and Juergen Schmidhuber as a solution to the vanishing gradient problem. 
