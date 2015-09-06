@@ -148,6 +148,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Map<Integer, Builder> getLayerwise() {
+            return layerwise;
+        }
+
         /**
          * Build the multi layer network
          * based on this neural network and
@@ -263,6 +267,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return ret;
     }
 
+
+    @Data
     public static class Builder implements Cloneable {
         private double rmsDecay = 0.95;
         private double lr = 1e-1f;
@@ -469,5 +475,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             return conf;
         }
+
     }
 }
