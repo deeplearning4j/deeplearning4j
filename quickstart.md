@@ -15,19 +15,17 @@ This Quick Start guide assumes that you have the following already installed:
 3. Maven (Automated build tool)
 4. Github 
  
-If you need to install any of the above, please read how in the [ND4J Getting Started guide](http://nd4j.org/getstarted.html).  (ND4J is the linear-algebra engine powering Deeplearning4j, and the instructions there apply to both projects.) Don't install everything listed on the page, just the software cited above. 
+If you need to install any of the above, please read how in the [ND4J Getting Started guide](http://nd4j.org/getstarted.html).  (ND4J is the linear-algebra engine behind Deeplearning4j, and the instructions there apply to both projects.) Don't install everything listed on the page, just the software listed above. 
 
-We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even some Java programmers are unfamiliar with Maven... If you're feeling anti-social or brashly independent, feel free to lurk and learn.
+We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback. Even if you're feeling anti-social or brashly independent, feel free to lurk and learn.
 
 ## DL4J in a Few Easy Steps
 
-After those installs, if you can follow these steps, you'll be up and running:
-<!--
-1. *git clone* [nd4j](https://github.com/deeplearning4j/nd4j/), [deeplearning4j](https://github.com/deeplearning4j/deeplearning4j/), [canova](https://github.com/deeplearning4j/Canova) and [the examples](https://github.com/deeplearning4j/dl4j-0.4-examples). We are currently on examples version 0.0.4.x.
-2. From your console, run "mvn clean install -DskipTests -Dmaven.javadoc.skip=true" on *each* of those directories
--->
-* Create a new project in IntelliJ with Maven. 
-* Copy and paste to make sure your POM.xml file looks like [this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). (We're on version 0.4.x)
+After those installs, if you can follow these steps, you'll be up and running (Windows users please see the [Walkthrough](#walk) section below):
+
+* Enter `git clone https://github.com/deeplearning4j/dl4j-0.4-examples` in your command line. (We are currently on examples version 0.0.4.x.)
+* Import a new project in IntelliJ with Maven. 
+* Copy and paste to make sure your POM.xml file looks like [this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). 
 * For an easier install, Windows users should replace *nd4j-jblas* with *nd4j-java* in the dependencies. 
 * Select `DBNIrisExample.java` from the lefthand file tree.
 * Hit run! (It's the green button.)
@@ -82,4 +80,28 @@ A [Scala version of the examples is here](https://github.com/kogecoo/dl4j-0.4-ex
 
 ## Next Steps
 
-Once you've run the examples, please visit our [Getting Started page](../gettingstarted.html) to explore further. And remember, DL4J is a multistep install. We highly recommend you join our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) if you have questions or feedback, so we can walk you through it. If you're feeling anti-social or brashly independent, you're still invited to lurk and learn. 
+Once you've run the examples, please visit our [Getting Started page](../gettingstarted.html) to explore further. 
+
+## <a name="walk">Walkthrough</a>
+
+* Type the following into your command line to see if you have Git.
+
+		git --version 
+
+* If you do not, install [git](https://git-scm.herokuapp.com/book/en/v2/Getting-Started-Installing-Git). 
+* In addition, set up a [Github account](https://github.com/join) and download GitHub for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). 
+
+* For Windows, find "Git Bash" in your Startup Menu and open it. The Git Bash terminal should look like cmd.exe.
+
+* `cd` into the directory where you want to place the DL4J examples. You may want to create a new one with `mkdir ddl4j-examples` and then `cd` into that. Then run:
+
+    git clone https://github.com/deeplearning4j/dl4j-0.4-examples
+
+* Make sure the files were downloaded by entering `ls`. 
+* Now open IntelliJ. 
+* Click on the "File" menu, and then on "Import Project" or "New Project from Existing Sources". This will give you a local file menu. 
+* Select the directory that contains the DL4J examples. 
+* In the next window, you will be presented with a choice of build tools. Select Maven. 
+* Check the boxes for "Search for projects recursively" and "Import Maven projects automatically" and click "Next." 
+* Make sure your JDK/SDK is set up, and if it's not, click on the plus sign at the bottom of the SDK window to add it. 
+* Then click through until you are asked to name the project. The default project name should do, so hit "Finish".
