@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -54,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
+import java.lang.Iterable;
 import java.util.*;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
@@ -76,7 +78,7 @@ import static org.nd4j.linalg.util.ArrayUtil.*;
  *
  * @author Adam Gibson
  */
-public abstract class BaseNDArray implements INDArray {
+public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected static final Logger log = LoggerFactory.getLogger(BaseNDArray.class);
@@ -3495,6 +3497,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the flattened version of this array
      */
     @Override
+    // TODO missing return?
     public void sliceVectors(List<INDArray> list) {
 
         if (isVector())
@@ -4296,5 +4299,10 @@ public abstract class BaseNDArray implements INDArray {
 
     protected INDArray create(BaseNDArray baseNDArray) {
         return baseNDArray;
+    }
+
+    @Override
+    public Iterator<Object> iterator() {
+        return new FirstAxisIterator(this);
     }
 }
