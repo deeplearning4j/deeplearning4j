@@ -1829,7 +1829,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 input = layers[i].activate(input, false);
             }
         }
-        
+
         if(inputIs2d && input.rank() == 3 && layers[layers.length-1].type() == Type.RECURRENT){
             //Return 2d output with shape [miniBatchSize,nOut]
             // instead of 3d output with shape [miniBatchSize,nOut,1]
