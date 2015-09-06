@@ -21,16 +21,17 @@
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.Key;
 import java.util.*;
 
 /**
@@ -52,6 +53,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
+    //whether to redistribute params or not
+    protected boolean redistributeParams = false;
 
     /**
      *
@@ -163,9 +166,22 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected BackpropType backpropType = BackpropType.Standard;
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
+        protected boolean redistributeParams = false;
+        
         @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
+
+        /**
+         * Whether to redistribute parameters as a view or not
+         * @param redistributeParams whether to redistribute parameters
+         *                           as a view or not
+         * @return
+         */
+        public Builder redistributeParams(boolean redistributeParams) {
+            this.redistributeParams = redistributeParams;
+            return this;
+        }
 
         /**
          * Specify the processors.
