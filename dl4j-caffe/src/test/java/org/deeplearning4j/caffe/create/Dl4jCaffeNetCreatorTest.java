@@ -1,7 +1,7 @@
 package org.deeplearning4j.caffe.create;
 
 import org.deeplearning4j.caffe.CaffeTestUtil;
-import org.deeplearning4j.caffe.common.NNCofigBuilderContainer;
+import org.deeplearning4j.caffe.common.NNConfigBuilderContainer;
 import org.deeplearning4j.caffe.common.SolverNetContainer;
 import org.deeplearning4j.caffe.dag.CaffeNode;
 import org.deeplearning4j.caffe.dag.Graph;
@@ -25,17 +25,17 @@ public class Dl4jCaffeNetCreatorTest {
         Caffe.SolverParameter solver = container.getSolver();
         Caffe.NetParameter net = container.getNet();
 
-        NNCofigBuilderContainer nnCofigBuilderContainer = new NNCofigBuilderContainer();
+        NNConfigBuilderContainer nnConfigBuilderContainer = new NNConfigBuilderContainer();
 
         // Parse SolverParameter and return wrapper container with solver parsed
-        solverTranslator.translate(solver, nnCofigBuilderContainer);
+        solverTranslator.translate(solver, nnConfigBuilderContainer);
         // Parse NetParameter and return wrapper container with solver parsed
-        netTranslator.translate(net, nnCofigBuilderContainer);
+        netTranslator.translate(net, nnConfigBuilderContainer);
 
 
         Graph<CaffeNode> graph = new CaffeLayerGraphConversion(net).convert();
         DL4jCaffeNetCreator creator = new DL4jCaffeNetCreator();
-        MultiLayerNetwork network = creator.createNet(nnCofigBuilderContainer, graph);
+        MultiLayerNetwork network = creator.createNet(nnConfigBuilderContainer, graph);
     }
 
 }

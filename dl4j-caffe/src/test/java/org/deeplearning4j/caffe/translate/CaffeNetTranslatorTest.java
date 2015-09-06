@@ -1,7 +1,7 @@
 package org.deeplearning4j.caffe.translate;
 
 import org.deeplearning4j.caffe.CaffeTestUtil;
-import org.deeplearning4j.caffe.common.NNCofigBuilderContainer;
+import org.deeplearning4j.caffe.common.NNConfigBuilderContainer;
 import org.deeplearning4j.caffe.common.SolverNetContainer;
 import org.deeplearning4j.caffe.proto.Caffe;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -23,14 +23,14 @@ public class CaffeNetTranslatorTest {
         Caffe.SolverParameter solver = container.getSolver();
         Caffe.NetParameter net = container.getNet();
 
-        NNCofigBuilderContainer nnCofigBuilderContainer = new NNCofigBuilderContainer();
+        NNConfigBuilderContainer nnConfigBuilderContainer = new NNConfigBuilderContainer();
 
         // Parse SolverParameter and return wrapper container with solver parsed
-        solverTranslator.translate(solver, nnCofigBuilderContainer);
+        solverTranslator.translate(solver, nnConfigBuilderContainer);
         // Parse NetParameter and return wrapper container with solver parsed
-        netTranslator.translate(net, nnCofigBuilderContainer);
+        netTranslator.translate(net, nnConfigBuilderContainer);
 
-        MultiLayerConfiguration model = nnCofigBuilderContainer.getListBuilder().build();
+        MultiLayerConfiguration model = nnConfigBuilderContainer.getListBuilder().build();
 
         assertTrue(model != null);
     }
@@ -45,14 +45,14 @@ public class CaffeNetTranslatorTest {
         Caffe.SolverParameter solver = container.getSolver();
         Caffe.NetParameter net = container.getNet();
 
-        NNCofigBuilderContainer nnCofigBuilderContainer = new NNCofigBuilderContainer();
+        NNConfigBuilderContainer nnConfigBuilderContainer = new NNConfigBuilderContainer();
 
         // Parse SolverParameter and return wrapper container with solver parsed
-        solverTranslator.translate(solver, nnCofigBuilderContainer);
+        solverTranslator.translate(solver, nnConfigBuilderContainer);
         // Parse NetParameter and return wrapper container with solver parsed
-        netTranslator.translate(net, nnCofigBuilderContainer);
+        netTranslator.translate(net, nnConfigBuilderContainer);
 
-        MultiLayerConfiguration model = nnCofigBuilderContainer.getListBuilder().build();
+        MultiLayerConfiguration model = nnConfigBuilderContainer.getListBuilder().build();
 
         assertTrue(model != null);
     }

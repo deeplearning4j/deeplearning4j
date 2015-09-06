@@ -2,7 +2,7 @@ package org.deeplearning4j.caffe.translate;
 
 import lombok.Data;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.deeplearning4j.caffe.common.NNCofigBuilderContainer;
+import org.deeplearning4j.caffe.common.NNConfigBuilderContainer;
 import org.deeplearning4j.caffe.dag.CaffeNode;
 import org.deeplearning4j.caffe.dag.CaffeNode.LayerSubType;
 import org.deeplearning4j.caffe.dag.Graph;
@@ -124,12 +124,22 @@ public class CaffeNetTranslator {
     public List<org.deeplearning4j.nn.conf.layers.Layer> makeDL4JLayerList(NetParameter net) throws Exception {
 
         // Convert caffe layers to a graph
-        Graph caffeGraph = new CaffeLayerGraphConversion(net).convert();
+        Graph<CaffeNode> caffeGraph = new CaffeLayerGraphConversion(net).convert();
         final CaffeNode firstNode = (CaffeNode) caffeGraph.getStartNodeSet().toArray()[0];
         // Do a breath first search to traverse and convert each node in the graph
         List<CaffeNode> seen = new ArrayList<>();
         Stack<CaffeNode> queue = new Stack<CaffeNode>() {{ add(firstNode); }};
         List<org.deeplearning4j.nn.conf.layers.Layer> dl4jLayerList = new ArrayList<>();
+        Map<String,List<CaffeNode>> nodes = new HashMap<>();
+        for(CaffeNode node : caffeGraph.getAllNodes()) {
+            List<CaffeNode> nodeListForName = nodes.get(node.getName());
+            if(nodeListForName == null) {
+                nodeListForName = new ArrayList<>();
+                nodes.put(node.getName(),nodeListForName);
+            }
+            nodeListForName.add(node);
+        }
+
 
         // Execute BFS
         while (!queue.empty()) {
@@ -138,10 +148,10 @@ public class CaffeNetTranslator {
             if (!currentNode.getLayerType().equals(CaffeNode.LayerType.CONNECTOR)) {
                 LayerSubType layerSubType = currentNode.getLayerSubType();
                 Map<String, Object> caffeFieldMap = currentNode.getMetaData();
-
+                List<CaffeNode> bottomNodes = currentNode.getBottomNodeList();
                 //TODO: Allow customized WeightInit
 
-                // If layer have associated paramaters
+                // If layer have associated parameters
                 if (layerMapping.containsKey(layerSubType) && layerMapping.get(layerSubType) != null) {
                     // Get DL4J layer from caffe layer
                     org.deeplearning4j.nn.conf.layers.Layer dl4jLayer =
@@ -165,6 +175,9 @@ public class CaffeNetTranslator {
                                     FieldUtils.writeField(dl4jLayer, dl4jFieldName, caffeValue, true);
                                 }
                             }
+                            else {
+                                System.out.println("Unused field " + caffeFieldName);
+                            }
                         }
                     } // End of if (writing DL4J layer parameters
 
@@ -174,6 +187,7 @@ public class CaffeNetTranslator {
                         layer.setNIn(currentNode.getData().get(0).size(1));
                         layer.setNOut(currentNode.getData().get(0).size(0));
                     }
+
 
                     // Put DL4J layer into a list
                     dl4jLayerList.add(dl4jLayer);
@@ -195,7 +209,7 @@ public class CaffeNetTranslator {
      * @param builderContainer
      * @throws Exception
      */
-    public void translate(NetParameter net, NNCofigBuilderContainer builderContainer)
+    public void translate(NetParameter net, NNConfigBuilderContainer builderContainer)
             throws Exception {
 
         List<org.deeplearning4j.nn.conf.layers.Layer> layerList = makeDL4JLayerList(net);

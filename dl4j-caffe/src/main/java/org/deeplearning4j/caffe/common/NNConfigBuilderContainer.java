@@ -10,7 +10,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration.ListBuilder;
  */
 @Data
 @NoArgsConstructor
-public class NNCofigBuilderContainer {
+public class NNConfigBuilderContainer {
     public Builder builder;
     public ListBuilder listBuilder;
 
