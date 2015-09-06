@@ -3260,10 +3260,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray raveled = ravel();
-        return create(raveled.data(), shape, getStrides(shape, order));
-
-
-
+        return raveled.reshape(order,shape);
     }
 
     @Override

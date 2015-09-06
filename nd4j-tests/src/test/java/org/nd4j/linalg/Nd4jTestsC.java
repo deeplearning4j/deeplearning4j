@@ -1216,6 +1216,27 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testGetPermuteReshapeSub(){
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray first = Nd4j.rand(new int[]{10,4});
+
+        //Reshape, as per RnnOutputLayer etc on labels
+        INDArray orig3d = Nd4j.rand(new int[]{2, 4, 15});
+        INDArray subset3d = orig3d.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(5, 10));
+        INDArray permuted = subset3d.permute(0,2,1);
+        int[] newShape = { subset3d.size(0) * subset3d.size(2),subset3d.size(1)};
+        INDArray second = permuted.reshape(newShape);
+
+        assertArrayEquals(first.shape(),second.shape());
+        assertEquals(first.length(),second.length());
+        assertArrayEquals(first.stride(),second.stride());
+
+        first.sub(second);  //Exception
+    }
+
+
+    @Test
     public void testPutAtIntervalIndexWithStride(){
         INDArray n1 = Nd4j.create(3, 3);
         INDArrayIndex[] indices = {NDArrayIndex.interval(0,2,3),NDArrayIndex.all()};
