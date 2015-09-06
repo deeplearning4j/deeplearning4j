@@ -260,24 +260,6 @@ public class ConvolutionLayerTest {
         },new int[]{1,1,2,2,4,4});
     }
 
-    private Gradient createPrevGradient() {
-        int inputWidth = 28;
-        int inputHeight = 28;
-        int[] stride = new int[] {2, 2};
-        int[] padding = new int[] {0,0};
-        int[] kernelSize = new int[] {9, 9};
-        int nChannelsIn = 1;
-        int nExamples = 5;
-        int  featureMapHeight = (inputHeight + padding[0] * 2 - kernelSize[0]) / stride[0] + 1;
-        int  featureMapWidth = (inputWidth + padding[1] * 2 - kernelSize[1]) / stride[1] + 1;
-
-        Gradient gradient = new DefaultGradient();
-        INDArray pseudoGradients = Nd4j.ones(nExamples, nChannelsIn, featureMapHeight, featureMapWidth);
-
-        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, pseudoGradients);
-        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoGradients);
-        return gradient;
-    }
 
 
     //////////////////////////////////////////////////////////////////////////////////
