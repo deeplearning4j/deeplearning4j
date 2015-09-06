@@ -12,7 +12,7 @@ public class CaffeTranslatorUtils {
 
 
     public static <T> Map<String, Map<String, Object>>
-            caffeField2builderField2caffeVal(T caffeInst, Map<String, String> paramMappings)
+    caffeField2builderField2caffeVal(T caffeInst, Map<String, String> paramMappings)
             throws IllegalAccessException{
 
         // Map caffeFieldName(String) to builderFieldName(String) to caffeFieldValue(Object)
@@ -65,8 +65,8 @@ public class CaffeTranslatorUtils {
     }
 
     public static void translation2BuilderFieldBuilderValMap(List<List<Object>> caffeFieldBuilderFieldCaffeValIter,
-                                                            Map<String, Object> builderParamMap,
-                                                            CaffeSpecialTranslator functionInterface) {
+                                                             Map<String, Object> builderParamMap,
+                                                             CaffeSpecialTranslator functionInterface) {
 
         for (List<Object> iter : caffeFieldBuilderFieldCaffeValIter) {
             String caffeField = (String) iter.get(0);

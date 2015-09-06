@@ -1,6 +1,7 @@
 package org.deeplearning4j.caffe.translate;
 
 import org.apache.commons.lang3.text.WordUtils;
+import org.deeplearning4j.caffe.proto.Caffe;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration.Builder;
@@ -79,7 +80,7 @@ public class CaffeSolverTranslator implements CaffeSpecialTranslator {
         builderParamMap.put("minimize", true);
     }
 
-    public void translate(SolverParameter solver, NNCofigBuilderContainer builderContainer)
+    public void translate(Caffe.SolverParameter solver, NNCofigBuilderContainer builderContainer)
             throws IllegalAccessException, NoSuchFieldException {
 
         // The builder should not already be assigned since solver should be the fist one parsed.
