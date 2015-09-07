@@ -3,7 +3,6 @@ package org.nd4j.linalg.lossfunctions;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
@@ -81,7 +80,7 @@ class LossCalculation {
     }
 
 
-    public static INDArray logZ(INDArray z) {
+    private static INDArray logZ(INDArray z) {
         INDArray log = log(z, true);
 
         // log approaches -Infinity as z approaches zero.  Replace -Infinity with the least possible value.
