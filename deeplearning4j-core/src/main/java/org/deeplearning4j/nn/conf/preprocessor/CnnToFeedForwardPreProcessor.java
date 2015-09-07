@@ -30,7 +30,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
- /**A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
+/**A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
  * For example, CNN -> Denselayer <br>
  * This does two things:<br>
  * (b) Reshapes 4d activations out of CNN layer, with shape
@@ -42,26 +42,26 @@ import java.util.Arrays;
  * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
  * @author Adam Gibson
  * @see FeedForwardToCnnPreProcessor for opposite case (i.e., DenseLayer -> CNNetc)
-*/
+ */
 @Data
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
-     private int inputHeight;
-     private int inputWidth;
-     private int numChannels;
+    private int inputHeight;
+    private int inputWidth;
+    private int numChannels;
 
-     /**
-      * @param inputHeight the columns
-      * @param inputWidth the rows
-      * @param numChannels the channels
-      */
+    /**
+     * @param inputHeight the columns
+     * @param inputWidth the rows
+     * @param numChannels the channels
+     */
 
-     @JsonCreator
+    @JsonCreator
     public CnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") int inputHeight,
                                         @JsonProperty("inputWidth") int inputWidth,
                                         @JsonProperty("numChannels") int numChannels) {
-         this.inputHeight = inputHeight;
-         this.inputWidth = inputWidth;
-         this.numChannels = numChannels;
+        this.inputHeight = inputHeight;
+        this.inputWidth = inputWidth;
+        this.numChannels = numChannels;
     }
 
     public CnnToFeedForwardPreProcessor(int inputHeight, int inputWidth) {
@@ -76,13 +76,18 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     // return 2 dimensions
     public INDArray preProcess(INDArray input, Layer layer) {
         int[] otherOutputs = null;
-        this.inputHeight = input.size(-2);
-        this.inputWidth = input.size(-1);
+
+        //this.inputHeight = input.size(-2);
+        //this.inputWidth = input.size(-1);
 
         if(input.shape().length == 2) {
             return input;
-        } else if(input.shape().length == 4) {
-            this.numChannels = input.size(-3);
+        }
+        else if(input.shape().length == 4) {
+            if(input.size(-2) == 1 && input.size(-1) == 1) {
+                return input.reshape(input.size(0), input.size(1));
+            }
+            //this.numChannels = input.size(-3);
             otherOutputs = new int[3];
         }
         else if(input.shape().length == 3) {
@@ -102,13 +107,13 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         return output.reshape(output.size(0), numChannels, inputHeight, inputWidth);
     }
 
-     @Override
-     public CnnToFeedForwardPreProcessor clone() {
-         try {
-             CnnToFeedForwardPreProcessor clone = (CnnToFeedForwardPreProcessor) super.clone();
-             return clone;
-         } catch (CloneNotSupportedException e) {
-             throw new RuntimeException(e);
-         }
-     }
+    @Override
+    public CnnToFeedForwardPreProcessor clone() {
+        try {
+            CnnToFeedForwardPreProcessor clone = (CnnToFeedForwardPreProcessor) super.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
