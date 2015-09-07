@@ -47,13 +47,13 @@ Like most neural networks, recurrent nets are old. By the early 1990s, the vanis
 
 Recurrent nets seeking to establish connections between an output and events many time steps away were hobbled, because it was very difficult to know how much importance to accord to remote inputs. Information flowing through neural nets passes through many stages of multiplication. 
 
-Anyone who has ever studied compound interest knows that any quantity multiplied frequently over time can become immeasurably large, and the inverse is also true. 
+Everyone who has studied compound interest knows that any quantity multiplied frequently by an amount greater than one can become immeasurably large (indeed, that mathematical truth underpins network effects and social inequalities). But its inverse, multiplying by a quantity less than one, is also true.
 
-Because the layers and time steps of deep neural networks relate to each other through multiplication, some derivatives are susceptible to vanishing, or exploding. 
+Because the layers and time steps of deep neural networks relate to each other through multiplication, derivatives are susceptible to vanishing or exploding. 
 
-Exploding gradients are like the butterfly effect. The smallest change in a distant weight can set off a catastrophic chain of events. But exploding gradients are solved relatively easily, because they can be truncated or squashed, while vanishing gradients can become too small for computers to work with or for networks to learn. 
+Exploding gradients treat every weight as though it were the butterfly flapping its wings, which will cause a distant hurricane. Those weights' gradients become saturated on the high end; they are presumed to be too powerful. But exploding gradients can be solved relatively easily, because they can be truncated or squashed, while vanishing gradients can become too small for computers to work with or for networks to learn. 
 
-Below you see the effects of applying a sigmoid function over and over again. The data is flattened until, for large stretches, it has no detectable slope. This is analogous to a gradient vanishing after passing through many layers. 
+Below you see the effects of applying a sigmoid function over and over again. The data is flattened until, for large stretches, it has no detectable slope. This is analogous to a gradient vanishing as it passes through many layers. 
 
 ![Alt text](../img/sigmoid_vanishing_gradient.png)
 
