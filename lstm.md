@@ -13,7 +13,9 @@ To understand them, first you have to understand the basics of feedforward nets.
 
 In the case of feedforward networks, input examples are fed to the network and transformed into an output; in the case of supervised learning, the output is a label. That is, they map raw data to categories, recognizing patterns that signal, for example, that an input image should be labeled "cat" or "elephant." 
 
-A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, it sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. That is, it has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
+A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, it sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. 
+
+That is, it has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
 
 Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where *BTSXPE* represents the input example and the current moment, and *Context* represents the output of the previous moment. 
 
