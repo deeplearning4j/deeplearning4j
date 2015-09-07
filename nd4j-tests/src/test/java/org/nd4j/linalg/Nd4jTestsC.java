@@ -1253,50 +1253,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(expected, n1);
     }
 
-
-
-    @Test
-    public void testTransposeGet(){
-        INDArray first = CheckUtil.getTransposedMatrixWithShape(3, 4);
-        INDArray second = CheckUtil.getTensorAlongDimensionMatricesWithShape(4, 2)[0];
-
-        INDArray firstCopy = Shape.toOffsetZeroCopy(first);
-        INDArray secondCopy = Shape.toOffsetZeroCopy(second);
-        assertTrue(CheckUtil.checkMmul(firstCopy, secondCopy, 1e-6, 1e-1));
-        assertTrue(first.equals(firstCopy));
-        assertTrue(second.equals(secondCopy));
-
-        assertTrue(CheckUtil.checkMmul(first, second, 1e-1, 1e-1));
-    }
-
-    @Test
-    public void testTransposePermute(){
-        INDArray first = CheckUtil.getTransposedMatrixWithShape(3, 4);
-        INDArray second = CheckUtil.getPermutedWithShape(4,2);
-
-        INDArray firstCopy = Shape.toOffsetZeroCopy(first);
-        INDArray secondCopy = Shape.toOffsetZeroCopy(second);
-        assertTrue(CheckUtil.checkMmul(firstCopy, secondCopy, 1e-1, 1e-1));
-        assertTrue(first.equals(firstCopy));
-        assertTrue(second.equals(secondCopy));
-
-        assertTrue(CheckUtil.checkMmul(first, second, 1e-1, 1e-1));
-    }
-
-    @Test
-    public void testTADStandard(){
-        INDArray first = CheckUtil.getTensorAlongDimensionMatricesWithShape(3, 4)[0];
-        INDArray second = Nd4j.rand(new int[]{4,2});
-
-        INDArray firstCopy = Shape.toOffsetZeroCopy(first);
-        INDArray secondCopy = Shape.toOffsetZeroCopy(second);
-        assertTrue(CheckUtil.checkMmul(firstCopy, secondCopy, 1e-1, 1e-1));
-        assertTrue(first.equals(firstCopy));
-        assertTrue(second.equals(secondCopy));
-
-        assertTrue(CheckUtil.checkMmul(first, second, 1e-1, 1e-1));
-    }
-
     @Test
     public void testMMulMatrixTimesColVector(){
         //[1 1 1 1 1; 10 10 10 10 10; 100 100 100 100 100] x [1; 1; 1; 1; 1] = [5; 50; 500]
@@ -1443,33 +1399,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray outCF = rowVectorF.mmul(colVectorC);
         assertArrayEquals(outCF.shape(),new int[]{1,1});
         assertTrue(outCF.equals(Nd4j.ones(1, 1).muli(5)));
-    }
-    
-    @Test
-    public void testMmulWithOps(){
-    	INDArray[] first = CheckUtil.getAllTestMatricesWithShape(5, 7);
-    	INDArray[] second = CheckUtil.getAllTestMatricesWithShape(7, 6);
-    	for( int i=0; i<first.length; i++ ){
-    		for( int j=0; j<second.length; j++ ){
-    			assertTrue(getTestWithOpsErrorMsg(i, j, first[i], second[j]), CheckUtil.checkMmul(first[i], second[j], 1e-1, 1e-1));
-    		}
-    	}
-    }
-    
-    @Test
-    public void testAddSubtractWithOps() {
-    	INDArray[] first = CheckUtil.getAllTestMatricesWithShape(5, 7);
-    	INDArray[] second = CheckUtil.getAllTestMatricesWithShape(5, 7);
-    	for( int i = 0; i < first.length; i++) {
-    		for( int j = 0; j < second.length; j++) {
-    			assertTrue(getTestWithOpsErrorMsg(i,j,first[i],second[j]),CheckUtil.checkAdd(first[i], second[j], 1e-1, 1e-1));
-                assertTrue(getTestWithOpsErrorMsg(i,j,first[i],second[j]),CheckUtil.checkSubtract(first[i], second[j], 1e-1, 1e-1));
-    		}
-    	}
-    }
-
-    private static String getTestWithOpsErrorMsg(int i, int j, INDArray first, INDArray second) {
-        return i + "," + j + "\n" + first + "\n" + second;
     }
 
     @Test
