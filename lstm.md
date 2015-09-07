@@ -60,6 +60,10 @@ Because this feedback loop occurs at every time step in the series, each hidden 
 
 Given a series of letters, a recurrent *will* use the first character to help determine its perception of the second character, such that an initial `q` might lead it to infer that the next letter will be `u`, while an initial `t` might lead it to infer that the next letter will be `h`.
 
+Since recurrent nets span time, they are probably best illustrated with animation:
+
+![Imgur](http://i.imgur.com/6Uak4vF.gifv)
+
 ## <a name="backpropagation">Backpropagation Through Time (BPTT)</a>
 
 Remember, the purpose of recurrent nets is to accurately classify sequential input. We rely on the backpropagation of error and gradient descent to do so. 
