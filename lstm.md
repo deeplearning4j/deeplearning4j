@@ -30,7 +30,7 @@ In the case of feedforward networks, input examples are fed to the network and t
 
 ![Alt text](../img/feedforward_rumelhart.png)
 
-A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, or weights, the network sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. 
+A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, or weights, the network sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. Seeing photograph of a cat will not push to next perceive an elephant. 
 
 That is, it has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
 
@@ -56,7 +56,9 @@ The hidden state at time step t is `h_t`. It is a function of the input at the s
 
 The sum of the weight input and hidden state is squashed by the function `φ` -- either a logistic sigmoid function or tanh, depending -- which is a standard tool for condensing very large or very small values into a logistic space, as well as making gradients workable for backpropagation. 
 
-Because this feedback loop occurs at every time step in the series, each hidden state contains traces not only of the previous hidden state, but also of all those that preceded h_t-1 for as long as memory can persist.
+Because this feedback loop occurs at every time step in the series, each hidden state contains traces not only of the previous hidden state, but also of all those that preceded `h_t-1` for as long as memory can persist.
+
+Given a series of letters, a recurrent *will* use the first character to help determine its perception of the second character, such that an initial `q` might lead it to infer that the next letter will be `u`, while an initial `t` might lead it to infer that the next letter will be `h`.
 
 ## <a name="backpropagation">Backpropagation Through Time (BPTT)</a>
 
