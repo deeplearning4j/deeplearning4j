@@ -5,6 +5,17 @@ layout: default
 
 # A Beginner's Guide to Recurrent Networks and LSTMs
 
+Contents
+
+* [Feedforward Networks](#feedforward)
+* [Recurrent Networks](#recurrent)
+* [Backpropagation Through Time](#backpropagation)
+* [Vanishing and Exploding Gradients](#vanishing)
+* [Long Short-Term Memory Units (LSTMs)](#long)
+* [Capturing Diverse Time Scales](#capturing)
+* [Code Sample & Comments](#code)
+* [Resources](#resources)
+
 The purpose of this post is to give students of neural networks an intuition about the functioning of recurrent networks and purpose and structure of a prominent variation, LSTMs.
 
 Recurrent nets are a type of artificial neural network designed to recognize patterns in sequences of data, such as text, handwriting, the spoken word, or numerical times series data emanating from sensors, stock markets and government agencies.
