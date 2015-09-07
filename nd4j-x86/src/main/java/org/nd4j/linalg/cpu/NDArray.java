@@ -309,6 +309,10 @@ public class NDArray extends BaseNDArray {
         super(buffer, shape, offset);
     }
 
+    public NDArray(DataBuffer buffer, int[] shape, char ordering) {
+        super(buffer, shape, ordering);
+    }
+
     public NDArray(double[] data, int[] shape, char ordering) {
         super(data, shape, ordering);
     }

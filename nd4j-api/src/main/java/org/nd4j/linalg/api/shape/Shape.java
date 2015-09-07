@@ -185,7 +185,8 @@ public class Shape {
      * @return the double at the specified index
      */
     public static double getDouble(INDArray arr,int...indices) {
-        return arr.data().getDouble(getOffset(arr.offset(),arr.shape(),arr.stride(),indices));
+        int offset = getOffset(arr.offset(),arr.shape(),arr.stride(),indices);
+        return arr.data().getDouble(offset);
     }
 
 
@@ -789,7 +790,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(INDArray arr,int index) {
-        return ind2sub(arr.shape(), index, arr.length());
+        return ind2sub(arr.shape(), index, ArrayUtil.prod(arr.shape()));
     }
 
 
@@ -893,7 +894,7 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2subC(INDArray arr,int index) {
-        return ind2subC(arr.shape(), index, arr.length());
+        return ind2subC(arr.shape(), index, ArrayUtil.prod(arr.shape()));
     }
 
     /**

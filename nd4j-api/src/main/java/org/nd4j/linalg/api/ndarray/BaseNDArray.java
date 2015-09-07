@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
+import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -43,10 +44,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
-import org.nd4j.linalg.indexing.SpecifiedIndex;
+import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -57,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
+import java.lang.Iterable;
 import java.util.*;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
@@ -79,7 +78,7 @@ import static org.nd4j.linalg.util.ArrayUtil.*;
  *
  * @author Adam Gibson
  */
-public abstract class BaseNDArray implements INDArray {
+public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected static final Logger log = LoggerFactory.getLogger(BaseNDArray.class);
@@ -383,7 +382,17 @@ public abstract class BaseNDArray implements INDArray {
      * @param offset
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, int offset) {
-        this(buffer, shape, Nd4j.getStrides(shape), offset);
+        this(buffer, shape, Nd4j.getStrides(shape), offset, Nd4j.order());
+    }
+
+    /**
+     *
+     * @param buffer
+     * @param shape
+     * @param ordering
+     */
+    public BaseNDArray(DataBuffer buffer, int[] shape, char ordering) {
+        this(buffer, shape, Nd4j.getStrides(shape,ordering), 0, ordering);
     }
 
     /**
@@ -1016,10 +1025,10 @@ public abstract class BaseNDArray implements INDArray {
             return this;
         }
 
-        if(ordering == 'c' && length() == data().length()) {
-            data.put(offset + i,value);
-            return this;
-        }
+//        if(ordering == 'c' && length() == data().length()) {
+//            data.put(offset + i,value);
+//            return this;
+//        }
 
         if(isRowVector())
             return putScalar(new int[]{0,i},value);
@@ -1367,7 +1376,7 @@ public abstract class BaseNDArray implements INDArray {
      */
     @Override
     public double getDouble(int... indices) {
-        return Shape.getDouble(this,indices);
+        return Shape.getDouble(this, indices);
     }
 
     /**
@@ -1651,7 +1660,10 @@ public abstract class BaseNDArray implements INDArray {
 
     @Override
     public INDArray put(INDArrayIndex[] indices, Number element) {
-        return put(indices, createScalar(element.doubleValue()));
+        INDArray get = get(indices);
+        for(int i = 0; i < get.length(); i++)
+            get.putScalar(i,element.doubleValue());
+        return this;
     }
 
 
@@ -3104,9 +3116,9 @@ public abstract class BaseNDArray implements INDArray {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
 
-        if(ordering == 'c' && length() == data().length()) {
-            return data.getDouble(offset + i);
-        }
+//        if(ordering == 'c' && length() == data().length()) {
+//            return data.getDouble(offset + i);
+//        }
 
         int[] dimensions = ordering == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions,shape());
@@ -3260,10 +3272,7 @@ public abstract class BaseNDArray implements INDArray {
         }
 
         INDArray raveled = ravel();
-        return create(raveled.data(), shape, getStrides(shape, order));
-
-
-
+        return raveled.reshape(order,shape);
     }
 
     @Override
@@ -3498,6 +3507,7 @@ public abstract class BaseNDArray implements INDArray {
      * @return the flattened version of this array
      */
     @Override
+    // TODO missing return?
     public void sliceVectors(List<INDArray> list) {
 
         if (isVector())
@@ -4299,5 +4309,10 @@ public abstract class BaseNDArray implements INDArray {
 
     protected INDArray create(BaseNDArray baseNDArray) {
         return baseNDArray;
+    }
+
+    @Override
+    public Iterator<Object> iterator() {
+        return new FirstAxisIterator(this);
     }
 }
