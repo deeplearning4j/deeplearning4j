@@ -22,6 +22,8 @@ Recurrent nets are a type of artificial neural network designed to recognize pat
 
 They are arguably the most powerful type of neural network, applicable even to images, which can be decomposed into a series of patches and treated as a sequence. 
 
+Since recurrent networks possess a certain type of memory, and memory is also part of the human condition, we'll make repeated analogies to memory in the brain.
+
 ## <a name="feedforward">Review of Feedforward Networks</a>
 
 To understand recurrent nets, first you have to understand the basics of [feedforward nets](../restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed by the nodes of the network. One feeds information straight through, the other cycles it through a loop.
