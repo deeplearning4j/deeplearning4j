@@ -138,7 +138,9 @@ If this human is also a diligent daughter, then maybe we can construct a familia
 
 Other data is like that. Music is polyrhythmic. Text contains recurrent themes at varying intervals. Stock markets and economies experience jitters within longer waves. They operate simultaneously on different time scales that LSTMs can capture. 
 
-A gated recurrent unit (GRU) is simply an LSTM without an output gate, which therefore fully writes the contents from its memory cell to the larger net at each time step. 
+### Gated Recurrent Units (GRUs)
+
+A gated recurrent unit (GRU) is basically an LSTM without an output gate, which therefore fully writes the contents from its memory cell to the larger net at each time step. 
 
 ![Alt text](../img/lstm_gru.png)
 
