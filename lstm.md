@@ -104,7 +104,7 @@ The diagram below illustrates how data flows through a memory cell and is contro
 
 ![Alt text](../img/gers_lstm.png)
 
-There are a lot of moving parts here, so if you are new to LSTMs, don't rush this diagram -- contemplate it for a few minutes. 
+There are a lot of moving parts here, so if you are new to LSTMs, don't rush this diagram -- contemplate it. After a few minutes, it will begin to reveal its secrets. 
 
 Starting from the bottom, the triple arrows show where information flows into the cell at multiple points. That combination of present input and past cell state is fed not only to the cell itself, but also to each of its three gates, which will decide how the input will be handled. 
 
