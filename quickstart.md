@@ -32,6 +32,8 @@ After those installs, if you can follow these steps, you'll be up and running (W
 
 You should get an F1 score of about 0.66, which is good for a small dataset like Iris. For a line by line walkthrough of the example, please refer to our [Iris DBN tutorial](../iris-flower-dataset-tutorial.html).
 
+If you have trouble, the first thing you should check is your POM.xml file, which should [look like this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). Please do not use the SNAPSHOT examples. 
+
 ## Dependencies and Backends
 
 Backends are what power the linear algebra operations behind DL4J's neural nets. Backends vary by chip. CPUs work fastest with both Jblas and Netlib Blas; GPUs with Jcublas. You can find all backends on [Maven Central](https://search.maven.org); click the linked version number under "Latest Version"; copy the dependency code on the left side of the subsequent screen; and paste it into your project root's pom.xml in IntelliJ. 
