@@ -31,7 +31,7 @@ public class SubsamplingLayer extends Layer {
     }
 
     private SubsamplingLayer(Builder builder) {
-    	super(builder);
+        super(builder);
         this.poolingType = builder.poolingType;
         if(builder.kernelSize.length != 2)
             throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
@@ -55,7 +55,7 @@ public class SubsamplingLayer extends Layer {
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
         private PoolingType poolingType = PoolingType.MAX;
-        private int[] kernelSize = new int[] {2, 2}; // Same as filter size from the last conv layer
+        private int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
         private int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
         private int[] padding = new int[] {0, 0};
 
@@ -74,6 +74,10 @@ public class SubsamplingLayer extends Layer {
             this.kernelSize = kernelSize;
             this.stride = stride;
             this.padding = padding;
+        }
+
+        public Builder(int[] stride) {
+            this(new int[]{1,1},stride);
         }
 
         public Builder(int[] kernelSize, int[] stride) {
