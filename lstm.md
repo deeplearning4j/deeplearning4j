@@ -58,6 +58,8 @@ The sum of the weight input and hidden state is squashed by the function `φ` --
 
 Because this feedback loop occurs at every time step in the series, each hidden state contains traces not only of the previous hidden state, but also of all those that preceded `h_t-1` for as long as memory can persist.
 
+![Alt text](../img/two_time_steps.png)
+
 Given a series of letters, a recurrent *will* use the first character to help determine its perception of the second character, such that an initial `q` might lead it to infer that the next letter will be `u`, while an initial `t` might lead it to infer that the next letter will be `h`.
 
 ## <a name="backpropagation">Backpropagation Through Time (BPTT)</a>
@@ -147,6 +149,7 @@ A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.
 * [Modeling Sequences With RNNs and LSTMs](https://class.coursera.org/neuralnets-2012-001/lecture/77); Geoff Hinton
 * [The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/); Andrej Karpathy
 * [Understanding LSTMs](https://colah.github.io/posts/2015-08-Understanding-LSTMs/); Christopher Olah
+* [Backpropagation Through Time: What It Does and How to Do It](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf); Paul Werbos
 
 ### Footnotes
 
