@@ -45,7 +45,7 @@ public class DefaultGradient implements Gradient {
         List<INDArray> ret = new ArrayList<>();
         for(String s : order) {
             if(!gradientForVariable().containsKey(s))
-                throw new IllegalStateException("Illegal key " + s + " no gradient with key found");
+               continue;
             ret.add(gradientForVariable().get(s));
         }
         return Nd4j.toFlattened(ret);
