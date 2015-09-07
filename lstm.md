@@ -36,11 +36,11 @@ That is, it has no notion of order in time, and the only input it considers is t
 
 ## <a name="recurrent">Recurrent Networks</a>
 
-Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where *BTSXPE* represents the input example and the current moment, and *Context* represents the output of the previous moment. 
+Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where the *BTSXPE* at the bottom of the drawing represents the input example in the current moment, and *Context* represents the output of the previous moment. 
 
 ![Alt text](../img/srn_elman.png)
 
-The decision a recurrent net reached at time step t-1 affects the decision it will reach one moment later at time step t. So recurrent networks have two sources of input, the present and the recent past, which combine to determine how they respond to new data, much as in life. 
+The decision a recurrent net reached at time step `t-1` affects the decision it will reach one moment later at time step `t`. So recurrent networks have two sources of input, the present and the recent past, which combine to determine how they respond to new data, much as in life. 
 
 They are distinguished from feedforward networks by that feedback loop, ingesting their own outputs moment after moment as input. It is often said that recurrent networks have memory.[1](#one) Adding memory to neural networks has a purpose: There is information in the sequence itself, and recurrent nets use it to perform tasks that feedforward networks can't. 
 
