@@ -106,7 +106,7 @@ The diagram below illustrates how data flows through a memory cell and is contro
 
 There are a lot of moving parts here, so if you are new to LSTMs, don't rush this diagram -- contemplate it for a few minutes. 
 
-The triple arrows show where data flows into the cell at multiple points. That combination of present input and past cell state is fed not only to the cell itself, but also to each of its three gates, which will decide how the input will be handled. 
+Starting from the bottom, the triple arrows show where information flows into the cell at multiple points. That combination of present input and past cell state is fed not only to the cell itself, but also to each of its three gates, which will decide how the input will be handled. 
 
 The black dots are the gates themselves, which determine respectively whether to let new input in, erase the present cell state, and/or let that state impact the networks output at the present time step. S_c is the current state of the memory cell, and g_y_in is the current input to it. Remember that each gate can be open or shut. The cell can forget its state, or not; be written to, or not; and be read from, or not, at each time step, and those flows are represented here. 
 
