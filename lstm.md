@@ -98,7 +98,7 @@ A gated recurrent unit (GRU) is simply an LSTM without an output gate, which the
 
 ## Code Sample
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java?slice=48:218"></script>
+A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java), implemented with Deeplearning4j, can be found here. 
 
 ### Resources
 * [Gated Feedback Recurrent Neural Networks](http://arxiv.org/pdf/1502.02367v4.pdf)
