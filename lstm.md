@@ -120,6 +120,10 @@ The black dots are the gates themselves, which determine respectively whether to
 
 The large bold letters give us the result of each operation. 
 
+Here's another diagram for good measure, comparing a simple recurrent network (right) to an LSTM cell. The blue lines can be ignored, the notes are helpful. 
+
+![Alt text](../img/greff_lstm_diagram.png)
+
 It's important to note that LSTMs' memory cells, give different roles to addition and multiplication in the transformation of input. The **plus sign** above is essentially the secret of LSTMs. Stupidly simple as it may seem, this basic change helps them preserve a constant error when it must be backpropagated at depth. Instead of determining the subsequent cell state by multiplying its current state with new input, they add the two, and that quite literally makes the difference. (The forget gate still relies on multiplication, of course.)
 
 Different sets of weights filter the input for input, output and forgetting. The forget gate is represented as a linear identity function, because if the gate is open, the current state of the memory cell is simply multiplied by one, to propagate forward one more time step. 
