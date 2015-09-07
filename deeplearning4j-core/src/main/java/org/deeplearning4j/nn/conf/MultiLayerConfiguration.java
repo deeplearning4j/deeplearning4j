@@ -156,6 +156,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return inputPreProcessors.get(curr);
     }
 
+    @Data
     public static class Builder {
 
         protected List<NeuralNetConfiguration> confs = new ArrayList<>();
@@ -283,50 +284,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
         }
 
-        @Override
-        public String toString() {
-            return "Builder{" +
-                    "confs=" + confs +
-                    ", pretrain=" + pretrain +
-                    ", dampingFactor=" + dampingFactor +
-                    '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Builder)) return false;
-
-            Builder builder = (Builder) o;
-
-            return Double.compare(builder.dampingFactor, dampingFactor) == 0
-                    && pretrain == builder.pretrain
-                    && !(confs != null ? !confs.equals(builder.confs) : builder.confs != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result;
-            long temp;
-            result = confs != null ? confs.hashCode() : 0;
-            result = 31 * result + (pretrain ? 1 : 0);
-            temp = Double.doubleToLongBits(dampingFactor);
-            result = 31 * result + (int) (temp ^ (temp >>> 32));
-            return result;
-        }
-
-        @Deprecated
-        public Builder override(ConfOverride override) {
-            confOverrides.put(confOverrides.size(),override);
-            return this;
-        }
-
-        @Deprecated
-        public Builder override(int layer,ConfOverride override) {
-            confOverrides.put(layer,override);
-            return this;
-        }
 
     }
 }
