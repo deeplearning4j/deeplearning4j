@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
@@ -21,11 +22,73 @@ public class ConvolutionLayerSetupTest {
     @Test
     public void testConvolutionLayerSetup() {
         MultiLayerConfiguration.Builder builder = inComplete();
-        ConvolutionLayerSetup setup = new ConvolutionLayerSetup(builder,28,28,1);
+        new ConvolutionLayerSetup(builder,28,28,1);
         MultiLayerConfiguration completed = complete().build();
         MultiLayerConfiguration test = builder.build();
         assertEquals(completed,test);
 
+    }
+
+    @Test
+    public void testMnistLenet() {
+        MultiLayerConfiguration mnistAssertion = mnistLenet();
+        ConvolutionLayer firstLayer = (ConvolutionLayer) mnistAssertion.getConf(0).getLayer();
+        assertEquals(1, firstLayer.getNIn());
+        assertEquals(6, firstLayer.getNOut());
+        assertArrayEquals(new int[]{5, 5}, firstLayer.getKernelSize());
+        assertArrayEquals(new int[]{0, 0}, firstLayer.getPadding());
+        assertArrayEquals(new int[]{1,1}, firstLayer.getStride());
+        OutputLayer o = (OutputLayer) mnistAssertion.getConf(4).getLayer();
+        assertEquals(500,o.getNIn());
+
+        MultiLayerConfiguration.Builder incomplete = incompleteMnistLenet();
+        new ConvolutionLayerSetup(incomplete,28,28,1);
+        MultiLayerConfiguration testConf = incomplete.build();
+
+        ConvolutionLayer firstLayerConv = (ConvolutionLayer) testConf.getConf(0).getLayer();
+        assertEquals(1,firstLayerConv.getNIn());
+        assertEquals(6, firstLayerConv.getNOut());
+        assertArrayEquals(new int[]{1,1}, firstLayerConv.getStride());
+        assertArrayEquals(new int[]{5, 5}, firstLayerConv.getKernelSize());
+
+        SubsamplingLayer firstSubSampling = (SubsamplingLayer) testConf.getConf(1).getLayer();
+        assertArrayEquals(new int[]{2,2},firstSubSampling.getStride());
+
+        ConvolutionLayer secondLayerConv = (ConvolutionLayer) testConf.getConf(2).getLayer();
+        assertEquals(6,secondLayerConv.getNIn());
+
+
+        OutputLayer finalLayer = (OutputLayer) testConf.getConf(4).getLayer();
+        assertEquals(150,finalLayer.getNIn());
+
+    }
+
+    public MultiLayerConfiguration.Builder incompleteMnistLenet() {
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .list(5)
+                .layer(0,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(6)
+                        .build())
+                .layer(1,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5,5},new int[]{2,2}).build())
+                .layer(2,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(6)
+                        .build())
+                .layer(3,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5,5},new int[]{2,2}).build())
+                .layer(4,new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10).build());
+        return builder;
+    }
+
+    public MultiLayerConfiguration mnistLenet() {
+        MultiLayerConfiguration builder = new NeuralNetConfiguration.Builder()
+                .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .list(5)
+                .layer(0,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(6)
+                        .build())
+                .layer(1,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5,5},new int[]{2,2}).build())
+                .layer(2,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(6)
+                        .build())
+                .layer(3,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5,5},new int[]{2,2}).build())
+                .layer(4,new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(500).nOut(10).build()).build();
+        return builder;
     }
 
     public MultiLayerConfiguration.Builder inComplete() {
