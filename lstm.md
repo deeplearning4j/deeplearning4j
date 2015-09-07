@@ -62,7 +62,7 @@ Given a series of letters, a recurrent *will* use the first character to help de
 
 Since recurrent nets span time, they are probably best illustrated with animation:
 
-<iframe src="https://i.imgur.com/6Uak4vF.gifv" width="100%" height="650px;" style="border:none;"></iframe>
+<iframe src="https://i.imgur.com/6Uak4vF.gifv" width="100%" height="630px;" style="border:none;"></iframe>
 
 ## <a name="backpropagation">Backpropagation Through Time (BPTT)</a>
 
