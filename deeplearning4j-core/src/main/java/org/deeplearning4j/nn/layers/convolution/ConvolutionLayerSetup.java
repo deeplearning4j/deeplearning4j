@@ -35,6 +35,7 @@ public class ConvolutionLayerSetup {
     private  int lastHeight = -1;
     private  int lastWidth = -1;
     private  int lastOutChannels = -1;
+    private int numLayers = -1;
 
     /**
      * Take in the configuration
@@ -48,7 +49,6 @@ public class ConvolutionLayerSetup {
         lastWidth = width;
         lastOutChannels = channels;
 
-        int numLayers = -1;
         if(conf instanceof NeuralNetConfiguration.ListBuilder) {
             NeuralNetConfiguration.ListBuilder listBuilder = (NeuralNetConfiguration.ListBuilder) conf;
             numLayers = listBuilder.getLayerwise().size();
@@ -65,14 +65,15 @@ public class ConvolutionLayerSetup {
                 if(next instanceof FeedForwardLayer) {
                     //set the feed forward wrt the out channels of the current convolution layer
                     //set the rows and columns (height/width) wrt the kernel size of the current layer
-                    conf.inputPreProcessor(i,new CnnToFeedForwardPreProcessor(
+                    conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
                             convolutionLayer.getKernelSize()[0]
                             ,convolutionLayer.getKernelSize()[1],convolutionLayer.getNOut()));
                     //set the number of inputs wrt the current convolution layer
                     FeedForwardLayer o = (FeedForwardLayer) next;
                     //need to infer nins from first input size
-                    int outRows = lastHeight - convolutionLayer.getKernelSize()[0] + convolutionLayer.getPadding()[0];
-                    int outCols = lastWidth - convolutionLayer.getKernelSize()[1] + convolutionLayer.getPadding()[1];
+                    int[] outWidthAndHeight = getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, convolutionLayer.getKernelSize(), convolutionLayer.getPadding(), convolutionLayer.getStride());
+                    int outRows = outWidthAndHeight[0];
+                    int outCols = outWidthAndHeight[1];
                     int nIn = outCols * outRows * convolutionLayer.getNOut();
                     o.setNIn(nIn);
 
@@ -101,16 +102,19 @@ public class ConvolutionLayerSetup {
                 if(next instanceof FeedForwardLayer) {
                     //set the feed forward wrt the out channels of the current convolution layer
                     //set the rows and columns (height/width) wrt the kernel size of the current layer
-                    conf.inputPreProcessor(i,new CnnToFeedForwardPreProcessor(
-                            subsamplingLayer.getKernelSize()[0]
-                            ,subsamplingLayer.getKernelSize()[1],lastOutChannels));
+                    conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
+                            lastHeight
+                            ,lastWidth,lastOutChannels));
                     //set the number of inputs wrt the current convolution layer
                     FeedForwardLayer o = (FeedForwardLayer) next;
                     //need to infer nins from first input size
-                    int outRows = lastHeight - subsamplingLayer.getKernelSize()[0] + subsamplingLayer.getPadding()[0];
-                    int outCols = lastWidth - subsamplingLayer.getKernelSize()[1] + subsamplingLayer.getPadding()[1];
+                    int[] outWidthAndHeight = getSubSamplingOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getStride());
+                    int outRows = outWidthAndHeight[0];
+                    int outCols = outWidthAndHeight[1];
                     int nIn = outCols * outRows * lastOutChannels;
                     o.setNIn(nIn);
+                    //setup the fourd connections
+                    setFourDtoTwoD(i,conf,o);
 
 
                 }
@@ -144,8 +148,9 @@ public class ConvolutionLayerSetup {
             //of certain values in the conv net
             if(curr instanceof ConvolutionLayer) {
                 ConvolutionLayer convolutionLayer = (ConvolutionLayer) curr;
-                lastHeight -=  convolutionLayer.getKernelSize()[0] + convolutionLayer.getPadding()[0];
-                lastWidth -=  convolutionLayer.getKernelSize()[1] + convolutionLayer.getPadding()[1];
+                int[] outWidthAndHeight = getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, convolutionLayer.getKernelSize(), convolutionLayer.getPadding(), convolutionLayer.getStride());
+                lastHeight =  outWidthAndHeight[0];
+                lastWidth =  outWidthAndHeight[1];
                 lastOutChannels = convolutionLayer.getNOut();
 
             }
@@ -155,8 +160,9 @@ public class ConvolutionLayerSetup {
             //of certain values in teh conv net
             else if(curr instanceof SubsamplingLayer) {
                 SubsamplingLayer subsamplingLayer = (SubsamplingLayer) curr;
-                lastHeight /= subsamplingLayer.getStride()[0];
-                lastWidth /= subsamplingLayer.getStride()[1];
+                int[] outWidthAndHeight = getSubSamplingOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getStride());
+                lastHeight =  outWidthAndHeight[0];
+                lastWidth =  outWidthAndHeight[1];
                 //don't need channels here; its inferred from the last time
                 //in the for loop
             }
@@ -179,6 +185,24 @@ public class ConvolutionLayerSetup {
 
     }
 
+    private int[] getSubSamplingOutputSize(int[] inputWidthAndHeight,int[] kernelWidthAndHeight,int[] stride) {
+        int[] ret = new int[inputWidthAndHeight.length];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = (inputWidthAndHeight[i]) / stride[i] + 1;
+        }
+
+        return ret;
+    }
+
+
+    private int[] getConvolutionOutputSize(int[] inputWidthAndHeight, int[] kernelWidthAndHeight, int[] padding, int[] stride) {
+        int[] ret = new int[inputWidthAndHeight.length];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = (inputWidthAndHeight[i] - kernelWidthAndHeight[i] + (2 * padding[i])) / stride[i] + 1;
+        }
+        return ret;
+    }
+
     public Layer getLayer(int i,MultiLayerConfiguration.Builder builder) {
         if(builder instanceof NeuralNetConfiguration.ListBuilder) {
             NeuralNetConfiguration.ListBuilder listBuilder = (NeuralNetConfiguration.ListBuilder) builder;
@@ -190,13 +214,13 @@ public class ConvolutionLayerSetup {
 
 
     private void setFourDtoTwoD(int i, MultiLayerConfiguration.Builder conf, FeedForwardLayer d) {
-        Layer next = conf instanceof NeuralNetConfiguration.ListBuilder  ? ((NeuralNetConfiguration.ListBuilder) conf).getLayerwise().get(i + 1).getLayer() : conf.getConfs().get(i).getLayer();
+        Layer currFourdLayer = conf instanceof NeuralNetConfiguration.ListBuilder  ? ((NeuralNetConfiguration.ListBuilder) conf).getLayerwise().get(i).getLayer() : conf.getConfs().get(i).getLayer();
         //2d -> 4d
-        if(next instanceof ConvolutionLayer || next instanceof SubsamplingLayer) {
-            if(next instanceof ConvolutionLayer) {
-                ConvolutionLayer convolutionLayer = (ConvolutionLayer) next;
-                int inputHeight = lastHeight - convolutionLayer.getKernelSize()[0]  + convolutionLayer.getPadding()[0];
-                int inputWidth = lastWidth - convolutionLayer.getKernelSize()[1] + convolutionLayer.getPadding()[1];
+        if(currFourdLayer instanceof ConvolutionLayer || currFourdLayer instanceof SubsamplingLayer) {
+            if(currFourdLayer instanceof ConvolutionLayer) {
+                ConvolutionLayer convolutionLayer = (ConvolutionLayer) currFourdLayer;
+                int inputHeight = lastHeight;
+                int inputWidth = lastWidth;
                 //set the number of out such that the 2d output of
                 //this layer match the width and height of the kernel
                 /**
@@ -218,10 +242,9 @@ public class ConvolutionLayerSetup {
                 conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(inputHeight,inputWidth,lastOutChannels));
 
             }
-            else if(next instanceof SubsamplingLayer) {
-                SubsamplingLayer convolutionLayer = (SubsamplingLayer) next;
-                int inputHeight = lastHeight - convolutionLayer.getKernelSize()[0]  + convolutionLayer.getPadding()[0];
-                int inputWidth = lastWidth - convolutionLayer.getKernelSize()[1] + convolutionLayer.getPadding()[1];
+            else if(currFourdLayer instanceof SubsamplingLayer) {
+                int inputHeight = lastHeight;
+                int inputWidth = lastWidth ;
                 //set the number of out such that the 2d output of
                 //this layer match the width and height of the kernel
                 /**
@@ -233,12 +256,15 @@ public class ConvolutionLayerSetup {
                  * This allows the user flexibility in how they'd
                  * like to set the values.
                  *
+                 *
+                 * Note here that we only modify the output layer's
+                 * nouts when the next fully connected layer
+                 * isn't the final one.
                  */
-                if(convolutionLayer.getKernelSize() != null){
+                if(i < numLayers - 2) {
                     d.setNOut(inputHeight * inputWidth * lastOutChannels);
                 }
-                else
-                    throw new IllegalStateException("Unable to infer width and height without convolution layer kernel size");
+
 
                 //set the input pre processor automatically for reshaping
                 conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(inputHeight,inputWidth,lastOutChannels));
