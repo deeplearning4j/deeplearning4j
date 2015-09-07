@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.layers.convolution;
+package org.deeplearning4j.nn.conf.layers.setup;
 
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
