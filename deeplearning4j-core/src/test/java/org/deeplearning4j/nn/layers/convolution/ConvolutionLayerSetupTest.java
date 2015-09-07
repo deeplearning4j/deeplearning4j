@@ -21,7 +21,9 @@ public class ConvolutionLayerSetupTest {
     public void testConvolutionLayerSetup() {
         MultiLayerConfiguration.Builder builder = inComplete();
         ConvolutionLayerSetup setup = new ConvolutionLayerSetup(builder,28,28,1);
-        assertEquals(complete(),builder);
+        MultiLayerConfiguration completed = complete().build();
+        MultiLayerConfiguration test = builder.build();
+        assertEquals(completed,test);
 
     }
 
@@ -45,7 +47,7 @@ public class ConvolutionLayerSetupTest {
                         .activation("relu")
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(150)
+                        .nIn(216)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
@@ -74,17 +76,17 @@ public class ConvolutionLayerSetupTest {
                         .nOut(6)
                         .build())
                 .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
-                        .weightInit(WeightInit.XAVIER)
+                        .weightInit(WeightInit.XAVIER).kernelSize(10,10)
                         .activation("relu")
                         .build())
                 .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(150)
+                        .nIn(216)
                         .nOut(outputNum)
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
                 .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
-                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor())
+                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor(10,10,6))
                 .backprop(true).pretrain(false);
 
         return builder;
