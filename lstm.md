@@ -11,15 +11,15 @@ Recurrent nets are a type of artificial neural network designed to recognize pat
 
 ##Feedforward Networks
 
-To understand them, first you have to understand the basics of feedforward nets. Both of these networks are named after the way they channel information through a series of mathematical operations performed by the nodes of the network. One feeds information straight through, the other cycles it through a loop.
+To understand recurrent nets, first you have to understand the basics of feedforward nets. Both of these networks are named after the way they channel information through a series of mathematical operations performed by the nodes of the network. One feeds information straight through, the other cycles it through a loop.
 
 In the case of feedforward networks, input examples are fed to the network and transformed into an output; with supervised learning, the output would be a label. That is, they map raw data to categories, recognizing patterns that signal, for example, that an input image should be labeled "cat" or "elephant." 
+
+![Alt text](../img/feedforward_rumelhart.png)
 
 A feedforward network is trained on labeled images until it minimizes the error it makes when guessing their categories. With the trained set of parameters, or weights, the network sallies forth to categorize data is has never seen. A trained feedforward network can be exposed to any random collection of photographs, and the first photograph it is exposed to will not necessarily alter how it classifies the second. 
 
 That is, it has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
-
-![Alt text](../img/feedforward_rumelhart.png)
 
 ## Recurrent Networks
 
