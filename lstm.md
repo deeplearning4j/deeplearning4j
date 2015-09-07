@@ -85,9 +85,13 @@ The diagram below illustrates how data flows through a memory cell and is contro
 
 ![Alt text](../img/gers_lstm.png)
 
-There are a lot of moving parts here, so if you are new to LSTMs, don't rush this diagram, contemplate it. 
+There are a lot of moving parts here, so if you are new to LSTMs, don't rush this diagram -- contemplate it for a few minutes. 
 
-The arrows show where data flows into the cell at multiple points. The combination of present input and past cell state is fed not only to the cell itself, but also to each of its three gates, which will decide how that input will be handled. The black dots are the gates themselves, which determine respectively whether to let new input in, erase the present cell state, and/or let that state impact the networks output at the present time step. S_c is the current state of the memory cell, and g_y_in is the current input to it.   
+The triple arrows show where data flows into the cell at multiple points. That combination of present input and past cell state is fed not only to the cell itself, but also to each of its three gates, which will decide how the input will be handled. 
+
+The black dots are the gates themselves, which determine respectively whether to let new input in, erase the present cell state, and/or let that state impact the networks output at the present time step. S_c is the current state of the memory cell, and g_y_in is the current input to it. Remember that each gate can be open or shut. The cell can forget its state, or not; be written to, or not; and be read from, or not, at each time step, and those flows are represented here. 
+
+The large bold letters give us the result of each operation. 
 
 It's important to note that LSTMs' memory cells, rather than modifying their state through multiplication, do so by addition. Stupidly simple as it may seem, this basic change helps them preserve a constant error when it must be backpropagated at depth. That plus sign is essentially the secret of LSTMs. Instead of determining the subsequent cell state by multiplying its current state with new input, they add the two, and that quite literally makes the difference. 
 
