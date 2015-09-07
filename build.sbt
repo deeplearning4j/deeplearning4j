@@ -2,12 +2,12 @@ lazy val root = (project in file(".")).settings(
   scalaVersion := "2.11.7",
   crossScalaVersions := Seq("2.10.5", "2.11.7", "2.12.0-M1"),
   name := "nd4s",
-  version := "0.4-rc2.2-SNAPSHOT",
+  version := "0.4-rc2.2",
   organization := "org.nd4j",
   resolvers += "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
   libraryDependencies ++= Seq(
-    "org.nd4j" % "nd4j-api" % "0.4-rc2.2-SNAPSHOT",
-    "org.nd4j" % "nd4j-jblas" % "0.4-rc2.2-SNAPSHOT" % Test,
+    "org.nd4j" % "nd4j-api" % "0.4-rc2.2",
+    "org.nd4j" % "nd4j-jblas" % "0.4-rc2.2" % Test,
     "ch.qos.logback" % "logback-classic" %  "1.1.3" % Test,
     "org.scalatest" %% "scalatest" % "2.2.4" % Test cross CrossVersion.binaryMapped {
       case x if x startsWith "2.12" => "2.11"
@@ -27,7 +27,7 @@ lazy val root = (project in file(".")).settings(
         Some("releases" at nexus + "service/local/staging/deploy/maven2")
   },
   pomExtra := {
-    <url>http://nd4s.org/</url>
+    <url>http://nd4j.org/</url>
       <licenses>
         <license>
           <name>Apache License, Version 2.0</name>
@@ -36,9 +36,9 @@ lazy val root = (project in file(".")).settings(
         </license>
       </licenses>
       <scm>
-        <connection>scm:git@github.com:SkymindIO/nd4s.git</connection>
-        <developerConnection>scm:git:git@github.com:SkymindIO/nd4s.git</developerConnection>
-        <url>git@github.com:deeplearning4j/nd4s.git</url>
+        <connection>scm:git@github.com:SkymindIO/deeplearning4j.git</connection>
+        <developerConnection>scm:git:git@github.com:SkymindIO/deeplearning4j.git</developerConnection>
+        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
         <tag>HEAD</tag>
       </scm>
       <developers>
