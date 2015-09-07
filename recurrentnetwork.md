@@ -23,7 +23,7 @@ To be precise, recurrent models include the hidden state that determined the pre
 
 Human memories are also context aware, recycling an awareness of previous states to properly interpret new data. For example, let's take two individuals. One is aware that she is near Jack's house. The other is aware that she has entered an airplane. They will interpret the sounds "Hi Jack!" in two very different ways, precisely because they retain a hidden state affected by their short-term memories and preceding sensations. 
 
-Different short-term memories should be recalled at different times, in order to assign the right meaning to current input. Some of those memories will have been forged recently, and other memories will have been forged many time steps before they are needed. The recurrent net that effectively associates memories and input remote in time is called a Long Short-Term Memory (LSTM), as much as that sounds like an oxymoron.
+Different short-term memories should be recalled at different times, in order to assign the right meaning to current input. Some of those memories will have been forged recently, and other memories will have been forged many time steps before they are needed. The recurrent net that effectively associates memories and input remote in time is called a [Long Short-Term Memory (LSTM)](../lstm.html), as much as that sounds like an oxymoron.
 
 ## Use Cases
 
