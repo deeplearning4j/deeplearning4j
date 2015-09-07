@@ -75,9 +75,12 @@ The diagram below illustrates how data flows through a memory cell and is contro
 
 ![Alt text](../img/gers_lstm.png)
 
-The arrows show where data flows into the cell. The combination of present input and past state is fed not only to the cell itself, but also to each of its three gates, which will decide how it will be handled. The black dots are the gates themselves, which determine respectively whether to let new input in, erase the present cell state, and let that state impact the networks output at the present time step. S_c is the current state of the memory cell, and g_y_in is the current input to it.   
+There are a lot of moving parts here, so if you are new to LSTMs, don't rush this diagram, contemplate it. 
 
-It's important to note that LSTMs' memory cells, rather than modifying their state through multiplication, do so with addition. Stupidly simple as it may seem, this basic change helps them preserve a constant error when it must be backpropagated at depth. 
+The arrows show where data flows into the cell at multiple points. The combination of present input and past cell state is fed not only to the cell itself, but also to each of its three gates, which will decide how that input will be handled. The black dots are the gates themselves, which determine respectively whether to let new input in, erase the present cell state, and/or let that state impact the networks output at the present time step. S_c is the current state of the memory cell, and g_y_in is the current input to it.   
+
+It's important to note that LSTMs' memory cells, rather than modifying their state through multiplication, do so by addition. Stupidly simple as it may seem, this basic change helps them preserve a constant error when it must be backpropagated at depth. That plus sign is essentially the secret of LSTMs. Instead of determining the subsequent cell state by multiplying its current state with new input, they add the two, and that quite literally makes the difference. 
+
 Different sets of weights filter the input for input, output and forgetting. The forget gate is represented as a linear identity function, because if the gate is open, the current state of the memory cell is simply multiplied by one, to propagate forward one more time step. 
 
 Furthermore, while we're on the topic of simple hacks, [including a bias of 1](http://jmlr.org/proceedings/papers/v37/jozefowicz15.pdf) to the forget gate of every LSTM cell is also shown to [improve performance](http://www.felixgers.de/papers/phd.pdf). 
