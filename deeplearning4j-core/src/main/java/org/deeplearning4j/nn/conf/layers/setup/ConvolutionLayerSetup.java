@@ -55,6 +55,7 @@ public class ConvolutionLayerSetup {
         }
         else
             numLayers = conf.getConfs().size();
+
         for(int i = 0; i < numLayers; i++) {
             Layer curr = getLayer(i,conf);
             //cnn -> subsampling
@@ -62,7 +63,7 @@ public class ConvolutionLayerSetup {
                 ConvolutionLayer convolutionLayer = (ConvolutionLayer)getLayer(i,conf);
                 Layer next = getLayer(i + 1,conf);
                 //cnn -> feedforward
-                if(next instanceof FeedForwardLayer) {
+                if(next instanceof DenseLayer || next instanceof OutputLayer) {
                     //set the feed forward wrt the out channels of the current convolution layer
                     //set the rows and columns (height/width) wrt the kernel size of the current layer
                     conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
@@ -99,7 +100,7 @@ public class ConvolutionLayerSetup {
                 SubsamplingLayer subsamplingLayer = (SubsamplingLayer) getLayer(i,conf);
                 Layer next = getLayer(i + 1,conf);
                 //cnn -> feedforward
-                if(next instanceof FeedForwardLayer) {
+                if(next instanceof DenseLayer || next instanceof OutputLayer) {
                     //set the feed forward wrt the out channels of the current convolution layer
                     //set the rows and columns (height/width) wrt the kernel size of the current layer
                     conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
@@ -214,6 +215,10 @@ public class ConvolutionLayerSetup {
 
 
     private void setFourDtoTwoD(int i, MultiLayerConfiguration.Builder conf, FeedForwardLayer d) {
+        //only for output layer and dense layer
+        if(d instanceof ConvolutionLayer)
+            return;
+
         Layer currFourdLayer = conf instanceof NeuralNetConfiguration.ListBuilder  ? ((NeuralNetConfiguration.ListBuilder) conf).getLayerwise().get(i).getLayer() : conf.getConfs().get(i).getLayer();
         //2d -> 4d
         if(currFourdLayer instanceof ConvolutionLayer || currFourdLayer instanceof SubsamplingLayer) {
@@ -233,7 +238,7 @@ public class ConvolutionLayerSetup {
                  * like to set the values.
                  *
                  */
-                if(convolutionLayer.getKernelSize() != null){
+                if(convolutionLayer.getKernelSize() != null) {
                     d.setNOut(inputHeight * inputWidth * convolutionLayer.getNOut());
                 }
                 else
