@@ -1344,14 +1344,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()) {
-            if( solver == null ){
-                solver = new Solver.Builder()
-                        .configure(conf())
-                        .listeners(getListeners())
-                        .model(this).build();
-            }
+        	if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT ){
+            	doTruncatedBPTT(data,labels);
+        	} else {
+	            if( solver == null ){
+	                solver = new Solver.Builder()
+	                        .configure(conf())
+	                        .listeners(getListeners())
+	                        .model(this).build();
+	            }
 
-            solver.optimize();
+	            solver.optimize();
+        	}
         }
     }
 
