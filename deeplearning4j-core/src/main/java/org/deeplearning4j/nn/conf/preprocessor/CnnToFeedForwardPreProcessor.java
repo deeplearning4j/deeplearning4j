@@ -30,7 +30,10 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
-/**A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
+/**
+ *
+ *
+ * A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
  * For example, CNN -> Denselayer <br>
  * This does two things:<br>
  * (b) Reshapes 4d activations out of CNN layer, with shape

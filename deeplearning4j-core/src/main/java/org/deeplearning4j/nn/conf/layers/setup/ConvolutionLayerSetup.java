@@ -95,8 +95,6 @@ public class ConvolutionLayerSetup {
                 //cnn -> subsampling
                 else if(next instanceof SubsamplingLayer) {
                     SubsamplingLayer subsamplingLayer = (SubsamplingLayer) next;
-                    if(subsamplingLayer.getKernelSize()[0] != 1 && subsamplingLayer.getKernelSize()[1] != 1)
-                        throw new IllegalStateException("Current calculations don't factor in a subsampling layer kernel size that is not 1");
                     // subsamplingLayer.setKernelSize(convolutionLayer.getKernelSize());
                     if(subsamplingLayer.getPadding() == null)
                         subsamplingLayer.setPadding(convolutionLayer.getPadding());
@@ -251,7 +249,11 @@ public class ConvolutionLayerSetup {
     private int[] getSubSamplingOutputSize(int[] inputWidthAndHeight,int[] kernelWidthAndHeight,int[] stride) {
         int[] ret = new int[inputWidthAndHeight.length];
         for(int i = 0; i < ret.length; i++) {
-            ret[i] = inputWidthAndHeight[i] / stride[i];
+            if(kernelWidthAndHeight[i] == 1)
+                ret[i] = inputWidthAndHeight[i] / stride[i];
+            else {
+                ret[i] = (inputWidthAndHeight[i] - kernelWidthAndHeight[i]) / stride[i] + 1;
+            }
         }
 
         return ret;
