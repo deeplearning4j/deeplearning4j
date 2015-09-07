@@ -67,7 +67,14 @@ LSTMs contain information outside the normal flow of the recurrent network in a 
 
 Those gates act on the signals they receive, and similar to the neural network's nodes, they block or pass on information based on its strength and import, which they filter with their own sets of weights. Those weights, like the weights that modulate input and hidden states, are adjusted via the recurrent networks learning process. That is, the cells learn when to allow data to enter, leave or be deleted through the iterative process of making guesses, backpropagating error, and adjusting weights via gradient descent.
 
+The diagram below illustrates how data flows through a memory cell and is controlled by its gates.
+
+![Alt text](../img/gers_lstm.png)
+
+The arrows show where data flows into the cell. The combination of present input and past state is fed not only to the cell itself, but also to each of its three gates, which will decide how it will be handled. The black dots are the gates themselves, which determine respectively whether to let new input in, erase the present cell state, and let that state impact the networks output at the present time step. S_c is the current state of the memory cell, and g_y_in is the current input to it.   
+
 It's important to note that LSTMs' memory cells, rather than modifying their state through multiplication, do so with addition. Stupidly simple as it may seem, this basic change helps them preserve a constant error when it must be backpropagated at depth. 
+Different sets of weights filter the input for input, output and forgetting. The forget gate is represented as a linear identity function, because if the gate is open, the current state of the memory cell is simply multiplied by one, to propagate forward one more time step. 
 
 Furthermore, while we're on the topic of simple hacks, [including a bias of 1](http://jmlr.org/proceedings/papers/v37/jozefowicz15.pdf) to the forget gate of every LSTM cell is also shown to [improve performance](http://www.felixgers.de/papers/phd.pdf). 
 
