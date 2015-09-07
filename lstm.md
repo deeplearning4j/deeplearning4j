@@ -140,6 +140,8 @@ Other data is like that. Music is polyrhythmic. Text contains recurrent themes a
 
 A gated recurrent unit (GRU) is simply an LSTM without an output gate, which therefore fully writes the contents from its memory cell to the larger net at each time step. 
 
+![Alt text](../img/lstm_gru.png)
+
 ## <a name="code">Code Sample</a>
 
 A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java) learning how to replicate Shakespearian drama, and implemented with Deeplearning4j, can be found here. 
@@ -152,6 +154,7 @@ A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.
 * [The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/); Andrej Karpathy
 * [Understanding LSTMs](https://colah.github.io/posts/2015-08-Understanding-LSTMs/); Christopher Olah
 * [Backpropagation Through Time: What It Does and How to Do It](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf); Paul Werbos
+* [Empirical Evaluation of Gated Recurrent Neural Networks on Sequence Modeling](http://arxiv.org/pdf/1412.3555v1.pdf); Cho et al
 
 ### Footnotes
 
