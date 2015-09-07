@@ -61,7 +61,7 @@ Recurrent nets seeking to establish connections between a final output and event
 
 This is partially because the information flowing through neural nets passes through many stages of multiplication. 
 
-Everyone who has studied compound interest knows that any quantity multiplied frequently by an amount greater than one can become immeasurably large (indeed, that mathematical truth underpins network effects and much social inequality). But its inverse, multiplying by a quantity less than one, is also true.
+Everyone who has studied compound interest knows that any quantity multiplied frequently by an amount slightly greater than one can become immeasurably large (indeed, that mathematical truth underpins network effects and much social inequality, determining the success of startups and the failure of nations). But its inverse, multiplying by a quantity less than one, is also true. Gamblers go bankrupt fast when they win just 97 cents on every dollar they put in the slots. 
 
 Because the layers and time steps of deep neural networks relate to each other through multiplication, derivatives are susceptible to vanishing or exploding. 
 
