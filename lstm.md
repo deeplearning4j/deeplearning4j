@@ -53,11 +53,15 @@ Recurrent networks rely on an extension of backpropagation called [backpropagati
 
 ## Vanishing (and Exploding) Gradients
 
-Like most neural networks, recurrent nets are old. By the early 1990s, the vanishing gradient problem emerged as a major obstacle to recurrent net performance. Just as a straight line expressed the change in x alongside the change in y, the gradient expresses the change in all weights with regard to the change in error. If we can't know the gradient, we can't adjust the weights in a direction that will decrease error, and our network has ceased to learn.
+Like most neural networks, recurrent nets are old. By the early 1990s, the *vanishing gradient problem* emerged as a major obstacle to recurrent net performance. 
 
-Recurrent nets seeking to establish connections between an output and events many time steps away were hobbled, because it was very difficult to know how much importance to accord to remote inputs. Information flowing through neural nets passes through many stages of multiplication. 
+Just as a straight line expresses a change in x alongside a change in y, the *gradient* expresses the change in all weights with regard to the change in error. If we can't know the gradient, we can't adjust the weights in a direction that will decrease error, and our network ceases to learn.
 
-Everyone who has studied compound interest knows that any quantity multiplied frequently by an amount greater than one can become immeasurably large (indeed, that mathematical truth underpins network effects and social inequalities). But its inverse, multiplying by a quantity less than one, is also true.
+Recurrent nets seeking to establish connections between a final output and events many time steps before were hobbled, because it is very difficult to know how much importance to accord to remote inputs. 
+
+This is partially because the information flowing through neural nets passes through many stages of multiplication. 
+
+Everyone who has studied compound interest knows that any quantity multiplied frequently by an amount greater than one can become immeasurably large (indeed, that mathematical truth underpins network effects and much social inequality). But its inverse, multiplying by a quantity less than one, is also true.
 
 Because the layers and time steps of deep neural networks relate to each other through multiplication, derivatives are susceptible to vanishing or exploding. 
 
