@@ -22,7 +22,7 @@ Recurrent nets are a type of artificial neural network designed to recognize pat
 
 They are arguably the most powerful type of neural network, applicable even to images, which can be decomposed into a series of patches and treated as a sequence. 
 
-##Feedforward Networks
+## <a name="feedforward">Feedforward Networks</a>
 
 To understand recurrent nets, first you have to understand the basics of feedforward nets. Both of these networks are named after the way they channel information through a series of mathematical operations performed by the nodes of the network. One feeds information straight through, the other cycles it through a loop.
 
@@ -34,7 +34,7 @@ A feedforward network is trained on labeled images until it minimizes the error 
 
 That is, it has no notion of order in time, and the only input it considers is the current example it has been exposed to. Feedforward networks are amnesiacs regarding their recent past; they remember nostalgically only the formative moments of training. 
 
-## Recurrent Networks
+## <a name="recurrent">Recurrent Networks</a>
 
 Recurrent networks, on the other hand, take as their input not just the current input example they see, but also what they perceived one step back in time. Here's a diagram of an early, [simple recurrent net proposed by Elman](https://web.stanford.edu/group/pdplab/pdphandbook/handbookch8.html), where *BTSXPE* represents the input example and the current moment, and *Context* represents the output of the previous moment. 
 
@@ -58,13 +58,13 @@ The sum of the weight input and hidden state is squashed by the function φ -- e
 
 Because this feedback loop occurs at every time step in the series, each hidden state contains traces not only of the previous hidden state, but also of all those that preceded h_t-1 for as long as memory can persist.
 
-## Backpropagation Through Time (BPTT)
+## <a name="backpropagation>Backpropagation Through Time (BPTT)</a>
 
 Remember, the purpose of recurrent nets is to accurately classify sequential input. We rely on the backpropagation of error and gradient descent to do so. Backpropagation in feedforward networks moves backward from the final error through the outputs, weights and inputs of each hidden layer, assigning those weights responsibility for a portion of the error by calculating their partial derivatives -- ∂E/∂w, or the relationship between their rates of change -- which are then used by our learning rule, gradient descent, to adjust the weights in a way that decreases error. 
 
 Recurrent networks rely on an extension of backpropagation called [backpropagation through time](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf), or BPTT. Time, in this case, is simply expressed by a well-defined series of calculations, which is all backpropagation needs to work. 
 
-## Vanishing (and Exploding) Gradients
+## <a name="vanishing">Vanishing (and Exploding) Gradients</a>
 
 Like most neural networks, recurrent nets are old. By the early 1990s, the *vanishing gradient problem* emerged as a major obstacle to recurrent net performance. 
 
@@ -84,7 +84,7 @@ Below you see the effects of applying a sigmoid function over and over again. Th
 
 ![Alt text](../img/sigmoid_vanishing_gradient.png)
 
-## Long Short-Term Memory Units (LSTMs)
+## <a name="long">Long Short-Term Memory Units (LSTMs)</a>
 
 In the mid-90s, a variation of recurrent net with so-called Long Short-Term Memory units, or LSTMs, was proposed by the German researchers Sepp Hochreiter and Juergen Schmidhuber as a solution to the vanishing gradient problem. 
 
@@ -120,7 +120,7 @@ In the diagram below, you can see the gates at work, with straight lines represe
 
 It should be noted that while feedforward networks map one input to one output, recurrent nets can map one to many, as above (one image to many words in a caption), many to many (translation), or many to one (classifying a voice).
 
-## Diverse Time Scales
+## <a name="time">Diverse Time Scales</a>
 
 You may also wonder what the precise value is of input gates that protect a memory cell from new data coming in, and output gates that prevent it from affecting certain outputs of the RNN. You can think of LSTMs as allowing a neural network to operate on different scales of time at once.
 
@@ -134,16 +134,18 @@ Other data is like that. Music is polyrhythmic. Text contains recurrent themes a
 
 A gated recurrent unit (GRU) is simply an LSTM without an output gate, which therefore fully writes the contents from its memory cell to the larger net at each time step. 
 
-## Code Sample
+## <a name="code">Code Sample</a>
 
-A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java), implemented with Deeplearning4j, can be found here. 
+A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/rnn/GravesLSTMCharModellingExample.java) learning how to replicate Shakespearian drama, and implemented with Deeplearning4j, can be found here. 
 
-### Resources
+## <a name="resources">Resources</a>
 * [Recurrent Networks](../recurrentnetwork.html)
 * [Gated Feedback Recurrent Neural Networks](http://arxiv.org/pdf/1502.02367v4.pdf)
 * [Recurrent Neural Networks](http://people.idsia.ch/~juergen/rnn.html); Juergen Schmidhuber
 * [Modeling Sequences With RNNs and LSTMs](https://class.coursera.org/neuralnets-2012-001/lecture/77); Geoff Hinton
 * [The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/); Andrej Karpathy
 * [Understanding LSTMs](https://colah.github.io/posts/2015-08-Understanding-LSTMs/); Christopher Olah
+
+### Footnotes
 
 <a name="one">1)</a> *All neural networks whose parameters have been optimized have memory in a sense, because those parameters are the traces of past data. But in feedforward networks, that memory may be frozen in time. That is, after a network is trained, the model it learns may be applied to more data without further adapting itself. In addition, it is monolithic in the sense that the same memory (or set of weights) is applied to all incoming data. Recurrent networks, which also go by the name of dynamic (translation: "changing") neural networks, are distinguished from feedforward nets so much by having memory as by giving particular weight to events that occur in a series. While those events do not  need to follow each other immediately, they are presumed to be linked, however remotely, by the same temporal thread. Feedforward nets do not make such a presumption. They treat the world as a bucket of objects without order or time. It may be helpful to map two types of neural network to two types of human knowledge. When we are children, we learn to recognize colors, and we go through the rest of our lives recognizing colors wherever we see them, in highly varied contexts and independent of time. We only had to learn it once. That knowledge is like memory in feedforward nets; they rely on a past without scope, undefined. Ask them what colors they were fed five minutes ago and they don't or care. They are short-term amnesiacs. On the other hand, we also learn as children to decipher the flow of sound called language, and the meanings we extract from sounds such as "toe" or "roe" or "z" are always highly dependent on the sounds preceding (and following) them. Each step of the sequence builds on what went before, and meaning emerges from their order. Indeed, whole sentences conspire to convey the meaning of each syllable within them, their redundant signals a protection against ambient noise. That is similar to the memory of recurrent nets, which look to a particular slice of the past for help. Both types of nets bring the past, or different pasts, to bear in different ways.* 
