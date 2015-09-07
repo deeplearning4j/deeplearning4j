@@ -94,18 +94,16 @@ public class ConvolutionLayerSetupTest {
 
 
 
-
-
     public MultiLayerConfiguration.Builder incompleteLFW() {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                 .seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                 .list(5)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nOut(6)
                         .build())
-                .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5, 5}, new int[]{2, 2}).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder( new int[]{2, 2}).build())
                 .layer(2, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5, 5}).nOut(6)
                         .build())
-                .layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5, 5}, new int[]{2, 2}).build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{2, 2}).build())
                 .layer(4, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2).build());
         return builder;
     }
