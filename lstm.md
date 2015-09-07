@@ -46,7 +46,7 @@ Recurrent networks are distinguished from feedforward networks by that feedback 
 
 That sequential information is preserved in the recurrent network's hidden state, which manages to span many time steps as it cascades forward to affect the processing of each new example. 
 
-What is human memory but information circulating invisibly within a body, affecting our behavior without revealing its full shape. The English language is full of words the describe the feedback loops of memory. When we say a person is haunted by their deeds, for example, we are simply talking about the consequences that past outputs wreak on present time. The French call this "*Le passé qui ne passe pas*," or "The past that does not pass away."
+Just as human memory circulates invisibly within a body, affecting our behavior without revealing its full shape, information circulates in the hidden states of recurrent nets. The English language is full of words the describe the feedback loops of memory. When we say a person is haunted by their deeds, for example, we are simply talking about the consequences that past outputs wreak on present time. The French call this "*Le passé qui ne passe pas*," or "The past that does not pass away."
 
 We'll describe the process of carrying memory forward mathematically:
 
@@ -62,9 +62,13 @@ Given a series of letters, a recurrent *will* use the first character to help de
 
 ## <a name="backpropagation">Backpropagation Through Time (BPTT)</a>
 
-Remember, the purpose of recurrent nets is to accurately classify sequential input. We rely on the backpropagation of error and gradient descent to do so. Backpropagation in feedforward networks moves backward from the final error through the outputs, weights and inputs of each hidden layer, assigning those weights responsibility for a portion of the error by calculating their partial derivatives -- ∂E/∂w, or the relationship between their rates of change -- which are then used by our learning rule, gradient descent, to adjust the weights in a way that decreases error. 
+Remember, the purpose of recurrent nets is to accurately classify sequential input. We rely on the backpropagation of error and gradient descent to do so. 
+
+Backpropagation in feedforward networks moves backward from the final error through the outputs, weights and inputs of each hidden layer, assigning those weights responsibility for a portion of the error by calculating their partial derivatives -- *∂E/∂w*, or the relationship between their rates of change -- which are then used by our learning rule, gradient descent, to adjust the weights in a way that decreases error. 
 
 Recurrent networks rely on an extension of backpropagation called [backpropagation through time](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf), or BPTT. Time, in this case, is simply expressed by a well-defined series of calculations, which is all backpropagation needs to work. 
+
+Neural networks, whether they are recurrent or not, are simply nested composite functions like `f(g(h(x)))`. Adding a time element only extends the chain of functions for which we calculate derivatives with the chain rule. 
 
 ## <a name="vanishing">Vanishing (and Exploding) Gradients</a>
 
