@@ -1822,7 +1822,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
    @Test
    public void testNdArrayCreation(){
        double delta = 1e-1;
-       INDArray n1 = Nd4j.create(new double[]{0d,1d,2d,3d},new int[]{2,2},0,'c');
+       INDArray n1 = Nd4j.create(new double[]{0d,1d,2d,3d},new int[]{2,2},'c');
        INDArray lv = n1.linearView();
        assertEquals(0d,lv.getDouble(0),delta);
        assertEquals(1d,lv.getDouble(1),delta);

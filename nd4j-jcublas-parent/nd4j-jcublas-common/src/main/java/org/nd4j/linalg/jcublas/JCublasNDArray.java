@@ -334,7 +334,7 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
     public JCublasNDArray(double[] data, int[] shape, char ordering) {
-        this(Nd4j.createBuffer(data), shape, 0,ordering);
+        super(data, shape ,ordering);
     }
 
     public JCublasNDArray(double[] data, int[] shape, int[] stride, int offset, char ordering) {
