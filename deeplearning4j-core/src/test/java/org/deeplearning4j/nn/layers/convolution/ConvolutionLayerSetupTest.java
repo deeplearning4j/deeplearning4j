@@ -39,7 +39,7 @@ public class ConvolutionLayerSetupTest {
         assertArrayEquals(new int[]{0, 0}, firstLayer.getPadding());
         assertArrayEquals(new int[]{1,1}, firstLayer.getStride());
         OutputLayer o = (OutputLayer) mnistAssertion.getConf(4).getLayer();
-        assertEquals(500,o.getNIn());
+        assertEquals(150,o.getNIn());
 
         MultiLayerConfiguration.Builder incomplete = incompleteMnistLenet();
         new ConvolutionLayerSetup(incomplete,28,28,1);
@@ -87,7 +87,7 @@ public class ConvolutionLayerSetupTest {
                 .layer(2,new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[]{5,5}).nIn(1).nOut(6)
                         .build())
                 .layer(3,new org.deeplearning4j.nn.conf.layers.SubsamplingLayer.Builder(new int[]{5,5},new int[]{2,2}).build())
-                .layer(4,new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(500).nOut(10).build()).build();
+                .layer(4,new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(150).nOut(10).build()).build();
         return builder;
     }
 
