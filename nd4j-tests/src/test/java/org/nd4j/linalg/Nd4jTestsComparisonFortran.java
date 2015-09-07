@@ -25,46 +25,34 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DataBuffer.Type;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.checkutil.CheckUtil;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.*;
-
-import static org.junit.Assert.*;
+import java.util.List;
 
 /**Tests comparing Nd4j ops to other libraries
  */
-public  class Nd4jTestsComparison extends BaseNd4jTest {
-    private static Logger log = LoggerFactory.getLogger(Nd4jTestsComparison.class);
+public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
+    private static Logger log = LoggerFactory.getLogger(Nd4jTestsComparisonFortran.class);
 
     public static final int SEED = 123;
 
-    public Nd4jTestsComparison() {
+    public Nd4jTestsComparisonFortran() {
     }
 
-    public Nd4jTestsComparison(String name) {
+    public Nd4jTestsComparisonFortran(String name) {
         super(name);
     }
 
-    public Nd4jTestsComparison(Nd4jBackend backend) {
+    public Nd4jTestsComparisonFortran(Nd4jBackend backend) {
         super(backend);
     }
 
-    public Nd4jTestsComparison(String name, Nd4jBackend backend) {
+    public Nd4jTestsComparisonFortran(String name, Nd4jBackend backend) {
         super(name, backend);
     }
 
@@ -86,7 +74,7 @@ public  class Nd4jTestsComparison extends BaseNd4jTest {
 
     @Override
     public char ordering() {
-        return 'c';
+        return 'f';
     }
     
     @Test
