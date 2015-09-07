@@ -1,12 +1,16 @@
 package org.deeplearning4j.nn.conf.layers.setup;
 
 
+import javassist.bytecode.analysis.SubroutineScanner;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -36,7 +40,8 @@ public class ConvolutionLayerSetup {
     private  int lastWidth = -1;
     private  int lastOutChannels = -1;
     private int numLayers = -1;
-
+    private Map<Integer,int[]> outSizesEachLayer = new HashMap<>();
+    private Map<Integer,Integer> nInForLayer = new HashMap<>();
     /**
      * Take in the configuration
      * @param conf the configuration
@@ -58,9 +63,13 @@ public class ConvolutionLayerSetup {
 
         for(int i = 0; i < numLayers; i++) {
             Layer curr = getLayer(i,conf);
+            boolean alreadySet = false;
             //cnn -> subsampling
-            if(i < numLayers - 1 && getLayer(i, conf) instanceof ConvolutionLayer) {
+            if(i < numLayers - 2 && getLayer(i, conf) instanceof ConvolutionLayer) {
                 ConvolutionLayer convolutionLayer = (ConvolutionLayer)getLayer(i,conf);
+                //ensure the number of in channels is set for the data
+                if(i == 0)
+                    convolutionLayer.setNIn(channels);
                 Layer next = getLayer(i + 1,conf);
                 //cnn -> feedforward
                 if(next instanceof DenseLayer || next instanceof OutputLayer) {
@@ -73,17 +82,22 @@ public class ConvolutionLayerSetup {
                     FeedForwardLayer o = (FeedForwardLayer) next;
                     //need to infer nins from first input size
                     int[] outWidthAndHeight = getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, convolutionLayer.getKernelSize(), convolutionLayer.getPadding(), convolutionLayer.getStride());
+                    outSizesEachLayer.put(i,outWidthAndHeight);
                     int outRows = outWidthAndHeight[0];
                     int outCols = outWidthAndHeight[1];
                     int nIn = outCols * outRows * convolutionLayer.getNOut();
+                    nInForLayer.put(i,nIn);
                     o.setNIn(nIn);
+                    alreadySet = true;
 
 
                 }
                 //cnn -> subsampling
                 else if(next instanceof SubsamplingLayer) {
                     SubsamplingLayer subsamplingLayer = (SubsamplingLayer) next;
-                    subsamplingLayer.setKernelSize(convolutionLayer.getKernelSize());
+                    if(subsamplingLayer.getKernelSize()[0] != 1 && subsamplingLayer.getKernelSize()[1] != 1)
+                        throw new IllegalStateException("Current calculations don't factor in a subsampling layer kernel size that is not 1");
+                    // subsamplingLayer.setKernelSize(convolutionLayer.getKernelSize());
                     if(subsamplingLayer.getPadding() == null)
                         subsamplingLayer.setPadding(convolutionLayer.getPadding());
                 }
@@ -101,22 +115,27 @@ public class ConvolutionLayerSetup {
                 Layer next = getLayer(i + 1,conf);
                 //cnn -> feedforward
                 if(next instanceof DenseLayer || next instanceof OutputLayer) {
+                    //need to infer nins from first input size
+                    int[] outWidthAndHeight = getSubSamplingOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getStride());
+                    outSizesEachLayer.put(i,outWidthAndHeight);
+                    int outRows = outWidthAndHeight[0];
+                    int outCols = outWidthAndHeight[1];
+                    lastHeight =  outWidthAndHeight[0];
+                    lastWidth =  outWidthAndHeight[1];
+
                     //set the feed forward wrt the out channels of the current convolution layer
                     //set the rows and columns (height/width) wrt the kernel size of the current layer
                     conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
-                            lastHeight
-                            ,lastWidth,lastOutChannels));
+                            outRows
+                            ,outCols,lastOutChannels));
                     //set the number of inputs wrt the current convolution layer
                     FeedForwardLayer o = (FeedForwardLayer) next;
-                    //need to infer nins from first input size
-                    int[] outWidthAndHeight = getSubSamplingOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getStride());
-                    int outRows = outWidthAndHeight[0];
-                    int outCols = outWidthAndHeight[1];
                     int nIn = outCols * outRows * lastOutChannels;
                     o.setNIn(nIn);
+                    nInForLayer.put(i + 1,nIn);
                     //setup the fourd connections
-                    setFourDtoTwoD(i,conf,o);
-
+                    setFourDtoTwoD(i, conf, o);
+                    alreadySet = true;
 
                 }
                 //cnn -> subsampling
@@ -131,9 +150,25 @@ public class ConvolutionLayerSetup {
             }
 
 
-            else if(i < conf.getConfs().size() - 1 && conf.getConfs().get(i).getLayer() instanceof FeedForwardLayer) {
-                FeedForwardLayer d = (FeedForwardLayer) conf.getConfs().get(i).getLayer();
-                setFourDtoTwoD(i,conf,d);
+            else if(i < numLayers - 1 && (getLayer(i,conf) instanceof DenseLayer || getLayer(i,conf) instanceof OutputLayer)) {
+                FeedForwardLayer forwardLayer = (FeedForwardLayer) getLayer(i, conf);
+                if(getLayer(i + 1,conf) instanceof  ConvolutionLayer) {
+                    ConvolutionLayer convolutionLayer = (ConvolutionLayer) getLayer(i + 1,conf);
+                    throw new UnsupportedOperationException("2d to 4d needs to be implemented");
+                }
+                else if(getLayer(i + 1,conf) instanceof SubsamplingLayer) {
+                    SubsamplingLayer subsamplingLayer = (SubsamplingLayer) getLayer(i + 1,conf);
+                    throw new UnsupportedOperationException("2d to 4d needs to be implemented");
+
+                }
+                //feedforward to feedforward
+                else if(getLayer(i + 1,conf) instanceof OutputLayer || getLayer(i + 1,conf) instanceof DenseLayer) {
+                    FeedForwardLayer d = (FeedForwardLayer) getLayer(i + 1,conf);
+                    d.setNIn(forwardLayer.getNOut());
+                    nInForLayer.put(i + 1,forwardLayer.getNOut());
+                }
+
+                setFourDtoTwoD(i,conf,forwardLayer);
             }
 
 
@@ -147,27 +182,54 @@ public class ConvolutionLayerSetup {
             //update the output size for a given activation
             //this allows us to track outputs for automatic setting
             //of certain values in the conv net
-            if(curr instanceof ConvolutionLayer) {
+            if(curr instanceof ConvolutionLayer && i < numLayers - 1 && !alreadySet) {
                 ConvolutionLayer convolutionLayer = (ConvolutionLayer) curr;
                 int[] outWidthAndHeight = getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, convolutionLayer.getKernelSize(), convolutionLayer.getPadding(), convolutionLayer.getStride());
                 lastHeight =  outWidthAndHeight[0];
                 lastWidth =  outWidthAndHeight[1];
                 lastOutChannels = convolutionLayer.getNOut();
+                outSizesEachLayer.put(i,outWidthAndHeight);
 
             }
             //update the output size for a given
             //activation
             //this allows us to track outputs for automatic setting
             //of certain values in teh conv net
-            else if(curr instanceof SubsamplingLayer) {
+            else if(curr instanceof SubsamplingLayer && i < numLayers - 1 && !alreadySet) {
                 SubsamplingLayer subsamplingLayer = (SubsamplingLayer) curr;
                 int[] outWidthAndHeight = getSubSamplingOutputSize(new int[]{lastHeight, lastWidth}, subsamplingLayer.getKernelSize(), subsamplingLayer.getStride());
                 lastHeight =  outWidthAndHeight[0];
                 lastWidth =  outWidthAndHeight[1];
+                outSizesEachLayer.put(i,outWidthAndHeight);
+
                 //don't need channels here; its inferred from the last time
                 //in the for loop
             }
 
+        }
+
+        if(getLayer(numLayers - 1,conf) instanceof OutputLayer || getLayer(numLayers - 1,conf) instanceof DenseLayer) {
+            FeedForwardLayer lastLayer = (FeedForwardLayer) getLayer(numLayers - 1,conf);
+            if(getLayer(numLayers - 2,conf) instanceof DenseLayer || getLayer(numLayers - 2,conf) instanceof OutputLayer) {
+                FeedForwardLayer feedForwardLayer = (FeedForwardLayer) getLayer(numLayers - 2,conf);
+                lastLayer.setNIn(feedForwardLayer.getNOut());
+                nInForLayer.put(numLayers - 1,feedForwardLayer.getNOut());
+            }
+            else if(getLayer(numLayers - 2,conf) instanceof SubsamplingLayer) {
+                lastLayer.setNIn(lastHeight * lastWidth * lastOutChannels);
+                nInForLayer.put(numLayers - 1,lastHeight * lastWidth * lastOutChannels);
+            }
+            else if(getLayer(numLayers - 2,conf) instanceof ConvolutionLayer) {
+                lastLayer.setNIn(lastHeight * lastWidth * lastOutChannels);
+                nInForLayer.put(numLayers - 1, lastHeight * lastWidth * lastOutChannels);
+
+            }
+        }
+        else if(getLayer(numLayers - 1,conf) instanceof ConvolutionLayer) {
+            throw new UnsupportedOperationException("Unsupported path: final convolution layer");
+        }
+        else if(getLayer(numLayers - 1,conf) instanceof SubsamplingLayer) {
+            throw new UnsupportedOperationException("Unsupported path: final subsampling layer");
         }
 
         if(conf instanceof NeuralNetConfiguration.ListBuilder) {
@@ -189,7 +251,7 @@ public class ConvolutionLayerSetup {
     private int[] getSubSamplingOutputSize(int[] inputWidthAndHeight,int[] kernelWidthAndHeight,int[] stride) {
         int[] ret = new int[inputWidthAndHeight.length];
         for(int i = 0; i < ret.length; i++) {
-            ret[i] = (inputWidthAndHeight[i]) / stride[i] + 1;
+            ret[i] = inputWidthAndHeight[i] / stride[i];
         }
 
         return ret;
@@ -207,6 +269,8 @@ public class ConvolutionLayerSetup {
     public Layer getLayer(int i,MultiLayerConfiguration.Builder builder) {
         if(builder instanceof NeuralNetConfiguration.ListBuilder) {
             NeuralNetConfiguration.ListBuilder listBuilder = (NeuralNetConfiguration.ListBuilder) builder;
+            if(listBuilder.getLayerwise().get(i) == null)
+                throw new IllegalStateException("Undefined layer " + i);
             return listBuilder.getLayerwise().get(i).getLayer();
         }
 
@@ -266,10 +330,6 @@ public class ConvolutionLayerSetup {
                  * nouts when the next fully connected layer
                  * isn't the final one.
                  */
-                if(i < numLayers - 2) {
-                    d.setNOut(inputHeight * inputWidth * lastOutChannels);
-                }
-
 
                 //set the input pre processor automatically for reshaping
                 conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(inputHeight,inputWidth,lastOutChannels));
@@ -302,5 +362,21 @@ public class ConvolutionLayerSetup {
 
     public void setLastOutChannels(int lastOutChannels) {
         this.lastOutChannels = lastOutChannels;
+    }
+
+    public Map<Integer, int[]> getOutSizesEachLayer() {
+        return outSizesEachLayer;
+    }
+
+    public void setOutSizesEachLayer(Map<Integer, int[]> outSizesEachLayer) {
+        this.outSizesEachLayer = outSizesEachLayer;
+    }
+
+    public Map<Integer, Integer> getnInForLayer() {
+        return nInForLayer;
+    }
+
+    public void setnInForLayer(Map<Integer, Integer> nInForLayer) {
+        this.nInForLayer = nInForLayer;
     }
 }
