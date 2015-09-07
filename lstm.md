@@ -58,7 +58,7 @@ The sum of the weight input and hidden state is squashed by the function φ -- e
 
 Because this feedback loop occurs at every time step in the series, each hidden state contains traces not only of the previous hidden state, but also of all those that preceded h_t-1 for as long as memory can persist.
 
-## <a name="backpropagation>Backpropagation Through Time (BPTT)</a>
+## <a name="backpropagation">Backpropagation Through Time (BPTT)</a>
 
 Remember, the purpose of recurrent nets is to accurately classify sequential input. We rely on the backpropagation of error and gradient descent to do so. Backpropagation in feedforward networks moves backward from the final error through the outputs, weights and inputs of each hidden layer, assigning those weights responsibility for a portion of the error by calculating their partial derivatives -- ∂E/∂w, or the relationship between their rates of change -- which are then used by our learning rule, gradient descent, to adjust the weights in a way that decreases error. 
 
@@ -120,7 +120,7 @@ In the diagram below, you can see the gates at work, with straight lines represe
 
 It should be noted that while feedforward networks map one input to one output, recurrent nets can map one to many, as above (one image to many words in a caption), many to many (translation), or many to one (classifying a voice).
 
-## <a name="time">Diverse Time Scales</a>
+## <a name="time">Capturing Diverse Time Scales and Remote Dependencies</a>
 
 You may also wonder what the precise value is of input gates that protect a memory cell from new data coming in, and output gates that prevent it from affecting certain outputs of the RNN. You can think of LSTMs as allowing a neural network to operate on different scales of time at once.
 
