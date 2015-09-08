@@ -46,7 +46,7 @@ public @Data class GemmParams {
 
 
         this.lda = a.size(0) > 1 ? a.size(0) : 1;
-        this.ldb = b.size(1) > 1 ? b.size(1) : 1;
+        this.ldb = b.size(0) > 1 ? b.size(0) : 1;
         this.ldc = c.size(0) > 1 ? c.size(0) : 1;
 
         if(a.ordering() == 'c') {
@@ -56,7 +56,7 @@ public @Data class GemmParams {
 
         if(b.ordering() == 'c') {
             bOrdering = 'T';
-            ldb = b.size(0) > 1 ? b.size(0) : 1;
+            ldb = b.size(1) > 1 ? b.size(1) : 1;
         }
 
 
