@@ -124,7 +124,7 @@ The black dots are the gates themselves, which determine respectively whether to
 
 The large bold letters give us the result of each operation. 
 
-Here's another diagram for good measure, comparing a simple recurrent network (left) to an LSTM cell (right). The blue lines can be ignored; the notes are helpful. 
+Here's another diagram for good measure, comparing a simple recurrent network (left) to an LSTM cell (right). The blue lines can be ignored; the legend is helpful. 
 
 ![Alt text](../img/greff_lstm_diagram.png)
 
