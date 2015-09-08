@@ -23,15 +23,15 @@ The second format for saving a model is as a long vector of all coefficients, wh
     //^^turn model's weight matrix into vector
     String conf = layer.conf().toJson(); 
     
-    Nd4j.write(params,"/your/absolute/file/path/here/somefile.json"); 
+    Nd4j.write(params,"somefile.json"); 
     //^^save vector as a string to file type of your choice, or
-    Nd4j.writeTxt(params,"/your/absolute/file/path/here/somefile.json"); 
+    Nd4j.writeTxt(params,"somefile.json"); 
     
     
     //You can reload the conf with
-    MultiLayerConfiguration = MultiLayerConfiguration.fromJson("/your/file/path/here/somefile.json");
+    MultiLayerConfiguration = MultiLayerConfiguration.fromJson("somefile.json");
     //or
-    NeuralNetConfiguration = NeuralNetConfiguration.fromJson("/your/file/path/here/somefile.json"); 
+    NeuralNetConfiguration = NeuralNetConfiguration.fromJson("somefile.json"); 
     
     //You can set the params with 
     layer.setParams(params);
