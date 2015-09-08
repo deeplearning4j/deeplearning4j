@@ -108,12 +108,14 @@ class NeuralNetworkReconstruction(override val uid: String)
     // train
     val networkParams = trainingStrategy.train(
         prepared.rdd, (network:MultiLayerNetwork, rows:Iterator[Row]) => {
-          
-          // features
-          val featureArrays = rows.map(row => row.getAs[Vector](0):INDArray)
-          val featureMatrix = Nd4j.vstack(featureArrays.toArray: _*)
-         
+
+        // features
+        val featureArrays = rows.map(row => row.getAs[Vector](0): INDArray).toArray
+        if(featureArrays.length >= 1) {
+          val featureMatrix = Nd4j.vstack(featureArrays: _*)
+
           network.fit(featureMatrix)
+        }
     })
 
     if (handlePersistence) prepared.unpersist()
@@ -136,44 +138,55 @@ class NeuralNetworkReconstructionModel private[ml] (
 
   override def predict(dataset: DataFrame): DataFrame = {
 
-    if ($(reconstructionCol) != "") {
-      val pred: Vector => Vector = (features) => {
-        reconstruct(features, $(layerIndex))
+    val schema = transformSchema(dataset.schema, logging = true)
+
+    val newRdd = dataset.mapPartitions { iterator:Iterator[Row] =>
+      val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson($(conf)))
+      network.init()
+      network.setParameters(networkParams.value)
+
+      // prepare the input feature matrix, while retaining the rows for later use
+      val featuresIndex = schema.fieldIndex(getFeaturesCol)
+      val (features, rows) = iterator.map { row =>
+        (
+          row.getAs[Vector](featuresIndex): INDArray,
+          row
+          )
+      }.toIterable.unzip
+
+      // compute output
+      val newRows = rows.size match {
+        case 0 => Seq()
+        case _ =>
+          val featureMatrix = Nd4j.vstack(features.toArray: _*)
+
+          val outputMatrix = network.reconstruct(featureMatrix, ${layerIndex})
+          val output = outputMatrix: Array[Vector]
+
+          // prepare column generators for required columns
+          val cols = {
+            schema.fieldNames flatMap {
+              case f if f == $(reconstructionCol) => Seq(
+                (row: Row, i: Int) => output(i))
+              case _ => Seq.empty
+            }
+          }
+
+          // transform the input rows, appending required columns
+          rows.zipWithIndex.map {
+            case (row, i) => {
+              Row.fromSeq(row.toSeq ++ cols.map(_(row, i)))
+            }
+          }
       }
-      dataset.withColumn($(reconstructionCol),
-        callUDF(pred, VectorUDT(), col($(featuresCol))))
-    } else {
-      this.logWarning(s"$uid: NeuralNetworkReconstructionModel.transform() was called as NOOP" +
-        " since no output columns were set.")
-      dataset
+
+      newRows.iterator
     }
-  }
-  
-  protected def reconstruct(features: Vector, layerIndex: Int): Vector = {
-    val examples: INDArray = features
-    val reconstruction: Vector = network().reconstruct(examples, layerIndex)
-    reconstruction
+
+    dataset.sqlContext.createDataFrame(newRdd, schema)
   }
 
   override def copy(extra: ParamMap): NeuralNetworkReconstructionModel = {
     copyValues(new NeuralNetworkReconstructionModel(uid, networkParams), extra)
-  }
-
-  @transient
-  private var networkHolder: ThreadLocal[MultiLayerNetwork] = null
-
-  private def network(): MultiLayerNetwork = {
-
-    if(networkHolder == null) {
-      networkHolder = new ThreadLocal[MultiLayerNetwork] {
-        override def initialValue(): MultiLayerNetwork = {
-          val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson($(conf)))
-          network.init()
-          network.setParameters(networkParams.value)
-          network
-        }
-      }
-    }
-    networkHolder.get()
   }
 }
