@@ -46,5 +46,22 @@ package object util {
 
       return Vectors.dense(ret)
     }
+
+    implicit def toMatrix(array: INDArray): Array[Vector] = {
+      if (!array.isRowVector && !array.isMatrix) {
+        throw new IllegalArgumentException("implicit array must be a matrix")
+      }
+
+      val matrix = new Array[Vector](array.rows())
+      for(i <- 0 to array.rows() - 1) {
+        val row = array.getRow(i)
+        val v = new Array[Double](row.length)
+        for(j <- 0 to row.length - 1)
+          v(j) = row.getDouble(j)
+        matrix(i) = Vectors.dense(v)
+      }
+
+      matrix
+    }
   }
 }
