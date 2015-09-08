@@ -32,7 +32,7 @@ Deeplearning4j includes both a distributed, multi-threaded deep-learning framewo
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) (images)
-* [Recurrent Nets/LSTMs](../recurrentnetwork.html) (time series and sensor data)
+* [Recurrent Nets](../recurrentnetwork.html)/[LSTMs](../lstm.html) (time series and sensor data)
 * [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [Deep-belief networks](../deepbeliefnetwork.html)
 * [Deep Autoencoders](http://deeplearning4j.org/deepautoencoder.html) (QA/data compression)
