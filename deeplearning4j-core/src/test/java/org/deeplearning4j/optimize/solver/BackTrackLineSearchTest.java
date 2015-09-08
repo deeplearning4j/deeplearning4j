@@ -111,6 +111,7 @@ public class BackTrackLineSearchTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345L)
                 .iterations(1)
+                .miniBatch(false)
                 .maxNumLineSearchIterations(maxIterations)
                 .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(lossFunction)
                         .nIn(4)
