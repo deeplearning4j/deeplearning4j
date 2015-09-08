@@ -130,7 +130,7 @@ It's important to note that LSTMs' memory cells, give different roles to additio
 
 Different sets of weights filter the input for input, output and forgetting. The forget gate is represented as a linear identity function, because if the gate is open, the current state of the memory cell is simply multiplied by one, to propagate forward one more time step. 
 
-Furthermore, while we're on the topic of simple hacks, [including a bias of 1](http://jmlr.org/proceedings/papers/v37/jozefowicz15.pdf) to the forget gate of every LSTM cell is also shown to [improve performance](http://www.felixgers.de/papers/phd.pdf). (*Graves, on the other hand, recommends a bias of 5.*)  
+Furthermore, while we're on the topic of simple hacks, [including a bias of 1](http://jmlr.org/proceedings/papers/v37/jozefowicz15.pdf) to the forget gate of every LSTM cell is also shown to [improve performance](http://www.felixgers.de/papers/phd.pdf). (*Sutskever, on the other hand, recommends a bias of 5.*)  
 
 You may wonder why LSTMs have a forget gate when their purpose is to link distant occurrences to a final output. Well, sometimes it's good to forget. If you're analyzing a text corpus and come to the end of a document, for example, you may have no reason to believe that the next document has any relationship to it whatsoever, and therefore the memory cell should be set to zero before the net ingests the first element of the next document. 
 
@@ -164,7 +164,6 @@ A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.
 
 ## <a name="resources">Resources</a>
 * [Recurrent Networks](../recurrentnetwork.html)
-* [LSTM Architecture, Mathematics and Implementation](https://www.dropbox.com/s/urkuc8s74ijiji0/A.Black_GravesLSTM_26_Aug_2015.pdf?dl=0); Alex Black
 * [Gated Feedback Recurrent Neural Networks](http://arxiv.org/pdf/1502.02367v4.pdf)
 * [Recurrent Neural Networks](http://people.idsia.ch/~juergen/rnn.html); Juergen Schmidhuber
 * [Modeling Sequences With RNNs and LSTMs](https://class.coursera.org/neuralnets-2012-001/lecture/77); Geoff Hinton
