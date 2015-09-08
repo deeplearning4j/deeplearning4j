@@ -96,7 +96,7 @@ Everyone who has studied compound interest knows that any quantity multiplied fr
 
 Because the layers and time steps of deep neural networks relate to each other through multiplication, derivatives are susceptible to vanishing or exploding. 
 
-Exploding gradients treat every weight as though it were the butterfly flapping its wings, which will cause a distant hurricane. Those weights' gradients become saturated on the high end; they are presumed to be too powerful. But exploding gradients can be solved relatively easily, because they can be truncated or squashed. Vanishing gradients can become too small for computers to work with or for networks to learn -- a harder problem to solve. 
+Exploding gradients treat every weight as though it were the proverbial butterfly whose flapping wings cause a distant hurricane. Those weights' gradients become saturated on the high end; i.e. they are presumed to be too powerful. But exploding gradients can be solved relatively easily, because they can be truncated or squashed. Vanishing gradients can become too small for computers to work with or for networks to learn -- a harder problem to solve. 
 
 Below you see the effects of applying a sigmoid function over and over again. The data is flattened until, for large stretches, it has no detectable slope. This is analogous to a gradient vanishing as it passes through many layers. 
 
