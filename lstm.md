@@ -96,7 +96,7 @@ Everyone who has studied compound interest knows that any quantity multiplied fr
 
 Because the layers and time steps of deep neural networks relate to each other through multiplication, derivatives are susceptible to vanishing or exploding. 
 
-Exploding gradients treat every weight as though it were the butterfly flapping its wings, which will cause a distant hurricane. Those weights' gradients become saturated on the high end; they are presumed to be too powerful. But exploding gradients can be solved relatively easily, because they can be truncated or squashed, while vanishing gradients can become too small for computers to work with or for networks to learn. 
+Exploding gradients treat every weight as though it were the butterfly flapping its wings, which will cause a distant hurricane. Those weights' gradients become saturated on the high end; they are presumed to be too powerful. But exploding gradients can be solved relatively easily, because they can be truncated or squashed. Vanishing gradients can become too small for computers to work with or for networks to learn -- a harder problem to solve. 
 
 Below you see the effects of applying a sigmoid function over and over again. The data is flattened until, for large stretches, it has no detectable slope. This is analogous to a gradient vanishing as it passes through many layers. 
 
@@ -108,7 +108,7 @@ In the mid-90s, a variation of recurrent net with so-called Long Short-Term Memo
 
 LSTMs help preserve the error that can be backpropagated through time and layers. By maintaining a more constant error, they allow recurrent nets to continue to learn over many time steps (over 1000), thereby opening a channel to link causes and effects remotely. 
 
-LSTMs contain information outside the normal flow of the recurrent network in a gated cell. Information can be stored in, written to, or read from a cell, much like data in a computer's memory. The cell makes decisions about what to store, and when to allow reads, writes and erasures, via gates that open and close. Unlike the digital storage on computers, however, these gates are analog, implemented with element-wise multiplication by sigmoids, which are all in the range of 0-1, which has the advantage over digital of being differentiable, and therefore suitable for backpropagation. 
+LSTMs contain information outside the normal flow of the recurrent network in a gated cell. Information can be stored in, written to, or read from a cell, much like data in a computer's memory. The cell makes decisions about what to store, and when to allow reads, writes and erasures, via gates that open and close. Unlike the digital storage on computers, however, these gates are analog, implemented with element-wise multiplication by sigmoids, which are all in the range of 0-1. Analog has the advantage over digital of being differentiable, and therefore suitable for backpropagation. 
 
 Those gates act on the signals they receive, and similar to the neural network's nodes, they block or pass on information based on its strength and import, which they filter with their own sets of weights. Those weights, like the weights that modulate input and hidden states, are adjusted via the recurrent networks learning process. That is, the cells learn when to allow data to enter, leave or be deleted through the iterative process of making guesses, backpropagating error, and adjusting weights via gradient descent.
 
