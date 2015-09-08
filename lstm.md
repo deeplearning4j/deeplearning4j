@@ -74,7 +74,7 @@ Remember, the purpose of recurrent nets is to accurately classify sequential inp
 
 Backpropagation in feedforward networks moves backward from the final error through the outputs, weights and inputs of each hidden layer, assigning those weights responsibility for a portion of the error by calculating their partial derivatives -- *∂E/∂w*, or the relationship between their rates of change. Those derivatives are then used by our learning rule, gradient descent, to adjust the weights up or down, whichever direction decreases error. 
 
-Recurrent networks rely on an extension of backpropagation called [backpropagation through time](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf), or BPTT. Time, in this case, is simply expressed by a well-defined series of calculations, which is all backpropagation needs to work. 
+Recurrent networks rely on an extension of backpropagation called [backpropagation through time](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/pdfs/Werbos.backprop.pdf), or BPTT. Time, in this case, is simply expressed by a well-defined, ordered series of calculations linking one time step to the next, which is all backpropagation needs to work. 
 
 Neural networks, whether they are recurrent or not, are simply nested composite functions like `f(g(h(x)))`. Adding a time element only extends the series of functions for which we calculate derivatives with the chain rule. 
 
