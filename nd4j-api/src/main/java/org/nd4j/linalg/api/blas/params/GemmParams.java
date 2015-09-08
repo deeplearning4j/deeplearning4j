@@ -51,12 +51,12 @@ public @Data class GemmParams {
 
         if(a.ordering() == 'c') {
             aOrdering = 'T';
-            lda = a.size(1) > 1 ? a.size(1) : 1;
+            lda = a.size(0) > 1 ? a.size(0) : 1;
         }
 
         if(b.ordering() == 'c') {
             bOrdering = 'T';
-            ldb = b.size(1) > 1 ? b.size(1) : 1;
+            ldb = b.size(0) > 1 ? b.size(0) : 1;
         }
 
         ldc = Math.max(1,m);
