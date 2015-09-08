@@ -166,7 +166,7 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 
 **[Understanding Machine Learning: From Theory to Algorithms](http://www.cs.huji.ac.il/~shais/UnderstandingMachineLearning/understanding-machine-learning-theory-algorithms.pdf)**
 
-**[Algorithms for Reinforcement Learning](http://www.ualberta.ca/~szepesva/papers/RLAlgsInMDPs.pdf); Csaba Szepesvári**
+**[Algorithms for Reinforcement Learning](http://www.ualberta.ca/~szepesva/papers/RLAlgsInMDPs.pdf);** Csaba Szepesvári
 
 ## Researchers' Personal Websites
 
