@@ -16,6 +16,7 @@ layout: default
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
 * [Machine Learning and Probabilistic Graphical Models](http://www.cedar.buffalo.edu/~srihari/CSE574/index.html)
 * ["Deep Learning" @CMU](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/); Bhiksha Raj
+* [Sebastian Thrun's "Artificial Intelligence and Robotics](https://www.udacity.com/course/artificial-intelligence-for-robotics--cs373)
 
 ## Deep- and Machine-Learning Fora
 
