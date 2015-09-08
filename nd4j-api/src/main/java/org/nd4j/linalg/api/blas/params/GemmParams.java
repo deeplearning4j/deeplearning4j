@@ -16,6 +16,8 @@ import org.nd4j.linalg.factory.Nd4j;
 public @Data class GemmParams {
     private int lda,ldb,ldc,m,n,k;
     private INDArray a,b,c;
+    private char aOrdering = 'N';
+    private char bOrdering = 'N';
 
     /**
      *
@@ -28,65 +30,39 @@ public @Data class GemmParams {
             throw new IllegalArgumentException("B columns must match c columns");
         if(a.rows() != c.rows())
             throw new IllegalArgumentException("A rows must equal c rows");
-        //homogenize row/column major
-        if(a.ordering() != b.ordering()) {
-            if(a.ordering() != 'f') {
-                INDArray rearrangedA = Nd4j.create(a.shape(),'f');
-                NdIndexIterator iter = new NdIndexIterator('c',rearrangedA.shape());
-                while(iter.hasNext()) {
-                    int[] next = iter.next();
-                    rearrangedA.putScalar(next, a.getDouble(next));
-                }
-
-                a = rearrangedA;
-            }
-
-            if(b.ordering() != 'f') {
-                INDArray rearrangedB = Nd4j.create(b.shape(),'f');
-                NdIndexIterator iter = new NdIndexIterator('c',rearrangedB.shape());
-                while(iter.hasNext()) {
-                    int[] next = iter.next();
-                    rearrangedB.putScalar(next,b.getDouble(next));
-                }
-
-                b = rearrangedB;
-            }
 
 
-        }
-
-
+        //automatically assume fortran ordering
+        //multiple backends force us to be
+        //in fortran ordering only
         this.a = a;
         this.b = b;
         this.c = c;
-        this.m = a.rows();
-        this.n = b.columns();
-        this.k = a.columns();
 
-        if(a.ordering() == NDArrayFactory.C && b.ordering() == NDArrayFactory.C) {
-            int oldN = n;
-            int oldM = m;
-            this.m = oldN;
-            this.n = oldM;
-            //invert the operation
-            this.a = b;
-            this.b = a;
+        this.m = a.ordering() == 'f' ? a.size(0) : a.size(1);
+        this.n = b.ordering() == 'f' ? b.size(1) : b.size(0);
+        this.k = c.ordering() == 'f' ? a.size(1) : a.size(0);
+
+
+
+        this.lda = a.size(0) > 1 ? a.size(0) : 1;
+        this.ldb = b.size(1) > 1 ? b.size(1) : 1;
+        this.ldc = c.size(0) > 1 ? c.size(0) : 1;
+
+        if(a.ordering() == 'c') {
+            aOrdering = 'T';
+            lda = a.size(1) > 1 ? a.size(1) : 1;
         }
 
-        this.lda = Math.max(1, m);
-        this.ldb = Math.max(1, k);
-        this.ldc = Math.max(1, m);
-        if(unevenStrides(a))
-            this.a = a.dup();
-        if(unevenStrides(b))
-            this.b = b.dup();
+        if(b.ordering() == 'c') {
+            bOrdering = 'T';
+            ldb = b.size(0) > 1 ? b.size(0) : 1;
+        }
+
 
         validate();
     }
 
-    protected boolean unevenStrides(INDArray arr) {
-        return arr.ordering() == 'f' && arr.offset() > 0;
-    }
 
 
 

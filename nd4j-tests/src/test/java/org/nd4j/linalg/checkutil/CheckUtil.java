@@ -31,7 +31,7 @@ public class CheckUtil {
 	 * @param minAbsDifference Minimum absolute difference for failure
 	 * @return true if OK, false if result incorrect
 	 */
-	public static boolean checkMmul(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference ){
+	public static boolean checkMmul(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference) {
 		if(first.size(1) != second.size(0)) throw new IllegalArgumentException("first.columns != second.rows");
 		RealMatrix rmFirst = convertToApacheMatrix(first);
 		RealMatrix rmSecond = convertToApacheMatrix(second);
@@ -239,7 +239,8 @@ public class CheckUtil {
 		String baseMsg = "getTensorAlongDimensionMatricesWithShape("+rows+","+cols+","+seed+")";
 		List<Pair<INDArray,String>> list = new ArrayList<>(12);
 		
-		for( int i=0; i<out.length; i++ ) list.add(new Pair<>(out[i],baseMsg+".get("+i+")"));
+		for( int i=0; i < out.length; i++ )
+			list.add(new Pair<>(out[i],baseMsg+".get("+i+")"));
 
 		return list;
 	}

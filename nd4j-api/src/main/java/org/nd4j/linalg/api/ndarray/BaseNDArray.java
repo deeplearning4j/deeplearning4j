@@ -2667,7 +2667,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        Nd4j.getExecutioner().exec(new AddOp(linearView(), other.linearView(), result.linearView()));
+        Nd4j.getExecutioner().exec(new AddOp(this, other, result));
 
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)

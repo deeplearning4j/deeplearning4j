@@ -40,8 +40,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemm(Order
-                    ,TransA
-                    ,TransB
+                    ,params.getAOrdering()
+                    ,params.getBOrdering()
                     ,params.getM()
                     ,params.getN()
                     ,params.getK()
@@ -55,8 +55,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     ,params.getLdc());
         else
             sgemm(Order
-                    , TransA
-                    , TransB
+                    , params.getAOrdering()
+                    , params.getBOrdering()
                     , params.getM()
                     , params.getN()
                     , params.getK()

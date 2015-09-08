@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -93,8 +94,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
 */
             else {
+                NdIndexIterator iter = new NdIndexIterator(op.x().shape());
                 for (int c = 0; c < op.n(); c++) {
-                    apply(t, c);
+                    apply(t, iter.next());
                 }
             }
 
@@ -485,7 +487,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     //apply a pairwise op to x and store the result
-    private void apply(TransformOp op, int c) {
+    private void apply(TransformOp op, int[] c) {
         if(op.isPassThrough())
             return;
         if (op.y() != null) {
