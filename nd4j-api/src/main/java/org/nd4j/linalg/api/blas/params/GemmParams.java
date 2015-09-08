@@ -59,6 +59,9 @@ public @Data class GemmParams {
             ldb = b.size(1) > 1 ? b.size(1) : 1;
         }
 
+        ldc = Math.max(1,m);
+
+
 
         validate();
     }
