@@ -164,6 +164,8 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 
 **[Explorations in Parallel Distributed Processing: A Handbook of Models, Programs, and Exercises](https://web.stanford.edu/group/pdplab/pdphandbook/handbookli1.html)**; James L. McClelland
 
+**[Understanding Machine Learning: From Theory to Algorithms](http://www.cs.huji.ac.il/~shais/UnderstandingMachineLearning/understanding-machine-learning-theory-algorithms.pdf)**
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
@@ -183,6 +185,7 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 * [The Matrix Cookbook](https://ia801002.us.archive.org/13/items/K_B_Petersen_and_M_S_Peders__The_Matrix_Cookbook/matrixcookbook.pdf)
 * [Old and New Matrix Algebra Useful for Statistics](http://research.microsoft.com/en-us/um/people/minka/papers/matrix/minka-matrix.pdf)
 * [Math for Machine Learning](https://www.umiacs.umd.edu/~hal/courses/2013S_ML/math4ml.pdf)
+* [Immersive Linear Algebra](http://immersivemath.com/ila/learnmore.html)
 
 ## Other Resources
 
