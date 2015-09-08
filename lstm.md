@@ -26,7 +26,7 @@ Since recurrent networks possess a certain type of memory, and memory is also pa
 
 ## <a name="feedforward">Review of Feedforward Networks</a>
 
-To understand recurrent nets, first you have to understand the basics of [feedforward nets](../restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed at the nodes of the network. One feeds information straight through, the other cycles it through a loop.
+To understand recurrent nets, first you have to understand the basics of [feedforward nets](../restrictedboltzmannmachine.html). Both of these networks are named after the way they channel information through a series of mathematical operations performed at the nodes of the network. One feeds information straight through (never touching a given node twice), the other cycles it through a loop.
 
 In the case of feedforward networks, input examples are fed to the network and transformed into an output; with supervised learning, the output would be a label. That is, they map raw data to categories, recognizing patterns that signal, for example, that an input image should be labeled "cat" or "elephant." 
 
