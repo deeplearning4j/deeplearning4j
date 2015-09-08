@@ -8,14 +8,14 @@ layout: default
 ## Online Courses
 
 * [Geoff Hinton's Neural Networks Class on Coursera](class.coursera.org/neuralnets-2012-001/lecture) (2012)
-* [Toronto: Introduction to Neural Networks](http://www.cs.toronto.edu/~rgrosse/csc321/notes.html) (2015)
+* [U. Toronto: Introduction to Neural Networks](http://www.cs.toronto.edu/~rgrosse/csc321/notes.html) (2015)
 * [Andrew Ng's Machine-Learning Class on Coursera](https://www.coursera.org/learn/machine-learning/home/info)
 * [Ng's Lecture Notes for Stanford's CS229 Machine Learning](http://cs229.stanford.edu/materials.html)
 * [Nando de Freitas's Deep Learning Class at Oxford](https://www.youtube.com/playlist?list=PLE6Wd9FR--EfW8dtjAuPoTuPcqmOV53Fu)  (2015)
 * [Andrej Karpathy's Convolutional Neural Networks Class at Stanford](cs231n.github.io)
 * [Patrick Winston's Introduction to Artificial Intelligence](http://ocw.mit.edu/courses/electrical-engineering-and-computer-science/6-034-artificial-intelligence-fall-2010/)
 * [Machine Learning and Probabilistic Graphical Models](http://www.cedar.buffalo.edu/~srihari/CSE574/index.html)
-* ["Deep Learning" @CMU](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/); Bhiksha Raj
+* [Bhiksha Raj's "Deep Learning" @CMU](https://www.cs.cmu.edu/~bhiksha/courses/deeplearning/Fall.2015/)
 * [Sebastian Thrun's "Artificial Intelligence and Robotics"](https://www.udacity.com/course/artificial-intelligence-for-robotics--cs373)
 
 ## Deep- and Machine-Learning Fora
