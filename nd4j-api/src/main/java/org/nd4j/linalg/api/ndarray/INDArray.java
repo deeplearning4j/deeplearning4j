@@ -1569,6 +1569,15 @@ public interface INDArray extends Serializable  {
      */
     INDArray ravel();
 
+
+    /**
+     * Returns a flattened version (row vector) of this ndarray
+     *
+     * @return a flattened version (row vector) of this ndarray
+     */
+    INDArray ravel(char order);
+
+
     /**
      *
      * @param data

@@ -861,7 +861,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 s += getDouble(i);
                 putScalar(i, s);
             }
-        } else if (dimension == Integer.MAX_VALUE) {
+        }
+        else if (dimension == Integer.MAX_VALUE) {
             INDArray flattened = ravel();
             double prevVal = flattened.getDouble(0);
             for (int i = 1; i < flattened.length(); i++) {
@@ -1010,8 +1011,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             LinAlgExceptions.assertSameShape(this, arr);
         else if (isVector() && arr.isVector() && length() != arr.length())
             throw new IllegalArgumentException("Illegal assignment, must be of same length");
-        INDArray linear = arr.linearView();
-        INDArray thisLinear = linearView();
         NdIndexIterator iter = new NdIndexIterator(shape());
         while(iter.hasNext()) {
             int[] next = iter.next();
@@ -3477,7 +3476,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    /**
+     * Flattens the array for linear indexing
+     *
+     * @return the flattened version of this array
+     */
+    @Override
+    public INDArray ravel(char ordering) {
 
+        INDArray ret = create(new int[]{1,length}, ordering);
+        INDArray linear = linearView();
+     
+        for(int i = 0; i < length(); i++) {
+            double val = linear.getDouble(i);
+            ret.putScalar(i,val);
+        }
+
+        return ret;
+
+    }
     /**
      * Flattens the array for linear indexing
      *
