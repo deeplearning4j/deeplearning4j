@@ -29,12 +29,12 @@ public @Data class GemvParameters {
 
         if(a.ordering() == 'f' && a.isMatrix()) {
             this.m = a.rows();
-            this.n = y.columns();
+            this.n = a.columns();
             this.lda = a.rows();
         }
         else if(a.ordering() == 'c' && a.isMatrix()) {
-            this.m = a.rows();
-            this.n = x.length();
+            this.m = a.columns();
+            this.n = a.rows();
             this.lda = a.columns();
             aOrdering = 'T';
         }

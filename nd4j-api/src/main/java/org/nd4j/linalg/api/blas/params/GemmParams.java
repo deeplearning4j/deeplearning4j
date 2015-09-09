@@ -59,7 +59,7 @@ public @Data class GemmParams {
             this.ldc = this.c.rows();
             bOrdering = 'T';
 
-        } else if(this.a.ordering() == 'c' && this.b.ordering() == 'f' ){
+        } else if(this.a.ordering() == 'c' && this.b.ordering() == 'f') {
             this.k = this.b.rows();  //common dimension of a and b
 
             this.lda = this.a.columns(); //normally a.rows() but swap for c->f
