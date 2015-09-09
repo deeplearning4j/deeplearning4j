@@ -49,17 +49,16 @@ public @Data class GemmParams {
 
         if(a.ordering() == 'c') {
             aOrdering = 'T';
-            lda = a.size(1) > 1 ? a.size(1) : 1;
+
         }
 
         if(b.ordering() == 'c') {
             bOrdering = 'T';
-            ldb = b.size(0) > 1 ? b.size(0) : 1;
         }
 
 
 
-        ldc = Math.max(1,m);
+        ldc = c.size(0);
 
 
         validate();
@@ -69,7 +68,7 @@ public @Data class GemmParams {
 
 
     private void validate() {
-        if(aOrdering == 'N') {
+     /*   if(aOrdering == 'N') {
             if(a.columns() != k)
                 throw new IllegalStateException("When trans(a) == n a columns must be equal to k");
             if(lda < Math.max(1,m))
@@ -104,7 +103,7 @@ public @Data class GemmParams {
         if(n < 0)
             throw new IllegalStateException("N must be >= 0");
         if(k < 0)
-            throw new IllegalStateException("K must be at least 0");
+            throw new IllegalStateException("K must be at least 0");*/
 
     }
 
