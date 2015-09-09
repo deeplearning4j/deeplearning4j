@@ -74,13 +74,59 @@ public class CheckUtil {
 		RealMatrix rmResult = rmFirst.subtract(rmSecond);
 
 		if(!checkShape(rmResult,result)) return false;
-		boolean ok = checkEntries(rmResult,result,maxRelativeDifference,minAbsDifference);
+		boolean ok = checkEntries(rmResult, result, maxRelativeDifference, minAbsDifference);
         if(!ok){
             INDArray onCopies = Shape.toOffsetZeroCopy(first).sub(Shape.toOffsetZeroCopy(second));
             printFailureDetails(first, second, rmResult, result, onCopies, "sub");
         }
         return ok;
 	}
+
+	public static boolean checkMulManually(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference ){
+		//No apache commons element-wise multiply, but can do this manually
+
+		INDArray result = first.mul(second);
+		int[] shape = first.shape();
+
+		INDArray expected = Nd4j.zeros(first.shape());
+
+		for(int i=0; i<shape[0]; i++ ) {
+            for (int j = 0; j < shape[1]; j++) {
+                double v = first.getDouble(i, j) * second.getDouble(i, j);
+                expected.putScalar(new int[]{i, j}, v);
+            }
+        }
+        if(!checkShape(expected,result)) return false;
+        boolean ok = checkEntries(expected,result,maxRelativeDifference,minAbsDifference);
+        if(!ok){
+            INDArray onCopies = Shape.toOffsetZeroCopy(first).mul(Shape.toOffsetZeroCopy(second));
+            printFailureDetails(first,second,expected,result,onCopies,"mul");
+        }
+        return ok;
+	}
+
+    public static boolean checkDivManually(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference ){
+        //No apache commons element-wise division, but can do this manually
+
+        INDArray result = first.div(second);
+        int[] shape = first.shape();
+
+        INDArray expected = Nd4j.zeros(first.shape());
+
+        for(int i=0; i<shape[0]; i++ ) {
+            for (int j = 0; j < shape[1]; j++) {
+                double v = first.getDouble(i, j) / second.getDouble(i, j);
+                expected.putScalar(new int[]{i, j}, v);
+            }
+        }
+        if(!checkShape(expected,result)) return false;
+        boolean ok = checkEntries(expected,result,maxRelativeDifference,minAbsDifference);
+        if(!ok){
+            INDArray onCopies = Shape.toOffsetZeroCopy(first).mul(Shape.toOffsetZeroCopy(second));
+            printFailureDetails(first, second, expected, result, onCopies, "div");
+        }
+        return ok;
+    }
 
 	private static boolean checkShape(RealMatrix rmResult, INDArray result){
 		int[] outShape = {rmResult.getRowDimension(),rmResult.getColumnDimension()};
@@ -91,7 +137,15 @@ public class CheckUtil {
 		return true;
 	}
 
-	private static boolean checkEntries(RealMatrix rmResult, INDArray result, double maxRelativeDifference, double minAbsDifference){
+    private static boolean checkShape(INDArray expected, INDArray actual){
+        if(!Arrays.equals(expected.shape(), actual.shape())){
+            System.out.println("Failure on shape: " + Arrays.toString(actual.shape()) + ", expected " + Arrays.toString(expected.shape()));
+            return false;
+        }
+        return true;
+    }
+
+	public static boolean checkEntries(RealMatrix rmResult, INDArray result, double maxRelativeDifference, double minAbsDifference){
 		int[] outShape = {rmResult.getRowDimension(),rmResult.getColumnDimension()};
 		for( int i = 0; i < outShape[0]; i++) {
 			for( int j = 0; j < outShape[1]; j++) {
@@ -109,6 +163,25 @@ public class CheckUtil {
 		}
 		return true;
 	}
+
+    public static boolean checkEntries(INDArray expected, INDArray actual, double maxRelativeDifference, double minAbsDifference){
+        int[] outShape = expected.shape();
+        for( int i = 0; i < outShape[0]; i++) {
+            for( int j = 0; j < outShape[1]; j++) {
+                double expOut = expected.getDouble(i, j);
+                double actOut = actual.getDouble(i,j);
+                if(expOut==0.0 && actOut==0.0)
+                    continue;
+                double absError = Math.abs(expOut - actOut);
+                double relError = absError / (Math.abs(expOut) + Math.abs(actOut));
+                if (relError > maxRelativeDifference && absError > minAbsDifference) {
+                    System.out.println("Failure on value: (" +i+","+j+" exp="+expOut + ", act="+actOut + ", absError="+absError + ", relError="+relError);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
 	public static RealMatrix convertToApacheMatrix(INDArray matrix){
 		if(matrix.rank() != 2) throw new IllegalArgumentException("Input rank is not 2 (not matrix)");
@@ -152,6 +225,21 @@ public class CheckUtil {
 			}
 		}
 	}
+
+    public static void printFailureDetails(INDArray first, INDArray second, INDArray expected, INDArray actual, INDArray onCopies, String op){
+        System.out.println("\nFactory: " + Nd4j.factory().getClass() + "\n");
+
+        System.out.println("First:");
+        printMatrixFullPrecision(first);
+        System.out.println("\nSecond:");
+        printMatrixFullPrecision(second);
+        System.out.println("\nExpected");
+        printMatrixFullPrecision(expected);
+        System.out.println("\nSame Nd4j op on copies: (Shape.toOffsetZeroCopy(first)." + op + "(Shape.toOffsetZeroCopy(second)))");
+        printMatrixFullPrecision(onCopies);
+        System.out.println("\nActual:");
+        printMatrixFullPrecision(actual);
+    }
 
     public static void printApacheMatrix(RealMatrix matrix){
         int nRows = matrix.getRowDimension();
