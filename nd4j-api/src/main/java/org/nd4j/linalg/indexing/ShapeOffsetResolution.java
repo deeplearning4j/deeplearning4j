@@ -50,6 +50,8 @@ public class ShapeOffsetResolution implements Serializable {
         int newAxesPrepend = 0;
         //whether we have encountered an all so far
         boolean encounteredAll = false;
+        List<Integer> oneDimensionWithAllEncountered = new ArrayList<>();
+
         //accumulate the results
         List<Integer> accumShape = new ArrayList<>();
         List<Integer> accumStrides = new ArrayList<>();
@@ -73,8 +75,11 @@ public class ShapeOffsetResolution implements Serializable {
         List<Integer> prependNewAxes = new ArrayList<>();
         for(int i = 0; i < indexes.length; i++) {
             INDArrayIndex idx = indexes[i];
-            if (idx instanceof NDArrayIndexAll)
+            if (idx instanceof NDArrayIndexAll) {
                 encounteredAll = true;
+                if(arr.size(i) == 1)
+                    oneDimensionWithAllEncountered.add(i);
+            }
             //point: do nothing but move the shape counter
             //also move the stride counter
             if(idx instanceof PointIndex) {
@@ -293,7 +298,11 @@ public class ShapeOffsetResolution implements Serializable {
                 this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
         }
         else if(numIntervals > 0 && arr.rank() > 2) {
-            this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
+            if(encounteredAll && arr.size(0) != 1)
+                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides);
+            else
+                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
+
         }
         else
             this.offset = ArrayUtil.calcOffset(accumShape,accumOffsets,accumStrides);

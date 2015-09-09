@@ -3486,7 +3486,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret = create(new int[]{1,length}, ordering);
         INDArray linear = linearView();
-     
+
         for(int i = 0; i < length(); i++) {
             double val = linear.getDouble(i);
             ret.putScalar(i,val);
