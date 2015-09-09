@@ -112,17 +112,17 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>0.0.0.5</version>
+            <version>${canova.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>0.4-rc0</version>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jblas</artifactId>
-            <version>0.4-rc0</version>
+            <artifactId>nd4j-x86</artifactId>
+            <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
