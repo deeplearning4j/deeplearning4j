@@ -321,6 +321,27 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return ret;
     }
 
+    @Override
+    public INDArray toFlattened(char order, Collection<INDArray> matrices ){
+        int length = 0;
+        for (INDArray m : matrices)
+            length += m.length();
+        INDArray ret = Nd4j.create(new int[]{1,length},order);
+        int linearIndex = 0;
+        for(INDArray m : matrices){
+            NdIndexIterator iter = new NdIndexIterator(order,m.shape());
+            while(iter.hasNext()){
+                ret.putScalar(linearIndex++,m.getDouble(iter.next()));
+            }
+        }
+        return ret;
+    }
+
+    @Override
+    public INDArray toFlattened(char order, INDArray... matrices ){
+        return toFlattened(order, Arrays.asList(matrices));
+    }
+
     /**
      * Create the identity ndarray
      *
