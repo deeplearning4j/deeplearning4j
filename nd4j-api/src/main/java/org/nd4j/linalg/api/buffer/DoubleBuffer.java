@@ -86,7 +86,7 @@ public class DoubleBuffer extends BaseDataBuffer {
 
     @Override
     public Number getNumber(int i) {
-        return (int) getDouble(i);
+        return  getDouble(i);
     }
 
     @Override

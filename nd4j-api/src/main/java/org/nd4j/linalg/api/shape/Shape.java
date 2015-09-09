@@ -94,9 +94,8 @@ public class Shape {
             return ret;
         }
         else {
-            INDArray ret = Nd4j.create(arr.shape());
-            for(int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i,arr.slice(i));
+            INDArray ret = Nd4j.create(arr.shape(),arr.ordering());
+            ret.assign(arr);
             return ret;
         }
     }
@@ -137,12 +136,12 @@ public class Shape {
         }
         else {
 
-        	if(arr.offset()==0 && arr.data().allocationMode() == AllocationMode.HEAP
+        	if(arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
         			&& arr.length() == arr.data().length() && arr.ordering() == Nd4j.order()
-        			&& strideDescendingCAscendingF(arr.ordering(),arr.stride()) ){
+        			&& strideDescendingCAscendingF(arr.ordering(),arr.stride())) {
         		Object array = arr.data().array();
         		
-        		if( array instanceof float[] ){
+        		if( array instanceof float[]) {
         			float[] orig = (float[])array;
         			float[] out = Arrays.copyOf(orig, orig.length);
         			DataBuffer floatBuffer = Nd4j.createBuffer(out);        			

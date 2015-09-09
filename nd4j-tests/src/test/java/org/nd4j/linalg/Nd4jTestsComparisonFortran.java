@@ -81,10 +81,11 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     public void testMmulWithOpsCommonsMath(){
     	List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
     	List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(5, 4, SEED);
-    	for( int i=0; i<first.size(); i++ ){
-    		for( int j=0; j<second.size(); j++ ){
+
+      	for( int i = 0; i < first.size(); i++ ){
+    		for( int j = 0; j < second.size(); j++ ){
     			Pair<INDArray,String> p1 = first.get(i);
-    			Pair<INDArray,String> p2 = second.get(i);
+    			Pair<INDArray,String> p2 = second.get(j);
     			String errorMsg = getTestWithOpsErrorMsg(i,j,"mmul",p1,p2);
     			assertTrue(errorMsg, CheckUtil.checkMmul(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
     		}
@@ -95,16 +96,34 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     public void testAddSubtractWithOpsCommonsMath() {
     	List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
     	List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
-    	for( int i=0; i<first.size(); i++ ){
-    		for( int j=0; j<second.size(); j++ ){
+    	for( int i = 0; i< first.size(); i++) {
+    		for( int j = 0; j< second.size(); j++) {
     			Pair<INDArray,String> p1 = first.get(i);
-    			Pair<INDArray,String> p2 = second.get(i);
-    			String errorMsg1 = getTestWithOpsErrorMsg(i,j,"add",p1,p2);
-    			String errorMsg2 = getTestWithOpsErrorMsg(i,j,"sub",p1,p2);
-    			assertTrue(errorMsg1,CheckUtil.checkAdd(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
-                assertTrue(errorMsg2,CheckUtil.checkSubtract(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
+    			Pair<INDArray,String> p2 = second.get(j);
+    			String errorMsg1 = getTestWithOpsErrorMsg(i, j, "add", p1, p2);
+    			String errorMsg2 = getTestWithOpsErrorMsg(i, j, "sub", p1, p2);
+                boolean addFail = CheckUtil.checkAdd(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6);
+    			assertTrue(errorMsg1,addFail);
+                boolean subFail = CheckUtil.checkSubtract(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6);
+                assertTrue(errorMsg2,subFail);
     		}
     	}
+    }
+
+    @Test
+    public void testMulDivOnCheckUtilMatrices(){
+        List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        for( int i=0; i<first.size(); i++ ){
+            for( int j=0; j<second.size(); j++ ){
+                Pair<INDArray,String> p1 = first.get(i);
+                Pair<INDArray,String> p2 = second.get(j);
+                String errorMsg1 = getTestWithOpsErrorMsg(i, j, "mul", p1, p2);
+                String errorMsg2 = getTestWithOpsErrorMsg(i, j, "div", p1, p2);
+                assertTrue(errorMsg1,CheckUtil.checkMulManually(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
+                assertTrue(errorMsg2,CheckUtil.checkDivManually(p1.getFirst(), p2.getFirst(), 1e-4, 1e-6));
+            }
+        }
     }
 
     private static String getTestWithOpsErrorMsg(int i, int j, String op, Pair<INDArray,String> first, Pair<INDArray,String> second) {
