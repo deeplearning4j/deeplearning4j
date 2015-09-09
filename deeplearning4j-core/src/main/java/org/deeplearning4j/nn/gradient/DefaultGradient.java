@@ -48,12 +48,12 @@ public class DefaultGradient implements Gradient {
                continue;
             ret.add(gradientForVariable().get(s));
         }
-        return Nd4j.toFlattened(ret);
+        return Nd4j.toFlattened('f',ret);
     }
 
     @Override
     public INDArray gradient() {
-        return Nd4j.toFlattened(gradients.values());
+        return Nd4j.toFlattened('f',gradients.values());
     }
 
     @Override

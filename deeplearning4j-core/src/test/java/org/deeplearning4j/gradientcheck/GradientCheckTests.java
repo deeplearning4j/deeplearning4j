@@ -32,7 +32,7 @@ public class GradientCheckTests {
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-2;
+    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
 
     static {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
@@ -41,7 +41,7 @@ public class GradientCheckTests {
     }
 
     @Test
-    public void testGradientMLP2LayerIrisSimple(){
+    public void testGradientMLP2LayerIrisSimple() {
     	//Parameterized test, testing combinations of:
     	// (a) activation function
     	// (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
@@ -57,9 +57,9 @@ public class GradientCheckTests {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
     	
-    	for( String afn : activFns ){
-    		for( boolean doLearningFirst : characteristic ){
-    			for( int i=0; i<lossFunctions.length; i++ ){
+    	for( String afn : activFns) {
+    		for(boolean doLearningFirst : characteristic) {
+    			for(int i = 0; i<lossFunctions.length; i++) {
     				LossFunction lf = lossFunctions[i];
     				String outputActivation = outputActivations[i];
     				
@@ -141,8 +141,8 @@ public class GradientCheckTests {
     	
     	for( String afn : activFns ){
     		for( boolean doLearningFirst : characteristic ){
-    			for( int i=0; i<lossFunctions.length; i++ ){
-    				for( int k=0; k<l2vals.length; k++ ){
+    			for( int i = 0; i<lossFunctions.length; i++) {
+    				for( int k = 0; k<l2vals.length; k++) {
 	    				LossFunction lf = lossFunctions[i];
 	    				String outputActivation = outputActivations[i];
 	    				double l2 = l2vals[k];
@@ -156,13 +156,13 @@ public class GradientCheckTests {
 				                .list(2)
 				                .layer(0, new DenseLayer.Builder()
 										.nIn(4).nOut(3)
-										.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+										.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
 										.updater(Updater.NONE)
 										.activation(afn)
 										.build())
 								.layer(1, new OutputLayer.Builder(lf)
 										.nIn(3).nOut(3)
-										.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+										.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
 										.updater(Updater.NONE)
 										.activation(outputActivation)
 										.build())
@@ -188,7 +188,7 @@ public class GradientCheckTests {
 					        assertTrue(msg,scoreAfter < 0.8 *scoreBefore);
 				        }
 				
-				        if( PRINT_RESULTS ){
+				        if(PRINT_RESULTS) {
 				        	System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
 				        		+", doLearningFirst="+doLearningFirst +", l2="+l2+", l1="+l1 );
 				        	for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
@@ -350,7 +350,7 @@ public class GradientCheckTests {
     	int layerSize = 9;
     	int nOut = 4;
     	
-    	for( int i=0; i<timeSeriesLength.length; i++ ){
+    	for( int i=0; i<timeSeriesLength.length; i++) {
     		
     		Random r = new Random(12345L);
         	INDArray input = Nd4j.zeros(miniBatchSize[i],nIn,timeSeriesLength[i]);
@@ -392,7 +392,7 @@ public class GradientCheckTests {
     }
     
     @Test
-    public void testGravesLSTMBasicMultiLayer(){
+    public void testGravesLSTMBasicMultiLayer() {
     	//Basic test of GravesLSTM layer
     	Nd4j.getRandom().setSeed(12345L);
     	
@@ -406,12 +406,12 @@ public class GradientCheckTests {
 	        .regularization(false)
 	        .seed(12345L)
 	        .list(3)
-	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("tanh")
-	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
-	        .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation("tanh")
-	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("sigmoid")
+	        		.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+	        .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation("sigmoid")
+	        		.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
-	        		.weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+	        		.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .pretrain(false).backprop(true)
 	        .build();
     	
@@ -420,24 +420,26 @@ public class GradientCheckTests {
     	
     	Random r = new Random(12345L);
     	INDArray input = Nd4j.zeros(miniBatchSize,nIn,timeSeriesLength);
-    	for( int i=0; i<miniBatchSize; i++ ){
-    		for( int j=0; j<nIn; j++ ){
-    			for( int k=0; k<timeSeriesLength; k++ ){
-    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    	for( int i = 0; i < miniBatchSize; i++) {
+    		for( int j = 0; j < nIn; j++) {
+    			for( int k = 0; k < timeSeriesLength; k++) {
+    				input.putScalar(new int[]{i,j,k},r.nextDouble() - 0.5);
     			}
     		}
     	}
+
     	INDArray labels = Nd4j.zeros(miniBatchSize,nOut,timeSeriesLength);
-    	for( int i=0; i<miniBatchSize; i++ ){
-    		for( int j=0; j<timeSeriesLength; j++ ){
+    	for( int i = 0; i < miniBatchSize; i++ ){
+    		for(int j = 0; j < timeSeriesLength; j++) {
     			int idx = r.nextInt(nOut);
-    			labels.putScalar(new int[]{i,idx,j}, 1.0f);
+    			labels.putScalar(new int[]{i,idx,j}, 1.0);
     		}
     	}
     	
-    	if( PRINT_RESULTS ){
+    	if(PRINT_RESULTS) {
     		System.out.println("testGravesLSTMBasic()");
-    		for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+    		for( int j = 0; j < mln.getnLayers(); j++ )
+				System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
     	}
     	
     	boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -464,7 +466,7 @@ public class GradientCheckTests {
     	for( int i=0; i<miniBatchSize; i++ ){
     		for( int j=0; j<nIn; j++ ){
     			for( int k=0; k<timeSeriesLength; k++ ){
-    				input.putScalar(new int[]{i,j,k},r.nextDouble()-0.5);
+    				input.putScalar(new int[]{i,j,k},r.nextDouble() - 0.5);
     			}
     		}
     	}
@@ -481,9 +483,9 @@ public class GradientCheckTests {
         double[] l2vals = {0.0, 0.4, 0.0};
         double[] l1vals = {0.0, 0.0, 0.5};	//i.e., use l2vals[i] with l1vals[i]
     	
-    	for( String afn : activFns ){
-			for( int i=0; i<lossFunctions.length; i++ ){
-				for( int k=0; k<l2vals.length; k++ ){
+    	for(String afn : activFns) {
+			for( int i = 0; i<lossFunctions.length; i++ ){
+				for( int k = 0; k<l2vals.length; k++ ){
     				LossFunction lf = lossFunctions[i];
     				String outputActivation = outputActivations[i];
     				double l2 = l2vals[k];
@@ -540,7 +542,7 @@ public class GradientCheckTests {
         	for( int m=0; m<miniBatchSize[i]; m++ ){
         		for( int j=0; j<nIn; j++ ){
         			for( int k=0; k<timeSeriesLength[i]; k++ ){
-        				input.putScalar(new int[]{m,j,k},r.nextDouble()-0.5);
+        				input.putScalar(new int[]{m,j,k},r.nextDouble() - 0.5);
         			}
         		}
         	}
