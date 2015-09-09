@@ -72,20 +72,32 @@ public @Data class GemmParams {
         if(aOrdering == 'N') {
             if(a.columns() != k)
                 throw new IllegalStateException("When trans(a) == n a columns must be equal to k");
+            if(lda < Math.max(1,m))
+                throw new IllegalStateException("When trans(a) == n lda must be >= max(1,m)");
 
         }
         else {
             if(a.columns() != m)
                 throw new IllegalStateException("When trans(a) == t a columns must be m");
+            if(lda < Math.max(1,k))
+                throw new IllegalStateException("When trans(a) == t lda must be >= max(1,k)");
         }
         if(bOrdering == 'N') {
             if(b.columns() != n)
                 throw new IllegalStateException("When trans(b) == n b columns must be n");
+            if(ldb < Math.max(1,k))
+                throw new IllegalStateException("When trans(b) == n ldb must be >= max(1,k)");
         }
         else {
             if(b.columns() != k)
                 throw new IllegalStateException("When trans(b) == t b columns must be k");
+            if(ldb < Math.max(1,n))
+                throw new IllegalStateException("When trans(b) == t ldb must be >= max(1,n)");
         }
+
+
+        if(ldc < Math.max(1,m))
+            throw new IllegalStateException("ldc must be >= max(1,m)");
 
         if(m < 0)
             throw new IllegalStateException("M must be >= 0");
