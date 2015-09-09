@@ -70,9 +70,12 @@ public class MultiLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list(1).layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                .list(2)
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .activation("tanh")
+                        .build())
+                .layer(1,new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(2)
                         .build())
                 .build();
 
@@ -81,7 +84,6 @@ public class MultiLayerTest {
 
         INDArray params = network3.params();
         network3.setParameters(params);
-        network3.computeGradientAndScore();
         INDArray params4 = network3.params();
         assertEquals(params, params4);
     }
