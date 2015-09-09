@@ -186,10 +186,10 @@ public class CheckUtil {
 		return all;
 	}
 
-	public static Pair<INDArray,String> getTransposedMatrixWithShape(int row, int col, int seed){
+	public static Pair<INDArray,String> getTransposedMatrixWithShape(int rows, int cols, int seed){
 		Nd4j.getRandom().setSeed(seed);
-		INDArray out = Nd4j.rand(new int[]{col,row});
-		return new Pair<>(out.transpose(),null);
+		INDArray out = Nd4j.rand(new int[]{cols,rows});
+		return new Pair<>(out.transpose(),"getTransposedMatrixWithShape("+rows+","+cols+","+seed+")");
 	}
 
 	public static List<Pair<INDArray,String>> getSubMatricesWithShape(int rows, int cols, int seed){
