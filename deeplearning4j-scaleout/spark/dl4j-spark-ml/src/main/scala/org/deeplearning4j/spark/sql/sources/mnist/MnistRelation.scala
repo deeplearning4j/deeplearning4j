@@ -18,9 +18,13 @@ import org.nd4j.linalg.util.ArrayUtil
 /**
  * Mnist dataset as a Spark SQL relation.
  *
- * @author Kai Sasaki
+ * @author Kai Sasaki, Eron Wright
  */
-case class MnistRelation(imagesPath: Path, labelsPath: Path, recordsPerPartition: Int)
+case class MnistRelation(
+                          imagesPath: Path,
+                          labelsPath: Path,
+                          recordsPerPartition: Int,
+                          maxRecords: Option[Int])
     (@transient val sqlContext: SQLContext) extends BaseRelation
     with PrunedScan with Logging  {
 
@@ -31,7 +35,7 @@ case class MnistRelation(imagesPath: Path, labelsPath: Path, recordsPerPartition
   override def buildScan(requiredColumns: Array[String]): RDD[Row] = {
     val sc = sqlContext.sparkContext
 
-    new MnistRDD(sc, imagesPath.toUri, labelsPath.toUri, requiredColumns, recordsPerPartition)
+    new MnistRDD(sc, imagesPath.toUri, labelsPath.toUri, requiredColumns, recordsPerPartition, maxRecords)
   }
 }
 
@@ -44,7 +48,8 @@ private class MnistRDD(
     private val imagesPath: URI,
     private val labelsPath: URI,
     private val requiredColumns: Array[String],
-    recordsPerPartition: Int = 1000
+    recordsPerPartition: Int = 1000,
+    maxRecords: Option[Int] = None
   )
   extends RDD[Row](sc, Nil) {
 
@@ -53,7 +58,8 @@ private class MnistRDD(
   override def getPartitions: Array[Partition] = {
     val manager = open()
     try {
-      val numRecords = manager.getLabels.getCount
+      val numLabels = manager.getLabels.getCount
+      val numRecords = Math.min(numLabels, maxRecords.getOrElse { numLabels })
       val numPartitions = Math.ceil(numRecords / (recordsPerPartition: Double)).asInstanceOf[Int]
       val array = new Array[Partition](numPartitions)
       for (i <- 0 until numPartitions) {
@@ -124,12 +130,21 @@ class DefaultSource extends RelationProvider {
     }
   }
 
+  private def checkMaxRecords(parameters: Map[String, String]): Option[Int] = {
+    parameters.getOrElse(MaxRecords, None) match {
+
+      case r: String => Option(Integer.parseInt(r))
+      case None => None
+    }
+  }
+
   override def createRelation(sqlContext: SQLContext,
       parameters: Map[String, String]) = {
     val imagesPath = new Path(checkImagesFilePath(parameters))
     val labelsPath = new Path(checkLabelsFilePath(parameters))
     val recordsPerPartition = checkRecordsPerPartition(parameters)
-    new MnistRelation(imagesPath, labelsPath, recordsPerPartition)(sqlContext)
+    val maxRecords = checkMaxRecords(parameters)
+    new MnistRelation(imagesPath, labelsPath, recordsPerPartition, maxRecords)(sqlContext)
   }
 }
 
@@ -137,4 +152,5 @@ object DefaultSource {
   val ImagesPath = "imagesPath"
   val LabelsPath = "labelsPath"
   val RecordsPerPartition = "recordsPerPartition"
+  val MaxRecords = "maxRecords"
 }
