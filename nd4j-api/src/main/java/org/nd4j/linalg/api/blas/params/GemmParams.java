@@ -2,7 +2,6 @@ package org.nd4j.linalg.api.blas.params;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * Used for setting the gemm parameters
@@ -37,23 +36,37 @@ public @Data class GemmParams {
         this.b = copyIfNeccessary(b);
         this.c = copyIfNeccessary(c);
 
-        if(a.ordering() == 'f' && b.ordering() == 'f') {
-            this.m = a.rows();
-            this.n = b.columns();
-            this.k = a.columns();
-            this.lda = a.rows();
-            this.ldb = b.rows();
-            this.ldc = a.rows();
-        } else if(a.ordering() == 'c' && b.ordering() == 'c') {
-            this.m = c.rows();
-            this.n = c.columns();
-            this.k = b.rows();
+        this.m = c.rows();
+        this.n = c.columns();
+        if(this.a.ordering() == 'f' && this.b.ordering() == 'f') {
+            this.k = this.a.columns();   //common dimension: = this.b.rows()
+            this.lda = this.a.rows();
+            this.ldb = this.b.rows();
+            this.ldc = this.a.rows();
+        } else if(this.a.ordering() == 'c' && this.b.ordering() == 'c') {
+            this.k = this.b.rows();
 
-            this.lda = a.columns();
-            this.ldb = b.columns();
-            this.ldc = c.rows();
+            this.lda = this.a.columns();
+            this.ldb = this.b.columns();
+            this.ldc = this.c.rows();
             aOrdering = 'T';
             bOrdering = 'T';
+        } else if(this.a.ordering() == 'f' && this.b.ordering() == 'c') {
+            this.k = this.a.columns();   //common dimension of a and b
+
+            this.lda = this.a.rows();
+            this.ldb = this.b.columns();
+            this.ldc = this.c.rows();
+            bOrdering = 'T';
+
+        } else if(this.a.ordering() == 'c' && this.b.ordering() == 'f' ){
+            this.k = this.b.rows();  //common dimension of a and b
+
+            this.lda = this.a.columns(); //normally a.rows() but swap for c->f
+            this.ldb = this.b.rows();
+            this.ldc = this.c.rows();
+            aOrdering = 'T';
+
         } else throw new RuntimeException();
 
 
@@ -67,7 +80,6 @@ public @Data class GemmParams {
         if(arr.isMatrix()) {
             if(arr.length() < arr.data().length())
                 return arr.dup();
-
         }
         return arr;
     }
