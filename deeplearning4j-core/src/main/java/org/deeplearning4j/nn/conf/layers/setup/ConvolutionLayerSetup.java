@@ -60,12 +60,13 @@ public class ConvolutionLayerSetup {
         }
         else
             numLayers = conf.getConfs().size();
+        boolean alreadySet = false;
 
         for(int i = 0; i < numLayers; i++) {
+            alreadySet = false;
             Layer curr = getLayer(i,conf);
-            boolean alreadySet = false;
             //cnn -> subsampling
-            if(i < numLayers - 2 && getLayer(i, conf) instanceof ConvolutionLayer) {
+            if(i == 0 || i < numLayers - 2 && getLayer(i, conf) instanceof ConvolutionLayer) {
                 ConvolutionLayer convolutionLayer = (ConvolutionLayer)getLayer(i,conf);
                 //ensure the number of in channels is set for the data
                 if(i == 0)
@@ -75,9 +76,14 @@ public class ConvolutionLayerSetup {
                 if(next instanceof DenseLayer || next instanceof OutputLayer) {
                     //set the feed forward wrt the out channels of the current convolution layer
                     //set the rows and columns (height/width) wrt the kernel size of the current layer
-                    conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
-                            convolutionLayer.getKernelSize()[0]
-                            ,convolutionLayer.getKernelSize()[1],convolutionLayer.getNOut()));
+                    if(i > 0)
+                        conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
+                                convolutionLayer.getKernelSize()[0]
+                                ,convolutionLayer.getKernelSize()[1],convolutionLayer.getNOut()));
+                    else
+                        conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
+                                height
+                                ,width,convolutionLayer.getNOut()));
                     //set the number of inputs wrt the current convolution layer
                     FeedForwardLayer o = (FeedForwardLayer) next;
                     //need to infer nins from first input size
@@ -85,6 +91,9 @@ public class ConvolutionLayerSetup {
                     outSizesEachLayer.put(i,outWidthAndHeight);
                     int outRows = outWidthAndHeight[0];
                     int outCols = outWidthAndHeight[1];
+                    lastHeight = outRows;
+                    lastWidth = outCols;
+                    lastOutChannels = convolutionLayer.getNOut();
                     int nIn = outCols * outRows * convolutionLayer.getNOut();
                     nInForLayer.put(i,nIn);
                     o.setNIn(nIn);
@@ -242,6 +251,8 @@ public class ConvolutionLayerSetup {
                 conf.inputPreProcessor(0,new FeedForwardToCnnPreProcessor(height,width,channels));
             }
         }
+
+
 
 
     }
