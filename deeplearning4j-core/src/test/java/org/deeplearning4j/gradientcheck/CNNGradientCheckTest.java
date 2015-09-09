@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -20,7 +21,7 @@ import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by nyghtowl on 9/1/15.
@@ -54,51 +55,52 @@ public class CNNGradientCheckTest {
         INDArray input = ds.getFeatureMatrix();
         INDArray labels = ds.getLabels();
 
-        for( String afn : activFns ){
-            for( boolean doLearningFirst : characteristic ){
-                for( int i=0; i<lossFunctions.length; i++ ){
+        for( String afn : activFns) {
+            for(boolean doLearningFirst : characteristic) {
+                for(int i = 0; i < lossFunctions.length; i++) {
                     LossFunctions.LossFunction lf = lossFunctions[i];
                     String outputActivation = outputActivations[i];
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
                             .regularization(false)
                             .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
                             .learningRate(1.0)
                             .seed(12345L)
                             .list(2)
                             .layer(0, new ConvolutionLayer.Builder(new int[]{1, 1})
-                                    .nIn(1).nOut(6)
-                                    .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                   .nOut(6)
+                                    .weightInit(WeightInit.XAVIER)
                                     .activation(afn)
                                     .updater(Updater.SGD)
                                     .build())
                             .layer(1, new OutputLayer.Builder(lf)
                                     .activation(outputActivation)
-                                    .nIn(6).nOut(3)
-                                    .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0, 1))
+                                    .nOut(3)
+                                    .weightInit(WeightInit.XAVIER)
                                     .updater(Updater.SGD)
                                     .build())
-                            .pretrain(false).backprop(true)
-                            .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(2, 2, 1))
-                            .inputPreProcessor(1, new CnnToFeedForwardPreProcessor())
-                            .build();
+                            .pretrain(false).backprop(true);
+
+                    ConvolutionLayerSetup setup = new ConvolutionLayerSetup(builder,2,2,1);
+                    MultiLayerConfiguration conf = builder.build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
                     String name = new Object(){}.getClass().getEnclosingMethod().getName();
 
-                    if(doLearningFirst){
+                    if(doLearningFirst) {
                         //Run a number of iterations of learning
                         mln.setInput(ds.getFeatures());
                         mln.setLabels(ds.getLabels());
                         mln.computeGradientAndScore();
                         double scoreBefore = mln.score();
-                        for( int j=0; j<10; j++ ) mln.fit(ds);
+                        for( int j = 0; j < 10; j++)
+                            mln.fit(ds);
                         mln.computeGradientAndScore();
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning
                         String msg = name+" - score did not (sufficiently) decrease during learning - activationFn="
-                                +afn+", lossFn="+lf+", outputActivation="+outputActivation+", doLearningFirst="+doLearningFirst
+                                + afn +", lossFn="+lf+", outputActivation="+outputActivation+", doLearningFirst= " + doLearningFirst
                                 +" (before="+scoreBefore +", scoreAfter="+scoreAfter+")";
                         assertTrue(msg,scoreAfter < 0.8 *scoreBefore);
                     }
@@ -106,7 +108,8 @@ public class CNNGradientCheckTest {
                     if( PRINT_RESULTS ){
                         System.out.println(name+" - activationFn="+afn+", lossFn="+lf+", outputActivation="+outputActivation
                                 +", doLearningFirst="+doLearningFirst );
-                        for( int j=0; j<mln.getnLayers(); j++ ) System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                        for( int j = 0; j<mln.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                     }
 
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
