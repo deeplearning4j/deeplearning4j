@@ -267,7 +267,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public Map<String, INDArray> paramTable() {
         //Get all parameters from all layers
-        Map<String,INDArray> allParams = new HashMap<>();
+        Map<String,INDArray> allParams = new LinkedHashMap<>();
         for( int i=0; i<layers.length; i++ ){
             Map<String,INDArray> paramMap = layers[i].paramTable();
             for( Map.Entry<String, INDArray> entry : paramMap.entrySet() ){
@@ -422,7 +422,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             params.add(paramsForL);
         }
 
-        this.params = Nd4j.toFlattened(params);
+        this.params = Nd4j.toFlattened('f',params);
         int idx = 0;
         for(Layer l : layers) {
             INDArray paramsForL = l.params();
@@ -815,7 +815,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 params.add(layer.params());
             }
 
-        return Nd4j.toFlattened(params);
+        return Nd4j.toFlattened('f',params);
     }
 
     /**
@@ -1942,7 +1942,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Output activations. If output is RNN layer (such as RnnOutputLayer): if input has shape [miniBatchSize,inputSize]
      * i.e., is 2d, output has shape [miniBatchSize,outputSize] (i.e., also 2d).<br>
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
-     * @see input
      */
     public INDArray rnnTimeStep(INDArray input) {
         this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
