@@ -3,7 +3,7 @@
     <parent>
         <artifactId>nd4j-serde</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.4-rc2.2</version>
+        <version>0.4-rc3.2-SNAPSHOT</version>
     </parent>
     <properties>
         <jackson.version>2.5.1</jackson.version>
