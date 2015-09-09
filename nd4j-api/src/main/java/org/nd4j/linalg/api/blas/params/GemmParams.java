@@ -29,7 +29,7 @@ public @Data class GemmParams {
         if(a.rows() != c.rows())
             throw new IllegalArgumentException("A rows must equal c rows");
 
-   
+
         //automatically assume fortran ordering
         //multiple backends force us to be
         //in fortran ordering only

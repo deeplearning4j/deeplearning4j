@@ -392,7 +392,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, char ordering) {
-        this(buffer, shape, Nd4j.getStrides(shape,ordering), 0, ordering);
+        this(buffer, shape, Nd4j.getStrides(shape, ordering), 0, ordering);
     }
 
     /**
@@ -2504,15 +2504,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         } else {
-            Nd4j.getBlasWrapper().level3().gemm(
-                    BlasBufferUtil.getCharForTranspose(this)
-                    ,BlasBufferUtil.getCharForTranspose(other)
-                    ,BlasBufferUtil.getCharForTranspose(resultArray)
-                    ,1.0
-                    ,this
-                    ,other
-                    ,0.0
-                    ,resultArray);
+            if(other.columns() == 1) {
+                Nd4j.getBlasWrapper().level2().gemv(
+                        BlasBufferUtil.getCharForTranspose(this)
+                        ,  BlasBufferUtil.getCharForTranspose(other),
+                        1.0
+                        ,this
+                        ,other
+                        ,0.0
+                        ,resultArray);
+            }
+            else
+                Nd4j.getBlasWrapper().level3().gemm(
+                        BlasBufferUtil.getCharForTranspose(this)
+                        ,BlasBufferUtil.getCharForTranspose(other)
+                        ,BlasBufferUtil.getCharForTranspose(resultArray)
+                        ,1.0
+                        ,this
+                        ,other
+                        ,0.0
+                        ,resultArray);
 
 
         }
