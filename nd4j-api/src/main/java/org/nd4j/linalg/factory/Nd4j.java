@@ -518,7 +518,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray  argMax(INDArray arr,int...dimension) {
-        return Nd4j.getExecutioner().exec(new IAMax(arr),dimension);
+        return Nd4j.getExecutioner().exec(new IAMax(arr), dimension);
     }
 
     /**
@@ -1294,7 +1294,19 @@ public class Nd4j {
         INDArray ret = INSTANCE.toFlattened(matrices);
         logCreationIfNecessary(ret);
         return ret;
+    }
 
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param order the order in which to flatten the matrices
+     * @param matrices the matrices to create the flattened ndarray for
+     * @return the flattened representation of
+     * these ndarrays
+     */
+    public static INDArray toFlattened(char order, Collection<INDArray> matrices) {
+        INDArray ret = INSTANCE.toFlattened(order,matrices);
+        logCreationIfNecessary(ret);
+        return ret;
     }
 
     /**
@@ -1349,6 +1361,21 @@ public class Nd4j {
     public static INDArray toFlattened(INDArray... matrices) {
         return INSTANCE.toFlattened(matrices);
     }
+
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param order order in which to flatten ndarrays
+     * @param matrices the matrices to create the flattened ndarray for
+
+     * @return the flattened representation of
+     * these ndarrays
+     */
+    public static INDArray toFlattened(char order, INDArray... matrices) {
+        return INSTANCE.toFlattened(order,matrices);
+    }
+
+
+
 
     /**
      * Create the identity ndarray
