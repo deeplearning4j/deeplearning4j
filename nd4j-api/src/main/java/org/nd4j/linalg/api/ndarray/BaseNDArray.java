@@ -2311,7 +2311,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray mmul(INDArray other) {
 
         int[] shape = {rows(), other.columns()};
-        INDArray result = create(shape,ordering());
+        INDArray result = create(shape,'f');
         return mmuli(other, result);
     }
 

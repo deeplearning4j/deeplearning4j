@@ -1,10 +1,7 @@
 package org.nd4j.linalg.api.blas.params;
 
 import lombok.Data;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.NDArrayFactory;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Used for setting the gemm parameters
@@ -49,9 +46,10 @@ public @Data class GemmParams {
         this.ldb = b.size(0) > 1 ? b.size(0) : 1;
         this.ldc = c.size(0) > 1 ? c.size(0) : 1;
 
+
         if(a.ordering() == 'c') {
             aOrdering = 'T';
-            lda = a.size(0) > 1 ? a.size(0) : 1;
+            lda = a.size(1) > 1 ? a.size(1) : 1;
         }
 
         if(b.ordering() == 'c') {
@@ -59,8 +57,9 @@ public @Data class GemmParams {
             ldb = b.size(0) > 1 ? b.size(0) : 1;
         }
 
-        ldc = Math.max(1,m);
 
+
+        ldc = Math.max(1,m);
 
 
         validate();
@@ -70,6 +69,23 @@ public @Data class GemmParams {
 
 
     private void validate() {
+        if(aOrdering == 'N') {
+            if(a.columns() != k)
+                throw new IllegalStateException("When trans(a) == n a columns must be equal to k");
+
+        }
+        else {
+            if(a.columns() != m)
+                throw new IllegalStateException("When trans(a) == t a columns must be m");
+        }
+        if(bOrdering == 'N') {
+            if(b.columns() != n)
+                throw new IllegalStateException("When trans(b) == n b columns must be n");
+        }
+        else {
+            if(b.columns() != k)
+                throw new IllegalStateException("When trans(b) == t b columns must be k");
+        }
 
         if(m < 0)
             throw new IllegalStateException("M must be >= 0");

@@ -81,8 +81,8 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
     public void testMmulWithOpsCommonsMath(){
     	List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
     	List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(5, 4, SEED);
-    	for( int i=0; i<first.size(); i++ ){
-    		for( int j=0; j<second.size(); j++ ){
+    	for( int i = 0; i < first.size(); i++ ){
+    		for( int j = 0; j < second.size(); j++ ){
     			Pair<INDArray,String> p1 = first.get(i);
     			Pair<INDArray,String> p2 = second.get(i);
     			String errorMsg = getTestWithOpsErrorMsg(i,j,"mmul",p1,p2);
