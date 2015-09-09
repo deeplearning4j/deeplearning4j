@@ -33,11 +33,11 @@ public @Data class GemmParams {
         //automatically assume fortran ordering
         //multiple backends force us to be
         //in fortran ordering only
-        this.a = a;
-        this.b = b;
-        this.c = c;
+        this.a = copyIfNeccessary(a);
+        this.b = copyIfNeccessary(b);
+        this.c = copyIfNeccessary(c);
 
-        if(a.ordering() == 'f' && b.ordering() == 'f'){
+        if(a.ordering() == 'f' && b.ordering() == 'f') {
             this.m = a.rows();
             this.n = b.columns();
             this.k = a.columns();
@@ -56,35 +56,21 @@ public @Data class GemmParams {
             bOrdering = 'T';
         } else throw new RuntimeException();
 
-        /*
-        this.m = a.ordering() == 'f' ? a.size(0) : a.size(1);
-        this.n = b.ordering() == 'f' ? b.size(1) : b.size(0);
-        this.k = c.ordering() == 'f' ? a.size(1) : a.size(0);
-
-
-
-        this.lda = a.ordering() == 'f' ? (a.size(0) > 1 ? a.size(0) : 1) : (a.size(1) > 1 ? a.size(1) : 1);
-        this.ldb = b.ordering() == 'f' ? (b.size(0) > 1 ? b.size(0) : 1) : (b.size(1) > 1 ? b.size(1) : 1);
-        this.ldc = c.size(0) > 1 ? c.size(0) : 1;
-
-//        this.ldc = c.size(1);
-
-        if(a.ordering() == 'c') {
-            aOrdering = 'T';
-        }
-
-        if(b.ordering() == 'c') {
-            bOrdering = 'T';
-        }
-
-
-
-        ldc = c.size(0);*/
 
 
         validate();
     }
 
+
+
+    private INDArray copyIfNeccessary(INDArray arr) {
+        if(arr.isMatrix()) {
+            if(arr.length() < arr.data().length())
+                return arr.dup();
+
+        }
+        return arr;
+    }
 
 
 
