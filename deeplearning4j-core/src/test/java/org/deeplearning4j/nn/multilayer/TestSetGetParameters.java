@@ -43,17 +43,18 @@ public class TestSetGetParameters {
 		INDArray initParams = net.params().dup();
 		Map<String,INDArray> initParams2 = net.paramTable();
 		
-		net.setParams(net.params());
-		
+		net.setParams(net.params().dup());
+
 		INDArray initParamsAfter = net.params();
+		assertTrue(initParams.equals(initParamsAfter));
+
 		Map<String,INDArray> initParams2After = net.paramTable();
 		
-		for( String s : initParams2.keySet() ){
-			assertTrue("Params differ: "+s, initParams2.get(s).equals(initParams2After.get(s)));
+		for(String s : initParams2.keySet()) {
+			assertTrue("Params differ: " + s, initParams2.get(s).equals(initParams2After.get(s)));
 		}
 		
-		assertTrue(initParams.equals(initParamsAfter));
-		
+
 		//Now, try the other way: get(set(random))
 		INDArray randomParams = Nd4j.rand(initParams.shape());
 		net.setParams(randomParams.dup());
