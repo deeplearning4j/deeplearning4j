@@ -360,26 +360,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         }
         solver = null;
     }
-
-
-    /**
-     * Set the parameters for this model.
-     * This expects a linear ndarray which then be unpacked internally
-     * relative to the expected ordering of the model
-     *
-     * @param params the parameters for the model
-     */
-    @Override
-    public void setParams(INDArray params) {
-        INDArray wParams = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(0, layerConf().getNIn() * layerConf().getNOut()));
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        W.assign(wParams);
-        INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
-        int biasBegin = params.length() - bias.length();
-        int biasEnd = params.length();
-        INDArray biasAssign = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(biasBegin, biasEnd));
-        bias.assign(biasAssign);
-    }
+    
     /**
      * Fit the model to the given data
      *

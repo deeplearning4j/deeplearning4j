@@ -43,23 +43,22 @@ public class TestSetGetParameters {
 		INDArray initParams = net.params().dup();
 		Map<String,INDArray> initParams2 = net.paramTable();
 		
-		net.setParams(net.params().dup());
-
+		net.setParams(net.params());
+		
 		INDArray initParamsAfter = net.params();
-		assertTrue(initParams.equals(initParamsAfter));
-
 		Map<String,INDArray> initParams2After = net.paramTable();
 		
-		for(String s : initParams2.keySet()) {
-			assertTrue("Params differ: " + s, initParams2.get(s).equals(initParams2After.get(s)));
+		for( String s : initParams2.keySet() ){
+			assertTrue("Params differ: "+s, initParams2.get(s).equals(initParams2After.get(s)));
 		}
 		
-
+		assertEquals(initParams,initParamsAfter);
+		
 		//Now, try the other way: get(set(random))
 		INDArray randomParams = Nd4j.rand(initParams.shape());
 		net.setParams(randomParams.dup());
 		
-		assertTrue(net.params().equals(randomParams));
+		assertEquals(net.params(),randomParams);
 	}
 	
 	@Test
@@ -70,7 +69,7 @@ public class TestSetGetParameters {
 			.list(3)
 			.layer(0, new GravesLSTM.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
 					.dist(new NormalDistribution(0,1)).build())
-			.layer(1, new GRU.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
+			.layer(1, new GravesLSTM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
 					.dist(new NormalDistribution(0,1)).build())
 			.layer(2, new RnnOutputLayer.Builder(LossFunction.MSE).weightInit(WeightInit.DISTRIBUTION)
 					.dist(new NormalDistribution(0,1)).nIn(11).nOut(12).build())
@@ -91,12 +90,12 @@ public class TestSetGetParameters {
 			assertTrue("Params differ: "+s, initParams2.get(s).equals(initParams2After.get(s)));
 		}
 		
-		assertTrue(initParams.equals(initParamsAfter));
+		assertEquals(initParams,initParamsAfter);
 		
 		//Now, try the other way: get(set(random))
 		INDArray randomParams = Nd4j.rand(initParams.shape());
 		net.setParams(randomParams.dup());
 		
-		assertTrue(net.params().equals(randomParams));
+		assertEquals(net.params(),randomParams);
 	}
 }
