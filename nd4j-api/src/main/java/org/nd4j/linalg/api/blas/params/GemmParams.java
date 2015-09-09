@@ -78,8 +78,11 @@ public @Data class GemmParams {
 
     private INDArray copyIfNeccessary(INDArray arr) {
         if(arr.isMatrix()) {
-            if(arr.length() < arr.data().length())
-                return arr.dup();
+            //Check if matrix values are contiguous in memory. If not: dup
+            //Contiguous for c if: stride[0] == shape[1] and stride[1] = 1
+            //Contiguous for f if: stride[0] == 1 and stride[1] == shape[0]
+            if(arr.ordering() == 'c' && (arr.stride(0) != arr.size(1) || arr.stride(1) != 1) ) return arr.dup();
+            else if(arr.stride(0) != 1 || arr.stride(1) != arr.size(0)) return arr.dup();
         }
         return arr;
     }
