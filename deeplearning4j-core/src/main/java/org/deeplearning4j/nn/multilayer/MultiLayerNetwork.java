@@ -811,9 +811,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers())
-            if(!(layer instanceof SubsamplingLayer)) {
-                params.add(layer.params());
-            }
+            params.add(layer.params());
+
 
         return Nd4j.toFlattened(params);
     }
