@@ -42,8 +42,8 @@ public @Data class GemmParams {
 
 
 
-        this.lda = a.size(0) > 1 ? a.size(0) : 1;
-        this.ldb = b.size(0) > 1 ? b.size(0) : 1;
+        this.lda = a.ordering() == 'f' ? a.size(0) > 1 ? a.size(0) : 1 : a.size(1) > 1 ? a.size(1) : 1;
+        this.ldb = b.ordering() == 'f' ? b.size(0) > 1 ? b.size(0) : 1 : b.size(1) > 1 ? b.size(1) : 1;
         this.ldc = c.size(0) > 1 ? c.size(0) : 1;
 
 
