@@ -45,6 +45,7 @@ public interface Level3 {
           INDArray B,
           double beta, INDArray C);
 
+    void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta );
 
 
     /**

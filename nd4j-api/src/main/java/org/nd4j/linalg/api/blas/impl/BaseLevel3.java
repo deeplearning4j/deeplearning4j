@@ -71,6 +71,43 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
     }
 
+    @Override
+    public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
+        GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
+        char Order = 'x';   //TODO: what should this be???
+
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+            dgemm(Order
+                    ,params.getAOrdering()
+                    ,params.getBOrdering()
+                    ,params.getM()
+                    ,params.getN()
+                    ,params.getK()
+                    ,alpha
+                    ,params.getA()
+                    ,params.getLda()
+                    ,params.getB()
+                    ,params.getLdb()
+                    ,beta
+                    ,C
+                    ,params.getLdc());
+        else
+            sgemm(Order
+                    , params.getAOrdering()
+                    , params.getBOrdering()
+                    , params.getM()
+                    , params.getN()
+                    , params.getK()
+                    , (float)alpha
+                    , params.getA()
+                    , params.getLda()
+                    , params.getB()
+                    , params.getLdb()
+                    , (float)beta
+                    , C
+                    , params.getLdc());
+    }
+
 
     /**
      * her2k performs a rank-2k update of an n-by-n Hermitian matrix c, that is, one of the following operations:

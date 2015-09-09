@@ -74,6 +74,11 @@ public @Data class GemmParams {
         validate();
     }
 
+    public GemmParams(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB){
+
+        throw new UnsupportedOperationException("not implemented");
+    }
+
 
 
     private INDArray copyIfNeccessary(INDArray arr) {

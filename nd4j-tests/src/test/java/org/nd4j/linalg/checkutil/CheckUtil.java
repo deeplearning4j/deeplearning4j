@@ -48,6 +48,34 @@ public class CheckUtil {
         return ok;
 	}
 
+	public static boolean checkGemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB,
+									double alpha, double beta,
+									double maxRelativeDifference, double minAbsDifference ){
+		int commonDimA = (transposeA ? a.rows() : a.columns() );
+		int commonDimB = (transposeB ? b.columns() : b.rows() );
+		if(commonDimA != commonDimB) throw new IllegalArgumentException("Common dimensions don't match");
+		int outRows = (transposeA ? a.columns() : a.rows() );
+		int outCols = (transposeB ? b.rows() : b.columns() );
+		if(c.rows() != outRows || c.columns() != outCols) throw new IllegalArgumentException("C does not match outRows or outCols");
+		if(c.offset() != 0 || c.ordering() != 'f') throw new IllegalArgumentException("Invalid c");
+
+		RealMatrix rmA = convertToApacheMatrix(transposeA ? a.transpose() : a);
+		RealMatrix rmB = convertToApacheMatrix(transposeB ? b.transpose() : b);
+		RealMatrix rmC = convertToApacheMatrix(c);
+		RealMatrix rmExpected = rmA.multiply(rmB).scalarMultiply(alpha).add(rmC.scalarMultiply(beta));
+
+		INDArray out = Nd4j.gemm(a, b, c, transposeA, transposeB, alpha, beta);
+		if(!checkShape(rmExpected,out)) return false;
+		boolean ok = checkEntries(rmExpected,out,maxRelativeDifference,minAbsDifference);
+		if(!ok){
+			INDArray aCopy = Shape.toOffsetZeroCopy(a);
+			INDArray bCopy = Shape.toOffsetZeroCopy(b);
+			INDArray onCopies = Nd4j.gemm(aCopy, bCopy, c, transposeA, transposeB, alpha, beta);
+			printGemmFailureDetails(a,b,c,transposeA,transposeB,alpha,beta,rmExpected,out,onCopies);
+		}
+		return ok;
+	}
+
 	/**Same as checkMmul, but for matrix addition */
 	public static boolean checkAdd(INDArray first, INDArray second, double maxRelativeDifference, double minAbsDifference ){
 		RealMatrix rmFirst = convertToApacheMatrix(first);
@@ -210,6 +238,26 @@ public class CheckUtil {
         System.out.println("\nActual:");
         printMatrixFullPrecision(actual);
 	}
+
+	public static void printGemmFailureDetails(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB,
+											   double alpha, double beta, RealMatrix expected, INDArray actual, INDArray onCopies){
+		System.out.println("\nFactory: " + Nd4j.factory().getClass() + "\n");
+		System.out.println("Op: gemm(a,b,c,transposeA="+transposeA+",transposeB="+transposeB+",alpha="+alpha+",beta="+beta+")");
+
+		System.out.println("a:");
+		printMatrixFullPrecision(a);
+		System.out.println("\nb:");
+		printMatrixFullPrecision(b);
+		System.out.println("\nc:");
+		printMatrixFullPrecision(c);
+		System.out.println("\nExpected (Apache Commons)");
+		printApacheMatrix(expected);
+		System.out.println("\nSame Nd4j op on zero offset copies: gemm(aCopy,bCopy,c,"+transposeA+","+transposeB+","+alpha+","+beta+")");
+		printMatrixFullPrecision(onCopies);
+		System.out.println("\nActual:");
+		printMatrixFullPrecision(actual);
+	}
+
 	public static void printMatrixFullPrecision(INDArray matrix){
 		boolean floatType = (matrix.data().dataType() == DataBuffer.Type.FLOAT);
 		System.out.println(matrix.data().dataType() + " - order=" + matrix.ordering() + ", offset=" + matrix.offset() +

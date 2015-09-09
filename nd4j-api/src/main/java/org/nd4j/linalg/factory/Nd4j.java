@@ -632,6 +632,15 @@ public class Nd4j {
         return ret.reshape('c',aPlusB);
     }
 
+    public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB){
+        INDArray c = Nd4j.create(new int[]{a.size(0),b.size(1)},'f');
+        return gemm(a,b,c,transposeA,transposeB,1.0,0.0);
+    }
+
+    public static INDArray gemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB, double alpha, double beta ){
+        getBlasWrapper().level3().gemm(a,b,c,transposeA,transposeB,alpha,beta);
+        return c;
+    }
 
     /**
      * Given a sequence of Iterators over a transform of matrices, fill in all of
