@@ -159,15 +159,13 @@ class NeuralNetworkReconstructionModel private[ml] (
         case 0 => Seq()
         case _ =>
           val featureMatrix = Nd4j.vstack(features.toArray: _*)
-
           val outputMatrix = network.reconstruct(featureMatrix, ${layerIndex})
-          val output = outputMatrix: Array[Vector]
 
           // prepare column generators for required columns
           val cols = {
             schema.fieldNames flatMap {
               case f if f == $(reconstructionCol) => Seq(
-                (row: Row, i: Int) => output(i))
+                (row: Row, i: Int, output: Vector) => output)
               case _ => Seq.empty
             }
           }
@@ -175,7 +173,8 @@ class NeuralNetworkReconstructionModel private[ml] (
           // transform the input rows, appending required columns
           rows.zipWithIndex.map {
             case (row, i) => {
-              Row.fromSeq(row.toSeq ++ cols.map(_(row, i)))
+              val output = outputMatrix.getRow(i): Vector
+              Row.fromSeq(row.toSeq ++ cols.map(_(row, i, output)))
             }
           }
       }
