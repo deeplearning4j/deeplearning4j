@@ -1012,8 +1012,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalArgumentException("Illegal assignment, must be of same length");
         INDArray linear = arr.linearView();
         INDArray thisLinear = linearView();
-        for(int i = 0; i < linear.length(); i++)
-            thisLinear.putScalar(i,linear.getDouble(i));
+        NdIndexIterator iter = new NdIndexIterator(shape());
+        while(iter.hasNext()) {
+            int[] next = iter.next();
+            putScalar(next,arr.getDouble(next));
+        }
+
         return this;
     }
 
