@@ -16,24 +16,4 @@ With this binary, any neural network can be saved and sent across a network. Dee
 It allows neural networks to be loaded into memory afterward (to resume training), and can be used with a REST API or other tools.
 
 ## <a name="vector">Save an Interoperable Vector of All Weights</a>
-
-The second format for saving a model is as a long vector of all coefficients, while writing your configuration to a JSON file. 
-
-    INDArray params = layer.params(); 
-    //^^turn model's weight matrix into vector
-    String conf = layer.conf().toJson(); 
-    
-    Nd4j.write(params,"somefile.txt"); 
-    //^^save vector as a string to file type of your choice, or
-    Nd4j.writeTxt(params,"somefile.txt"); 
-    
-    
-    //You can reload the conf with
-    MultiLayerConfiguration = MultiLayerConfiguration.fromJson("someOtherFile.json");
-    //or
-    NeuralNetConfiguration = NeuralNetConfiguration.fromJson("someOtherFile.json"); 
-    
-    //You can set the params with 
-    layer.setParams(params);
-    //or
-    multiLayerNetwork.setParams(params);
+Please see https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java#L127 for an example.
