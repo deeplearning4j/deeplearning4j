@@ -19,33 +19,46 @@ import java.util.Iterator;
 public @Data class GemvParameters {
     private int m,n,lda,incx,incy;
     private INDArray a,x,y;
+    private char aOrdering = 'N';
 
     public GemvParameters(INDArray a,INDArray x,INDArray y) {
+
         this.a = a;
         this.x = x;
         this.y = y;
-        this.m = a.rows();
-        this.n = a.columns();
-        this.lda = Math.max(1, m);
 
-        if(a.ordering() == 'c') {
-            INDArray newOrder = Nd4j.create(a.shape(),'f');
-            Iterator<int[]> copy = new NdIndexIterator(a.shape());
-            while(copy.hasNext()) {
-                int[] next = copy.next();
-                newOrder.putScalar(next,a.getDouble(next));
-            }
-            a = newOrder;
+        if(a.ordering() == 'f' && a.isMatrix()) {
+            this.m = a.rows();
+            this.n = y.columns();
+            this.lda = a.rows();
+        }
+        else if(a.ordering() == 'c' && a.isMatrix()) {
+            this.m = a.rows();
+            this.n = x.length();
+            this.lda = a.columns();
+            aOrdering = 'T';
+        }
+
+        else  {
+            this.m = a.rows();
+            this.n = a.columns();
+            this.lda = a.size(0);
         }
 
 
-        if(a.isVector() && a.ordering() == NDArrayFactory.FORTRAN) {
-            this.lda = a.stride(0);
-            if(a instanceof IComplexNDArray)
-                this.lda /= 2;
+        if(x.isColumnVector()) {
+            if(x.ordering() == 'f')
+                incx = x.stride(0);
+            else
+                incx = x.stride(1);
+        }
+        else {
+            if(x.ordering() == 'f')
+                incx = x.stride(1);
+            else
+                incx = x.stride(0);
         }
 
-        this.incx = x.elementStride();
         this.incy = y.elementStride();
 
         if(x instanceof IComplexNDArray)
