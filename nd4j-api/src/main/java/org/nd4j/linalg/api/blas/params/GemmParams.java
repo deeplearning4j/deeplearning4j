@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.blas.params;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * Used for setting the gemm parameters
@@ -28,6 +29,8 @@ public @Data class GemmParams {
         if(a.rows() != c.rows())
             throw new IllegalArgumentException("A rows must equal c rows");
 
+        a = Shape.toOffsetZeroCopy(a);
+        b = Shape.toOffsetZeroCopy(b);
 
         //automatically assume fortran ordering
         //multiple backends force us to be
@@ -36,20 +39,40 @@ public @Data class GemmParams {
         this.b = b;
         this.c = c;
 
+        if(a.ordering() == 'f' && b.ordering() == 'f'){
+            this.m = a.rows();
+            this.n = b.columns();
+            this.k = a.columns();
+            this.lda = a.rows();
+            this.ldb = b.rows();
+            this.ldc = a.rows();
+        } else if(a.ordering() == 'c' && b.ordering() == 'c') {
+            this.m = c.rows();
+            this.n = c.columns();
+            this.k = b.rows();
+
+            this.lda = a.columns();
+            this.ldb = b.columns();
+            this.ldc = c.rows();
+            aOrdering = 'T';
+            bOrdering = 'T';
+        } else throw new RuntimeException();
+
+        /*
         this.m = a.ordering() == 'f' ? a.size(0) : a.size(1);
         this.n = b.ordering() == 'f' ? b.size(1) : b.size(0);
         this.k = c.ordering() == 'f' ? a.size(1) : a.size(0);
 
 
 
-        this.lda = a.ordering() == 'f' ? a.size(0) > 1 ? a.size(0) : 1 : a.size(1) > 1 ? a.size(1) : 1;
-        this.ldb = b.ordering() == 'f' ? b.size(0) > 1 ? b.size(0) : 1 : b.size(1) > 1 ? b.size(1) : 1;
+        this.lda = a.ordering() == 'f' ? (a.size(0) > 1 ? a.size(0) : 1) : (a.size(1) > 1 ? a.size(1) : 1);
+        this.ldb = b.ordering() == 'f' ? (b.size(0) > 1 ? b.size(0) : 1) : (b.size(1) > 1 ? b.size(1) : 1);
         this.ldc = c.size(0) > 1 ? c.size(0) : 1;
 
+//        this.ldc = c.size(1);
 
         if(a.ordering() == 'c') {
             aOrdering = 'T';
-
         }
 
         if(b.ordering() == 'c') {
@@ -58,7 +81,7 @@ public @Data class GemmParams {
 
 
 
-        ldc = c.size(0);
+        ldc = c.size(0);*/
 
 
         validate();
@@ -68,7 +91,11 @@ public @Data class GemmParams {
 
 
     private void validate() {
-     /*   if(aOrdering == 'N') {
+
+        if( c.ordering() != 'f' ) throw new IllegalStateException("C is not order f");
+
+        /*
+        if(aOrdering == 'N') {
             if(a.columns() != k)
                 throw new IllegalStateException("When trans(a) == n a columns must be equal to k");
             if(lda < Math.max(1,m))
@@ -81,6 +108,7 @@ public @Data class GemmParams {
             if(lda < Math.max(1,k))
                 throw new IllegalStateException("When trans(a) == t lda must be >= max(1,k)");
         }
+
         if(bOrdering == 'N') {
             if(b.columns() != n)
                 throw new IllegalStateException("When trans(b) == n b columns must be n");
@@ -88,7 +116,7 @@ public @Data class GemmParams {
                 throw new IllegalStateException("When trans(b) == n ldb must be >= max(1,k)");
         }
         else {
-            if(b.columns() != k)
+            if(b.rows() != k)
                 throw new IllegalStateException("When trans(b) == t b columns must be k");
             if(ldb < Math.max(1,n))
                 throw new IllegalStateException("When trans(b) == t ldb must be >= max(1,n)");
