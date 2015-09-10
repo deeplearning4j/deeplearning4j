@@ -31,7 +31,6 @@ public class SplitTestAndTrain implements Serializable {
     private DataSet train, test;
 
     public SplitTestAndTrain(DataSet train, DataSet test) {
-
         this.train = train;
         this.test = test;
     }

@@ -120,24 +120,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public static DataSet merge(List<DataSet> data) {
         if (data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
-        DataSet first = data.get(0);
-        int numExamples = totalExamples(data);
-        INDArray in = Nd4j.create(numExamples, first.getFeatures().columns());
-        INDArray out = Nd4j.create(numExamples, first.getLabels().columns());
-        int count = 0;
-
-        for (int i = 0; i < data.size(); i++) {
-            DataSet d1 = data.get(i);
-            for (int j = 0; j < d1.numExamples(); j++) {
-                DataSet example = d1.get(j);
-                in.putRow(count, example.getFeatures().dup());
-                out.putRow(count, example.getLabels().dup());
-                count++;
-            }
-
-
-        }
-        return new DataSet(in, out);
+        return merge(data,false);
     }
 
     private static int totalExamples(Collection<DataSet> coll) {
@@ -733,21 +716,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet sample(int numSamples, org.nd4j.linalg.api.rng.Random rng, boolean withReplacement) {
-            INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
-            INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
-            Set<Integer> added = new HashSet<>();
-            for (int i = 0; i < numSamples; i++) {
-                int picked = rng.nextInt(numExamples());
-                if (!withReplacement)
-                    while (added.contains(picked))
-                        picked = rng.nextInt(numExamples());
+        INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
+        INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
+        Set<Integer> added = new HashSet<>();
+        for (int i = 0; i < numSamples; i++) {
+            int picked = rng.nextInt(numExamples());
+            if (!withReplacement)
+                while (added.contains(picked))
+                    picked = rng.nextInt(numExamples());
 
 
-                examples.putRow(i, get(picked).getFeatures());
-                outcomes.putRow(i, get(picked).getLabels());
+            examples.putRow(i, get(picked).getFeatures());
+            outcomes.putRow(i, get(picked).getLabels());
 
-            }
-            return new DataSet(examples, outcomes);
+        }
+        return new DataSet(examples, outcomes);
 
     }
 
