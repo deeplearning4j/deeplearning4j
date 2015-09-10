@@ -7,9 +7,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +25,8 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     private int totalBatches = -1;
     private DataSetPreProcessor dataSetPreProcessor;
 
+
+
     /**
      *
      * @param baseData the base dataset
@@ -35,19 +34,30 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
      * @throws IOException
      */
     public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize) throws IOException {
+        this(baseData,batchSize,true);
+
+    }
+    /**
+     *
+     * @param baseData the base dataset
+     * @param batchSize the batch size to split by
+     * @throws IOException
+     */
+    public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize,boolean delete) throws IOException {
         this.batchSize = batchSize;
         rootDir = new File(System.getProperty("java.io.tmpdir"),UUID.randomUUID().toString());
         rootDir.mkdirs();
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    FileUtils.deleteDirectory(rootDir);
-                } catch (IOException e) {
-                    e.printStackTrace();
+        if(delete)
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        FileUtils.deleteDirectory(rootDir);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
-            }
-        }));
+            }));
         currIdx = 0;
         paths = new ArrayList<>();
         totalExamples = baseData.numExamples();
@@ -160,4 +170,11 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
 
     }
 
+    public File getRootDir() {
+        return rootDir;
+    }
+
+    public void setRootDir(File rootDir) {
+        this.rootDir = rootDir;
+    }
 }
