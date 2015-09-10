@@ -23,15 +23,6 @@
 		<artifactId>deeplearning4j-scaleout</artifactId>
 		<version>0.4-rc3.2-SNAPSHOT</version>
 	</parent>
-	<properties>
-		<cleartk.version>2.0.0</cleartk.version>
-		<spring.version>3.2.5.RELEASE</spring.version>
-		<netty.version>3.8.0.Final</netty.version>
-        <dropwizard.version>0.8.0</dropwizard.version>
-        <lucene.version>4.10.3</lucene.version>
-
-	</properties>
-
     <build>
         <pluginManagement>
             <plugins>
