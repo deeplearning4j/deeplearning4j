@@ -22,6 +22,7 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -129,6 +130,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         for (DataSet d : coll)
             count += d.numExamples();
         return count;
+    }
+
+    @Override
+    public DataSetIterator iterateWithMiniBatches() {
+        return null;
     }
 
     @Override

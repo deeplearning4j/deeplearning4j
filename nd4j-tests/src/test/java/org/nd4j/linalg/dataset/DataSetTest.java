@@ -25,13 +25,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class DataSetTest extends BaseNd4jTest {
 	public DataSetTest() {
@@ -63,6 +64,14 @@ public class DataSetTest extends BaseNd4jTest {
 
         SplitTestAndTrain train2 = data.splitTestAndTrain(6, new Random(1));
         assertEquals(getFailureMessage(),train.getTrain().getFeatureMatrix(), train2.getTrain().getFeatureMatrix());
+
+        DataSet x0 = new IrisDataSetIterator(150,150).next();
+        SplitTestAndTrain testAndTrain = x0.splitTestAndTrain(10);
+        assertArrayEquals(new int[]{10,4},testAndTrain.getTrain().getFeatureMatrix().shape());
+        assertEquals(x0.getFeatureMatrix().getRows(ArrayUtil.range(0, 10)), testAndTrain.getTrain().getFeatureMatrix());
+        assertEquals(x0.getLabels().getRows(ArrayUtil.range(0,10)),testAndTrain.getTrain().getLabels());
+
+
     }
 
     @Test

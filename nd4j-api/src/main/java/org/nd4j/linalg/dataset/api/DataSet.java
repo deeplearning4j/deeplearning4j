@@ -23,6 +23,7 @@ import com.google.common.base.Function;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
@@ -34,6 +35,9 @@ import java.util.Map;
  * Created by agibsonccc on 8/26/14.
  */
 public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Serializable {
+
+
+    DataSetIterator iterateWithMiniBatches();
 
     String id();
 
