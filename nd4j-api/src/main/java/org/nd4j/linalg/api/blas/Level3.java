@@ -45,6 +45,11 @@ public interface Level3 {
           INDArray B,
           double beta, INDArray C);
 
+    /** A convenience method for matrix-matrix operations with transposes.
+     * Implements C = alpha*op(A)*op(B) + beta*C
+     * Matrices A and B can be any order and offset (though will have copy overhead if elements are not contiguous in buffer)
+     * but matrix C MUST be f order, 0 offset and have length == data.length
+     */
     void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta );
 
 
