@@ -632,6 +632,39 @@ public class Nd4j {
         return ret.reshape('c',aPlusB);
     }
 
+    /** Matrix multiply: Implements op(a)*op(b) where op(X) means transpose X (or not) depending on
+     * setting of arguments transposeA and transposeB.<br>
+     * So gemm(a,b,false,false) == a.mmul(b), gemm(a,b,true,false) == a.transpose().mmul(b) etc.
+     * @param a First matrix
+     * @param b Second matrix
+     * @param transposeA if true: transpose matrix a before mmul
+     * @param transposeB if true: transpose matrix b before mmul
+     * @return result
+     */
+    public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB){
+        int cRows = (transposeA ? a.columns() : a.rows() );
+        int cCols = (transposeB ? b.rows() : b.columns() );
+        INDArray c = Nd4j.create(new int[]{cRows, cCols}, 'f');
+        return gemm(a, b, c, transposeA, transposeB, 1.0, 0.0);
+    }
+
+    /** Matrix multiply: Implements c = alpha*op(a)*op(b) + beta*c where op(X) means transpose X (or not)
+     * depending on setting of arguments transposeA and transposeB.<br>
+     * Note that matrix c MUST be fortran order, have zero offset and have c.data().length == c.length().
+     * An exception will be thrown otherwise.<br>
+     * Don't use this unless you know about level 3 blas and NDArray storage orders.
+     * @param a First matrix
+     * @param b Second matrix
+     * @param c result matrix. Used in calculation (assuming beta != 0) and result is stored in this. f order,
+     *          zero offset and length == data.length only
+     * @param transposeA if true: transpose matrix a before mmul
+     * @param transposeB if true: transpose matrix b before mmul
+     * @return result, i.e., matrix c is returned for convenience
+     */
+    public static INDArray gemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB, double alpha, double beta ){
+        getBlasWrapper().level3().gemm(a,b,c,transposeA,transposeB,alpha,beta);
+        return c;
+    }
 
     /**
      * Given a sequence of Iterators over a transform of matrices, fill in all of
