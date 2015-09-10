@@ -94,11 +94,18 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
     @Test
     public void testGemmWithOpsCommonsMath(){
     	List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> firstT = CheckUtil.getAllTestMatricesWithShape(5, 3, SEED);
     	List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(5, 4, SEED);
-        double[] alpha = {-0.5,1.0,2.5};
-        double[] beta = {0.0,1.0,3.5};
+        List<Pair<INDArray,String>> secondT = CheckUtil.getAllTestMatricesWithShape(4, 5, SEED);
+        double[] alpha = {1.0,-0.5,2.5};
+        double[] beta = {0.0,-0.25,1.5};
         INDArray cOrig = Nd4j.create(new int[]{3,4});
-        //TODO random values
+        Random r = new Random(12345);
+        for( int i=0; i<cOrig.size(0); i++ ){
+            for( int j=0; j<cOrig.size(1); j++ ){
+                cOrig.putScalar(new int[]{i,j},r.nextDouble());
+            }
+        }
     	for( int i = 0; i < first.size(); i++ ){
     		for( int j = 0; j < second.size(); j++ ){
                 for( int k=0; k<alpha.length; k++ ) {
@@ -106,28 +113,30 @@ public  class Nd4jTestsComparisonC extends BaseNd4jTest {
                         INDArray cff = Nd4j.create(cOrig.shape(),'f');
                         cff.assign(cOrig);
                         INDArray cft = Nd4j.create(cOrig.shape(),'f');
-                        cff.assign(cOrig);
+                        cft.assign(cOrig);
                         INDArray ctf = Nd4j.create(cOrig.shape(),'f');
-                        cff.assign(cOrig);
+                        ctf.assign(cOrig);
                         INDArray ctt = Nd4j.create(cOrig.shape(),'f');
-                        cff.assign(cOrig);
+                        ctt.assign(cOrig);
 
                         double a = alpha[k];
                         double b = beta[k];
                         Pair<INDArray, String> p1 = first.get(i);
+                        Pair<INDArray, String> p1T = firstT.get(i);
                         Pair<INDArray, String> p2 = second.get(j);
+                        Pair<INDArray, String> p2T = secondT.get(j);
                         String errorMsgff = getGemmErrorMsg(i, j, false, false, a,b, p1, p2);
-                        String errorMsgft = getGemmErrorMsg(i, j, false, true, a, b, p1, p2);
-                        String errorMsgtf = getGemmErrorMsg(i, j, true, false, a, b, p1, p2);
-                        String errorMsgtt = getGemmErrorMsg(i, j, true, true, a, b, p1, p2);
+                        String errorMsgft = getGemmErrorMsg(i, j, false, true, a, b, p1, p2T);
+                        String errorMsgtf = getGemmErrorMsg(i, j, true, false, a, b, p1T, p2);
+                        String errorMsgtt = getGemmErrorMsg(i, j, true, true, a, b, p1T, p2T);
 
                         assertTrue(errorMsgff, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cff,
                                 false, false, a, b, 1e-4, 1e-6));
-                        assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), cft,
+                        assertTrue(errorMsgft, CheckUtil.checkGemm(p1.getFirst(), p2T.getFirst(), cft,
                                 false, true, a, b, 1e-4, 1e-6));
-                        assertTrue(errorMsgtf, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), ctf,
+                        assertTrue(errorMsgtf, CheckUtil.checkGemm(p1T.getFirst(), p2.getFirst(), ctf,
                                 true, false, a, b, 1e-4, 1e-6));
-                        assertTrue(errorMsgtt, CheckUtil.checkGemm(p1.getFirst(), p2.getFirst(), ctt,
+                        assertTrue(errorMsgtt, CheckUtil.checkGemm(p1T.getFirst(), p2T.getFirst(), ctt,
                                 true, true, a, b, 1e-4, 1e-6));
                     }
                 }

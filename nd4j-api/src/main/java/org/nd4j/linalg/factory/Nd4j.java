@@ -633,7 +633,9 @@ public class Nd4j {
     }
 
     public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB){
-        INDArray c = Nd4j.create(new int[]{a.size(0),b.size(1)},'f');
+        int cRows = (transposeA ? a.columns() : a.rows() );
+        int cCols = (transposeB ? b.rows() : b.columns() );
+        INDArray c = Nd4j.create(new int[]{cRows,cCols},'f');
         return gemm(a,b,c,transposeA,transposeB,1.0,0.0);
     }
 

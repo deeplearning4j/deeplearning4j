@@ -53,7 +53,8 @@ public class CheckUtil {
 									double maxRelativeDifference, double minAbsDifference ){
 		int commonDimA = (transposeA ? a.rows() : a.columns() );
 		int commonDimB = (transposeB ? b.columns() : b.rows() );
-		if(commonDimA != commonDimB) throw new IllegalArgumentException("Common dimensions don't match");
+		if(commonDimA != commonDimB) throw new IllegalArgumentException("Common dimensions don't match: a.shape=" +
+                Arrays.toString(a.shape()) + ", b.shape="+ Arrays.toString(b.shape()) + ", tA=" + transposeA + ", tb=" + transposeB);
 		int outRows = (transposeA ? a.columns() : a.rows() );
 		int outCols = (transposeB ? b.rows() : b.columns() );
 		if(c.rows() != outRows || c.columns() != outCols) throw new IllegalArgumentException("C does not match outRows or outCols");
@@ -63,15 +64,23 @@ public class CheckUtil {
 		RealMatrix rmB = convertToApacheMatrix(transposeB ? b.transpose() : b);
 		RealMatrix rmC = convertToApacheMatrix(c);
 		RealMatrix rmExpected = rmA.multiply(rmB).scalarMultiply(alpha).add(rmC.scalarMultiply(beta));
+        INDArray cCopy1 = Nd4j.create(c.shape(), 'f');
+        cCopy1.assign(c);
+        INDArray cCopy2 = Nd4j.create(c.shape(), 'f');
+        cCopy2.assign(c);
 
 		INDArray out = Nd4j.gemm(a, b, c, transposeA, transposeB, alpha, beta);
+        if(out != c){
+            System.out.println("Returned different array than c");
+            return false;
+        }
 		if(!checkShape(rmExpected,out)) return false;
 		boolean ok = checkEntries(rmExpected,out,maxRelativeDifference,minAbsDifference);
 		if(!ok){
 			INDArray aCopy = Shape.toOffsetZeroCopy(a);
 			INDArray bCopy = Shape.toOffsetZeroCopy(b);
-			INDArray onCopies = Nd4j.gemm(aCopy, bCopy, c, transposeA, transposeB, alpha, beta);
-			printGemmFailureDetails(a,b,c,transposeA,transposeB,alpha,beta,rmExpected,out,onCopies);
+			INDArray onCopies = Nd4j.gemm(aCopy, bCopy, cCopy1, transposeA, transposeB, alpha, beta);
+			printGemmFailureDetails(a,b,cCopy2,transposeA,transposeB,alpha,beta,rmExpected,out,onCopies);
 		}
 		return ok;
 	}
@@ -252,7 +261,7 @@ public class CheckUtil {
 		printMatrixFullPrecision(c);
 		System.out.println("\nExpected (Apache Commons)");
 		printApacheMatrix(expected);
-		System.out.println("\nSame Nd4j op on zero offset copies: gemm(aCopy,bCopy,c,"+transposeA+","+transposeB+","+alpha+","+beta+")");
+		System.out.println("\nSame Nd4j op on zero offset copies: gemm(aCopy,bCopy,cCopy," + transposeA + "," + transposeB + "," + alpha + "," + beta + ")");
 		printMatrixFullPrecision(onCopies);
 		System.out.println("\nActual:");
 		printMatrixFullPrecision(actual);
