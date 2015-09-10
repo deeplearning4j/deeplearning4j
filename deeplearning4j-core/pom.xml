@@ -84,7 +84,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>${netty.version}</version>
+            <version>${netty.buffer.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
