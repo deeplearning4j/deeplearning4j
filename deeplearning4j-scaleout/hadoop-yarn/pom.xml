@@ -29,10 +29,6 @@
         <version>0.4-rc3.2-SNAPSHOT</version>
     </parent>
     <packaging>pom</packaging>
-    <properties>
-        <logback.version>1.0.6</logback.version>
-        <spring.version>3.2.5.RELEASE</spring.version>
-    </properties>
 
     <repositories>
         <repository>
