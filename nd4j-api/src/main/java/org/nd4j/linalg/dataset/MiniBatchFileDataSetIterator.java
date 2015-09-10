@@ -43,16 +43,16 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
      * @param batchSize the batch size to split by
      * @throws IOException
      */
-    public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize,boolean delete) throws IOException {
+    public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize,boolean delete,File rootDir) throws IOException {
         this.batchSize = batchSize;
-        rootDir = new File(System.getProperty("java.io.tmpdir"),UUID.randomUUID().toString());
+        rootDir = new File(rootDir,UUID.randomUUID().toString());
         rootDir.mkdirs();
         if(delete)
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        FileUtils.deleteDirectory(rootDir);
+                        FileUtils.deleteDirectory(MiniBatchFileDataSetIterator.this.rootDir);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -71,6 +71,16 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
             if(offset >= totalExamples)
                 break;
         }
+    }
+
+    /**
+     *
+     * @param baseData the base dataset
+     * @param batchSize the batch size to split by
+     * @throws IOException
+     */
+    public MiniBatchFileDataSetIterator(DataSet baseData,int batchSize,boolean delete) throws IOException {
+        this(baseData, batchSize, delete, new File(System.getProperty("java.io.tmpdir")));
     }
 
     @Override
