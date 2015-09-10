@@ -22,8 +22,10 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.MathUtils;
@@ -120,24 +122,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public static DataSet merge(List<DataSet> data) {
         if (data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
-        DataSet first = data.get(0);
-        int numExamples = totalExamples(data);
-        INDArray in = Nd4j.create(numExamples, first.getFeatures().columns());
-        INDArray out = Nd4j.create(numExamples, first.getLabels().columns());
-        int count = 0;
-
-        for (int i = 0; i < data.size(); i++) {
-            DataSet d1 = data.get(i);
-            for (int j = 0; j < d1.numExamples(); j++) {
-                DataSet example = d1.get(j);
-                in.putRow(count, example.getFeatures().dup());
-                out.putRow(count, example.getLabels().dup());
-                count++;
-            }
-
-
-        }
-        return new DataSet(in, out);
+        return merge(data,false);
     }
 
     private static int totalExamples(Collection<DataSet> coll) {
@@ -145,6 +130,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         for (DataSet d : coll)
             count += d.numExamples();
         return count;
+    }
+
+    @Override
+    public DataSetIterator iterateWithMiniBatches() {
+        return null;
     }
 
     @Override
@@ -224,11 +214,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void shuffle() {
-        List<DataSet> list = asList();
-        Collections.shuffle(list);
-        DataSet ret = DataSet.merge(list,false);
-        setFeatures(ret.getFeatures());
-        setLabels(ret.getLabels());
+        //note here we use the same seed with different random objects guaranteeing same order
+        long seed = System.currentTimeMillis();
+        Nd4j.shuffle(getFeatureMatrix(),new Random(seed),0);
+        Nd4j.shuffle(getLabels(),new Random(seed),0);
     }
 
 
@@ -544,20 +533,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
-
         if (numHoldout >= numExamples())
             throw new IllegalArgumentException("Unable to split on size larger than the number of rows");
-
-        List<DataSet> list = asList();
-
-        Collections.rotate(list, 3);
-        Collections.shuffle(list, rng);
-        List<List<DataSet>> partition = new ArrayList<>();
-        partition.add(list.subList(0, numHoldout));
-        partition.add(list.subList(numHoldout, list.size()));
-        DataSet train = merge(partition.get(0),false);
-        DataSet test = merge(partition.get(1),false);
-        return new SplitTestAndTrain(train, test);
+        DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout)),getLabels().get(NDArrayIndex.interval(0,numHoldout)));
+        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples())),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples())));
+        return new SplitTestAndTrain(first, second);
     }
 
     @Override
@@ -733,21 +713,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public DataSet sample(int numSamples, org.nd4j.linalg.api.rng.Random rng, boolean withReplacement) {
-            INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
-            INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
-            Set<Integer> added = new HashSet<>();
-            for (int i = 0; i < numSamples; i++) {
-                int picked = rng.nextInt(numExamples());
-                if (!withReplacement)
-                    while (added.contains(picked))
-                        picked = rng.nextInt(numExamples());
+        INDArray examples = Nd4j.create(numSamples, getFeatures().columns());
+        INDArray outcomes = Nd4j.create(numSamples, numOutcomes());
+        Set<Integer> added = new HashSet<>();
+        for (int i = 0; i < numSamples; i++) {
+            int picked = rng.nextInt(numExamples());
+            if (!withReplacement)
+                while (added.contains(picked))
+                    picked = rng.nextInt(numExamples());
 
 
-                examples.putRow(i, get(picked).getFeatures());
-                outcomes.putRow(i, get(picked).getLabels());
+            examples.putRow(i, get(picked).getFeatures());
+            outcomes.putRow(i, get(picked).getLabels());
 
-            }
-            return new DataSet(examples, outcomes);
+        }
+        return new DataSet(examples, outcomes);
 
     }
 

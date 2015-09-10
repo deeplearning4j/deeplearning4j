@@ -51,6 +51,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.api.shape.Shape;
+import org.omg.PortableInterceptor.INACTIVE;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
@@ -162,6 +163,9 @@ public class Nd4j {
     public static INDArray pad(INDArray toPad,int[][] padWidth,PadMode padMode) {
         return pad(toPad,padWidth,ArrayUtil.zerosMatrix(toPad.shape()),padMode);
     }
+
+
+
     /**
      * Pad the given ndarray to the size along each dimension
      * @param toPad the ndarray to pad
@@ -319,6 +323,38 @@ public class Nd4j {
         return Nd4j.concat(axis, Nd4j.valueArrayOf(paShape, val), arr);
     }
 
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param random the random to use
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(INDArray toShuffle,Random random,int...dimension) {
+        List<Integer> vectorsAlongDimension = Ints.asList(ArrayUtil.range(0, toShuffle.tensorssAlongDimension(dimension)));
+        Collections.rotate(vectorsAlongDimension, 3);
+        Collections.shuffle(vectorsAlongDimension, random);
+        for(int i = 0; i < toShuffle.tensorssAlongDimension(dimension); i++) {
+            INDArray curr = toShuffle.tensorAlongDimension(i,dimension);
+            INDArray toShuffleTensor = toShuffle.tensorAlongDimension(vectorsAlongDimension.get(i),dimension);
+            INDArray temp = curr.dup();
+            curr.assign(toShuffleTensor);
+            toShuffleTensor.assign(temp);
+        }
+    }
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(INDArray toShuffle,int...dimension) {
+        shuffle(toShuffle,new Random(),dimension);
+    }
 
     /**
      * The reference queue used for cleaning up
