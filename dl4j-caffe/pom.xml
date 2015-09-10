@@ -13,9 +13,6 @@
 
 
     <properties>
-        <spring.version>3.2.5.RELEASE</spring.version>
-        <google.protobuf.version>2.6.1</google.protobuf.version>
-        <lombok.version>1.16.4</lombok.version>
         <graphchi.version>0.2.2</graphchi.version>
     </properties>
 
@@ -44,7 +41,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>0.4-rc2.2</version>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
