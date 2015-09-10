@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.MathUtils;
@@ -207,11 +208,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void shuffle() {
-        List<DataSet> list = asList();
-        Collections.shuffle(list);
-        DataSet ret = DataSet.merge(list,false);
-        setFeatures(ret.getFeatures());
-        setLabels(ret.getLabels());
+        //note here we use the same seed with different random objects guaranteeing same order
+        long seed = System.currentTimeMillis();
+        Nd4j.shuffle(getFeatureMatrix(),new Random(seed),0);
+        Nd4j.shuffle(getLabels(),new Random(seed),0);
     }
 
 
@@ -527,20 +527,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public SplitTestAndTrain splitTestAndTrain(int numHoldout, Random rng) {
-
         if (numHoldout >= numExamples())
             throw new IllegalArgumentException("Unable to split on size larger than the number of rows");
-
-        List<DataSet> list = asList();
-
-        Collections.rotate(list, 3);
-        Collections.shuffle(list, rng);
-        List<List<DataSet>> partition = new ArrayList<>();
-        partition.add(list.subList(0, numHoldout));
-        partition.add(list.subList(numHoldout, list.size()));
-        DataSet train = merge(partition.get(0),false);
-        DataSet test = merge(partition.get(1),false);
-        return new SplitTestAndTrain(train, test);
+        DataSet first = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(0,numHoldout)),getLabels().get(NDArrayIndex.interval(0,numHoldout)));
+        DataSet second = new DataSet(getFeatureMatrix().get(NDArrayIndex.interval(numHoldout,numExamples())),getLabels().get(NDArrayIndex.interval(numHoldout,numExamples())));
+        return new SplitTestAndTrain(first, second);
     }
 
     @Override

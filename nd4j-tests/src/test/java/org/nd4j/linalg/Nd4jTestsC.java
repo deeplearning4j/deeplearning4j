@@ -98,9 +98,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testShuffle() {
         INDArray arr = Nd4j.rand(6,6);
+        INDArray dup = arr.dup();
         Nd4j.shuffle(arr,0);
-        System.out.println(arr);
+        assertNotEquals(arr,dup);
     }
+
+
+
 
     @Test
     public void testScalarOps() throws Exception {
