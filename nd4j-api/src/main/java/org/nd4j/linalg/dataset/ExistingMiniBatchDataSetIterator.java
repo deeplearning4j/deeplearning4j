@@ -89,6 +89,11 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public void remove() {
+        //no opt;
+    }
+
+    @Override
     public DataSet next() {
         try {
             DataSet ret =  read(currIdx);

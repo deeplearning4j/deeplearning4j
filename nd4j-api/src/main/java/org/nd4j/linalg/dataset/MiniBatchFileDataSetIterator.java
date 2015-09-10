@@ -134,6 +134,11 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
     }
 
     @Override
+    public void remove() {
+        //no opt;
+    }
+
+    @Override
     public DataSet next() {
         try {
             DataSet ret =  read(currIdx);
