@@ -232,6 +232,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.dampingFactor = dampingFactor;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
+            conf.redistributeParams = redistributeParams;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 
