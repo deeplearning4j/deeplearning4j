@@ -182,7 +182,9 @@ A [commented example of a Graves LSTM](https://github.com/deeplearning4j/dl4j-0.
 * [Restricted Boltzmann Machines](../restrictedboltzmannmachine.html)
 * [Eigenvectors, Covariance, PCA and Entropy](../eigenvector.html)
 * [Word2vec](../word2vec.html)
+* [Neural Networks](../neuralnet-overview.html)
 * [Neural Networks and Regression](../linear-regression.html)
+* [Convolutional Networks](../convolutionalnets.html)
 
 ### Footnotes
 
