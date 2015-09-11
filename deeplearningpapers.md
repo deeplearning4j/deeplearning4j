@@ -177,6 +177,10 @@ for Statistical Machine Translation](http://arxiv.org/pdf/1406.1078v3.pdf)**; Ch
 
 **[THE MARKOV CHAIN MONTE CARLO REVOLUTION](http://www.ams.org/journals/bull/2009-46-02/S0273-0979-08-01238-X/S0273-0979-08-01238-X.pdf)**; Diaconis
 
+**[An Introduction to MCMC for Machine Learning](http://www.cs.princeton.edu/courses/archive/spr06/cos598C/papers/AndrieuFreitasDoucetJordan2003.pdf)**
+
+**[Continuous control with deep reinforcement learning](http://arxiv.org/pdf/1509.02971v1.pdf)**; DeepMind
+
 ## Researchers' Personal Websites
 
 -  [Yoshua Bengio](http://www.iro.umontreal.ca/~bengioy/yoshua_en/index.html)
