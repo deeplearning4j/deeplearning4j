@@ -83,7 +83,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * Invoke the recordreaderdatasetiterator with a batch size of 10
      * @param recordReader the recordreader to use
      * @param labelIndex the index of the label
-     * @param numPossibleLabels the number of possible labels for classificatoin
+     * @param numPossibleLabels the number of possible labels for classificatio/dn
      *
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
