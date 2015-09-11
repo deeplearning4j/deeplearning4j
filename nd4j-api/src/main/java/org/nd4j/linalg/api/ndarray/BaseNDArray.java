@@ -1028,11 +1028,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         }
 
-//        if(ordering == 'c' && length() == data().length()) {
-//            data.put(offset + i,value);
-//            return this;
-//        }
-
         if(isRowVector())
             return putScalar(new int[]{0,i},value);
         else if(isColumnVector())
@@ -3170,73 +3165,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transposei() {
-        if (isRowVector()) {
-            INDArray ret = create(shape.length == 1 ? new int[]{shape[0], 1} : ArrayUtil.reverseCopy(shape()));
-            if(ret instanceof IComplexNDArray) {
-                IComplexNDArray arr = (IComplexNDArray) ret;
-                IComplexNDArray thisArr = (IComplexNDArray) this;
-                for(int i = 0; i < ret.length(); i++) {
-                    arr.putScalar(i,thisArr.getComplex(i));
-                }
-
-            }
-            else {
-                for(int i = 0; i < ret.length(); i++) {
-                    ret.putScalar(i,getDouble(i));
-                }
-            }
-
-            return ret;
-
-        }
-        else if (isColumnVector()) {
-            INDArray ret = create(new int[]{1,shape[0]});
-            if(ret instanceof IComplexNDArray) {
-                IComplexNDArray arr = (IComplexNDArray) ret;
-                IComplexNDArray thisArr = (IComplexNDArray) this;
-                for(int i = 0; i < ret.length(); i++) {
-                    arr.putScalar(i,thisArr.getComplex(i));
-                }
-
-            }
-            else {
-                for(int i = 0; i < ret.length(); i++) {
-                    ret.putScalar(i,getDouble(i));
-                }
-            }
-
-            return ret;
-        }
-        if(isMatrix()) {
-            if(this instanceof IComplexNDArray) {
-                IComplexNDArray arr = (IComplexNDArray) create(new int[]{columns(), rows()});
-                IComplexNDArray arrThis = (IComplexNDArray) this;
-                for(int i = 0; i < arr.rows(); i++) {
-                    for(int j = 0; j < arr.columns(); j++)
-                        arr.put(i,j,arrThis.getComplex(j, i));
-                }
-
-                return arr;
-            }
-            else {
-                INDArray arr = create(columns(),rows());
-                for(int i = 0; i < arr.rows(); i++) {
-                    for(int j = 0; j < arr.columns(); j++)
-                        arr.put(i,j,getDouble(j, i));
-                }
-
-                return arr;
-            }
-
-        }
-
-        INDArray arr = create(ArrayUtil.reverseCopy(shape()));
-        for(int i = 0; i < arr.slices(); i++) {
-            arr.putSlice(i,arr.slice(i).transpose());
-        }
-
-        return arr;
-
+       return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0,rank())));
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {
@@ -3502,35 +3431,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray ravel() {
-
         INDArray ret = create(new int[]{1,length}, ordering);
-        INDArray linear = linearView();
-        /**
-         * Oddities with ravel.
-         *
-         * Suspect getDouble is returning
-         * the same indexes twice.
-         *
-         * Need to write unit tests and
-         * assert that all indexes returned
-         * by 2 index c are
-         * unique.
-         *
-         * Put scalar appears to be ok here,
-         * it's only get double putting up
-         * some weirdness.
-         *
-         *
-         * I suspect the errors are likely
-         * related to rounding if at all.
-         */
-        for(int i = 0; i < length(); i++) {
-            double val = linear.getDouble(i);
-            ret.putScalar(i,val);
+        int count = 0;
+        NdIndexIterator iter = new NdIndexIterator(shape());
+        while(iter.hasNext()) {
+            int[] next = iter.next();
+            ret.putScalar(new int[]{0,count++}, getDouble(next));
         }
 
         return ret;
-
     }
 
     /**
