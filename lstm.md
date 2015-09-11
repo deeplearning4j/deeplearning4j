@@ -18,7 +18,7 @@ Contents
 
 The purpose of this post is to give students of neural networks an intuition about the functioning of recurrent networks and purpose and structure of a prominent variation, LSTMs.
 
-Recurrent nets are a type of artificial neural network designed to recognize patterns in sequences of data, such as text, handwriting, the spoken word, or numerical times series data emanating from sensors, stock markets and government agencies.
+Recurrent nets are a type of artificial neural network designed to recognize patterns in sequences of data, such as text, genomes, handwriting, the spoken word, or numerical times series data emanating from sensors, stock markets and government agencies.
 
 They are arguably the most powerful type of neural network, applicable even to images, which can be decomposed into a series of patches and treated as a sequence. 
 
