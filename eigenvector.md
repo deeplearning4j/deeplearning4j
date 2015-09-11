@@ -12,6 +12,7 @@ Content:
 * [Covariance Matrix](#covariance)
 * [Change of Basis](#change)
 * [Entropy & Information Gain](#entropy)
+* [Just Give Me the Code](#code)
 * [Resources](#resources)
 
 This post introduces eigenvectors and their relationship to matrices in plain language and without a great deal of math. It builds on those ideas to explain covariance, principal component analysis, and information entropy. 
@@ -202,6 +203,10 @@ That transfer of information, from *what we don't know* about the system to *wha
 So each principal component cutting through the scatterplot represents a decrease in the system's entropy, in its unpredictability. 
 
 It so happens that explaining the shape of the data one principal component at a time, beginning with the component that accounts for the most variance, is similar to walking data through a decision tree. The first component of PCA, like the first if-then-else split in a properly formed decision tree, will be along the dimension that reduces unpredictability the most. 
+
+## <a name="code">Just Give Me the Code</a>
+
+You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-api/src/main/java/org/nd4j/linalg/eigen/Eigen.java) in [ND4J](http://nd4j.org), a numerical computing library for the JVM that handles n-dimensional arrays, broadly inspired by Numpy. 
 
 ## <a name="resources">Other Resources</a>
 
