@@ -121,7 +121,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     accumulation.update(op.op(op.x().data().getDouble(i)));
                 }
             }
-            else if(!(op.x() instanceof IComplexNDArray)) {
+            else if(!(op.x() instanceof IComplexNDArray) && op.x().isMatrix() || op.x().isVector()) {
                 for(int i = 0; i < op.n(); i++) {
                     accumulation.update(op.op(op.x().data().getDouble(op.x().offset() + i * op.x().majorStride())));
                 }
