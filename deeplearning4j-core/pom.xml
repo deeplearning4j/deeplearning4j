@@ -77,6 +77,11 @@
                 <version>${canova.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>canova-api</artifactId>
+                <version>${canova.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
                 <version>${commonsmath.version}</version>
@@ -98,8 +103,6 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>${canova.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
