@@ -827,30 +827,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void setParams(INDArray params) {
-        if(this.params != null) {
-            this.params = params;
-            int idx = 0;
-            for (int i = 0; i < getLayers().length; i++) {
-                Layer layer = getLayer(i);
-                int range = layer.numParams();
-                INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-//                if (get.length() < 1)
-//                    throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
-                layer.setParams(get);
-                idx += range;
-
-            }
-        }
+        if(this.params != null) this.params = params;  //not null if isRedistributeParams
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
             Layer layer = getLayer(i);
             int range = layer.numParams();
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-//            if (get.length() < 1)
-//                throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
             idx += range;
-
         }
     }
 
