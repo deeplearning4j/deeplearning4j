@@ -30,8 +30,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class UniformDistribution extends Distribution {
 
-    private static final long serialVersionUID = 7006579116682205405L;
-
     private double upper, lower;
 
     /**
