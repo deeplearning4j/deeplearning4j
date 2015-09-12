@@ -34,6 +34,8 @@
                 width = 960 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
         var data = values;
+        if(values == null || typeof values === 'undefined' || values[0] == null || typeof values[0] === 'undefined')
+             return;
         var min = 0;
         var max = 0;
         for(var i = 0; i < data.length; i++) {
@@ -69,6 +71,10 @@
                 .enter().append("g")
                 .attr("class", "bar")
                 .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+        if(data[0] == null || typeof data[0] === 'undefined')
+                 return;
+
 
         bar.append("rect")
                 .attr("x", 1)
