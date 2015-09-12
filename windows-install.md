@@ -14,6 +14,7 @@ Follow these steps:
 * Extract Maven and add its `bin` location to the Path          
 * Install Tortoise Git(https://tortoisegit.org/download/)
 * `git clone` the following repositories to the same directory, say "deeplearning4jExamples"
+
 			https://github.com/deeplearning4j/nd4j.git
 			https://github.com/deeplearning4j/deeplearning4j.git
 			https://github.com/deeplearning4j/Canova.git
