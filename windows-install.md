@@ -52,3 +52,5 @@ Follow these steps:
     </dependency>
 * Adapt the code for your GPU as [shown here](http://nd4j.org/dependencies.html)
 * Recompile the module and run it.
+
+(*Special thanks to user @Imdrail for help with these instructions.*)
