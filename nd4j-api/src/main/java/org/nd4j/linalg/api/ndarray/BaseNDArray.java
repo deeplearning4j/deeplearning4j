@@ -739,10 +739,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2))
             return ret2.slice(offset);
-        if(length == NDArrayMath.lengthPerSlice(ret2)) {
-            while(offset >= ret2.slices())
-                offset -= ret2.slices();
 
+        if(length == NDArrayMath.lengthPerSlice(ret2)) {
+           /* while(offset >= ret2.slices())
+                offset -= ret2.slices();*/
+            offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
             return ret2;
         }
@@ -750,8 +751,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         while(ret2.length() > length) {
             sliceIdx = NDArrayMath.sliceOffsetForTensor(index, ret2, tensorShape);
-            while(sliceIdx >= ret2.slices())
-                sliceIdx -= ret2.slices();
+            sliceIdx -= ret2.slices() * (sliceIdx / ret2.slices());
             ret2 = ret2.slice(sliceIdx);
 
         }
