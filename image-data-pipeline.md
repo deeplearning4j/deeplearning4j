@@ -54,32 +54,7 @@ The DataSetIterator iterates through input datasets, fetching one or more new ex
 
 Below is a neural net configuration example. Many of the hyperparameters have been explained in the [Iris tutorial](../iris-flower-dataset-tutorial.html); thus, we'll summarize a few distinguishing characteristics.
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .seed(seed) // Seed to lock in weight initialization for tuning
-                        .iterations(iterations) // # training iterations classify & backprop
-                        .learningRate(1e-6f) // Optimization step size
-                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT) 
-                        .l1(1e-1).regularization(true).l2(2e-4)
-                        .useDropConnect(true)
-                        .list(2) // # NN layers (ex-input layer)
-                        .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                                        .nIn(numRows * numColumns) // # input nodes
-                                        .nOut(3) // # fully connected hidden layer nodes. 
-                                        .weightInit(WeightInit.XAVIER)
-                                        .k(1) // # contrastive divergence iterations
-                                        .activation("relu") // Activation function type
-                                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT) 
-                                        .updater(Updater.ADAGRAD)
-                                        .dropOut(0.5)
-                                        .build()
-                        ) 
-                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .nIn(3) 
-                                        .nOut(outputNum) // # output nodes/classifications
-                                        .activation("softmax")
-                                        .build()
-                        ) // NN layer type
-                        .build();
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:84"></script>
 
 * *optimizationAlgo* relies on conjugate gradient, rather than LBFGS. 
 * *nIn* is set to 784, so each image pixel becomes an input node. If your images change dimensions (meaning more or less pixels total), nIn should, too.
