@@ -39,6 +39,8 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
 
 
+    DataSet getRange(int from,int to);
+
     void load(File from);
 
     void save(File to);

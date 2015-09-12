@@ -23,6 +23,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -49,6 +50,24 @@ public class DataSetTest extends BaseNd4jTest {
 
     public DataSetTest(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @Test
+    public void testViewIterator() {
+        DataSetIterator iter = new ViewIterator(new IrisDataSetIterator(150,150).next(),10);
+        assertTrue(iter.hasNext());
+        int count = 0;
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            count++;
+            assertArrayEquals(new int[]{10,4},next.getFeatureMatrix().shape());
+        }
+
+        assertFalse(iter.hasNext());
+        assertEquals(15,count);
+        iter.reset();
+        assertTrue(iter.hasNext());
+
     }
 
 

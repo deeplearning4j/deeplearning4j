@@ -134,6 +134,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     }
 
     @Override
+    public org.nd4j.linalg.dataset.api.DataSet getRange(int from, int to) {
+        return new DataSet(features.get(NDArrayIndex.interval(from,to)),labels.get(NDArrayIndex.interval(from,to)));
+    }
+
+    @Override
     public void load(File from) {
         try {
             BufferedInputStream bis = new BufferedInputStream(new FileInputStream(from));
