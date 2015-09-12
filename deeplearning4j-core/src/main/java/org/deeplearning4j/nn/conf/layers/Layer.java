@@ -59,6 +59,9 @@ public abstract class Layer implements Serializable, Cloneable {
     protected Distribution dist;
     protected double dropOut;
     protected Updater updater;
+    protected double l1;
+    protected double l2;
+    protected double lr;
     
     public Layer(Builder builder){
     	this.activationFunction = builder.activationFunction;
@@ -66,6 +69,9 @@ public abstract class Layer implements Serializable, Cloneable {
     	this.dist = builder.dist;
     	this.dropOut = builder.dropOut;
     	this.updater = builder.updater;
+        this.l1 = builder.l1;
+        this.l2 = builder.l2;
+        this.lr = builder.lr;
     }
 
     @Override
@@ -86,6 +92,9 @@ public abstract class Layer implements Serializable, Cloneable {
         protected Distribution dist = new NormalDistribution(1e-3,1);
         protected double dropOut = 0;
         protected Updater updater = Updater.ADAGRAD;
+        protected double l1 = Double.NaN;
+        protected double l2 = Double.NaN;
+        protected double lr = Double.NaN;
 
         public T activation(String activationFunction) {
             this.activationFunction = activationFunction;
@@ -113,6 +122,20 @@ public abstract class Layer implements Serializable, Cloneable {
         public T updater(Updater updater){
         	this.updater = updater;
         	return (T) this;
+        }
+
+        public T l1(double l1){
+            this.l1 = l1;
+            return (T)this;
+        }
+        public T l2(double l2){
+            this.l2 = l2;
+            return (T)this;
+        }
+
+        public T learningRate(double lr){
+            this.lr = lr;
+            return (T)this;
         }
 
         public abstract <E extends Layer> E build();
