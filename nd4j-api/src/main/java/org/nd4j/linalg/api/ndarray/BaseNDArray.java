@@ -3433,7 +3433,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray ravel() {
         INDArray ret = create(new int[]{1,length}, ordering);
         int count = 0;
-        NdIndexIterator iter = new NdIndexIterator(shape());
+        NdIndexIterator iter = new NdIndexIterator('c',true,shape());
         while(iter.hasNext()) {
             int[] next = iter.next();
             ret.putScalar(new int[]{0,count++}, getDouble(next));
