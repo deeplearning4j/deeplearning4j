@@ -13,9 +13,19 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class NDIndexIteratorTest extends BaseNd4jTest {
+    public NDIndexIteratorTest() {
+    }
+
+    public NDIndexIteratorTest(String name) {
+        super(name);
+    }
 
     public NDIndexIteratorTest(String name, Nd4jBackend backend) {
         super(name, backend);
+    }
+
+    public NDIndexIteratorTest(Nd4jBackend backend) {
+        super(backend);
     }
 
     @Test

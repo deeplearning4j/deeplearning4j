@@ -77,7 +77,7 @@ public class ShapeOffsetResolution implements Serializable {
             INDArrayIndex idx = indexes[i];
             if (idx instanceof NDArrayIndexAll) {
                 encounteredAll = true;
-                if(arr.size(i) == 1)
+                if(i < arr.rank() && arr.size(i) == 1)
                     oneDimensionWithAllEncountered.add(i);
             }
             //point: do nothing but move the shape counter
