@@ -3,7 +3,7 @@ title:
 layout: default
 ---
 
-# Installation Guide for Deeplearning4j to Run Examples on Windows 7 and above
+# Running Examples on Windows 7 and above
 
 1.)  Install Java 7 or above (https://www.java.com/de/download/)
 2.)  Create an environment variable `JAVA_HOME` with the content "C:\Program Files\Java\jdk1.8.0_51"
