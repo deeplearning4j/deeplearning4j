@@ -6,6 +6,8 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -13,6 +15,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,10 +28,11 @@ import java.util.Map;
  * @author Adam Gibson
  */
 public class HistogramIterationListener implements IterationListener {
-
+    private static final Logger log = LoggerFactory.getLogger(HistogramIterationListener.class);
     private Client client = ClientBuilder.newClient().register(JacksonJsonProvider.class).register(new ObjectMapperProvider());
     private WebTarget target;
     private int iterations = 1;
+    private ArrayList<Double> scoreHistory = new ArrayList<>();
 
     public HistogramIterationListener(int iterations) {
         this.iterations = iterations;
@@ -65,13 +69,17 @@ public class HistogramIterationListener implements IterationListener {
                 //dup() because params might be a view
             }
 
+            double score = model.score();
+            scoreHistory.add(score);
+
             ModelAndGradient g = new ModelAndGradient();
             g.setGradients(newGrad);
             g.setParameters(newParams);
-            g.setScore(model.score());
+            g.setScore(score);
+            g.setScores(scoreHistory);
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
-            System.out.println(resp);
+            log.debug("{}",resp);
         }
 
 
