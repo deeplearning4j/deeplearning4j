@@ -22,7 +22,6 @@ class LossCalculation {
     private double l1,l2;
     private LossFunctions.LossFunction lossFunction;
     private boolean useRegularization;
-    private INDArray delta;
     private boolean miniBatch = false;
     private int miniBatchSize;
 
@@ -33,7 +32,7 @@ class LossCalculation {
             case RECONSTRUCTION_CROSSENTROPY:
                 INDArray xEntLogZ2 = logZ(z);
                 INDArray xEntOneMinusLabelsOut2 = labels.rsub(1);
-                INDArray xEntOneMinusLogOneMinusZ2 = xEntLogZ2.dup().rsubi(1);
+                INDArray xEntOneMinusLogOneMinusZ2 = xEntLogZ2.rsubi(1);
                 ret = -labels.mul(xEntLogZ2).add(xEntOneMinusLabelsOut2).muli(xEntOneMinusLogOneMinusZ2).sumNumber().doubleValue();
                 break;
             case MCXENT:
@@ -47,13 +46,13 @@ class LossCalculation {
                 ret = labels.mul(xEntLogZ).add(xEntOneMinusLabelsOut).muli(xEntOneMinusLogOneMinusZ).sum(1).sumNumber().doubleValue();
                 break;
             case RMSE_XENT:
-                INDArray rmseXentDiff = delta == null ? labels.sub(z) : delta;
+                INDArray rmseXentDiff = labels.sub(z);
                 INDArray squaredrmseXentDiff = pow(rmseXentDiff, 2.0);
                 INDArray sqrt = sqrt(squaredrmseXentDiff);
                 ret = sqrt.sumNumber().doubleValue();
                 break;
             case MSE:
-                INDArray mseDelta = delta == null ? labels.sub(z) : delta;
+                INDArray mseDelta = labels.sub(z) ;
                 ret = 0.5 * pow(mseDelta, 2).sum(1).sumNumber().doubleValue();
                 break;
             case EXPLL:
@@ -61,7 +60,7 @@ class LossCalculation {
                 ret = z.sub(labels.mul(expLLLogZ)).sumNumber().doubleValue();
                 break;
             case SQUARED_LOSS:
-                ret = pow(delta == null ? labels.sub(z) : delta, 2).sumNumber().doubleValue();
+                ret = pow(labels.sub(z), 2).sumNumber().doubleValue();
                 break;
             case NEGATIVELOGLIKELIHOOD:
                 INDArray log = logZ(z);
