@@ -29,12 +29,25 @@ import lombok.*;
 @EqualsAndHashCode(callSuper = true)
 public class GravesLSTM extends BaseRecurrentLayer {
 
+    private double forgetGateBiasInit;
+
     private GravesLSTM(Builder builder) {
     	super(builder);
+        this.forgetGateBiasInit = builder.forgetGateBiasInit;
     }
 
-    @AllArgsConstructor
+    @AllArgsConstructor @NoArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
+
+        private double forgetGateBiasInit = 1.0;
+
+        /** Set forget gate bias initalizations. Values in range 1-5 can potentially
+         * help with learning or longer-term dependencies.
+         */
+        public Builder forgetGateBiasInit(double biasInit){
+            this.forgetGateBiasInit = biasInit;
+            return this;
+        }
 
         @SuppressWarnings("unchecked")
         public GravesLSTM build() {
