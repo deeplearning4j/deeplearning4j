@@ -31,10 +31,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.padding = builder.padding;
     }
 
-    public enum PoolingType {
-        FULL, VALID, SAME
-    }
-
     @Override
     public ConvolutionLayer clone() {
         ConvolutionLayer clone = (ConvolutionLayer) super.clone();
