@@ -54,7 +54,7 @@ The DataSetIterator iterates through input datasets, fetching one or more new ex
 
 Below is a neural net configuration example. Many of the hyperparameters have been explained in the [Iris tutorial](../iris-flower-dataset-tutorial.html); thus, we'll summarize a few distinguishing characteristics.
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:84"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:98"></script>
 
 * *optimizationAlgo* relies on conjugate gradient, rather than LBFGS. 
 * *nIn* is set to 784, so each image pixel becomes an input node. If your images change dimensions (meaning more or less pixels total), nIn should, too.
