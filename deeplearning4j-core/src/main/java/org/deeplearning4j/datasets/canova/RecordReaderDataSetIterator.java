@@ -245,7 +245,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
     }
-BaseUpda
     @Override
     public void reset() {
 
