@@ -55,32 +55,35 @@ The DataSetIterator iterates through input datasets, fetching one or more new ex
 Below is a neural net configuration example. Many of the hyperparameters have been explained in the [Iris tutorial](../iris-flower-dataset-tutorial.html); thus, we'll summarize a few distinguishing characteristics.
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                .constrainGradientToUnitNorm(true)
-                .weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(1,1e-5))
-                .iterations(100).learningRate(1e-3)
-                .nIn(784).nOut(labels.size())
-                .visibleUnit(org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit.GAUSSIAN)
-                .hiddenUnit(org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit.RECTIFIED)
-                .layer(new org.deeplearning4j.nn.conf.layers.RBM())
-                .list(4).hiddenLayerSizes(600, 250, 100).override(3, new ConfOverride() {
-                    @Override
-                    public void overrideLayer(int i, NeuralNetConfiguration.Builder builder) {
-                        if (i == 3) {
-                            builder.layer(new org.deeplearning4j.nn.conf.layers.OutputLayer());
-                            builder.activationFunction("softmax");
-                            builder.lossFunction(LossFunctions.LossFunction.MCXENT);
-
-                        }
-                    }
-                }).build();
+                        .seed(seed) // Seed to lock in weight initialization for tuning
+                        .iterations(iterations) // # training iterations classify & backprop
+                        .learningRate(1e-6f) // Optimization step size
+                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT) 
+                        .l1(1e-1).regularization(true).l2(2e-4)
+                        .useDropConnect(true)
+                        .list(2) // # NN layers (ex-input layer)
+                        .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                                        .nIn(numRows * numColumns) // # input nodes
+                                        .nOut(3) // # fully connected hidden layer nodes. 
+                                        .weightInit(WeightInit.XAVIER)
+                                        .k(1) // # contrastive divergence iterations
+                                        .activation("relu") // Activation function type
+                                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT) 
+                                        .updater(Updater.ADAGRAD)
+                                        .dropOut(0.5)
+                                        .build()
+                        ) 
+                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .nIn(3) 
+                                        .nOut(outputNum) // # output nodes/classifications
+                                        .activation("softmax")
+                                        .build()
+                        ) // NN layer type
+                        .build();
 
 * *optimizationAlgo* relies on conjugate gradient, rather than LBFGS. 
 * *nIn* is set to 784, so each image pixel becomes an input node. If your images change dimensions (meaning more or less pixels total), nIn should, too.
 * *list* operator is set to 4, which means three RBM hidden layers and one output layer. More than one RBM becomes a DBN.
-* *hiddenLayerSizes* sets the number of nodes in each hidden layer, making them progressively smaller. This is dimensionality reduction at work. 
-* *override* creates a classification layer at the end with a softmax function is the output classification layer.
 * *lossFunction* is set to Monte Carlo Cross Entropy. This loss function will be used to train the classification layer. 
 
 ## Building and Training the Model
