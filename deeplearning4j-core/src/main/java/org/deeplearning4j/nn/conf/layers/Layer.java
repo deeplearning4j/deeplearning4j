@@ -56,6 +56,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public abstract class Layer implements Serializable, Cloneable {
     protected String activationFunction;
     protected WeightInit weightInit;
+    protected double biasInit;
     protected Distribution dist;
     protected double dropOut;
     protected Updater updater;
@@ -63,6 +64,7 @@ public abstract class Layer implements Serializable, Cloneable {
     public Layer(Builder builder){
     	this.activationFunction = builder.activationFunction;
     	this.weightInit = builder.weightInit;
+        this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
     	this.dropOut = builder.dropOut;
     	this.updater = builder.updater;
@@ -83,6 +85,7 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract static class Builder<T extends Builder<T>> {
         protected String activationFunction = "sigmoid";
         protected WeightInit weightInit = WeightInit.VI;
+        protected double biasInit = 0;
         protected Distribution dist = new NormalDistribution(1e-3,1);
         protected double dropOut = 0;
         protected Updater updater = Updater.ADAGRAD;
@@ -96,7 +99,12 @@ public abstract class Layer implements Serializable, Cloneable {
             this.weightInit = weightInit;
             return (T) this;
         }
-        
+
+        public T biasInit(double biasInit) {
+            this.biasInit = biasInit;
+            return (T) this;
+        }
+
         /** Distribution to sample initial weights from. Used in conjunction with
          * .weightInit(WeightInit.DISTRIBUTION)
          */
