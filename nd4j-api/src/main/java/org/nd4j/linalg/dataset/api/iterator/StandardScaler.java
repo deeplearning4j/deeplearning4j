@@ -47,6 +47,17 @@ public class StandardScaler {
 
     }
 
+
+    /**
+     * Transform the data
+     * @param dataSet the dataset to transform
+     */
+    public void transform(DataSet dataSet) {
+        dataSet.setFeatures(dataSet.getFeatures().subiRowVector(mean));
+        dataSet.setFeatures(dataSet.getFeatures().diviRowVector(std));
+    }
+
+
     public INDArray getMean() {
         return mean;
     }
