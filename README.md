@@ -1,5 +1,7 @@
 #ND4S: Scala bindings for ND4J
 
+[![Join the chat at https://gitter.im/deeplearning4j/nd4s](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/nd4s?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ND4S is an Apache2 Licensed open-sourced Scala bindings for [ND4J](https://github.com/deeplearning4j/nd4j).
 
 #Main Features
