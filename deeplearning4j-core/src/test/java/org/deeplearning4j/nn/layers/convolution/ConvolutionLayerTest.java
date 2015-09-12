@@ -42,6 +42,23 @@ public class ConvolutionLayerTest {
     }
 
     @Test
+    public void testCNNBiasInit() {
+        ConvolutionLayer cnn = new ConvolutionLayer.Builder()
+                .nIn(1)
+                .nOut(3)
+                .biasInit(1)
+                .build();
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(cnn)
+                .build();
+
+        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+
+        assertEquals(1, layer.getParam("b").size(0));
+    }
+
+    @Test
     public void testCNNInputSetupMNIST() throws Exception{
         INDArray input = getMnistData();
         Layer layer = getMNISTConfig();
