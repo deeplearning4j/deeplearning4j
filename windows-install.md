@@ -14,10 +14,10 @@ Follow these steps:
 * Extract Maven and add its `bin` location to the Path          
 * Install Tortoise Git(https://tortoisegit.org/download/)
 * `git clone` the following repositories to the same directory, say "deeplearning4jExamples"
-	-- https://github.com/deeplearning4j/nd4j.git
-	--  https://github.com/deeplearning4j/deeplearning4j.git
-	--  https://github.com/deeplearning4j/Canova.git
-	--  https://github.com/deeplearning4j/dl4j-0.4-examples.git
+		https://github.com/deeplearning4j/nd4j.git
+		https://github.com/deeplearning4j/deeplearning4j.git
+		https://github.com/deeplearning4j/Canova.git
+		https://github.com/deeplearning4j/dl4j-0.4-examples.git
 * Install Visual Studio 2013 (if not freely available, download [Visual Studio Community](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx)
 * Add the Visual Studio bin directory to the Path; for example `C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin` (you can take the 64 bit folder as well)
 * To check if the Visual Studio directory was added correctly, type `cl` into the command-line tool and see if it is found.
