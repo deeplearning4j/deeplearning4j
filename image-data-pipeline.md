@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# Customized Image Data Pipeline
+# Customized Data Pipelines for Images etc.
 
 Deeplearning4j's examples run on benchmark datasets that don't present any obstacles in the data pipeline, because we abstracted them away. But real-world users start with raw, messy data, which they need to preprocess, vectorize and use to train a neural net for clustering or classification. 
 
