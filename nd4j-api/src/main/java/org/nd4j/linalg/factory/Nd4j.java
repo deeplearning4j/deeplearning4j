@@ -353,7 +353,7 @@ public class Nd4j {
      * @return
      */
     public static void shuffle(INDArray toShuffle,int...dimension) {
-        shuffle(toShuffle,new Random(),dimension);
+        shuffle(toShuffle, new Random(), dimension);
     }
 
     /**
@@ -1779,6 +1779,37 @@ public class Nd4j {
         arr.data().write(dataOutputStream);
 
     }
+
+    /**
+     * Save an ndarray to the given file
+     * @param arr the array to save
+     * @param saveTo the file to save to
+     * @throws IOException
+     */
+    public static void saveBinary(INDArray arr,File saveTo) throws IOException {
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(saveTo));
+        DataOutputStream dos = new DataOutputStream(bos);
+        Nd4j.write(arr, dos);
+        dos.flush();
+        dos.close();
+
+    }
+
+
+    /**
+     * Read a binary ndarray from the given file
+     * @param read the nd array to read
+     * @return the loaded ndarray
+     * @throws IOException
+     */
+    public static INDArray readBinary(File read) throws IOException {
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(read));
+        DataInputStream dis = new DataInputStream(bis);
+        INDArray ret = Nd4j.read(dis);
+        dis.close();
+        return ret;
+    }
+
 
     /**
      * Clear nans from an ndarray

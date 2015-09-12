@@ -23,11 +23,13 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,24 +37,50 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class DataSetTest extends BaseNd4jTest {
-	public DataSetTest() {
-	}
+    public DataSetTest() {
+    }
 
-	public DataSetTest(String name) {
-		super(name);
-	}
+    public DataSetTest(String name) {
+        super(name);
+    }
 
-	public DataSetTest(String name, Nd4jBackend backend) {
-		super(name, backend);
-	}
+    public DataSetTest(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
-	public DataSetTest(Nd4jBackend backend) {
-		super(backend);
-	}
+    public DataSetTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Test
+    public void testViewIterator() {
+        DataSetIterator iter = new ViewIterator(new IrisDataSetIterator(150,150).next(),10);
+        assertTrue(iter.hasNext());
+        int count = 0;
+        while(iter.hasNext()) {
+            DataSet next = iter.next();
+            count++;
+            assertArrayEquals(new int[]{10,4},next.getFeatureMatrix().shape());
+        }
+
+        assertFalse(iter.hasNext());
+        assertEquals(15,count);
+        iter.reset();
+        assertTrue(iter.hasNext());
+
+    }
 
 
 
-
+    @Test
+    public void testPersist() {
+        DataSet iris = new IrisDataSetIterator(150,150).next();
+        iris.save(new File("iris.bin"));
+        DataSet load = new DataSet();
+        load.load(new File("iris.bin"));
+        new File("iris.bin").deleteOnExit();
+        assertEquals(iris,load);
+    }
 
     @Test
     public void testSplitTestAndTrain() throws Exception{

@@ -5,6 +5,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 /**
  * Standard scaler calculates a moving column wise
  * variance and mean
@@ -13,6 +18,12 @@ import org.nd4j.linalg.factory.Nd4j;
 public class StandardScaler {
     private INDArray mean,std;
     private int runningTotal = 0;
+
+
+    public void fit(DataSet dataSet) {
+        mean = dataSet.getFeatureMatrix().mean(0);
+        std = dataSet.getFeatureMatrix().std(0);
+    }
 
     /**
      * Fit the given model
@@ -41,12 +52,30 @@ public class StandardScaler {
         }
 
         iterator.reset();
-
-
-
-
     }
 
+
+    /**
+     * Load the given mean and std
+     * @param mean the mean file
+     * @param std the std file
+     * @throws IOException
+     */
+    public void load(File mean,File std) throws IOException {
+        this.mean = Nd4j.readBinary(mean);
+        this.std = Nd4j.readBinary(std);
+    }
+
+    /**
+     * Save the current mean and std
+     * @param mean the mean
+     * @param std the std
+     * @throws IOException
+     */
+    public void save(File mean,File std) throws IOException {
+        Nd4j.saveBinary(this.mean,mean);
+        Nd4j.saveBinary(this.std,std);
+    }
 
     /**
      * Transform the data
