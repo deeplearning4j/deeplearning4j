@@ -9,7 +9,7 @@ Follow these steps:
 
 * Install Java 7 or above (https://www.java.com/de/download/)
 *  Create an environment variable `JAVA_HOME` with the content "C:\Program Files\Java\jdk1.8.0_51"
-* Install [Netbeans 8.1 (currently beta)](https://netbeans.org/downloads/)
+* Install [Netbeans 8.1 (currently beta)](https://netbeans.org/downloads/) or [IntelliJ](http://nd4j.org/getstarted.html) (recommended)
 * Download [Maven 3.3.3](http://ftp.fau.de/apache/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.zip)
 * Extract Maven and add its `bin` location to the Path          
 * Install Tortoise Git(https://tortoisegit.org/download/)
