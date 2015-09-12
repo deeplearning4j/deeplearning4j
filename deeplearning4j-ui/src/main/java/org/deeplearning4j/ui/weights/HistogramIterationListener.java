@@ -54,13 +54,15 @@ public class HistogramIterationListener implements IterationListener {
             Map<String,INDArray> grad = model.gradient().gradientForVariable();
             Map<String,INDArray> newGrad = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : grad.entrySet() ){
-                newGrad.put("param_" + entry.getKey(),entry.getValue());    //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
+                newGrad.put("param_" + entry.getKey(),entry.getValue().dup());
+                //CSS identifier can't start with digit http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
             }
 
             Map<String,INDArray> params = model.paramTable();
             Map<String,INDArray> newParams = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : params.entrySet()) {
-                newParams.put("param_" + entry.getKey(),entry.getValue());
+                newParams.put("param_" + entry.getKey(),entry.getValue().dup());
+                //dup() because params might be a view
             }
 
             ModelAndGradient g = new ModelAndGradient();
