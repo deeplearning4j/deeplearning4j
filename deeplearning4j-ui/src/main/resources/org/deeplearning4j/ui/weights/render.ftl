@@ -21,6 +21,12 @@
         shape-rendering: crispEdges;
     }
 
+    path {
+        stroke: steelblue;
+        stroke-width: 2;
+        fill: none;
+    }
+
 </style>
 <body>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
@@ -31,8 +37,8 @@
         var formatCount = d3.format(",.0f");
 
         var margin = {top: 10, right: 30, bottom: 30, left: 30},
-                width = 960 - margin.left - margin.right,
-                height = 500 - margin.top - margin.bottom;
+                width = 650 - margin.left - margin.right,
+                height = 400 - margin.top - margin.bottom;
         var data = values;
         var min = d3.min(data);
         var max = d3.max(data);
@@ -88,6 +94,59 @@
                 .call(xAxis);
     }
 
+    function appendLineChart(values,selector){
+        // Set the dimensions of the canvas / graph
+        var margin = {top: 30, right: 20, bottom: 30, left: 50},
+                width = 650 - margin.left - margin.right,
+                height = 350 - margin.top - margin.bottom;
+
+        // Set the ranges
+        var x = d3.scale.linear().range([0, width]);
+        var y = d3.scale.linear().range([height, 0]);
+
+        // Define the axes
+        var xAxis = d3.svg.axis().scale(x)
+                .orient("bottom").ticks(5);
+
+        var yAxis = d3.svg.axis().scale(y)
+                .orient("left").ticks(5);
+
+        // Define the line
+        var valueline = d3.svg.line()
+                .x(function(d,i) { return x(i); })
+                .y(function(d) { return y(d); });
+
+        // Adds the svg canvas
+        var svg = d3.select(selector)
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        // Scale the range of the data
+        var max = d3.max(values);
+        x.domain([0,values.length]);
+        y.domain([0, max]);
+
+        // Add the valueline path.
+        svg.append("path")
+                .attr("class", "line")
+                .attr("d", valueline(values));
+
+        // Add the X Axis
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+
+        // Add the Y Axis
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis);
+    }
+
 
     setInterval(function() {
 
@@ -96,9 +155,18 @@
                     var model = json['parameters'];
                     var gradient = json['gradients'];
                     var score = json['score'];
-                    if(!model || !gradient || !score)
+                    var scores = json['scores'];
+
+                    if(!model || !gradient || !score || !scores)
                         return;
                     $('.score').html('' + score);
+
+
+                    $('#scores .chart').html('');
+                    var scdiv = '<div class="scorechart"></div>';
+                    $('#scores .chart').append(scdiv);
+                    appendLineChart(scores,'#scores .chart');
+
                     //clear out body of where the chart content will go
                     $('#model .charts').html('');
                     $('#gradient .charts').html('');
@@ -130,6 +198,10 @@
 <div id="score">
     <h4>Score</h4>
     <div class="score"></div>
+</div>
+<div id="scores">
+    <h4>Scores vs. iteration</h4>
+    <div class="chart"></div>
 </div>
 <div id="model">
     <h4>Model</h4>
