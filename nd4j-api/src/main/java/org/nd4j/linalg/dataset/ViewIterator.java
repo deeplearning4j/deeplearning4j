@@ -71,6 +71,10 @@ public class ViewIterator implements DataSetIterator {
     }
 
     @Override
+    public void remove() {
+    }
+
+    @Override
     public DataSet next() {
         //only loop to the end
         if(cursor + batch() > numExamples())
