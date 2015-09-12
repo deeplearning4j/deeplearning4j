@@ -5,8 +5,10 @@ layout: default
 
 # Running Examples on Windows 7 and Above
 
-1.)  Install Java 7 or above (https://www.java.com/de/download/)
-2.)  Create an environment variable `JAVA_HOME` with the content "C:\Program Files\Java\jdk1.8.0_51"
+Follow these steps:
+
+1)  Install Java 7 or above (https://www.java.com/de/download/)
+2)  Create an environment variable `JAVA_HOME` with the content "C:\Program Files\Java\jdk1.8.0_51"
 3.)  Install [Netbeans 8.1 (currently beta)](https://netbeans.org/downloads/)
 4.)  Download [Maven 3.3.3](http://ftp.fau.de/apache/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.zip)
 5.)  Extract Maven and add its `bin` location to the Path          
