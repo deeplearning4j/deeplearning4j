@@ -76,13 +76,13 @@ public class SubsamplingLayer extends Layer {
             this.padding = padding;
         }
 
-        public Builder(int[] stride) {
-            this(new int[]{1,1},stride);
-        }
-
         public Builder(int[] kernelSize, int[] stride) {
             this.kernelSize = kernelSize;
             this.stride = stride;
+        }
+
+        public Builder(int... kernelSize) {
+            this.kernelSize = kernelSize;
         }
 
         public Builder(PoolingType poolingType) {
