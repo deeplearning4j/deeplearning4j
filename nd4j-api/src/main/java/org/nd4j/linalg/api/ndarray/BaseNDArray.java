@@ -3165,7 +3165,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray transposei() {
-       return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0,rank())));
+        return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0,rank())));
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {
@@ -3214,8 +3214,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return reshapeAttempt;
         }
 
-        INDArray raveled = ravel();
-        return raveled.reshape(order,shape);
+        INDArray ret = create(new int[]{1,length}, ordering);
+        int count = 0;
+        NdIndexIterator iter = new NdIndexIterator(shape());
+        while(iter.hasNext()) {
+            int[] next = iter.next();
+            ret.putScalar(new int[]{0,count++}, getDouble(next));
+        }
+
+        return ret.reshape(order,shape);
     }
 
     @Override
@@ -3431,15 +3438,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray ravel() {
-        INDArray ret = create(new int[]{1,length}, ordering);
-        int count = 0;
-        NdIndexIterator iter = new NdIndexIterator('c',true,shape());
-        while(iter.hasNext()) {
-            int[] next = iter.next();
-            ret.putScalar(new int[]{0,count++}, getDouble(next));
-        }
-
-        return ret;
+        return reshape(1,length());
     }
 
     /**
