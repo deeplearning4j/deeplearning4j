@@ -26,6 +26,7 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
@@ -36,6 +37,11 @@ import java.util.Map;
  */
 public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Serializable {
 
+
+
+    void load(File from);
+
+    void save(File to);
 
     DataSetIterator iterateWithMiniBatches();
 

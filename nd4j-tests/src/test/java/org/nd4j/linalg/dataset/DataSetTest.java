@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,24 +36,32 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class DataSetTest extends BaseNd4jTest {
-	public DataSetTest() {
-	}
+    public DataSetTest() {
+    }
 
-	public DataSetTest(String name) {
-		super(name);
-	}
+    public DataSetTest(String name) {
+        super(name);
+    }
 
-	public DataSetTest(String name, Nd4jBackend backend) {
-		super(name, backend);
-	}
+    public DataSetTest(String name, Nd4jBackend backend) {
+        super(name, backend);
+    }
 
-	public DataSetTest(Nd4jBackend backend) {
-		super(backend);
-	}
-
-
+    public DataSetTest(Nd4jBackend backend) {
+        super(backend);
+    }
 
 
+
+    @Test
+    public void testPersist() {
+        DataSet iris = new IrisDataSetIterator(150,150).next();
+        iris.save(new File("iris.bin"));
+        DataSet load = new DataSet();
+        load.load(new File("iris.bin"));
+        new File("iris.bin").deleteOnExit();
+        assertEquals(iris,load);
+    }
 
     @Test
     public void testSplitTestAndTrain() throws Exception{

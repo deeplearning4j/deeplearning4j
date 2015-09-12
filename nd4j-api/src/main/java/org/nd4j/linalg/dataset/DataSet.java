@@ -32,6 +32,7 @@ import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.util.*;
 
 
@@ -130,6 +131,33 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         for (DataSet d : coll)
             count += d.numExamples();
         return count;
+    }
+
+    @Override
+    public void load(File from) {
+        try {
+            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(from));
+            DataInputStream dis = new DataInputStream(bis);
+            features = Nd4j.read(dis);
+            labels = Nd4j.read(dis);
+            dis.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void save(File to) {
+        try {
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(to));
+            DataOutputStream dis = new DataOutputStream(bos);
+            Nd4j.write(getFeatureMatrix(),dis);
+            Nd4j.write(getLabels(),dis);
+            dis.flush();
+            dis.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
