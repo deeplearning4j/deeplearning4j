@@ -2,9 +2,11 @@ package org.deeplearning4j.ui.weights;
 
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import io.dropwizard.server.DefaultServerFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.UiServer;
+import org.deeplearning4j.ui.UiUtils;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
@@ -34,19 +36,32 @@ public class HistogramIterationListener implements IterationListener {
     private WebTarget target;
     private int iterations = 1;
     private ArrayList<Double> scoreHistory = new ArrayList<>();
+    private boolean openBrowser;
+    private boolean firstIteration = true;
+    private String path;
+    private String subPath;
 
     public HistogramIterationListener(int iterations) {
+        this(iterations,true,"weights");
+    }
+    public HistogramIterationListener(int iterations, boolean openBrowser, String subPath){
+        int port = -1;
         try{
-            UiServer.getInstance();
+            UiServer server = UiServer.getInstance();
+            port = server.getPort();
         }catch(Exception e){
             log.error("Error initializing UI server",e);
+            throw new RuntimeException(e);
         }
+
         this.iterations = iterations;
-        target = client.target("http://localhost:8080").path("weights").path("update");
+        target = client.target("http://localhost:" + port ).path(subPath).path("update");
+        this.openBrowser = openBrowser;
+        this.path = "http://localhost:" + port + "/" + subPath;
+        this.subPath = subPath;
+
+        System.out.println("UI Histogram: " + this.path);
     }
-
-
-
 
     @Override
     public boolean invoked() {
@@ -71,7 +86,7 @@ public class HistogramIterationListener implements IterationListener {
             Map<String,INDArray> params = model.paramTable();
             Map<String,INDArray> newParams = new LinkedHashMap<>();
             for(Map.Entry<String,INDArray> entry : params.entrySet()) {
-                newParams.put("param_" + entry.getKey(),entry.getValue().dup());
+                newParams.put("param_" + entry.getKey(), entry.getValue().dup());
                 //dup() because params might be a view
             }
 
@@ -83,9 +98,15 @@ public class HistogramIterationListener implements IterationListener {
             g.setParameters(newParams);
             g.setScore(score);
             g.setScores(scoreHistory);
+            g.setPath(subPath);
 
             Response resp = target.request(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).post(Entity.entity(g,MediaType.APPLICATION_JSON));
             log.debug("{}",resp);
+
+            if(openBrowser && firstIteration){
+                UiUtils.tryOpenBrowser(path,log);
+                firstIteration = false;
+            }
         }
 
 

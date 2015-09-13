@@ -15,7 +15,8 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
     @Override
     public Response toResponse(Throwable ex) {
         return Response.status(500)
-                .entity("Error occurred\n\n" + (ex != null ? ExceptionUtils.getStackTrace(ex) : ""))
+                .entity("Error occurred\n\n" + ex.getMessage() + "\n" +
+                        (ex != null ? ExceptionUtils.getStackTrace(ex) : ""))
                 .type(MediaType.APPLICATION_JSON)
                 .build();
     }
