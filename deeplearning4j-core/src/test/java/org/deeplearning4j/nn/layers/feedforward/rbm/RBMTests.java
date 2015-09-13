@@ -23,9 +23,11 @@ import java.util.Arrays;
 import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -51,6 +53,24 @@ import static org.junit.Assert.assertEquals;
  */
 public class RBMTests {
     private static final Logger log = LoggerFactory.getLogger(RBMTests.class);
+
+
+    @Test
+    public void testRBMBiasInit() {
+        org.deeplearning4j.nn.conf.layers.RBM cnn = new org.deeplearning4j.nn.conf.layers.RBM.Builder()
+                .nIn(1)
+                .nOut(3)
+                .biasInit(1)
+                .build();
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(cnn)
+                .build();
+
+        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+
+        assertEquals(1, layer.getParam("b").size(0));
+    }
 
     @Test
     public void testLfw() {

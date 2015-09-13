@@ -60,7 +60,7 @@ public class DefaultParamInitializer implements ParamInitializer {
     protected INDArray createBias(NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        INDArray ret =  Nd4j.valueArrayOf(layerConf.getNOut(),0.0);
+        INDArray ret =  Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getBiasInit());
         ret.data().persist();
         return ret;
     }
