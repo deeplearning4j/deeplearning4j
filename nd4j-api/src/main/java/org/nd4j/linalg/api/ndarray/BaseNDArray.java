@@ -3219,15 +3219,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret = create(shape, ordering);
         Pair<INDArray,INDArray> rawIter = Shape.prepareTwoRawArrayIter(ret, this);
-        if(Shape.isVector(shape)) {
-            for(int i = 0; i < ret.length(); i++) {
-                rawIter.getSecond().data().put(rawIter.getSecond().offset() + i * rawIter.getSecond().innerMostStride(),rawIter.getFirst().offset() + i * rawIter.getFirst().innerMostStride());
-            }
-        }
-        else {
-            for(int i = 0; i < ret.length(); i++) {
-              rawIter.getSecond().data().put(rawIter.getSecond().offset() + i * rawIter.getSecond().innerMostStride(),rawIter.getFirst().offset() + i * rawIter.getFirst().innerMostStride());
-            }
+        int[] offsets = new int[2];
+
+        for(int i = 0; i  < ret.length(); i++) {
+            offsets = Shape.raw2dLoop(0
+                    ,2
+                    ,
+                    offsets
+                    ,rawIter.getSecond().shape()
+                    ,offsets[0]
+                    ,rawIter.getFirst().stride()
+                    ,rawIter.getSecond().offset()
+                    ,rawIter.getSecond().stride());
+            rawIter.getFirst().data().put(
+                    offsets[0] + i * rawIter.getFirst().stride(0)
+                    ,rawIter.getSecond().getDouble(offsets[1] + i * rawIter.getSecond().stride(0)));
         }
 
         return ret;

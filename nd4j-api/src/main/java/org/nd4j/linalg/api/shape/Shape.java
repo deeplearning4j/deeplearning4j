@@ -205,11 +205,11 @@ public class Shape {
                                   int dataA, int[] stridesA, int dataB, int[] stridesB) {
 
         do {
-            for (idim = 1; idim < ndim; idim++) {
-                if (++(coord)[idim] == (shape)[idim]) {
-                    (coord)[idim] = 0;
-                    (dataA) -= (shape[idim] - 1) * stridesA[idim];
-                    (dataB) -= (shape[idim] - 1) * stridesB[idim];
+            for (idim = 0; idim < ndim; idim++) {
+                if (++(coord)[idim] == shape[idim]) {
+                    coord[idim] = 0;
+                    dataA -= (shape[idim] - 1) * stridesA[idim];
+                    dataB -= (shape[idim] - 1) * stridesB[idim];
                 } else {
                     dataA += stridesA[idim];
                     dataB += stridesB[idim];
@@ -243,7 +243,7 @@ public class Shape {
                                   int dataB, int[] stridesB,
                                   int dataC, int[] stridesC)  {
         do {
-            for (idim = 1; (idim) < ndim; idim++) {
+            for (idim = 0; (idim) < ndim; idim++) {
                 if (++(coord)[idim] == (shape)[idim]) {
                     coord[idim] = 0;
                     dataA -= (shape[idim] - 1) * stridesA[idim];
@@ -257,7 +257,7 @@ public class Shape {
                     break;
                 }
             }
-        } while ((idim) < (ndim));
+        } while (idim < (ndim));
 
         return new int[]{dataA,dataB,dataC};
     }
@@ -287,8 +287,8 @@ public class Shape {
                                   int dataD, int[] stridesD) {
         do {
 
-            for ((idim) = 1; idim < ndim; idim++) {
-                if (++coord[idim] == shape[idim]) {
+            for ((idim) = 0; idim < ndim; idim++) {
+                if (coord[idim]++ == shape[idim]) {
                     coord[idim] = 0;
                     dataA -= (shape[idim] - 1) * stridesA[idim];
                     dataB -= (shape[idim] - 1) * stridesB[idim];
