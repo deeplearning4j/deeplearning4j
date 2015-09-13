@@ -158,7 +158,7 @@ public class MLLibUtil {
      * @return the labeled point
      */
     public static LabeledPoint pointOf(Collection<Writable> writables) {
-        double[] ret = new double[writables.size()];
+        double[] ret = new double[writables.size() - 1];
         int count = 0;
         double target = 0;
         for(Writable w : writables) {
@@ -168,6 +168,8 @@ public class MLLibUtil {
                 target = Float.parseFloat(w.toString());
         }
 
+        if(target < 0)
+            throw new IllegalStateException("Target must be >= 0");
         return new LabeledPoint(target,Vectors.dense(ret));
     }
 
