@@ -3,7 +3,9 @@ package org.deeplearning4j.ui.activation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.iterationlistener.ActivationMeanIterationListener;
-import org.deeplearning4j.plot.iterationlistener.PlotFiltersIterationListener;
+import org.deeplearning4j.ui.UiServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -16,6 +18,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class UpdateActivationIterationListener implements IterationListener {
+    private static final Logger log = LoggerFactory.getLogger(UpdateActivationIterationListener.class);
     private Client client = ClientBuilder.newClient();
     private WebTarget target = client.target("http://localhost:8080").path("activations").path("update");
     private ActivationMeanIterationListener listener;
@@ -26,6 +29,11 @@ public class UpdateActivationIterationListener implements IterationListener {
      * @param iterations the number of iterations to update on
      */
     public UpdateActivationIterationListener(int iterations) {
+        try{
+            UiServer.getInstance();
+        }catch(Exception e){
+            log.error("Error initializing UI server",e);
+        }
         listener = new ActivationMeanIterationListener(iterations);
         this.iterations = iterations;
     }

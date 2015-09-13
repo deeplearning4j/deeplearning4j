@@ -63,7 +63,8 @@ public class UiServer extends Application<UIConfiguration> {
         INSTANCE = this;
     }
 
-    public static UiServer getInstance() {
+    public static synchronized UiServer getInstance() throws Exception {
+        if(INSTANCE == null) createServer();
         return INSTANCE;
     }
 
@@ -120,6 +121,10 @@ public class UiServer extends Application<UIConfiguration> {
     }
 
     public static void main(String[] args) throws Exception {
+        createServer();
+    }
+
+    public static void createServer() throws Exception {
         ClassPathResource resource = new ClassPathResource("dropwizard.yml");
         InputStream is = resource.getInputStream();
         File tmpConfig = new File("dropwizard-render.yml");
