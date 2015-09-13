@@ -27,7 +27,7 @@ Follow these steps:
 * Copy each of the following lines seperately into the cmd and hit enter after each line.
 
 		cd nd4j
-		vcvars32.bat(vcvard64.bat if you chose to take the 64 bit folder into your path)
+		vcvars32.bat(vcvars64.bat if you chose to take the 64 bit folder into your path)
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true	
 		cd ../Canova
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
@@ -36,20 +36,22 @@ Follow these steps:
 		cd ../dl4j-0.4-examples
 		mvn clean install -DskipTests -Dmaven.javadoc.skip=true
 
-*  Open Netbeans and import deeplearning4jExamples
+* Open Netbeans and import "deeplearning4jExamples"
 * In Netbeans, go to Tools -> Options -> Java -> Maven and change the Maven_Home to the path of your Maven download from step 4.
 * Congratulations, you can now run the examples.
 
-## Running the examples on the GPU
+## Running the examples on a GPU
 
 * Install CUDA as described on [this site](http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-microsoft-windows/index.html#axzz3k6nvc1PO)
 * Copy nvcc, [the Nvidia compiler](C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\bin) in your classpath (src\main\resources).
 * Copy the following lines into the dependency part of the POM.xml file of your project.
-    <dependency>
-     <groupId>org.nd4j</groupId>
-     <artifactId>nd4j-jcublas-7.0</artifactId>
-     <version>${nd4j.version}</version>
-    </dependency>
+
+		    <dependency>
+		     <groupId>org.nd4j</groupId>
+		     <artifactId>nd4j-jcublas-7.0</artifactId>
+		     <version>${nd4j.version}</version>
+		    </dependency>
+    
 * Adapt the code for your GPU as [shown here](http://nd4j.org/dependencies.html)
 * Recompile the module and run it.
 
