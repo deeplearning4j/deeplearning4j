@@ -139,6 +139,18 @@ public class SparkDl4jMultiLayer implements Serializable {
         return MLLibUtil.toVector(network.output(MLLibUtil.toVector(point)));
     }
 
+    /**
+     * Fit the given rdd given the context.
+     * This will convert the labeled points
+     * to the internal dl4j format and train the model on that
+     * @param rdd the rdd to fitDataSet
+     * @return the multi layer network that was fitDataSet
+     */
+    public MultiLayerNetwork fit(JavaRDD<LabeledPoint> rdd,int batchSize) {
+        FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
+        return fitDataSet(MLLibUtil.fromLabeledPoint(rdd, outputLayer.getNOut(),batchSize));
+    }
+
 
     /**
      * Fit the given rdd given the context.
