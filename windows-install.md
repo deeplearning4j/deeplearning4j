@@ -42,6 +42,7 @@ Follow these steps:
 
 ## Running the examples on a GPU
 
+* WARNING: CUDA 7.5 and 7 may not work on Windows 10. 
 * Install CUDA as described on [this site](http://docs.nvidia.com/cuda/cuda-getting-started-guide-for-microsoft-windows/index.html#axzz3k6nvc1PO)
 * Copy nvcc, [the Nvidia compiler](C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.0\bin) in your classpath (src\main\resources).
 * Copy the following lines into the dependency part of the POM.xml file of your project.
