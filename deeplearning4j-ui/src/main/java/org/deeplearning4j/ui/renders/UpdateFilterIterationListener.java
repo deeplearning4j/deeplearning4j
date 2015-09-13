@@ -5,6 +5,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.plot.iterationlistener.PlotFiltersIterationListener;
 import org.deeplearning4j.ui.UiServer;
+import org.deeplearning4j.ui.UiUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,9 +22,12 @@ import java.util.List;
 public class UpdateFilterIterationListener implements IterationListener {
     private static final Logger log = LoggerFactory.getLogger(UpdateFilterIterationListener.class);
     private Client client = ClientBuilder.newClient();
-    private WebTarget target = client.target("http://localhost:8080").path("filters").path("update");
+    private WebTarget target;
     private PlotFiltersIterationListener listener;
     private int iterations = 1;
+    private boolean openBrowser;
+    private boolean firstIteration = true;
+    private String path;
 
     /**
      * Initializes with the variables to render filters for
@@ -31,13 +35,23 @@ public class UpdateFilterIterationListener implements IterationListener {
      * @param iterations the number of iterations to update on
      */
     public UpdateFilterIterationListener(PlotFilters filters,List<String> variables,int iterations) {
+        this(filters,variables,iterations,true,"filters");
+    }
+    public UpdateFilterIterationListener(PlotFilters filters,List<String> variables,int iterations, boolean openBrowser,
+                                         String subPath ) {
+        int port = -1;
         try{
-            UiServer.getInstance();
+            UiServer server = UiServer.getInstance();
+            port = server.getPort();
         }catch(Exception e){
             log.error("Error initializing UI server",e);
+            throw new RuntimeException(e);
         }
+        target = client.target("http://localhost:" + port ).path(subPath).path("update");
         listener = new PlotFiltersIterationListener(filters,variables,0);
         this.iterations = iterations;
+        this.openBrowser = openBrowser;
+        path = "http://localhost:" + port + "/" + subPath;
     }
 
     @Override
@@ -60,6 +74,10 @@ public class UpdateFilterIterationListener implements IterationListener {
             update.setPath(listener.getOutputFile().getPath());
             //ensure the server is hooked up with the path
             target.request(MediaType.APPLICATION_JSON).post(Entity.entity(update, MediaType.APPLICATION_JSON));
+            if(openBrowser && firstIteration){
+                UiUtils.tryOpenBrowser(path, log);
+                firstIteration = false;
+            }
         }
 
     }
