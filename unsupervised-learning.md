@@ -10,6 +10,9 @@ Contents
 * <a href="#visualization">Visualization</a>
 * <a href="#k-means">K-Means Clustering</a>
 * <a href="#transfer">Transfer Learning</a>
+
+**Supervised Learning** 
+
 * <a href="#knn">K-Nearest Neighbors</a>
 
 The features learned by deep neural networks can be used for the purposes of classification, clustering and regression. 
