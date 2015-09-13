@@ -31,6 +31,10 @@ public class Distributions {
             NormalDistribution nd = (NormalDistribution) dist;
             return Nd4j.getDistributions().createNormal(nd.getMean(), nd.getStd());
         }
+        if(dist instanceof GaussianDistribution) {
+            GaussianDistribution nd = (GaussianDistribution) dist;
+            return Nd4j.getDistributions().createNormal(nd.getMean(), nd.getStd());
+        }
         if(dist instanceof UniformDistribution) {
             UniformDistribution ud = (UniformDistribution) dist;
             return Nd4j.getDistributions().createUniform(ud.getLower(), ud.getUpper());
