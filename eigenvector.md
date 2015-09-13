@@ -218,6 +218,13 @@ You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob
 * [(Another) Introduction to Eigenvectors & Eigenvalues](https://www.youtube.com/watch?v=8UX82qVJzYI) (Video)
 * [Information & Entropy, Unit 1, Lecture 2](https://www.youtube.com/watch?v=phxsQrZQupo) (MIT OpenCourseWare)
 * [The $25 Billion Eigenvector: The Linear Algebra Behind Google](https://www.rose-hulman.edu/~bryan/googleFinalVersionFixed.pdf)
+
+
+## <a name="resources">Other Beginner's Guides</a>
+
 * [Regression & Neural Networks](../linear-regression.html)
+* [Word2vec: Extracting Relations From Raw Text](../word2vec.html)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](../restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units](../lstm.html)
 
 <a name="ref">1)</a> *In some cases, matrices may not have a full set of eigenvectors; they can have at most as many linearly independent eigenvectors as their respective order, or number of dimensions.*
