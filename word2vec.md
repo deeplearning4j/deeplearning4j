@@ -31,59 +31,7 @@ Given enough data, usage and contexts, Word2vec can make highly accurate guesses
 
 The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net or simply queried to detect relationships between words. 
 
-## <a name="vectors">Vectors Review</a>
-
-[Word2vec](../word2vec.html) learns to represent words as vectors.
-
-A vector is a data structure with at least two components, as opposed to a *scalar*, which has just one. For example, a vector can represent velocity, an idea that combines speed and direction: *wind velocity* = (50mph, 35 degrees North East). A scalar, on the other hand, can represent something with one value like temperature or height: 50 degrees Celsius, 180 centimeters.
-
-Therefore, we can represent two-dimensional vectors as arrows on an x-y graph, with the coordinates x and y each representing one of the vector's values. 
-
-![Alt text](../img/vector.jpeg)
-
-Two vectors can relate to one another mathematically, and similarities between them (and therefore between anything you can vectorize, including words) can be measured with precision. 
-
-![Alt text](../img/two_vectors2.png)
-
-As you can see, these vectors differ from one another in both their length, or magnitude, and in their angle, or direction. The angle is what concerns us here. 
-
-## <a name="trig">Cosine Similarity</a>
-
-It turns out two vectors are just 66% of a triangle, so let's do a quick trig review. 
-
-Trigonometric functions like *sine*, *cosine* and *tangent* are ratios that use the lengths of a side of a right triangle (opposite, adjacent and hypotenuse) to compute the shape’s angles. By feeding the sides into ratios like these 
-
-![Alt text](../img/trig_functions2.png)
-
-we can also know the angles at which those sides intersect. Remember [SOH-CAH-TOA](http://mathworld.wolfram.com/SOHCAHTOA.html)?
-
-Differences between word vectors, as they swing around the origin like the arms of a clock, can be thought of as differences in degrees. 
-
-And similar to ancient navigators gauging the stars by a sextant, we will measure the *angular distance* between words using something called *cosine similarity*. You can think of words as points of light in a dark canopy, clustered together in constellations of meaning. 
-
-![Alt text](../img/angular_dist_cosine.png)
-
-To find that distance knowing only the word vectors, we need the equation for vector dot multiplication (multiplying two vectors to produce a single, scalar value). 
-
-![Alt text](../img/colored_dot_product.png)
-
-In Java, you can think of the formula to measure cosine similarity like this:
-
-    public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
-        double dotProduct = 0.0;
-        double normA = 0.0;
-        double normB = 0.0;
-        for (int i = 0; i < vectorA.length; i++) {
-            dotProduct += vectorA[i] * vectorB[i];
-            normA += Math.pow(vectorA[i], 2);
-            normB += Math.pow(vectorB[i], 2);
-        }   
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-    }
-
-Cosine is the angle attached to the origin, which makes it useful here. (We normalize the measurements so they come out as percentages, where 1 means that two vectors are equal, and 0 means they are perpendicular, bearing no relation to each other.) 
-
-A perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
+Measuring cosine similarity, a perfect 90-degree angle represents identity; i.e. Sweden equals Sweden, while Norway has a cosine distance of 0.760124 from Sweden, the highest of any other country. 
 
 Here's a list of words associated with "Sweden" using Word2vec, in order of proximity:
 
