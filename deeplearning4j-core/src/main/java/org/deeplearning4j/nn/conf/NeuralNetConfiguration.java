@@ -503,7 +503,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.batchSize = batchSize;
             conf.layer = layer;
             conf.numIterations = numIterations;
-            conf.momentum = momentum;
             conf.useRegularization = useRegularization;
             conf.momentumAfter = momentumAfter;
             conf.optimizationAlgo = optimizationAlgo;
@@ -518,23 +517,24 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             conf.lr = (Double.isNaN(layer.getLr()) ? lr : layer.getLr());
             conf.l1 = (Double.isNaN(layer.getL1()) ? l1 : layer.getL1());
             conf.l2 = (Double.isNaN(layer.getL2()) ? l2 : layer.getL2());
-//            conf.activationFunction = (layer.getActivationFunction() == null ? activationFunction : layer.getActivationFunction());
+            conf.momentum = (Double.isNaN(layer.getMomentum()) ? momentum : layer.getMomentum());
+            conf.activationFunction = (layer.getActivationFunction() == null ? activationFunction : layer.getActivationFunction());
             conf.weightInit = (layer.getWeightInit() == null ? weightInit : layer.getWeightInit());
             conf.biasInit = (Double.isNaN(layer.getBiasInit()) ? biasInit : layer.getBiasInit());
             conf.dist = (layer.getDist() == null ? dist : layer.getDist());
             conf.dropOut = (Double.isNaN(layer.getDropOut()) ? dropOut : layer.getDropOut());
             conf.updater = (layer.getUpdater() == null ? updater : layer.getUpdater());
 
-            conf.activationFunction = activationFunction;
-//            if(Double.isNaN(layer.getLr())) layer.setLr(lr);
-//            if(Double.isNaN(layer.getL1())) layer.setL1(l1);
-//            if(Double.isNaN(layer.getL2())) layer.setL2(l2);
-//            if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
-//            if(layer.getWeightInit() == null) layer.setWeightInit(weightInit);
-//            if(Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
-//            if(layer.getDist() == null) layer.setDist(dist);
-//            if(Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
-//            if(layer.getUpdater() == null) layer.setUpdater(updater);
+            if(Double.isNaN(layer.getLr())) layer.setLr(lr);
+            if(Double.isNaN(layer.getL1())) layer.setL1(l1);
+            if(Double.isNaN(layer.getL2())) layer.setL2(l2);
+            if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+            if(layer.getWeightInit() == null) layer.setWeightInit(weightInit);
+            if(Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
+            if(layer.getDist() == null) layer.setDist(dist);
+            if(Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
+            if(layer.getUpdater() == null) layer.setUpdater(updater);
+            if(Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
             return conf;
         }
 

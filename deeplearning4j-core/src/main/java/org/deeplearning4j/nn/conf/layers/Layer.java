@@ -57,8 +57,9 @@ public abstract class Layer implements Serializable, Cloneable {
     protected WeightInit weightInit;
     protected double biasInit;
     protected Distribution dist;
-//    protected String activationFunction;
+    protected String activationFunction;
     protected double lr;
+    protected double momentum;
     protected double l1;
     protected double l2;
     protected double dropOut;
@@ -68,12 +69,13 @@ public abstract class Layer implements Serializable, Cloneable {
     	this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
-//        this.activationFunction = builder.activationFunction;
+        this.activationFunction = builder.activationFunction;
         this.lr = builder.lr;
+        this.momentum = momentum;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
-	this.dropOut = builder.dropOut;
-	this.updater = builder.updater;
+	    this.dropOut = builder.dropOut;
+	    this.updater = builder.updater;
     }
 
     @Override
@@ -92,17 +94,18 @@ public abstract class Layer implements Serializable, Cloneable {
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
-//        protected String activationFunction = null;
+        protected String activationFunction = null;
         protected double lr = Double.NaN;
+        protected double momentum = Double.NaN;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double dropOut = Double.NaN;
         protected Updater updater = null;
 
-//        public T activation(String activationFunction) {
-//            this.activationFunction = activationFunction;
-//            return (T) this;
-//        }
+        public T activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return (T) this;
+        }
 
         public T weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
@@ -146,6 +149,10 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T)this;
         }
 
+        public T momentum(double momentum){
+            this.momentum = momentum;
+            return (T)this;
+        }
         public abstract <E extends Layer> E build();
     }
 }
