@@ -20,11 +20,20 @@ package org.deeplearning4j.ui.weights;
 
 import io.dropwizard.views.View;
 
+import javax.ws.rs.GET;
+
 /**
  * @author Adam Gibson
  */
 public class WeightView extends View {
-    protected WeightView() {
+    protected String path;
+    protected WeightView(String path){
         super("render.ftl");
+        this.path = path;
+    }
+
+    @GET
+    public String getPath(){
+        return path;
     }
 }

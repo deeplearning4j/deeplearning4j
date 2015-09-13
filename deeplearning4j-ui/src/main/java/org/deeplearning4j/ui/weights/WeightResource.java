@@ -36,14 +36,15 @@ import java.util.HashMap;
  *
  * @author Adam Gibson
  */
-@Path("/weights")
+@Path("/{path}")
 public class WeightResource {
     private ModelAndGradient current;
+    String path = "weights";
     private boolean updated = true;
     @GET
     @Produces(MediaType.TEXT_HTML)
     public View get() {
-        return new WeightView();
+        return new WeightView(path);
     }
 
     @GET
@@ -76,8 +77,9 @@ public class WeightResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @ExceptionMetered
-    public Response update(ModelAndGradient modelAndGrad) {
+    public Response update(ModelAndGradient modelAndGrad, @PathParam("path") String path) {
         this.current = modelAndGrad;
+        this.path = modelAndGrad.getPath();
         updated = true;
         return Response.ok(Collections.singletonMap("status","ok")).build();
     }
