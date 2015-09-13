@@ -20,6 +20,7 @@ public class ModelAndGradient implements Serializable {
     private Map<String,INDArray> gradients;
     private double score;
     private List<Double> scores = new ArrayList<>();
+    private String path;
 
 
     public ModelAndGradient() {
@@ -64,6 +65,14 @@ public class ModelAndGradient implements Serializable {
 
     public void setScores(List<Double> scores){
         this.scores = scores;
+    }
+
+    public void setPath(String path){
+        this.path = path;
+    }
+
+    public String getPath(){
+        return path;
     }
 
     public List<Double> getScores(){

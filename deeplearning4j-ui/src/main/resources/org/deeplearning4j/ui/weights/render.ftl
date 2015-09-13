@@ -1,3 +1,4 @@
+<#-- @ftlvariable name="" type="org.deeplearning4j.ui.weights.WeightView" -->
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
@@ -149,9 +150,8 @@
 
 
     setInterval(function() {
-
-        $.get( "/weights/updated", function( data ) {
-                d3.json('/weights/data',function(error,json) {
+        $.get( "${path}" + "/updated", function( data ) {
+            d3.json("${path}"+'/data',function(error,json) {
                     var model = json['parameters'];
                     var gradient = json['gradients'];
                     var score = json['score'];
