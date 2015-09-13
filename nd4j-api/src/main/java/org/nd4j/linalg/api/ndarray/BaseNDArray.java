@@ -3220,7 +3220,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray ret = create(shape, ordering);
         Pair<INDArray,INDArray> rawIter = Shape.prepareTwoRawArrayIter(ret,this);
         for(int i = 0; i < ret.length(); i++) {
-            rawIter.getSecond().data().put(rawIter.getSecond().offset() + i * rawIter.getSecond().stride(-1),rawIter.getFirst().data().getDouble(rawIter.getFirst().offset()  + i * rawIter.getFirst().stride(-1)));
+            rawIter.getSecond().data().put(
+                    rawIter.getSecond().offset() + i * rawIter.getSecond().stride(-1)
+                    ,rawIter.getFirst().data().getDouble(rawIter.getFirst().offset()
+                            + i * rawIter.getFirst().stride(-1)));
         }
 
 

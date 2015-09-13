@@ -554,10 +554,10 @@ public class Shape {
         int sourceOffset = src.offset();
 
         for(int i = 0; i < dst.rank(); i++) {
-            int iPerm = perms[dst.rank() - i - i].getPermutation();
+            int iPerm = perms[dst.rank() - i - 1].getPermutation();
             outShape[i] = dst.size(iPerm);
             outStridesA[i] = dst.stride(iPerm);
-            outStridesB[i] = dst.stride(iPerm);
+            outStridesB[i] = src.stride(iPerm);
         }
 
         for(int i = 0; i < dst.rank(); i++) {
@@ -598,7 +598,7 @@ public class Shape {
 
 
         INDArray retDst = Nd4j.create(dst.data(),outShape,outStridesA,dstOffset,dst.ordering());
-        INDArray sourceDst = Nd4j.create(src.data(),outShape,outStridesB,sourceOffset,src.ordering());
+        INDArray sourceDst = Nd4j.create(src.data(),src.shape(),outStridesB,sourceOffset,src.ordering());
         return new Pair<>(retDst,sourceDst);
 
     }
