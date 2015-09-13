@@ -139,6 +139,18 @@ public class SparkDl4jMultiLayer implements Serializable {
         return MLLibUtil.toVector(network.output(MLLibUtil.toVector(point)));
     }
 
+    /**
+     * Fit the given rdd given the context.
+     * This will convert the labeled points
+     * to the internal dl4j format and train the model on that
+     * @param rdd the rdd to fitDataSet
+     * @return the multi layer network that was fitDataSet
+     */
+    public MultiLayerNetwork fit(JavaRDD<LabeledPoint> rdd,int batchSize) {
+        FeedForwardLayer outputLayer = (FeedForwardLayer) conf.getConf(conf.getConfs().size() - 1).getLayer();
+        return fitDataSet(MLLibUtil.fromLabeledPoint(rdd, outputLayer.getNOut(),batchSize));
+    }
+
 
     /**
      * Fit the given rdd given the context.
@@ -191,7 +203,7 @@ public class SparkDl4jMultiLayer implements Serializable {
         int paramsLength = network.numParams();
         if(params.length() != paramsLength)
             throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-        JavaRDD<INDArray> results = rdd.sample(true,0.4).mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params)).cache();
+        JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params),true).cache();
         log.info("Ran iterative reduce...averaging results now.");
         Adder a = new Adder(params.length());
         results.foreach(a);

@@ -91,7 +91,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 reshaped = retE.reshape(n,c,-1,outH,outW);
                 reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
-                Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
+                Iterator<int[]> iter = new NdIndexIterator('c',true,n,c,outH,outW);
                 while(iter.hasNext()) {
                     int[] i = iter.next();
                     double epsGet = epsilon.getDouble(i);

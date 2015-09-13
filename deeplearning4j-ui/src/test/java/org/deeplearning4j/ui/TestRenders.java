@@ -69,7 +69,7 @@ public class TestRenders extends BaseUiServerTest {
                 .layer(new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
                         .nIn(784).nOut(600)
                         .corruptionLevel(0.6)
-                        .lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build())
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
                 .build();
 
 
@@ -77,7 +77,7 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.asList(new ScoreIterationListener(1),new UpdateActivationIterationListener(1)),0);
         da.setParams(da.params());
         da.fit(input);
     }
@@ -101,7 +101,7 @@ public class TestRenders extends BaseUiServerTest {
         DataSet d2 = fetcher.next();
 
         INDArray input = d2.getFeatureMatrix();
-        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.<IterationListener>asList(new ScoreIterationListener(1),new HistogramIterationListener(5)),0);
+        AutoEncoder da = LayerFactories.getFactory(conf.getLayer()).create(conf, Arrays.asList(new ScoreIterationListener(1),new HistogramIterationListener(5)),0);
         da.setParams(da.params());
         da.fit(input);
     }
