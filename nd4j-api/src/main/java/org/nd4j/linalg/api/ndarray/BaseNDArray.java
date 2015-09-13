@@ -3215,8 +3215,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         INDArray ret = create(shape, ordering);
-        NdIndexIterator iter = new NdIndexIterator(shape());
-        NdIndexIterator assignIter = new NdIndexIterator(shape);
+        NdIndexIterator iter = new NdIndexIterator('c',true,shape());
+        NdIndexIterator assignIter = new NdIndexIterator('c',true,shape);
         while(iter.hasNext()) {
             int[] next = iter.next();
             ret.putScalar(assignIter.next(), getDouble(next));
