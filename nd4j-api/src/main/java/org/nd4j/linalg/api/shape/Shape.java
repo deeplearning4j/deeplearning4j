@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.bytebuddy.shape.IndexMapper;
 import org.nd4j.bytebuddy.shape.OffsetMapper;
 import org.nd4j.bytebuddy.shape.ShapeMapper;
@@ -136,37 +137,37 @@ public class Shape {
         }
         else {
 
-        	if(arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
-        			&& arr.length() == arr.data().length() && arr.ordering() == Nd4j.order()
-        			&& strideDescendingCAscendingF(arr.ordering(),arr.stride())) {
-        		Object array = arr.data().array();
-        		
-        		if( array instanceof float[]) {
-        			float[] orig = (float[])array;
-        			float[] out = Arrays.copyOf(orig, orig.length);
-        			DataBuffer floatBuffer = Nd4j.createBuffer(out);        			
-        			
-        			int[] newShape = arr.shape();
-        			newShape = Arrays.copyOf(newShape, newShape.length);
-        			int[] newStride = arr.stride();
-        			newStride = Arrays.copyOf(newStride, newStride.length);
-        			
-        			return Nd4j.create(floatBuffer,newShape,newStride,0,arr.ordering());
-        			
-        		} else if( array instanceof double[] ){
-        			double[] orig = (double[])array;
-        			double[] out = Arrays.copyOf(orig, orig.length);
-        			DataBuffer doubleBuffer = Nd4j.createBuffer(out);
-        			
-        			int[] newShape = arr.shape();
-        			newShape = Arrays.copyOf(newShape, newShape.length);
-        			int[] newStride = arr.stride();
-        			newStride = Arrays.copyOf(newStride, newStride.length);
-        			
-        			return Nd4j.create(doubleBuffer,newShape,newStride,0,arr.ordering());
-        		}
-        	}
-        	
+            if(arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
+                    && arr.length() == arr.data().length() && arr.ordering() == Nd4j.order()
+                    && strideDescendingCAscendingF(arr.ordering(),arr.stride())) {
+                Object array = arr.data().array();
+
+                if( array instanceof float[]) {
+                    float[] orig = (float[])array;
+                    float[] out = Arrays.copyOf(orig, orig.length);
+                    DataBuffer floatBuffer = Nd4j.createBuffer(out);
+
+                    int[] newShape = arr.shape();
+                    newShape = Arrays.copyOf(newShape, newShape.length);
+                    int[] newStride = arr.stride();
+                    newStride = Arrays.copyOf(newStride, newStride.length);
+
+                    return Nd4j.create(floatBuffer,newShape,newStride,0,arr.ordering());
+
+                } else if( array instanceof double[] ){
+                    double[] orig = (double[])array;
+                    double[] out = Arrays.copyOf(orig, orig.length);
+                    DataBuffer doubleBuffer = Nd4j.createBuffer(out);
+
+                    int[] newShape = arr.shape();
+                    newShape = Arrays.copyOf(newShape, newShape.length);
+                    int[] newStride = arr.stride();
+                    newStride = Arrays.copyOf(newStride, newStride.length);
+
+                    return Nd4j.create(doubleBuffer,newShape,newStride,0,arr.ordering());
+                }
+            }
+
             INDArray ret = Nd4j.create(arr.shape());
             for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
                 ret.vectorAlongDimension(i,0).assign(arr.vectorAlongDimension(i,0));
@@ -482,6 +483,140 @@ public class Shape {
     }
 
 
+
+    public static void rawArrayAssignArray(int nDim,INDArray destination,INDArray source) {
+           if(source.rank() > destination.rank()) {
+               int nDimTmp = source.rank();
+               int[] srcShape = Arrays.copyOf(source.shape(),source.rank());
+               int[] srcStrides = Arrays.copyOf(source.stride(),source.rank());
+               while(nDimTmp > destination.rank() && srcShape[0] == 1) {
+                   nDimTmp--;
+                   srcShape = Arrays.copyOfRange(srcShape,1,srcShape.length);
+                   srcStrides = Arrays.copyOfRange(srcStrides,1,srcStrides.length);
+               }
+
+               int[] newStrides = broadcastStrides(destination.rank(),destination.shape(),source.rank(),source.shape(),source.stride());
+
+
+           }
+    }
+
+
+    /**
+     *  Broadcasts strides to match the given dimensions.
+     * Used for setting up a raw iteration
+     * @param nDim the number of dimensions to iterate through
+     * @param shape the shape to compare broadcasting strides against
+     * @param numStrideDimensions the number of stride dimensions to broadcast
+     * @param strideShape the shape of the stride to broadcast
+     * @param strides the strides to broadcast
+     * @return the new strides
+     */
+    public static int[] broadcastStrides( int nDim ,int[] shape,int numStrideDimensions,int[] strideShape,int[] strides) {
+        int iDimStart = nDim - numStrideDimensions;
+        if(iDimStart < 0)
+            throw new IllegalStateException("Can't broadcast to fewer dimensions");
+
+        int[] newStrides = new int[numStrideDimensions];
+        for(int iDim = nDim - 1; iDim >= iDimStart; iDim--) {
+            int currShape = strideShape[iDim - iDimStart];
+            //if it doesn't have dimension one, it must match
+            if(currShape == 1)
+                newStrides[iDim] = 0;
+            else if(currShape != shape[iDim]) {
+                throw new IllegalStateException("Current shape and shape i must match");
+            }
+            else
+                newStrides[iDim] = strides[iDim - iDimStart];
+        }
+
+
+
+        return newStrides;
+    }
+
+
+
+
+    /**
+     * Prepares two arrays for
+     * raw iteration linearly through the data.
+     * It uses the same data for allocation
+     * @param dst the first array
+     * @param src the second array
+     */
+    public static  Pair<INDArray,INDArray> prepareTwoRawArrayIter(INDArray dst,INDArray src) {
+        StridePermutation[] perms = Shape.createSortedStrides(dst.stride());
+        int[] outShape = new int[dst.rank()];
+        int[] outStridesA = new int[dst.rank()];
+        int[] outStridesB = new int[src.rank()];
+        int dstOffset = dst.offset();
+        int sourceOffset = src.offset();
+
+        for(int i = 0; i < dst.rank(); i++) {
+            int iPerm = perms[dst.rank() - i - i].getPermutation();
+            outShape[i] = dst.size(iPerm);
+            outStridesA[i] = dst.stride(iPerm);
+            outStridesB[i] = dst.stride(iPerm);
+        }
+
+        for(int i = 0; i < dst.rank(); i++) {
+            int outStrideA = outStridesA[i];
+            int outStrideB = outStridesB[i];
+            int shapeI = outShape[i];
+
+            if(outStrideA < 0) {
+                dstOffset += outStrideA * shapeI - 1;
+                sourceOffset += outStrideB * shapeI - 1;
+                outStridesA[i] -= outStrideA;
+                outStridesB[i] -= outStrideB;
+            }
+        }
+
+        for(int i = 0,j = 1; j < dst.rank(); j++) {
+            if(outShape[i] == 1) {
+                outShape[i] = outShape[j];
+                outStridesA[i] =  outStridesA[j];
+                outStridesB[i] = outStridesB[j];
+            }
+            else if(outShape[j] == 1) {
+                //drops axis j
+            }
+            else if(outStridesA[i] * outShape[i] == outStridesA[j] && outStridesB[i] * outShape[i] == outStridesB[j]) {
+                outShape[i] *= outShape[j];
+            }
+
+            else {
+                i++;
+                outShape[i] = outShape[j];
+                outStridesA[i] = outStridesA[j];
+                outStridesB[i] = outStridesB[j];
+            }
+
+
+        }
+
+
+        INDArray retDst = Nd4j.create(dst.data(),outShape,outStridesA,dstOffset,dst.ordering());
+        INDArray sourceDst = Nd4j.create(src.data(),outShape,outStridesB,sourceOffset,src.ordering());
+        return new Pair<>(retDst,sourceDst);
+
+    }
+
+
+    /**
+     * Creates sorted strides
+     *  whlie retaining the permutation
+     * @param strides the strides
+     * @return the ordered
+     * strides with the permutation/order retained
+     */
+    public static StridePermutation[] createSortedStrides(int[] strides) {
+        StridePermutation[] perm = StridePermutation.create(strides);
+        Arrays.sort(perm);
+        return perm;
+    }
+
     /**
      * A port of numpy's reshaping algorithm that leverages
      * no copy where possible and returns
@@ -558,7 +693,7 @@ public class Shape {
                 }
                 else {
                 /* C order */
-                    if (oldstrides[ok] != olddims[ok+1]*oldstrides[ok+1]) {
+                    if (oldstrides[ok] != olddims[ok + 1]*oldstrides[ok + 1]) {
                     /* not contiguous enough */
                         return null;
                     }
@@ -829,11 +964,11 @@ public class Shape {
      */
     public static boolean opIsWholeBufferWithMatchingStrides(Op op) {
         if(op.y() != null) {
-           return op.x().offset() == 0 && op.n() == op.x().data().length()
-                   && op.y().offset() == 0 && op.y().data().length() == op.n()
-                   &&
-                   op.z().offset() == 0 && op.z().offset() == 0 && op.z().data().length() == op.n()
-                   && Arrays.equals(op.x().stride(),op.y().stride()) && Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
+            return op.x().offset() == 0 && op.n() == op.x().data().length()
+                    && op.y().offset() == 0 && op.y().data().length() == op.n()
+                    &&
+                    op.z().offset() == 0 && op.z().offset() == 0 && op.z().data().length() == op.n()
+                    && Arrays.equals(op.x().stride(),op.y().stride()) && Arrays.equals(op.x().stride(),op.z().stride()) && !(op.x() instanceof IComplexNDArray || op.y() instanceof IComplexNDArray);
 
         }
         else {
@@ -1046,14 +1181,14 @@ public class Shape {
      * @return true if c+descending, f+ascending, false otherwise
      */
     public static boolean strideDescendingCAscendingF(char order, int[] strides ){
-    	if(order=='c'){	//Expect descending. [100,10,1] etc
-    		for( int i=1; i<strides.length; i++ ) if(strides[i-1]<=strides[i]) return false;
-    		return true;
-    	} else if(order=='f'){//Expect ascending. [1,10,100] etc
-    		for( int i=1; i<strides.length; i++ ) if(strides[i-1]>=strides[i]) return false;
-    		return true;
-    	} else {
-    		throw new RuntimeException("Invalid order: not c or f");
-    	}
+        if(order=='c'){	//Expect descending. [100,10,1] etc
+            for( int i=1; i<strides.length; i++ ) if(strides[i-1]<=strides[i]) return false;
+            return true;
+        } else if(order=='f'){//Expect ascending. [1,10,100] etc
+            for( int i=1; i<strides.length; i++ ) if(strides[i-1]>=strides[i]) return false;
+            return true;
+        } else {
+            throw new RuntimeException("Invalid order: not c or f");
+        }
     }
 }

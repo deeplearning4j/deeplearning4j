@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -3214,13 +3215,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return reshapeAttempt;
         }
 
+
+
         INDArray ret = create(shape, ordering);
-        NdIndexIterator iter = new NdIndexIterator('c',true,shape());
-        NdIndexIterator assignIter = new NdIndexIterator('c',true,shape);
-        while(iter.hasNext()) {
-            int[] next = iter.next();
-            ret.putScalar(assignIter.next(), getDouble(next));
+        Pair<INDArray,INDArray> rawIter = Shape.prepareTwoRawArrayIter(ret,this);
+        for(int i = 0; i < ret.length(); i++) {
+            rawIter.getSecond().data().put(rawIter.getSecond().offset() + i * rawIter.getSecond().stride(-1),rawIter.getFirst().data().getDouble(rawIter.getFirst().offset()  + i * rawIter.getFirst().stride(-1)));
         }
+
 
         return ret;
     }
