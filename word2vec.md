@@ -50,7 +50,7 @@ It does so in one of two ways, either using context to predict a target word (a 
 
 ![Alt text](../img/word2vec_diagrams.png) 
 
-When the feature vector assigned to a word cannot be used to accurately predict that word's context, the components of the vector are adjusted. Similar word vectors are nudged closer together.
+When the feature vector assigned to a word cannot be used to accurately predict that word's context, the components of the vector are adjusted. The vectors of words judged similar by their context are nudged closer together by adjusting the numbers in the vector.
 
 Just as Van Gogh's painting of sunflowers is a two-dimensional mixture of oil on canvas that *represents* vegetable matter in a three-dimensional space in Paris in the late 1880s, so 500 numbers arranged in a vector can represent a word or group of words.
 
