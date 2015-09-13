@@ -139,7 +139,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             int firstDim = dim0s[i];
             int secondDim = dim1s[i];
             INDArray tad = arr.tensorAlongDimension(0, firstDim, secondDim);
-            assertEquals(sums[i],tad.sumNumber().doubleValue(),1e-1);
+            assertEquals("I " + i + " failed ",sums[i],tad.sumNumber().doubleValue(),1e-1);
             char order = tad.ordering();
             int[] stride = tad.stride();
 

@@ -3218,16 +3218,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         INDArray ret = create(shape, ordering);
-        Pair<INDArray,INDArray> rawIter = Shape.prepareTwoRawArrayIter(ret,this);
-        for(int i = 0; i < ret.length(); i++) {
-            rawIter.getSecond().data().put(
-                    rawIter.getSecond().offset() + i * rawIter.getSecond().stride(-1)
-                    ,rawIter.getFirst().data().getDouble(rawIter.getFirst().offset()
-                            + i * rawIter.getFirst().stride(-1)));
+        Pair<INDArray,INDArray> rawIter = Shape.prepareTwoRawArrayIter(ret, this);
+        if(Shape.isVector(shape)) {
+            for(int i = 0; i < ret.length(); i++) {
+                rawIter.getSecond().data().put(rawIter.getSecond().offset() + i * rawIter.getSecond().innerMostStride(),rawIter.getFirst().offset() + i * rawIter.getFirst().innerMostStride());
+            }
+        }
+        else {
+            for(int i = 0; i < ret.length(); i++) {
+              rawIter.getSecond().data().put(rawIter.getSecond().offset() + i * rawIter.getSecond().innerMostStride(),rawIter.getFirst().offset() + i * rawIter.getFirst().innerMostStride());
+            }
         }
 
-
         return ret;
+    }
+
+    @Override
+    public int innerMostStride() {
+        if(ordering == 'c')
+            return stride(-1);
+        return stride(0);
     }
 
     @Override

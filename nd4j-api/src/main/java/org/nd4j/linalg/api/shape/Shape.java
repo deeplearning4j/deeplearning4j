@@ -49,10 +49,11 @@ public class Shape {
     private static IndexMapper[] indexMappers = new IndexMapper[255];
     private static IndexMapper[] indexMappersC = new IndexMapper[255];
     private static OffsetMapper[] mappers = new OffsetMapper[255];
+
     static {
-        for(int i = 0; i < 255; i++) {
-            indexMappersC[i] = ShapeMapper.getInd2SubInstance('c',i);
-            indexMappers[i] = ShapeMapper.getInd2SubInstance('f',i);
+        for (int i = 0; i < 255; i++) {
+            indexMappersC[i] = ShapeMapper.getInd2SubInstance('c', i);
+            indexMappers[i] = ShapeMapper.getInd2SubInstance('f', i);
             mappers[i] = ShapeMapper.getOffsetMapperInstance(i);
         }
     }
@@ -61,89 +62,85 @@ public class Shape {
     /**
      * Create a copy of the matrix
      * where the new offset is zero
+     *
      * @param arr the array to copy to offset 0
      * @return the same array if offset is zero
      * otherwise a copy of the array with
      * elements set to zero
      */
     public static INDArray toOffsetZero(INDArray arr) {
-        if(arr.offset() < 1 && arr.data().length() == arr.length() || arr instanceof  IComplexNDArray && arr.length() * 2 == arr.data().length())
-            if(arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride() ||
+        if (arr.offset() < 1 && arr.data().length() == arr.length() || arr instanceof IComplexNDArray && arr.length() * 2 == arr.data().length())
+            if (arr.ordering() == 'f' && arr.stride(-1) != arr.elementStride() ||
                     arr.ordering() == 'c' && arr.stride(0) != arr.elementStride())
                 return arr;
 
-        if(arr.isRowVector()) {
-            if(arr instanceof IComplexNDArray) {
+        if (arr.isRowVector()) {
+            if (arr instanceof IComplexNDArray) {
                 IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-                for(int i = 0; i < ret.length(); i++)
+                for (int i = 0; i < ret.length(); i++)
                     ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
                 return ret;
-            }
-            else {
+            } else {
                 INDArray ret = Nd4j.create(arr.shape());
-                for(int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i,arr.getDouble(i));
+                for (int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i, arr.getDouble(i));
                 return ret;
             }
         }
 
 
-        if(arr instanceof IComplexNDArray) {
+        if (arr instanceof IComplexNDArray) {
             IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-            for(int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i,arr.slice(i));
+            for (int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i, arr.slice(i));
             return ret;
-        }
-        else {
-            INDArray ret = Nd4j.create(arr.shape(),arr.ordering());
+        } else {
+            INDArray ret = Nd4j.create(arr.shape(), arr.ordering());
             ret.assign(arr);
             return ret;
         }
     }
 
 
-
-
     /**
      * Create a copy of the matrix
      * where the new offset is zero
+     *
      * @param arr the array to copy to offset 0
      * @return the same array if offset is zero
      * otherwise a copy of the array with
      * elements set to zero
      */
     public static INDArray toOffsetZeroCopy(INDArray arr) {
-        if(arr.isRowVector()) {
-            if(arr instanceof IComplexNDArray) {
+        if (arr.isRowVector()) {
+            if (arr instanceof IComplexNDArray) {
                 IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-                for(int i = 0; i < ret.length(); i++)
+                for (int i = 0; i < ret.length(); i++)
                     ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
                 return ret;
-            }
-            else {
+            } else {
                 INDArray ret = Nd4j.create(arr.shape());
-                for(int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i,arr.getDouble(i));
+                for (int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i, arr.getDouble(i));
                 return ret;
             }
         }
 
 
-        if(arr instanceof IComplexNDArray) {
+        if (arr instanceof IComplexNDArray) {
             IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-            for(int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i,arr.slice(i));
+            for (int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i, arr.slice(i));
             return ret;
-        }
-        else {
+        } else {
 
-            if(arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
+            if (arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
                     && arr.length() == arr.data().length() && arr.ordering() == Nd4j.order()
-                    && strideDescendingCAscendingF(arr.ordering(),arr.stride())) {
+                    && strideDescendingCAscendingF(arr.ordering(), arr.stride())) {
                 Object array = arr.data().array();
 
-                if( array instanceof float[]) {
-                    float[] orig = (float[])array;
+                if (array instanceof float[]) {
+                    float[] orig = (float[]) array;
                     float[] out = Arrays.copyOf(orig, orig.length);
                     DataBuffer floatBuffer = Nd4j.createBuffer(out);
 
@@ -152,10 +149,10 @@ public class Shape {
                     int[] newStride = arr.stride();
                     newStride = Arrays.copyOf(newStride, newStride.length);
 
-                    return Nd4j.create(floatBuffer,newShape,newStride,0,arr.ordering());
+                    return Nd4j.create(floatBuffer, newShape, newStride, 0, arr.ordering());
 
-                } else if( array instanceof double[] ){
-                    double[] orig = (double[])array;
+                } else if (array instanceof double[]) {
+                    double[] orig = (double[]) array;
                     double[] out = Arrays.copyOf(orig, orig.length);
                     DataBuffer doubleBuffer = Nd4j.createBuffer(out);
 
@@ -164,13 +161,13 @@ public class Shape {
                     int[] newStride = arr.stride();
                     newStride = Arrays.copyOf(newStride, newStride.length);
 
-                    return Nd4j.create(doubleBuffer,newShape,newStride,0,arr.ordering());
+                    return Nd4j.create(doubleBuffer, newShape, newStride, 0, arr.ordering());
                 }
             }
 
             INDArray ret = Nd4j.create(arr.shape());
-            for(int i = 0; i < arr.vectorsAlongDimension(0); i++) {
-                ret.vectorAlongDimension(i,0).assign(arr.vectorAlongDimension(i,0));
+            for (int i = 0; i < arr.vectorsAlongDimension(0); i++) {
+                ret.vectorAlongDimension(i, 0).assign(arr.vectorAlongDimension(i, 0));
             }
 
 
@@ -180,13 +177,135 @@ public class Shape {
 
     /**
      * Get a double based on the array and given indices
-     * @param arr the array to retrieve the double from
+     *
+     * @param arr     the array to retrieve the double from
      * @param indices the indices to iterate over
      * @return the double at the specified index
      */
-    public static double getDouble(INDArray arr,int...indices) {
-        int offset = getOffset(arr.offset(),arr.shape(),arr.stride(),indices);
+    public static double getDouble(INDArray arr, int... indices) {
+        int offset = getOffset(arr.offset(), arr.shape(), arr.stride(), indices);
         return arr.data().getDouble(offset);
+    }
+
+    /**
+     * Raw 2 dimensional loop
+     * over a data buffer given some strides.
+     * Credit to:
+     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
+     * @param idim the current dimension
+     * @param ndim the number of dimensions
+     * @param coord the current coordinate
+     * @param shape  the oerall shape of the array
+     * @param dataA the offset for data a
+     * @param stridesA the strides for a
+     * @param dataB the offset for data b
+     * @param stridesB the strides for b
+     */
+    public static int[] raw2dLoop(int idim, int  ndim, int[] coord, int[] shape,
+                                  int dataA, int[] stridesA, int dataB, int[] stridesB) {
+
+        do {
+            for (idim = 1; idim < ndim; idim++) {
+                if (++(coord)[idim] == (shape)[idim]) {
+                    (coord)[idim] = 0;
+                    (dataA) -= (shape[idim] - 1) * stridesA[idim];
+                    (dataB) -= (shape[idim] - 1) * stridesB[idim];
+                } else {
+                    dataA += stridesA[idim];
+                    dataB += stridesB[idim];
+                    break;
+                }
+            }
+        }
+
+        while( idim < ndim);
+
+        return new int[] {dataA,dataB};
+    }
+
+    /**
+     * 3 dimensional loop
+     * Credit to:
+     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
+     * @param idim
+     * @param ndim
+     * @param coord
+     * @param shape
+     * @param dataA
+     * @param stridesA
+     * @param dataB
+     * @param stridesB
+     * @param dataC
+     * @param stridesC
+     */
+    public static int[] raw3dLoop(int idim, int ndim, int[] coord, int[] shape,
+                                  int dataA, int[] stridesA,
+                                  int dataB, int[] stridesB,
+                                  int dataC, int[] stridesC)  {
+        do {
+            for (idim = 1; (idim) < ndim; idim++) {
+                if (++(coord)[idim] == (shape)[idim]) {
+                    coord[idim] = 0;
+                    dataA -= (shape[idim] - 1) * stridesA[idim];
+                    dataB -= (shape[idim] - 1) * stridesB[idim];
+                    dataC -= (shape[idim] - 1) * stridesC[idim];
+                }
+                else {
+                    dataA += stridesA[idim];
+                    dataB += stridesB[idim];
+                    dataC += stridesC[idim];
+                    break;
+                }
+            }
+        } while ((idim) < (ndim));
+
+        return new int[]{dataA,dataB,dataC};
+    }
+
+
+    /**
+     * 4 dimensional loop
+     * Credit to:
+     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
+     * @param idim
+     * @param ndim
+     * @param coord
+     * @param shape
+     * @param dataA
+     * @param stridesA
+     * @param dataB
+     * @param stridesB
+     * @param dataC
+     * @param stridesC
+     * @param dataD
+     * @param stridesD
+     */
+    public static int[] raw4DLoop(int idim, int ndim, int[] coord, int[] shape,
+                                  int dataA, int[] stridesA,
+                                  int dataB, int[] stridesB,
+                                  int dataC, int[] stridesC,
+                                  int dataD, int[] stridesD) {
+        do {
+
+            for ((idim) = 1; idim < ndim; idim++) {
+                if (++coord[idim] == shape[idim]) {
+                    coord[idim] = 0;
+                    dataA -= (shape[idim] - 1) * stridesA[idim];
+                    dataB -= (shape[idim] - 1) * stridesB[idim];
+                    dataC -= (shape[idim] - 1) * stridesC[idim];
+                    dataD -= (shape[idim] - 1) * stridesD[idim];
+                }
+                else {
+                    dataA += stridesA[idim];
+                    dataB += stridesB[idim];
+                    dataC += stridesC[idim];
+                    dataD += stridesD[idim];
+                    break;
+                }
+            }
+        } while (idim < ndim);
+
+        return new int[] {dataA,dataB,dataC,dataD};
     }
 
 
@@ -485,20 +604,20 @@ public class Shape {
 
 
     public static void rawArrayAssignArray(int nDim,INDArray destination,INDArray source) {
-           if(source.rank() > destination.rank()) {
-               int nDimTmp = source.rank();
-               int[] srcShape = Arrays.copyOf(source.shape(),source.rank());
-               int[] srcStrides = Arrays.copyOf(source.stride(),source.rank());
-               while(nDimTmp > destination.rank() && srcShape[0] == 1) {
-                   nDimTmp--;
-                   srcShape = Arrays.copyOfRange(srcShape,1,srcShape.length);
-                   srcStrides = Arrays.copyOfRange(srcStrides,1,srcStrides.length);
-               }
+        if(source.rank() > destination.rank()) {
+            int nDimTmp = source.rank();
+            int[] srcShape = Arrays.copyOf(source.shape(),source.rank());
+            int[] srcStrides = Arrays.copyOf(source.stride(),source.rank());
+            while(nDimTmp > destination.rank() && srcShape[0] == 1) {
+                nDimTmp--;
+                srcShape = Arrays.copyOfRange(srcShape,1,srcShape.length);
+                srcStrides = Arrays.copyOfRange(srcStrides,1,srcStrides.length);
+            }
 
-               int[] newStrides = broadcastStrides(destination.rank(),destination.shape(),source.rank(),source.shape(),source.stride());
+            int[] newStrides = broadcastStrides(destination.rank(),destination.shape(),source.rank(),source.shape(),source.stride());
 
 
-           }
+        }
     }
 
 
@@ -598,7 +717,7 @@ public class Shape {
 
 
         INDArray retDst = Nd4j.create(dst.data(),outShape,outStridesA,dstOffset,dst.ordering());
-        INDArray sourceDst = Nd4j.create(src.data(),src.shape(),outStridesB,sourceOffset,src.ordering());
+        INDArray sourceDst = Nd4j.create(src.data(),outShape,outStridesB,sourceOffset,src.ordering());
         return new Pair<>(retDst,sourceDst);
 
     }
