@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * A normal distribution.
  *
  */
-public class NormalDistribution extends Distribution {
+public class GaussianDistribution extends Distribution {
 
     private double mean, std;
 
@@ -37,7 +37,7 @@ public class NormalDistribution extends Distribution {
      * @param std  the standard deviation
      */
     @JsonCreator
-    public NormalDistribution(@JsonProperty("mean") double mean, @JsonProperty("std") double std) {
+    public GaussianDistribution(@JsonProperty("mean") double mean, @JsonProperty("std") double std) {
         this.mean = mean;
         this.std = std;
     }
@@ -78,7 +78,7 @@ public class NormalDistribution extends Distribution {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        NormalDistribution other = (NormalDistribution) obj;
+        GaussianDistribution other = (GaussianDistribution) obj;
         if (Double.doubleToLongBits(mean) != Double
                 .doubleToLongBits(other.mean))
             return false;
@@ -88,7 +88,7 @@ public class NormalDistribution extends Distribution {
     }
 
     public String toString() {
-        return "NormalDistribution{" +
+        return "GaussianDistribution{" +
                 "mean=" + mean +
                 ", std=" + std +
                 '}';

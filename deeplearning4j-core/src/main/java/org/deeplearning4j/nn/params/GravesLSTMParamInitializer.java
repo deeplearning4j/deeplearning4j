@@ -45,6 +45,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     public void init(Map<String, INDArray> params, NeuralNetConfiguration conf) {
         org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
                 (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
+        double forgetGateInit = layerConf.getForgetGateBiasInit();
 
         Distribution dist = Distributions.createDistribution(layerConf.getDist());
 
@@ -58,8 +59,8 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         params.put(INPUT_WEIGHT_KEY,WeightInitUtil.initWeights(nLast, 4 * nL, layerConf.getWeightInit(), dist));
         params.put(RECURRENT_WEIGHT_KEY,WeightInitUtil.initWeights(nL, 4 * nL + 3, layerConf.getWeightInit(), dist));
         INDArray biases = Nd4j.zeros(1,4*nL);	//Order: input, forget, output, input modulation, i.e., IFOG
-        biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(5));
-        /*The above line initializes the forget gate biases to 5.
+        biases.put(new INDArrayIndex[]{new NDArrayIndex(0),NDArrayIndex.interval(nL, 2*nL)}, Nd4j.ones(1,nL).muli(forgetGateInit));
+        /*The above line initializes the forget gate biases to specified value.
          * See Sutskever PhD thesis, pg19:
          * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,
          *  which is accomplished by initializing [the forget gate biases] to a large value (such as 5). If it is

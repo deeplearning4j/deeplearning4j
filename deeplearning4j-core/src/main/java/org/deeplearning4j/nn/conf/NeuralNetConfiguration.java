@@ -455,13 +455,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
-            conf.l1 = l1;
+            conf.l1 = (!Double.isNaN(layer.getL1()) ? layer.getL1() : l1);
             conf.batchSize = batchSize;
             conf.layer = layer;
-            conf.lr = lr;
+            conf.lr = (!Double.isNaN(layer.getLr()) ? layer.getLr() : lr);
             conf.numIterations = numIterations;
             conf.momentum = momentum;
-            conf.l2 = l2;
+            conf.l2 = (!Double.isNaN(layer.getL2()) ? layer.getL2() : l2);
             conf.useRegularization = useRegularization;
             conf.momentumAfter = momentumAfter;
             conf.optimizationAlgo = optimizationAlgo;
