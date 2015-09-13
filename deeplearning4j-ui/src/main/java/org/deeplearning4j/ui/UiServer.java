@@ -25,6 +25,9 @@ import com.google.common.collect.ImmutableMap;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.jersey.jackson.JsonProcessingExceptionMapper;
+import io.dropwizard.jetty.HttpConnectorFactory;
+import io.dropwizard.lifecycle.ServerLifecycleListener;
+import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
@@ -36,6 +39,9 @@ import org.deeplearning4j.ui.nearestneighbors.NearestNeighborsResource;
 import org.deeplearning4j.ui.renders.RendersResource;
 import org.deeplearning4j.ui.tsne.TsneResource;
 import org.deeplearning4j.ui.weights.WeightResource;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -45,10 +51,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.util.EnumSet;
 
 
@@ -62,8 +65,11 @@ public class UiServer extends Application<UIConfiguration> {
     public UiServer() {
         INSTANCE = this;
     }
+    private int port;
+    public int getPort(){ return port; }
 
-    public static UiServer getInstance() {
+    public static synchronized UiServer getInstance() throws Exception {
+        if(INSTANCE == null) createServer();
         return INSTANCE;
     }
 
@@ -75,6 +81,37 @@ public class UiServer extends Application<UIConfiguration> {
     public void run(UIConfiguration uiConfiguration, Environment environment) throws Exception {
         this.conf = uiConfiguration;
         this.env = environment;
+
+        //Workaround to dropwizard sometimes ignoring ports specified in dropwizard.yml
+        int[] portsFromYml = getApplicationPortFromYml();
+        if(portsFromYml[0] != -1 ) {
+            ((HttpConnectorFactory) ((DefaultServerFactory) uiConfiguration.getServerFactory())
+                    .getApplicationConnectors().get(0)).setPort(portsFromYml[0]);
+        }
+        if(portsFromYml[1] != -1 ) {
+            ((HttpConnectorFactory) ((DefaultServerFactory) uiConfiguration.getServerFactory())
+                    .getAdminConnectors().get(0)).setPort(portsFromYml[1]);
+        }
+
+        //Read the port that actually got assigned (needed for random ports i.e. port: 0 setting in yml)
+        environment.lifecycle().addServerLifecycleListener(new ServerLifecycleListener() {
+            @Override
+            public void serverStarted(Server server) {
+                for (Connector connector : server.getConnectors()) {
+                    if (connector instanceof ServerConnector) {
+                        ServerConnector serverConnector = (ServerConnector) connector;
+                        if(!serverConnector.getName().toLowerCase().contains("application")) continue;
+                        int port = serverConnector.getLocalPort();
+                        try{
+                            UiServer.getInstance().port = port;
+                        }catch( Exception e ){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+
         environment.jersey().register(MultiPartFeature.class);
         environment.jersey().register(new GenericExceptionMapper());
         environment.jersey().register(new JsonProcessingExceptionMapper());
@@ -115,11 +152,15 @@ public class UiServer extends Application<UIConfiguration> {
     private SimpleModule module() {
         SimpleModule module = new SimpleModule();
         module.addSerializer(INDArray.class, new VectorSerializer());
-        module.addDeserializer(INDArray.class,new VectorDeSerializer());
+        module.addDeserializer(INDArray.class, new VectorDeSerializer());
         return module;
     }
 
     public static void main(String[] args) throws Exception {
+        createServer();
+    }
+
+    public static void createServer() throws Exception {
         ClassPathResource resource = new ClassPathResource("dropwizard.yml");
         InputStream is = resource.getInputStream();
         File tmpConfig = new File("dropwizard-render.yml");
@@ -129,7 +170,8 @@ public class UiServer extends Application<UIConfiguration> {
         bos.close();
         is.close();
         tmpConfig.deleteOnExit();
-        new UiServer().run("server", tmpConfig.getAbsolutePath());
+        INSTANCE = new UiServer();
+        INSTANCE.run("server", tmpConfig.getAbsolutePath());
     }
 
 
@@ -142,5 +184,37 @@ public class UiServer extends Application<UIConfiguration> {
         filter.setInitParameter(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, "*");
         filter.setInitParameter("allowedHeaders", "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin");
         filter.setInitParameter("allowCredentials", "true");
+    }
+
+
+    //Parse dropwizard.yml (if present on classpath) and parse the port specifications
+    private int[] getApplicationPortFromYml(){
+        int[] toReturn = {-1,-1};
+        InputStream in = this.getClass().getClassLoader()
+                .getResourceAsStream("dropwizard.yml");
+        if(in == null) return toReturn;   //Not found
+        String s;
+        try {
+            s = IOUtils.toString(in);
+        } catch(IOException e ){
+            return toReturn;
+        }
+
+        String[] split = s.split("\n");
+        int count = 0;
+        for( String str : split ){
+            if(!str.contains("port")) continue;
+            System.out.println(str);
+            String[] line = str.split("\\s+");
+            for( String token : line ){
+                try{
+                    toReturn[count] = Integer.parseInt(token);
+                    count++;
+                }catch(NumberFormatException e ){ }
+            }
+            if(count == 2 ) return toReturn;
+        }
+
+        return toReturn;  //No port configuration?
     }
 }

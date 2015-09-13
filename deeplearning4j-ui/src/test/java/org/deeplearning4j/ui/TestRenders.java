@@ -111,7 +111,7 @@ public class TestRenders extends BaseUiServerTest {
         MnistDataFetcher fetcher = new MnistDataFetcher(true);
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().momentum(0.9f)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .iterations(100)
+                .iterations(1000)
                 .learningRate(1e-1f)
                 .list(2)
                 .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder()
@@ -126,7 +126,7 @@ public class TestRenders extends BaseUiServerTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        net.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(1),new HistogramIterationListener(1)));
+        net.setListeners(Arrays.<IterationListener>asList(new ScoreIterationListener(1),new HistogramIterationListener(1,true,"myweightpath")));
 
         fetcher.fetch(100);
         DataSet d2 = fetcher.next();
