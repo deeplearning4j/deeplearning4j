@@ -21,7 +21,10 @@ package org.deeplearning4j.spark.impl.multilayer;
 
 
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.mllib.util.MLUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -41,6 +44,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,14 +62,57 @@ public class TestSparkMultiLayer extends BaseSparkTest {
     private static final Logger log = LoggerFactory.getLogger(TestSparkMultiLayer.class);
 
 
+    @Test
+    public void testFromSvmLight() throws Exception {
+        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc.sc(), new ClassPathResource("svmLight/iris_svmLight_0.txt").getFile().getAbsolutePath()).toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
+            @Override
+            public LabeledPoint call(LabeledPoint v1) throws Exception {
+                return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
+            }
+        }).cache();
+
+        DataSet d = new IrisDataSetIterator(150,150).next();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .momentum(0.9).seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .iterations(100)
+                .maxNumLineSearchIterations(10)
+                .constrainGradientToUnitNorm(true)
+                .list(2)
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                        .nIn(4).nOut(3)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
+                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3)
+                        .activation("softmax")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .backprop(false)
+                .build();
+
+
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        System.out.println("Initializing network");
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
+
+        MultiLayerNetwork network2 = master.fit(data, 10);
+        Evaluation evaluation = new Evaluation();
+        evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
+        System.out.println(evaluation.stats());
+
+
+    }
+
 
     @Test
     public void testIris2() throws Exception {
 
-
-
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-               .momentum(0.9).seed(123)
+                .momentum(0.9).seed(123)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
                 .iterations(100)
                 .maxNumLineSearchIterations(10)
