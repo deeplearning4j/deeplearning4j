@@ -3,7 +3,7 @@ server:
 #  hardNofileLimit: 1000
   applicationConnectors:
     - type: http
-      port: 8080
+      port: 0
       acceptorThreads: 5
       selectorThreads: 3
       bindHost: 0.0.0.0 # only bind to loopback
@@ -14,7 +14,7 @@ server:
   adminMaxThreads: 100
   adminConnectors:
     - type: http
-      port: 8081
+      port: 0
       bindHost: 0.0.0.0 # only bind to loopback
 
 
@@ -34,3 +34,7 @@ logging:
 
   appenders:
     - type: console
+
+server:
+  requestLog:
+    appenders: []
