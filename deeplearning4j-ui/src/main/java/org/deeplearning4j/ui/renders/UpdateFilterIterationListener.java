@@ -4,6 +4,9 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.plot.PlotFilters;
 import org.deeplearning4j.plot.iterationlistener.PlotFiltersIterationListener;
+import org.deeplearning4j.ui.UiServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -16,6 +19,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class UpdateFilterIterationListener implements IterationListener {
+    private static final Logger log = LoggerFactory.getLogger(UpdateFilterIterationListener.class);
     private Client client = ClientBuilder.newClient();
     private WebTarget target = client.target("http://localhost:8080").path("filters").path("update");
     private PlotFiltersIterationListener listener;
@@ -27,6 +31,11 @@ public class UpdateFilterIterationListener implements IterationListener {
      * @param iterations the number of iterations to update on
      */
     public UpdateFilterIterationListener(PlotFilters filters,List<String> variables,int iterations) {
+        try{
+            UiServer.getInstance();
+        }catch(Exception e){
+            log.error("Error initializing UI server",e);
+        }
         listener = new PlotFiltersIterationListener(filters,variables,0);
         this.iterations = iterations;
     }

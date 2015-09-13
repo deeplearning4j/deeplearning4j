@@ -4,6 +4,7 @@ package org.deeplearning4j.ui.weights;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.ui.UiServer;
 import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
@@ -35,6 +36,11 @@ public class HistogramIterationListener implements IterationListener {
     private ArrayList<Double> scoreHistory = new ArrayList<>();
 
     public HistogramIterationListener(int iterations) {
+        try{
+            UiServer.getInstance();
+        }catch(Exception e){
+            log.error("Error initializing UI server",e);
+        }
         this.iterations = iterations;
         target = client.target("http://localhost:8080").path("weights").path("update");
     }
