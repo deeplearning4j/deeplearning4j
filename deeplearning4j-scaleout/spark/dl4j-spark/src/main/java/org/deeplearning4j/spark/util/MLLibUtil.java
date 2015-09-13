@@ -208,7 +208,7 @@ public class MLLibUtil {
             public DataSet call(DataSet v1, DataSet v2) throws Exception {
                 return new DataSet(Nd4j.vstack(v1.getFeatureMatrix(), v2.getFeatureMatrix()), Nd4j.vstack(v1.getLabels(), v2.getLabels()));
             }
-        }, (int) (batchSize / mappedData.count()));
+        }, (int) (mappedData.count() / batchSize));
 
 
         JavaRDD<DataSet> data2 = aggregated.flatMap(new FlatMapFunction<Tuple2<Long, DataSet>, DataSet>() {
