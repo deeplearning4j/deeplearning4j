@@ -54,26 +54,26 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
-    protected String activationFunction;
     protected WeightInit weightInit;
     protected double biasInit;
     protected Distribution dist;
-    protected double dropOut;
-    protected Updater updater;
+//    protected String activationFunction;
+    protected double lr;
     protected double l1;
     protected double l2;
-    protected double lr;
-    
+    protected double dropOut;
+    protected Updater updater;
+
     public Layer(Builder builder){
-    	this.activationFunction = builder.activationFunction;
     	this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
-    	this.dropOut = builder.dropOut;
-    	this.updater = builder.updater;
+//        this.activationFunction = builder.activationFunction;
+        this.lr = builder.lr;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
-        this.lr = builder.lr;
+	this.dropOut = builder.dropOut;
+	this.updater = builder.updater;
     }
 
     @Override
@@ -89,20 +89,20 @@ public abstract class Layer implements Serializable, Cloneable {
 
 
     public abstract static class Builder<T extends Builder<T>> {
-        protected String activationFunction = "sigmoid";
-        protected WeightInit weightInit = WeightInit.VI;
-        protected double biasInit = 0;
-        protected Distribution dist = new NormalDistribution(1e-3,1);
-        protected double dropOut = 0;
-        protected Updater updater = Updater.ADAGRAD;
+        protected WeightInit weightInit = null;
+        protected double biasInit = Double.NaN;
+        protected Distribution dist = null;
+//        protected String activationFunction = null;
+        protected double lr = Double.NaN;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
-        protected double lr = Double.NaN;
+        protected double dropOut = Double.NaN;
+        protected Updater updater = null;
 
-        public T activation(String activationFunction) {
-            this.activationFunction = activationFunction;
-            return (T) this;
-        }
+//        public T activation(String activationFunction) {
+//            this.activationFunction = activationFunction;
+//            return (T) this;
+//        }
 
         public T weightInit(WeightInit weightInit) {
             this.weightInit = weightInit;
