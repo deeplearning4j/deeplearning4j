@@ -614,6 +614,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int i, double element) {
+        if(i < 0)
+            throw new IllegalArgumentException("Illegal index " + i);
+
         if(doubleData != null)
             doubleData[i] = element;
 

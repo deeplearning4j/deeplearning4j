@@ -3208,21 +3208,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape),order == 'f');
+        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, ArrayUtil.copy(shape), order == 'f');
         if(reshapeAttempt != null) {
             reshapeAttempt.setOrder(Shape.getOrder(reshapeAttempt));
             return reshapeAttempt;
         }
 
-        INDArray ret = create(new int[]{1,length}, ordering);
-        int count = 0;
+        INDArray ret = create(shape, ordering);
         NdIndexIterator iter = new NdIndexIterator(shape());
+        NdIndexIterator assignIter = new NdIndexIterator(shape);
         while(iter.hasNext()) {
             int[] next = iter.next();
-            ret.putScalar(new int[]{0,count++}, getDouble(next));
+            ret.putScalar(assignIter.next(), getDouble(next));
         }
 
-        return ret.reshape(order,shape);
+        return ret;
     }
 
     @Override
