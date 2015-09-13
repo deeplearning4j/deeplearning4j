@@ -32,6 +32,24 @@ public class DenseTest {
     private int batchSize = 150;
     private DataSetIterator iter = new IrisDataSetIterator(batchSize, numSamples);
 
+
+    @Test
+    public void testDenseBiasInit() {
+        DenseLayer build = new DenseLayer.Builder()
+                .nIn(1)
+                .nOut(3)
+                .biasInit(1)
+                .build();
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(build)
+                .build();
+
+        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+
+        assertEquals(1, layer.getParam("b").size(0));
+    }
+
     @Test
     public void testMLPMultiLayerPretrain(){
         // Note CNN does not do pretrain

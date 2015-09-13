@@ -62,7 +62,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         //the bias is a 1D tensor -- one bias per output feature map
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
-        return Nd4j.zeros(layerConf.getNOut());
+        return Nd4j.valueArrayOf(layerConf.getNOut(), layerConf.getBiasInit());
     }
 
 
