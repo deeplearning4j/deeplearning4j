@@ -26,7 +26,7 @@ After those installs, if you can follow these steps, you'll be up and running (W
 * Enter `git clone https://github.com/deeplearning4j/dl4j-0.4-examples` in your command line. (We are currently on examples version 0.0.4.x.)
 * Import a new project in IntelliJ with Maven. 
 * Copy and paste to make sure your POM.xml file looks like [this](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml). 
-* For an easier install, Windows users should replace *nd4j-jblas* with *nd4j-java* in the dependencies. 
+* For an easier install, Windows users should replace *nd4j-jblas* with *nd4j-java* in the dependencies. Additional [Windows instructions are available here](../windows-install.html). 
 * Select `DBNIrisExample.java` from the lefthand file tree.
 * Hit run! (It's the green button.)
 
