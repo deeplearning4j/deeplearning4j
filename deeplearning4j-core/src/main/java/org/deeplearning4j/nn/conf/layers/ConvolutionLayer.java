@@ -2,9 +2,6 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.convolution.Convolution;
 
 /**
@@ -29,10 +26,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
             throw new IllegalArgumentException("Invalid stride, must be length 2");
         this.stride = builder.stride;
         this.padding = builder.padding;
-    }
-
-    public enum PoolingType {
-        FULL, VALID, SAME
     }
 
     @Override

@@ -407,11 +407,11 @@ public class GradientCheckTests {
 	        .seed(12345L)
 	        .list(3)
 	        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation("sigmoid")
-	        		.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+                .weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .layer(1, new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).activation("sigmoid")
-	        		.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+				.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation("softmax").nIn(layerSize).nOut(nOut)
-	        		.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
+				.weightInit(WeightInit.XAVIER).dist(new NormalDistribution(0,1.0)).updater(Updater.NONE).build())
 	        .pretrain(false).backprop(true)
 	        .build();
     	

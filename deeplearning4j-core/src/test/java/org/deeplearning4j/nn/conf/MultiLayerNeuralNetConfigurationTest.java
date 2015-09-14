@@ -21,9 +21,10 @@ package org.deeplearning4j.nn.conf;
 import static org.junit.Assert.*;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.override.ClassifierOverride;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.ReshapePreProcessor;
@@ -33,6 +34,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
 import java.util.Arrays;
@@ -75,6 +77,60 @@ public class MultiLayerNeuralNetConfigurationTest {
         assertEquals(conf.getConf(0),conf3.getConf(0));
 
     }
+
+    @Test
+    public void testConvnetJson() {
+        final int numRows = 75;
+        final int numColumns = 75;
+        int nChannels = 3;
+        int outputNum = 6;
+        int batchSize = 500;
+        int iterations = 10;
+        int seed = 123;
+
+        //setup the network
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .seed(seed)
+                .batchSize(batchSize)
+                .iterations(iterations).regularization(true)
+                .l1(1e-1).l2(2e-4).useDropConnect(true)
+                .constrainGradientToUnitNorm(true).miniBatch(true)
+                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                .list(6)
+                .layer(0, new ConvolutionLayer.Builder(5, 5)
+                        .nOut(5).dropOut(0.5)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
+                        .build())
+
+                .layer(1, new SubsamplingLayer
+                        .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
+                        .build())
+                .layer(2, new ConvolutionLayer.Builder(3, 3)
+                        .nOut(10).dropOut(0.5)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
+                        .build())
+                .layer(3, new SubsamplingLayer
+                        .Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
+                        .build())
+                .layer(4, new DenseLayer.Builder().nOut(100).activation("relu")
+                        .build())
+
+                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(outputNum)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .build())
+                .backprop(true).pretrain(false);
+
+        new ConvolutionLayerSetup(builder,numRows,numColumns,nChannels);
+        MultiLayerConfiguration conf = builder.build();
+        String json = conf.toJson();
+        MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);
+        assertEquals(conf, conf2);
+    }
+
 
     @Test
     public void testYaml() throws Exception {

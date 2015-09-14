@@ -2,7 +2,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc2.2-SNAPSHOT</version>
+        <version>0.4-rc3.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -13,9 +13,6 @@
 
 
     <properties>
-        <spring.version>3.2.5.RELEASE</spring.version>
-        <google.protobuf.version>2.6.1</google.protobuf.version>
-        <lombok.version>1.16.4</lombok.version>
         <graphchi.version>0.2.2</graphchi.version>
     </properties>
 

@@ -6,7 +6,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,6 +19,9 @@ public class ModelAndGradient implements Serializable {
     private Map<String,INDArray> parameters;
     private Map<String,INDArray> gradients;
     private double score;
+    private List<Double> scores = new ArrayList<>();
+    private String path;
+
 
     public ModelAndGradient() {
         parameters = new HashMap<>();
@@ -56,6 +61,22 @@ public class ModelAndGradient implements Serializable {
 
     public void setGradients(Map<String, INDArray> gradients) {
         this.gradients = gradients;
+    }
+
+    public void setScores(List<Double> scores){
+        this.scores = scores;
+    }
+
+    public void setPath(String path){
+        this.path = path;
+    }
+
+    public String getPath(){
+        return path;
+    }
+
+    public List<Double> getScores(){
+        return scores;
     }
 
     @Override
