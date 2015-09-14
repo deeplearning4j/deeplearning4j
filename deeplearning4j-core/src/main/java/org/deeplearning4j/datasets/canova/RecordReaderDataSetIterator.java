@@ -79,6 +79,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
 
+    /**
+     * Invoke the recordreaderdatasetiterator with a batch size of 10
+     * @param recordReader the recordreader to use
+     * @param labelIndex the index of the label
+     * @param numPossibleLabels the number of possible labels for classificatio/dn
+     *
+     */
     public RecordReaderDataSetIterator(RecordReader recordReader, int labelIndex, int numPossibleLabels) {
         this(recordReader, new SelfWritableConverter(), 10, labelIndex, numPossibleLabels);
     }
@@ -172,7 +179,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         INDArray label = null;
         INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
-        int count = 0;
         for (int j = 0; j < currList.size(); j++) {
             if (labelIndex >= 0 && j == labelIndex) {
                 if (numPossibleLabels < 1)
@@ -191,6 +197,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 }
                 else {
                     int curr = Double.valueOf(current.toString()).intValue();
+                    if(curr >= numPossibleLabels)
+                        curr--;
                     label = FeatureUtil.toOutcomeVector(curr, numPossibleLabels);
                 }
 
@@ -198,7 +206,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 Writable current = currList.get(j);
                 if (current.toString().isEmpty())
                     continue;
-                featureVector.putScalar(count++, Double.valueOf(current.toString()));
+                featureVector.putScalar(j, Double.valueOf(current.toString()));
             }
         }
 
@@ -237,7 +245,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
     }
-
     @Override
     public void reset() {
 

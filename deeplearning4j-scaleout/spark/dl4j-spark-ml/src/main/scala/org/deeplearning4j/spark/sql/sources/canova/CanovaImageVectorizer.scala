@@ -25,7 +25,7 @@ import org.canova.api.conf.{Configuration => CanovaConfiguration}
 import org.canova.api.io.data.{DoubleWritable, FloatWritable}
 import org.canova.api.records.reader.{RecordReader => CanovaRecordReader}
 import org.canova.api.writable.{Writable => CanovaWritable}
-import org.canova.image.recordreader.{ImageRecordReader => CanovaImageRecordReader}
+import org.canova.image.recordreader.{ImageRecordReader => CanovaImageRecordReader, BaseImageRecordReader}
 
 import scala.collection.JavaConversions._
 
@@ -64,8 +64,13 @@ object CanovaImageVectorizer {
    * @param width
    */
   def setWidth(conf: HadoopConfiguration, width: Int) = {
-    conf.setInt(CanovaImageRecordReader.WIDTH, width)
+    conf.setInt(BaseImageRecordReader.WIDTH, width)
   }
+
+  def setChannels(conf: HadoopConfiguration,channels: Int) = {
+    conf.setInt(BaseImageRecordReader.CHANNELS,channels)
+  }
+
 
   /**
    * Specify the target height of the image.
@@ -73,7 +78,7 @@ object CanovaImageVectorizer {
    * @param height
    */
   def setHeight(conf: HadoopConfiguration, height: Int) = {
-    conf.setInt(CanovaImageRecordReader.HEIGHT, height)
+    conf.setInt(BaseImageRecordReader.HEIGHT, height)
   }
 }
 

@@ -811,9 +811,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         List<INDArray> params = new ArrayList<>();
         for (Layer layer: getLayers())
-            if(!(layer instanceof SubsamplingLayer)) {
-                params.add(layer.params());
-            }
+            params.add(layer.params());
+
 
         return Nd4j.toFlattened('f',params);
     }
@@ -828,30 +827,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void setParams(INDArray params) {
-        if(this.params != null) {
-            this.params = params;
-            int idx = 0;
-            for (int i = 0; i < getLayers().length; i++) {
-                Layer layer = getLayer(i);
-                int range = layer.numParams();
-                INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-//                if (get.length() < 1)
-//                    throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
-                layer.setParams(get);
-                idx += range;
-
-            }
-        }
+        if(this.params != null) this.params = params;  //not null if isRedistributeParams
         int idx = 0;
         for (int i = 0; i < getLayers().length; i++) {
             Layer layer = getLayer(i);
             int range = layer.numParams();
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, range + idx));
-//            if (get.length() < 1)
-//                throw new IllegalStateException("Unable to retrieve layer. No params found (length was 0");
             layer.setParams(get);
             idx += range;
-
         }
     }
 
@@ -2006,7 +1989,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * Typically used during training only. Use rnnTimeStep for prediction/forward pass at test time.
      * @param input Input to network
      * @param training Whether training or not
-     * @param storeLastForTBPPT set to true if used as part of truncated BPTT training
+     * @param storeLastForTBPTT set to true if used as part of truncated BPTT training
      * @return Activations for each layer (including input, as per feedforward() etc)
      * @see rnnTimeStep
      */

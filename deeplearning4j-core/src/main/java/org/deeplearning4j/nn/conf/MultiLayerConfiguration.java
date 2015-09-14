@@ -278,7 +278,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
             conf.tbpttBackLength = tbpttBackLength;
-            
+            conf.redistributeParams = redistributeParams;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 
