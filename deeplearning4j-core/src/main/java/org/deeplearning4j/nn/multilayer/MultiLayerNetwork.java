@@ -988,9 +988,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (mask == null)
             initMask();
 
-        g.addi(theta.mul(defaultConfiguration.getL2()).muli(mask));
+        g.addi(theta.mul(defaultConfiguration.getLayer().getL2()).muli(mask));
 
-        INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getL2()).add(Nd4j.valueArrayOf(g.slices(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
+        INDArray conAdd = Transforms.pow(mask.mul(defaultConfiguration.getLayer().getL2()).add(Nd4j.valueArrayOf(g.slices(), g.columns(), layerWiseConfigurations.getDampingFactor())), 3.0 / 4.0);
 
         con.addi(conAdd);
 
@@ -1580,7 +1580,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         INDArray params = params();
         setParameters(param);
         double ret = score();
-        double regCost = 0.5f * defaultConfiguration.getL2() * (double) Transforms.pow(mask.mul(param), 2).sum(Integer.MAX_VALUE).element();
+        double regCost = 0.5f * defaultConfiguration.getLayer().getL2() * (double) Transforms.pow(mask.mul(param), 2).sum(Integer.MAX_VALUE).element();
         setParameters(params);
         return ret + regCost;
     }
@@ -1752,7 +1752,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         }
 
-        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getL2())
+        INDArray pack = pack(list).addi(mask.mul(defaultConfiguration.getLayer().getL2())
                 .muli(v)).addi(v.mul(layerWiseConfigurations.getDampingFactor()));
         return unPack(pack);
 

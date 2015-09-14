@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -54,28 +56,37 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
+    protected String activationFunction;
     protected WeightInit weightInit;
     protected double biasInit;
     protected Distribution dist;
-    protected String activationFunction;
-    protected double lr;
+    protected double learningRate;
     protected double momentum;
+    //momentum after n iterations
+    protected Map<Integer,Double> momentumAfter;
     protected double l1;
     protected double l2;
     protected double dropOut;
     protected Updater updater;
+    //adadelta - weight for how much to consider previous history
+    protected double rho;
+    protected double rmsDecay;
+
 
     public Layer(Builder builder){
+        this.activationFunction = builder.activationFunction;
     	this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
     	this.dist = builder.dist;
-        this.activationFunction = builder.activationFunction;
-        this.lr = builder.lr;
-        this.momentum = momentum;
+        this.learningRate = builder.learningRate;
+        this.momentum = builder.momentum;
+        this.momentumAfter = builder.momentumAfter;
         this.l1 = builder.l1;
         this.l2 = builder.l2;
 	    this.dropOut = builder.dropOut;
 	    this.updater = builder.updater;
+        this.rho = builder.rho;
+        this.rmsDecay = builder.rmsDecay;
     }
 
     @Override
@@ -83,6 +94,7 @@ public abstract class Layer implements Serializable, Cloneable {
         try {
             Layer clone = (Layer) super.clone();
             if(clone.dist != null) clone.dist = clone.dist.clone();
+            if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -91,16 +103,19 @@ public abstract class Layer implements Serializable, Cloneable {
 
 
     public abstract static class Builder<T extends Builder<T>> {
+        protected String activationFunction = null;
         protected WeightInit weightInit = null;
         protected double biasInit = Double.NaN;
         protected Distribution dist = null;
-        protected String activationFunction = null;
-        protected double lr = Double.NaN;
+        protected double learningRate = Double.NaN;
         protected double momentum = Double.NaN;
+        protected Map<Integer,Double> momentumAfter = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double dropOut = Double.NaN;
         protected Updater updater = null;
+        protected double rho = Double.NaN;
+        protected double rmsDecay = Double.NaN;
 
         public T activation(String activationFunction) {
             this.activationFunction = activationFunction;
@@ -125,14 +140,9 @@ public abstract class Layer implements Serializable, Cloneable {
         	return (T) this;
         }
 
-        public T dropOut(double dropOut) {
-            this.dropOut = dropOut;
-            return (T) this;
-        }
-        
-        public T updater(Updater updater){
-        	this.updater = updater;
-        	return (T) this;
+        public T learningRate(double learningRate){
+            this.learningRate = learningRate;
+            return (T)this;
         }
 
         public T l1(double l1){
@@ -144,15 +154,36 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T)this;
         }
 
-        public T learningRate(double lr){
-            this.lr = lr;
-            return (T)this;
+        public T dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return (T) this;
         }
 
         public T momentum(double momentum){
             this.momentum = momentum;
             return (T)this;
         }
+
+        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
+            this.momentumAfter = momentumAfter;
+            return this;
+        }
+
+        public T updater(Updater updater){
+            this.updater = updater;
+            return (T) this;
+        }
+
+        public Builder rho(double rho) {
+            this.rho = rho;
+            return this;
+        }
+
+        public Builder rmsDecay(double rmsDecay) {
+            this.rmsDecay = rmsDecay;
+            return this;
+        }
+
         public abstract <E extends Layer> E build();
     }
 }
