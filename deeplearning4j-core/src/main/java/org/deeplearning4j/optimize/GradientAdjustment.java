@@ -63,18 +63,18 @@ public class GradientAdjustment {
             lastStep = Nd4j.ones((params.shape()));
 
         //change up momentum after so many iterations if specified
-        double momentum = conf.getLayer().getMomentum();
-        if(conf.getLayer().getMomentumAfter() != null && !conf.getLayer().getMomentumAfter().isEmpty()) {
-            int key = conf.getLayer().getMomentumAfter().keySet().iterator().next();
+        double momentum = conf.getMomentum();
+        if(conf.getMomentumAfter() != null && !conf.getMomentumAfter().isEmpty()) {
+            int key = conf.getMomentumAfter().keySet().iterator().next();
             if(iteration >= key) {
-                momentum = conf.getLayer().getMomentumAfter().get(key);
+                momentum = conf.getMomentumAfter().get(key);
             }
         }
 
         //RMSPROP
-        if(conf.getLayer().getRmsDecay() > 0) {
-            lastStep.assign(lastStep.mul(conf.getLayer().getRmsDecay()).addi(Transforms.pow(gradient,2).muli((1 - conf.getLayer().getRmsDecay()))));
-            gradient = gradient.mul(conf.getLayer().getLearningRate()).negi().divi(Transforms.sqrt(lastStep.add(Nd4j.EPS_THRESHOLD)));
+        if(conf.getRmsDecay() > 0) {
+            lastStep.assign(lastStep.mul(conf.getRmsDecay()).addi(Transforms.pow(gradient,2).muli((1 - conf.getRmsDecay()))));
+            gradient = gradient.mul(conf.getLr()).negi().divi(Transforms.sqrt(lastStep.add(Nd4j.EPS_THRESHOLD)));
         }
 
         //calculate gradient
@@ -89,10 +89,10 @@ public class GradientAdjustment {
         }
 
         //simulate post gradient application  and apply the difference to the gradient to decrease the change the gradient has
-        if(conf.isUseRegularization() && conf.getLayer().getL2() > 0 && !(gradient.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(params.mul(conf.getLayer().getL2()));
-        else if(conf.isUseRegularization() && conf.getLayer().getL1() < 0 && !(gradient.equals(DefaultParamInitializer.BIAS_KEY)))
-            gradient.subi(Transforms.sign(params).muli(conf.getLayer().getL1()));
+        if(conf.isUseRegularization() && conf.getL2() > 0 && !(gradient.equals(DefaultParamInitializer.BIAS_KEY)))
+            gradient.subi(params.mul(conf.getL2()));
+        else if(conf.isUseRegularization() && conf.getL1() < 0 && !(gradient.equals(DefaultParamInitializer.BIAS_KEY)))
+            gradient.subi(Transforms.sign(params).muli(conf.getL1()));
 
 
         if(conf.isConstrainGradientToUnitNorm())
