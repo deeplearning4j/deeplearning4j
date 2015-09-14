@@ -22,18 +22,14 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.4-rc2.2-SNAPSHOT</version>
+		<version>0.4-rc3.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-akka</artifactId>
 	<name>deeplearning4j-scaleout-akka</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<akka.version>2.3.4-spark</akka.version>
-        <netty.version>3.8.0.Final</netty.version>
 		<hazelcast.version>3.4.2</hazelcast.version>
-		<spring.version>3.2.5.RELEASE</spring.version>
-		<dropwizard.version>0.8.0</dropwizard.version>
-		<jackson.version>2.5.1</jackson.version>
 		<scala.binary.version>2.10</scala.binary.version>
 		<akka.group>org.spark-project.akka</akka.group>
 	</properties>
@@ -96,7 +92,7 @@
 			<dependency>
 				<groupId>com.google.protobuf</groupId>
 				<artifactId>protobuf-java</artifactId>
-				<version>2.5.0</version>
+				<version>${google.protobuf.version}</version>
 			</dependency>
 			<dependency>
 
@@ -190,7 +186,7 @@
 			<dependency>
 				<groupId>commons-io</groupId>
 				<artifactId>commons-io</artifactId>
-				<version>2.4</version>
+				<version>${commonsio.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -283,7 +279,7 @@
 		<dependency>
 			<groupId>args4j</groupId>
 			<artifactId>args4j</artifactId>
-			<version>2.0.26</version>
+			<version>${args4j.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.fusesource</groupId>
@@ -323,19 +319,19 @@
         <dependency>
 			<groupId>org.nd4j</groupId>
 			<artifactId>nd4j-jblas</artifactId>
-			<version>0.4-rc0</version>
+			<version>${nd4j.version}</version>
 			<scope>test</scope>
 		</dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.3.1</version>
+            <version>${commonslang.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
+            <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>1.3.2</version>
+            <version>${commonsio.version}</version>
         </dependency>
 
 	</dependencies>

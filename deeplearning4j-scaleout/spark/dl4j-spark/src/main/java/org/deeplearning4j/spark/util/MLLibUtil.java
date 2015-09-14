@@ -18,10 +18,14 @@
 
 package org.deeplearning4j.spark.util;
 
+import org.apache.spark.RangePartitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.mllib.linalg.Matrices;
 import org.apache.spark.mllib.linalg.Matrix;
@@ -158,7 +162,7 @@ public class MLLibUtil {
      * @return the labeled point
      */
     public static LabeledPoint pointOf(Collection<Writable> writables) {
-        double[] ret = new double[writables.size()];
+        double[] ret = new double[writables.size() - 1];
         int count = 0;
         double target = 0;
         for(Writable w : writables) {
@@ -168,9 +172,54 @@ public class MLLibUtil {
                 target = Float.parseFloat(w.toString());
         }
 
+        if(target < 0)
+            throw new IllegalStateException("Target must be >= 0");
         return new LabeledPoint(target,Vectors.dense(ret));
     }
 
+    /**
+     * Convert an rdd
+     * of labeled point
+     * based on the specified batch size
+     * in to data set
+     * @param data the data to convert
+     * @param numPossibleLabels the number of possible labels
+     * @param batchSize the batch size
+     * @return the new rdd
+     */
+    public static JavaRDD<DataSet> fromLabeledPoint(JavaRDD<LabeledPoint> data, final int numPossibleLabels,int batchSize) {
+       //map by index
+        JavaPairRDD<Long,LabeledPoint> dataWithIndex = data.zipWithIndex().mapToPair(new PairFunction<Tuple2<LabeledPoint, Long>, Long, LabeledPoint>() {
+           @Override
+           public Tuple2<Long, LabeledPoint> call(Tuple2<LabeledPoint, Long> labeledPointLongTuple2) throws Exception {
+               return new Tuple2<>(labeledPointLongTuple2._2(),labeledPointLongTuple2._1());
+           }
+       });
+
+        JavaPairRDD<Long,DataSet> mappedData = dataWithIndex.mapToPair(new PairFunction<Tuple2<Long, LabeledPoint>, Long, DataSet>() {
+            @Override
+            public Tuple2<Long, DataSet> call(Tuple2<Long, LabeledPoint> longLabeledPointTuple2) throws Exception {
+                return new Tuple2<>(longLabeledPointTuple2._1(), MLLibUtil.fromLabeledPoint(longLabeledPointTuple2._2(), numPossibleLabels));
+            }
+        });
+
+        JavaPairRDD<Long,DataSet> aggregated = mappedData.reduceByKey(new Function2<DataSet, DataSet, DataSet>() {
+            @Override
+            public DataSet call(DataSet v1, DataSet v2) throws Exception {
+                return new DataSet(Nd4j.vstack(v1.getFeatureMatrix(), v2.getFeatureMatrix()), Nd4j.vstack(v1.getLabels(), v2.getLabels()));
+            }
+        }, (int) (mappedData.count() / batchSize));
+
+
+        JavaRDD<DataSet> data2 = aggregated.flatMap(new FlatMapFunction<Tuple2<Long, DataSet>, DataSet>() {
+            @Override
+            public Iterable<DataSet> call(Tuple2<Long, DataSet> longDataSetTuple2) throws Exception {
+                return longDataSetTuple2._2();
+            }
+        });
+
+        return data2;
+    }
 
     /**
      * From labeled point

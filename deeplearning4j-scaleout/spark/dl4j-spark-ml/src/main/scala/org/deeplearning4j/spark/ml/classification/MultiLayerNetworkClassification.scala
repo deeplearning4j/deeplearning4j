@@ -22,6 +22,7 @@ import org.apache.spark.ml.attribute.{Attribute, NominalAttribute}
 import org.apache.spark.ml.classification.{ClassificationModel, Classifier}
 import org.apache.spark.ml.param._
 import org.apache.spark.mllib.linalg.Vector
+import org.apache.spark.sql.catalyst.expressions.{GenericMutableRow, GenericRowWithSchema}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.storage.StorageLevel
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
@@ -114,15 +115,17 @@ class NeuralNetworkClassification(override val uid: String)
           // features & labels
           val (features, labels) = rows.map { row =>
             (
-              row.getAs[Vector](1):INDArray,
+              row.getAs[Vector](1): INDArray,
               FeatureUtil.toOutcomeVector(row.getDouble(0).toInt, numClasses)
-            )
+              )
           }.toIterable.unzip
-          
-          val featureMatrix = Nd4j.vstack(features.toArray: _*)
-          val labelMatrix = Nd4j.vstack(labels.toArray: _*)
-          
-          network.fit(featureMatrix, labelMatrix)
+
+          if(features.size >= 1) {
+            val featureMatrix = Nd4j.vstack(features.toArray: _*)
+            val labelMatrix = Nd4j.vstack(labels.toArray: _*)
+
+            network.fit(featureMatrix, labelMatrix)
+          }
     })
 
     if (handlePersistence) prepared.unpersist()
@@ -145,33 +148,61 @@ class NeuralNetworkClassificationModel private[ml] (
   with NeuralNetworkClassificationParams {
 
   override protected def predictRaw(features: Vector): Vector = {
-    val examples: INDArray = features
+    throw new NotImplementedError()
+  }
 
-    // produces a probability distribution
-    val raw: Vector = network().output(examples)
-    raw
+  override def transform(dataset: DataFrame): DataFrame = {
+
+    val schema = transformSchema(dataset.schema, logging = true)
+
+    val newRdd = dataset.mapPartitions { iterator:Iterator[Row] =>
+      val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson($(conf)))
+      network.init()
+      network.setParameters(networkParams.value)
+
+      // prepare the input feature matrix, while retaining the rows for later use
+      val featuresIndex = schema.fieldIndex(getFeaturesCol)
+      val (features, rows) = iterator.map { row =>
+        (
+          row.getAs[Vector](featuresIndex): INDArray,
+          row
+        )
+      }.toIterable.unzip
+
+      // compute output
+      val newRows = rows.size match {
+        case 0 => Seq()
+        case _ =>
+          val featureMatrix = Nd4j.vstack(features.toArray: _*)
+          val outputMatrix = network.output(featureMatrix, true)
+
+          // prepare column generators for required columns
+          val cols = {
+            schema.fieldNames flatMap {
+              case f if f == $(rawPredictionCol) => Seq(
+                (row: Row, i: Int, output: Vector) => output)
+              case f if f == $(predictionCol) => Seq(
+                (row: Row, i: Int, output: Vector) => raw2prediction(output))
+              case _ => Seq.empty
+            }
+          }
+
+          // transform the input rows, appending required columns
+          rows.zipWithIndex.map {
+            case (row, i) => {
+              val output = outputMatrix.getRow(i): Vector
+              Row.fromSeq(row.toSeq ++ cols.map(_(row, i, output)))
+            }
+          }
+      }
+
+      newRows.iterator
+    }
+
+    dataset.sqlContext.createDataFrame(newRdd, schema)
   }
 
   override def copy(extra: ParamMap): NeuralNetworkClassificationModel = {
     copyValues(new NeuralNetworkClassificationModel(uid, numClasses, networkParams), extra)
-  }
-
-  @transient
-  private var networkHolder: ThreadLocal[MultiLayerNetwork] = null
-
-  private def network(): MultiLayerNetwork = {
-
-    if(networkHolder == null) {
-      networkHolder = new ThreadLocal[MultiLayerNetwork] {
-        override def initialValue(): MultiLayerNetwork = {
-          val network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson($(conf)))
-          network.setListeners(new ScoreIterationListener(1))
-          network.init()
-          network.setParameters(networkParams.value)
-          network
-        }
-      }
-    }
-    networkHolder.get()
   }
 }

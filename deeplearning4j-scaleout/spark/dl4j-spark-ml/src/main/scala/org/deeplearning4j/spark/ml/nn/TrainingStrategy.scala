@@ -84,7 +84,7 @@ private[spark] class ParameterAveragingTrainingStrategy[RowType](
          val network = new MultiLayerNetwork(conf)
          network.init()
          network.setListeners(List(new ScoreIterationListener(1)))
-         network.setParams(broadcastedParams.value)
+         network.setParams(broadcastedParams.value.dup())
          
          partitionTrainer(network, iterator)
          
