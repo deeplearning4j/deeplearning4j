@@ -354,14 +354,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL2() {
-    	if(!conf.isUseRegularization() || conf.getLayer().getL2() <= 0.0 ) return 0.0;
-        return 0.5 * conf.getLayer().getL2() * Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
+    	if(!conf.isUseRegularization() || conf.getL2() <= 0.0 ) return 0.0;
+        return 0.5 * conf.getL2() * Transforms.pow(getParam(DefaultParamInitializer.WEIGHT_KEY),2).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
     public double calcL1() {
-    	if(!conf.isUseRegularization() || conf.getLayer().getL1() <= 0.0 ) return 0.0;
-        return conf.getLayer().getL1() * Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
+    	if(!conf.isUseRegularization() || conf.getL1() <= 0.0 ) return 0.0;
+        return conf.getL1() * Transforms.abs(getParam(DefaultParamInitializer.WEIGHT_KEY)).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
