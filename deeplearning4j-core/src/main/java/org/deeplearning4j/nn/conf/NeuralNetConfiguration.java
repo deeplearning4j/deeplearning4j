@@ -28,8 +28,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.distribution.Distribution;
+import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -50,38 +53,28 @@ import java.util.Map;
 @NoArgsConstructor
 public class NeuralNetConfiguration implements Serializable,Cloneable {
 
-    private double lr = 1e-1;
-    protected int numIterations = 5;
-    /* momentum for learning */
-    protected double momentum = 0.5;
-    /* L2 Regularization constant */
-    protected double l2 = 0;
-    protected boolean useRegularization = false;
-    //momentum after n iterations
-    protected Map<Integer,Double> momentumAfter = new HashMap<>();
-    //number of line search iterations
-    protected int maxNumLineSearchIterations = 5;
-    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
-    //whether to constrain the gradient to unit norm or not
-    protected boolean constrainGradientToUnitNorm = false;
-    //adadelta - weight for how much to consider previous history
-    protected double rho;
-    protected long seed;
-    protected StepFunction stepFunction;
     protected Layer layer;
-    //gradient keys used for ensuring order when getting and setting the gradient
-    protected List<String> variables = new ArrayList<>();
-    protected boolean useDropConnect = false;
-    // Graves LSTM & RNN
-    private int timeSeriesLength = 1;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected int batchSize = 10;
-    //minimize or maximize objective
-    protected boolean minimize = false;
-    //l1 regularization
-    protected double l1 = 0.0;
-    protected double rmsDecay = 0.95;
     protected boolean miniBatch = true;
+    protected int numIterations = 5;
+    //number of line search iterations
+    protected int maxNumLineSearchIterations = 5;
+    protected long seed = System.currentTimeMillis();
+//    protected String activationFunction = "sigmoid";
+    protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
+    //gradient keys used for ensuring order when getting and setting the gradient
+    protected List<String> variables = new ArrayList<>();
+    //whether to constrain the gradient to unit norm or not
+    protected boolean constrainGradientToUnitNorm = false;
+    protected StepFunction stepFunction;
+    protected boolean useRegularization = false;
+    protected boolean useDropConnect = false;
+    //minimize or maximize objective
+    protected boolean minimize = true;
+    // Graves LSTM & RNN
+    private int timeSeriesLength = 1;
+
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -90,7 +83,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
     public NeuralNetConfiguration clone()  {
         try {
             NeuralNetConfiguration clone = (NeuralNetConfiguration) super.clone();
-            if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
             if(clone.layer != null) clone.layer = clone.layer.clone();
             if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
             if(clone.variables != null ) clone.variables = new ArrayList<>(clone.variables);
@@ -272,26 +264,32 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
     @Data
     public static class Builder implements Cloneable {
+        protected String activationFunction = "sigmoid";
+        protected WeightInit weightInit = WeightInit.XAVIER;
+        protected double biasInit = 0.0;
+        protected Distribution dist = new NormalDistribution(1e-3,1);
+        private double learningRate = 1e-1;
+        private double momentum = 0.5;
+        private Map<Integer, Double> momentumAfter = new HashMap<>();
+        private double l1 = 0.0;
+        private double l2 = 0.0;
+        protected double dropOut = 0;
+        protected Updater updater = Updater.NONE;
+        private double rho;
         private double rmsDecay = 0.95;
-        private double lr = 1e-1f;
-        private double momentum = 0.5f;
-        private double l2 = 0f;
-        private boolean useRegularization = false;
-        private Map<Integer, Double> momentumAfter;
+        private Layer layer;
+        private int batchSize = 10;
+        private boolean miniBatch = true;
+        private int numIterations = 5;
+        private int maxNumLineSearchIterations = 5;
+        private long seed = System.currentTimeMillis();
         private OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.CONJUGATE_GRADIENT;
         private boolean constrainGradientToUnitNorm = false;
-        private long seed = System.currentTimeMillis();
-        private int numIterations = 5;
-        private int timeSeriesLength = 1;
         private StepFunction stepFunction = null;
-        private Layer layer;
-        private int batchSize = 100;
-        private int maxNumLineSearchIterations = 5;
-        private boolean minimize = false;
-        private double l1 = 0.0;
+        private boolean useRegularization = false;
         private boolean useDropConnect = false;
-        private double rho;
-        private boolean miniBatch = true;
+        private boolean minimize = true;
+        private int timeSeriesLength = 1;
 
         /**
          +         * Time series length
@@ -379,7 +377,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         public Builder clone() {
             try {
                 Builder clone = (Builder) super.clone();
-                if(clone.momentumAfter != null) clone.momentumAfter = new HashMap<>(clone.momentumAfter);
                 if(clone.layer != null) clone.layer = clone.layer.clone();
                 if(clone.stepFunction != null) clone.stepFunction = clone.stepFunction.clone();
 
@@ -395,8 +392,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
-        public Builder learningRate(double lr) {
-            this.lr = lr;
+        public Builder learningRate(double learningRate) {
+            this.learningRate = learningRate;
             return this;
         }
 
@@ -443,6 +440,35 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Builder activation(String activationFunction) {
+            this.activationFunction = activationFunction;
+            return this;
+        }
+
+        public Builder weightInit(WeightInit weightInit) {
+            this.weightInit = weightInit;
+            return this;
+        }
+
+        public Builder biasInit(double biasInit) {
+            this.biasInit = biasInit;
+            return this;
+        }
+
+        public Builder dist(Distribution dist) {
+            this.dist = dist;
+            return this;
+        }
+
+        public Builder dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return this;
+        }
+
+        public Builder updater(Updater updater) {
+            this.updater = updater;
+            return this;
+        }
         /**
          * Return a configuration based on this builder
          *
@@ -456,25 +482,31 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
-            conf.l1 = (!Double.isNaN(layer.getL1()) ? layer.getL1() : l1);
             conf.batchSize = batchSize;
             conf.layer = layer;
-            conf.lr = (!Double.isNaN(layer.getLr()) ? layer.getLr() : lr);
             conf.numIterations = numIterations;
-            conf.momentum = momentum;
-            conf.l2 = (!Double.isNaN(layer.getL2()) ? layer.getL2() : l2);
             conf.useRegularization = useRegularization;
-            conf.momentumAfter = momentumAfter;
             conf.optimizationAlgo = optimizationAlgo;
             conf.constrainGradientToUnitNorm = constrainGradientToUnitNorm;
             conf.seed = seed;
             conf.timeSeriesLength = timeSeriesLength;
-            conf.rmsDecay = rmsDecay;
             conf.stepFunction = stepFunction;
             conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
-            conf.rho = rho;
 
+            if(Double.isNaN(layer.getLearningRate())) layer.setLearningRate(learningRate);
+            if(Double.isNaN(layer.getL1())) layer.setL1(l1);
+            if(Double.isNaN(layer.getL2())) layer.setL2(l2);
+            if(layer.getActivationFunction() == null) layer.setActivationFunction(activationFunction);
+            if(layer.getWeightInit() == null) layer.setWeightInit(weightInit);
+            if(Double.isNaN(layer.getBiasInit())) layer.setBiasInit(biasInit);
+            if(layer.getDist() == null) layer.setDist(dist);
+            if(Double.isNaN(layer.getDropOut())) layer.setDropOut(dropOut);
+            if(layer.getUpdater() == null) layer.setUpdater(updater);
+            if(Double.isNaN(layer.getMomentum())) layer.setMomentum(momentum);
+            if(layer.getMomentumAfter() == null) layer.setMomentumAfter(momentumAfter);
+            if(Double.isNaN(layer.getRho())) layer.setRho(rho);
+            if(Double.isNaN(layer.getRmsDecay())) layer.setRmsDecay(rmsDecay);
             return conf;
         }
 
