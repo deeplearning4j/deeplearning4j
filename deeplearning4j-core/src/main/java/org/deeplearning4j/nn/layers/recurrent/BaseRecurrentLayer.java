@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -12,6 +14,12 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
 
 	/** stateMap stores the INDArrays needed to do rnnTimeStep() forward pass. */
 	protected Map<String,INDArray> stateMap = new ConcurrentHashMap<>();
+
+	/** State map for use specifically in truncated BPTT training. Whereas stateMap contains the
+	 * state from which forward pass is initialized, the tBpttStateMap contains the state at the
+	 * end of the last truncated bptt
+	 * */
+	protected Map<String,INDArray> tBpttStateMap = new ConcurrentHashMap<>();
 
 	public BaseRecurrentLayer(NeuralNetConfiguration conf) {
 		super(conf);
@@ -44,8 +52,38 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
 		this.stateMap.putAll(stateMap);
 	}
 
-	/** Reset/clear the stateMap for rnnTimeStep() */
+	/** Reset/clear the stateMap for rnnTimeStep() and tBpttStateMap for rnnActivateUsingStoredState() */
 	public void rnnClearPreviousState(){
 		stateMap.clear();
+		tBpttStateMap.clear();
 	}
+
+	/** Similar to rnnTimeStep, this method is used for activations using the state
+	 * stored in the stateMap as the initialization. However, unlike rnnTimeStep this
+	 * method does not alter the stateMap; therefore, unlike rnnTimeStep, multiple calls to
+	 * this method (with identical input) will:<br>
+	 * (a) result in the same output<br>
+	 * (b) leave the state maps (both stateMap and tBpttStateMap) in an identical state
+	 * @param input Layer input
+	 * @param training if true: training. Otherwise: test
+	 * @param storeLastForTBPTT If true: store the final state in tBpttStateMap for use in truncated BPTT training
+	 * @return Layer activations
+	 */
+	public abstract INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT);
+
+	public Map<String,INDArray> rnnGetTBPTTState(){
+		return new HashMap<>(tBpttStateMap);
+	}
+
+	public void rnnSetTBPTTState(Map<String,INDArray> state){
+		tBpttStateMap.clear();
+		tBpttStateMap.putAll(state);
+	}
+
+	/**Truncated BPTT equivalent of Layer.backpropGradient().
+	 * Primary difference here is that forward pass in the context of BPTT is that we do
+	 * forward pass using stored state for truncated BPTT vs. from zero initialization
+	 * for standard BPTT.
+	 */
+	public abstract Pair<Gradient,INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength);
 }
