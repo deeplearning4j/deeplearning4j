@@ -21,7 +21,6 @@ package org.nd4j.linalg.api.ndarray;
 
 
 import com.google.common.primitives.Ints;
-import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -43,6 +42,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
+import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
@@ -2603,7 +2604,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.muli(getDouble(0), result);
         }
 
-        Nd4j.getExecutioner().exec(new MulOp(linearView(), other.linearView(), result.linearView(), length()));
+        Nd4j.getExecutioner().exec(new MulOp(this, other, result, length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -2639,7 +2640,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.subi(getDouble(0), result);
         }
 
-        Nd4j.getExecutioner().exec(new SubOp(linearView(), other.linearView(), result.linearView(), length()));
+        Nd4j.getExecutioner().exec(new SubOp(this, other, result, length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -3217,25 +3218,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
 
-        INDArray ret = create(shape, ordering);
-        Pair<INDArray,INDArray> rawIter = Shape.prepareTwoRawArrayIter(ret, this);
-        int[] offsets = new int[2];
-
-        for(int i = 0; i  < ret.length(); i++) {
-            offsets = Shape.raw2dLoop(0
-                    ,2
-                    ,
-                    offsets
-                    ,rawIter.getSecond().shape()
-                    ,offsets[0]
-                    ,rawIter.getFirst().stride()
-                    ,rawIter.getSecond().offset()
-                    ,rawIter.getSecond().stride());
-            rawIter.getFirst().data().put(
-                    offsets[0] + i * rawIter.getFirst().stride(0)
-                    ,rawIter.getSecond().getDouble(offsets[1] + i * rawIter.getSecond().stride(0)));
-        }
-
+        INDArray ret = create(dup().data(),shape, Nd4j.getStrides(shape,order),offset(),ordering);
+        //Shape.assignArray(ret,this);
         return ret;
     }
 

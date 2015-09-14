@@ -1,9 +1,10 @@
 package org.nd4j.linalg.api.indexing.shape;
 
-import org.apache.commons.math3.util.Pair;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
+import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -32,12 +33,15 @@ public class RawArrayIterationTest extends BaseNd4jTest {
     public void testRawIteration() {
         INDArray a = Nd4j.linspace(1,6,6).reshape(2,3);
         INDArray b = Nd4j.linspace(1,6,6).reshape(2,3).add(1);
-        Pair<INDArray,INDArray> rawIter = Shape.prepareTwoRawArrayIter(b,a);
-        for(int i = 0; i < a.length(); i++) {
-            rawIter.getSecond().data().put(rawIter.getSecond().offset() + i * rawIter.getSecond().stride(-1),rawIter.getFirst().data().getDouble(rawIter.getFirst().offset()  + i * rawIter.getFirst().stride(-1)));
-        }
+        RawArrayIterationInformation2 rawIter = Shape.prepareTwoRawArrayIter(b,a);
+        int[] offsets = new int[2];
+        int[] coords = new int[2];
+        Shape.raw2dLoop(0,2,coords,rawIter.getShape(),rawIter.getAOffset(),rawIter.getAStrides(),rawIter.getBOffset(),rawIter.getBStrides(),rawIter,new CopyLoopFunction());
 
-        System.out.println(b);
+
+
+        assertEquals(a,b);
+
     }
 
     @Override

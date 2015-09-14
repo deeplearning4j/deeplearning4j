@@ -21,7 +21,6 @@ package org.nd4j.linalg.api.shape;
 
 import com.google.common.primitives.Ints;
 
-import org.apache.commons.math3.util.Pair;
 import org.nd4j.bytebuddy.shape.IndexMapper;
 import org.nd4j.bytebuddy.shape.OffsetMapper;
 import org.nd4j.bytebuddy.shape.ShapeMapper;
@@ -30,11 +29,19 @@ import org.nd4j.linalg.api.buffer.DataBuffer.AllocationMode;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.loop.four.LoopFunction4;
+import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
+import org.nd4j.linalg.api.shape.loop.three.LoopFunction3;
+import org.nd4j.linalg.api.shape.loop.three.RawArrayIterationInformation3;
+import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
+import org.nd4j.linalg.api.shape.loop.two.LoopFunction2;
+import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
+import sun.security.provider.SHA;
 
 import java.util.*;
 
@@ -187,6 +194,8 @@ public class Shape {
         return arr.data().getDouble(offset);
     }
 
+
+
     /**
      * Raw 2 dimensional loop
      * over a data buffer given some strides.
@@ -202,11 +211,13 @@ public class Shape {
      * @param stridesB the strides for b
      */
     public static int[] raw2dLoop(int idim, int  ndim, int[] coord, int[] shape,
-                                  int dataA, int[] stridesA, int dataB, int[] stridesB) {
+                                  int dataA, int[] stridesA, int dataB, int[] stridesB,RawArrayIterationInformation2 info,LoopFunction2 loopFunction2) {
 
+        idim = 1;
         do {
-            for (idim = 0; idim < ndim; idim++) {
-                if (++(coord)[idim] == shape[idim]) {
+            loopFunction2.perform(idim, info, info.getA(), dataA, info.getB(), dataB);
+            for (; idim < ndim; ++idim) {
+                if (++coord[idim] == shape[idim]) {
                     coord[idim] = 0;
                     dataA -= (shape[idim] - 1) * stridesA[idim];
                     dataB -= (shape[idim] - 1) * stridesB[idim];
@@ -216,11 +227,10 @@ public class Shape {
                     break;
                 }
             }
-        }
+        } while (idim < ndim);
 
-        while( idim < ndim);
 
-        return new int[] {dataA,dataB};
+        return new int[]{dataA, dataB};
     }
 
     /**
@@ -241,9 +251,12 @@ public class Shape {
     public static int[] raw3dLoop(int idim, int ndim, int[] coord, int[] shape,
                                   int dataA, int[] stridesA,
                                   int dataB, int[] stridesB,
-                                  int dataC, int[] stridesC)  {
+                                  int dataC, int[] stridesC,RawArrayIterationInformation3 info,LoopFunction3 loopFunction3)  {
         do {
-            for (idim = 0; (idim) < ndim; idim++) {
+            loopFunction3.perform(idim,info,info.getA(),info.getAOffset(),info.getB(),info.getBOffset(),info.getC(),info.getCOffset());
+
+
+            for (idim = 1; (idim) < ndim; idim++) {
                 if (++(coord)[idim] == (shape)[idim]) {
                     coord[idim] = 0;
                     dataA -= (shape[idim] - 1) * stridesA[idim];
@@ -284,10 +297,11 @@ public class Shape {
                                   int dataA, int[] stridesA,
                                   int dataB, int[] stridesB,
                                   int dataC, int[] stridesC,
-                                  int dataD, int[] stridesD) {
+                                  int dataD, int[] stridesD,RawArrayIterationInformation4 info,LoopFunction4 loopFunction4) {
         do {
+            loopFunction4.perform(idim,info,info.getA(),info.getAOffset(),info.getB(),info.getBOffset(),info.getC(),info.getCOffset(),info.getD(),info.getDOffset());
 
-            for ((idim) = 0; idim < ndim; idim++) {
+            for ((idim) = 1; idim < ndim; idim++) {
                 if (coord[idim]++ == shape[idim]) {
                     coord[idim] = 0;
                     dataA -= (shape[idim] - 1) * stridesA[idim];
@@ -603,7 +617,8 @@ public class Shape {
 
 
 
-    public static void rawArrayAssignArray(int nDim,INDArray destination,INDArray source) {
+    public static void assignArray(INDArray destination, INDArray source) {
+        int[] newStrides;
         if(source.rank() > destination.rank()) {
             int nDimTmp = source.rank();
             int[] srcShape = Arrays.copyOf(source.shape(),source.rank());
@@ -614,10 +629,30 @@ public class Shape {
                 srcStrides = Arrays.copyOfRange(srcStrides,1,srcStrides.length);
             }
 
-            int[] newStrides = broadcastStrides(destination.rank(),destination.shape(),source.rank(),source.shape(),source.stride());
-
-
+            //broadcast the new arrays
+            newStrides = broadcastStrides(destination.rank(), destination.shape(), source.rank(), source.shape(), source.stride());
         }
+        else
+            newStrides = broadcastStrides(destination.rank(),destination.shape(),source.rank(),source.shape(),source.stride());
+
+
+
+
+        //prepare the arrays for raw iteration
+        RawArrayIterationInformation2 rawIter = RawArrayIterationInformation2.builder()
+                .nDim(destination.rank()).shape(destination.shape()).a(destination.data())
+                .aStrides(destination.stride()).b(source.data()).bStrides(newStrides)
+                .aOffset(destination.offset()).bOffset(source.offset()).build().computeOut();
+        int[] offsets = new int[2];
+        int[] coords = new int[2];
+        Shape.raw2dLoop(0
+                ,rawIter.getNDim(),
+                coords
+                ,rawIter.getShape()
+                ,offsets[0]
+                ,rawIter.getAStrides()
+                ,offsets[1]
+                ,rawIter.getBStrides(),rawIter,new CopyLoopFunction());
     }
 
 
@@ -631,7 +666,7 @@ public class Shape {
      * @param strides the strides to broadcast
      * @return the new strides
      */
-    public static int[] broadcastStrides( int nDim ,int[] shape,int numStrideDimensions,int[] strideShape,int[] strides) {
+    public static int[] broadcastStrides(int nDim ,int[] shape,int numStrideDimensions,int[] strideShape,int[] strides) {
         int iDimStart = nDim - numStrideDimensions;
         if(iDimStart < 0)
             throw new IllegalStateException("Can't broadcast to fewer dimensions");
@@ -642,7 +677,7 @@ public class Shape {
             //if it doesn't have dimension one, it must match
             if(currShape == 1)
                 newStrides[iDim] = 0;
-            else if(currShape != shape[iDim]) {
+            else if(currShape != shape[iDim] && !Shape.isVector(strideShape) && !Shape.isVector(shape)) {
                 throw new IllegalStateException("Current shape and shape i must match");
             }
             else
@@ -664,62 +699,10 @@ public class Shape {
      * @param dst the first array
      * @param src the second array
      */
-    public static  Pair<INDArray,INDArray> prepareTwoRawArrayIter(INDArray dst,INDArray src) {
-        StridePermutation[] perms = Shape.createSortedStrides(dst.stride());
-        int[] outShape = new int[dst.rank()];
-        int[] outStridesA = new int[dst.rank()];
-        int[] outStridesB = new int[src.rank()];
-        int dstOffset = dst.offset();
-        int sourceOffset = src.offset();
-
-        for(int i = 0; i < dst.rank(); i++) {
-            int iPerm = perms[dst.rank() - i - 1].getPermutation();
-            outShape[i] = dst.size(iPerm);
-            outStridesA[i] = dst.stride(iPerm);
-            outStridesB[i] = src.stride(iPerm);
-        }
-
-        for(int i = 0; i < dst.rank(); i++) {
-            int outStrideA = outStridesA[i];
-            int outStrideB = outStridesB[i];
-            int shapeI = outShape[i];
-
-            if(outStrideA < 0) {
-                dstOffset += outStrideA * shapeI - 1;
-                sourceOffset += outStrideB * shapeI - 1;
-                outStridesA[i] -= outStrideA;
-                outStridesB[i] -= outStrideB;
-            }
-        }
-
-        for(int i = 0,j = 1; j < dst.rank(); j++) {
-            if(outShape[i] == 1) {
-                outShape[i] = outShape[j];
-                outStridesA[i] =  outStridesA[j];
-                outStridesB[i] = outStridesB[j];
-            }
-            else if(outShape[j] == 1) {
-                //drops axis j
-            }
-            else if(outStridesA[i] * outShape[i] == outStridesA[j] && outStridesB[i] * outShape[i] == outStridesB[j]) {
-                outShape[i] *= outShape[j];
-            }
-
-            else {
-                i++;
-                outShape[i] = outShape[j];
-                outStridesA[i] = outStridesA[j];
-                outStridesB[i] = outStridesB[j];
-            }
-
-
-        }
-
-
-        INDArray retDst = Nd4j.create(dst.data(),outShape,outStridesA,dstOffset,dst.ordering());
-        INDArray sourceDst = Nd4j.create(src.data(),outShape,outStridesB,sourceOffset,src.ordering());
-        return new Pair<>(retDst,sourceDst);
-
+    public static RawArrayIterationInformation2 prepareTwoRawArrayIter(INDArray dst,INDArray src) {
+        return RawArrayIterationInformation2.builder().aOffset(dst.offset()).a(dst.data()).b(src.data())
+                .bOffset(src.offset()).aStrides(dst.stride()).bStrides(src.stride())
+                .nDim(dst.rank()).shape(dst.shape()).build().computeOut();
     }
 
 

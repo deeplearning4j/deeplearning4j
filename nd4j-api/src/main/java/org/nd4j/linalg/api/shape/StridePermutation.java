@@ -21,7 +21,31 @@ class StridePermutation implements Comparable<StridePermutation> {
 
     @Override
     public int compareTo(StridePermutation o) {
-        return Ints.compare(stride,o.stride);
+        int astride = this.stride,
+                bstride = o.getStride();
+
+    /* Sort the absolute value of the strides */
+        if (astride < 0) {
+            astride = -astride;
+        }
+        if (bstride < 0) {
+            bstride = -bstride;
+        }
+
+        if (astride == bstride) {
+        /*
+         * Make the qsort stable by next comparing the perm order.
+         * (Note that two perm entries will never be equal)
+         */
+            int aperm = permutation,
+                    bperm = o.getPermutation();
+            return (aperm < bperm) ? -1 : 1;
+        }
+        if (astride > bstride) {
+            return -1;
+        }
+
+        return 1;
     }
 
     /**
