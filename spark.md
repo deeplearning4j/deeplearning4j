@@ -4,7 +4,7 @@ layout: default
 
 # Deeplearning4j on Spark
 
-Given that deep learning is computationally intensive, if you are working with large datasets, you should think about how to train deep neural networks in parallel. 
+Given that deep learning is computationally intensive, if you're working with large datasets, you should think about how to train deep neural networks in parallel. 
 
 With Spark standalone, Deeplearning4j can run multi-threaded on your local machine; i.e. you don't need a cluster or the cloud. If you don't have Spark, please see our [Spark installation page](../sparkinstall.html).
 
@@ -45,3 +45,7 @@ They can be run on your local machine by setting `master` to `local[YourNumberOf
     bin/run-example ml.JavaIrisClassification
 
 You can read more about Spark standalone, which is just Spark without a cluster, [here](http://spark.apache.org/docs/latest/spark-standalone.html). Ultimately, training neural networks with Deeplearning4j is just another Spark job. 
+
+## Just Give Me the Code
+
+Here's an iPython Notebook for Iris classification using [Deeplearning4j and Spark](https://github.com/deeplearning4j/dl4j-spark-ml-examples/blob/master/notebooks/dl4j-iris.ipynb). 
