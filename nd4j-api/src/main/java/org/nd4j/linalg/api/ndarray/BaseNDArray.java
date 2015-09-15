@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
 import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -1008,17 +1009,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return this
      */
     @Override
-    public INDArray assign(INDArray arr) {
+    public INDArray assign(final INDArray arr) {
         if (!arr.isVector() && !isVector())
             LinAlgExceptions.assertSameShape(this, arr);
         else if (isVector() && arr.isVector() && length() != arr.length())
             throw new IllegalArgumentException("Illegal assignment, must be of same length");
-        NdIndexIterator iter = new NdIndexIterator(shape());
-        while(iter.hasNext()) {
-            int[] next = iter.next();
-            putScalar(next,arr.getDouble(next));
-        }
-
+       Shape.iterate(this, arr, new CoordinateFunction() {
+           @Override
+           public void process(int[]... coord) {
+               putScalar(coord[0],arr.getDouble(coord[1]))
+           }
+       });
+     
         return this;
     }
 

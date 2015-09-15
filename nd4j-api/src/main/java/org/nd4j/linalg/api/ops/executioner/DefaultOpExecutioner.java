@@ -104,7 +104,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         apply(t,coord[0],coord[1]);
                     }
                 });
-               
+
             }
 
             else {
