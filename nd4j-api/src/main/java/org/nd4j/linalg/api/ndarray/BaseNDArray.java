@@ -1017,10 +1017,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
        Shape.iterate(this, arr, new CoordinateFunction() {
            @Override
            public void process(int[]... coord) {
-               putScalar(coord[0],arr.getDouble(coord[1]))
+               putScalar(coord[0],arr.getDouble(coord[1]));
            }
        });
-     
+
         return this;
     }
 
