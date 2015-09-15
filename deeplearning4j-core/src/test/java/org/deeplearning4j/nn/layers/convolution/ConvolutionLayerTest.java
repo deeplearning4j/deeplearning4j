@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -353,7 +354,7 @@ public class ConvolutionLayerTest {
         int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        MultiLayerConfiguration.Builder conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -362,7 +363,7 @@ public class ConvolutionLayerTest {
                         .nIn(nChannels)
                         .nOut(6)
                         .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu")
                         .build())
@@ -372,11 +373,11 @@ public class ConvolutionLayerTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
-                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
-                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor())
-                .backprop(backprop).pretrain(pretrain)
-                .build();
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+                .backprop(backprop).pretrain(pretrain);
+
+        new ConvolutionLayerSetup(conf,numRows,numColumns,1);
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf.build());
         model.init();
 
         return model;
