@@ -6,8 +6,8 @@ layout: default
 
 Content
 
-* [Build](#build)
-* [Run](#run)
+* [Build with the CLI](#build)
+* [Run with the CLI](#run)
 * [Notebook](#notebook)
 
 Deep learning is computationally intensive, so on very large datasets, speed matters. You can tackle the problem with faster hardware (usually GPUs), optimized code and some form of parallelism. 
