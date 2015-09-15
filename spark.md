@@ -10,7 +10,9 @@ Content
 * [Run](#run)
 * [Notebook](#notebook)
 
-Given that deep learning is computationally intensive, if you're working with large datasets, you should think about how to train deep neural networks in parallel. 
+Deep learning is computationally intensive, so on very large datasets, speed matters. You can tackle the problem with faster hardware (usually GPUs), optimized code and some form of parallelism. 
+
+Data parallelism shards large datasets and hands those pieces to separate neural networks, say, each on its own core. Deeplearning4j relies on Spark and Hadoop for MapReduce, trains models in parallel and iteratively averages the parameters they produce in a central model. (Model parallelism, [discussed here by Jeff Dean et al](https://static.googleusercontent.com/media/research.google.com/en//archive/large_deep_networks_nips2012.pdf), allows models to specialize on separate patches of a large dataset without averaging.)
 
 With Spark standalone, Deeplearning4j can run multi-threaded on your local machine; i.e. you don't need a cluster or the cloud. If you don't have Spark, please see our [Spark installation page](../sparkinstall.html).
 
