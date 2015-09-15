@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -55,7 +56,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
         if (op instanceof TransformOp) {
-            TransformOp t = (TransformOp) op;
+            final TransformOp t = (TransformOp) op;
             //make assumption x and z are same type
             if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
@@ -97,9 +98,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
             else if(op.y() != null) {
                 NdIndexIterator iter = new NdIndexIterator(op.x().shape());
                 NdIndexIterator yIter = new NdIndexIterator(op.y().shape());
-                for (int c = 0; c < op.n(); c++) {
-                    apply(t, iter.next(),yIter.next());
-                }
+                Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
+                    @Override
+                    public void process(int[]... coord) {
+                        apply(t,coord[0],coord[1]);
+                    }
+                });
+               
             }
 
             else {
