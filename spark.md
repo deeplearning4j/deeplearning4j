@@ -8,7 +8,7 @@ Content
 
 * [Build with the CLI](#build)
 * [Run with the CLI](#run)
-* [Notebook](#notebook)
+* [Spark Notebook](#notebook)
 
 Deep learning is computationally intensive, so on very large datasets, speed matters. You can tackle the problem with faster hardware (usually GPUs), optimized code and some form of parallelism. 
 
@@ -56,7 +56,7 @@ You can read more about Spark standalone, which is just Spark without a cluster,
 
 ## <a name="notebook">DL4J Notebook for Iris</a>
 
-Here's an iPython Notebook for Iris classification using [Deeplearning4j and Spark](https://github.com/deeplearning4j/dl4j-spark-ml-examples/blob/master/notebooks/dl4j-iris.ipynb). 
+Here's a Spark Notebook for Iris classification using [Deeplearning4j and Spark](https://github.com/deeplearning4j/dl4j-spark-ml-examples/blob/master/notebooks/dl4j-iris.ipynb). 
 
 ## Scala Resources
 
