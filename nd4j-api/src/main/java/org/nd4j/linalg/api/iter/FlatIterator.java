@@ -22,6 +22,11 @@ public class FlatIterator implements Iterator<int[]> {
     }
 
     @Override
+    public void remove() {
+        
+    }
+
+    @Override
     public boolean hasNext() {
         return current < length;
     }
