@@ -54,7 +54,7 @@ They can be run on your local machine by setting `master` to `local[YourNumberOf
 
 You can read more about Spark standalone, which is just Spark without a cluster, [here](http://spark.apache.org/docs/latest/spark-standalone.html). Ultimately, training neural networks with Deeplearning4j is just another Spark job. 
 
-## <a name="notebook">DL4J Notebook for Iris</a>
+## <a name="notebook">Spark Notebook for Iris Dataset</a>
 
 Here's a Spark Notebook for Iris classification using [Deeplearning4j and Spark](https://github.com/deeplearning4j/dl4j-spark-ml-examples/blob/master/notebooks/dl4j-iris.ipynb). 
 
