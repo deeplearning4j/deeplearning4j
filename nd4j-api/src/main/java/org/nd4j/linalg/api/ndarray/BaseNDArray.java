@@ -3217,8 +3217,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-
-        INDArray ret = create(dup().data(),shape, Nd4j.getStrides(shape,order),0,order);
+        int[] newStrides = Nd4j.getStrides(shape, order);
+        INDArray ret = Shape.copyArrayWithWholeBuffer(this);
+        ret.setShape(shape);
+        ret.setStride(newStrides);
         //Shape.assignArray(ret,this);
         return ret;
     }

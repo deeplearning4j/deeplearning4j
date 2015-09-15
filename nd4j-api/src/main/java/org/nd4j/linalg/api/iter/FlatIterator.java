@@ -23,7 +23,7 @@ public class FlatIterator implements Iterator<int[]> {
 
     @Override
     public void remove() {
-        
+
     }
 
     @Override

@@ -112,6 +112,15 @@ public class Shape {
 
 
     /**
+     * Copy the whole buffer whole sale
+     * @param arr
+     * @return
+     */
+    public static INDArray copyArrayWithWholeBuffer(INDArray arr) {
+        return Nd4j.create(arr.data().dup(),arr.shape(),arr.stride(),arr.offset(),arr.ordering());
+    }
+
+    /**
      * Create a copy of the matrix
      * where the new offset is zero
      *
