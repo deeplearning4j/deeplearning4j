@@ -23,12 +23,12 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.*;
+import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
-import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
 import org.deeplearning4j.nn.layers.recurrent.BaseRecurrentLayer;
@@ -1028,15 +1028,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
-                setInput(next.getFeatureMatrix());
-                setLabels(next.getLabels());
-                if( solver == null ){
-                    solver = new Solver.Builder()
-                            .configure(conf())
-                            .listeners(getListeners())
-                            .model(this).build();
+                if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT ){
+                	doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
+                } else {
+	                setInput(next.getFeatureMatrix());
+	                setLabels(next.getLabels());
+	                if( solver == null ){
+	                    solver = new Solver.Builder()
+	                            .configure(conf())
+	                            .listeners(getListeners())
+	                            .model(this).build();
+	                }
+	                solver.optimize();
                 }
-                solver.optimize();
             }
         }
     }
@@ -1051,7 +1055,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
         }
 
-        BaseOutputLayer outputLayer = (BaseOutputLayer) getOutputLayer();
+        BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
         if(outputLayer.conf().getLayer().getWeightInit() == WeightInit.ZERO){
@@ -1087,6 +1091,122 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for(int j = numLayers - 2; j >= 0; j--) {
             currLayer = getLayer(j);
             currPair = currLayer.backpropGradient(currPair.getSecond());
+
+            LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
+            for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
+                multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
+                tempList.addFirst(new Pair<>(multiGradientKey,entry.getValue()));
+            }
+            for(Pair<String,INDArray> pair : tempList) gradientList.addFirst(pair);
+
+            //Pass epsilon through input processor before passing to next layer (if applicable)
+            if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
+                currPair = new Pair<> (currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j).backprop(currPair.getSecond(),layers[j]));
+        }
+
+        //Add gradients to Gradients, in correct order
+        for( Pair<String,INDArray> pair : gradientList ) gradient.setGradientFor(pair.getFirst(), pair.getSecond());
+    }
+
+    protected void doTruncatedBPTT(INDArray input, INDArray labels){
+    	if( input.rank() != 3 || labels.rank() != 3 ){
+    		log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength]");
+    		return;
+    	}
+    	if( input.size(2) != labels.size(2) ){
+    		log.warn("Input and label time series have different lengths: {} input length, {} label length",input.size(2),labels.size(2));
+    		return;
+    	}
+
+    	int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
+    	int timeSeriesLength = input.size(2);
+    	int nSubsets = timeSeriesLength / fwdLen;
+    	if( fwdLen > timeSeriesLength ){
+    		log.warn("Cannot do TBPTT: Truncated BPTT forward length > input time series length.");
+    		return;
+    	}
+
+    	rnnClearPreviousState();
+
+    	for( int i=0; i<nSubsets; i++ ){
+    		int startTimeIdx = i*fwdLen;
+    		int endTimeIdx = startTimeIdx + fwdLen;
+
+    		INDArray inputSubset = input.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+    		INDArray labelSubset = labels.get(NDArrayIndex.all(),NDArrayIndex.all(),NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+
+    		setInput(inputSubset);
+    		setLabels(labelSubset);
+
+    		if( solver == null ){
+                solver = new Solver.Builder()
+                        .configure(conf())
+                        .listeners(getListeners())
+                        .model(this).build();
+            }
+            solver.optimize();
+
+            //Finally, update the state of the RNN layers:
+            updateRnnStateWithTBPTTState();
+    	}
+
+    	rnnClearPreviousState();
+    }
+
+    protected void updateRnnStateWithTBPTTState(){
+    	for(int i=0; i<layers.length; i++){
+    		if(layers[i] instanceof BaseRecurrentLayer){
+    			BaseRecurrentLayer<?> l = ((BaseRecurrentLayer<?>)layers[i]);
+    			l.rnnSetPreviousState(l.rnnGetTBPTTState());
+    		} else if(layers[i] instanceof MultiLayerNetwork){
+    			((MultiLayerNetwork)layers[i]).updateRnnStateWithTBPTTState();
+    		}
+    	}
+    }
+
+    /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
+    protected void truncatedBPTTGradient(){
+    	String multiGradientKey;
+        gradient = new DefaultGradient();
+        Layer currLayer;
+
+        if(!(getOutputLayer() instanceof BaseOutputLayer)) {
+            log.warn("Warning: final layer isn't output layer. You cannot use backprop (truncated BPTT) without an output layer.");
+            return;
+        }
+
+        BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>) getOutputLayer();
+        if(labels == null)
+            throw new IllegalStateException("No labels found");
+        if(outputLayer.conf().getLayer().getWeightInit() == WeightInit.ZERO){
+            throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
+        }
+
+        outputLayer.setLabels(labels);
+
+        //calculate and apply the backward gradient for every layer
+        int numLayers = getnLayers();
+        //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
+        LinkedList<Pair<String,INDArray>> gradientList = new LinkedList<>();
+
+        Pair<Gradient,INDArray> currPair = outputLayer.backpropGradient(null);
+
+        for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
+            multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
+            gradientList.addLast(new Pair<>(multiGradientKey,entry.getValue()));
+        }
+
+        if(getLayerWiseConfigurations().getInputPreProcess(numLayers-1) != null)
+            currPair = new Pair<> (currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1).backprop(currPair.getSecond(),layers[numLayers-1]));
+
+        // Calculate gradients for previous layers & drops output layer in count
+        for(int j = numLayers - 2; j >= 0; j--) {
+            currLayer = getLayer(j);
+            if(currLayer instanceof BaseRecurrentLayer){
+            	currPair = ((BaseRecurrentLayer<?>)currLayer).tbpttBackpropGradient(currPair.getSecond(),layerWiseConfigurations.getTbpttBackLength());
+            } else {
+            	currPair = currLayer.backpropGradient(currPair.getSecond());
+            }
 
             LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
             for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
@@ -1207,14 +1327,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if(layerWiseConfigurations.isBackprop()) {
-            if( solver == null ){
-                solver = new Solver.Builder()
-                        .configure(conf())
-                        .listeners(getListeners())
-                        .model(this).build();
-            }
+        	if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT ){
+            	doTruncatedBPTT(data,labels);
+        	} else {
+	            if( solver == null ){
+	                solver = new Solver.Builder()
+	                        .configure(conf())
+	                        .listeners(getListeners())
+	                        .model(this).build();
+	            }
 
-            solver.optimize();
+	            solver.optimize();
+        	}
         }
     }
 
@@ -1383,7 +1507,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         feedForward(data.getFeatureMatrix());
         setLabels(data.getLabels());
         if( getOutputLayer() instanceof BaseOutputLayer ){
-            BaseOutputLayer ol = (BaseOutputLayer)getOutputLayer();
+            BaseOutputLayer<?> ol = (BaseOutputLayer<?>)getOutputLayer();
             ol.setLabels(data.getLabels());
             ol.computeScore(calcL1(),calcL2());
             this.score = ol.score();
@@ -1418,11 +1542,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Override
     public void computeGradientAndScore() {
         //Calculate activations (which are stored in each layer, and used in backprop)
-        feedForward();
-        backprop();
-        score = ((BaseOutputLayer)getOutputLayer()).computeScore(calcL1(),calcL2());
-        // Updating activations based on new gradients
-
+        if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT ){
+        	rnnActivateUsingStoredState(getInput(), true, true);
+        	truncatedBPTTGradient();
+        }else{
+        	feedForward();
+        	backprop();
+        }
+        score = ((BaseOutputLayer<?>)getOutputLayer()).computeScore(calcL1(),calcL2());
     }
 
     @Override
@@ -1805,19 +1932,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         for( int i = 0; i < layers.length; i++) {
             if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input,layers[i]);
-            if(layers[i] instanceof BaseRecurrentLayer){
-                input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
-            } else {
-                input = layers[i].activate(input, false);
-            }
-        }
-
-        if(inputIs2d && input.rank() == 3 && layers[layers.length-1].type() == Type.RECURRENT){
-            //Return 2d output with shape [miniBatchSize,nOut]
-            // instead of 3d output with shape [miniBatchSize,nOut,1]
-            return input.tensorAlongDimension(0,1,0);
-        }
-        return input;
+    		if(layers[i] instanceof BaseRecurrentLayer){
+    			input = ((BaseRecurrentLayer<?>)layers[i]).rnnTimeStep(input);
+    		} else if(layers[i] instanceof MultiLayerNetwork){
+    			input = ((MultiLayerNetwork)layers[i]).rnnTimeStep(input);
+    		} else {
+    			input = layers[i].activate(input, false);
+    		}
+    	}
+    	if(inputIs2d && input.rank()==3 && layers[layers.length-1].type() == Type.RECURRENT){
+    		//Return 2d output with shape [miniBatchSize,nOut]
+    		// instead of 3d output with shape [miniBatchSize,nOut,1]
+    		return input.tensorAlongDimension(0,1,0);
+    	}
+    	return input;
     }
 
     /**Get the state of the RNN layer, as used in rnnTimeStep().
@@ -1845,9 +1973,45 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     /** Clear the previous state of the RNN layers (if any).
      */
     public void rnnClearPreviousState(){
-        if( layers == null ) return;
+    	if( layers == null ) return;
+    	for( int i=0; i<layers.length; i++ ){
+    		if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer<?>)layers[i]).rnnClearPreviousState();
+    		else if( layers[i] instanceof MultiLayerNetwork ){
+    			((MultiLayerNetwork)layers[i]).rnnClearPreviousState();
+    		}
+    	}
+    }
+    
+    /** Similar to rnnTimeStep and feedForward() methods. Difference here is that this method:<br>
+     * (a) like rnnTimeStep does forward pass using stored state for RNN layers, and<br>
+     * (b) unlike rnnTimeStep does not modify the RNN layer state<br>
+     * Therefore multiple calls to this method with the same input should have the same output.<br>
+     * Typically used during training only. Use rnnTimeStep for prediction/forward pass at test time.
+     * @param input Input to network
+     * @param training Whether training or not
+     * @param storeLastForTBPTT set to true if used as part of truncated BPTT training
+     * @return Activations for each layer (including input, as per feedforward() etc)
+     * @see rnnTimeStep
+     */
+    public List<INDArray> rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT ){
+    	this.setInputMiniBatchSize(input.size(0));	//Necessary for preprocessors/reshaping
+    	INDArray currInput = input;
+        List<INDArray> activations = new ArrayList<>();
+        activations.add(currInput);
+
         for( int i=0; i<layers.length; i++ ){
-            if( layers[i] instanceof BaseRecurrentLayer ) ((BaseRecurrentLayer<?>)layers[i]).rnnClearPreviousState();
-        }
+        	if(getLayerWiseConfigurations().getInputPreProcess(i) != null)
+                currInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(currInput,layers[i]);
+    		if(layers[i] instanceof BaseRecurrentLayer){
+    			currInput = ((BaseRecurrentLayer<?>)layers[i]).rnnActivateUsingStoredState(currInput,training,storeLastForTBPTT);
+    		} else if(layers[i] instanceof MultiLayerNetwork){
+    			List<INDArray> temp = ((MultiLayerNetwork)layers[i]).rnnActivateUsingStoredState(currInput, training, storeLastForTBPTT);
+    			currInput = temp.get(temp.size()-1);
+    		} else {
+    			currInput = layers[i].activate(currInput, training);
+    		}
+    		activations.add(currInput);
+    	}
+        return activations;
     }
 }
