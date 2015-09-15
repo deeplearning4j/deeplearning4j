@@ -55,3 +55,10 @@ You can read more about Spark standalone, which is just Spark without a cluster,
 ## <a name="notebook">DL4J Notebook for Iris</a>
 
 Here's an iPython Notebook for Iris classification using [Deeplearning4j and Spark](https://github.com/deeplearning4j/dl4j-spark-ml-examples/blob/master/notebooks/dl4j-iris.ipynb). 
+
+## Scala Resources
+
+* [Deeplearning4j-Spark-ML Repo](https://github.com/deeplearning4j/dl4j-spark-ml)
+* ND4S: [N-Dimensional Arrays for Scala](https://github.com/deeplearning4j/nd4s)
+* [ND4J/ND4S Benchmarks](http://nd4j.org/benchmarking)
+* [ND4J, Scala & Scientific Computing](http://nd4j.org/scala.html)
