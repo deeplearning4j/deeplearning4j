@@ -115,6 +115,13 @@ public interface INDArray extends Serializable  {
     int majorStride();
 
     /**
+     * Get the inner most stride
+     * wrt the ordering of the array
+     * @return
+     */
+    int innerMostStride();
+
+    /**
      * Returns a linear view reference of shape
      * 1,length(ndarray)
      *

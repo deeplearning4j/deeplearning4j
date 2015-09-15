@@ -538,34 +538,34 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
         INDArray testRow = n.getRow(0);
         assertEquals(newRow.length(), testRow.length());
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, testRow.shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{1,2}, testRow.shape()));
 
 
         INDArray nLast = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
         INDArray row = nLast.getRow(1);
-        INDArray row1 = Nd4j.create(new double[]{2, 4}, new int[]{2});
+        INDArray row1 = Nd4j.create(new double[]{2, 4}, new int[]{1,2});
         assertEquals(row, row1);
 
 
         INDArray arr = Nd4j.create(new int[]{3, 2});
-        INDArray evenRow = Nd4j.create(new double[]{1, 2}, new int[]{2});
+        INDArray evenRow = Nd4j.create(new double[]{1, 2}, new int[]{1,2});
         arr.putRow(0, evenRow);
         INDArray firstRow = arr.getRow(0);
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, firstRow.shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{1,2}, firstRow.shape()));
         INDArray testRowEven = arr.getRow(0);
         assertEquals(evenRow, testRowEven);
 
 
-        INDArray row12 = Nd4j.create(new double[]{5, 6}, new int[]{2});
+        INDArray row12 = Nd4j.create(new double[]{5, 6}, new int[]{1,2});
         arr.putRow(1, row12);
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{1,2}, arr.getRow(0).shape()));
         INDArray testRow1 = arr.getRow(1);
         assertEquals(row12, testRow1);
 
 
         INDArray multiSliceTest = Nd4j.create(Nd4j.linspace(1, 16, 16).data(), new int[]{4, 2, 2});
-        INDArray test = Nd4j.create(new double[]{2, 10}, new int[]{2});
-        INDArray test2 = Nd4j.create(new double[]{6, 14}, new int[]{2});
+        INDArray test = Nd4j.create(new double[]{2, 10}, new int[]{1,2});
+        INDArray test2 = Nd4j.create(new double[]{6, 14}, new int[]{1,2});
 
         INDArray multiSliceRow1 = multiSliceTest.slice(1).getRow(0);
         INDArray multiSliceRow2 = multiSliceTest.slice(1).getRow(1);

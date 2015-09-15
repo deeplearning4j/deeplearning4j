@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -55,7 +56,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
         if (op instanceof TransformOp) {
-            TransformOp t = (TransformOp) op;
+            final TransformOp t = (TransformOp) op;
             //make assumption x and z are same type
             if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
@@ -93,6 +94,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride)));
             }
 */
+
+            else if(op.y() != null) {
+                NdIndexIterator iter = new NdIndexIterator(op.x().shape());
+                NdIndexIterator yIter = new NdIndexIterator(op.y().shape());
+                Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
+                    @Override
+                    public void process(int[]... coord) {
+                        apply(t,coord[0],coord[1]);
+                    }
+                });
+
+            }
+
             else {
                 NdIndexIterator iter = new NdIndexIterator(op.x().shape());
                 for (int c = 0; c < op.n(); c++) {
@@ -494,6 +508,55 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public void setExecutionMode(ExecutionMode executionMode) {
         this.executionMode = executionMode;
     }
+    //apply a pairwise op to x and store the result
+    private void apply(TransformOp op, int[] c,int[] c2) {
+        if(op.isPassThrough())
+            return;
+        if (op.y() != null) {
+            //x is complex, y could be complex or real
+            if (op.x() instanceof IComplexNDArray) {
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
+                IComplexNDArray complexZ = (IComplexNDArray) op.z();
+
+                IComplexNumber curr = complexX.getComplex(c);
+                if (op.y() instanceof IComplexNDArray) {
+                    IComplexNDArray complexY = (IComplexNDArray) op.y();
+                    complexZ.putScalar(c, op.op(curr, complexY.getComplex(c)));
+                } else
+                    complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
+            }
+            //x is real
+            else {
+                INDArray zLinear = op.z();
+                INDArray xLinear = op.x();
+                INDArray yLinear = op.y();
+                zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c2)));
+
+            }
+
+        }
+
+        else {
+
+            //x is complex, y could be complex or real
+            if (op.x() instanceof IComplexNDArray) {
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
+                IComplexNDArray complexZ = (IComplexNDArray) op.z();
+
+                if (op.y() instanceof IComplexNDArray)
+                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
+
+                else
+                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
+            }
+            //x is real
+            else
+                op.z().putScalar(c, op.op(op.x().getDouble(c)));
+        }
+
+    }
+
+
 
 
     //apply a pairwise op to x and store the result
