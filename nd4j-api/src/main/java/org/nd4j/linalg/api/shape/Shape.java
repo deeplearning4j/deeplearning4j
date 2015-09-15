@@ -29,6 +29,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer.AllocationMode;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CopyCoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.four.LoopFunction4;
 import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
 import org.nd4j.linalg.api.shape.loop.three.LoopFunction3;
@@ -173,10 +175,7 @@ public class Shape {
             }
 
             INDArray ret = Nd4j.create(arr.shape());
-            for (int i = 0; i < arr.vectorsAlongDimension(0); i++) {
-                ret.vectorAlongDimension(i, 0).assign(arr.vectorAlongDimension(i, 0));
-            }
-
+            Shape.iterate(arr,ret,new CopyCoordinateFunction(arr,ret));
 
             return ret;
         }
@@ -195,28 +194,88 @@ public class Shape {
     }
 
 
+    /**
+     * Iterate over 2
+     * coordinate spaces given 2 arrays
+     * @param arr the first array
+     * @param arr2 the second array
+     * @param coordinateFunction the coordinate function to use
+     *
+     */
+    public static void iterate(INDArray arr,INDArray arr2,CoordinateFunction coordinateFunction) {
+        Shape.iterate(0
+                ,arr.rank()
+                ,arr.shape()
+                ,new int[arr.rank()]
+                ,0
+                ,arr2.rank()
+                ,arr2.shape()
+                ,new int[arr2.rank()]
+                ,coordinateFunction);
+    }
 
     /**
-     * Raw 2 dimensional loop
-     * over a data buffer given some strides.
-     * Credit to:
-     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
-     * @param idim the current dimension
-     * @param ndim the number of dimensions
-     * @param coord the current coordinate
-     * @param shape  the oerall shape of the array
-     * @param dataA the offset for data a
-     * @param stridesA the strides for a
-     * @param dataB the offset for data b
-     * @param stridesB the strides for b
+     * Iterate over a pair of coordinates
+     * @param dimension
+     * @param n
+     * @param size
+     * @param res
+     * @param dimension2
+     * @param n2
+     * @param size2
+     * @param res2
+     * @param func
      */
+    public static void iterate(int dimension,int n,int[] size, int[] res,int dimension2,int n2,int[] size2, int[] res2,CoordinateFunction func) {
+        if (dimension >= n || dimension2 >= n2) { //stop clause
+            func.process(res,res2);
+            return;
+        }
+        for (int i = 0,j = 0; i < size[dimension] || j < size2[dimension2]; i++,j++) {
+            res[dimension] = i;
+            res2[dimension2] = j;
+            iterate(dimension + 1, n, size, res,dimension2 + 1,n2,size2,res2,func);
+        }
+    }
+    /**
+     * Iterate over a pair of coordinates
+     * @param dimension
+     * @param n
+     * @param size
+     */
+    public static void iterate(int dimension,int n,int[] size, int[] res,CoordinateFunction func) {
+        if (dimension >= n) { //stop clause
+            func.process(res);
+            return;
+        }
+        for (int i = 0,j = 0; i < size[dimension]; i++,j++) {
+            res[dimension] = i;
+            iterate(dimension + 1, n, size, res,func);
+        }
+    }
+
+
+        /**
+         * Raw 2 dimensional loop
+         * over a data buffer given some strides.
+         * Credit to:
+         * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
+         * @param idim the current dimension
+         * @param ndim the number of dimensions
+         * @param coord the current coordinate
+         * @param shape  the oerall shape of the array
+         * @param dataA the offset for data a
+         * @param stridesA the strides for a
+         * @param dataB the offset for data b
+         * @param stridesB the strides for b
+         */
     public static int[] raw2dLoop(int idim, int  ndim, int[] coord, int[] shape,
                                   int dataA, int[] stridesA, int dataB, int[] stridesB,RawArrayIterationInformation2 info,LoopFunction2 loopFunction2) {
 
         idim = 1;
         do {
             loopFunction2.perform(idim, info, info.getA(), dataA, info.getB(), dataB);
-            for (; idim < ndim; ++idim) {
+            for (; idim < ndim; idim--) {
                 if (++coord[idim] == shape[idim]) {
                     coord[idim] = 0;
                     dataA -= (shape[idim] - 1) * stridesA[idim];
@@ -644,7 +703,7 @@ public class Shape {
                 .aStrides(destination.stride()).b(source.data()).bStrides(newStrides)
                 .aOffset(destination.offset()).bOffset(source.offset()).build().computeOut();
         int[] offsets = new int[2];
-        int[] coords = new int[2];
+        int[] coords = new int[rawIter.getNDim()];
         Shape.raw2dLoop(0
                 ,rawIter.getNDim(),
                 coords
