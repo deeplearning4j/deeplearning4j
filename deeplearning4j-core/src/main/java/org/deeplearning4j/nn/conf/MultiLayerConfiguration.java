@@ -21,16 +21,17 @@
 package org.deeplearning4j.nn.conf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.Key;
 import java.util.*;
 
 /**
@@ -49,6 +50,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected double dampingFactor = 100;
     protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
     protected boolean backprop = false;
+    protected BackpropType backpropType = BackpropType.Standard;
+    protected int tbpttFwdLength = 20;
+    protected int tbpttBackLength = 20;
     //whether to redistribute params or not
     protected boolean redistributeParams = false;
 
@@ -160,7 +164,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected double dampingFactor = 100;
         protected Map<Integer,InputPreProcessor> inputPreProcessors = new HashMap<>();
         protected boolean backprop = false;
+        protected BackpropType backpropType = BackpropType.Standard;
+        protected int tbpttFwdLength = 20;
+        protected int tbpttBackLength = 20;
         protected boolean redistributeParams = false;
+        
         @Deprecated
         protected Map<Integer,ConfOverride> confOverrides = new HashMap<>();
 
@@ -202,6 +210,41 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             this.backprop = backprop;
             return this;
         }
+        
+        /**The type of backprop. Default setting is used for most networks (MLP, CNN etc),
+         * but optionally truncated BPTT can be used for training recurrent neural networks.
+         * If using TruncatedBPTT make sure you set both tBPTTForwardLength() and tBPTTBackwardLength()
+         */
+        public Builder backpropType(BackpropType type){
+        	this.backpropType = type;
+        	return this;
+        }
+        
+        /**When doing truncated BPTT: how many steps of forward pass should we do
+         * before doing (truncated) backprop?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * Typically tBPTTForwardLength parameter is same as the the tBPTTBackwardLength parameter,
+         * but may be larger than it in some circumstances (but never smaller)<br>
+         * Ideally your training data time series length should be divisible by this
+         * This is the k1 parameter on pg23 of
+         * http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         * @param forwardLength Forward length > 0, >= backwardLength
+         */
+        public Builder tBPTTForwardLength(int forwardLength){
+        	this.tbpttFwdLength = forwardLength;
+        	return this;
+        }
+        
+        /**When doing truncated BPTT: how many steps of backward should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * This is the k2 parameter on pg23 of
+         * http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         * @param backwardLength <= forwardLength
+         */
+        public Builder tBPTTBackwardLength(int backwardLength){
+        	this.tbpttBackLength = backwardLength;
+        	return this;
+        }
 
         @Deprecated
         public Builder dampingFactor(double dampingFactor) {
@@ -232,6 +275,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.dampingFactor = dampingFactor;
             conf.backprop = backprop;
             conf.inputPreProcessors = inputPreProcessors;
+            conf.backpropType = backpropType;
+            conf.tbpttFwdLength = tbpttFwdLength;
+            conf.tbpttBackLength = tbpttBackLength;
             conf.redistributeParams = redistributeParams;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
