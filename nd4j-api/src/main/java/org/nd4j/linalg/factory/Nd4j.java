@@ -337,8 +337,11 @@ public class Nd4j {
         Collections.rotate(vectorsAlongDimension, 3);
         Collections.shuffle(vectorsAlongDimension, random);
         for(int i = 0; i < toShuffle.tensorssAlongDimension(dimension); i++) {
+            int currTensorAlongDimension = vectorsAlongDimension.get(i);
+            if(i == currTensorAlongDimension)
+                continue;
             INDArray curr = toShuffle.tensorAlongDimension(i,dimension);
-            INDArray toShuffleTensor = toShuffle.tensorAlongDimension(vectorsAlongDimension.get(i),dimension);
+            INDArray toShuffleTensor = toShuffle.tensorAlongDimension(currTensorAlongDimension,dimension);
             INDArray temp = curr.dup();
             curr.assign(toShuffleTensor);
             toShuffleTensor.assign(temp);

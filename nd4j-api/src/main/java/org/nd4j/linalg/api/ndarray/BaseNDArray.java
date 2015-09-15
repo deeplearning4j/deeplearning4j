@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.ref.WeakReference;
 import java.lang.Iterable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
 
@@ -1010,23 +1011,67 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray assign(final INDArray arr) {
-        if (!arr.isVector() && !isVector())
-            LinAlgExceptions.assertSameShape(this, arr);
-        else if (isVector() && arr.isVector() && length() != arr.length())
+        if (isVector() && arr.isVector() && length() != arr.length())
             throw new IllegalArgumentException("Illegal assignment, must be of same length");
-       Shape.iterate(this, arr, new CoordinateFunction() {
-           @Override
-           public void process(int[]... coord) {
-               putScalar(coord[0],arr.getDouble(coord[1]));
-           }
-       });
+        if(isVector()) {
+            if(isColumnVector() && arr.isRowVector()) {
+                for(int i = 0; i < arr.length(); i++) {
+                    putScalar(new int[]{i,0},arr.getDouble(new int[]{0,i}));
+                }
+            }
+            else if(isRowVector() && arr.isColumnVector()) {
+                for(int i = 0; i < arr.length(); i++) {
+                    putScalar(new int[]{0,i},arr.getDouble(new int[]{i,0}));
+                }
+            }
+            else if(arr.isRowVector() && isRowVector()) {
+                for(int i = 0; i < arr.length(); i++) {
+                    putScalar(new int[]{0,i},arr.getDouble(new int[]{0,i}));
+                }
+            }
+            else if(arr.isColumnVector() && arr.isColumnVector()) {
+                for(int i = 0; i < arr.length(); i++) {
+                    putScalar(new int[]{i,0},arr.getDouble(new int[]{i,0}));
+                }
+            }
+
+            else if(isRowVector()){
+                final AtomicInteger a = new AtomicInteger(0);
+                Shape.iterate(arr, new CoordinateFunction() {
+                    @Override
+                    public void process(int[]... coord) {
+                        putScalar(new int[]{0,a.getAndIncrement()},arr.getDouble(coord[0]));
+                    }
+                });
+            }
+
+            else if(isColumnVector()){
+                final AtomicInteger a = new AtomicInteger(0);
+                Shape.iterate(arr, new CoordinateFunction() {
+                    @Override
+                    public void process(int[]... coord) {
+                        putScalar(new int[]{a.getAndIncrement(),0},arr.getDouble(coord[0]));
+                    }
+                });
+            }
+
+        }
+
+        else {
+            Shape.iterate(this, arr, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    putScalar(coord[0],arr.getDouble(coord[1]));
+                }
+            });
+        }
+
 
         return this;
     }
 
     @Override
     public INDArray putScalar(int i, double value) {
-
         if(isScalar()) {
             data.put(offset + i,value);
             return this;
@@ -1054,13 +1099,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putScalar(int[] indexes, double value) {
-        int offset = 0;
-        for(int j = 0; j < indexes.length; j++) {
-            offset += indexes[j] * stride(j);
-        }
+        int offset = Shape.getOffset(offset(),shape(),stride(),indexes);
         if(offset >= data().length())
             throw new IllegalArgumentException("Illegal index " + Arrays.toString(indexes));
-        data.put(offset + this.offset, value);
+        data.put(offset, value);
         return this;
     }
 
@@ -3132,6 +3174,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 //        if(ordering == 'c' && length() == data().length()) {
 //            return data.getDouble(offset + i);
 //        }
+        if(i == 0)
+            return data().getDouble(offset);
 
         int[] dimensions = ordering == 'c'? Shape.ind2subC(this,i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions,shape());
@@ -3219,10 +3263,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-        int[] newStrides = Nd4j.getStrides(shape, order);
-        INDArray ret = Shape.copyArrayWithWholeBuffer(this);
-        ret.setShape(shape);
-        ret.setStride(newStrides);
+        INDArray ret = Nd4j.create(shape,order);
+        ret.assign(this);
         //Shape.assignArray(ret,this);
         return ret;
     }

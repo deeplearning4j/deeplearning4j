@@ -202,6 +202,20 @@ public class Shape {
         return arr.data().getDouble(offset);
     }
 
+    /**
+     * Iterate over 2
+     * coordinate spaces given 2 arrays
+     * @param arr the first array
+     * @param coordinateFunction the coordinate function to use
+     *
+     */
+    public static void iterate(INDArray arr,CoordinateFunction coordinateFunction) {
+        Shape.iterate(0
+                ,arr.rank()
+                ,arr.shape()
+                ,new int[arr.rank()]
+                ,coordinateFunction);
+    }
 
     /**
      * Iterate over 2
@@ -240,7 +254,7 @@ public class Shape {
             func.process(res,res2);
             return;
         }
-        for (int i = 0,j = 0; i < size[dimension] || j < size2[dimension2]; i++,j++) {
+        for (int i = 0,j = 0; i < size[dimension] && j < size2[dimension2]; i++,j++) {
             res[dimension] = i;
             res2[dimension2] = j;
             iterate(dimension + 1, n, size, res,dimension2 + 1,n2,size2,res2,func);
@@ -403,7 +417,14 @@ public class Shape {
      * @return the double at the specified index
      */
     public static int getOffset(int baseOffset,int[] shape,int[] stride,int...indices) {
-        return mappers[shape.length].getOffset(baseOffset, shape, stride, indices);
+        //int ret =  mappers[shape.length].getOffset(baseOffset, shape, stride, indices);
+        int offset = baseOffset;
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] != 1)
+                offset += indices[i] * stride[i];
+        }
+
+        return offset;
     }
 
 
