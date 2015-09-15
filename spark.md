@@ -62,3 +62,4 @@ Here's an iPython Notebook for Iris classification using [Deeplearning4j and Spa
 * ND4S: [N-Dimensional Arrays for Scala](https://github.com/deeplearning4j/nd4s)
 * [ND4J/ND4S Benchmarks](http://nd4j.org/benchmarking)
 * [ND4J, Scala & Scientific Computing](http://nd4j.org/scala.html)
+* [Intro to Iterative Reduce](../iterativereduce)
