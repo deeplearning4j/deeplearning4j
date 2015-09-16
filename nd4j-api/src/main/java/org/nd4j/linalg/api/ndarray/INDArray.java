@@ -1568,6 +1568,11 @@ public interface INDArray extends Serializable  {
      */
     INDArray dup();
 
+    /**Return a copy of this ndarray, where the returned ndarray has the specified order
+     * @param order Order of the NDArray. 'f' or 'c'
+     * @return copy of ndarray with specified order
+     */
+    INDArray dup(char order);
 
     /**
      * Returns a flattened version (row vector) of this ndarray

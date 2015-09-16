@@ -20,6 +20,7 @@
 package org.nd4j.linalg;
 
 
+import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -97,10 +98,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testShuffle() {
-        INDArray arr = Nd4j.rand(6,6);
+        INDArray arr = Nd4j.rand(6, 6);
         INDArray dup = arr.dup();
         Nd4j.shuffle(arr,0);
-        assertNotEquals(arr,dup);
+        assertNotEquals(arr, dup);
     }
 
 
@@ -116,7 +117,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         n.checkDimensions(n.divi(Nd4j.scalar(1.0d)));
 
         n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
-        assertEquals(getFailureMessage(),27, n.sumNumber().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(), 27, n.sumNumber().doubleValue(), 1e-1);
         INDArray a = n.slice(2);
         assertEquals(getFailureMessage(), true, Arrays.equals(new int[]{3, 3}, a.shape()));
 
@@ -1829,6 +1830,25 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(fc,ff);
         assertEquals(fc,fmixed);
+    }
+
+
+    @Test
+    public void testDupWithOrder(){
+        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4,5,123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dupc = in.dup('c');
+            INDArray dupf = in.dup('f');
+
+            assertEquals(dupc.ordering(),'c');
+            assertEquals(dupf.ordering(),'f');
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+        }
     }
 
 
