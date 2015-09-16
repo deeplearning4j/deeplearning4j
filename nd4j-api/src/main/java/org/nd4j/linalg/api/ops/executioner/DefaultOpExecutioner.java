@@ -445,12 +445,60 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else {
             INDArray ret = Nd4j.create(retShape);
             INDArray linear = ret;
-            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
-                linear.putScalar(i, result);
+            INDArray opArr;
+            INDArray arr = op.x();
+            int axis = dimension[0];
+        /*
+         * We need to permute the array so that axis is placed at the end.
+         * And all other dimensions are shifted left.
+          */
+            if (dimension[0] != arr.rank() - 1) {
+                int[] newaxes = new int[arr.rank()];
+                int j;
+
+                for (j = 0; j < axis; j++) {
+                    newaxes[j] = j;
+                }
+
+                for (j = axis; j < arr.rank() - 1; j++) {
+                    newaxes[j] = j + 1;
+                }
+
+                newaxes[newaxes.length - 1] = axis;
+                opArr = arr.permute(newaxes);
 
             }
+            else {
+                opArr = arr;
+            }
+
+            int m =  opArr.size(-1);
+            int n = arr.length() / m;
+            int[] shape = {1,m};
+            int[] strides =  Nd4j.getStrides(shape,op.x().ordering());
+            //need to retain strides for column vectors
+            if(opArr.isMatrix() && dimension.length == 1 && dimension[0] == 0) {
+                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                    Op op2 = op.opForDimension(i, dimension);
+                    double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
+                    linear.putScalar(i, result);
+
+                }
+
+                return linear;
+            }
+            else {
+                for (int ip = 0, i = 0; i < n; i++, ip +=  m) {
+                    INDArray maxAlong = Nd4j.create(arr.data(),shape,strides,ip);
+                    op.setX(maxAlong);
+                    double result = execAndReturn(op).currentResult().doubleValue();
+                    ret.putScalar(i,result);
+                    op.setCurrentResult(op.zero());
+                }
+
+            }
+
+
             return ret;
         }
 
