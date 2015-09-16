@@ -97,6 +97,13 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
 
     }
 
+    @Override
+    public int iamax(int n, INDArray arr, int stride) {
+        if(arr.data().dataType() == DataBuffer.Type.DOUBLE)
+            return idamax(n,arr,stride);
+        return isamax(n,arr,stride);
+    }
+
     /**
      * finds the element of a
      * vector that has the largest absolute value.
