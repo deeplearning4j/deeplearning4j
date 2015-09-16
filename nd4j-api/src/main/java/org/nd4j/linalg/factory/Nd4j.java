@@ -557,7 +557,44 @@ public class Nd4j {
      * @return
      */
     public static INDArray  argMax(INDArray arr,int...dimension) {
-        return Nd4j.getExecutioner().exec(new IAMax(arr), dimension);
+        INDArray op;
+        int axis = dimension[0];
+        /*
+         * We need to permute the array so that axis is placed at the end.
+         * And all other dimensions are shifted left.
+          */
+        if (dimension[0] != arr.rank() - 1) {
+            int[] newaxes = new int[arr.rank()];
+            int j;
+
+            for (j = 0; j < axis; j++) {
+                newaxes[j] = j;
+            }
+
+            for (j = axis; j < arr.rank() - 1; j++) {
+                newaxes[j] = j + 1;
+            }
+
+            newaxes[newaxes.length - 1] = axis;
+            op = arr.permute(newaxes);
+
+        }
+        else {
+            op = arr;
+        }
+
+        int m =  op.size(-1);
+        int n = arr.length() / m;
+        INDArray ret = Nd4j.create(ArrayUtil.removeIndex(arr.shape(),dimension));
+        int[] shape = {1,m};
+        int[] strides = Nd4j.getStrides(shape);
+        for (int ip = arr.offset(), i = 0; i < n; i++, ip +=  m) {
+            INDArray maxAlong = Nd4j.create(arr.data(),shape,strides,ip);
+            int max = Nd4j.getBlasWrapper().level1().iamax(m,maxAlong,maxAlong.stride(-1));
+            ret.putScalar(i,max);
+        }
+
+        return ret;
     }
 
     /**

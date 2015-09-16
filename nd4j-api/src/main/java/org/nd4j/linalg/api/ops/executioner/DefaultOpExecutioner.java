@@ -96,8 +96,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
 */
 
             else if(op.y() != null) {
-                NdIndexIterator iter = new NdIndexIterator(op.x().shape());
-                NdIndexIterator yIter = new NdIndexIterator(op.y().shape());
                 Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
                     @Override
                     public void process(int[]... coord) {
@@ -453,7 +451,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 linear.putScalar(i, result);
 
             }
-
             return ret;
         }
 

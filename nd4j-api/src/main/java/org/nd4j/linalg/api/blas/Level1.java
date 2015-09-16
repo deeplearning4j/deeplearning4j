@@ -77,6 +77,17 @@ public interface Level1 {
      * @return
      */
     int iamax(INDArray arr);
+
+    /**
+     * finds the element of a
+     * vector that has the largest absolute value.
+     * @param n the length to iterate for
+     * @param arr the array to get the max
+     *            index for
+     * @param stride  the stride for the array
+     * @return
+     */
+     int iamax(int n,INDArray arr,int stride);
     /**
      * finds the element of a vector that has the largest absolute value.
      * @param arr
