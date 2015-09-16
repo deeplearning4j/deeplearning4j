@@ -690,6 +690,31 @@ public class TestOptimizers {
         }
 
         @Override
+        public INDArray preOutput(INDArray x, TrainingMode training) {
+            return null;
+        }
+
+        @Override
+        public INDArray activate(TrainingMode training) {
+            return null;
+        }
+
+        @Override
+        public INDArray activate(INDArray input, TrainingMode training) {
+            return null;
+        }
+
+        @Override
+        public int getIndex() {
+            return 0;
+        }
+
+        @Override
+        public void setInput(INDArray input) {
+
+        }
+
+        @Override
         public void fit() { throw new UnsupportedOperationException(); }
 
         @Override
