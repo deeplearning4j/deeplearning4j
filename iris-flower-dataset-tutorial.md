@@ -82,7 +82,7 @@ To create a neural network, we'll declare the variables and then feed them into 
 
 Here's the configuration in full -- we'll step through it line by line below:
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=64:84"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=67:87"></script>
 
 There's a lot to discuss here. The entire configuration is united in one snippet above, and now we'll go through it one parameter at a time:
 
