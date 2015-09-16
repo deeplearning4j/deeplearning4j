@@ -394,9 +394,6 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
         }
         //reconstructed: propUp ----> hidden propDown to transform
         INDArray propUp = propUp(input,training);
-        if(training) {
-
-        }
         return propUp;
     }
 
