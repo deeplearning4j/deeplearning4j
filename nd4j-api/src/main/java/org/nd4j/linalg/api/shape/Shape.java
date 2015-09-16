@@ -313,14 +313,40 @@ public class Shape {
      * @param func
      */
     public static void iterate(int dimension,int n,int[] size, int[] res,int dimension2,int n2,int[] size2, int[] res2,CoordinateFunction func) {
-        if (dimension >= n || dimension2 >= n2) { //stop clause
+        if (dimension >= n || dimension2 >= n2) {
+            // stop clause
             func.process(res,res2);
             return;
         }
-        for (int i = 0,j = 0; i < size[dimension] && j < size2[dimension2]; i++,j++) {
-            res[dimension] = i;
-            res2[dimension2] = j;
-            iterate(dimension + 1, n, size, res,dimension2 + 1,n2,size2,res2,func);
+
+        if(size2.length != size.length) {
+            if(dimension >= size.length)
+                return;
+            for (int i = 0; i < size[dimension]; i++) {
+                if(dimension2 >= size2.length)
+                    break;
+                for(int j = 0; j < size2[dimension2]; j++) {
+                    res[dimension] = i;
+                    res2[dimension2] = j;
+                    iterate(dimension + 1, n, size, res, dimension2 + 1, n2, size2, res2, func);
+                }
+
+            }
+        }
+        else {
+            if(dimension >= size.length)
+                return;
+
+            for (int i = 0; i < size[dimension]; i++) {
+                for(int j = 0; j < size2[dimension2]; j++) {
+                    if(dimension2 >= size2.length)
+                        break;
+                    res[dimension] = i;
+                    res2[dimension2] = j;
+                    iterate(dimension + 1, n, size, res, dimension2 + 1, n2, size2, res2, func);
+                }
+
+            }
         }
     }
     /**
@@ -334,27 +360,27 @@ public class Shape {
             func.process(res);
             return;
         }
-        for (int i = 0,j = 0; i < size[dimension]; i++,j++) {
+        for (int i = 0; i < size[dimension]; i++) {
             res[dimension] = i;
             iterate(dimension + 1, n, size, res,func);
         }
     }
 
 
-        /**
-         * Raw 2 dimensional loop
-         * over a data buffer given some strides.
-         * Credit to:
-         * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
-         * @param idim the current dimension
-         * @param ndim the number of dimensions
-         * @param coord the current coordinate
-         * @param shape  the oerall shape of the array
-         * @param dataA the offset for data a
-         * @param stridesA the strides for a
-         * @param dataB the offset for data b
-         * @param stridesB the strides for b
-         */
+    /**
+     * Raw 2 dimensional loop
+     * over a data buffer given some strides.
+     * Credit to:
+     * https://github.com/numpy/numpy/blob/master/numpy/core/src/private/lowlevel_strided_loops.h#L548
+     * @param idim the current dimension
+     * @param ndim the number of dimensions
+     * @param coord the current coordinate
+     * @param shape  the oerall shape of the array
+     * @param dataA the offset for data a
+     * @param stridesA the strides for a
+     * @param dataB the offset for data b
+     * @param stridesB the strides for b
+     */
     public static int[] raw2dLoop(int idim, int  ndim, int[] coord, int[] shape,
                                   int dataA, int[] stridesA, int dataB, int[] stridesB,RawArrayIterationInformation2 info,LoopFunction2 loopFunction2) {
 

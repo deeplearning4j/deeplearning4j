@@ -1057,13 +1057,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         }
 
-        else {
+        else if(Arrays.equals(this.shape(),arr.shape())) {
+            Shape.iterate(this, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    putScalar(coord[0],arr.getDouble(coord[0]));
+                }
+            });
+        }
+
+        else if(arr.rank() == rank()) {
             Shape.iterate(this, arr, new CoordinateFunction() {
                 @Override
                 public void process(int[]... coord) {
                     putScalar(coord[0],arr.getDouble(coord[1]));
                 }
             });
+        }
+
+        else {
+            NdIndexIterator iterator = new NdIndexIterator(this.shape());
+            NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
+            for(int i = 0; i < length(); i++) {
+                putScalar(iterator.next(),arr.getDouble(otherIter.next()));
+            }
         }
 
 

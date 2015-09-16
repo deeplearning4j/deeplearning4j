@@ -1542,9 +1542,19 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testTemp(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(new int[]{2, 2, 2});
+        System.out.println("In:\n" + in);
+        INDArray permuted = in.permute(0,2,1);    //Permute, so we get correct order after reshaping
+        INDArray out = permuted.reshape(4, 2);
+        System.out.println("Out:\n" + out);
 
-
-
+        int countZero = 0;
+        for( int i=0; i<8; i++ ) if(out.getDouble(i) == 0.0 ) countZero++;
+        assertEquals(countZero, 0);
+    }
 
 
     @Test
@@ -1591,7 +1601,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray concat = Nd4j.concat(0, A, B);
         assertTrue(Arrays.equals(new int[]{5, 2, 2}, concat.shape()));
 
-        INDArray columnConcat = Nd4j.linspace(1,6,6).reshape(2, 3);
+        INDArray columnConcat = Nd4j.linspace(1,6, 6).reshape(2, 3);
         INDArray concatWith = Nd4j.zeros(2, 3);
         INDArray columnWiseConcat = Nd4j.concat(0, columnConcat, concatWith);
         System.out.println(columnConcat);

@@ -96,12 +96,21 @@ public class DefaultOpExecutioner implements OpExecutioner {
 */
 
             else if(op.y() != null) {
-                Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                        apply(t,coord[0],coord[1]);
-                    }
-                });
+                if(Arrays.equals(op.x().shape(),op.y().shape())) {
+                    Shape.iterate(op.x(), new CoordinateFunction() {
+                        @Override
+                        public void process(int[]... coord) {
+                            apply(t,coord[0],coord[0]);
+                        }
+                    });
+                }
+                else
+                    Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
+                        @Override
+                        public void process(int[]... coord) {
+                            apply(t,coord[0],coord[1]);
+                        }
+                    });
 
             }
 
