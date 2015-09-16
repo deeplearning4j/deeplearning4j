@@ -175,6 +175,20 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
 
+    @Override
+    public INDArray preOutput(INDArray x, TrainingMode training) {
+        return preOutput(x,training == TrainingMode.TRAIN);
+    }
+
+    @Override
+    public INDArray activate(TrainingMode training) {
+        return activate(training == TrainingMode.TRAIN);
+    }
+
+    @Override
+    public INDArray activate(INDArray input, TrainingMode training) {
+        return activate(input,training == TrainingMode.TRAIN);
+    }
 
     /**
      * Objective function:  the specified objective
@@ -300,7 +314,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if(conf.isUseDropConnect() && training) {
-            if (conf.getLayer().getDropOut() > 0) {
+            if (conf.getLayer().getDropOut() > 0 && training) {
                 W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
             }
         }
