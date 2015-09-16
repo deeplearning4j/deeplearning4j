@@ -1400,6 +1400,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret;
     }
 
+    @Override
+    public INDArray dup(char order){
+        return Shape.toOffsetZeroCopy(this,order);
+    }
+
     /**
      * Returns the elements at the the specified indices
      *

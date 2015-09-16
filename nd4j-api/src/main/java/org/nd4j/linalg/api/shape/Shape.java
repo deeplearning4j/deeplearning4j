@@ -121,13 +121,10 @@ public class Shape {
     }
 
     /**
-     * Create a copy of the matrix
-     * where the new offset is zero
+     * Create a copy of the ndarray where the new offset is zero
      *
      * @param arr the array to copy to offset 0
-     * @return the same array if offset is zero
-     * otherwise a copy of the array with
-     * elements set to zero
+     * @return a copy of the array with elements set to zero offset
      */
     public static INDArray toOffsetZeroCopy(INDArray arr) {
         if (arr.isRowVector()) {
@@ -184,6 +181,72 @@ public class Shape {
             }
 
             INDArray ret = Nd4j.create(arr.shape());
+            Shape.iterate(arr,ret,new CopyCoordinateFunction(arr,ret));
+
+            return ret;
+        }
+    }
+
+    /**Create a copy of the ndarray where the new offset is zero, and has specified order
+     * @param arr the array to copy to offset 0
+     * @param order the order of the returned array
+     * @return a copy of the array with elements set to zero offset, and with specified order
+     */
+    public static INDArray toOffsetZeroCopy(INDArray arr, char order ){
+
+        if (arr.isRowVector()) {
+            if (arr instanceof IComplexNDArray) {
+                IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
+                for (int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
+                return ret;
+            } else {
+                INDArray ret = Nd4j.create(arr.shape(),order);
+                for (int i = 0; i < ret.length(); i++)
+                    ret.putScalar(i, arr.getDouble(i));
+                return ret;
+            }
+        }
+
+        if (arr instanceof IComplexNDArray) {
+            IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
+            for (int i = 0; i < ret.slices(); i++)
+                ret.putSlice(i, arr.slice(i));
+            return ret;
+        } else {
+
+            if (arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
+                    && arr.length() == arr.data().length() && arr.ordering() == order
+                    && strideDescendingCAscendingF(arr.ordering(), arr.stride())) {
+                Object array = arr.data().array();
+
+                if (array instanceof float[]) {
+                    float[] orig = (float[]) array;
+                    float[] out = Arrays.copyOf(orig, orig.length);
+                    DataBuffer floatBuffer = Nd4j.createBuffer(out);
+
+                    int[] newShape = arr.shape();
+                    newShape = Arrays.copyOf(newShape, newShape.length);
+                    int[] newStride = arr.stride();
+                    newStride = Arrays.copyOf(newStride, newStride.length);
+
+                    return Nd4j.create(floatBuffer, newShape, newStride, 0, order);
+
+                } else if (array instanceof double[]) {
+                    double[] orig = (double[]) array;
+                    double[] out = Arrays.copyOf(orig, orig.length);
+                    DataBuffer doubleBuffer = Nd4j.createBuffer(out);
+
+                    int[] newShape = arr.shape();
+                    newShape = Arrays.copyOf(newShape, newShape.length);
+                    int[] newStride = arr.stride();
+                    newStride = Arrays.copyOf(newStride, newStride.length);
+
+                    return Nd4j.create(doubleBuffer, newShape, newStride, 0, order);
+                }
+            }
+
+            INDArray ret = Nd4j.create(arr.shape(),order);
             Shape.iterate(arr,ret,new CopyCoordinateFunction(arr,ret));
 
             return ret;
