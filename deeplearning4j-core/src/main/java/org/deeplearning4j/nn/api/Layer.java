@@ -40,6 +40,11 @@ public interface Layer extends Serializable,Cloneable,Model {
        FEED_FORWARD,RECURRENT,CONVOLUTIONAL,SUBSAMPLING,RECURSIVE,MULTILAYER
     }
 
+    enum TrainingMode {
+        TRAIN,TEST
+    }
+
+
     /**Calculate the l2 regularization term<br>
      * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>
      * Note that this does not divide by mini-batch size
@@ -138,6 +143,35 @@ public interface Layer extends Serializable,Cloneable,Model {
      * for this layer
      */
     INDArray preOutput(INDArray x);
+
+
+
+    /**
+     * Raw activations
+     * @param x the input to transform
+     * @return the raw activation
+     * for this layer
+     */
+    INDArray preOutput(INDArray x,TrainingMode training);
+
+
+    /**
+     * Trigger an activation with the last specified input
+     * @param training  training or test mode
+     * @return the activation of the last specified input
+     */
+    INDArray activate(TrainingMode training);
+
+    /**
+     * Initialize the layer with the given input
+     * and return the activation for this layer
+     * given this input
+     * @param input the input to use
+     * @param training  train or test mode
+     * @return
+     */
+    INDArray activate(INDArray input,TrainingMode training);
+
 
     /**
      * Raw activations
