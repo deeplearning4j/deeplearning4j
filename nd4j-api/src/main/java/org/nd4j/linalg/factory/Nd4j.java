@@ -588,7 +588,7 @@ public class Nd4j {
         INDArray ret = Nd4j.create(ArrayUtil.removeIndex(arr.shape(),dimension));
         int[] shape = {1,m};
         int[] strides = Nd4j.getStrides(shape);
-        for (int ip = 0, i = 0; i < n; i++, ip +=  m) {
+        for (int ip = arr.offset(), i = 0; i < n; i++, ip +=  m) {
             INDArray maxAlong = Nd4j.create(arr.data(),shape,strides,ip);
             int max = Nd4j.getBlasWrapper().level1().iamax(m,maxAlong,maxAlong.stride(-1));
             ret.putScalar(i,max);
