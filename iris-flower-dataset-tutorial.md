@@ -231,20 +231,20 @@ Here, the program prints out how well it labeled samples by each classification.
 
 Finally, we ask the program to print statistics such as accuracy and the F1 score. 
 
-    Actual Class 0 was predicted with Predicted 0 with count 50 times
-
-    Actual Class 1 was predicted with Predicted 1 with count 2 times
-
-    Actual Class 1 was predicted with Predicted 2 with count 48 times
-
-    Actual Class 2 was predicted with Predicted 2 with count 50 times
-
-    ==========================Scores=================================
-     Accuracy:  0.6667
-     Precision: 0.4906
-     Recall:    0.6667
-     F1 Score:  0.5652272213429799
-    =================================================================
+		Actual Class 0 was predicted with Predicted 0 with count 13 times
+		
+		Actual Class 1 was predicted with Predicted 0 with count 2 times
+		
+		Actual Class 1 was predicted with Predicted 2 with count 8 times
+		
+		Actual Class 2 was predicted with Predicted 2 with count 7 times
+		
+		==========================Scores========================================
+		 Accuracy:  0.6667
+		 Precision: 0.6667
+		 Recall:    1
+		 F1 Score:  0.8
+		===========================================================================
 
 In machine learning, an F1 score is a metric used to determine how well a classifier performs. It’s a number between zero and one that explains how well the network performed during training. It is analogous to a percentage, with 1 being the equivalent of 100 percent predictive accuracy. It’s basically the probability that your net’s guesses are correct. 
 
