@@ -156,6 +156,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    public BaseDataBuffer(byte[] data, int length) {
+        this(Unpooled.wrappedBuffer(data),length);
+    }
+
 
     @Override
     public AllocationMode allocationMode() {
@@ -796,7 +800,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             s.defaultReadObject();
             read(s);
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
 
 
