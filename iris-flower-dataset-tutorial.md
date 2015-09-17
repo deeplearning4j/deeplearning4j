@@ -126,7 +126,7 @@ A *NeuralNetConfiguration* object is the fundamental object used to construct La
 * L1 and L2 regularization are two ways to fight overfitting by decreasing the size of the model's weights. Here we've selected L2. 
 * Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. Momentum influences the gradient your model uses for the next step.
 
-   .useDropConnect(true)
+			.useDropConnect(true)
 
 ^ This line ensures that DropConnect is used. Drop connect, like drop out, helps a neural net generalize from training data by randomly cancelling out the interlayer edges between nodes; i.e. the channels by which the output of a node on an earlier layer is transmitted to a node on the subsequent layer. Randomly dropping information is a form of noise useful in making a model more robust. 
 
@@ -138,23 +138,23 @@ A *NeuralNetConfiguration* object is the fundamental object used to construct La
 
 ^ This line sets the layer type to RBM, or restricted Boltzmann machine, which is the shallow, building-block layer that is stacked to become a deep-belief network. It applies a Gaussian transform to the RBM that makes up the net's input layer. The transform applies Gaussian white noise to normalize a distribution of continuous data. It applies a rectified linear transform to the hidden layer. Rectified linear units (ReLU) create more robust activations and tends to improve the F1 score. These transforms look like a hockey stick, flat to begin with and then sharply rising. The flatness is the so-called offset, and ReLU applies a fixed offset to the bias of each node. That offset is a thresshold below which all samples are ignored.
 
-   	.nIn(numRows * numColumns) 
+			.nIn(numRows * numColumns) 
 
 ^ This line sets the number of input nodes, which are defined as the number of rows (4) by the number of columns (1) -- two variables to which values have been assigned already. Here, each row is a feature of an Iris data record: the length and width of petal and sepal. So there are four input nodes, one for each supervised feature. 
 
-   	.nOut(outputNum)
+			.nOut(outputNum)
 
 ^ This line is the number of output nodes. We're passing in the variable outputNum, which holds a value of 3. It was set to three because there are three species of Iris flowers tracked by the dataset. The output nodes are equal to the labels you care about. 
 
-   	.weightInit(WeightInit.XAVIER)
+			.weightInit(WeightInit.XAVIER)
 
 ^ This line specifies which algorithm to use on randomly generated initial weights. As the affect of pre-training on RBMs showed, proper weight initialization is crucial for RBMs' ability to learn well. [Xavier initialization](http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization) keeps weights from becoming too small or too large over many layers. Xavier initializes a given neuron's weight by making the variance of that weight equal to one over the number of neurons feeding into it. 
 
-   	.activation("relu") 
+			.activation("relu") 
 
 ^ This line sets the activation function to be a rectified linear transform. So you have recitified linear appearing twice: Once on how the RBM samples from the input, and once on the nonlinear transform applied to the output. When those two overlap between hidden layers, it's effectively a passthrough that alters nothing. 
 
-   	.lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+			.lossFunction(LossFunctions.LossFunction.RMSE_XENT)
 
 ^ This line sets the loss function. The loss function calculates the error produced by the weights of the model, which is used to determine the gradient along which a learning algorithm adjust those weights in search of less error. Here, the loss function is root-means-squared-error-cross entropy (RMSE_XENT). RMSE is the square root of the mean of the squares of the errors. It is useful in penalizing large errors. Cross-entropy assumes predicted values (which are contrasted with the ground truth) are probabilities between 0 and 1.
 
