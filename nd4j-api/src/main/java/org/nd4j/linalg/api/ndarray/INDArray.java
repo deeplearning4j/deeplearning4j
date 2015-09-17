@@ -1475,6 +1475,11 @@ public interface INDArray extends Serializable  {
     void setShape(int...shape);
 
     /**
+     * Updates the shape informationldn
+     */
+    void updateShapeInfo();
+
+    /**
      * Set the ordering
      * @param order the ordering to set
      */

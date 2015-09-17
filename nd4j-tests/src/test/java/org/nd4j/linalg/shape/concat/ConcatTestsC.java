@@ -97,31 +97,6 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(tensor,ones);
     }
     
-    @Test
-    public void testConcatColVectorAndMatrix() {
-      
-        INDArray colVector = Nd4j.create(new double[]{1, 2, 3, 1, 2, 3}, new int[]{6, 1});
-        INDArray matrix = Nd4j.create(new double[]{4, 5, 6, 4, 5, 6}, new int[]{2, 3});
-
-        INDArray assertion = Nd4j.create(new double[]{1, 2, 3, 1, 2, 3, 4, 5}, new int[]{8, 1});
-
-        INDArray concat = Nd4j.vstack(colVector, matrix);
-        assertEquals(assertion,concat);
-        
-    }
-
-    @Test
-    public void testConcatRowVectorAndMatrix() {
-
-        INDArray rowVector = Nd4j.create(new double[]{1, 2, 3, 1, 2, 3}, new int[]{1, 6});
-        INDArray matrix = Nd4j.create(new double[]{4, 5, 6, 4, 5, 6}, new int[]{3, 2});
-
-        INDArray assertion = Nd4j.create(new double[]{1, 2, 3, 1, 2, 3, 4, 5}, new int[]{1, 8});
-
-        INDArray concat = Nd4j.hstack(rowVector, matrix);
-        assertEquals(assertion, concat);
-      
-    }
 
 
     @Override
