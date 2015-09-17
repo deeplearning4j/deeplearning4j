@@ -51,7 +51,7 @@
 
 
     <properties>
-        <nd4j.version>0.4-rc3.2-SNAPSHOT</nd4j.version>
+        <nd4j.version>0.4-rc4-SNAPSHOT</nd4j.version>
         <canova.version>0.0.0.7-SNAPSHOT</canova.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.3.1</commonslang.version>
@@ -327,7 +327,7 @@
             <dependency>
                 <groupId>org.nd4j</groupId>
                 <artifactId>canova-api</artifactId>
-                <version>0.0.0.7</version>
+                <version>${canova.version}</version>
             </dependency>
 
 
