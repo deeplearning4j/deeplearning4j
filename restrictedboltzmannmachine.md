@@ -188,10 +188,14 @@ Next, we'll show you how to implement a [deep-belief network](../deepbeliefnetwo
 
 ### <a name="resources">Other Resources</a>
 
-* [An Introduction to Neural Networks](../neuralnet-overview.html)
-* [Convolutional Networks](../convolutionalnetworks.html)
-* [Recurrent Networks/LSTMs](../recurrentnetwork.html)
-* [Neural Networks & Regression](../linear-regression.html)
 * [Geoff Hinton on Boltzmann Machines](http://www.scholarpedia.org/article/Boltzmann_machine)
 * [Deeplearning.net's Restricted Boltzmann Machine Tutorial](http://deeplearning.net/tutorial/rbm.html)
 * [A Practical Guide to Training Restricted Boltzmann Machines](https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf); Geoff Hinton
+
+### Other Beginner's Guides
+
+* [Recurrent Networks/LSTMs](../lstm.html)
+* [Neural Networks](../neuralnet-overview.html)
+* [Eigenvectors, PCA and Entropy](../eigenvector.html)
+* [Neural Networks & Regression](../linear-regression.html)
+* [Convolutional Networks](../convolutionalnetworks.html)
