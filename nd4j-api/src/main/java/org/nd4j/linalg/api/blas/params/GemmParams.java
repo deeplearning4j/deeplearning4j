@@ -85,6 +85,7 @@ public @Data class GemmParams {
 
 
     private INDArray copyIfNeccessary(INDArray arr) {
+        //See also: Shape.toMmulCompatible - want same conditions here and there
         if(arr.isMatrix()) {
             //Check if matrix values are contiguous in memory. If not: dup
             //Contiguous for c if: stride[0] == shape[1] and stride[1] = 1
