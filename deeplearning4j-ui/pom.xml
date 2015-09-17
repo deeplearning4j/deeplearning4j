@@ -20,7 +20,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.2-SNAPSHOT</version>
+        <version>0.4-rc3</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -94,12 +94,12 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
-            <version>${nd4j.version}</version>
+            <version>0.4-rc3</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jackson</artifactId>
-            <version>${nd4j.version}</version>
+            <version>0.4-rc3</version>
         </dependency>
     </dependencies>
 </project>
