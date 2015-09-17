@@ -126,7 +126,7 @@ public class Shape {
      * @param arr the array to copy to offset 0
      * @return a copy of the array with elements set to zero offset
      */
-    public static INDArray toOffsetZeroCopy(INDArray arr) {
+    public static INDArray toOffsetZeroCopy(final INDArray arr) {
         if (arr.isRowVector()) {
             if (arr instanceof IComplexNDArray) {
                 IComplexNDArray ret = Nd4j.createComplex(arr.shape());
@@ -180,8 +180,13 @@ public class Shape {
                 }
             }
 
-            INDArray ret = Nd4j.create(arr.shape());
-            Shape.iterate(arr,ret,new CopyCoordinateFunction(arr,ret));
+            final INDArray ret = Nd4j.create(arr.shape());
+            Shape.iterate(arr, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    ret.putScalar(coord[0],arr.getDouble(coord[0]));
+                }
+            });
 
             return ret;
         }
@@ -247,7 +252,7 @@ public class Shape {
             }
 
             INDArray ret = Nd4j.create(arr.shape(),order);
-            Shape.iterate(arr,ret,new CopyCoordinateFunction(arr,ret));
+            Shape.iterate(arr, ret, new CopyCoordinateFunction(arr, ret));
 
             return ret;
         }
