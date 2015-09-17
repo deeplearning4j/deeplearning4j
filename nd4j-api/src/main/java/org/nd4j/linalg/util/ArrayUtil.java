@@ -55,7 +55,6 @@ public class ArrayUtil {
     }
 
 
-
     /**
      * Returns true if all of the elements in the
      * given int array are unique
