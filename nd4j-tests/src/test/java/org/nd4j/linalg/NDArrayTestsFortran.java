@@ -1093,20 +1093,44 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     }
 
     @Test
-    public void testDupWithOrder(){
+    public void testDupAndDupWithOrder(){
         List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4, 5, 123);
 
         for(Pair<INDArray,String> pair : testInputs ){
 
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
+            INDArray dup = in.dup();
             INDArray dupc = in.dup('c');
             INDArray dupf = in.dup('f');
 
-            assertEquals(dupc.ordering(),'c');
-            assertEquals(dupf.ordering(),'f');
+            assertEquals(msg,in,dup);
+            assertEquals(msg,dup.ordering(),(char)Nd4j.order());
+            assertEquals(msg,dupc.ordering(),'c');
+            assertEquals(msg,dupf.ordering(),'f');
             assertEquals(msg,in,dupc);
             assertEquals(msg,in,dupf);
+        }
+    }
+
+    @Test
+    public void testToOffsetZeroCopy(){
+        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4,5,123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dup = Shape.toOffsetZeroCopy(in);
+            INDArray dupc = Shape.toOffsetZeroCopy(in, 'c');
+            INDArray dupf = Shape.toOffsetZeroCopy(in, 'f');
+            INDArray dupany = Shape.toOffsetZeroCopyAnyOrder(in);
+
+            assertEquals(msg,in,dup);
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+            assertEquals(msg,dupc.ordering(),'c');
+            assertEquals(msg,dupf.ordering(),'f');
+            assertEquals(msg,in,dupany);
         }
     }
 

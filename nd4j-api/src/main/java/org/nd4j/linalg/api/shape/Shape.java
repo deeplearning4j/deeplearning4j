@@ -117,7 +117,7 @@ public class Shape {
      * @return
      */
     public static INDArray copyArrayWithWholeBuffer(INDArray arr) {
-        return Nd4j.create(arr.data().dup(),arr.shape(),arr.stride(),arr.offset(),arr.ordering());
+        return Nd4j.create(arr.data().dup(), arr.shape(), arr.stride(), arr.offset(), arr.ordering());
     }
 
     /**
@@ -127,64 +127,7 @@ public class Shape {
      * @return a copy of the array with elements set to zero offset
      */
     public static INDArray toOffsetZeroCopy(INDArray arr) {
-        if (arr.isRowVector()) {
-            if (arr instanceof IComplexNDArray) {
-                IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
-                return ret;
-            } else {
-                INDArray ret = Nd4j.create(arr.shape());
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, arr.getDouble(i));
-                return ret;
-            }
-        }
-
-
-        if (arr instanceof IComplexNDArray) {
-            IComplexNDArray ret = Nd4j.createComplex(arr.shape());
-            for (int i = 0; i < ret.slices(); i++)
-                ret.putSlice(i, arr.slice(i));
-            return ret;
-        } else {
-
-            if (arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
-                    && arr.length() == arr.data().length() && arr.ordering() == Nd4j.order()
-                    && strideDescendingCAscendingF(arr.ordering(), arr.stride())) {
-                Object array = arr.data().array();
-
-                if (array instanceof float[]) {
-                    float[] orig = (float[]) array;
-                    float[] out = Arrays.copyOf(orig, orig.length);
-                    DataBuffer floatBuffer = Nd4j.createBuffer(out);
-
-                    int[] newShape = arr.shape();
-                    newShape = Arrays.copyOf(newShape, newShape.length);
-                    int[] newStride = arr.stride();
-                    newStride = Arrays.copyOf(newStride, newStride.length);
-
-                    return Nd4j.create(floatBuffer, newShape, newStride, 0, arr.ordering());
-
-                } else if (array instanceof double[]) {
-                    double[] orig = (double[]) array;
-                    double[] out = Arrays.copyOf(orig, orig.length);
-                    DataBuffer doubleBuffer = Nd4j.createBuffer(out);
-
-                    int[] newShape = arr.shape();
-                    newShape = Arrays.copyOf(newShape, newShape.length);
-                    int[] newStride = arr.stride();
-                    newStride = Arrays.copyOf(newStride, newStride.length);
-
-                    return Nd4j.create(doubleBuffer, newShape, newStride, 0, arr.ordering());
-                }
-            }
-
-            INDArray ret = Nd4j.create(arr.shape());
-            Shape.iterate(arr,ret,new CopyCoordinateFunction(arr,ret));
-
-            return ret;
-        }
+        return toOffsetZeroCopyHelper(arr, Nd4j.order(), false);
     }
 
     /**Create a copy of the ndarray where the new offset is zero, and has specified order
@@ -192,57 +135,75 @@ public class Shape {
      * @param order the order of the returned array
      * @return a copy of the array with elements set to zero offset, and with specified order
      */
-    public static INDArray toOffsetZeroCopy(INDArray arr, char order ){
+    public static INDArray toOffsetZeroCopy(INDArray arr, char order) {
+        return toOffsetZeroCopyHelper(arr,order,false);
+    }
 
-        if (arr.isRowVector()) {
-            if (arr instanceof IComplexNDArray) {
+    /** Create a copy of the ndarray where the new offset is zero.
+     * Unlike toOffsetZeroCopy(INDArray) (which always returns arrays of order Nd4j.order()),
+     * and toOffsetZeroCopy(INDArray,char) (which always returns arrays of a specified order)
+     * this method returns NDArrays of any order (sometimes c, sometimes f).<br>
+     * This method may be faster than the other two toOffsetZeroCopyAnyOrder methods as a result,
+     * however no performance benefit (or cost) relative to them will be observed in many cases.
+     * If a copy is necessary, the output will have order Nd4j.order()
+     * @param arr NDArray to duplicate
+     * @return Copy with offset 0, but order might be c, or might be f
+     */
+    public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr){
+        return toOffsetZeroCopyHelper(arr,Nd4j.order(),true);
+    }
+
+    private static INDArray toOffsetZeroCopyHelper(INDArray arr, char order, boolean anyOrder ){
+
+        if(arr instanceof IComplexNDArray){
+            if(arr.isRowVector()){
                 IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
                 for (int i = 0; i < ret.length(); i++)
                     ret.putScalar(i, ((IComplexNDArray) arr).getComplex(i));
                 return ret;
-            } else {
-                INDArray ret = Nd4j.create(arr.shape(),order);
-                for (int i = 0; i < ret.length(); i++)
-                    ret.putScalar(i, arr.getDouble(i));
-                return ret;
             }
-        }
-
-        if (arr instanceof IComplexNDArray) {
             IComplexNDArray ret = Nd4j.createComplex(arr.shape(),order);
             for (int i = 0; i < ret.slices(); i++)
                 ret.putSlice(i, arr.slice(i));
             return ret;
         } else {
 
-            if (arr.offset() == 0 && arr.data().allocationMode() == AllocationMode.HEAP
-                    && arr.length() == arr.data().length() && arr.ordering() == order
-                    && strideDescendingCAscendingF(arr.ordering(), arr.stride())) {
-                Object array = arr.data().array();
+            if(arr.data().allocationMode() == AllocationMode.HEAP){
+                if(Shape.isContiguousInBuffer(arr) && Shape.strideDescendingCAscendingF(arr.ordering(),arr.stride())
+                        && (anyOrder || order == arr.ordering()) ){
+                    //Can do array copy on data
+                    int length = arr.length();
+                    int offset = arr.offset();
+                    char outOrder = arr.ordering(); //Same as input OR same as order argument if anyOrder == false
 
-                if (array instanceof float[]) {
-                    float[] orig = (float[]) array;
-                    float[] out = Arrays.copyOf(orig, orig.length);
-                    DataBuffer floatBuffer = Nd4j.createBuffer(out);
+                    Object array = arr.data().array();
 
-                    int[] newShape = arr.shape();
-                    newShape = Arrays.copyOf(newShape, newShape.length);
-                    int[] newStride = arr.stride();
-                    newStride = Arrays.copyOf(newStride, newStride.length);
+                    if (array instanceof float[]) {
+                        float[] orig = (float[]) array;
+                        float[] out = new float[length];
+                        System.arraycopy(orig,offset,out,0,length);
+                        DataBuffer floatBuffer = Nd4j.createBuffer(out);
 
-                    return Nd4j.create(floatBuffer, newShape, newStride, 0, order);
+                        int[] newShape = arr.shape();
+                        newShape = Arrays.copyOf(newShape, newShape.length);
+                        int[] newStride = arr.stride();
+                        newStride = Arrays.copyOf(newStride, newStride.length);
 
-                } else if (array instanceof double[]) {
-                    double[] orig = (double[]) array;
-                    double[] out = Arrays.copyOf(orig, orig.length);
-                    DataBuffer doubleBuffer = Nd4j.createBuffer(out);
+                        return Nd4j.create(floatBuffer, newShape, newStride, 0, arr.ordering());
 
-                    int[] newShape = arr.shape();
-                    newShape = Arrays.copyOf(newShape, newShape.length);
-                    int[] newStride = arr.stride();
-                    newStride = Arrays.copyOf(newStride, newStride.length);
+                    } else if (array instanceof double[]) {
+                        double[] orig = (double[]) array;
+                        double[] out = new double[length];
+                        System.arraycopy(orig,offset,out,0,length);
+                        DataBuffer doubleBuffer = Nd4j.createBuffer(out);
 
-                    return Nd4j.create(doubleBuffer, newShape, newStride, 0, order);
+                        int[] newShape = arr.shape();
+                        newShape = Arrays.copyOf(newShape, newShape.length);
+                        int[] newStride = arr.stride();
+                        newStride = Arrays.copyOf(newStride, newStride.length);
+
+                        return Nd4j.create(doubleBuffer, newShape, newStride, 0, arr.ordering());
+                    }
                 }
             }
 
@@ -1490,5 +1451,24 @@ public class Shape {
         } else {
             throw new RuntimeException("Invalid order: not c or f");
         }
+    }
+
+    /** Are the elements in the buffer contiguous for this NDArray? */
+    public static boolean isContiguousInBuffer( INDArray in ){
+        int length = in.length();
+        int dLength = in.data().length();
+        if( length == dLength ) return true;    //full buffer, can't not be contiguous
+
+        char order = in.ordering();
+
+        int[] shape = in.shape();
+        int[] stridesIfContiguous;
+        if(order == 'f'){
+            stridesIfContiguous = ArrayUtil.calcStridesFortran(shape);
+        } else if(order == 'c') {
+            stridesIfContiguous = ArrayUtil.calcStrides(shape);
+        } else throw new RuntimeException("Invalid order");
+
+        return Arrays.equals(in.stride(),stridesIfContiguous);
     }
 }
