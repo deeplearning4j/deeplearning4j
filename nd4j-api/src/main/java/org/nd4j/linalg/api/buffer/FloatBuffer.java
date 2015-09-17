@@ -58,12 +58,14 @@ public class FloatBuffer extends BaseDataBuffer {
     }
 
     public FloatBuffer(int[] data, boolean copyOnOps) {
-       super(data, copyOnOps);
+        super(data, copyOnOps);
     }
 
     public FloatBuffer(double[] data, boolean copyOnOps) {
         super(data,copyOnOps);
     }
+
+
 
     @Override
     public DataBuffer create(ByteBuf buf,int length) {

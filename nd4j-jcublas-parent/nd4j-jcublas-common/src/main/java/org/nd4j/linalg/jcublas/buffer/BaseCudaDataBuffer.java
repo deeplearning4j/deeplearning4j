@@ -63,7 +63,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      * Pointers to contexts covers this buffer on the gpu at offset 0
      * for each thread.
      *
-     * The column key is for offsets. If we only have one device allocation per thread
+     * The column key is for offsets. If we only have buffer one device allocation per thread
      * we will clobber anything that is already allocated on the gpu.
      *
      * This also allows us to make a simplifying assumption about how to allocate the data as follows:
@@ -121,6 +121,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(double[] data) {
         super(data);
+    }
+
+    public BaseCudaDataBuffer(byte[] data, int length) {
+        super(data,length);
     }
 
     @Override

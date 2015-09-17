@@ -43,7 +43,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
-import sun.security.provider.SHA;
 
 import java.util.*;
 
@@ -150,10 +149,10 @@ public class Shape {
      * @return Copy with offset 0, but order might be c, or might be f
      */
     public static INDArray toOffsetZeroCopyAnyOrder(INDArray arr){
-        return toOffsetZeroCopyHelper(arr,Nd4j.order(),true);
+        return toOffsetZeroCopyHelper(arr, Nd4j.order(), true);
     }
 
-    private static INDArray toOffsetZeroCopyHelper(INDArray arr, char order, boolean anyOrder ){
+    private static INDArray toOffsetZeroCopyHelper(final INDArray arr, char order, boolean anyOrder ){
 
         if(arr instanceof IComplexNDArray){
             if(arr.isRowVector()){
@@ -207,8 +206,13 @@ public class Shape {
                 }
             }
 
-            INDArray ret = Nd4j.create(arr.shape(),order);
-            Shape.iterate(arr,ret,new CopyCoordinateFunction(arr,ret));
+            final INDArray ret = Nd4j.create(arr.shape(),order);
+            Shape.iterate(arr, new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    ret.putScalar(coord[0],arr.getDouble(coord[0]));
+                }
+            });
 
             return ret;
         }
