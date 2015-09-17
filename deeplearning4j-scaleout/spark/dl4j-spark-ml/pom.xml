@@ -117,12 +117,12 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>0.4-rc3</version>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-x86</artifactId>
-            <version>0.4-rc3</version>
+            <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
