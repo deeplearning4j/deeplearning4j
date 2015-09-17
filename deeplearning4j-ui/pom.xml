@@ -94,12 +94,12 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
-            <version>0.4-rc3</version>
+            <version>${nd4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jackson</artifactId>
-            <version>0.4-rc3</version>
+            <version>${nd4j.version}</version>
         </dependency>
     </dependencies>
 </project>
