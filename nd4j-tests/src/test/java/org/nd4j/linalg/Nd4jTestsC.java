@@ -1881,6 +1881,15 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             assertEquals(msg,dupc.ordering(),'c');
             assertEquals(msg,dupf.ordering(),'f');
             assertEquals(msg,in,dupany);
+
+            assertEquals(dup.offset(),0);
+            assertEquals(dupc.offset(),0);
+            assertEquals(dupf.offset(),0);
+            assertEquals(dupany.offset(),0);
+            assertEquals(dup.length(),dup.data().length());
+            assertEquals(dupc.length(),dupc.data().length());
+            assertEquals(dupf.length(),dupf.data().length());
+            assertEquals(dupany.length(),dupany.data().length());
         }
     }
 
