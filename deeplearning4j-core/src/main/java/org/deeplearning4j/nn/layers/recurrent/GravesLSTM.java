@@ -97,17 +97,17 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
 		int timeSeriesLength = (is2dInput? 1: epsilon.size(2));
 
-		INDArray wiTranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[0].transpose());
-		INDArray wITranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[1].transpose());
-		INDArray wfTranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[2].transpose());
-		INDArray wFTranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[3].transpose());
-		INDArray wFFTranspose = fwdPass.paramsZeroOffset[4];
-		INDArray woTranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[5].transpose());
-		INDArray wOTranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[6].transpose());
-		INDArray wOOTranspose = fwdPass.paramsZeroOffset[7];
-		INDArray wgTranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[8].transpose());
-		INDArray wGTranspose = Shape.toOffsetZero(fwdPass.paramsZeroOffset[9].transpose());
-		INDArray wGGTranspose = fwdPass.paramsZeroOffset[10];
+		INDArray wiTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[0].transpose());
+		INDArray wITranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[1].transpose());
+		INDArray wfTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[2].transpose());
+		INDArray wFTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[3].transpose());
+		INDArray wFFTranspose = fwdPass.paramsMmulCompatible[4];
+		INDArray woTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[5].transpose());
+		INDArray wOTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[6].transpose());
+		INDArray wOOTranspose = fwdPass.paramsMmulCompatible[7];
+		INDArray wgTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[8].transpose());
+		INDArray wGTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[9].transpose());
+		INDArray wGGTranspose = fwdPass.paramsMmulCompatible[10];
 
 		//Parameter gradients, summed across time. bias gradients, input weight gradients, recurrent weight gradients
 		INDArray[] bGradients = new INDArray[4];
@@ -156,7 +156,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
             //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
             INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(t,1,0));		//(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
-            INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice); //Shape: [m,n^L]
+            INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice,'f'); //Shape: [m,n^L]
             if(t!=timeSeriesLength-1){
                 //if t == timeSeriesLength-1 then deltaiNext etc are zeros
                 nablaOut.addi(deltaiNext.mmul(wITranspose))
@@ -350,21 +350,21 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         INDArray bg = biases.get(NDArrayIndex.point(0),interval(3*hiddenLayerSize,4 * hiddenLayerSize));
 
         if(timeSeriesLength>1 || forBackprop){
-            wi = Shape.toOffsetZero(wi);
-            wI = Shape.toOffsetZero(wI);
-            wf = Shape.toOffsetZero(wf);
-            wF = Shape.toOffsetZero(wF);
-            wFFTranspose = Shape.toOffsetZero(wFFTranspose);
-            wo = Shape.toOffsetZero(wo);
-            wO = Shape.toOffsetZero(wO);
-            wOOTranspose = Shape.toOffsetZero(wOOTranspose);
-            wg = Shape.toOffsetZero(wg);
-            wG = Shape.toOffsetZero(wG);
-            wGGTranspose = Shape.toOffsetZero(wGGTranspose);
-            bi = Shape.toOffsetZero(bi);
-            bf = Shape.toOffsetZero(bf);
-            bo = Shape.toOffsetZero(bo);
-            bg = Shape.toOffsetZero(bg);
+            wi = Shape.toMmulCompatible(wi);
+            wI = Shape.toMmulCompatible(wI);
+            wf = Shape.toMmulCompatible(wf);
+            wF = Shape.toMmulCompatible(wF);
+            wFFTranspose = Shape.toMmulCompatible(wFFTranspose);
+            wo = Shape.toMmulCompatible(wo);
+            wO = Shape.toMmulCompatible(wO);
+            wOOTranspose = Shape.toMmulCompatible(wOOTranspose);
+            wg = Shape.toMmulCompatible(wg);
+            wG = Shape.toMmulCompatible(wG);
+            wGGTranspose = Shape.toMmulCompatible(wGGTranspose);
+            bi = Shape.toMmulCompatible(bi);
+            bf = Shape.toMmulCompatible(bf);
+            bo = Shape.toMmulCompatible(bo);
+            bg = Shape.toMmulCompatible(bg);
         }
 
         //Allocate arrays for activations:
@@ -372,7 +372,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
         FwdPassReturn toReturn = new FwdPassReturn();
         if(forBackprop){
-            toReturn.paramsZeroOffset = new INDArray[]{wi,wI,wf,wF,wFFTranspose,wo,wO,wOOTranspose,wg,wG,wGGTranspose};
+            toReturn.paramsMmulCompatible = new INDArray[]{wi,wI,wf,wF,wFFTranspose,wo,wO,wOOTranspose,wg,wG,wGGTranspose};
             toReturn.fwdPassOutputAsArrays = new INDArray[timeSeriesLength];
             toReturn.memCellState = new INDArray[timeSeriesLength];
             toReturn.memCellActivations = new INDArray[timeSeriesLength];
@@ -390,27 +390,27 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         if(prevMemCellState == null) prevMemCellState = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
         for( int t = 0; t < timeSeriesLength; t++ ){
             INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(t,1,0));	//[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
-            miniBatchData = Shape.toOffsetZero(miniBatchData);
+            miniBatchData = Shape.toMmulCompatible(miniBatchData);
 
             //Calculate activations for: network input + forget, output, input modulation gates.
-            INDArray inputActivations = miniBatchData.mmul(wi)
-                    .addi(prevOutputActivations.mmul(wI))
-                    .addiRowVector(bi);
-            if(forBackprop) toReturn.iz[t] = inputActivations.dup();
+            INDArray inputActivations = miniBatchData.mmul(wi);
+            Nd4j.gemm(prevOutputActivations,wI,inputActivations,false,false,1.0,1.0);
+            inputActivations.addiRowVector(bi);
+            if(forBackprop) toReturn.iz[t] = inputActivations.dup('f');
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
             if(forBackprop) toReturn.ia[t] = inputActivations;
 
-            INDArray forgetGateActivations = miniBatchData.mmul(wf)
-                    .addi(prevOutputActivations.mmul(wF))
-                    .addi(prevMemCellState.mulRowVector(wFFTranspose))
+            INDArray forgetGateActivations = miniBatchData.mmul(wf);
+            Nd4j.gemm(prevOutputActivations,wF,forgetGateActivations,false,false,1.0,1.0);
+            forgetGateActivations.addi(prevMemCellState.mulRowVector(wFFTranspose))
                     .addiRowVector(bf);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
             if(forBackprop) toReturn.fa[t] = forgetGateActivations;
 
 
-            INDArray inputModGateActivations = miniBatchData.mmul(wg)
-                    .addi(prevOutputActivations.mmul(wG))
-                    .addi(prevMemCellState.mulRowVector(wGGTranspose))
+            INDArray inputModGateActivations = miniBatchData.mmul(wg);
+            Nd4j.gemm(prevOutputActivations,wG,inputModGateActivations,false,false,1.0,1.0);
+            inputModGateActivations.addi(prevMemCellState.mulRowVector(wGGTranspose))
                     .addiRowVector(bg);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
             if(forBackprop) toReturn.ga[t] = inputModGateActivations;
@@ -419,15 +419,15 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             INDArray currentMemoryCellState = forgetGateActivations.mul(prevMemCellState)
                     .addi(inputModGateActivations.mul(inputActivations));
 
-            INDArray outputGateActivations = miniBatchData.mmul(wo)
-                    .addi(prevOutputActivations.mmul(wO))
-                    .addi(currentMemoryCellState.mulRowVector(wOOTranspose))
+            INDArray outputGateActivations = miniBatchData.mmul(wo);
+            Nd4j.gemm(prevOutputActivations,wO,outputGateActivations,false,false,1.0,1.0);
+            outputGateActivations.addi(currentMemoryCellState.mulRowVector(wOOTranspose))
                     .addiRowVector(bo);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
             if(forBackprop) toReturn.oa[t] = outputGateActivations;
 
             //LSTM unit outputs:
-            INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup()));
+            INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup('f')));
             INDArray currHiddenUnitActivations = currMemoryCellActivation.mul(outputGateActivations);	//Expected shape: [m,hiddenLayerSize]
 
             if(forBackprop){
@@ -495,7 +495,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 		//First: needed by standard forward pass only
 		private INDArray fwdPassOutput;
 		//Arrays: Needed for backpropGradient only
-		private INDArray[] paramsZeroOffset;	//{wi,wI,wf,wF,wFF,wo,wO,wOO,wg,wG,wGG}
+		private INDArray[] paramsMmulCompatible;	//{wi,wI,wf,wF,wFF,wo,wO,wOO,wg,wG,wGG}
 		private INDArray[] fwdPassOutputAsArrays;
 		private INDArray[] memCellState;		//Pre nonlinearity
 		private INDArray[] memCellActivations;	//Post nonlinearity
