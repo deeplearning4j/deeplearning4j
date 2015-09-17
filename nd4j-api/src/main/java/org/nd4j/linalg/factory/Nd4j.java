@@ -976,6 +976,23 @@ public class Nd4j {
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
+
+    /**
+     * Create a buffer based on the data type
+     *
+     * @param data the data to create the buffer with
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(byte[] data,int length) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.DOUBLE)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data,length);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data,length);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
     /**
      * Create a buffer equal of length prod(shape)
      *

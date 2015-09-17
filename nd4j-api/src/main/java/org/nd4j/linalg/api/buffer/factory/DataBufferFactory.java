@@ -85,6 +85,23 @@ public interface DataBufferFactory {
      */
     DataBuffer createDouble(double[] data);
 
+
+    /**
+     * Create a double buffer buffer
+     * @param data
+     * @param length
+     * @return
+     */
+    DataBuffer createDouble(byte[] data, int length);
+
+    /**
+     * Create a double buffer
+     * @param data
+     * @param length
+     * @return
+     */
+    DataBuffer createFloat(byte[] data, int length);
+
     /**
      * Creates a float data buffer
      *
