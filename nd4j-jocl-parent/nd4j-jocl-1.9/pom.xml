@@ -21,7 +21,7 @@
     <parent>
         <artifactId>nd4j-jocl-parent</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.4-rc3</version>
+        <version>0.4-rc4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>nd4j-jocl-1.9</artifactId>
