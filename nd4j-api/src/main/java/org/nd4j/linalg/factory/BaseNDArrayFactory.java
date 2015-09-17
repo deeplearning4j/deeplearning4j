@@ -36,7 +36,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
-import org.nd4j.linalg.api.shape.StridePermutation;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -989,63 +988,61 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
         int sumAlongDim = 0;
-        int lastSize = toConcat[0].size(dimension);
+
         for (int i = 0; i < toConcat.length; i++) {
-            if(toConcat[i].size(dimension) != lastSize)
-                throw new IllegalStateException("Unable to concatneate along dimension " + dimension + " for array " + i);
             sumAlongDim += toConcat[i].size(dimension);
-            lastSize = toConcat[i].size(dimension);
         }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
-        int[] strides = new int[outputShape.length];
 
         outputShape[dimension] = sumAlongDim;
-        int[] strideperm = StridePermutation.create(outputShape.length,toConcat);
+        int[] sortedStrides = Nd4j.getStrides(outputShape);
 
+        INDArray ret = Nd4j.create(outputShape,sortedStrides);
+        if(ret.isVector()) {
+            int offset = 0;
+            for(INDArray arr : toConcat) {
+                for(int i = 0; i < arr.size(dimension); i++) {
+                    ret.putScalar(offset++,arr.getDouble(i));
+                }
+            }
 
-        int s  = 1;
-        int ndim = outputShape.length;
-        for (int idim = ndim - 1; idim >= 0; --idim) {
-            int iperm = strideperm[idim];
-            strides[iperm] = s;
-            s *= outputShape[iperm];
+            return ret;
+        }
+
+        if(toConcat[0].isScalar()) {
+            INDArray retLinear = ret.linearView();
+            for(int i = 0; i < retLinear.length(); i++)
+                retLinear.putScalar(i,toConcat[i].getDouble(0));
+            return ret;
         }
 
 
-        INDArray ret = Nd4j.create(ArrayUtil.copy(outputShape),strides);
 
 
         int arrOffset = 0;
-        INDArray slidingView = ret;
-
         for(INDArray arr : toConcat) {
-            //   int arrTensorLength = -1;
+            int arrTensorLength = -1;
 
-           /* if(arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
-                throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");*/
-            slidingView = Nd4j.create(ret.data(),ret.shape(),ret.stride(),arrOffset,ret.ordering());
-            //  for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-            // INDArray retLinear = ret.tensorAlongDimension(i, dimension);
-            //  sliding_view->dimensions[axis] = PyArray_SHAPE(arrays[iarrays])[axis];
-            slidingView.shape()[dimension] = arr.size(dimension);
-            slidingView.updateShapeInfo();
+            if(arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
+                throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");
 
-            //   INDArray arrTensor = arr.tensorAlongDimension(i, dimension);
-            //  arrTensorLength = arrTensor.length();
-            // for(int j = 0; j < arrTensor.length(); j++) {
-            //    int idx = j + arrOffset;
-            // retLinear.putScalar(idx,arrTensor.getDouble(j));
-            //}
-            slidingView.assign(arr);
-            // }
+            for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
+                INDArray retLinear = ret.tensorAlongDimension(i, dimension);
+                INDArray arrTensor = arr.tensorAlongDimension(i, dimension);
+                arrTensorLength = arrTensor.length();
+                for(int j = 0; j < arrTensor.length(); j++) {
+                    int idx = j + arrOffset;
+                    retLinear.putScalar(idx,arrTensor.getDouble(j));
+                }
+
+
+            }
             //bump the sliding window
-            arrOffset += ret.size(dimension) * ret.stride(dimension);
+            arrOffset += arrTensorLength;
 
         }
 
-        ret.setShape(outputShape);
-        ret.updateShapeInfo();
         return ret;
 
     }
