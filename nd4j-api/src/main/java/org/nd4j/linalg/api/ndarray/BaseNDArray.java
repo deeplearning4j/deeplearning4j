@@ -1013,51 +1013,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray assign(final INDArray arr) {
         if (isVector() && arr.isVector() && length() != arr.length())
             throw new IllegalArgumentException("Illegal assignment, must be of same length");
-        if(isVector()) {
-            if(isColumnVector() && arr.isRowVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{i,0},arr.getDouble(new int[]{0,i}));
-                }
-            }
-            else if(isRowVector() && arr.isColumnVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{0,i},arr.getDouble(new int[]{i,0}));
-                }
-            }
-            else if(arr.isRowVector() && isRowVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{0,i},arr.getDouble(new int[]{0,i}));
-                }
-            }
-            else if(arr.isColumnVector() && arr.isColumnVector()) {
-                for(int i = 0; i < arr.length(); i++) {
-                    putScalar(new int[]{i,0},arr.getDouble(new int[]{i,0}));
-                }
-            }
-
-            else if(isRowVector()){
-                final AtomicInteger a = new AtomicInteger(0);
-                Shape.iterate(arr, new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                        putScalar(new int[]{0,a.getAndIncrement()},arr.getDouble(coord[0]));
-                    }
-                });
-            }
-
-            else if(isColumnVector()){
-                final AtomicInteger a = new AtomicInteger(0);
-                Shape.iterate(arr, new CoordinateFunction() {
-                    @Override
-                    public void process(int[]... coord) {
-                        putScalar(new int[]{a.getAndIncrement(),0},arr.getDouble(coord[0]));
-                    }
-                });
-            }
-
-        }
-
-        else if(Arrays.equals(this.shape(),arr.shape())) {
+        if(Arrays.equals(this.shape(),arr.shape())) {
             Shape.iterate(this, new CoordinateFunction() {
                 @Override
                 public void process(int[]... coord) {
@@ -1085,6 +1041,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         return this;
+    }
+
+    @Override
+    public void updateShapeInfo() {
+        if(shape.length == 2) {
+            rows = shape[0];
+            columns = shape[1];
+        }
+
+        length = ArrayUtil.prod(shape);
+
+
     }
 
     @Override

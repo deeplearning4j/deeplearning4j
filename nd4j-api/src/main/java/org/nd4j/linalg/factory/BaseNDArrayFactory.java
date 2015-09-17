@@ -989,9 +989,12 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
         int sumAlongDim = 0;
-
+        int lastSize = toConcat[0].size(dimension);
         for (int i = 0; i < toConcat.length; i++) {
+            if(toConcat[i].size(dimension) != lastSize)
+                throw new IllegalStateException("Unable to concatneate along dimension " + dimension + " for array " + i);
             sumAlongDim += toConcat[i].size(dimension);
+            lastSize = toConcat[i].size(dimension);
         }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
@@ -1010,7 +1013,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
 
-        INDArray ret = Nd4j.create(outputShape,strides);
+        INDArray ret = Nd4j.create(ArrayUtil.copy(outputShape),strides);
 
 
         int arrOffset = 0;
@@ -1019,14 +1022,14 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         for(INDArray arr : toConcat) {
             //   int arrTensorLength = -1;
 
-            if(arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
-                throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");
+           /* if(arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
+                throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");*/
             slidingView = Nd4j.create(ret.data(),ret.shape(),ret.stride(),arrOffset,ret.ordering());
             //  for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
             // INDArray retLinear = ret.tensorAlongDimension(i, dimension);
             //  sliding_view->dimensions[axis] = PyArray_SHAPE(arrays[iarrays])[axis];
             slidingView.shape()[dimension] = arr.size(dimension);
-            
+            slidingView.updateShapeInfo();
 
             //   INDArray arrTensor = arr.tensorAlongDimension(i, dimension);
             //  arrTensorLength = arrTensor.length();
@@ -1041,6 +1044,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         }
 
+        ret.setShape(outputShape);
+        ret.updateShapeInfo();
         return ret;
 
     }
