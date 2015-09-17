@@ -5,6 +5,8 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.indexing.conditions.Or;
+import org.nd4j.linalg.indexing.functions.StableNumber;
 import org.nd4j.linalg.indexing.functions.Value;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.log;
@@ -86,13 +88,13 @@ class LossCalculation {
         // Caveat: does not handle +Infinity since z is assumed to be 0 <= z <= 1.
         switch(log.data().dataType()) {
             case FLOAT:
-                BooleanIndexing.applyWhere(log, Conditions.isInfinite(), new Value(-Float.MAX_VALUE));
+                BooleanIndexing.applyWhere(log, new Or(Conditions.isNan(),Conditions.isInfinite()), new StableNumber(StableNumber.Type.FLOAT));
                 break;
             case DOUBLE:
-                BooleanIndexing.applyWhere(log, Conditions.isInfinite(), new Value(-Double.MAX_VALUE));
+                BooleanIndexing.applyWhere(log, new Or(Conditions.isNan(),Conditions.isInfinite()), new StableNumber(StableNumber.Type.DOUBLE));
                 break;
             case INT:
-                BooleanIndexing.applyWhere(log, Conditions.isInfinite(), new Value(-Integer.MAX_VALUE));
+                BooleanIndexing.applyWhere(log, new Or(Conditions.isNan(),Conditions.isInfinite()), new Value(-Integer.MAX_VALUE));
                 break;
             default:
                 throw new RuntimeException("unsupported data type: " + log.data().dataType());

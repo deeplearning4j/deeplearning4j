@@ -497,7 +497,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return linear;
             }
             else {
-                for (int ip = 0, i = 0; i < n; i++, ip +=  m) {
+                for (int ip = 0, i = 0; i < ret.length(); i++, ip +=  m) {
                     INDArray maxAlong = Nd4j.create(arr.data(),shape,strides,ip);
                     op.setX(maxAlong);
                     double result = execAndReturn(op).currentResult().doubleValue();
