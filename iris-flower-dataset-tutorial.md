@@ -92,7 +92,7 @@ There's a lot to discuss here. The entire configuration is united in one snippet
 
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
-**Line 2** runs a Builder pattern, useful for many-parameter objects, on a NeuralNetConfiguration (which can used to create a single layer if need be).
+^ This line runs a Builder pattern, useful for many-parameter objects, on a NeuralNetConfiguration (which can used to create a single layer if need be).
 
 The neural net config's parameters are then assigned to an instance of the MultiLayerConfiguration object. It's useful here to disambiguate the term parameter. 
 
@@ -102,85 +102,65 @@ A NeuralNetConfiguration lets you set the hyperparameters for a single shallow n
 
 A *NeuralNetConfiguration* object is the fundamental object used to construct Layers. Many single layers combined make for a deeper neural network. Note that Datasets are transformed as they are processed by each layer -- before and after each layer, they are subjected to additional pre- or post-processing such as normalization.
 
-          .layer(new RBM()) 
+					.seed(seed) 
 
-**Line 3** sets the layer type to RBM, or restricted Boltzmann machine, which is the shallow, building-block layer that is stacked to become a deep-belief network. 
+^ This line uses a specific, randomly generated weight initialization. If you run an example many times, and generate new, random weights each time, then your net's F1 score may vary a great deal, because different initial weights can lead algorithms to different local minima of the errorscape. Keeping the weights the same allows you see the effect of adjusting other hyperparameters more clearly. `seed` is a variable specified before we congifure the model. 
 
-          .nIn(numRows * numColumns) 
+					.iterations(iterations)
 
-**Line 4** sets the number of input nodes, which are defined as the number of rows (4) by the number of columns (1) -- two variables to which values have been assigned already. Here, each row is a feature of an Iris data record: the length and width of petal and sepal. So there are four input nodes, one for each supervised feature. 
+^ This line specifies the number of iterations the algorithm will train. The number of iterations is the number of times you allow a net to classify samples and be corrected with a weight update. (Not to be confused with an epoch, which is neural-netspeak for a complete pass through the dataset.) The number of iterations represent the time you allow a net to learn: too few iterations will truncate the learning it might do; too many and you will see decreasing returns. Again the variable `iterations` was declared above, and assigned the value of 1000.
 
-          .nOut(outputNum)
+          .learningRate(1e-6f)
 
-**Line 5** is the number of output nodes. We're passing in the variable outputNum, which holds a value of 3. It was set to three because there are three species of Iris flowers tracked by the dataset. The output nodes are equal to the labels you care about. 
-
-          .seed(seed) 
-
-**Line 6** uses a specific, randomly generated weight initialization. If you run an example many times, and generate new, random weights each time, then your net's F1 score may vary a great deal, because different initial weights can lead algorithms to different local minima of the errorscape. Keeping the weights the same allows you see the effect of adjusting other hyperparameters more clearly. 
-
-          .visibleUnit(RBM.VisibleUnit.GAUSSIAN) 
-
-**Line 7** applies a Gaussian transform to the RBM that makes up the net's input layer. The transform applies Gaussian white noise to normalize a distribution of continuous data. 
-
-		.hiddenUnit(RBM.HiddenUnit.RECTIFIED) 
-
-**Line 8** applies rectified linear to how the hidden layer samples from the visible layer. Rectified linear units (ReLU) create more robust activations and tends to improve the F1 score. These transforms look like a hockey stick, flat to begin with and then sharply rising. The flatness is the so-called offset, and ReLU applies a fixed offset to the bias of each node. That offset is a thresshold below which all samples are ignored.
-
-          .iterations(iterations) 
-
-**Line 9** specifies the number of iterations the algorithm will train. The number of iterations is the number of times you allow a net to classify samples and be corrected with a weight update. (Not to be confused with an epoch, which is neural-netspeak for a complete pass through the dataset.) The number of iterations represent the time you allow a net to learn: too few iterations will truncate the learning it might do; too many and you will see decreasing returns. 
-
-          .weightInit(WeightInit.XAVIER)
-
-**Line 10** specifies which algorithm to use on randomly generated initial weights. As the affect of pre-training on RBMs showed, proper weight initialization is crucial for RBMs' ability to learn well. [Xavier initialization](http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization) keeps weights from becoming too small or too large over many layers. Xavier initializes a given neuron's weight by making the variance of that weight equal to one over the number of neurons feeding into it. 
-
-          .activationFunction("relu") 
-
-**Line 11** sets the activation function to be a rectified linear transform. So you have recitified linear appearing twice: Once on how the RBM samples from the input, and once on the nonlinear transform applied to the output. When those two overlap between hidden layers, it's effectively a passthrough that alters nothing. 
-
-     	.l2(2e-4).regularization(true).momentum(0.9).constrainGradientToUnitNorm(true)
-
-**Line 12** sets several parameters: 
-
-* First, regularization is set to true. 
-* L1 and L2 regularization are two ways to fight overfitting by decreasing the size of the model's weights. Here we've selected L2. 
-* Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. That’s where momentum influences the gradient your model uses for the next step:
-
-					new gradient = (previous gradient * momentum) - current provisional gradient
-* Constraining the gradient simply divides it by the norm 2 of that gradient.
-
-
-          .k(1)
-
-**Line 13** sets the value of k to 1. The k on an RBM represents the number of samples collected for each iteration. Briefly, an RBM uses Markov Chain Monte Carlo (MCMC) to calculate the gradient, as well as an algorithm called contrastive divergence that has a k parameter you control. (k = 1 is usually sufficient.)
-
-          .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
-
-**Line 14** sets the loss function. The loss function calculates the error produced by the weights of the model, which is used to determine the gradient along which a learning algorithm adjust those weights in search of less error. Here, the loss function is root-means-squared-error-cross entropy (RMSE_XENT). RMSE is the square root of the mean of the squares of the errors. It is useful in penalizing large errors. Cross-entropy assumes predicted values (which are contrasted with the ground truth) are probabilities between 0 and 1.
-
-          .learningRate(1e-3f)
-
-**Line 15** sets the learning rate, which is the size of the adjustments made to the weights with each iteration. A high learning rate makes a net traverse the errorscape quickly, but makes it prone to overshoot the minima. A low learning rate is more likely to find the minimum, but it will do so very slowly.
+^ This line sets the learning rate, which is the size of the adjustments made to the weights with each iteration. A high learning rate makes a net traverse the errorscape quickly, but makes it prone to overshoot the minima. A low learning rate is more likely to find the minimum, but it will do so very slowly.
 
           .optimizationAlgo(OptimizationAlgorithm.LBFGS) 
 
-**Line 16** specifies your optimization algorithm as Limited-memory BFGS, a backpropagation method that helps calculate gradients. 
+^ This line specifies your optimization algorithm as Limited-memory BFGS, a backpropagation method that helps calculate gradients. 
+
+     	.l2(2e-4).regularization(true).momentum(0.9).constrainGradientToUnitNorm(true)
+
+^ This line sets several parameters: 
+
+* First, regularization is set to true. 
+* L1 and L2 regularization are two ways to fight overfitting by decreasing the size of the model's weights. Here we've selected L2. 
+* Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. Momentum influences the gradient your model uses for the next step.
+
+          .useDropConnect(true)
+
+^ This line ensures that DropConnect is used. Drop connect, like drop out, helps a neural net generalize from training data by randomly cancelling out the interlayer edges between nodes; i.e. the channels by which the output of a node on an earlier layer is transmitted to a node on the subsequent layer. Randomly dropping information is a form of noise useful in making a model more robust. 
 
           .list(2) 
 
-**Line 17** sets the number of neural net layers, excluding the input layer, at two. The number of layers will vary from one deep net to the other, and is an important variable to experiment with as you seek the net most appropriate for your dataset. *list* is zero-indexed and includes the input and output layers, so setting list to 2 means that you told it to create one input layer, one output layer, and one hidden layer. Since it only has one hidden layer here, we'll only enter one number into the next hyperparameter, hiddenLayerSizes. List basically transitions a NeuralNetConfiguration that by definition only applies to one layer, to all the layers in a multilayer net. 
+^ This line sets the number of neural net layers, excluding the input layer, at two. The number of layers will vary from one deep net to the other, and is an important variable to experiment with as you seek the net most appropriate for your dataset. *list* is zero-indexed and includes the input and output layers, so setting list to 2 means that you told it to create one input layer, one output layer, and one hidden layer. Since it only has one hidden layer here, we'll only enter one number into the next hyperparameter, hiddenLayerSizes. List basically transitions a NeuralNetConfiguration that by definition only applies to one layer, to all the layers in a multilayer net. 
 
-          .hiddenLayerSizes(3) 
+					.layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
 
-**Line 18** sets the size of the hidden layer(s), measured in the number of nodes each contains, at three. This number can vary layer by layer, and often does. Small numbers of nodes like this are the exception -- in other deep nets, you will see layers with hundreds of nodes, or more. To add hidden layers and set their sizes, you would first increase the number in the list; e.g. .list(5). Then you would add a layer size, the number of nodes per layer, for each additional layer. So for .list(5) you would do something like this .hiddenLayerSizes(3,4,5,6). 
+^ This line sets the layer type to RBM, or restricted Boltzmann machine, which is the shallow, building-block layer that is stacked to become a deep-belief network. It applies a Gaussian transform to the RBM that makes up the net's input layer. The transform applies Gaussian white noise to normalize a distribution of continuous data. It applies a rectified linear transform to the hidden layer. Rectified linear units (ReLU) create more robust activations and tends to improve the F1 score. These transforms look like a hockey stick, flat to begin with and then sharply rising. The flatness is the so-called offset, and ReLU applies a fixed offset to the bias of each node. That offset is a thresshold below which all samples are ignored.
+
+          .nIn(numRows * numColumns) 
+
+^ This line sets the number of input nodes, which are defined as the number of rows (4) by the number of columns (1) -- two variables to which values have been assigned already. Here, each row is a feature of an Iris data record: the length and width of petal and sepal. So there are four input nodes, one for each supervised feature. 
+
+          .nOut(outputNum)
+
+^ This line is the number of output nodes. We're passing in the variable outputNum, which holds a value of 3. It was set to three because there are three species of Iris flowers tracked by the dataset. The output nodes are equal to the labels you care about. 
+
+          .weightInit(WeightInit.XAVIER)
+
+^ This line specifies which algorithm to use on randomly generated initial weights. As the affect of pre-training on RBMs showed, proper weight initialization is crucial for RBMs' ability to learn well. [Xavier initialization](http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization) keeps weights from becoming too small or too large over many layers. Xavier initializes a given neuron's weight by making the variance of that weight equal to one over the number of neurons feeding into it. 
+
+          .activation("relu") 
+
+^ This line sets the activation function to be a rectified linear transform. So you have recitified linear appearing twice: Once on how the RBM samples from the input, and once on the nonlinear transform applied to the output. When those two overlap between hidden layers, it's effectively a passthrough that alters nothing. 
+
+          .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
+
+^ This line sets the loss function. The loss function calculates the error produced by the weights of the model, which is used to determine the gradient along which a learning algorithm adjust those weights in search of less error. Here, the loss function is root-means-squared-error-cross entropy (RMSE_XENT). RMSE is the square root of the mean of the squares of the errors. It is useful in penalizing large errors. Cross-entropy assumes predicted values (which are contrasted with the ground truth) are probabilities between 0 and 1.
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/deepbelief/DBNIrisExample.java?slice=84:90"></script>
 
 **Lines 19-25** override the default layer type of RBM to create an output layer that classifies input by Iris label using a multinomial sigmoid classifier called softmax. The loss function for this layer is Monte Carlo cross entropy. 
-
-          .useDropConnect(true)
-
-**Line 26** ensures that DropConnect is used. Drop connect, like drop out, helps a neural net generalize from training data by randomly cancelling out the interlayer edges between nodes; i.e. the channels by which the output of a node on an earlier layer is transmitted to a node on the subsequent layer. Randomly dropping information is a form of noise useful in making a model more robust.
 
 That wraps up the deep net's configuration. Back to the rest of our program. 
 
