@@ -234,7 +234,7 @@ public class Shape {
         if(input.ordering() == 'c' && (input.stride(0) != input.size(1) || input.stride(1) != 1) ) doCopy = true;
         else if(input.ordering() == 'f' && (input.stride(0) != 1 || input.stride(1) != input.size(0))) doCopy = true;
 
-        if(doCopy) return Shape.toOffsetZeroCopy(input);
+        if(doCopy) return Shape.toOffsetZeroCopyAnyOrder(input);
         else return input;
     }
 
