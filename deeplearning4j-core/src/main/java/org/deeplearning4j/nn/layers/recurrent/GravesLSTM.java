@@ -99,11 +99,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
         int timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
 
-        INDArray wiTranspose = Shape.toOffsetZero(fwdPass.paramsMmulCompatible[0].transpose());
-        INDArray wFFTranspose = fwdPass.paramsMmulCompatible[4];
-        INDArray wOOTranspose = fwdPass.paramsMmulCompatible[7];
-        INDArray wGGTranspose = fwdPass.paramsMmulCompatible[10];
-
         INDArray wi = fwdPass.paramsMmulCompatible[0];
         INDArray wI = fwdPass.paramsMmulCompatible[1];
         INDArray wf = fwdPass.paramsMmulCompatible[2];
@@ -112,6 +107,9 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         INDArray wO = fwdPass.paramsMmulCompatible[6];
         INDArray wg = fwdPass.paramsMmulCompatible[8];
         INDArray wG = fwdPass.paramsMmulCompatible[9];
+        INDArray wFFTranspose = fwdPass.paramsMmulCompatible[4];
+        INDArray wOOTranspose = fwdPass.paramsMmulCompatible[7];
+        INDArray wGGTranspose = fwdPass.paramsMmulCompatible[10];
 
         //Parameter gradients, summed across time. bias gradients, input weight gradients, recurrent weight gradients
         INDArray[] bGradients = new INDArray[4];
@@ -246,7 +244,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
             //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
             //But here, need to add 4 weights * deltas for the IFOG gates
-            INDArray epsilonNextSlice = deltai.mmul(wiTranspose);
+            INDArray epsilonNextSlice = Nd4j.gemm(deltai,wi,false,true);
             Nd4j.gemm(deltao, wo, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltao.mmul(woTranspose))
             Nd4j.gemm(deltag, wg, epsilonNextSlice, false, true, 1.0, 1.0);   //epsilonNextSlice.addi(deltag.mmul(wgTranspose));
             if (t > 0)
