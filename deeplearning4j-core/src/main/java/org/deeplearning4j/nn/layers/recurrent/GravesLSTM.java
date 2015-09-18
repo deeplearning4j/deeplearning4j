@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -386,6 +387,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             toReturn.fwdPassOutput = outputActivations;
         }
 
+        Level1 l1BLAS = Nd4j.getBlasWrapper().level1();
+
         if(prevOutputActivations == null) prevOutputActivations = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
         if(prevMemCellState == null) prevMemCellState = Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize});
         for( int t = 0; t < timeSeriesLength; t++ ){
@@ -403,7 +406,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             INDArray forgetGateActivations = miniBatchData.mmul(wf);
             Nd4j.gemm(prevOutputActivations, wF, forgetGateActivations, false, false, 1.0, 1.0);
             INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
-            Nd4j.getBlasWrapper().level1().axpy(pmcellWFF.length(),1.0, pmcellWFF, forgetGateActivations);   //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
+            l1BLAS.axpy(pmcellWFF.length(),1.0, pmcellWFF, forgetGateActivations);   //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
             //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
             forgetGateActivations.addiRowVector(bf);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
@@ -413,19 +416,20 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             INDArray inputModGateActivations = miniBatchData.mmul(wg);
             Nd4j.gemm(prevOutputActivations, wG, inputModGateActivations, false, false, 1.0, 1.0);
             INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
-            Nd4j.getBlasWrapper().level1().axpy(pmcellWGG.length(),1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
+            l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
             inputModGateActivations.addiRowVector(bg);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
             if(forBackprop) toReturn.ga[t] = inputModGateActivations;
 
             //Memory cell state
-            INDArray currentMemoryCellState = forgetGateActivations.mul(prevMemCellState)
-                    .addi(inputModGateActivations.mul(inputActivations));
+            INDArray currentMemoryCellState = forgetGateActivations.dup('f').muli(prevMemCellState);
+            INDArray inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
+            l1BLAS.axpy(currentMemoryCellState.length(),1.0,inputModMulInput,currentMemoryCellState);   //currentMemoryCellState.addi(inputModMulInput)
 
             INDArray outputGateActivations = miniBatchData.mmul(wo);
             Nd4j.gemm(prevOutputActivations, wO, outputGateActivations, false, false, 1.0, 1.0);
-            INDArray pmcellWOO = prevMemCellState.dup('f').muliRowVector(wOOTranspose);
-            Nd4j.getBlasWrapper().level1().axpy(pmcellWOO.length(),1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
+            INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
+            l1BLAS.axpy(pmcellWOO.length(),1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
             outputGateActivations.addiRowVector(bo);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
             if(forBackprop) toReturn.oa[t] = outputGateActivations;
