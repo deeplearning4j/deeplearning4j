@@ -92,6 +92,7 @@ class LossCalculation {
                 break;
             case DOUBLE:
                 BooleanIndexing.applyWhere(log, new Or(Conditions.isNan(),Conditions.isInfinite()), new StableNumber(StableNumber.Type.DOUBLE));
+
                 break;
             case INT:
                 BooleanIndexing.applyWhere(log, new Or(Conditions.isNan(),Conditions.isInfinite()), new Value(-Integer.MAX_VALUE));
