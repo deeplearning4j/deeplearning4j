@@ -118,11 +118,11 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         INDArray[] iwGradients = new INDArray[4];
         INDArray[] rwGradients = new INDArray[7];    //Order: {I,F,O,G,FF,OO,GG}
         for (int i = 0; i < 4; i++) {
-            bGradients[i] = Nd4j.zeros(1, hiddenLayerSize);
+            bGradients[i] = Nd4j.create(new int[]{1, hiddenLayerSize}); //Order as per Nd4j.order()
             iwGradients[i] = Nd4j.create(new int[]{prevLayerSize, hiddenLayerSize}, 'f'); //f order for use in gemm
             rwGradients[i] = Nd4j.create(new int[]{hiddenLayerSize, hiddenLayerSize}, 'f');
         }
-        for (int i = 0; i < 3; i++) rwGradients[i + 4] = Nd4j.zeros(1, hiddenLayerSize);
+        for (int i = 0; i < 3; i++) rwGradients[i + 4] = Nd4j.zeros(1, hiddenLayerSize);    //Order as per Nd4j.order()
 
         INDArray epsilonNext = Nd4j.zeros(miniBatchSize, prevLayerSize, timeSeriesLength);    //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
@@ -195,8 +195,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             INDArray af = fwdPass.fa[t];
             INDArray deltaf = null;
             if (t > 0) {
-                deltaf = nablaCellState.mul(prevMemCellState)
-                        .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", af.dup())));    //Equivalent to sigmoid deriv on zf
+                deltaf = nablaCellState.dup('f').muli(prevMemCellState)
+                        .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", af.dup('f'))));    //Equivalent to sigmoid deriv on zf
             }
             //Shape: [m,n^L]
 
@@ -204,7 +204,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             INDArray ag = fwdPass.ga[t];
             INDArray ai = fwdPass.ia[t];
             INDArray deltag = ai.muli(nablaCellState)
-                    .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ag.dup())));    //Equivalent to sigmoid deriv on zg
+                    .muli(Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("timesoneminus", ag.dup('f'))));    //Equivalent to sigmoid deriv on zg
             //Shape: [m,n^L]
 
             //Network input delta:
@@ -227,20 +227,22 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                 Nd4j.gemm(prevHiddenUnitActivation, deltao, rwGradients[2], true, false, 1.0, 1.0);   //rwGradients[2].addi(prevActTranspose.mmul(deltao));
                 Nd4j.gemm(prevHiddenUnitActivation, deltag, rwGradients[3], true, false, 1.0, 1.0);   //rwGradients[3].addi(prevActTranspose.mmul(deltag));
 
-
                 //Shape: [1,n^L]. sum(0) is sum over examples in mini-batch.
-                INDArray dLdwFF = deltaf.mul(prevMemCellState).sum(0);    //mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
-                rwGradients[4].addi(dLdwFF);    //dL/dw_{FF}
-                INDArray dLdwGG = deltag.mul(prevMemCellState).sum(0);
-                rwGradients[6].addi(dLdwGG);
+                //Can use axpy here because result of sum and rwGradients[4 to 6] have order Nd4j.order(), via Nd4j.create()
+                INDArray dLdwFF = deltaf.dup('f').muli(prevMemCellState).sum(0);    //mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
+                l1BLAS.axpy(rwGradients[4].length(),1.0,dLdwFF,rwGradients[4]);     //rwGradients[4].addi(dLdwFF);    //dL/dw_{FF}
+                INDArray dLdwGG = deltag.dup('f').muli(prevMemCellState).sum(0);
+                l1BLAS.axpy(rwGradients[6].length(),1.0,dLdwGG,rwGradients[6]);     //rwGradients[6].addi(dLdwGG);
             }
-            INDArray dLdwOO = deltao.mul(currMemCellState).sum(0);    //Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
-            rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
 
-            bGradients[0].addi(deltai.sum(0));
-            if (t > 0) bGradients[1].addi(deltaf.sum(0));
-            bGradients[2].addi(deltao.sum(0));
-            bGradients[3].addi(deltag.sum(0));
+            INDArray dLdwOO = deltao.dup('f').muli(currMemCellState).sum(0);    //Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
+            l1BLAS.axpy(rwGradients[5].length(),1.0,dLdwOO,rwGradients[5]); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
+
+            //Can use axpy here because result of sum and bGradients[i] both have order Nd4j.order(), via Nd4j.create()
+            l1BLAS.axpy(bGradients[0].length(),1.0,deltai.sum(0),bGradients[0]);    //bGradients[0].addi(deltai.sum(0));
+            if(t>0) l1BLAS.axpy(bGradients[1].length(),1.0,deltaf.sum(0),bGradients[1]);    //bGradients[1].addi(deltaf.sum(0));
+            l1BLAS.axpy(bGradients[2].length(),1.0,deltao.sum(0),bGradients[2]);    //bGradients[2].addi(deltao.sum(0));
+            l1BLAS.axpy(bGradients[3].length(),1.0,deltag.sum(0),bGradients[3]);    //bGradients[3].addi(deltag.sum(0));
 
             //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
             //But here, need to add 4 weights * deltas for the IFOG gates
@@ -377,7 +379,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         }
 
         //Allocate arrays for activations:
-        INDArray outputActivations = null; //Nd4j.zeros(new int[]{miniBatchSize,hiddenLayerSize,timeSeriesLength});
+        INDArray outputActivations = null;
 
         FwdPassReturn toReturn = new FwdPassReturn();
         if (forBackprop) {
@@ -445,7 +447,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
             //LSTM unit outputs:
             INDArray currMemoryCellActivation = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), currentMemoryCellState.dup('f')));
-            INDArray currHiddenUnitActivations = currMemoryCellActivation.mul(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
+            INDArray currHiddenUnitActivations = currMemoryCellActivation.dup('f').muli(outputGateActivations);    //Expected shape: [m,hiddenLayerSize]
 
             if (forBackprop) {
                 toReturn.fwdPassOutputAsArrays[t] = currHiddenUnitActivations;
