@@ -394,24 +394,27 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
             //Calculate activations for: network input + forget, output, input modulation gates.
             INDArray inputActivations = miniBatchData.mmul(wi);
-            Nd4j.gemm(prevOutputActivations,wI,inputActivations,false,false,1.0,1.0);
+            Nd4j.gemm(prevOutputActivations, wI, inputActivations, false, false, 1.0, 1.0);
             inputActivations.addiRowVector(bi);
             if(forBackprop) toReturn.iz[t] = inputActivations.dup('f');
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), inputActivations));
             if(forBackprop) toReturn.ia[t] = inputActivations;
 
             INDArray forgetGateActivations = miniBatchData.mmul(wf);
-            Nd4j.gemm(prevOutputActivations,wF,forgetGateActivations,false,false,1.0,1.0);
-            forgetGateActivations.addi(prevMemCellState.mulRowVector(wFFTranspose))
-                    .addiRowVector(bf);
+            Nd4j.gemm(prevOutputActivations, wF, forgetGateActivations, false, false, 1.0, 1.0);
+            INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
+            Nd4j.getBlasWrapper().level1().axpy(pmcellWFF.length(),1.0, pmcellWFF, forgetGateActivations);   //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
+            //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
+            forgetGateActivations.addiRowVector(bf);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", forgetGateActivations));
             if(forBackprop) toReturn.fa[t] = forgetGateActivations;
 
 
             INDArray inputModGateActivations = miniBatchData.mmul(wg);
-            Nd4j.gemm(prevOutputActivations,wG,inputModGateActivations,false,false,1.0,1.0);
-            inputModGateActivations.addi(prevMemCellState.mulRowVector(wGGTranspose))
-                    .addiRowVector(bg);
+            Nd4j.gemm(prevOutputActivations, wG, inputModGateActivations, false, false, 1.0, 1.0);
+            INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
+            Nd4j.getBlasWrapper().level1().axpy(pmcellWGG.length(),1.0, pmcellWGG, inputModGateActivations);   //inputModGateActivations.addi(pmcellWGG)
+            inputModGateActivations.addiRowVector(bg);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", inputModGateActivations));
             if(forBackprop) toReturn.ga[t] = inputModGateActivations;
 
@@ -420,9 +423,10 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                     .addi(inputModGateActivations.mul(inputActivations));
 
             INDArray outputGateActivations = miniBatchData.mmul(wo);
-            Nd4j.gemm(prevOutputActivations,wO,outputGateActivations,false,false,1.0,1.0);
-            outputGateActivations.addi(currentMemoryCellState.mulRowVector(wOOTranspose))
-                    .addiRowVector(bo);
+            Nd4j.gemm(prevOutputActivations, wO, outputGateActivations, false, false, 1.0, 1.0);
+            INDArray pmcellWOO = prevMemCellState.dup('f').muliRowVector(wOOTranspose);
+            Nd4j.getBlasWrapper().level1().axpy(pmcellWOO.length(),1.0, pmcellWOO, outputGateActivations);   //outputGateActivations.addi(pmcellWOO)
+            outputGateActivations.addiRowVector(bo);
             Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", outputGateActivations));
             if(forBackprop) toReturn.oa[t] = outputGateActivations;
 
