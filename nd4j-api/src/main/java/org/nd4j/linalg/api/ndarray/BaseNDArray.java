@@ -745,19 +745,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return ret2.slice(offset);
 
         if(length == NDArrayMath.lengthPerSlice(ret2)) {
-           /* while(offset >= ret2.slices())
-                offset -= ret2.slices();*/
             offset -= ret2.slices() * (offset / ret2.slices());
             ret2 = ret2.slice(offset);
             return ret2;
         }
 
-
         while(ret2.length() > length) {
             sliceIdx = NDArrayMath.sliceOffsetForTensor(index, ret2, tensorShape);
             sliceIdx -= ret2.slices() * (sliceIdx / ret2.slices());
             ret2 = ret2.slice(sliceIdx);
-
         }
 
         return  ret2;
@@ -1066,16 +1062,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             });
         }
 
-        else if(arr.rank() == rank()) {
-            Shape.iterate(this, arr, new CoordinateFunction() {
+
+        else {
+      /*      Shape.iterate(this, arr, new CoordinateFunction() {
                 @Override
                 public void process(int[]... coord) {
                     putScalar(coord[0],arr.getDouble(coord[1]));
                 }
-            });
-        }
-
-        else {
+            });*/
             NdIndexIterator iterator = new NdIndexIterator(this.shape());
             NdIndexIterator otherIter = new NdIndexIterator(arr.shape());
             for(int i = 0; i < length(); i++) {
@@ -2922,11 +2916,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(slice < 0)
             slice += shape.length;
         List<INDArrayIndex> indices = new ArrayList<>();
-        indices.add(NDArrayIndex.point(slice));
+        INDArrayIndex[] indexes = new INDArrayIndex[rank()];
+        indexes[0] = NDArrayIndex.point(slice);
         for(int i = 1; i < rank(); i++) {
-            indices.add(NDArrayIndex.all());
+            indexes[i] = NDArrayIndex.all();
         }
-        return get(indices.toArray(new INDArrayIndex[indices.size()]));
+        return get(indexes);
     }
 
 

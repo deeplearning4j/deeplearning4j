@@ -890,8 +890,20 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray valueArrayOf(int[] shape, double value) {
-        INDArray create = create(shape);
-        create.assign(value);
+        INDArray create = null;
+        if(Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            double[] vals = new double[ArrayUtil.prod(shape)];
+            if(value != 0.0)
+                Arrays.fill(vals,value);
+            create = Nd4j.create(vals,shape);
+        }
+        else if(Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            float[] vals = new float[ArrayUtil.prod(shape)];
+            if(value != 0.0)
+                Arrays.fill(vals,(float) value);
+            create = Nd4j.create(vals,shape);
+        }
+
         return create;
     }
 
