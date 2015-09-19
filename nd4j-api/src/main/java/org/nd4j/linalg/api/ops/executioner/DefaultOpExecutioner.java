@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.parallel.DefaultParallelExecutionProvider;
+import org.nd4j.linalg.api.parallel.DefaultParallelExecutioner;
+import org.nd4j.linalg.api.parallel.ParallelExecutionProvider;
+import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,6 +50,22 @@ import java.util.Arrays;
 public class DefaultOpExecutioner implements OpExecutioner {
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
+    protected ParallelExecutionProvider parallelExecutionProvider;
+    protected ParallelExecutioner executorService;
+
+    public DefaultOpExecutioner() {
+        String provider = System.getProperty(ParallelExecutionProvider.EXECUTOR_SERVICE_PROVIDER,DefaultParallelExecutionProvider.class.getName());
+        try {
+            Class<? extends ParallelExecutionProvider> executorServiceProvider = (Class<? extends ParallelExecutionProvider>) Class.forName(provider);
+            this.parallelExecutionProvider = executorServiceProvider.newInstance();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        this.executorService = parallelExecutionProvider.getService();
+
+    }
 
     @Override
     public Op exec(Op op) {
@@ -262,6 +282,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             INDArray originalX = op.x();
             INDArray originalZ = op.z();
             for(int i = 0; i < originalX.slices(); i++) {
+
                 INDArray slice = originalX.slice(i);
                 INDArray zSlice = originalZ.slice(i);
                 op.setX(slice);
@@ -351,7 +372,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 Accumulation a = (Accumulation) op;
                 return exec(a);
             }
-            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+
+
+            parallelExecutionProvider.getService().execBasedOnArraysLongDimension(op.x(),op,this,dimension);
+
+
+           /* for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
                 Op op2 = op.opForDimension(i, dimension);
                 exec(op2);
                 if (op instanceof TransformOp) {
@@ -361,7 +387,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 }
 
 
-            }
+            }*/
             return op;
         }
     }
@@ -377,7 +403,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Accumulation a = (Accumulation) op;
             return exec(a);
         }
-        for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+   /*     for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);
             if (op instanceof TransformOp) {
@@ -387,7 +413,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
 
 
-        }
+        }*/
+        parallelExecutionProvider.getService().execBasedOnArraysLongDimension(op.x(),op,this,dimension);
+
         return op;
     }
 
@@ -522,12 +550,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(dimension.length == 1)
             return execAndReturnVector(op,dimension[0]);
         else {
-         Shape.iterate(op.x(), new CoordinateFunction() {
-             @Override
-             public void process(int[]... coord) {
-                 apply(op,coord[0],coord[0]);
-             }
-         });
+            Shape.iterate(op.x(), new CoordinateFunction() {
+                @Override
+                public void process(int[]... coord) {
+                    apply(op,coord[0],coord[0]);
+                }
+            });
 
             return op.z();
 

@@ -122,6 +122,16 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testAlongDimension() {
+        INDArray arr = Nd4j.linspace(1,4,4).reshape(2,2);
+        Sigmoid sigmoid = new Sigmoid(arr.dup());
+        Nd4j.getExecutioner().exec(sigmoid,1);
+        INDArray sigmoidREsult = Transforms.sigmoid(arr);
+        assertEquals(sigmoidREsult,sigmoid.z());
+    }
+
+
+    @Test
     public void testNormMax() {
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4});
         double normMax = Nd4j.getExecutioner().execAndReturn(new NormMax(arr)).currentResult().doubleValue();
