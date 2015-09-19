@@ -20,10 +20,7 @@
 package org.nd4j.linalg.factory;
 
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
@@ -1032,6 +1029,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
         int arrOffset = 0;
+        INDArray[] retAlongDimensionArrays = new INDArray[ret.tensorssAlongDimension(dimension)];
+        for(int i = 0; i < retAlongDimensionArrays.length; i++)
+            retAlongDimensionArrays[i] = ret.tensorAlongDimension(i,dimension);
+
         for(INDArray arr : toConcat) {
             int arrTensorLength = -1;
 
@@ -1040,7 +1041,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
             for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-                INDArray retLinear = ret.tensorAlongDimension(i, dimension);
+                INDArray retLinear = retAlongDimensionArrays[i];
                 INDArray arrTensor = arr.tensorAlongDimension(i, dimension);
 
                 arrTensorLength = arrTensor.length();
