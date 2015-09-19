@@ -24,7 +24,11 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.indexing.conditions.Condition;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Boolean indexing
@@ -75,12 +79,15 @@ public class BooleanIndexing {
      * @return true if all of the elements meet the specified
      * condition false otherwise
      */
-    public static boolean and(INDArray n, Condition cond) {
+    public static boolean and(final INDArray n, final Condition cond) {
         boolean ret = true;
-        INDArray linear = n.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            ret = ret && cond.apply(linear.getFloat(i));
-        }
+        final AtomicBoolean a = new AtomicBoolean(ret);
+        Shape.iterate(n, new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                a.set(a.get() && cond.apply(n.getFloat(coord[0])));
+            }
+        });
 
         return ret;
     }
@@ -92,12 +99,15 @@ public class BooleanIndexing {
      * @param cond
      * @return
      */
-    public static boolean or(INDArray n, Condition cond) {
+    public static boolean or(final INDArray n, final Condition cond) {
         boolean ret = false;
-        INDArray linear = n.linearView();
-        for (int i = 0; i < linear.length(); i++) {
-            ret = ret || cond.apply(linear.getFloat(i));
-        }
+        final AtomicBoolean a = new AtomicBoolean(ret);
+        Shape.iterate(n, new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                a.set(a.get() || cond.apply(n.getFloat(coord[0])));
+            }
+        });
 
         return ret;
     }
@@ -110,12 +120,17 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(INDArray to, Condition condition, Function<Number, Number> function) {
+    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
         INDArray linear = to.linearView();
-        for (int i = 0; i < linear.linearView().length(); i++)
-            if (condition.apply(linear.getFloat(i))) {
-                linear.putScalar(i, function.apply(linear.getDouble(i)).floatValue());
+        Shape.iterate(to, new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                if(condition.apply(to.getDouble(coord[0])))
+                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+
             }
+        });
+
     }
 
     /**
@@ -126,14 +141,18 @@ public class BooleanIndexing {
      * @param condition the condition on op
      * @param function  the function to apply the op to
      */
-    public static void applyWhere(INDArray to, Condition condition, Function<Number, Number> function, Function<Number, Number> alternativeFunction) {
-        INDArray linear = to.linearView();
-        for (int i = 0; i < linear.linearView().length(); i++)
-            if (condition.apply(linear.getFloat(i))) {
-                linear.putScalar(i, function.apply(linear.getDouble(i)).floatValue());
-            } else {
-                linear.putScalar(i, alternativeFunction.apply(linear.getDouble(i)).floatValue());
+    public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function,final Function<Number, Number> alternativeFunction) {
+        Shape.iterate(to, new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                if (condition.apply(to.getFloat(coord[0]))) {
+                    to.putScalar(coord[0], function.apply(to.getDouble(coord[0])).floatValue());
+                } else {
+                    to.putScalar(coord[0], alternativeFunction.apply(to.getDouble(coord[0])).floatValue());
+                }
             }
+        });
+
     }
 
     /**
