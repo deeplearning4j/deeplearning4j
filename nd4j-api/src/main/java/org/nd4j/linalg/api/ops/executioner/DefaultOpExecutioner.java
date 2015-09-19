@@ -68,6 +68,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public ParallelExecutioner parallelExecutioner() {
+        return executorService;
+    }
+
+    @Override
     public Op exec(Op op) {
         checkOp(op);
 
@@ -550,10 +555,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(dimension.length == 1)
             return execAndReturnVector(op,dimension[0]);
         else {
+
+
             Shape.iterate(op.x(), new CoordinateFunction() {
                 @Override
                 public void process(int[]... coord) {
-                    apply(op,coord[0],coord[0]);
+                    apply(op, coord[0], coord[0]);
                 }
             });
 

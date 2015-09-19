@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 
 /**
  * An operation executioner handles storage specific details of
@@ -36,6 +37,8 @@ public interface OpExecutioner {
     enum ExecutionMode {
         JAVA,NATIVE
     }
+
+    ParallelExecutioner parallelExecutioner();
 
     /**
      * Execute the operation
