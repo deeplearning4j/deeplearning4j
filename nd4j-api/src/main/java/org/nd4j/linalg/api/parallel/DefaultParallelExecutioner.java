@@ -1,8 +1,11 @@
 package org.nd4j.linalg.api.parallel;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +37,47 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
     }
 
     @Override
-    public void execBasedOnArraysLongDimension(INDArray arr, Op task, OpExecutioner executioner, int... dimension) {
+    public INDArray execBasedOnArraysAlongDimension(INDArray arr, Accumulation task, OpExecutioner executioner, int... dimension) {
+        int[] retShape = ArrayUtil.removeIndex(task.x().shape(), dimension);
+        INDArray retArray = Nd4j.create(retShape);
+        if(forkJoinPool != null) {
+            List<ForkJoinTask<INDArray>> tasks = TaskCreator.parititonForkJoinBasedOnTensorsAlongDimension(arr,task,executioner,retArray,dimension);
+            for(ForkJoinTask<INDArray> task2 : tasks) {
+                forkJoinPool.execute(task2);
+            }
+
+            for(ForkJoinTask<INDArray> block : tasks) {
+                try {
+                    block.get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        else {
+            List<Runnable> runnables = TaskCreator.parititonRunnablesBasedOnTensorsAlongDimension(arr,task,executioner,dimension);
+            List<RunnableFuture<INDArray>> futures = new ArrayList<>();
+            for(Runnable runnable : runnables)
+                futures.add((RunnableFuture<INDArray>) executorService.submit(runnable));
+            for(RunnableFuture<INDArray> future : futures)
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+
+        }
+
+        return retArray;
+    }
+
+    @Override
+    public void execBasedOnArraysAlongDimension(INDArray arr, Op task, OpExecutioner executioner, int... dimension) {
         if(forkJoinPool != null) {
             List<ForkJoinTask<INDArray>> tasks = TaskCreator.parititonForkJoinBasedOnTensorsAlongDimension(arr,task,executioner,dimension);
             for(ForkJoinTask<INDArray> task2 : tasks) {
@@ -106,7 +149,7 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
     }
 
     @Override
-    public void execBasedOnArraysLongDimension(INDArray arr, TaskCreator.INDArrayTask task, int... dimension) {
+    public void execBasedOnArraysAlongDimension(INDArray arr, TaskCreator.INDArrayTask task, int... dimension) {
 
         if(forkJoinPool != null) {
             List<ForkJoinTask<INDArray>> tasks = TaskCreator.parititonForkJoinBasedOnTensorsAlongDimension(arr,task,dimension);
@@ -115,6 +158,44 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
             }
 
             for(ForkJoinTask<INDArray> block : tasks) {
+                try {
+                    block.get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        else {
+            List<Runnable> runnables = TaskCreator.parititonRunnablesBasedOnTensorsAlongDimension(arr,task,dimension);
+            List<RunnableFuture<INDArray>> futures = new ArrayList<>();
+            for(Runnable runnable : runnables)
+                futures.add((RunnableFuture<INDArray>) executorService.submit(runnable));
+            for(RunnableFuture<INDArray> future : futures)
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+
+        }
+
+    }
+
+    @Override
+    public void execBasedOnArraysAlongDimension(INDArray[] arr, TaskCreator.INDArrayTask task, int... dimension) {
+
+        if(forkJoinPool != null) {
+            List<ForkJoinTask<INDArray[]>> tasks = TaskCreator.parititonForkJoinBasedOnTensorsAlongDimension(arr,task,dimension);
+            for(ForkJoinTask<INDArray[]> task2 : tasks) {
+                forkJoinPool.execute(task2);
+            }
+
+            for(ForkJoinTask<INDArray[]> block : tasks) {
                 try {
                     block.get();
                 } catch (InterruptedException e) {
