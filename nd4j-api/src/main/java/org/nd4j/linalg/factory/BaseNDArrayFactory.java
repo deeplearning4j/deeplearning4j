@@ -997,9 +997,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
         int sumAlongDim = 0;
+        boolean allC = toConcat[0].ordering() == 'c';
+        boolean allOffsetZero = toConcat[0].offset() == 0;
 
         for (int i = 0; i < toConcat.length; i++) {
             sumAlongDim += toConcat[i].size(dimension);
+            allC = allC && toConcat[i].ordering() == 'c';
+            allOffsetZero = toConcat[i].offset() == 0;
         }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
@@ -1027,6 +1031,20 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
 
+
+        if(dimension == 0 && allC) {
+            int currBuffer = 0;
+            int currBufferOffset = 0;
+            for(int i = 0; i < ret.length(); i++) {
+                ret.data().put(i,toConcat[currBuffer].data().getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
+                if(currBufferOffset >= toConcat[currBuffer].length()) {
+                    currBuffer++;
+                    currBufferOffset = 0;
+                }
+            }
+
+            return ret;
+        }
 
         int arrOffset = 0;
         INDArray[] retAlongDimensionArrays = new INDArray[ret.tensorssAlongDimension(dimension)];
