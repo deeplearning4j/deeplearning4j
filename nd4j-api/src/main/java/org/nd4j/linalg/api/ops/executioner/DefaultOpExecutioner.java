@@ -68,6 +68,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public ParallelExecutioner parallelExecutioner() {
+        return executorService;
+    }
+
+    @Override
     public Op exec(Op op) {
         checkOp(op);
 
@@ -374,20 +379,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
 
 
-            parallelExecutionProvider.getService().execBasedOnArraysLongDimension(op.x(),op,this,dimension);
+            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
 
-
-           /* for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                exec(op2);
-                if (op instanceof TransformOp) {
-                    TransformOp t = (TransformOp) op;
-                    TransformOp t2 = (TransformOp) op2;
-                    t.z().tensorAlongDimension(i, dimension).assign(t2.z());
-                }
-
-
-            }*/
             return op;
         }
     }
@@ -403,18 +396,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Accumulation a = (Accumulation) op;
             return exec(a);
         }
-   /*     for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+/*
+        for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);
             if (op instanceof TransformOp) {
                 TransformOp t = (TransformOp) op;
                 TransformOp t2 = (TransformOp) op2;
-                t.z().vectorAlongDimension(i, dimension).assign(t2.z());
+                t.z().tensorAlongDimension(i, dimension).assign(t2.z());
             }
 
 
         }*/
-        parallelExecutionProvider.getService().execBasedOnArraysLongDimension(op.x(),op,this,dimension);
+        parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
 
         return op;
     }
@@ -451,19 +445,21 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return Nd4j.scalar(execAndReturn(op).currentResultComplex());
             return Nd4j.scalar(execAndReturn(op).currentResult().doubleValue());
         }
-        int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
-        //ensure vector is proper shape
-        if(retShape.length == 1) {
-            if(dimension[0] == 0)
-                retShape = new int[] {1,retShape[0]};
-            else
-                retShape = new int[] {retShape[0],1};
 
-        }
-        else if(retShape.length == 0) {
-            retShape = new int[] {1,1};
-        }
         if(op instanceof IComplexNDArray) {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+            //ensure vector is proper shape
+            if(retShape.length == 1) {
+                if(dimension[0] == 0)
+                    retShape = new int[] {1,retShape[0]};
+                else
+                    retShape = new int[] {retShape[0],1};
+
+            }
+            else if(retShape.length == 0) {
+                retShape = new int[] {1,1};
+            }
+
             IComplexNDArray ret = Nd4j.createComplex(retShape);
             IComplexNDArray linear = ret;
             for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
@@ -479,65 +475,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             return ret;
         }
-        else {
-            INDArray ret = Nd4j.create(retShape);
-            INDArray linear = ret;
-            INDArray opArr;
-            INDArray arr = op.x();
-            int axis = dimension[0];
-        /*
-         * We need to permute the array so that axis is placed at the end.
-         * And all other dimensions are shifted left.
-          */
-            if (dimension[0] != arr.rank() - 1) {
-                int[] newaxes = new int[arr.rank()];
-                int j;
 
-                for (j = 0; j < axis; j++) {
-                    newaxes[j] = j;
-                }
-
-                for (j = axis; j < arr.rank() - 1; j++) {
-                    newaxes[j] = j + 1;
-                }
-
-                newaxes[newaxes.length - 1] = axis;
-                opArr = arr.permute(newaxes);
-
-            }
-            else {
-                opArr = arr;
-            }
-
-            int m =  opArr.size(-1);
-            int n = arr.length() / m;
-            int[] shape = {1,m};
-            int[] strides =  Nd4j.getStrides(shape,op.x().ordering());
-            //need to retain strides for column vectors
-            if(opArr.isMatrix() && dimension.length == 1 && dimension[0] == 0) {
-                for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                    Op op2 = op.opForDimension(i, dimension);
-                    double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
-                    linear.putScalar(i, result);
-
-                }
-
-                return linear;
-            }
-            else {
-                for (int ip = 0, i = 0; i < ret.length(); i++, ip +=  m) {
-                    INDArray maxAlong = Nd4j.create(arr.data(),shape,strides,ip);
-                    op.setX(maxAlong);
-                    double result = execAndReturn(op).currentResult().doubleValue();
-                    ret.putScalar(i,result);
-                    op.setCurrentResult(op.zero());
-                }
-
-            }
+        else
+            return parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this,dimension);
 
 
-            return ret;
-        }
 
 
     }
@@ -550,13 +492,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(dimension.length == 1)
             return execAndReturnVector(op,dimension[0]);
         else {
-            Shape.iterate(op.x(), new CoordinateFunction() {
-                @Override
-                public void process(int[]... coord) {
-                    apply(op,coord[0],coord[0]);
-                }
-            });
-
+            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
             return op.z();
 
         }
@@ -568,11 +504,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op.z();
         }
 
-        for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-            Op op2 = op.opForDimension(i, dimension);
-            exec(op2);
-            op.z().vectorAlongDimension(i, dimension).assign(op2.z());
-        }
+        parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
+
         return op.z();
     }
 

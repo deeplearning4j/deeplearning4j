@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.parallel;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
@@ -14,6 +15,14 @@ import java.util.concurrent.Future;
  */
 public interface ParallelExecutioner {
 
+    /**
+     *
+     * @param arr
+     * @param task
+     * @param dimension
+     */
+    INDArray execBasedOnArraysAlongDimension(INDArray arr, Accumulation task, OpExecutioner executioner, int... dimension);
+
 
     /**
      *
@@ -21,7 +30,7 @@ public interface ParallelExecutioner {
      * @param task
      * @param dimension
      */
-    void execBasedOnArraysLongDimension(INDArray arr,Op task,OpExecutioner executioner, int... dimension);
+    void execBasedOnArraysAlongDimension(INDArray arr, Op task, OpExecutioner executioner, int... dimension);
 
     /**
      *
@@ -36,7 +45,16 @@ public interface ParallelExecutioner {
      * @param task
      * @param dimension
      */
-    void execBasedOnArraysLongDimension(INDArray arr, TaskCreator.INDArrayTask task, int... dimension);
+    void execBasedOnArraysAlongDimension(INDArray arr, TaskCreator.INDArrayTask task, int... dimension);
+
+
+    /**
+     *
+     * @param arr
+     * @param task
+     * @param dimension
+     */
+    void execBasedOnArraysAlongDimension(INDArray[] arr, TaskCreator.INDArrayTask task, int... dimension);
 
     /**
      *
