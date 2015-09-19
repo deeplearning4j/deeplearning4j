@@ -37,6 +37,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.NDArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1871,8 +1872,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
             INDArray dup = Shape.toOffsetZeroCopy(in);
-            INDArray dupc = Shape.toOffsetZeroCopy(in,'c');
-            INDArray dupf = Shape.toOffsetZeroCopy(in,'f');
+            INDArray dupc = Shape.toOffsetZeroCopy(in, 'c');
+            INDArray dupf = Shape.toOffsetZeroCopy(in, 'f');
             INDArray dupany = Shape.toOffsetZeroCopyAnyOrder(in);
 
             assertEquals(msg,in,dup);
@@ -1893,6 +1894,53 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testTensorStats(){
+        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(9,13,123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+            INDArray arr = pair.getFirst();
+            String msg = pair.getSecond();
+
+            int nTAD0 = arr.tensorssAlongDimension(0);
+            int nTAD1 = arr.tensorssAlongDimension(1);
+
+            NDArrayUtil.Tensor1DStats t0 = NDArrayUtil.get1DTensorStats(arr, 0);
+            NDArrayUtil.Tensor1DStats t1 = NDArrayUtil.get1DTensorStats(arr, 1);
+
+            assertEquals(nTAD0,t0.getNumTensors());
+            assertEquals(nTAD1, t1.getNumTensors());
+
+            INDArray tFirst0 = arr.tensorAlongDimension(0,0);
+            INDArray tSecond0 = arr.tensorAlongDimension(1,0);
+
+            INDArray tFirst1 = arr.tensorAlongDimension(0,1);
+            INDArray tSecond1 = arr.tensorAlongDimension(1,1);
+
+            assertEquals(tFirst0.offset(),t0.getFirstTensorOffset());
+            assertEquals(tFirst1.offset(),t1.getFirstTensorOffset());
+            int separation0 = tSecond0.offset()-tFirst0.offset();
+            int separation1 = tSecond1.offset()-tFirst1.offset();
+            assertEquals(separation0,t0.getTensorStartSeparation());
+            assertEquals(separation1,t1.getTensorStartSeparation());
+
+            for( int i=0; i<nTAD0; i++ ){
+                INDArray tad0 = arr.tensorAlongDimension(i,0);
+                assertArrayEquals(tad0.shape(),t0.getTensorShape());
+                assertEquals(tad0.length(),t0.getTensorLength());
+                assertArrayEquals(tad0.stride(),t0.getTensorStride());
+                assertEquals(tad0.elementStride(),t0.getElementWiseStride());
+            }
+
+            for( int i=0; i<nTAD1; i++ ){
+                INDArray tad1 = arr.tensorAlongDimension(i,1);
+                assertArrayEquals(tad1.shape(),t1.getTensorShape());
+                assertEquals(tad1.length(), t1.getTensorLength());
+                assertArrayEquals(tad1.stride(), t1.getTensorStride());
+                assertEquals(tad1.elementStride(),t1.getElementWiseStride());
+            }
+        }
+    }
 
 
 

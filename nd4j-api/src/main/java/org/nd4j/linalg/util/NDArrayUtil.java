@@ -19,6 +19,9 @@
 
 package org.nd4j.linalg.util;
 
+import com.google.common.primitives.Ints;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -208,6 +211,75 @@ public class NDArrayUtil {
         System.arraycopy(nd.data(), 0, ret.data(), 0, (int) nd.data().length());
         return ret;
 
+    }
+
+    public static Tensor1DStats get1DTensorStats(INDArray array, int dimension){
+        //As per BaseNDArray.tensorAlongDimension
+        int[] tensorShape = ArrayUtil.keep(array.shape(), dimension);
+        int tensorLength = ArrayUtil.prod(tensorShape);
+
+        int[] remove = ArrayUtil.removeIndex(ArrayUtil.range(0, array.rank()), dimension);
+        int[] newPermuteDims = Arrays.copyOf(remove, remove.length + 1);
+        newPermuteDims[newPermuteDims.length-1] = dimension;
+
+
+        INDArray temp0 = array.tensorAlongDimension(0,dimension);
+        INDArray temp1 = array.tensorAlongDimension(1,dimension);
+        int tensorStartSeparation = temp1.offset() - temp0.offset();
+
+        //As per NDArrayMath.sliceOffsetForTensor
+        int firstTensorOffset = array.offset();
+
+        //As per tensorssAlongDimension:
+        int numTensors = array.length() / tensorLength;
+
+        int elementStride = temp0.elementWiseStride();  //TODO
+
+        return new Tensor1DStats(firstTensorOffset,tensorStartSeparation,
+                numTensors,tensorLength,elementStride);
+    }
+
+    @AllArgsConstructor @Data
+    public static class Tensor1DStats {
+        public final int firstTensorOffset;
+        public final int tensorStartSeparation;
+        public final int numTensors;
+        public final int tensorLength;
+        public final int elementWiseStride;
+    }
+
+    public static INDArray doElementWiseOp(INDArray first, INDArray second, char op){
+        boolean canDoDirectly = false;
+        if(canDoDirectly){
+            throw new UnsupportedOperationException("Not implemented");
+        } else {
+            int opAlongDimension = ArrayUtil.argMin(first.shape());
+            Tensor1DStats fs = get1DTensorStats(first, opAlongDimension);
+            Tensor1DStats ss = get1DTensorStats(second,opAlongDimension);
+        }
+    }
+
+    private static INDArray doOp(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
+        switch(op){
+            case 'a':
+            case 's':
+                //first.addi(second) or first.subi(second)
+                double a = (op == 'a' ? 1.0 : -1.0);
+                Nd4j.getBlasWrapper().level1().axpy(fs.getTensorLength(),a,first,second);
+                break;
+            case 'm':
+                //muli
+                throw new UnsupportedOperationException("not yet implemented");
+                break;
+            case 'd':
+                //divi
+                throw new UnsupportedOperationException("not yet implemented");
+                break;
+            case 'p':   //put / copy
+                throw new UnsupportedOperationException("not yet implemented");
+                break;
+        }
+        return null;    //TODO
     }
 
 

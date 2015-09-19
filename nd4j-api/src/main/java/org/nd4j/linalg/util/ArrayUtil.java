@@ -1298,4 +1298,35 @@ public class ArrayUtil {
             throw new IllegalStateException("Unknown array type");	//Should never happen
         return shape;
     }
+
+
+    /** Returns the maximum value in the array */
+    public static int max(int[] in){
+        int max = Integer.MIN_VALUE;
+        for( int i=0; i<in.length; i++ ) if(in[i]>max) max = in[i];
+        return max;
+    }
+
+    /** Returns the minimum value in the array */
+    public static int min(int[] in){
+        int min = Integer.MAX_VALUE;
+        for( int i=0; i<in.length; i++ ) if(in[i]<min) min = in[i];
+        return min;
+    }
+
+    /** Returns the index of the maximum value in the array.
+     * If two entries have same maximum value, index of the first one is returned. */
+    public static int argMax(int[] in){
+        int maxIdx = 0;
+        for( int i=1; i<in.length; i++ ) if(in[i]>in[maxIdx]) maxIdx = i;
+        return maxIdx;
+    }
+
+    /** Returns the index of the minimum value in the array.
+     * If two entries have same minimum value, index of the first one is returned. */
+    public static int argMin(int[] in){
+        int minIdx = 0;
+        for( int i=1; i<in.length; i++ ) if(in[i]<in[minIdx]) minIdx = i;
+        return minIdx;
+    }
 }
