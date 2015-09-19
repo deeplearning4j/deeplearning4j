@@ -121,7 +121,6 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function) {
-        INDArray linear = to.linearView();
         Shape.iterate(to, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
