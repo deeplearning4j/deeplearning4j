@@ -18,17 +18,17 @@
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
-import com.google.common.primitives.Ints;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -90,17 +90,23 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 int outW = epsilon.size(3);
                 //compute backwards kernel based on rearranging the given error
                 retE = Nd4j.zeros(n, c, layerConf().getKernelSize()[0], layerConf().getKernelSize()[1], outH, outW);
-                reshaped = retE.reshape(n,c,-1,outH,outW);
+                reshaped = retE.reshape(n, c, -1, outH, outW);
                 reshapeEpsilon = Nd4j.rollAxis(reshaped,2);
 
-                Iterator<int[]> iter = new NdIndexIterator(n,c,outH,outW);
-                while(iter.hasNext()) {
-                    int[] i = iter.next();
-                    double epsGet = epsilon.getDouble(i);
-                    int idx = maxIndexes.getInt(i);
-                    INDArray sliceToGetFrom = reshapeEpsilon.get(NDArrayIndex.point(idx));
-                    sliceToGetFrom.putScalar(i,epsGet);
-                }
+                //Iterator<int[]> iter = new NdIndexIterator('c',true,n,c,outH,outW);
+                final INDArray finalEps = epsilon;
+                final INDArray reshapedEps = reshapeEpsilon;
+                Shape.iterate(0, 4, new int[]{n, c, outH, outW}, new int[4], new CoordinateFunction() {
+                    @Override
+                    public void process(int[]... coord) {
+                        int[] i = coord[0];
+                        double epsGet = finalEps.getDouble(i);
+                        int idx = maxIndexes.getInt(i);
+                        INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
+                        sliceToGetFrom.putScalar(i,epsGet);
+                    }
+                });
+
                 reshapeEpsilon = Convolution.col2im(retE,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
             case AVG:

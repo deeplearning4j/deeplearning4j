@@ -18,17 +18,12 @@
 
 package org.deeplearning4j.nn.multilayer;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.google.common.collect.Lists;
-
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.DataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,16 +31,10 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
-import org.deeplearning4j.nn.conf.override.ClassifierOverride;
-import org.deeplearning4j.nn.conf.override.ConfOverride;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
-import org.deeplearning4j.nn.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.factory.LayerFactories;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.plot.iterationlistener.NeuralNetPlotterIterationListener;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -55,7 +44,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.*;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by agibsonccc on 12/27/14.
@@ -70,9 +63,12 @@ public class MultiLayerTest {
         Nd4j.MAX_SLICES_TO_PRINT = Integer.MAX_VALUE;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list(1).layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
+                .list(2)
+                .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
                         .nIn(4).nOut(3)
                         .activation("tanh")
+                        .build())
+                .layer(1,new RBM.Builder(RBM.HiddenUnit.GAUSSIAN, RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(2)
                         .build())
                 .build();
 
@@ -81,17 +77,12 @@ public class MultiLayerTest {
 
         INDArray params = network3.params();
         network3.setParameters(params);
-        network3.computeGradientAndScore();
         INDArray params4 = network3.params();
         assertEquals(params, params4);
     }
 
     @Test
     public void testReDistribute() {
-        DataSetIterator iter = new LFWDataSetIterator(28,28);
-
-        DataSet next = iter.next();
-        next.normalizeZeroMeanZeroUnitVariance();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
@@ -99,7 +90,7 @@ public class MultiLayerTest {
                 .iterations(5).learningRate(1e-3)
                 .list(4)
                 .layer(0, new RBM.Builder(RBM.HiddenUnit.RECTIFIED, RBM.VisibleUnit.GAUSSIAN)
-                        .nIn(next.numInputs()).nOut(600)
+                        .nIn(200).nOut(600)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                         .build())
@@ -114,7 +105,7 @@ public class MultiLayerTest {
                         .lossFunction(LossFunctions.LossFunction.RMSE_XENT)
                         .build())
                 .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .nIn(100).nOut(iter.totalOutcomes())
+                        .nIn(100).nOut(50)
                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1e-5))
                         .build())
                 .build();

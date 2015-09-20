@@ -26,13 +26,9 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-scaleout</artifactId>
-        <version>0.4-rc2.2-SNAPSHOT</version>
+        <version>0.4-rc3.2-SNAPSHOT</version>
     </parent>
     <packaging>pom</packaging>
-    <properties>
-        <logback.version>1.0.6</logback.version>
-        <spring.version>3.2.5.RELEASE</spring.version>
-    </properties>
 
     <repositories>
         <repository>

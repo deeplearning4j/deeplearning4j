@@ -148,6 +148,10 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
             return this;
         }
 
+        public Map<Integer, Builder> getLayerwise() {
+            return layerwise;
+        }
+
         /**
          * Build the multi layer network
          * based on this neural network and
@@ -160,7 +164,9 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
-                    pretrain(pretrain)
+                    pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+                    .tBPTTBackwardLength(tbpttBackLength)
+                    .redistributeParams(redistributeParams)
                     .confs(list).build();
         }
 
@@ -263,6 +269,8 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
         return ret;
     }
 
+
+    @Data
     public static class Builder implements Cloneable {
         private double rmsDecay = 0.95;
         private double lr = 1e-1f;
@@ -448,13 +456,13 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
-            conf.l1 = l1;
+            conf.l1 = (!Double.isNaN(layer.getL1()) ? layer.getL1() : l1);
             conf.batchSize = batchSize;
             conf.layer = layer;
-            conf.lr = lr;
+            conf.lr = (!Double.isNaN(layer.getLr()) ? layer.getLr() : lr);
             conf.numIterations = numIterations;
             conf.momentum = momentum;
-            conf.l2 = l2;
+            conf.l2 = (!Double.isNaN(layer.getL2()) ? layer.getL2() : l2);
             conf.useRegularization = useRegularization;
             conf.momentumAfter = momentumAfter;
             conf.optimizationAlgo = optimizationAlgo;
@@ -469,5 +477,6 @@ public class NeuralNetConfiguration implements Serializable,Cloneable {
 
             return conf;
         }
+
     }
 }

@@ -27,8 +27,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class NormalDistribution extends Distribution {
 
-    private static final long serialVersionUID = -5893908202686359437L;
-
     private double mean, std;
 
     /**

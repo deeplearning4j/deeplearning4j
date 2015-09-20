@@ -24,7 +24,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BasePretrainNetwork;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.util.Dropout;
 import org.deeplearning4j.util.RBMUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
@@ -305,11 +307,13 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      * @param v the visible layer
      * @return the approximated activations of the visible layer
      */
-    public INDArray propUp(INDArray v) {
+    public INDArray propUp(INDArray v,boolean training) {
         INDArray W = getParam(PretrainParamInitializer.WEIGHT_KEY);
-        if(conf.isUseDropConnect()) {
-            if (conf.getLayer().getDropOut() > 0) {
-                W = W.mul(Nd4j.getDistributions().createBinomial(1,conf.getLayer().getDropOut()).sample(W.shape()).divi(conf.getLayer().getDropOut()));
+        if(training) {
+            if(conf.isUseDropConnect() && training) {
+                if (conf.getLayer().getDropOut() > 0 && training) {
+                    W = Dropout.applyDropConnect(this,DefaultParamInitializer.WEIGHT_KEY);
+                }
             }
         }
         INDArray hBias = getParam(PretrainParamInitializer.BIAS_KEY);
@@ -334,6 +338,17 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
                 throw new IllegalStateException("Hidden unit type should either be binary, gaussian, or rectified linear");
         }
 
+    }
+
+
+    /**
+     * Calculates the activation of the visible :
+     * sigmoid(v * W + hbias)
+     * @param v the visible layer
+     * @return the approximated activations of the visible layer
+     */
+    public INDArray propUp(INDArray v) {
+        return propUp(v,true);
     }
 
     /**
@@ -374,8 +389,11 @@ public  class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.
      */
     @Override
     public INDArray activate(boolean training) {
+        if(training && conf.getLayer().getDropOut() > 0.0) {
+            input = Dropout.applyDropout(input,conf.getLayer().getDropOut(),dropoutMask);
+        }
         //reconstructed: propUp ----> hidden propDown to transform
-        INDArray propUp = propUp(input);
+        INDArray propUp = propUp(input,training);
         return propUp;
     }
 

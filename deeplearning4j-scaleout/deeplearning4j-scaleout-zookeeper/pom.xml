@@ -21,11 +21,11 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.4-rc2.2-SNAPSHOT</version>
+		<version>0.4-rc3.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-scaleout-zookeeper</artifactId>
 	<properties>
-		<zookeeper.version>3.4.5</zookeeper.version>
+		<zookeeper.version>3.5.1-alpha</zookeeper.version>
 		<curator.version>2.4.0</curator.version>
 	</properties>
 	<dependencies>

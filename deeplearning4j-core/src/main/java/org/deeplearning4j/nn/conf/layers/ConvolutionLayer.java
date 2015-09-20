@@ -2,9 +2,6 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.convolution.Convolution;
 
 /**
@@ -31,10 +28,6 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.padding = builder.padding;
     }
 
-    public enum PoolingType {
-        FULL, VALID, SAME
-    }
-
     @Override
     public ConvolutionLayer clone() {
         ConvolutionLayer clone = (ConvolutionLayer) super.clone();
@@ -48,7 +41,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         private Convolution.Type convolutionType = Convolution.Type.VALID;
         private int[] kernelSize = new int[] {5, 5};
-        private int[] stride = new int[] {2, 2};
+        private int[] stride = new int[] {1,1};
         private int[] padding = new int[] {0, 0};
 
 

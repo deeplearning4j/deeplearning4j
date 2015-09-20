@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.LayerFactory;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.factory.LayerFactories;
@@ -43,6 +44,25 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.assertEquals;
 
 public class AutoEncoderTest {
+
+    @Test
+    public void testAutoEncoderBiasInit() {
+        org.deeplearning4j.nn.conf.layers.AutoEncoder build = new org.deeplearning4j.nn.conf.layers.AutoEncoder.Builder()
+                .nIn(1)
+                .nOut(3)
+                .biasInit(1)
+                .build();
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(build)
+                .build();
+
+        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+
+        assertEquals(1, layer.getParam("b").size(0));
+    }
+
+
     @Test
     public void testAutoEncoder() throws Exception {
 

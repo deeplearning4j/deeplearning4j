@@ -175,6 +175,20 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
 
+    @Override
+    public INDArray preOutput(INDArray x, TrainingMode training) {
+        return preOutput(x,training == TrainingMode.TRAIN);
+    }
+
+    @Override
+    public INDArray activate(TrainingMode training) {
+        return activate(training == TrainingMode.TRAIN);
+    }
+
+    @Override
+    public INDArray activate(INDArray input, TrainingMode training) {
+        return activate(input,training == TrainingMode.TRAIN);
+    }
 
     /**
      * Objective function:  the specified objective
@@ -240,7 +254,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     @Override
     public INDArray params() {
-        return Nd4j.toFlattened(params.values());
+        return Nd4j.toFlattened('f',params.values());
     }
 
     @Override
@@ -268,8 +282,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray get = params.get(NDArrayIndex.point(0),NDArrayIndex.interval(idx, idx + param.length()));
             if(param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length() + " but was " + get.length());
-            setParam(s,get.reshape(param.shape()));
+            setParam(s,get.reshape('f',param.shape()));
             idx += param.length();
+
         }
 
     }

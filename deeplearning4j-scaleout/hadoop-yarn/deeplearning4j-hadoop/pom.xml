@@ -21,13 +21,12 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-parent</artifactId>
-        <version>0.0.3.3.3.alpha1-SNAPSHOT</version>
+        <version>${nd4j.version}.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>deeplearning4j-hadoop</artifactId>
 	<name>DeepLearning 4j for Hadoop</name>
 	<properties>
 		<hadoop.version>2.2.0</hadoop.version>
-		<netty.version>3.2.9.Final</netty.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>

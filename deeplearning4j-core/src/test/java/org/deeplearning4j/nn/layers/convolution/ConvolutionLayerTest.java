@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -39,6 +40,23 @@ public class ConvolutionLayerTest {
         Nd4j.dtype = DataBuffer.Type.DOUBLE;
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.EPS_THRESHOLD = 1e-4;
+    }
+
+    @Test
+    public void testCNNBiasInit() {
+        ConvolutionLayer cnn = new ConvolutionLayer.Builder()
+                .nIn(1)
+                .nOut(3)
+                .biasInit(1)
+                .build();
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .layer(cnn)
+                .build();
+
+        Layer layer =  LayerFactories.getFactory(conf).create(conf);
+
+        assertEquals(1, layer.getParam("b").size(0));
     }
 
     @Test
@@ -260,24 +278,6 @@ public class ConvolutionLayerTest {
         },new int[]{1,1,2,2,4,4});
     }
 
-    private Gradient createPrevGradient() {
-        int inputWidth = 28;
-        int inputHeight = 28;
-        int[] stride = new int[] {2, 2};
-        int[] padding = new int[] {0,0};
-        int[] kernelSize = new int[] {9, 9};
-        int nChannelsIn = 1;
-        int nExamples = 5;
-        int  featureMapHeight = (inputHeight + padding[0] * 2 - kernelSize[0]) / stride[0] + 1;
-        int  featureMapWidth = (inputWidth + padding[1] * 2 - kernelSize[1]) / stride[1] + 1;
-
-        Gradient gradient = new DefaultGradient();
-        INDArray pseudoGradients = Nd4j.ones(nExamples, nChannelsIn, featureMapHeight, featureMapWidth);
-
-        gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, pseudoGradients);
-        gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, pseudoGradients);
-        return gradient;
-    }
 
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -354,7 +354,7 @@ public class ConvolutionLayerTest {
         int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+        MultiLayerConfiguration.Builder conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
                 .iterations(iterations)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
@@ -363,7 +363,7 @@ public class ConvolutionLayerTest {
                         .nIn(nChannels)
                         .nOut(6)
                         .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2,2})
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2})
                         .weightInit(WeightInit.XAVIER)
                         .activation("relu")
                         .build())
@@ -373,11 +373,11 @@ public class ConvolutionLayerTest {
                         .weightInit(WeightInit.XAVIER)
                         .activation("softmax")
                         .build())
-                .inputPreProcessor(0, new FeedForwardToCnnPreProcessor(numRows, numColumns, 1))
-                .inputPreProcessor(2, new CnnToFeedForwardPreProcessor())
-                .backprop(backprop).pretrain(pretrain)
-                .build();
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+                .backprop(backprop).pretrain(pretrain);
+
+        new ConvolutionLayerSetup(conf,numRows,numColumns,1);
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf.build());
         model.init();
 
         return model;
