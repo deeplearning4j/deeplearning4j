@@ -22,6 +22,7 @@ package org.nd4j.linalg.util;
 import com.google.common.primitives.Ints;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -224,7 +225,7 @@ public class NDArrayUtil {
 
 
         INDArray temp0 = array.tensorAlongDimension(0,dimension);
-        INDArray temp1 = array.tensorAlongDimension(1,dimension);
+        INDArray temp1 = array.tensorAlongDimension(1, dimension);
         int tensorStartSeparation = temp1.offset() - temp0.offset();
 
         //As per NDArrayMath.sliceOffsetForTensor
@@ -248,7 +249,7 @@ public class NDArrayUtil {
         public final int elementWiseStride;
     }
 
-    public static INDArray doElementWiseOp(INDArray first, INDArray second, char op){
+    public static void doElementWiseOp(INDArray first, INDArray second, char op){
         boolean canDoDirectly = false;
         if(canDoDirectly){
             throw new UnsupportedOperationException("Not implemented");
@@ -256,28 +257,36 @@ public class NDArrayUtil {
             int opAlongDimension = ArrayUtil.argMin(first.shape());
             Tensor1DStats fs = get1DTensorStats(first, opAlongDimension);
             Tensor1DStats ss = get1DTensorStats(second,opAlongDimension);
+            doOp(first,second,op,fs,ss);
         }
     }
 
     private static INDArray doOp(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
+        DataBuffer df = first.data();
+        DataBuffer ds = second.data();
+        int n = fs.getTensorLength();
+        int nTensors = fs.getNumTensors();
+        int incrF = fs.getElementWiseStride();
+        int incrS = fs.getElementWiseStride();
         switch(op){
             case 'a':
             case 's':
                 //first.addi(second) or first.subi(second)
                 double a = (op == 'a' ? 1.0 : -1.0);
-                Nd4j.getBlasWrapper().level1().axpy(fs.getTensorLength(),a,first,second);
+                for(int i=0; i<nTensors; i++ ) {
+                    int offset1 = fs.firstTensorOffset + i*fs.getTensorStartSeparation();
+                    int offset2 = ss.firstTensorOffset + i*ss.getTensorStartSeparation();
+                    Nd4j.getBlasWrapper().level1().axpy(n, a, ds,offset2,incrS, df,offset1,incrF);
+                }
                 break;
             case 'm':
                 //muli
                 throw new UnsupportedOperationException("not yet implemented");
-                break;
             case 'd':
                 //divi
                 throw new UnsupportedOperationException("not yet implemented");
-                break;
             case 'p':   //put / copy
                 throw new UnsupportedOperationException("not yet implemented");
-                break;
         }
         return null;    //TODO
     }

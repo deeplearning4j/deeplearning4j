@@ -1926,17 +1926,13 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
             for( int i=0; i<nTAD0; i++ ){
                 INDArray tad0 = arr.tensorAlongDimension(i,0);
-                assertArrayEquals(tad0.shape(),t0.getTensorShape());
                 assertEquals(tad0.length(),t0.getTensorLength());
-                assertArrayEquals(tad0.stride(),t0.getTensorStride());
                 assertEquals(tad0.elementStride(),t0.getElementWiseStride());
             }
 
             for( int i=0; i<nTAD1; i++ ){
                 INDArray tad1 = arr.tensorAlongDimension(i,1);
-                assertArrayEquals(tad1.shape(),t1.getTensorShape());
                 assertEquals(tad1.length(), t1.getTensorLength());
-                assertArrayEquals(tad1.stride(), t1.getTensorStride());
                 assertEquals(tad1.elementStride(),t1.getElementWiseStride());
             }
         }
