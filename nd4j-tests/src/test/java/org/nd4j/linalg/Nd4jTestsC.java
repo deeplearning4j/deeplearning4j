@@ -97,28 +97,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-<<<<<<< HEAD
-    public void testPutAtIntervalIndexWithStride(){
-        INDArray n1 = Nd4j.create(3,3);
-        INDArrayIndex[] indices = {NDArrayIndex.interval(0,2,3),NDArrayIndex.all()};
-        n1.put(indices,1);
-        INDArray expected = Nd4j.create(new double[][]{{1d,1d,1d},{0d,0d,0d},{1d,1d,1d}});
-        assertEquals(expected,n1);
-    }
-
-=======
-    public void testShuffle() {
-        INDArray arr = Nd4j.rand(6, 6);
-        INDArray dup = arr.dup();
-        Nd4j.shuffle(arr,0);
-        assertNotEquals(arr, dup);
-    }
-
-
-
-
->>>>>>> 4144c85580f7144a28fe0375c57c5f21e8818f6e
-    @Test
     public void testScalarOps() throws Exception {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
         assertEquals(27d, n.length(), 1e-1);
