@@ -25,6 +25,7 @@ import lombok.Data;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.Indices;
@@ -502,6 +503,181 @@ public class NDArrayUtil {
         return false;
     }
 
+    /** Do element-wise vector operation on an NDArray (using a vector NDArray)
+     * Ops:
+     * When vector is a row vector:
+     * 'a': addiRowVector    first.eachRow += second
+     * 's': subiRowVector    first.eachRow -= second
+     * 'm': muliRowVector    first.eachRow *= second
+     * 'd': diviRowVector    first.eachRow /= second
+     * 'p': putRowVector     first.eachRow =  second
+     * 'h': rsubiRowVector   first.eachRow = second - first.eachRow
+     * 't': rdiviRowVector   first.eachRow = second / first.eachRow
+     *
+     * When vector is a column vector: do column-wise instead of row-wise ops
+     */
+    public static void doVectorOp(INDArray array, INDArray vector, char op){
+        boolean rowOp = Shape.isRowVectorShape(vector.shape());
+
+        Tensor1DStats tensorStats = get1DTensorStats(array, (rowOp ? 1 : 0));
+
+        int incr = array.elementWiseStride();
+        int incrVec = tensorStats.getElementWiseStride();
+        int offsetVec = array.offset();
+        int opLength = vector.length();
+        int nTensors = tensorStats.getNumTensors();
+
+        DataBuffer buffer = array.data();
+        DataBuffer bufferVec = vector.data();
+
+        Object dataArray = buffer.array();
+        Object dataArrayVec = bufferVec.array();
+        float[] dataFloat;
+        float[] dataFloatVec;
+        double[] dataDouble;
+        double[] dataDoubleVec;
+        if(dataArray instanceof float[]){
+            dataFloat = (float[])dataArray;
+            dataFloatVec = (float[])dataArrayVec;
+            dataDouble = null;
+            dataDoubleVec = null;
+        } else {
+            dataFloat = null;
+            dataFloatVec = null;
+            dataDouble = (double[])dataArray;
+            dataDoubleVec = (double[])dataArrayVec;
+        }
+
+        Level1 l1Blas = Nd4j.getBlasWrapper().level1();
+        switch(op){
+            case 'a':   //addiXVector
+            case 's':   //subiXVector
+                double a = (op == 'a' ? 1.0 : -1.0);
+                for( int i=0; i<nTensors; i++){
+                    int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                    l1Blas.axpy(opLength, a, bufferVec, offsetVec, incrVec, buffer, tOffset, incrVec);
+                }
+                break;
+            case 'm':   //muliXVector
+                if(dataFloat != null){
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            muliOffsetUnitIncrementFloat(dataFloat,dataFloatVec,opLength,tOffset,offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            muliIncrementOffsetFloat(dataFloat, dataFloatVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                } else {
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            muliOffsetUnitIncrementDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            muliIncrementOffsetDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                }
+                break;
+            case 'd':   //diviXVector
+                if(dataFloat != null){
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            diviOffsetUnitIncrementFloat(dataFloat, dataFloatVec, opLength, tOffset, offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            diviIncrementOffsetFloat(dataFloat, dataFloatVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                } else {
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            diviOffsetUnitIncrementDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            diviIncrementOffsetDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                }
+                break;
+            case 'p':   //putiXVector
+                for(int i=0; i<nTensors; i++ ) {
+                    int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                    l1Blas.copy(opLength,bufferVec,offsetVec,incrVec,buffer,tOffset,incr);
+                }
+                break;
+            case 'h':   //rsubiXVector
+                if(dataFloat != null){
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rsubiOffsetUnitIncrementFloat(dataFloat, dataFloatVec, opLength, tOffset, offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rsubiIncrementOffsetFloat(dataFloat, dataFloatVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                } else {
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rsubiOffsetUnitIncrementDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rsubiIncrementOffsetDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                }
+                break;
+            case 't':   //rdiviXVector
+                if(dataFloat != null){
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rdiviOffsetUnitIncrementFloat(dataFloat, dataFloatVec, opLength, tOffset, offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rdiviIncrementOffsetFloat(dataFloat, dataFloatVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                } else {
+                    if(incr==1 && incrVec==1){
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rdiviOffsetUnitIncrementDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec);
+                        }
+                    } else {
+                        for( int i=0; i<nTensors; i++ ){
+                            int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
+                            rdiviIncrementOffsetDouble(dataDouble, dataDoubleVec, opLength, tOffset, offsetVec, incr, incrVec);
+                        }
+                    }
+                }
+                break;
+            default:
+                throw new RuntimeException("Unknown op: " + op);
+        }
+
+    }
+
     //muli - float
     private static void muliIncrementOffsetFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
         for (int i = 0; i < opLength; i++) {
@@ -601,5 +777,68 @@ public class NDArrayUtil {
             first[i] /= second[i];
         }
     }
+
+    //rsubi - float
+    private static void rsubiIncrementOffsetFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i * incrFirst;
+            first[fIdx] = second[offsetSecond + i * incrSecond] - first[fIdx];
+        }
+    }
+
+    private static void rsubiOffsetUnitIncrementFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i;
+            first[fIdx] = second[offsetSecond + i] - first[fIdx];
+        }
+    }
+
+    //rsubi - double
+    private static void rsubiIncrementOffsetDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i * incrFirst;
+            first[fIdx] = second[offsetSecond + i * incrSecond] - first[fIdx];
+        }
+    }
+
+    private static void rsubiOffsetUnitIncrementDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i;
+            first[fIdx] = second[offsetSecond + i] - first[fIdx];
+        }
+    }
+
+
+
+    //rdivi - float
+    private static void rdiviIncrementOffsetFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i * incrFirst;
+            first[fIdx] = second[offsetSecond + i * incrSecond] / first[fIdx];
+        }
+    }
+
+    private static void rdiviOffsetUnitIncrementFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i;
+            first[fIdx] = second[offsetSecond + i] / first[fIdx];
+        }
+    }
+
+    //rdivi - double
+    private static void rdiviIncrementOffsetDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i * incrFirst;
+            first[fIdx] = second[offsetSecond + i * incrSecond] / first[fIdx];
+        }
+    }
+
+    private static void rdiviOffsetUnitIncrementDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            int fIdx = offsetFirst + i;
+            first[fIdx] = second[offsetSecond + i] / first[fIdx];
+        }
+    }
+
 
 }
