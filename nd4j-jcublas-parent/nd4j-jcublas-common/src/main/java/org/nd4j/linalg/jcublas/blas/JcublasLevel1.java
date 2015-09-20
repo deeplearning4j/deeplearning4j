@@ -4,6 +4,7 @@ import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -130,9 +131,9 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         JCublas2.cublasDnrm2(
                 ContextHolder.getInstance().getHandle()
-                ,N,
+                , N,
                 cAPointer.getDevicePointer()
-                ,incX
+                , incX
                 , result);
         return ret[0];
     }
@@ -142,7 +143,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X);
         float[] ret = new float[1];
         Pointer result = Pointer.to(ret);
-        JCublas2.cublasDasum(ContextHolder.getInstance().getHandle(), N ,xCPointer.getDevicePointer(), incX, result);
+        JCublas2.cublasDasum(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
         return ret[0];
     }
 
@@ -187,7 +188,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer xCPointer = new CublasPointer(X);
         SimpleJCublas.sync();
         int ret2 = JCublas.cublasIsamax(
-               N,
+                N,
                 xCPointer.getDevicePointer(),
                 incX);
         SimpleJCublas.sync();
@@ -249,13 +250,18 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         JCublas2.cublasScopy(
                 ContextHolder.getInstance().getHandle()
-                ,N, xCPointer.getDevicePointer()
+                , N, xCPointer.getDevicePointer()
                 , incX
                 , yCPointer.getDevicePointer()
                 , incY);
         SimpleJCublas.sync();
 
         yCPointer.copyToHost();
+    }
+
+    @Override
+    protected void scopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -278,6 +284,11 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         xBPointer.copyToHost();
 
+    }
+
+    @Override
+    protected void saxpy( int N, float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -307,13 +318,18 @@ public class JcublasLevel1 extends BaseLevel1 {
 
         JCublas2.cublasDcopy(
                 ContextHolder.getInstance().getHandle()
-                ,N,xCPointer.getDevicePointer()
-                ,incX
-                ,yCPointer.getDevicePointer()
-                ,incY);
+                , N, xCPointer.getDevicePointer()
+                , incX
+                , yCPointer.getDevicePointer()
+                , incY);
         SimpleJCublas.sync();
 
         yCPointer.copyToHost();
+    }
+
+    @Override
+    protected void dcopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -337,11 +353,16 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected void daxpy( int N, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
     protected void cswap(int N, IComplexNDArray X, int incX, IComplexNDArray Y, int incY) {
         CublasPointer xAPointer = new CublasPointer(X);
         CublasPointer xBPointer = new CublasPointer(Y);
 
-        JCublas2.cublasCswap(ContextHolder.getInstance().getHandle(),N,xAPointer.getDevicePointer(),incX,xBPointer.getDevicePointer(),incY);
+        JCublas2.cublasCswap(ContextHolder.getInstance().getHandle(), N, xAPointer.getDevicePointer(), incX, xBPointer.getDevicePointer(), incY);
 
         xBPointer.copyToHost();
     }
@@ -534,7 +555,7 @@ public class JcublasLevel1 extends BaseLevel1 {
     @Override
     protected void csscal(int N, float alpha, IComplexNDArray X, int incX) {
         CublasPointer p = new CublasPointer(X);
-        JCublas2.cublasSscal(ContextHolder.getInstance().getHandle(),N,Pointer.to(new float[]{alpha}),p.getDevicePointer(),incX);
+        JCublas2.cublasSscal(ContextHolder.getInstance().getHandle(), N, Pointer.to(new float[]{alpha}), p.getDevicePointer(), incX);
         p.copyToHost();
     }
 
@@ -543,5 +564,10 @@ public class JcublasLevel1 extends BaseLevel1 {
         CublasPointer p = new CublasPointer(X);
         JCublas2.cublasZdscal(ContextHolder.getInstance().getHandle(), N, Pointer.to(new double[]{alpha}), p.getDevicePointer(), incX);
         p.copyToHost();
+    }
+
+    @Override
+    public boolean supportsDataBufferL1Ops(){
+        return false;
     }
 }

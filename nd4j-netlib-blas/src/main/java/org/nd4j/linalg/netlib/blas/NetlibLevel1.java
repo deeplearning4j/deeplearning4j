@@ -3,6 +3,7 @@ package org.nd4j.linalg.netlib.blas;
 import com.github.fommil.netlib.BLAS;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -150,10 +151,20 @@ public class NetlibLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected void scopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        BLAS.getInstance().scopy(n, getFloatData(x), offsetX, incrX, getFloatData(y), offsetY, incrY);
+    }
+
+    @Override
     protected void saxpy(int N, float alpha, INDArray X, int incX, INDArray Y, int incY) {
         float[] yData = getFloatData(Y);
         BLAS.getInstance().saxpy(N, alpha, getFloatData(X), getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
         setData(yData,Y);
+    }
+
+    @Override
+    public void saxpy(int n,float alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        BLAS.getInstance().saxpy(n, alpha, getFloatData(x), offsetX, incrX, getFloatData(y), offsetY, incrY);
     }
 
     @Override
@@ -162,21 +173,31 @@ public class NetlibLevel1 extends BaseLevel1 {
         double[] xData = getDoubleData(X);
         BLAS.getInstance().dswap(N,xData,getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
         setData(xData, X);
-        setData(yData,Y);
+        setData(yData, Y);
     }
 
     @Override
     protected void dcopy(int N, INDArray X, int incX, INDArray Y, int incY) {
         double[] yData = getDoubleData(Y);
-        BLAS.getInstance().dcopy(N,getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        BLAS.getInstance().dcopy(N, getDoubleData(X), getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
         setData(yData,Y);
+    }
+
+    @Override
+    protected void dcopy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        BLAS.getInstance().dcopy(n, getDoubleData(x), offsetX, incrX, getDoubleData(y), offsetY, incrY);
     }
 
     @Override
     protected void daxpy(int N, double alpha, INDArray X, int incX, INDArray Y, int incY) {
         double[] yData = getDoubleData(Y);
-        BLAS.getInstance().daxpy(N,alpha,getDoubleData(X),getBlasOffset(X),incX,yData,getBlasOffset(Y),incY);
+        BLAS.getInstance().daxpy(N, alpha, getDoubleData(X), getBlasOffset(X), incX, yData, getBlasOffset(Y), incY);
         setData(yData,Y);
+    }
+
+    @Override
+    public void daxpy(int n,double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY ){
+        BLAS.getInstance().daxpy(n, alpha, getDoubleData(x), offsetX, incrX, getDoubleData(y), offsetY, incrY);
     }
 
     @Override
