@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.blas;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -118,11 +119,17 @@ public interface Level1 {
     void swap(IComplexNDArray x, IComplexNDArray y);
 
     /**
-     * swaps a vector with another vector.
+     * copy a vector to another vector.
      * @param x
      * @param y
      */
     void copy(INDArray x,INDArray y);
+
+    /**copy a vector to another vector.
+     * @param x
+     * @param y
+     */
+    void copy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY );
 
     void copy(IComplexNDArray x, IComplexNDArray y);
 
@@ -134,6 +141,21 @@ public interface Level1 {
      * @param y
      */
     void axpy(int n,double alpha,INDArray x,INDArray y);
+
+    /**
+     * computes a vector-scalar product and adds the result to a vector.
+     * y = a*x + y
+     * @param n number of operations
+     * @param alpha
+     * @param x X
+     * @param offsetX offset of first element of X in buffer
+     * @param incrX increment/stride between elements of X in buffer
+     * @param y Y
+     * @param offsetY offset of first element of Y in buffer
+     * @param incrY increment/stride between elements of Y in buffer
+     */
+    void axpy(int n,double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY );
+
     /**
      *  computes a vector-scalar product and adds the result to a vector.
      * @param n
@@ -210,4 +232,6 @@ public interface Level1 {
     void scal(int N,  IComplexNumber alpha, IComplexNDArray X);
 
 
+    /** Can we use the axpy and copy methods that take a DataBuffer instead of an INDArray with this backend? */
+    public boolean supportsDataBufferL1Ops();
 }
