@@ -34,6 +34,74 @@ public class ShapeOffsetResolution implements Serializable {
         this.arr = arr;
     }
 
+
+    public boolean tryShortCircuit(INDArrayIndex...indexes) {
+        int pointIndex = 0;
+        int interval = 0;
+        int newAxis = 0;
+        int numAll = 0;
+        int numSpecified = 0;
+        for(int i = 0; i < indexes.length; i++) {
+            if(indexes[i] instanceof PointIndex) {
+                pointIndex++;
+            }
+            if(indexes[i] instanceof SpecifiedIndex)
+                numSpecified++;
+            else if(indexes[i] instanceof IntervalIndex && !(indexes[i] instanceof NDArrayIndexAll))
+                interval++;
+            else if(indexes[i] instanceof NewAxis)
+                newAxis++;
+            else if(indexes[i] instanceof NDArrayIndexAll)
+                numAll++;
+
+        }
+
+        //specific easy case
+        if(numSpecified < 1 && interval < 1 && newAxis < 1 && pointIndex > 0 && numAll > 0) {
+            int minDimensions = Math.max(arr.rank() - pointIndex,2);
+            int[] shape = new int[minDimensions];
+            Arrays.fill(shape,1);
+            int[] stride = new int[minDimensions];
+            Arrays.fill(stride,arr.elementStride());
+            int[] offsets = new int[minDimensions];
+            int offset = 0;
+            //used for filling in elements of the actual shape stride and offsets
+            int currIndex = 0;
+            //used for array item access
+            int arrIndex = 0;
+            for(int i = 0; i < indexes.length; i++) {
+                if(indexes[i] instanceof NDArrayIndexAll) {
+                    shape[currIndex] = arr.size(arrIndex);
+                    stride[currIndex] = arr.stride(arrIndex);
+                    currIndex++;
+                    arrIndex++;
+                }
+                //point index
+                else {
+                    offset += indexes[i].offset() * arr.stride(i);
+                    arrIndex++;
+
+                }
+            }
+
+            if(arr.isMatrix() && indexes[0] instanceof PointIndex) {
+                shape = ArrayUtil.reverseCopy(shape);
+                stride = ArrayUtil.reverseCopy(stride);
+            }
+
+            //keep same strides
+            this.strides = stride;
+            this.shapes = shape;
+            this.offsets = offsets;
+            this.offset = offset;
+            return true;
+
+        }
+
+
+        return false;
+    }
+
     /**
      * Based on the passed in array
      * compute the shape,offsets, and strides
@@ -44,12 +112,19 @@ public class ShapeOffsetResolution implements Serializable {
      */
     public void exec(INDArrayIndex... indexes) {
         indexes = NDArrayIndex.resolve(arr.shape(),indexes);
+        if(tryShortCircuit(indexes)) {
+            return;
+        }
         int[] shape = arr.shape();
+
+
         int numIntervals = 0;
         //number of new axes dimensions to prepend to the beginning
         int newAxesPrepend = 0;
         //whether we have encountered an all so far
         boolean encounteredAll = false;
+        List<Integer> oneDimensionWithAllEncountered = new ArrayList<>();
+
         //accumulate the results
         List<Integer> accumShape = new ArrayList<>();
         List<Integer> accumStrides = new ArrayList<>();
@@ -73,8 +148,11 @@ public class ShapeOffsetResolution implements Serializable {
         List<Integer> prependNewAxes = new ArrayList<>();
         for(int i = 0; i < indexes.length; i++) {
             INDArrayIndex idx = indexes[i];
-            if (idx instanceof NDArrayIndexAll)
+            if (idx instanceof NDArrayIndexAll) {
                 encounteredAll = true;
+                if(i < arr.rank() && arr.size(i) == 1)
+                    oneDimensionWithAllEncountered.add(i);
+            }
             //point: do nothing but move the shape counter
             //also move the stride counter
             if(idx instanceof PointIndex) {
@@ -293,7 +371,11 @@ public class ShapeOffsetResolution implements Serializable {
                 this.offset = ArrayUtil.dotProduct(pointOffsets, pointStrides);
         }
         else if(numIntervals > 0 && arr.rank() > 2) {
-            this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
+            if(encounteredAll && arr.size(0) != 1)
+                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides);
+            else
+                this.offset = ArrayUtil.dotProduct(accumOffsets,accumStrides) / numIntervals;
+
         }
         else
             this.offset = ArrayUtil.calcOffset(accumShape,accumOffsets,accumStrides);

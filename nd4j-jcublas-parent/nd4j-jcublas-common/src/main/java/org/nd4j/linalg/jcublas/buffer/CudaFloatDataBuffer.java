@@ -65,6 +65,10 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(buf, length);
     }
 
+    public CudaFloatDataBuffer(byte[] data, int length) {
+        super(data, length);
+    }
+
 
     @Override
     public void assign(int[] indices, float[] data, boolean contiguous, int inc) {
@@ -172,7 +176,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public DataBuffer create(int[] data) {
-       return new CudaFloatDataBuffer(data);
+        return new CudaFloatDataBuffer(data);
     }
 
     @Override

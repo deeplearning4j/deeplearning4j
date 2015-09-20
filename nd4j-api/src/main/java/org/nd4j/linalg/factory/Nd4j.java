@@ -51,6 +51,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.api.shape.Shape;
+import org.omg.PortableInterceptor.INACTIVE;
 import org.springframework.core.io.Resource;
 
 import java.io.*;
@@ -162,6 +163,9 @@ public class Nd4j {
     public static INDArray pad(INDArray toPad,int[][] padWidth,PadMode padMode) {
         return pad(toPad,padWidth,ArrayUtil.zerosMatrix(toPad.shape()),padMode);
     }
+
+
+
     /**
      * Pad the given ndarray to the size along each dimension
      * @param toPad the ndarray to pad
@@ -319,6 +323,41 @@ public class Nd4j {
         return Nd4j.concat(axis, Nd4j.valueArrayOf(paShape, val), arr);
     }
 
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param random the random to use
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(INDArray toShuffle,Random random,int...dimension) {
+        List<Integer> vectorsAlongDimension = Ints.asList(ArrayUtil.range(0, toShuffle.tensorssAlongDimension(dimension)));
+        Collections.rotate(vectorsAlongDimension, 3);
+        Collections.shuffle(vectorsAlongDimension, random);
+        for(int i = 0; i < toShuffle.tensorssAlongDimension(dimension); i++) {
+            int currTensorAlongDimension = vectorsAlongDimension.get(i);
+            if(i == currTensorAlongDimension)
+                continue;
+            INDArray curr = toShuffle.tensorAlongDimension(i,dimension);
+            INDArray toShuffleTensor = toShuffle.tensorAlongDimension(currTensorAlongDimension,dimension);
+            INDArray temp = curr.dup();
+            curr.assign(toShuffleTensor);
+            toShuffleTensor.assign(temp);
+        }
+    }
+
+    /**
+     * In place shuffle of an ndarray
+     * along a specified set of dimensions
+     * @param toShuffle the ndarray to shuffle
+     * @param dimension the dimension to do the shuffle
+     * @return
+     */
+    public static void shuffle(INDArray toShuffle,int...dimension) {
+        shuffle(toShuffle, new Random(), dimension);
+    }
 
     /**
      * The reference queue used for cleaning up
@@ -518,7 +557,44 @@ public class Nd4j {
      * @return
      */
     public static INDArray  argMax(INDArray arr,int...dimension) {
-        return Nd4j.getExecutioner().exec(new IAMax(arr),dimension);
+        INDArray op;
+        int axis = dimension[0];
+        /*
+         * We need to permute the array so that axis is placed at the end.
+         * And all other dimensions are shifted left.
+          */
+        if (dimension[0] != arr.rank() - 1) {
+            int[] newaxes = new int[arr.rank()];
+            int j;
+
+            for (j = 0; j < axis; j++) {
+                newaxes[j] = j;
+            }
+
+            for (j = axis; j < arr.rank() - 1; j++) {
+                newaxes[j] = j + 1;
+            }
+
+            newaxes[newaxes.length - 1] = axis;
+            op = arr.permute(newaxes);
+
+        }
+        else {
+            op = arr;
+        }
+
+        int m =  op.size(-1);
+        int n = arr.length() / m;
+        INDArray ret = Nd4j.create(ArrayUtil.removeIndex(arr.shape(),dimension));
+        int[] shape = {1,m};
+        int[] strides = Nd4j.getStrides(shape);
+        for (int ip = arr.offset(), i = 0; i < n; i++, ip +=  m) {
+            INDArray maxAlong = Nd4j.create(arr.data(),shape,strides,ip);
+            int max = Nd4j.getBlasWrapper().level1().iamax(m,maxAlong,maxAlong.stride(-1));
+            ret.putScalar(i,max);
+        }
+
+        return ret;
     }
 
     /**
@@ -632,6 +708,39 @@ public class Nd4j {
         return ret.reshape('c',aPlusB);
     }
 
+    /** Matrix multiply: Implements op(a)*op(b) where op(X) means transpose X (or not) depending on
+     * setting of arguments transposeA and transposeB.<br>
+     * So gemm(a,b,false,false) == a.mmul(b), gemm(a,b,true,false) == a.transpose().mmul(b) etc.
+     * @param a First matrix
+     * @param b Second matrix
+     * @param transposeA if true: transpose matrix a before mmul
+     * @param transposeB if true: transpose matrix b before mmul
+     * @return result
+     */
+    public static INDArray gemm(INDArray a, INDArray b, boolean transposeA, boolean transposeB){
+        int cRows = (transposeA ? a.columns() : a.rows() );
+        int cCols = (transposeB ? b.rows() : b.columns() );
+        INDArray c = Nd4j.create(new int[]{cRows, cCols}, 'f');
+        return gemm(a, b, c, transposeA, transposeB, 1.0, 0.0);
+    }
+
+    /** Matrix multiply: Implements c = alpha*op(a)*op(b) + beta*c where op(X) means transpose X (or not)
+     * depending on setting of arguments transposeA and transposeB.<br>
+     * Note that matrix c MUST be fortran order, have zero offset and have c.data().length == c.length().
+     * An exception will be thrown otherwise.<br>
+     * Don't use this unless you know about level 3 blas and NDArray storage orders.
+     * @param a First matrix
+     * @param b Second matrix
+     * @param c result matrix. Used in calculation (assuming beta != 0) and result is stored in this. f order,
+     *          zero offset and length == data.length only
+     * @param transposeA if true: transpose matrix a before mmul
+     * @param transposeB if true: transpose matrix b before mmul
+     * @return result, i.e., matrix c is returned for convenience
+     */
+    public static INDArray gemm(INDArray a, INDArray b, INDArray c, boolean transposeA, boolean transposeB, double alpha, double beta ){
+        getBlasWrapper().level3().gemm(a,b,c,transposeA,transposeB,alpha,beta);
+        return c;
+    }
 
     /**
      * Given a sequence of Iterators over a transform of matrices, fill in all of
@@ -865,6 +974,23 @@ public class Nd4j {
     public static DataBuffer createBuffer(int[] shape, DataBuffer.Type type) {
         int length = ArrayUtil.prod(shape);
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
+    }
+
+
+    /**
+     * Create a buffer based on the data type
+     *
+     * @param data the data to create the buffer with
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(byte[] data,int length) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.DOUBLE)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data,length);
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data,length);
+        logCreationIfNecessary(ret);
+        return ret;
     }
 
     /**
@@ -1294,7 +1420,19 @@ public class Nd4j {
         INDArray ret = INSTANCE.toFlattened(matrices);
         logCreationIfNecessary(ret);
         return ret;
+    }
 
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param order the order in which to flatten the matrices
+     * @param matrices the matrices to create the flattened ndarray for
+     * @return the flattened representation of
+     * these ndarrays
+     */
+    public static INDArray toFlattened(char order, Collection<INDArray> matrices) {
+        INDArray ret = INSTANCE.toFlattened(order,matrices);
+        logCreationIfNecessary(ret);
+        return ret;
     }
 
     /**
@@ -1349,6 +1487,21 @@ public class Nd4j {
     public static INDArray toFlattened(INDArray... matrices) {
         return INSTANCE.toFlattened(matrices);
     }
+
+    /**
+     * Create a long row vector of all of the given ndarrays
+     * @param order order in which to flatten ndarrays
+     * @param matrices the matrices to create the flattened ndarray for
+
+     * @return the flattened representation of
+     * these ndarrays
+     */
+    public static INDArray toFlattened(char order, INDArray... matrices) {
+        return INSTANCE.toFlattened(order,matrices);
+    }
+
+
+
 
     /**
      * Create the identity ndarray
@@ -1683,6 +1836,37 @@ public class Nd4j {
         arr.data().write(dataOutputStream);
 
     }
+
+    /**
+     * Save an ndarray to the given file
+     * @param arr the array to save
+     * @param saveTo the file to save to
+     * @throws IOException
+     */
+    public static void saveBinary(INDArray arr,File saveTo) throws IOException {
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(saveTo));
+        DataOutputStream dos = new DataOutputStream(bos);
+        Nd4j.write(arr, dos);
+        dos.flush();
+        dos.close();
+
+    }
+
+
+    /**
+     * Read a binary ndarray from the given file
+     * @param read the nd array to read
+     * @return the loaded ndarray
+     * @throws IOException
+     */
+    public static INDArray readBinary(File read) throws IOException {
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream(read));
+        DataInputStream dis = new DataInputStream(bis);
+        INDArray ret = Nd4j.read(dis);
+        dis.close();
+        return ret;
+    }
+
 
     /**
      * Clear nans from an ndarray
@@ -3990,7 +4174,7 @@ public class Nd4j {
     /**
      * Concatneate ndarrays along a dimension
      *
-     * @param dimension the dimension to concatneate along
+     * @param dimension the dimension to concatneaBaseNDte along
      * @param toConcat  the ndarrays to concat
      * @return the concatted ndarrays with an output shape of
      * the ndarray shapes save the dimension shape specified

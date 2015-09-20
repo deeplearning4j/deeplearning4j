@@ -23,13 +23,19 @@ package org.nd4j.linalg.api.ops.executioner;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.parallel.DefaultParallelExecutionProvider;
+import org.nd4j.linalg.api.parallel.DefaultParallelExecutioner;
+import org.nd4j.linalg.api.parallel.ParallelExecutionProvider;
+import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -44,6 +50,27 @@ import java.util.Arrays;
 public class DefaultOpExecutioner implements OpExecutioner {
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
+    protected ParallelExecutionProvider parallelExecutionProvider;
+    protected ParallelExecutioner executorService;
+
+    public DefaultOpExecutioner() {
+        String provider = System.getProperty(ParallelExecutionProvider.EXECUTOR_SERVICE_PROVIDER,DefaultParallelExecutionProvider.class.getName());
+        try {
+            Class<? extends ParallelExecutionProvider> executorServiceProvider = (Class<? extends ParallelExecutionProvider>) Class.forName(provider);
+            this.parallelExecutionProvider = executorServiceProvider.newInstance();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        this.executorService = parallelExecutionProvider.getService();
+
+    }
+
+    @Override
+    public ParallelExecutioner parallelExecutioner() {
+        return executorService;
+    }
 
     @Override
     public Op exec(Op op) {
@@ -54,7 +81,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
         if (op instanceof TransformOp) {
-            TransformOp t = (TransformOp) op;
+            final TransformOp t = (TransformOp) op;
             //make assumption x and z are same type
             if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
@@ -92,9 +119,30 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride)));
             }
 */
+
+            else if(op.y() != null) {
+                if(Arrays.equals(op.x().shape(),op.y().shape())) {
+                    Shape.iterate(op.x(), new CoordinateFunction() {
+                        @Override
+                        public void process(int[]... coord) {
+                            apply(t,coord[0],coord[0]);
+                        }
+                    });
+                }
+                else
+                    Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
+                        @Override
+                        public void process(int[]... coord) {
+                            apply(t,coord[0],coord[1]);
+                        }
+                    });
+
+            }
+
             else {
+                NdIndexIterator iter = new NdIndexIterator(op.x().shape());
                 for (int c = 0; c < op.n(); c++) {
-                    apply(t, c);
+                    apply(t, iter.next());
                 }
             }
 
@@ -121,9 +169,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
 
 
+            else if(!(op.x() instanceof IComplexNDArray)) {
+                INDArray xLinear = op.x().reshape(1,op.x().length());
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(xLinear.getDouble(0,i)));
+                }
+            }
+
+
+
             else {
-                for (int c = 0; c < op.n(); c++)
+                for (int c = 0; c < op.n(); c++) {
                     apply(accumulation, c);
+                }
             }
 
         }
@@ -229,6 +287,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             INDArray originalX = op.x();
             INDArray originalZ = op.z();
             for(int i = 0; i < originalX.slices(); i++) {
+
                 INDArray slice = originalX.slice(i);
                 INDArray zSlice = originalZ.slice(i);
                 op.setX(slice);
@@ -318,17 +377,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 Accumulation a = (Accumulation) op;
                 return exec(a);
             }
-            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                exec(op2);
-                if (op instanceof TransformOp) {
-                    TransformOp t = (TransformOp) op;
-                    TransformOp t2 = (TransformOp) op2;
-                    t.z().tensorAlongDimension(i, dimension).assign(t2.z());
-                }
 
 
-            }
+            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
+
             return op;
         }
     }
@@ -344,17 +396,20 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Accumulation a = (Accumulation) op;
             return exec(a);
         }
-        for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
+/*
+        for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
             Op op2 = op.opForDimension(i, dimension);
             exec(op2);
             if (op instanceof TransformOp) {
                 TransformOp t = (TransformOp) op;
                 TransformOp t2 = (TransformOp) op2;
-                t.z().vectorAlongDimension(i, dimension).assign(t2.z());
+                t.z().tensorAlongDimension(i, dimension).assign(t2.z());
             }
 
 
-        }
+        }*/
+        parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
+
         return op;
     }
 
@@ -390,19 +445,21 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return Nd4j.scalar(execAndReturn(op).currentResultComplex());
             return Nd4j.scalar(execAndReturn(op).currentResult().doubleValue());
         }
-        int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
-        //ensure vector is proper shape
-        if(retShape.length == 1) {
-            if(dimension[0] == 0)
-                retShape = new int[] {1,retShape[0]};
-            else
-                retShape = new int[] {retShape[0],1};
 
-        }
-        else if(retShape.length == 0) {
-            retShape = new int[] {1,1};
-        }
         if(op instanceof IComplexNDArray) {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+            //ensure vector is proper shape
+            if(retShape.length == 1) {
+                if(dimension[0] == 0)
+                    retShape = new int[] {1,retShape[0]};
+                else
+                    retShape = new int[] {retShape[0],1};
+
+            }
+            else if(retShape.length == 0) {
+                retShape = new int[] {1,1};
+            }
+
             IComplexNDArray ret = Nd4j.createComplex(retShape);
             IComplexNDArray linear = ret;
             for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
@@ -418,36 +475,24 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             return ret;
         }
-        else {
-            INDArray ret = Nd4j.create(retShape);
-            INDArray linear = ret;
-            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                double result = execAndReturn((Accumulation) op2).currentResult().doubleValue();
-                linear.putScalar(i, result);
 
-            }
+        else
+            return parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this,dimension);
 
-            return ret;
-        }
+
 
 
     }
 
 
     @Override
-    public INDArray execAndReturn(TransformOp op, int...dimension) {
+    public INDArray execAndReturn(final TransformOp op, int...dimension) {
         if(dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
         if(dimension.length == 1)
             return execAndReturnVector(op,dimension[0]);
         else {
-            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-                Op op2 = op.opForDimension(i, dimension);
-                exec(op2);
-                op.z().tensorAlongDimension(i, dimension).assign(op2.z());
-            }
-
+            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
             return op.z();
 
         }
@@ -459,11 +504,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op.z();
         }
 
-        for (int i = 0; i < op.x().vectorsAlongDimension(dimension); i++) {
-            Op op2 = op.opForDimension(i, dimension);
-            exec(op2);
-            op.z().vectorAlongDimension(i, dimension).assign(op2.z());
-        }
+        parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
+
         return op.z();
     }
 
@@ -482,10 +524,59 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public void setExecutionMode(ExecutionMode executionMode) {
         this.executionMode = executionMode;
     }
+    //apply a pairwise op to x and store the result
+    private void apply(TransformOp op, int[] c,int[] c2) {
+        if(op.isPassThrough())
+            return;
+        if (op.y() != null) {
+            //x is complex, y could be complex or real
+            if (op.x() instanceof IComplexNDArray) {
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
+                IComplexNDArray complexZ = (IComplexNDArray) op.z();
+
+                IComplexNumber curr = complexX.getComplex(c);
+                if (op.y() instanceof IComplexNDArray) {
+                    IComplexNDArray complexY = (IComplexNDArray) op.y();
+                    complexZ.putScalar(c, op.op(curr, complexY.getComplex(c)));
+                } else
+                    complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
+            }
+            //x is real
+            else {
+                INDArray zLinear = op.z();
+                INDArray xLinear = op.x();
+                INDArray yLinear = op.y();
+                zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c2)));
+
+            }
+
+        }
+
+        else {
+
+            //x is complex, y could be complex or real
+            if (op.x() instanceof IComplexNDArray) {
+                IComplexNDArray complexX = (IComplexNDArray) op.x();
+                IComplexNDArray complexZ = (IComplexNDArray) op.z();
+
+                if (op.y() instanceof IComplexNDArray)
+                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
+
+                else
+                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
+            }
+            //x is real
+            else
+                op.z().putScalar(c, op.op(op.x().getDouble(c)));
+        }
+
+    }
+
+
 
 
     //apply a pairwise op to x and store the result
-    private void apply(TransformOp op, int c) {
+    private void apply(TransformOp op, int[] c) {
         if(op.isPassThrough())
             return;
         if (op.y() != null) {
@@ -531,6 +622,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
 
     }
+
+
+
+
 
     private void apply(Accumulation op, int x) {
         if(op.isPassThrough())

@@ -24,17 +24,20 @@ package org.nd4j.linalg;
 import java.io.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 //import org.nd4j.linalg.jcublas.CublasPointer;
@@ -538,34 +541,34 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
         INDArray testRow = n.getRow(0);
         assertEquals(newRow.length(), testRow.length());
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, testRow.shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{1,2}, testRow.shape()));
 
 
         INDArray nLast = Nd4j.create(Nd4j.linspace(1, 4, 4).data(), new int[]{2, 2});
         INDArray row = nLast.getRow(1);
-        INDArray row1 = Nd4j.create(new double[]{2, 4}, new int[]{2});
+        INDArray row1 = Nd4j.create(new double[]{2, 4}, new int[]{1,2});
         assertEquals(row, row1);
 
 
         INDArray arr = Nd4j.create(new int[]{3, 2});
-        INDArray evenRow = Nd4j.create(new double[]{1, 2}, new int[]{2});
+        INDArray evenRow = Nd4j.create(new double[]{1, 2}, new int[]{1,2});
         arr.putRow(0, evenRow);
         INDArray firstRow = arr.getRow(0);
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, firstRow.shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{1,2}, firstRow.shape()));
         INDArray testRowEven = arr.getRow(0);
         assertEquals(evenRow, testRowEven);
 
 
-        INDArray row12 = Nd4j.create(new double[]{5, 6}, new int[]{2});
+        INDArray row12 = Nd4j.create(new double[]{5, 6}, new int[]{1,2});
         arr.putRow(1, row12);
-        assertEquals(true, Shape.shapeEquals(new int[]{2}, arr.getRow(0).shape()));
+        assertEquals(true, Shape.shapeEquals(new int[]{1,2}, arr.getRow(0).shape()));
         INDArray testRow1 = arr.getRow(1);
         assertEquals(row12, testRow1);
 
 
         INDArray multiSliceTest = Nd4j.create(Nd4j.linspace(1, 16, 16).data(), new int[]{4, 2, 2});
-        INDArray test = Nd4j.create(new double[]{2, 10}, new int[]{2});
-        INDArray test2 = Nd4j.create(new double[]{6, 14}, new int[]{2});
+        INDArray test = Nd4j.create(new double[]{2, 10}, new int[]{1,2});
+        INDArray test2 = Nd4j.create(new double[]{6, 14}, new int[]{1,2});
 
         INDArray multiSliceRow1 = multiSliceTest.slice(1).getRow(0);
         INDArray multiSliceRow2 = multiSliceTest.slice(1).getRow(1);
@@ -1048,29 +1051,29 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testTensorDot() {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape(3,4,5);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
-        INDArray result = Nd4j.tensorMmul(oneThroughSixty,oneThroughTwentyFour,new int[][]{{1,0},{0,1}});
+        INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][]{{1, 0}, {0, 1}});
         assertArrayEquals(new int[]{5,2},result.shape());
         INDArray assertion = Nd4j.create(new double[][]{
-                {   440. ,  1232.},
-                {  1232. ,  3752.},
-                {  2024.  , 6272.},
-                {  2816. ,  8792.},
-                {  3608. , 11312.}
+                {440., 1232.},
+                {1232., 3752.},
+                {2024., 6272.},
+                {2816., 8792.},
+                {3608., 11312.}
         });
-        assertEquals(assertion,result);
+        assertEquals(assertion, result);
 
     }
 
 
     @Test
     public void testNegativeShape() {
-        INDArray linspace = Nd4j.linspace(1,4,4);
-        INDArray reshaped = linspace.reshape(-1,2);
+        INDArray linspace = Nd4j.linspace(1, 4, 4);
+        INDArray reshaped = linspace.reshape(-1, 2);
         assertArrayEquals(new int[]{2,2},reshaped.shape());
 
         INDArray linspace6 = Nd4j.linspace(1,6,6);
-        INDArray reshaped2 = linspace6.reshape(-1,3);
-        assertArrayEquals(new int[]{2,3},reshaped2.shape());
+        INDArray reshaped2 = linspace6.reshape(-1, 3);
+        assertArrayEquals(new int[]{2, 3}, reshaped2.shape());
 
     }
 
@@ -1082,13 +1085,63 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
             assertArrayEquals(col.shape(),new int[]{1,1});
         }
 
-        INDArray col = Nd4j.ones(5,1);
+        INDArray col = Nd4j.ones(5, 1);
         for( int i = 0; i < 5; i++ ){
             INDArray row2 = col.getRow(i);
             assertArrayEquals(row2.shape(), new int[]{1, 1});
         }
     }
 
+    @Test
+    public void testDupAndDupWithOrder(){
+        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4, 5, 123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dup = in.dup();
+            INDArray dupc = in.dup('c');
+            INDArray dupf = in.dup('f');
+
+            assertEquals(msg,in,dup);
+            assertEquals(msg,dup.ordering(),(char)Nd4j.order());
+            assertEquals(msg,dupc.ordering(),'c');
+            assertEquals(msg,dupf.ordering(),'f');
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+        }
+    }
+
+    @Test
+    public void testToOffsetZeroCopy(){
+        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4,5,123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dup = Shape.toOffsetZeroCopy(in);
+            INDArray dupc = Shape.toOffsetZeroCopy(in, 'c');
+            INDArray dupf = Shape.toOffsetZeroCopy(in, 'f');
+            INDArray dupany = Shape.toOffsetZeroCopyAnyOrder(in);
+
+            assertEquals(msg,in,dup);
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+            assertEquals(msg,dupc.ordering(),'c');
+            assertEquals(msg,dupf.ordering(),'f');
+            assertEquals(msg,in,dupany);
+
+            assertEquals(dup.offset(),0);
+            assertEquals(dupc.offset(),0);
+            assertEquals(dupf.offset(),0);
+            assertEquals(dupany.offset(),0);
+            assertEquals(dup.length(),dup.data().length());
+            assertEquals(dupc.length(),dupc.data().length());
+            assertEquals(dupf.length(),dupf.data().length());
+            assertEquals(dupany.length(),dupany.data().length());
+        }
+    }
 
 
 

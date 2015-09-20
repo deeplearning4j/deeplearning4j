@@ -156,6 +156,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
     }
 
+    public BaseDataBuffer(byte[] data, int length) {
+        this(Unpooled.wrappedBuffer(data),length);
+    }
+
 
     @Override
     public AllocationMode allocationMode() {
@@ -185,9 +189,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected BaseDataBuffer(int length) {
         this.length = length;
         allocationMode = Nd4j.alloc;
+        if(length < 0)
+            throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
         ref = new WeakReference<DataBuffer>(this,Nd4j.bufferRefQueue());
         if(allocationMode == AllocationMode.HEAP) {
+            if(length >= Integer.MAX_VALUE)
+                throw new IllegalArgumentException("Length of data buffer can not be > Integer.MAX_VALUE for heap (array based storage) allocation");
             if(dataType() == Type.DOUBLE)
                 doubleData = new double[length];
             else if(dataType() == Type.FLOAT)
@@ -610,6 +618,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int i, double element) {
+        if(i < 0 || i >= length())
+            throw new IllegalArgumentException("Illegal index " + i);
+
         if(doubleData != null)
             doubleData[i] = element;
 
@@ -789,7 +800,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             s.defaultReadObject();
             read(s);
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
 
 

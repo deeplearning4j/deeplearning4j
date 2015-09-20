@@ -16,9 +16,19 @@ import static org.junit.Assert.assertTrue;
  * @author Adam Gibson
  */
 public class NDArrayIndexResolveTests extends BaseNd4jTest {
+    public NDArrayIndexResolveTests() {
+    }
+
+    public NDArrayIndexResolveTests(String name) {
+        super(name);
+    }
 
     public NDArrayIndexResolveTests(String name, Nd4jBackend backend) {
         super(name, backend);
+    }
+
+    public NDArrayIndexResolveTests(Nd4jBackend backend) {
+        super(backend);
     }
 
     @Test

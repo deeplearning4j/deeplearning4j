@@ -17,6 +17,17 @@ public class IndexShapeTests extends BaseNd4jTest {
         super(name, backend);
     }
 
+    public IndexShapeTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    public IndexShapeTests() {
+    }
+
+    public IndexShapeTests(String name) {
+        super(name);
+    }
+
     private  int[] shape = {1,1,2,1,3,4,5,1};
 
     @Test

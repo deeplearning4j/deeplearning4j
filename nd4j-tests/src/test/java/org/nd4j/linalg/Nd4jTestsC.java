@@ -20,6 +20,7 @@
 package org.nd4j.linalg;
 
 
+import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,6 +97,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+<<<<<<< HEAD
     public void testPutAtIntervalIndexWithStride(){
         INDArray n1 = Nd4j.create(3,3);
         INDArrayIndex[] indices = {NDArrayIndex.interval(0,2,3),NDArrayIndex.all()};
@@ -104,6 +106,18 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(expected,n1);
     }
 
+=======
+    public void testShuffle() {
+        INDArray arr = Nd4j.rand(6, 6);
+        INDArray dup = arr.dup();
+        Nd4j.shuffle(arr,0);
+        assertNotEquals(arr, dup);
+    }
+
+
+
+
+>>>>>>> 4144c85580f7144a28fe0375c57c5f21e8818f6e
     @Test
     public void testScalarOps() throws Exception {
         INDArray n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
@@ -114,7 +128,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         n.checkDimensions(n.divi(Nd4j.scalar(1.0d)));
 
         n = Nd4j.create(Nd4j.ones(27).data(), new int[]{3, 3, 3});
-        assertEquals(getFailureMessage(),27, n.sumNumber().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(), 27, n.sumNumber().doubleValue(), 1e-1);
         INDArray a = n.slice(2);
         assertEquals(getFailureMessage(), true, Arrays.equals(new int[]{3, 3}, a.shape()));
 
@@ -137,7 +151,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
             int firstDim = dim0s[i];
             int secondDim = dim1s[i];
             INDArray tad = arr.tensorAlongDimension(0, firstDim, secondDim);
-            assertEquals(sums[i],tad.sumNumber().doubleValue(),1e-1);
+            assertEquals("I " + i + " failed ",sums[i],tad.sumNumber().doubleValue(),1e-1);
             char order = tad.ordering();
             int[] stride = tad.stride();
 
@@ -1539,9 +1553,19 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testTemp(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(new int[]{2, 2, 2});
+        System.out.println("In:\n" + in);
+        INDArray permuted = in.permute(0,2,1);    //Permute, so we get correct order after reshaping
+        INDArray out = permuted.reshape(4, 2);
+        System.out.println("Out:\n" + out);
 
-
-
+        int countZero = 0;
+        for( int i=0; i<8; i++ ) if(out.getDouble(i) == 0.0 ) countZero++;
+        assertEquals(countZero, 0);
+    }
 
 
     @Test
@@ -1588,7 +1612,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray concat = Nd4j.concat(0, A, B);
         assertTrue(Arrays.equals(new int[]{5, 2, 2}, concat.shape()));
 
-        INDArray columnConcat = Nd4j.linspace(1,6,6).reshape(2, 3);
+        INDArray columnConcat = Nd4j.linspace(1,6, 6).reshape(2, 3);
         INDArray concatWith = Nd4j.zeros(2, 3);
         INDArray columnWiseConcat = Nd4j.concat(0, columnConcat, concatWith);
         System.out.println(columnConcat);
@@ -1684,7 +1708,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,2,2);
         INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.newAxis());
         int[] shapeAssertion = {3, 2, 1, 1, 2};
-        assertArrayEquals(shapeAssertion,get.shape());
+        assertArrayEquals(shapeAssertion, get.shape());
     }
 
 
@@ -1761,14 +1785,124 @@ public  class Nd4jTestsC extends BaseNd4jTest {
    @Test
    public void testNdArrayCreation(){
        double delta = 1e-1;
-       INDArray n1 = Nd4j.create(new double[]{0d,1d,2d,3d},new int[]{2,2},'c');
+       INDArray n1 = Nd4j.create(new double[]{0d, 1d, 2d, 3d}, new int[]{2, 2}, 'c');
        INDArray lv = n1.linearView();
-       assertEquals(0d,lv.getDouble(0),delta);
+       assertEquals(0d, lv.getDouble(0), delta);
        assertEquals(1d,lv.getDouble(1),delta);
        assertEquals(2d,lv.getDouble(2),delta);
        assertEquals(3d,lv.getDouble(3),delta);
    }
 
+    @Test
+    public void testToFlattenedWithOrder(){
+
+        int[] firstShape = {10,3};
+        int[] secondShape = {2,7};
+        int[] thirdShape = {3,3};
+        INDArray firstC = Nd4j.create(firstShape,'c');
+        INDArray firstF = Nd4j.create(firstShape,'f');
+        INDArray secondC = Nd4j.create(secondShape,'c');
+        INDArray secondF = Nd4j.create(secondShape,'f');
+        INDArray thirdC = Nd4j.create(thirdShape,'c');
+        INDArray thirdF = Nd4j.create(thirdShape,'f');
+
+        Random r = new Random(12345);
+
+        for( int i=0; i<firstShape[0]; i++ ){
+            for( int j=0; j<firstShape[1]; j++ ){
+                double d = r.nextDouble();
+                firstC.putScalar(new int[]{i,j},d);
+                firstF.putScalar(new int[]{i,j},d);
+            }
+        }
+
+        for( int i=0; i<secondShape[0]; i++ ){
+            for( int j=0; j<secondShape[1]; j++ ){
+                double d = r.nextDouble();
+                secondC.putScalar(new int[]{i,j},d);
+                secondF.putScalar(new int[]{i,j},d);
+            }
+        }
+
+        for( int i=0; i<thirdShape[0]; i++ ){
+            for( int j=0; j<thirdShape[1]; j++ ){
+                double d = r.nextDouble();
+                thirdC.putScalar(new int[]{i,j},d);
+                thirdF.putScalar(new int[]{i,j},d);
+            }
+        }
+
+        assertEquals(firstC,firstF);
+        assertEquals(secondC,secondF);
+        assertEquals(thirdC,thirdF);
+
+        INDArray cc = Nd4j.toFlattened('c',firstC,secondC,thirdC);
+        INDArray cf = Nd4j.toFlattened('c',firstF,secondF,thirdF);
+        INDArray cmixed = Nd4j.toFlattened('c',firstC,secondF,thirdF);
+
+        INDArray fc = Nd4j.toFlattened('f',firstC,secondC,thirdC);
+        INDArray ff = Nd4j.toFlattened('f',firstF,secondF,thirdF);
+        INDArray fmixed = Nd4j.toFlattened('f',firstC,secondF,thirdF);
+
+        assertEquals(cc,cf);
+        assertEquals(cc,cmixed);
+
+        assertNotEquals(cc,fc);
+
+        assertEquals(fc,ff);
+        assertEquals(fc,fmixed);
+    }
+
+
+    @Test
+    public void testDupAndDupWithOrder(){
+        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4,5,123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dup = in.dup();
+            INDArray dupc = in.dup('c');
+            INDArray dupf = in.dup('f');
+
+            assertEquals(dup.ordering(),(char)Nd4j.order());
+            assertEquals(dupc.ordering(),'c');
+            assertEquals(dupf.ordering(),'f');
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+        }
+    }
+
+    @Test
+    public void testToOffsetZeroCopy(){
+        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4,5,123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+            String msg = pair.getSecond();
+            INDArray in = pair.getFirst();
+            INDArray dup = Shape.toOffsetZeroCopy(in);
+            INDArray dupc = Shape.toOffsetZeroCopy(in,'c');
+            INDArray dupf = Shape.toOffsetZeroCopy(in,'f');
+            INDArray dupany = Shape.toOffsetZeroCopyAnyOrder(in);
+
+            assertEquals(msg,in,dup);
+            assertEquals(msg,in,dupc);
+            assertEquals(msg,in,dupf);
+            assertEquals(msg,dupc.ordering(),'c');
+            assertEquals(msg,dupf.ordering(),'f');
+            assertEquals(msg,in,dupany);
+
+            assertEquals(dup.offset(),0);
+            assertEquals(dupc.offset(),0);
+            assertEquals(dupf.offset(),0);
+            assertEquals(dupany.offset(),0);
+            assertEquals(dup.length(),dup.data().length());
+            assertEquals(dupc.length(),dupc.data().length());
+            assertEquals(dupf.length(),dupf.data().length());
+            assertEquals(dupany.length(),dupany.data().length());
+        }
+    }
 
 
 

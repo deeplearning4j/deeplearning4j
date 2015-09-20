@@ -24,8 +24,8 @@ import static org.nd4j.linalg.api.blas.BlasBufferUtil.setData;
 public class CpuLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda, INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        A = Shape.toOffsetZero(A);
-        B = Shape.toOffsetZero(B);
+//        A = Shape.toOffsetZero(A);
+//        B = Shape.toOffsetZero(B);
 
         DataBuffer aData = A.data();
         DataBuffer bData = B.data();

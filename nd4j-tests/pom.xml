@@ -21,7 +21,7 @@
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.4-rc2.2-SNAPSHOT</version>
+        <version>0.4-rc3.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -66,12 +66,12 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+   <!--     <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jcublas-7.0</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-java</artifactId>

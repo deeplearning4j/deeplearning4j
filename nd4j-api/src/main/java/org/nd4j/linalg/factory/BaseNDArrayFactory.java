@@ -20,10 +20,7 @@
 package org.nd4j.linalg.factory;
 
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.Level2;
@@ -33,6 +30,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -84,7 +82,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      * Initialize with the given data type and ordering
      * The ndarray factory will use this for
      * @param dtype the data type
-     * @param order the orderingmem
+     * @param order the ordering in mem
      */
     protected BaseNDArrayFactory(DataBuffer.Type dtype, Character order) {
         this.dtype = dtype;
@@ -239,11 +237,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(1, length);
         int linearIndex = 0;
         for (INDArray d : matrices) {
-            if (!d.isVector())
-                d = Nd4j.create(d.data(), new int[]{1, d.length()}, d.offset());
-            for (int i = 0; i < d.length(); i++) {
-                ret.putScalar(linearIndex++, d.getFloat(i));
+            NdIndexIterator iter = new NdIndexIterator(d.shape());
+            while(iter.hasNext()) {
+                for (int i = 0; i < d.length(); i++) {
+                    ret.putScalar(linearIndex++, d.getDouble(iter.next()));
+                }
             }
+
         }
 
         return ret;
@@ -258,9 +258,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         for (Iterator<? extends INDArray> iter1 : matrices) {
             while (iter1.hasNext()) {
                 INDArray d = iter1.next();
-                INDArray flattened = d.linearView();
-                for (int i = 0; i < d.length(); i++) {
-                    ret.putScalar(linearIndex++, flattened.getDouble(i));
+                NdIndexIterator iter = new NdIndexIterator(d.shape());
+                while(iter.hasNext()) {
+                    for (int i = 0; i < d.length(); i++) {
+                        ret.putScalar(linearIndex++, d.getDouble(iter.next()));
+                    }
                 }
             }
 
@@ -314,6 +316,27 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         }
 
         return ret;
+    }
+
+    @Override
+    public INDArray toFlattened(char order, Collection<INDArray> matrices ){
+        int length = 0;
+        for (INDArray m : matrices)
+            length += m.length();
+        INDArray ret = Nd4j.create(new int[]{1,length},order);
+        int linearIndex = 0;
+        for(INDArray m : matrices){
+            NdIndexIterator iter = new NdIndexIterator(order,m.shape());
+            while(iter.hasNext()){
+                ret.putScalar(linearIndex++,m.getDouble(iter.next()));
+            }
+        }
+        return ret;
+    }
+
+    @Override
+    public INDArray toFlattened(char order, INDArray... matrices ){
+        return toFlattened(order, Arrays.asList(matrices));
     }
 
     /**
@@ -864,8 +887,20 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray valueArrayOf(int[] shape, double value) {
-        INDArray create = create(shape);
-        create.assign(value);
+        INDArray create = null;
+        if(Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            double[] vals = new double[ArrayUtil.prod(shape)];
+            if(value != 0.0)
+                Arrays.fill(vals,value);
+            create = Nd4j.create(vals,shape);
+        }
+        else if(Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            float[] vals = new float[ArrayUtil.prod(shape)];
+            if(value != 0.0)
+                Arrays.fill(vals,(float) value);
+            create = Nd4j.create(vals,shape);
+        }
+
         return create;
     }
 
@@ -962,9 +997,13 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
         int sumAlongDim = 0;
+        boolean allC = toConcat[0].ordering() == 'c';
+        boolean allOffsetZero = toConcat[0].offset() == 0;
 
         for (int i = 0; i < toConcat.length; i++) {
             sumAlongDim += toConcat[i].size(dimension);
+            allC = allC && toConcat[i].ordering() == 'c';
+            allOffsetZero = toConcat[i].offset() == 0;
         }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
@@ -993,17 +1032,36 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
 
+        if(dimension == 0 && allC) {
+            int currBuffer = 0;
+            int currBufferOffset = 0;
+            for(int i = 0; i < ret.length(); i++) {
+                ret.data().put(i,toConcat[currBuffer].data().getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
+                if(currBufferOffset >= toConcat[currBuffer].length()) {
+                    currBuffer++;
+                    currBufferOffset = 0;
+                }
+            }
+
+            return ret;
+        }
 
         int arrOffset = 0;
+        INDArray[] retAlongDimensionArrays = new INDArray[ret.tensorssAlongDimension(dimension)];
+        for(int i = 0; i < retAlongDimensionArrays.length; i++)
+            retAlongDimensionArrays[i] = ret.tensorAlongDimension(i,dimension);
+
         for(INDArray arr : toConcat) {
             int arrTensorLength = -1;
 
             if(arr.tensorssAlongDimension(dimension) != ret.tensorssAlongDimension(dimension))
                 throw new IllegalStateException("Illegal concatenate. Tensors along dimension must be same length.");
 
+
             for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-                INDArray retLinear = ret.tensorAlongDimension(i, dimension);
+                INDArray retLinear = retAlongDimensionArrays[i];
                 INDArray arrTensor = arr.tensorAlongDimension(i, dimension);
+
                 arrTensorLength = arrTensor.length();
                 for(int j = 0; j < arrTensor.length(); j++) {
                     int idx = j + arrOffset;

@@ -115,6 +115,13 @@ public interface INDArray extends Serializable  {
     int majorStride();
 
     /**
+     * Get the inner most stride
+     * wrt the ordering of the array
+     * @return
+     */
+    int innerMostStride();
+
+    /**
      * Returns a linear view reference of shape
      * 1,length(ndarray)
      *
@@ -1561,6 +1568,11 @@ public interface INDArray extends Serializable  {
      */
     INDArray dup();
 
+    /**Return a copy of this ndarray, where the returned ndarray has the specified order
+     * @param order Order of the NDArray. 'f' or 'c'
+     * @return copy of ndarray with specified order
+     */
+    INDArray dup(char order);
 
     /**
      * Returns a flattened version (row vector) of this ndarray
@@ -1568,6 +1580,15 @@ public interface INDArray extends Serializable  {
      * @return a flattened version (row vector) of this ndarray
      */
     INDArray ravel();
+
+
+    /**
+     * Returns a flattened version (row vector) of this ndarray
+     *
+     * @return a flattened version (row vector) of this ndarray
+     */
+    INDArray ravel(char order);
+
 
     /**
      *

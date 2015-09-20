@@ -67,6 +67,16 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createDouble(byte[] data, int length) {
+        return new CudaDoubleDataBuffer(data, length);
+    }
+
+    @Override
+    public DataBuffer createFloat(byte[] data, int length) {
+        return new CudaFloatDataBuffer(data, length);
+    }
+
+    @Override
     public DataBuffer createFloat(double[] data) {
         return new CudaFloatDataBuffer(ArrayUtil.toFloats(data));
     }

@@ -9,9 +9,19 @@ import org.nd4j.linalg.factory.Nd4jBackend;
  * @author Adam Gibson
  */
 public class DistributionTestsC extends BaseNd4jTest {
+    public DistributionTestsC() {
+    }
+
+    public DistributionTestsC(String name) {
+        super(name);
+    }
 
     public DistributionTestsC(String name, Nd4jBackend backend) {
         super(name, backend);
+    }
+
+    public DistributionTestsC(Nd4jBackend backend) {
+        super(backend);
     }
 
     @Test

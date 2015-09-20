@@ -197,6 +197,15 @@ public interface NDArrayFactory {
      */
     INDArray toFlattened(int length, Iterator<? extends INDArray>... matrices);
 
+    /**
+     * Returns a flattened ndarray with all elements in each ndarray
+     * regardless of dimension.
+     * Order is specified to ensure flattening order is consistent across
+     * @param matrices the ndarrays to flatten
+     * @param order the order in which the ndarray values should be flattened
+     * @return
+     */
+    INDArray toFlattened(char order, Collection<INDArray> matrices);
 
     /**
      * Returns a column vector where each entry is the nth bilinear
@@ -211,6 +220,14 @@ public interface NDArrayFactory {
      * @return the flattened vector
      */
     INDArray toFlattened(INDArray... matrices);
+
+    /**
+     * Flatten all of the ndarrays in to one long vector
+     *
+     * @param matrices the matrices to flatten
+     * @return the flattened vector
+     */
+    INDArray toFlattened(char order, INDArray... matrices);
 
     /**
      * Create the identity ndarray

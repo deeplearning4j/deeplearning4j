@@ -40,8 +40,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
 
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemm(Order
-                    ,TransA
-                    ,TransB
+                    ,params.getAOrdering()
+                    ,params.getBOrdering()
                     ,params.getM()
                     ,params.getN()
                     ,params.getK()
@@ -55,8 +55,8 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     ,params.getLdc());
         else
             sgemm(Order
-                    , TransA
-                    , TransB
+                    , params.getAOrdering()
+                    , params.getBOrdering()
                     , params.getM()
                     , params.getN()
                     , params.getK()
@@ -69,6 +69,45 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
                     , C
                     , params.getLdc());
 
+    }
+
+    /**{@inheritDoc}
+     */
+    @Override
+    public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha, double beta) {
+        GemmParams params = new GemmParams(A,B,C,transposeA,transposeB);
+        char Order = 'N';   //Check this?
+
+        if(A.data().dataType() == DataBuffer.Type.DOUBLE)
+            dgemm(Order
+                    ,params.getAOrdering()
+                    ,params.getBOrdering()
+                    ,params.getM()
+                    ,params.getN()
+                    ,params.getK()
+                    ,alpha
+                    ,params.getA()
+                    ,params.getLda()
+                    ,params.getB()
+                    ,params.getLdb()
+                    ,beta
+                    ,C
+                    ,params.getLdc());
+        else
+            sgemm(Order
+                    , params.getAOrdering()
+                    , params.getBOrdering()
+                    , params.getM()
+                    , params.getN()
+                    , params.getK()
+                    , (float)alpha
+                    , params.getA()
+                    , params.getLda()
+                    , params.getB()
+                    , params.getLdb()
+                    , (float)beta
+                    , C
+                    , params.getLdc());
     }
 
 

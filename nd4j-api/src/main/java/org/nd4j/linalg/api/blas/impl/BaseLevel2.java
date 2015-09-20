@@ -37,7 +37,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         GemvParameters parameters = new GemvParameters(A,X,Y);
         if(A.data().dataType() == DataBuffer.Type.DOUBLE)
             dgemv(order
-                    , transA
+                    , parameters.getAOrdering()
                     , parameters.getM()
                     , parameters.getN()
                     ,
@@ -51,7 +51,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
                     , parameters.getIncy());
         else
             sgemv(order
-                    , transA
+                    , parameters.getAOrdering()
                     , parameters.getM()
                     , parameters.getN()
                     , (float) alpha
