@@ -333,21 +333,17 @@ public class TaskCreator {
         public void perform(INDArray...arr) {
             if(slice >= 0 && dimension == null) {
                 Op op2 = op.opForDimension(slice, 0);
-                opExecutioner.exec(op2);
-                if (op instanceof TransformOp) {
-                    TransformOp t = (TransformOp) op;
-                    TransformOp t2 = (TransformOp) op2;
-                    t.z().tensorAlongDimension(slice, 0).assign(t2.z());
-                }
+                Accumulation acc = (Accumulation) op2;
+                double val = opExecutioner.execAndReturn(acc).currentResult().doubleValue();
+                retArray.putScalar(slice,val);
+
             }
             else if(dimension != null) {
                 Op op2 = op.opForDimension(slice, dimension);
-                opExecutioner.exec(op2);
-                if (op instanceof TransformOp) {
-                    TransformOp t = (TransformOp) op;
-                    TransformOp t2 = (TransformOp) op2;
-                    t.z().tensorAlongDimension(slice, dimension).assign(t2.z());
-                }
+                Accumulation acc = (Accumulation) op2;
+                double val = opExecutioner.execAndReturn(acc).currentResult().doubleValue();
+                retArray.putScalar(slice,val);
+
             }
             else {
                 opExecutioner.exec(op);
