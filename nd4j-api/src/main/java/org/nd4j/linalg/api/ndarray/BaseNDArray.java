@@ -42,6 +42,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
+import org.nd4j.linalg.api.parallel.TaskCreator;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
 import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;
@@ -1992,8 +1993,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
-    private void applyVectorOp(INDArray vector,char operation) {
-        int count = 0;
+    private void applyVectorOp(final INDArray vector,final char operation) {
         if(this instanceof IComplexNDArray) {
             IComplexNDArray complexThis = (IComplexNDArray) this;
             IComplexNDArray row = (IComplexNDArray) vector;
@@ -2030,9 +2030,38 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         }
         else {
+            int dimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
             //a column vector iterates row wise a row vector iterates column wise
-            Iterator<int[]> shapes = Shape.isRowVectorShape(vector.shape()) ? new NdIndexIterator('c',shape()) : new NdIndexIterator('f',shape());
-            int currVectorPosition = 0;
+            //  Iterator<int[]> shapes = Shape.isRowVectorShape(vector.shape()) ? new NdIndexIterator('c',shape()) : new NdIndexIterator('f',shape());
+            Nd4j.getExecutioner().parallelExecutioner().execBasedOnArraysAlongDimension(this, new TaskCreator.INDArrayTask() {
+                @Override
+                public void perform(INDArray... arr) {
+                    for (int i = 0; i < arr[0].length(); i++) {
+                        switch (operation) {
+                            case 'a':
+                                arr[0].putScalar(i, arr[0].getDouble(i) + vector.getDouble(i));
+                                break;
+                            case 's':
+                                arr[0].putScalar(i, arr[0].getDouble(i) - vector.getDouble(i));
+                                break;
+                            case 'm':
+                                arr[0].putScalar(i, arr[0].getDouble(i) * vector.getDouble(i));
+                                break;
+                            case 'd':
+                                arr[0].putScalar(i, arr[0].getDouble(i) / vector.getDouble(i));
+                                break;
+                            case 'h':
+                                arr[0].putScalar(i, vector.getDouble(i) - arr[0].getDouble(i));
+                                break;
+                            case 't':
+                                arr[0].putScalar(i, vector.getDouble(i) / arr[0].getDouble(i));
+                                break;
+                        }
+                    }
+                }
+            },dimension);
+
+     /*       int currVectorPosition = 0;
             while(shapes.hasNext()) {
                 int[] position = shapes.next();
                 switch (operation) {
@@ -2058,7 +2087,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
                 if(currVectorPosition >= vector.length())
                     currVectorPosition = 0;
-            }
+            }*/
 
         }
     }
