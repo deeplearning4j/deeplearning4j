@@ -319,6 +319,9 @@ public class CheckUtil {
 	 */
 	public static List<Pair<INDArray,String>> getAllTestMatricesWithShape(int rows, int cols, int seed) {
 		List<Pair<INDArray,String>> all = new ArrayList<>();
+		Nd4j.getRandom().setSeed(seed);
+		all.add(new Pair<>(Nd4j.rand(rows,cols),"Nd4j.rand(rows,cols)"));
+
 		all.add(getTransposedMatrixWithShape(rows,cols,seed));
 
 		all.addAll(getSubMatricesWithShape(rows,cols,seed));
@@ -338,10 +341,16 @@ public class CheckUtil {
 	}
 
 	public static List<Pair<INDArray,String>> getSubMatricesWithShape(int rows, int cols, int seed){
+		//Create 3 identical matrices. Could do get() on single original array, but in-place modifications on one
+		//might mess up tests for another
 		Nd4j.getRandom().setSeed(seed);
 		INDArray orig = Nd4j.rand(new int[]{2*rows,2*cols});
-		INDArray first = orig.get(NDArrayIndex.interval(0, rows),NDArrayIndex.interval(0, cols));
-		INDArray second = orig.get(NDArrayIndex.interval(3, rows+3),NDArrayIndex.interval(3,cols+3));
+		INDArray first = orig.get(NDArrayIndex.interval(0, rows), NDArrayIndex.interval(0, cols));
+		Nd4j.getRandom().setSeed(seed);
+		orig = Nd4j.rand(new int[]{2 * rows, 2 * cols});
+		INDArray second = orig.get(NDArrayIndex.interval(3, rows + 3), NDArrayIndex.interval(3, cols + 3));
+		Nd4j.getRandom().setSeed(seed);
+		orig = Nd4j.rand(new int[]{2 * rows, 2 * cols});
 		INDArray third = orig.get(NDArrayIndex.interval(rows,2*rows),NDArrayIndex.interval(cols,2*cols));
 		
 		String baseMsg = "getSubMatricesWithShape("+rows+","+cols+","+seed+")";
@@ -357,28 +366,46 @@ public class CheckUtil {
 		//From 3d NDArray: do various tensors. One offset 0, one offset > 0
 		//[0,1], [0,2], [1,0], [1,2], [2,0], [2,1]
 		INDArray[] out = new INDArray[12];
+
 		INDArray temp01 = Nd4j.rand(new int[]{cols,rows,4});
 		out[0] = temp01.tensorAlongDimension(0, 0,1);
-		out[1] = temp01.tensorAlongDimension(2, 0,1);
+		Nd4j.getRandom().setSeed(seed);
+		temp01 = Nd4j.rand(new int[]{cols, rows, 4});
+		out[1] = temp01.tensorAlongDimension(2, 0, 1);
 
+		Nd4j.getRandom().setSeed(seed);
 		INDArray temp02 = Nd4j.rand(new int[]{cols,4,rows});
 		out[2] = temp02.tensorAlongDimension(0, 0,2);
+		Nd4j.getRandom().setSeed(seed);
+		temp02 = Nd4j.rand(new int[]{cols,4,rows});
 		out[3] = temp02.tensorAlongDimension(2, 0,2);
 
+		Nd4j.getRandom().setSeed(seed);
 		INDArray temp10 = Nd4j.rand(new int[]{rows,cols,4});
 		out[4] = temp10.tensorAlongDimension(0, 1,0);
+		Nd4j.getRandom().setSeed(seed);
+		temp10 = Nd4j.rand(new int[]{rows,cols,4});
 		out[5] = temp10.tensorAlongDimension(2, 1,0);
 
+		Nd4j.getRandom().setSeed(seed);
 		INDArray temp12 = Nd4j.rand(new int[]{4,cols,rows});
 		out[6] = temp12.tensorAlongDimension(0, 1,2);
+		Nd4j.getRandom().setSeed(seed);
+		temp12 = Nd4j.rand(new int[]{4,cols,rows});
 		out[7] = temp12.tensorAlongDimension(2, 1,2);
 
+		Nd4j.getRandom().setSeed(seed);
 		INDArray temp20 = Nd4j.rand(new int[]{rows,4,cols});
 		out[8] = temp20.tensorAlongDimension(0, 2,0);
+		Nd4j.getRandom().setSeed(seed);
+		temp20 = Nd4j.rand(new int[]{rows,4,cols});
 		out[9] = temp20.tensorAlongDimension(2, 2,0);
 
+		Nd4j.getRandom().setSeed(seed);
 		INDArray temp21 = Nd4j.rand(new int[]{4,rows,cols});
 		out[10] = temp21.tensorAlongDimension(0, 2,1);
+		Nd4j.getRandom().setSeed(seed);
+		temp21 = Nd4j.rand(new int[]{4,rows,cols});
 		out[11] = temp21.tensorAlongDimension(2, 2,1);
 		
 		String baseMsg = "getTensorAlongDimensionMatricesWithShape("+rows+","+cols+","+seed+")";

@@ -45,6 +45,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * NDArrayTests
@@ -459,7 +460,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testSubRowVector() {
-        INDArray matrix = Nd4j.linspace(1,6,6).reshape(2,3);
+        INDArray matrix = Nd4j.linspace(1,6,6).reshape(2, 3);
         INDArray row = Nd4j.linspace(1, 3, 3);
         INDArray test = matrix.subRowVector(row);
         INDArray assertion = Nd4j.create(new double[][]{
@@ -1926,18 +1927,101 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
             for( int i=0; i<nTAD0; i++ ){
                 INDArray tad0 = arr.tensorAlongDimension(i,0);
-                assertEquals(tad0.length(),t0.getTensorLength());
-                assertEquals(tad0.elementStride(),t0.getElementWiseStride());
+                assertEquals(tad0.length(), t0.getTensorLength());
+                assertEquals(tad0.elementWiseStride(),t0.getElementWiseStride());
+
+                int offset = tad0.offset();
+                int calcOffset = t0.getFirstTensorOffset() + i*t0.getTensorStartSeparation();
+                assertEquals(offset,calcOffset);
             }
 
             for( int i=0; i<nTAD1; i++ ){
                 INDArray tad1 = arr.tensorAlongDimension(i,1);
                 assertEquals(tad1.length(), t1.getTensorLength());
-                assertEquals(tad1.elementStride(),t1.getElementWiseStride());
+                assertEquals(tad1.elementWiseStride(),t1.getElementWiseStride());
+
+                int offset = tad1.offset();
+                int calcOffset = t1.getFirstTensorOffset() + i*t1.getTensorStartSeparation();
+                assertEquals(offset,calcOffset);
             }
         }
     }
 
+    @Test
+    public void testSumVsDoElementWiseOp(){
+        int nRows = 5;
+        int nColumns = 7;
+        List<Pair<INDArray,String>> testInputsSecond = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+
+        List<Pair<INDArray,String>> testInputsOrigCopy = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+
+        int count = testInputsSecond.size();
+
+        //Do operation: first.addi(second)
+        for( int i=0; i<count; i++ ){
+            //Operations are in place, so don't want to use same input array twice
+            List<Pair<INDArray,String>> testInputsFirst = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+            for( int j=0; j<count; j++ ) {
+                Pair<INDArray, String> pairFirst = testInputsFirst.get(j);
+                Pair<INDArray, String> pairSecond = testInputsSecond.get(i);
+
+                Pair<INDArray, String> pairFirstOriginal = testInputsOrigCopy.get(j);
+                Pair<INDArray, String> pairSecondOriginal = testInputsOrigCopy.get(i);
+
+                INDArray arrFirst = pairFirst.getFirst();
+                INDArray arrSecond = pairSecond.getFirst();
+                String msg = pairFirst.getSecond();
+                String msg2 = pairSecond.getSecond();
+
+
+                INDArray firstDup = arrFirst.dup();
+                INDArray firstDup2 = arrFirst.dup();
+                INDArray secondDup = arrSecond.dup();
+
+                firstDup.addi(secondDup);   //firstDup now has expected values
+                NDArrayUtil.doElementWiseOp(arrFirst, arrSecond, 'a');
+
+
+                boolean equals = arrFirst.equals(firstDup);
+                if (!equals) {
+                    System.out.println("Original (first):");
+                    CheckUtil.printMatrixFullPrecision(firstDup2);
+                    System.out.println("Original (second):");
+                    CheckUtil.printMatrixFullPrecision(secondDup);
+
+                    System.out.println("Expected:");
+                    CheckUtil.printMatrixFullPrecision(firstDup);
+                    System.out.println("Actual:");
+                    CheckUtil.printMatrixFullPrecision(arrFirst);
+                }
+                assertEquals(arrFirst, firstDup);
+
+                assertEquals(pairSecondOriginal.getFirst(),pairSecond.getFirst());
+
+
+                //Check that only the expected number of elements have been modified
+                //i.e., don't want any other elements in buffer to have been changed unintentionally
+                DataBuffer orig = pairFirstOriginal.getFirst().data();
+                DataBuffer after = arrFirst.data();
+                int dataLength = orig.length();
+                int tensorLength = arrFirst.length();
+                int countDifferent = 0;
+                for (int k = 0; k < dataLength; k++) {
+                    if (orig.getDouble(k) != after.getDouble(k)) countDifferent++;
+                }
+                assertEquals("Incorrect number of elements changed by operation", tensorLength, countDifferent);
+
+                DataBuffer orig2 = pairSecondOriginal.getFirst().data();
+                DataBuffer arrSecondAfter = arrSecond.data();
+                dataLength = orig2.length();
+                countDifferent = 0;
+                for (int k = 0; k < dataLength; k++) {
+                    if (orig2.getDouble(k) != arrSecondAfter.getDouble(k)) countDifferent++;
+                }
+                assertEquals("array 2 should not be modified",countDifferent,0);
+            }
+        }
+    }
 
 
     @Override

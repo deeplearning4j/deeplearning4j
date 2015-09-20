@@ -22,6 +22,7 @@ package org.nd4j.linalg.util;
 import com.google.common.primitives.Ints;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -250,46 +251,347 @@ public class NDArrayUtil {
     }
 
     public static void doElementWiseOp(INDArray first, INDArray second, char op){
-        boolean canDoDirectly = false;
-        if(canDoDirectly){
-            throw new UnsupportedOperationException("Not implemented");
+        if(canDoOpDirectly(first,second)){
+            doOpDirectly(first,second,op);
         } else {
-            int opAlongDimension = ArrayUtil.argMin(first.shape());
+            //Decide which dimension we want to split on
+            //doing argMax on shape gives us smallest number of largest tensors
+            //but may not be optimal in terms of element separation (for CPU cache etc)
+            int opAlongDimension = ArrayUtil.argMax(first.shape());
+
             Tensor1DStats fs = get1DTensorStats(first, opAlongDimension);
-            Tensor1DStats ss = get1DTensorStats(second,opAlongDimension);
-            doOp(first,second,op,fs,ss);
+            Tensor1DStats ss = get1DTensorStats(second, opAlongDimension);
+            if(fs.tensorStartSeparation == fs.getTensorLength()*fs.getElementWiseStride() &&
+                    ss.tensorStartSeparation == ss.getTensorLength()*ss.getElementWiseStride() ){
+                //One tensor ends and the next begins at same element-wise interval for both
+                doOpDirectly(first,second,op);
+            } else {
+                doOp(first, second, op, fs, ss);
+            }
         }
     }
 
-    private static INDArray doOp(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
+    /** Do an operation on the entire NDArray instead of breaking it up into tensors.
+     * Can do this under certain circumstances */
+    private static void doOpDirectly(INDArray first, INDArray second, char op){
+        switch(op){
+            case 'a':
+            case 's':
+                //first.addi(second) or first.subi(second)
+                double a = (op == 'a' ? 1.0 : -1.0);
+                Nd4j.getBlasWrapper().level1().axpy(first.length(), a, second, first);
+                break;
+            case 'm':   //muli
+            case 'd':   //divi
+                int incrFirst = first.elementWiseStride();
+                int incrSecond = second.elementWiseStride();
+                int offsetFirst = first.offset();
+                int offsetSecond = second.offset();
+                int opLength = first.length();
+                Object arrayFirst = first.data().array();
+                Object arraySecond = first.data().array();
+
+                if(arrayFirst instanceof float[]) {
+                    float[] fArr1 = (float[])arrayFirst;
+                    float[] fArr2 = (float[])arraySecond;
+                    if(op=='m') {   //muli
+                        if(incrFirst == 1 && incrSecond == 1 ){
+                            if(offsetFirst==0 && offsetSecond==0){
+                                muliSimpleFloat(fArr1,fArr2,opLength);
+                            } else {
+                                muliOffsetUnitIncrementFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond);
+                            }
+                        } else {
+                            if(offsetFirst==0 && offsetSecond==0){
+                                muliIncrementNoOffsetFloat(fArr1,fArr2,opLength,incrFirst,incrSecond);
+                            } else {
+                                muliIncrementOffsetFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond,incrFirst,incrSecond);
+                            }
+                        }
+                    } else {    //divi
+                        if(incrFirst == 1 && incrSecond == 1 ){
+                            if(offsetFirst==0 && offsetSecond==0){
+                                diviSimpleFloat(fArr1,fArr2,opLength);
+                            } else {
+                                diviOffsetUnitIncrementFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond);
+                            }
+                        } else {
+                            if(offsetFirst==0 && offsetSecond==0){
+                                diviIncrementNoOffsetFloat(fArr1,fArr2,opLength,incrFirst,incrSecond);
+                            } else {
+                                diviIncrementOffsetFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond,incrFirst,incrSecond);
+                            }
+                        }
+                    }
+                } else {    //double ops
+                    double[] dArr1 = (double[])arrayFirst;
+                    double[] dArr2 = (double[])arraySecond;
+                    if(op=='m') {   //muli
+                        if(incrFirst == 1 && incrSecond == 1 ){
+                            if(offsetFirst==0 && offsetSecond==0){
+                                muliSimpleDouble(dArr1, dArr2, opLength);
+                            } else {
+                                muliOffsetUnitIncrementDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond);
+                            }
+                        } else {
+                            if(offsetFirst==0 && offsetSecond==0){
+                                muliIncrementNoOffsetDouble(dArr1, dArr2, opLength, incrFirst, incrSecond);
+                            } else {
+                                muliIncrementOffsetDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond, incrFirst, incrSecond);
+                            }
+                        }
+                    } else {    //divi
+                        if(incrFirst == 1 && incrSecond == 1 ){
+                            if(offsetFirst==0 && offsetSecond==0){
+                                diviSimpleDouble(dArr1, dArr2, opLength);
+                            } else {
+                                diviOffsetUnitIncrementDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond);
+                            }
+                        } else {
+                            if(offsetFirst==0 && offsetSecond==0){
+                                diviIncrementNoOffsetDouble(dArr1, dArr2, opLength, incrFirst, incrSecond);
+                            } else {
+                                diviIncrementOffsetDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond, incrFirst, incrSecond);
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'p':   //put / copy
+                Nd4j.getBlasWrapper().level1().copy(second,first); //first = second
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown op: " + op);
+        }
+    }
+
+    private static void doOp(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
         DataBuffer df = first.data();
         DataBuffer ds = second.data();
         int n = fs.getTensorLength();
         int nTensors = fs.getNumTensors();
         int incrF = fs.getElementWiseStride();
-        int incrS = fs.getElementWiseStride();
+        int incrS = ss.getElementWiseStride();
+        Level1 l1Blas = Nd4j.getBlasWrapper().level1();
         switch(op){
             case 'a':
             case 's':
                 //first.addi(second) or first.subi(second)
                 double a = (op == 'a' ? 1.0 : -1.0);
                 for(int i=0; i<nTensors; i++ ) {
-                    int offset1 = fs.firstTensorOffset + i*fs.getTensorStartSeparation();
-                    int offset2 = ss.firstTensorOffset + i*ss.getTensorStartSeparation();
-                    Nd4j.getBlasWrapper().level1().axpy(n, a, ds,offset2,incrS, df,offset1,incrF);
+                    int offset1 = fs.getFirstTensorOffset() + i*fs.getTensorStartSeparation();
+                    int offset2 = ss.getFirstTensorOffset() + i*ss.getTensorStartSeparation();
+                    l1Blas.axpy(n, a, ds, offset2, incrS, df, offset1, incrF);
                 }
                 break;
             case 'm':
                 //muli
-                throw new UnsupportedOperationException("not yet implemented");
+                Object arrayFirst = first.data().array();
+                Object arraySecond = first.data().array();
+                if(arrayFirst instanceof float[]) {
+                    float[] f1 = (float[])arrayFirst;
+                    float[] f2 = (float[])arraySecond;
+                    if (incrF == 1 && incrS == 1) {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliOffsetUnitIncrementFloat(f1,f2,n,offset1,offset2);
+                        }
+                    } else {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliIncrementOffsetFloat(f1,f2,n,offset1,offset2,incrF,incrS);
+                        }
+                    }
+                } else {
+                    double[] f1 = (double[])arrayFirst;
+                    double[] f2 = (double[])arraySecond;
+                    if (incrF == 1 && incrS == 1) {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliOffsetUnitIncrementDouble(f1, f2, n, offset1, offset2);
+                        }
+                    } else {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliIncrementOffsetDouble(f1, f2, n, offset1, offset2, incrF, incrS);
+                        }
+                    }
+                }
+                break;
             case 'd':
                 //divi
-                throw new UnsupportedOperationException("not yet implemented");
+                Object arrayFirstd = first.data().array();
+                Object arraySecondd = first.data().array();
+                if(arrayFirstd instanceof float[]) {
+                    float[] f1 = (float[])arrayFirstd;
+                    float[] f2 = (float[])arraySecondd;
+                    if (incrF == 1 && incrS == 1) {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliOffsetUnitIncrementFloat(f1,f2,n,offset1,offset2);
+                        }
+                    } else {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliIncrementOffsetFloat(f1,f2,n,offset1,offset2,incrF,incrS);
+                        }
+                    }
+                } else {
+                    double[] f1 = (double[])arrayFirstd;
+                    double[] f2 = (double[])arraySecondd;
+                    if (incrF == 1 && incrS == 1) {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliOffsetUnitIncrementDouble(f1,f2,n,offset1,offset2);
+                        }
+                    } else {
+                        for (int i = 0; i < nTensors; i++) {
+                            int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
+                            int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
+                            muliIncrementOffsetDouble(f1,f2,n,offset1,offset2,incrF,incrS);
+                        }
+                    }
+                }
+                break;
             case 'p':   //put / copy
-                throw new UnsupportedOperationException("not yet implemented");
+                for(int i=0; i<nTensors; i++ ) {
+                    int offset1 = fs.getFirstTensorOffset() + i*fs.getTensorStartSeparation();
+                    int offset2 = ss.getFirstTensorOffset() + i*ss.getTensorStartSeparation();
+                    l1Blas.copy(n,ds,offset2,incrS,df,offset1,incrF);
+                }
+                break;
+            default:
+                throw new RuntimeException("Unknown op: " + op);
         }
-        return null;    //TODO
     }
 
+    private static boolean canDoOpDirectly(INDArray first, INDArray second){
+        if(first.isVector()) return true;
+
+        //Full buffer + matching strides -> implies all elements are contiguous (and match)
+        int l1 = first.length();
+        int dl1 = first.data().length();
+        int l2 = second.length();
+        int dl2 = second.data().length();
+        int[] strides1 = first.stride();
+        int[] strides2 = second.stride();
+        boolean equalStrides = Arrays.equals(strides1, strides2);
+        if(l1==dl1 && l2==dl2 && equalStrides) return true;
+
+        //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
+        int[] shape1 = first.shape();
+        int[] stridesAsInit = (first.ordering()=='c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
+        boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
+        if(equalStrides && stridesSameAsInit) return true;
+
+        return false;
+    }
+
+    //muli - float
+    private static void muliIncrementOffsetFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i * incrFirst] *= second[offsetSecond + i * incrSecond];
+        }
+    }
+
+    private static void muliIncrementNoOffsetFloat(float[] first, float[] second, int opLength, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[i * incrFirst] *= second[i * incrSecond];
+        }
+    }
+
+    private static void muliOffsetUnitIncrementFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i] *= second[offsetSecond + i];
+        }
+    }
+
+    private static void muliSimpleFloat(float[] first, float[] second, int opLength){
+        for (int i = 0; i < first.length; i++) {
+            first[i] *= second[i];
+        }
+    }
+
+    //muli - double
+    private static void muliIncrementOffsetDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i * incrFirst] *= second[offsetSecond + i * incrSecond];
+        }
+    }
+
+    private static void muliIncrementNoOffsetDouble(double[] first, double[] second, int opLength, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[i * incrFirst] *= second[i * incrSecond];
+        }
+    }
+
+    private static void muliOffsetUnitIncrementDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i] *= second[offsetSecond + i];
+        }
+    }
+
+    private static void muliSimpleDouble(double[] first, double[] second, int opLength){
+        for (int i = 0; i < first.length; i++) {
+            first[i] *= second[i];
+        }
+    }
+
+    //divi - float
+    private static void diviIncrementOffsetFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i * incrFirst] /= second[offsetSecond + i * incrSecond];
+        }
+    }
+
+    private static void diviIncrementNoOffsetFloat(float[] first, float[] second, int opLength, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[i * incrFirst] /= second[i * incrSecond];
+        }
+    }
+
+    private static void diviOffsetUnitIncrementFloat(float[] first, float[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i] /= second[offsetSecond + i];
+        }
+    }
+
+    private static void diviSimpleFloat(float[] first, float[] second, int opLength){
+        for (int i = 0; i < first.length; i++) {
+            first[i] /= second[i];
+        }
+    }
+
+    //divi - double
+    private static void diviIncrementOffsetDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i * incrFirst] /= second[offsetSecond + i * incrSecond];
+        }
+    }
+
+    private static void diviIncrementNoOffsetDouble(double[] first, double[] second, int opLength, int incrFirst, int incrSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[i * incrFirst] /= second[i * incrSecond];
+        }
+    }
+
+    private static void diviOffsetUnitIncrementDouble(double[] first, double[] second, int opLength, int offsetFirst, int offsetSecond){
+        for (int i = 0; i < opLength; i++) {
+            first[offsetFirst + i] /= second[offsetSecond + i];
+        }
+    }
+
+    private static void diviSimpleDouble(double[] first, double[] second, int opLength){
+        for (int i = 0; i < first.length; i++) {
+            first[i] /= second[i];
+        }
+    }
 
 }
