@@ -1710,7 +1710,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance1(INDArray other) {
-
         return other.sub(this).sum(Integer.MAX_VALUE).getDouble(0);
     }
 
@@ -2032,7 +2031,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         else {
             int dimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
             //a column vector iterates row wise a row vector iterates column wise
-            //  Iterator<int[]> shapes = Shape.isRowVectorShape(vector.shape()) ? new NdIndexIterator('c',shape()) : new NdIndexIterator('f',shape());
             Nd4j.getExecutioner().parallelExecutioner().execBasedOnArraysAlongDimension(this, new TaskCreator.INDArrayTask() {
                 @Override
                 public void perform(INDArray... arr) {
@@ -2060,35 +2058,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     }
                 }
             },dimension);
-
-     /*       int currVectorPosition = 0;
-            while(shapes.hasNext()) {
-                int[] position = shapes.next();
-                switch (operation) {
-                    case 'a':
-                        putScalar(position, getDouble(position) + vector.getDouble(currVectorPosition++));
-                        break;
-                    case 's':
-                        putScalar(position, getDouble(position) - vector.getDouble(currVectorPosition++));
-                        break;
-                    case 'm':
-                        putScalar(position, getDouble(position) * vector.getDouble(currVectorPosition++));
-                        break;
-                    case 'd':
-                        putScalar(position, getDouble(position) / vector.getDouble(currVectorPosition++));
-                        break;
-                    case 'h':
-                        putScalar(position, vector.getDouble(currVectorPosition++) - getDouble(position));
-                        break;
-                    case 't':
-                        putScalar(position, vector.getDouble(currVectorPosition++) / getDouble(position));
-                        break;
-                }
-
-                if(currVectorPosition >= vector.length())
-                    currVectorPosition = 0;
-            }*/
-
         }
     }
 
@@ -2944,7 +2913,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(slice < 0)
             slice += shape.length;
-        List<INDArrayIndex> indices = new ArrayList<>();
         INDArrayIndex[] indexes = new INDArrayIndex[rank()];
         indexes[0] = NDArrayIndex.point(slice);
         for(int i = 1; i < rank(); i++) {
@@ -4247,7 +4215,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public IComplexNDArray muli(IComplexNumber n) {
-
         return muli(n, Nd4j.createComplex(shape()));
 
     }
@@ -4269,7 +4236,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public IComplexNDArray addi(IComplexNumber n) {
-
         return addi(n, Nd4j.createComplex(shape()));
 
     }
@@ -4292,7 +4258,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public IComplexNDArray rsubi(IComplexNumber n, IComplexNDArray result) {
-
         return Nd4j.createComplex(this).rsubi(n, result);
     }
 
@@ -4303,7 +4268,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public IComplexNDArray divi(IComplexNumber n, IComplexNDArray result) {
-
         return Nd4j.createComplex(this).divi(n, result);
 
     }
@@ -4315,7 +4279,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public IComplexNDArray muli(IComplexNumber n, IComplexNDArray result) {
-
         return Nd4j.createComplex(this).muli(n, result);
 
     }
@@ -4327,7 +4290,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public IComplexNDArray subi(IComplexNumber n, IComplexNDArray result) {
-
         return Nd4j.createComplex(this).subi(n, result);
 
     }
