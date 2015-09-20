@@ -514,7 +514,7 @@ public class NDArrayUtil {
     }
 
     private static void muliSimpleFloat(float[] first, float[] second, int opLength){
-        for (int i = 0; i < first.length; i++) {
+        for (int i = 0; i < opLength; i++) {
             first[i] *= second[i];
         }
     }
@@ -539,7 +539,7 @@ public class NDArrayUtil {
     }
 
     private static void muliSimpleDouble(double[] first, double[] second, int opLength){
-        for (int i = 0; i < first.length; i++) {
+        for (int i = 0; i < opLength; i++) {
             first[i] *= second[i];
         }
     }
@@ -564,7 +564,7 @@ public class NDArrayUtil {
     }
 
     private static void diviSimpleFloat(float[] first, float[] second, int opLength){
-        for (int i = 0; i < first.length; i++) {
+        for (int i = 0; i < opLength; i++) {
             first[i] /= second[i];
         }
     }
@@ -589,7 +589,7 @@ public class NDArrayUtil {
     }
 
     private static void diviSimpleDouble(double[] first, double[] second, int opLength){
-        for (int i = 0; i < first.length; i++) {
+        for (int i = 0; i < opLength; i++) {
             first[i] /= second[i];
         }
     }
