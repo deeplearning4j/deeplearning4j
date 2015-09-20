@@ -250,6 +250,14 @@ public class NDArrayUtil {
         public final int elementWiseStride;
     }
 
+    /** Do element-wise operation on two NDArrays.
+     * Ops:
+     * 'a': addi    first += second
+     * 's': subi    first -= second
+     * 'm': muli    first *= second
+     * 'd': divi    first /= second
+     * 'p': put     first =  second
+     */
     public static void doElementWiseOp(INDArray first, INDArray second, char op){
         if(canDoOpDirectly(first,second)){
             doOpDirectly(first,second,op);
@@ -289,7 +297,7 @@ public class NDArrayUtil {
                 int offsetSecond = second.offset();
                 int opLength = first.length();
                 Object arrayFirst = first.data().array();
-                Object arraySecond = first.data().array();
+                Object arraySecond = second.data().array();
 
                 if(arrayFirst instanceof float[]) {
                     float[] fArr1 = (float[])arrayFirst;
@@ -387,7 +395,7 @@ public class NDArrayUtil {
             case 'm':
                 //muli
                 Object arrayFirst = first.data().array();
-                Object arraySecond = first.data().array();
+                Object arraySecond = second.data().array();
                 if(arrayFirst instanceof float[]) {
                     float[] f1 = (float[])arrayFirst;
                     float[] f2 = (float[])arraySecond;
@@ -425,7 +433,7 @@ public class NDArrayUtil {
             case 'd':
                 //divi
                 Object arrayFirstd = first.data().array();
-                Object arraySecondd = first.data().array();
+                Object arraySecondd = second.data().array();
                 if(arrayFirstd instanceof float[]) {
                     float[] f1 = (float[])arrayFirstd;
                     float[] f2 = (float[])arraySecondd;
@@ -433,13 +441,13 @@ public class NDArrayUtil {
                         for (int i = 0; i < nTensors; i++) {
                             int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
                             int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
-                            muliOffsetUnitIncrementFloat(f1,f2,n,offset1,offset2);
+                            diviOffsetUnitIncrementFloat(f1,f2,n,offset1,offset2);
                         }
                     } else {
                         for (int i = 0; i < nTensors; i++) {
                             int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
                             int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
-                            muliIncrementOffsetFloat(f1,f2,n,offset1,offset2,incrF,incrS);
+                            diviIncrementOffsetFloat(f1,f2,n,offset1,offset2,incrF,incrS);
                         }
                     }
                 } else {
@@ -449,13 +457,13 @@ public class NDArrayUtil {
                         for (int i = 0; i < nTensors; i++) {
                             int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
                             int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
-                            muliOffsetUnitIncrementDouble(f1,f2,n,offset1,offset2);
+                            diviOffsetUnitIncrementDouble(f1,f2,n,offset1,offset2);
                         }
                     } else {
                         for (int i = 0; i < nTensors; i++) {
                             int offset1 = fs.getFirstTensorOffset() + i * fs.getTensorStartSeparation();
                             int offset2 = ss.getFirstTensorOffset() + i * ss.getTensorStartSeparation();
-                            muliIncrementOffsetDouble(f1,f2,n,offset1,offset2,incrF,incrS);
+                            diviIncrementOffsetDouble(f1,f2,n,offset1,offset2,incrF,incrS);
                         }
                     }
                 }
