@@ -30,8 +30,10 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Convolution is the code for applying the convolution operator.
- * http://www.inf.ufpr.br/danielw/pos/ci724/20102/HIPR2/flatjavasrc/Convolution.java
+ * Convolution is the
+ * code for applying
+ * the convolution operator.
+ *
  *
  * @author Adam Gibson
  */
@@ -52,6 +54,15 @@ public class Convolution {
     private Convolution() {
     }
 
+    /**
+     *
+     * @param col
+     * @param stride
+     * @param padding
+     * @param height
+     * @param width
+     * @return
+     */
     public static INDArray col2im(INDArray col, int[] stride, int[] padding, int height, int width) {
         return col2im(col, stride[0], stride[1], padding[0], padding[1], height, width);
     }
@@ -91,7 +102,7 @@ public class Convolution {
             for(int j = 0; j < kw; j++) {
                 //iterate over the kernel columns
                 int  jLim = j + sx * outW;
-                INDArrayIndex[]indices = new INDArrayIndex[]{
+                INDArrayIndex[]indices = new INDArrayIndex[] {
                         NDArrayIndex.all(),
                         NDArrayIndex.all(),
                         NDArrayIndex.interval(i, sy, iLim),
@@ -117,6 +128,14 @@ public class Convolution {
         return img.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(ph, ph + h), NDArrayIndex.interval(pw, pw + w));
     }
 
+    /**
+     *
+     * @param img
+     * @param kernel
+     * @param stride
+     * @param padding
+     * @return
+     */
     public static INDArray im2col(INDArray img, int[] kernel, int[] stride, int[] padding) {
         return im2col(img, kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false);
     }

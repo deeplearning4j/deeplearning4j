@@ -1687,7 +1687,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double squaredDistance(INDArray other) {
-
         double sd = 0.0;
         for (int i = 0; i < length; i++) {
             double d = getDouble(i) - other.getDouble(i);
@@ -1701,7 +1700,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public double distance2(INDArray other) {
-
         return Math.sqrt(squaredDistance(other));
     }
 
