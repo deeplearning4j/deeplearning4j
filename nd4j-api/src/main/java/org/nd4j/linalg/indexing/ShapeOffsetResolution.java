@@ -165,7 +165,9 @@ public class ShapeOffsetResolution implements Serializable {
                     shapeAxis++;
                 }
             }
-
+            this.shapes = shape;
+            this.strides = stride;
+            this.offsets = offsets;
             return true;
         }
 
