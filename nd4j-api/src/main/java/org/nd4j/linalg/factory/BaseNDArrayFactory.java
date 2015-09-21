@@ -998,12 +998,10 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             return toConcat[0];
         int sumAlongDim = 0;
         boolean allC = toConcat[0].ordering() == 'c';
-        boolean allOffsetZero = toConcat[0].offset() == 0;
 
         for (int i = 0; i < toConcat.length; i++) {
             sumAlongDim += toConcat[i].size(dimension);
             allC = allC && toConcat[i].ordering() == 'c';
-            allOffsetZero = toConcat[i].offset() == 0;
         }
 
         int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
@@ -1070,6 +1068,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
 
             }
+
             //bump the sliding window
             arrOffset += arrTensorLength;
 
