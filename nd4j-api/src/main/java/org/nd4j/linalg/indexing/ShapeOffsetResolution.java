@@ -98,6 +98,77 @@ public class ShapeOffsetResolution implements Serializable {
 
         }
 
+        //intervals and all
+        else if(numSpecified < 1 && interval > 0 && newAxis < 1 && pointIndex < 1 && numAll > 0) {
+            int minDimensions = Math.max(arr.rank(),2);
+            int[] shape = new int[minDimensions];
+            Arrays.fill(shape,1);
+            int[] stride = new int[minDimensions];
+            Arrays.fill(stride,arr.elementStride());
+            int[] offsets = new int[minDimensions];
+
+            for(int i = 0; i < shape.length; i++) {
+                if(indexes[i] instanceof NDArrayIndexAll) {
+                    shape[i] = arr.size(i);
+                    stride[i] = arr.stride(i);
+                    offsets[i] = indexes[i].offset();
+                }
+                else if(indexes[i] instanceof IntervalIndex) {
+                    shape[i] = indexes[i].length();
+                    stride[i] = indexes[i].stride() * arr.stride(i);
+                    offsets[i] = indexes[i].offset();
+                }
+            }
+
+            this.shapes = shape;
+            this.strides = stride;
+            this.offsets = offsets;
+            this.offset = 0;
+            for(int i = 0; i < indexes.length; i++) {
+                offset += offsets[i] * (stride[i] / indexes[i].stride());
+            }
+            return true;
+        }
+
+        //all and newaxis
+        else if(numSpecified < 1 && interval < 1 && newAxis < 1 && pointIndex < 1 && numAll > 0) {
+            int minDimensions = Math.max(arr.rank(),2) + newAxis;
+            //new axis dimensions + all
+            int[] shape = new int[minDimensions];
+            Arrays.fill(shape,1);
+            int[] stride = new int[minDimensions];
+            Arrays.fill(stride,arr.elementStride());
+            int[] offsets = new int[minDimensions];
+            int prependNewAxes = 0;
+            boolean allFirst = false;
+            int shapeAxis = 0;
+            for(int i = 0; i < indexes.length; i++) {
+                //prepend if all was not first; otherwise its meant
+                //to be targeted for particular dimensions
+                if(indexes[i] instanceof NewAxis) {
+                    if(allFirst) {
+                        shape[i] = 1;
+                        stride[i] = 0;
+                    }
+                    else {
+                        prependNewAxes++;
+                    }
+
+                }
+                //all index
+                else {
+                    if(i == 0)
+                        allFirst = true;
+                    //offset by number of axes to prepend
+                    shape[i] = arr.size(shapeAxis + prependNewAxes);
+                    stride[i] = arr.stride(shapeAxis + prependNewAxes);
+                    shapeAxis++;
+                }
+            }
+
+            return true;
+        }
+
 
         return false;
     }

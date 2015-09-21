@@ -31,10 +31,6 @@ import java.util.List;
  */
 public class ShapeMapper {
 
-
-
-
-
     /**
      * Get an ind2sub instance
      * based on the ordering and rank
