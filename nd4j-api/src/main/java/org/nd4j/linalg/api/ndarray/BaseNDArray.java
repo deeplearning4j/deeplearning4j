@@ -1083,7 +1083,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray putScalar(int i, double value) {
+    public  INDArray putScalar(int i, double value) {
         if(isScalar()) {
             data.put(offset + i,value);
             return this;
@@ -2029,27 +2029,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.getExecutioner().parallelExecutioner().execBasedOnArraysAlongDimension(this, new TaskCreator.INDArrayTask() {
                 @Override
                 public void perform(INDArray... arr) {
-                    for (int i = 0; i < arr[0].length(); i++) {
-                        switch (operation) {
-                            case 'a':
-                                arr[0].putScalar(i, arr[0].getDouble(i) + vector.getDouble(i));
-                                break;
-                            case 's':
-                                arr[0].putScalar(i, arr[0].getDouble(i) - vector.getDouble(i));
-                                break;
-                            case 'm':
-                                arr[0].putScalar(i, arr[0].getDouble(i) * vector.getDouble(i));
-                                break;
-                            case 'd':
-                                arr[0].putScalar(i, arr[0].getDouble(i) / vector.getDouble(i));
-                                break;
-                            case 'h':
-                                arr[0].putScalar(i, vector.getDouble(i) - arr[0].getDouble(i));
-                                break;
-                            case 't':
-                                arr[0].putScalar(i, vector.getDouble(i) / arr[0].getDouble(i));
-                                break;
-                        }
+                    synchronized (vector) {
+                        for (int i = 0; i < arr[0].length(); i++) {
+                            switch (operation) {
+                                case 'a':
+                                    arr[0].putScalar(i, arr[0].getDouble(i) + vector.getDouble(i));
+                                    break;
+                                case 's':
+                                    arr[0].putScalar(i, arr[0].getDouble(i) - vector.getDouble(i));
+                                    break;
+                                case 'm':
+                                    arr[0].putScalar(i, arr[0].getDouble(i) * vector.getDouble(i));
+                                    break;
+                                case 'd':
+                                    arr[0].putScalar(i, arr[0].getDouble(i) / vector.getDouble(i));
+                                    break;
+                                case 'h':
+                                    arr[0].putScalar(i, vector.getDouble(i) - arr[0].getDouble(i));
+                                    break;
+                                case 't':
+                                    arr[0].putScalar(i, vector.getDouble(i) / arr[0].getDouble(i));
+                                    break;
+                            }
+                    }
+
                     }
                 }
             },dimension);
