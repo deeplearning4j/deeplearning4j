@@ -11,7 +11,7 @@ Everyone's heard of big data. By releasing these open-source deep-learning tools
 
 These deep-learning algorithms are capable of unsupervised learning, which removes the brunt of menial feature extraction from data scientists, allowing them to concentrate on more interesting work. More generally, we believe they will help us create a safer, smarter, more transparent and more efficient society. 
 
-There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact.html). 
+There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact/). 
 
 ## ND4J & ND4S
 
