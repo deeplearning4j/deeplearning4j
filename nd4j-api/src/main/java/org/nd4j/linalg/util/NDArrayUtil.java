@@ -218,25 +218,25 @@ public class NDArrayUtil {
 
     public static Tensor1DStats get1DTensorStats(INDArray array, int dimension){
         //As per BaseNDArray.tensorAlongDimension
-        int[] tensorShape = ArrayUtil.keep(array.shape(), dimension);
-        int tensorLength = ArrayUtil.prod(tensorShape);
-
-        int[] remove = ArrayUtil.removeIndex(ArrayUtil.range(0, array.rank()), dimension);
-        int[] newPermuteDims = Arrays.copyOf(remove, remove.length + 1);
-        newPermuteDims[newPermuteDims.length-1] = dimension;
-
-
-        INDArray temp0 = array.tensorAlongDimension(0,dimension);
-        INDArray temp1 = array.tensorAlongDimension(1, dimension);
-        int tensorStartSeparation = temp1.offset() - temp0.offset();
-
-        //As per NDArrayMath.sliceOffsetForTensor
-        int firstTensorOffset = array.offset();
+        int tensorLength = ArrayUtil.prod(ArrayUtil.keep(array.shape(), dimension));
 
         //As per tensorssAlongDimension:
         int numTensors = array.length() / tensorLength;
 
-        int elementStride = temp0.elementWiseStride();  //TODO
+        //First tensor always starts with the first element in the NDArray, regardless of dimension
+        int firstTensorOffset = array.offset();
+
+        //Next: Need to work out the separation between the start (first element) of each 1d tensor
+        int tensorStartSeparation;
+        int elementStride;  //Separation in buffer between elements in the tensor
+        if(numTensors == 1){
+            tensorStartSeparation = -1; //Not applicable
+            elementStride = array.elementWiseStride();
+        } else {
+            INDArray secondTensor = array.tensorAlongDimension(1, dimension);
+            tensorStartSeparation = secondTensor.offset() - firstTensorOffset;
+            elementStride = secondTensor.elementWiseStride();
+        }
 
         return new Tensor1DStats(firstTensorOffset,tensorStartSeparation,
                 numTensors,tensorLength,elementStride);
@@ -536,6 +536,16 @@ public class NDArrayUtil {
      */
     public static void doVectorOp(INDArray array, INDArray vector, char op){
         boolean rowOp = Shape.isRowVectorShape(vector.shape());
+        //Edge case: 'vector' is actually a scalar
+        if(vector.length() == 1){
+            //Expect 'array' to be a vector also
+            if(array.isRowVector()){
+                rowOp = false;
+            } else if(array.isColumnVector()){
+                rowOp = true;
+            } else throw new IllegalArgumentException("Invalid input: vector input is a scalar but array is not a vector");
+        }
+
 
         Tensor1DStats tensorStats = get1DTensorStats(array, (rowOp ? 1 : 0));
 
