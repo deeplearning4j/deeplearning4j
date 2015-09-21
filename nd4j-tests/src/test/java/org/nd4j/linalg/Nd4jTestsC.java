@@ -2116,10 +2116,11 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                             case 't':
                                 if(row) firstDup.rdiviRowVector(secondDup);
                                 else firstDup.rdiviColumnVector(secondDup);
+                                break;
                             default:
                                 throw new RuntimeException();
                         }
-                        NDArrayUtil.doElementWiseOp(arrFirst, arrSecond, c);
+                        NDArrayUtil.doVectorOp(arrFirst, arrSecond, c);
 
 
                         boolean equals = arrFirst.equals(firstDup);
@@ -2166,8 +2167,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                 }
             }
         }
-
-
     }
 
 

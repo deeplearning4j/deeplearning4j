@@ -521,9 +521,9 @@ public class NDArrayUtil {
 
         Tensor1DStats tensorStats = get1DTensorStats(array, (rowOp ? 1 : 0));
 
-        int incr = array.elementWiseStride();
-        int incrVec = tensorStats.getElementWiseStride();
-        int offsetVec = array.offset();
+        int incr = tensorStats.getElementWiseStride();
+        int incrVec = vector.elementWiseStride();
+        int offsetVec = vector.offset();
         int opLength = vector.length();
         int nTensors = tensorStats.getNumTensors();
 
@@ -555,7 +555,7 @@ public class NDArrayUtil {
                 double a = (op == 'a' ? 1.0 : -1.0);
                 for( int i=0; i<nTensors; i++){
                     int tOffset = tensorStats.getFirstTensorOffset() + i*tensorStats.getTensorStartSeparation();
-                    l1Blas.axpy(opLength, a, bufferVec, offsetVec, incrVec, buffer, tOffset, incrVec);
+                    l1Blas.axpy(opLength, a, bufferVec, offsetVec, incrVec, buffer, tOffset, incr);
                 }
                 break;
             case 'm':   //muliXVector
