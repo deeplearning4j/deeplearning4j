@@ -85,6 +85,13 @@ public class UimaSentenceIterator extends BaseSentenceIterator {
     }
 
 
+    public UimaSentenceIterator(SentencePreProcessor preProcessor,CollectionReader cr,UimaResource resource) {
+        super(preProcessor);
+	this.reader = cr;
+        this.resource = resource;
+    }
+
+
     public UimaSentenceIterator(String path, UimaResource resource) {
         this(null,path,resource);
     }
