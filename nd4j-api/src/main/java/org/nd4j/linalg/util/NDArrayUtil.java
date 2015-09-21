@@ -264,9 +264,7 @@ public class NDArrayUtil {
             doOpDirectly(first,second,op);
         } else {
             //Decide which dimension we want to split on
-            //doing argMax on shape gives us smallest number of largest tensors
-            //but may not be optimal in terms of element separation (for CPU cache etc)
-            int opAlongDimension = ArrayUtil.argMax(first.shape());
+            int opAlongDimension = chooseElementWiseTensorDimension(first,second);
 
             Tensor1DStats fs = get1DTensorStats(first, opAlongDimension);
             Tensor1DStats ss = get1DTensorStats(second, opAlongDimension);
@@ -278,6 +276,26 @@ public class NDArrayUtil {
                 doOp(first, second, op, fs, ss);
             }
         }
+    }
+
+    private static int chooseElementWiseTensorDimension(INDArray first, INDArray second){
+        //doing argMin(max(first.stride(i),second.stride(i))) minimizes the maximum
+        //separation between elements (helps CPU cache) BUT might result in a huge number
+        //of tiny ops - i.e., addi on NDArrays with shape [5,10^6]
+        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(first.stride(),second.stride());
+
+        //doing argMax on shape gives us smallest number of largest tensors
+        //but may not be optimal in terms of element separation (for CPU cache etc)
+        int opAlongDimensionMaxLength = ArrayUtil.argMax(first.shape());
+
+        //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
+        //dimension vs. the maximum size dimension, use the maximum size dimension instead
+        //The idea is to avoid choosing wrong dimension in cases like shape=[10,10^6]
+        //Might be able to do better than this with some additional thought
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.keep(first.shape(), opAlongDimensionMinStride));
+        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.keep(first.shape(), opAlongDimensionMaxLength));
+        if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
+        else return opAlongDimensionMaxLength;
     }
 
     /** Do an operation on the entire NDArray instead of breaking it up into tensors.

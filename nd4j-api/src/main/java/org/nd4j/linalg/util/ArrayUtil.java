@@ -1329,4 +1329,30 @@ public class ArrayUtil {
         for( int i=1; i<in.length; i++ ) if(in[i]<in[minIdx]) minIdx = i;
         return minIdx;
     }
+
+    public static int argMinOfMax(int[] first, int[] second){
+        int minIdx = 0;
+        int maxAtMinIdx = Math.max(first[0],second[0]);
+        for( int i=1; i<first.length; i++ ){
+            int maxAtIndex = Math.max(first[i],second[i]);
+            if(maxAtMinIdx > maxAtIndex){
+                maxAtMinIdx = maxAtIndex;
+                minIdx = i;
+            }
+        }
+        return minIdx;
+    }
+
+    public static int argMinOfSum(int[] first, int[] second){
+        int minIdx = 0;
+        int sumAtMinIdx = first[0]+second[0];
+        for( int i=1; i<first.length; i++ ){
+            int sumAtIndex = first[i]+second[i];
+            if(sumAtMinIdx > sumAtIndex){
+                sumAtMinIdx = sumAtIndex;
+                minIdx = i;
+            }
+        }
+        return minIdx;
+    }
 }
