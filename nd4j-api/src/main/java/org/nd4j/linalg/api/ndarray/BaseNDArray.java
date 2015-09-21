@@ -1083,7 +1083,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray putScalar(int i, double value) {
+    public  INDArray putScalar(int i, double value) {
         if(isScalar()) {
             data.put(offset + i,value);
             return this;
@@ -1742,6 +1742,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    @Override
+    public boolean isView() {
+        return offset > 0 || length() < data().length();
+    }
 
     @Override
     public DataBuffer data() {
@@ -1958,6 +1962,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         assert rowVector.length() == columns() || rowVector.rows() == rows() && rowVector.columns() == 1 : "Illegal row vector must have the same length as the number of rows in this ndarray";
     }
 
+
+
     /**
      * Do a row wise op (a,s,m,d)
      * a : add
@@ -1987,7 +1993,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
-    private void applyVectorOp(final INDArray vector,final char operation) {
+    private void applyVectorOp(INDArray vector,final char operation) {
         if(this instanceof IComplexNDArray) {
             IComplexNDArray complexThis = (IComplexNDArray) this;
             IComplexNDArray row = (IComplexNDArray) vector;
@@ -2025,6 +2031,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
         else {
             int dimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
+
+            final INDArray op;
+            if(vector.data() == data())
+                op = vector.dup();
+            else
+                op = vector;
             //a column vector iterates row wise a row vector iterates column wise
             Nd4j.getExecutioner().parallelExecutioner().execBasedOnArraysAlongDimension(this, new TaskCreator.INDArrayTask() {
                 @Override
@@ -2032,25 +2044,28 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     for (int i = 0; i < arr[0].length(); i++) {
                         switch (operation) {
                             case 'a':
-                                arr[0].putScalar(i, arr[0].getDouble(i) + vector.getDouble(i));
+                                arr[0].putScalar(i, arr[0].getDouble(i) + op.getDouble(i));
                                 break;
                             case 's':
-                                arr[0].putScalar(i, arr[0].getDouble(i) - vector.getDouble(i));
+                                arr[0].putScalar(i, arr[0].getDouble(i) - op.getDouble(i));
                                 break;
                             case 'm':
-                                arr[0].putScalar(i, arr[0].getDouble(i) * vector.getDouble(i));
+                                arr[0].putScalar(i, arr[0].getDouble(i) * op.getDouble(i));
                                 break;
                             case 'd':
-                                arr[0].putScalar(i, arr[0].getDouble(i) / vector.getDouble(i));
+                                arr[0].putScalar(i, arr[0].getDouble(i) / op.getDouble(i));
                                 break;
                             case 'h':
-                                arr[0].putScalar(i, vector.getDouble(i) - arr[0].getDouble(i));
+                                arr[0].putScalar(i, op.getDouble(i) - arr[0].getDouble(i));
                                 break;
                             case 't':
-                                arr[0].putScalar(i, vector.getDouble(i) / arr[0].getDouble(i));
+                                arr[0].putScalar(i, op.getDouble(i) / arr[0].getDouble(i));
                                 break;
                         }
                     }
+
+
+
                 }
             },dimension);
         }

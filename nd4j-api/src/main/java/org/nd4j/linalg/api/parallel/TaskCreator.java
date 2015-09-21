@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.parallel;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinTask;
 
 /**
@@ -22,13 +24,14 @@ public class TaskCreator {
      * @param opExecutioner
      * @return
      */
-    public static List<ForkJoinTask<INDArray>> parititonForkJoinBasedOnSlices(INDArray arr,Op op,OpExecutioner opExecutioner) {
+    public static Pair<List<ForkJoinTask<INDArray>>,CountDownLatch> parititonForkJoinBasedOnSlices(INDArray arr,Op op,OpExecutioner opExecutioner) {
         List<ForkJoinTask<INDArray>> forkJoinTasks = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(arr.slices());
         for(int i = 0; i < arr.slices(); i++) {
-            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.slice(i),new OpINDArrayTask(op,opExecutioner,i)));
+            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.slice(i),new OpINDArrayTask(op,opExecutioner,i,null),latch));
         }
 
-        return forkJoinTasks;
+        return new Pair<>(forkJoinTasks,latch);
     }
 
     /**
@@ -38,13 +41,14 @@ public class TaskCreator {
      * @param opExecutioner
      * @return
      */
-    public static List<Runnable> parititonRunnablesBasedOnSlices(INDArray arr,Op op,OpExecutioner opExecutioner) {
+    public static Pair<List<Runnable>,CountDownLatch> parititonRunnablesBasedOnSlices(INDArray arr,Op op,OpExecutioner opExecutioner) {
         List<Runnable> runnable = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(arr.slices());
         for(int i = 0; i < arr.slices(); i++) {
-            runnable.add(new RunnableINDArrayTask(arr.slice(i), new OpINDArrayTask(op,opExecutioner,i)));
+            runnable.add(new RunnableINDArrayTask(arr.slice(i), new OpINDArrayTask(op,opExecutioner,i,latch)));
         }
 
-        return runnable;
+        return new Pair<>(runnable,latch);
     }
 
 
@@ -58,21 +62,22 @@ public class TaskCreator {
      * @param dimension
      * @return
      */
-    public static List<ForkJoinTask<INDArray[]>> parititonForkJoinBasedOnTensorsAlongDimension(INDArray[] arr,Op op,OpExecutioner opExecutioner,int...dimension) {
+    public static Pair<List<ForkJoinTask<INDArray[]>>,CountDownLatch> parititonForkJoinBasedOnTensorsAlongDimension(INDArray[] arr,Op op,OpExecutioner opExecutioner,int...dimension) {
         List<ForkJoinTask<INDArray[]>> forkJoinTasks = new ArrayList<>();
         int tensorsAlongDim = arr[0].tensorssAlongDimension(dimension);
         for(int i = 1; i < arr.length; i++)
             if(arr[i].tensorssAlongDimension(dimension) != tensorsAlongDim)
                 throw new IllegalArgumentException("Unable to parallellize operations with unequal number of tenosrs along dimension");
+        CountDownLatch latch = new CountDownLatch(tensorsAlongDim);
         for(int i = 0; i < tensorsAlongDim; i++) {
             INDArray[] arrs = new INDArray[arr.length];
             for(int j = 0; j < arrs.length; j++) {
                 arrs[j] = arr[j].tensorAlongDimension(i,dimension);
             }
-            forkJoinTasks.add(new ForkJoinArrayINDArrayTask(arrs,new OpINDArrayTask(op,opExecutioner,i,dimension)));
+            forkJoinTasks.add(new ForkJoinArrayINDArrayTask(arrs,new OpINDArrayTask(op,opExecutioner,i,dimension,null),latch));
         }
 
-        return forkJoinTasks;
+        return new Pair<>(forkJoinTasks,latch);
     }
 
     /**
@@ -89,13 +94,14 @@ public class TaskCreator {
                 throw new IllegalArgumentException("Unable to parallellize operations with unequal number of tenosrs along dimension");
 
         List<Runnable> runnable = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(tensorsAlongDim);
         for(int i = 0; i < tensorsAlongDim; i++) {
             INDArray[] arrs = new INDArray[arr.length];
             for(int j = 0; j < arrs.length; j++) {
                 arrs[j] = arr[j].tensorAlongDimension(i,dimension);
             }
 
-            runnable.add(new RunnableMultipleINDArrayTask(arrs, task));
+            runnable.add(new RunnableMultipleINDArrayTask(arrs, task,latch));
         }
 
         return runnable;
@@ -111,8 +117,10 @@ public class TaskCreator {
      */
     public static List<ForkJoinTask<INDArray>> parititonForkJoinBasedOnTensorsAlongDimension(INDArray arr,Accumulation op,OpExecutioner opExecutioner,INDArray retArray,int...dimension) {
         List<ForkJoinTask<INDArray>> forkJoinTasks = new ArrayList<>();
-        for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.tensorAlongDimension(i, dimension),new AccumulationINDArrayTask(op,opExecutioner,i,retArray,dimension)));
+        int tensors = arr.tensorssAlongDimension(dimension);
+        CountDownLatch latch = new CountDownLatch(tensors);
+        for(int i = 0; i < tensors; i++) {
+            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.tensorAlongDimension(i, dimension),new AccumulationINDArrayTask(op,opExecutioner,i,retArray,dimension),latch));
         }
 
         return forkJoinTasks;
@@ -127,13 +135,15 @@ public class TaskCreator {
      * @param dimension
      * @return
      */
-    public static List<ForkJoinTask<INDArray>> parititonForkJoinBasedOnTensorsAlongDimension(INDArray arr,Op op,OpExecutioner opExecutioner,int...dimension) {
+    public static Pair<CountDownLatch,List<ForkJoinTask<INDArray>>> parititonForkJoinBasedOnTensorsAlongDimension(INDArray arr,Op op,OpExecutioner opExecutioner,int...dimension) {
         List<ForkJoinTask<INDArray>> forkJoinTasks = new ArrayList<>();
-        for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.tensorAlongDimension(i, dimension),new OpINDArrayTask(op,opExecutioner,i,dimension)));
+        int tensors = arr.tensorssAlongDimension(dimension);
+        CountDownLatch latch = new CountDownLatch(tensors);
+        for(int i = 0; i < tensors; i++) {
+            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.tensorAlongDimension(i, dimension),new OpINDArrayTask(op,opExecutioner,i,dimension,latch),latch));
         }
 
-        return forkJoinTasks;
+        return new Pair<>(new CountDownLatch(forkJoinTasks.size()),forkJoinTasks);
     }
 
     /**
@@ -158,7 +168,7 @@ public class TaskCreator {
      * @param task
      * @return
      */
-    public static List<ForkJoinTask<INDArray[]>> parititonForkJoinBasedOnSlices(INDArray[] arr,INDArrayTask task) {
+    public static Pair<List<ForkJoinTask<INDArray[]>>,CountDownLatch> parititonForkJoinBasedOnSlices(INDArray[] arr,INDArrayTask task) {
         int slices = arr[0].slices();
         for(int i = 1; i < arr.length; i++) {
             if(arr[i].slices() != slices)
@@ -166,16 +176,18 @@ public class TaskCreator {
 
 
         }
+
+        CountDownLatch latch = new CountDownLatch(slices);
         List<ForkJoinTask<INDArray[]>> forkJoinTasks = new ArrayList<>();
         for(int i = 0; i < slices; i++) {
             INDArray[] slicesArr = new INDArray[slices];
             for(int j = 0; j < slicesArr.length; i++)
                 slicesArr[j] = arr[j].slice(i);
 
-            forkJoinTasks.add(new ForkJoinArrayINDArrayTask(slicesArr,task));
+            forkJoinTasks.add(new ForkJoinArrayINDArrayTask(slicesArr,task,latch));
         }
 
-        return forkJoinTasks;
+        return new Pair<>(forkJoinTasks,latch);
     }
 
     /**
@@ -184,7 +196,7 @@ public class TaskCreator {
      * @param task
      * @return
      */
-    public static List<Runnable> parititonRunnablesBasedOnSlices(INDArray[] arr,INDArrayTask task) {
+    public static Pair<List<Runnable>,CountDownLatch> parititonRunnablesBasedOnSlices(INDArray[] arr,INDArrayTask task) {
         List<Runnable> runnable = new ArrayList<>();
         int slices = arr[0].slices();
         for(int i = 1; i < arr.length; i++) {
@@ -194,15 +206,16 @@ public class TaskCreator {
 
         }
 
+        CountDownLatch latch = new CountDownLatch(slices);
 
         for(int i = 0; i < slices; i++) {
             INDArray[] slicesArr = new INDArray[slices];
             for(int j = 0; j < slicesArr.length; i++)
                 slicesArr[j] = arr[j].slice(i);
-            runnable.add(new RunnableMultipleINDArrayTask(slicesArr, task));
+            runnable.add(new RunnableMultipleINDArrayTask(slicesArr, task,latch));
         }
 
-        return runnable;
+        return new Pair<>(runnable,latch);
     }
 
 
@@ -212,13 +225,14 @@ public class TaskCreator {
      * @param task
      * @return
      */
-    public static List<ForkJoinTask<INDArray>> parititonForkJoinBasedOnSlices(INDArray arr,INDArrayTask task) {
+    public static Pair<List<ForkJoinTask<INDArray>>,CountDownLatch> parititonForkJoinBasedOnSlices(INDArray arr,INDArrayTask task) {
         List<ForkJoinTask<INDArray>> forkJoinTasks = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(arr.slices());
         for(int i = 0; i < arr.slices(); i++) {
-            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.slice(i),task));
+            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.slice(i),task,latch));
         }
 
-        return forkJoinTasks;
+        return new Pair<>(forkJoinTasks,latch);
     }
 
     /**
@@ -227,13 +241,15 @@ public class TaskCreator {
      * @param task
      * @return
      */
-    public static List<Runnable> parititonRunnablesBasedOnSlices(INDArray arr,INDArrayTask task) {
+    public static Pair<List<Runnable>,CountDownLatch> parititonRunnablesBasedOnSlices(INDArray arr,INDArrayTask task) {
         List<Runnable> runnable = new ArrayList<>();
-        for(int i = 0; i < arr.slices(); i++) {
+        int slices =  arr.slices();
+        CountDownLatch latch = new CountDownLatch(slices);
+        for(int i = 0; i < slices; i++) {
             runnable.add(new RunnableINDArrayTask(arr.slice(i), task));
         }
 
-        return runnable;
+        return new Pair<>(runnable,latch);
     }
 
 
@@ -244,13 +260,15 @@ public class TaskCreator {
      * @param dimension
      * @return
      */
-    public static List<ForkJoinTask<INDArray>> parititonForkJoinBasedOnTensorsAlongDimension(INDArray arr,INDArrayTask task,int...dimension) {
+    public static Pair<List<ForkJoinTask<INDArray>>,CountDownLatch> parititonForkJoinBasedOnTensorsAlongDimension(INDArray arr,INDArrayTask task,int...dimension) {
         List<ForkJoinTask<INDArray>> forkJoinTasks = new ArrayList<>();
-        for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.tensorAlongDimension(i, dimension),task));
+        int tensors = arr.tensorssAlongDimension(dimension);
+        CountDownLatch latch = new CountDownLatch(tensors);
+        for(int i = 0; i < tensors; i++) {
+            forkJoinTasks.add(new ForkJoinINDArrayTask(arr.tensorAlongDimension(i, dimension),task,latch));
         }
 
-        return forkJoinTasks;
+        return new Pair<>(forkJoinTasks,latch);
     }
 
     /**
@@ -260,13 +278,15 @@ public class TaskCreator {
      * @param dimension
      * @return
      */
-    public static List<Runnable> parititonRunnablesBasedOnTensorsAlongDimension(INDArray arr,Op task,OpExecutioner opExecutioner,int...dimension) {
+    public static Pair<List<Runnable>,CountDownLatch> parititonRunnablesBasedOnTensorsAlongDimension(INDArray arr,Op task,OpExecutioner opExecutioner,int...dimension) {
         List<Runnable> runnable = new ArrayList<>();
-        for(int i = 0; i < arr.tensorssAlongDimension(dimension); i++) {
-            runnable.add(new RunnableINDArrayTask(arr,new OpINDArrayTask(task,opExecutioner,i,dimension)));
+        int tensors = arr.tensorssAlongDimension(dimension);
+        CountDownLatch latch = new CountDownLatch(tensors);
+        for(int i = 0; i < tensors; i++) {
+            runnable.add(new RunnableINDArrayTask(arr,new OpINDArrayTask(task,opExecutioner,i,dimension,latch)));
         }
 
-        return runnable;
+        return new Pair<>(runnable,latch);
     }
 
     /**
@@ -276,12 +296,12 @@ public class TaskCreator {
      * @param dimension
      * @return
      */
-    public static List<ForkJoinTask<INDArray[]>> parititonForkJoinBasedOnTensorsAlongDimension(INDArray[] arr, INDArrayTask task, int...dimension) {
+    public static Pair<List<ForkJoinTask<INDArray[]>>,CountDownLatch> parititonForkJoinBasedOnTensorsAlongDimension(INDArray[] arr, INDArrayTask task, int...dimension) {
         int tensorsAlongDim = arr[0].tensorssAlongDimension(dimension);
         for(int i = 1; i < arr.length; i++)
             if(!arr[0].isVector() && arr[i].tensorssAlongDimension(dimension) != tensorsAlongDim)
                 throw new IllegalArgumentException("Unable to parallellize operations with unequal number of tenosrs along dimension");
-
+        CountDownLatch latch = new CountDownLatch(tensorsAlongDim);
         List<ForkJoinTask<INDArray[]>> runnable = new ArrayList<>();
         for(int i = 0; i < tensorsAlongDim; i++) {
             INDArray[] arrs = new INDArray[arr.length];
@@ -289,10 +309,10 @@ public class TaskCreator {
                 arrs[j] = arr[j].tensorAlongDimension(i,dimension);
             }
 
-            runnable.add(new ForkJoinArrayINDArrayTask(arrs, task));
+            runnable.add(new ForkJoinArrayINDArrayTask(arrs, task,latch));
         }
 
-        return runnable;
+        return new Pair<>(runnable,latch);
     }
 
 
@@ -350,28 +370,33 @@ public class TaskCreator {
             }
         }
     }
+
     public static class OpINDArrayTask  implements INDArrayTask {
         private Op op;
         private OpExecutioner opExecutioner;
         private int slice = -1;
         private int[] dimension;
+        private CountDownLatch countDownLatch;
 
-        public OpINDArrayTask(Op op, OpExecutioner opExecutioner) {
+        public OpINDArrayTask(Op op, OpExecutioner opExecutioner,CountDownLatch latch) {
             this.op = op;
             this.opExecutioner = opExecutioner;
+            this.countDownLatch = latch;
         }
 
-        public OpINDArrayTask(Op op, OpExecutioner opExecutioner, int slice) {
+        public OpINDArrayTask(Op op, OpExecutioner opExecutioner, int slice,CountDownLatch latch) {
             this.op = op;
             this.opExecutioner = opExecutioner;
             this.slice = slice;
+            this.countDownLatch = latch;
         }
 
-        public OpINDArrayTask(Op op, OpExecutioner opExecutioner, int slice, int[] dimension) {
+        public OpINDArrayTask(Op op, OpExecutioner opExecutioner, int slice, int[] dimension,CountDownLatch latch) {
             this.op = op;
             this.opExecutioner = opExecutioner;
             this.slice = slice;
             this.dimension = dimension;
+            this.countDownLatch = latch;
         }
 
         @Override
@@ -397,16 +422,23 @@ public class TaskCreator {
             else {
                 opExecutioner.exec(op);
             }
+
+            if(countDownLatch != null)
+                countDownLatch.countDown();
         }
+
+
     }
 
     public static  class ForkJoinArrayINDArrayTask extends ForkJoinTask<INDArray[]> {
         protected INDArray[] arr;
         private INDArrayTask task;
+        private CountDownLatch latch;
 
-        public ForkJoinArrayINDArrayTask(INDArray[] arr,INDArrayTask task) {
+        public ForkJoinArrayINDArrayTask(INDArray[] arr,INDArrayTask task,CountDownLatch latch) {
             this.arr = arr;
             this.task = task;
+            this.latch = latch;
         }
 
         @Override
@@ -422,6 +454,7 @@ public class TaskCreator {
         @Override
         protected boolean exec() {
             task.perform(arr);
+            latch.countDown();
             return true;
         }
     }
@@ -429,10 +462,12 @@ public class TaskCreator {
     public static  class ForkJoinINDArrayTask extends ForkJoinTask<INDArray> {
         protected INDArray arr;
         private INDArrayTask task;
+        private CountDownLatch latch;
 
-        public ForkJoinINDArrayTask(INDArray arr,INDArrayTask task) {
+        public ForkJoinINDArrayTask(INDArray arr,INDArrayTask task,CountDownLatch latch) {
             this.arr = arr;
             this.task = task;
+            this.latch = latch;
         }
 
         @Override
@@ -448,6 +483,7 @@ public class TaskCreator {
         @Override
         protected boolean exec() {
             task.perform(arr);
+            latch.countDown();
             return true;
         }
     }
@@ -457,16 +493,18 @@ public class TaskCreator {
     public static  class RunnableMultipleINDArrayTask  implements Runnable {
         private INDArray[] arr;
         private INDArrayTask task;
-
-        public RunnableMultipleINDArrayTask(INDArray[] arr,INDArrayTask task) {
+        private CountDownLatch latch;
+        public RunnableMultipleINDArrayTask(INDArray[] arr,INDArrayTask task,CountDownLatch latch) {
             this.arr = arr;
             this.task = task;
+            this.latch = latch;
         }
 
 
         @Override
         public void run() {
             task.perform(arr);
+            latch.countDown();
         }
     }
 

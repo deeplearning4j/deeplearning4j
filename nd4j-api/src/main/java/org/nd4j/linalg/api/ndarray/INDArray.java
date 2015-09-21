@@ -37,6 +37,13 @@ import java.util.List;
  */
 public interface INDArray extends Serializable  {
 
+
+    /**
+     * Returns true if this array is a view or not
+     * @return
+     */
+    boolean isView();
+
     /**
      * Set the ndarray to wrap around
      * @param wrapAround thewrap around
