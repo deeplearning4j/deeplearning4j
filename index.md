@@ -19,7 +19,7 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 * E-commerce fraud detection
 * [Regression](../linear-regression.html)
 
-### DL4J's main features
+### DL4J's Main Features
 
 * A versatile [n-dimensional array](http://nd4j.org/) class.
 * [GPU](http://nd4j.org/gpu_native_backends.html) integration
@@ -28,7 +28,7 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 
 Deeplearning4j includes both a distributed, multi-threaded deep-learning framework and a normal single-threaded deep-learning framework. Training takes place in the cluster, which means it can process massive amounts of data quickly. Nets are trained in parallel via [iterative reduce](../iterativereduce.html), and they are equally compatible with **Java**, **[Scala](http://nd4j.org/scala.html)** and **Clojure**. Deeplearning4j's role as a modular component in an open stack makes it the first deep-learning framework adapted for a [micro-service architecture](http://microservices.io/patterns/microservices.html).
 
-### DL4J's neural nets
+### DL4J's Neural Networks
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
 * [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) (images)
@@ -49,5 +49,9 @@ Here's an overview of the different libraries we've built and where they fit int
 There are a lot of parameters to adjust when you're training a deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, [Scala](https://github.com/deeplearning4j/nd4s) and Clojure programmers.
 
 If you have any questions, please join [us on Gitter](https://gitter.im/deeplearning4j/deeplearning4j); for premium support, [contact us at Skymind](http://www.skymind.io/contact/). [ND4J is the Java-based scientific computing engine](http://nd4j.org/) powering our matrix operations. On large matrices, our benchmarks show [it runs roughly twice as fast as Numpy](http://nd4j.org/benchmarking).
+
+### Deeplearning4j Testimonial
+
+      "I feel like Frankenstein. The doctor..." - Steve D. 
 
 ![Alt text](../img/logos_8.png)
