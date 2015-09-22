@@ -112,7 +112,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>0.0.0.7</version>
+            <version>${canova.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -123,7 +123,6 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-x86</artifactId>
             <version>${nd4j.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
