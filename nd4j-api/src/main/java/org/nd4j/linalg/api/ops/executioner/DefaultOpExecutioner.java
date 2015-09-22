@@ -170,10 +170,20 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
             else if(!(op.x() instanceof IComplexNDArray)) {
-                INDArray xLinear = op.x().reshape(1,op.x().length());
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(xLinear.getDouble(0,i)));
+                if(op.y() != null) {
+                    INDArray xLinear = op.x().reshape(1,op.x().length());
+                    INDArray yLinear = op.y().reshape(1,op.y().length());
+                    for(int i = 0; i < op.n(); i++) {
+                        accumulation.update(op.op(xLinear.getDouble(0,i),yLinear.getDouble(0,i)));
+                    }
                 }
+                else {
+                    INDArray xLinear = op.x().reshape(1,op.x().length());
+                    for(int i = 0; i < op.n(); i++) {
+                        accumulation.update(op.op(xLinear.getDouble(0,i)));
+                    }
+                }
+
             }
 
 
@@ -374,8 +384,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else {
             //only accumulate along a particular dimension
             if (op instanceof Accumulation) {
-                Accumulation a = (Accumulation) op;
-                return exec(a);
+                throw new IllegalStateException("Should never be invoked");
             }
 
 
