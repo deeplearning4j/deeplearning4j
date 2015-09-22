@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.INDArrayIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -259,6 +260,29 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         oneThroughFour.subiRowVector(row1);
         INDArray result = Nd4j.create(new float[]{-2, -2, 0, 0}, new int[]{2, 2});
         assertEquals(getFailureMessage(), result, oneThroughFour);
+
+    }
+
+    @Test
+    public void testLength() {
+        INDArray values = Nd4j.create(2,2);
+        INDArray values2 = Nd4j.create(2,2);
+
+        values.put(0, 0, 0);
+        values2.put(0, 0, 2);
+        values.put(1, 0, 0);
+        values2.put(1, 0, 2);
+        values.put(0, 1, 0);
+        values2.put(0, 1, 0);
+        values.put(1, 1, 2);
+        values2.put(1, 1, 2);
+
+
+        INDArray expected = Nd4j.repeat(Nd4j.scalar(2), 2);
+
+        Accumulation accum = Nd4j.getOpFactory().createAccum("euclidean", values, values2);
+        INDArray results = Nd4j.getExecutioner().exec(accum, 1);
+        assertEquals(expected,results);
 
     }
 
@@ -1760,16 +1784,16 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(Nd4j.scalar(1.333333333333333333333), div);
     }
 
-   @Test
-   public void testNdArrayCreation(){
-       double delta = 1e-1;
-       INDArray n1 = Nd4j.create(new double[]{0d, 1d, 2d, 3d}, new int[]{2, 2}, 'c');
-       INDArray lv = n1.linearView();
-       assertEquals(0d, lv.getDouble(0), delta);
-       assertEquals(1d,lv.getDouble(1),delta);
-       assertEquals(2d,lv.getDouble(2),delta);
-       assertEquals(3d,lv.getDouble(3),delta);
-   }
+    @Test
+    public void testNdArrayCreation(){
+        double delta = 1e-1;
+        INDArray n1 = Nd4j.create(new double[]{0d, 1d, 2d, 3d}, new int[]{2, 2}, 'c');
+        INDArray lv = n1.linearView();
+        assertEquals(0d, lv.getDouble(0), delta);
+        assertEquals(1d,lv.getDouble(1),delta);
+        assertEquals(2d,lv.getDouble(2),delta);
+        assertEquals(3d,lv.getDouble(3),delta);
+    }
 
     @Test
     public void testToFlattenedWithOrder(){
