@@ -4,7 +4,7 @@ layout: default
 
 # What is Deeplearning4j?
 
-Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../gpu_aws.html), DL4J is designed to be used in business environments, rather than as a research tool. [Skymind](http://skymind.io) is its commercial support arm.
+Deeplearning4j is the first commercial-grade, open-source, distributed deep-learning library written for Java and Scala. Integrated with Hadoop and [Spark](../spark.html), DL4J is designed to be used in business environments, rather than as a research tool. [Skymind](http://skymind.io) is its commercial support arm.
 
 Deeplearning4j aims to be cutting-edge plug and play, more convention than configuration, which allows for fast prototyping for non-researchers. DL4J is customizable at scale. Released under the Apache 2.0 license, all derivatives of DL4J belong to their authors.
 
@@ -12,7 +12,7 @@ By following the [instructions on our Quick Start page](../quickstart.html), you
 
 ### [Deep learning use cases](use_cases.html)
 
-* Face/image recognition
+* [Face/image recognition](../convolutionalnets.html)
 * Voice search
 * Speech-to-text (transcription)
 * Spam filtering (anomaly detection)
@@ -31,7 +31,7 @@ Deeplearning4j includes both a distributed, multi-threaded deep-learning framewo
 ### DL4J's Neural Networks
 
 * [Restricted Boltzmann machines](../restrictedboltzmannmachine.html)
-* [Convolutional Nets](http://deeplearning4j.org/convolutionalnets.html) (images)
+* [Convolutional Nets](../convolutionalnets.html) (images)
 * [Recurrent Nets](../recurrentnetwork.html)/[LSTMs](../lstm.html) (time series and sensor data)
 * [Recursive autoencoders](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/layers/feedforward/autoencoder/recursive/RecursiveAutoEncoder.java)
 * [Deep-belief networks](../deepbeliefnetwork.html)
