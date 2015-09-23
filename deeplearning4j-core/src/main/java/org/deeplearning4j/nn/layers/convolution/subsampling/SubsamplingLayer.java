@@ -99,13 +99,20 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 Shape.iterate(0, 4, new int[]{n, c, outH, outW}, new int[4], new CoordinateFunction() {
                     @Override
                     public void process(int[]... coord) {
-                        int[] i = coord[0];
-                        double epsGet = finalEps.getDouble(i);
-                        int idx = maxIndexes.getInt(i);
-                        INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
-                        sliceToGetFrom.putScalar(i,epsGet);
+                       try {
+                           int[] i = coord[0];
+                           double epsGet = finalEps.getDouble(i);
+                           int idx = maxIndexes.getInt(i);
+                           INDArray sliceToGetFrom = reshapedEps.get(NDArrayIndex.point(idx));
+                           sliceToGetFrom.putScalar(i, epsGet);
+                       }catch(Exception e) {
+                           throw new IllegalStateException("Iterated to " + Arrays.toString(coord[0]) + " out of shape for indexes "
+                                   + Arrays.toString(maxIndexes.shape()) + " and final eps shape " + Arrays.toString(finalEps.shape()));
+                       }
                     }
                 });
+
+
 
                 reshapeEpsilon = Convolution.col2im(retE,layerConf().getStride(),layerConf().getPadding(),inputHeight, inputWidth);
                 return new Pair<>(retGradient,reshapeEpsilon);
