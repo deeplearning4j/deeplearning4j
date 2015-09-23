@@ -2,7 +2,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.4</version>
+        <version>0.4-rc3.5.-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
