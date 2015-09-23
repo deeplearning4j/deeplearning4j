@@ -51,8 +51,8 @@
 
 
     <properties>
-        <nd4j.version>0.4-rc4.2-SNAPSHOT</nd4j.version>
-        <canova.version>0.0.0.9-SNAPSHOT</canova.version>
+        <nd4j.version>0.4-rc3.3</nd4j.version>
+        <canova.version>0.0.0.9</canova.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.3.1</commonslang.version>
         <commonsio.version>2.4</commonsio.version>
