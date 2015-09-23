@@ -20,7 +20,7 @@
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.3</version>
+        <version>0.4-rc3.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-api</artifactId>
-            <version>${project.version}</version>
+            <version>.0.4-rc3.4-SNAPSHOT</version>
         </dependency>
 
     </dependencies>
