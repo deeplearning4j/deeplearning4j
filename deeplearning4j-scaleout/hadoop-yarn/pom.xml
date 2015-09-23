@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-scaleout</artifactId>
-        <version>0.4-rc3.5.-SNAPSHOT</version>
+        <version>0.4-rc3.3</version>
     </parent>
     <packaging>pom</packaging>
 
