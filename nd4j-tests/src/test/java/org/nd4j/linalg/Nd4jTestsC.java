@@ -254,28 +254,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testMmulVectorVector() throws Exception {
-        Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
-        Nd4j.dtype = DataBuffer.Type.DOUBLE;
-        BufferedInputStream bis = new BufferedInputStream(new GZIPInputStream(new ClassPathResource("matrix.txt.gz").getInputStream()));
-        DataInputStream dis = new DataInputStream(bis);
-        INDArray first = Nd4j.read(dis);
-        INDArray second = Nd4j.read(dis);
-        INDArray third = first.mmul(second);
-
-        INDArray result = Nd4j.read(dis);
-        first.setData(Nd4j.createBuffer(first.data().asDouble()));
-        second.setData(Nd4j.createBuffer(second.data().asDouble()));
-        result.setData(Nd4j.createBuffer(result.data().asDouble()));
-        first.setOrder('f');
-        second.setOrder('f');
-        result.setOrder('f');
-        System.out.println("First " + first);
-        System.out.println("Second " + second);
-        System.out.println("Result " + result);
-        assertEquals(result,third);
-    }
 
     @Test
     public void testSubiRowVector() throws Exception {
