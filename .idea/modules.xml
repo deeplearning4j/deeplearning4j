@@ -1,25 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/cdh4/cdh4.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/cdh4/cdh4.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-aws/deeplearning4j-aws.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-aws/deeplearning4j-aws.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-cli/deeplearning4j-cli.iml" filepath="$PROJECT_DIR$/deeplearning4j-cli/deeplearning4j-cli.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-cli/deeplearning4j-cli-api/deeplearning4j-cli-api.iml" filepath="$PROJECT_DIR$/deeplearning4j-cli/deeplearning4j-cli-api/deeplearning4j-cli-api.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-core/deeplearning4j-core.iml" filepath="$PROJECT_DIR$/deeplearning4j-core/deeplearning4j-core.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-nlp/deeplearning4j-nlp.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-nlp/deeplearning4j-nlp.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/deeplearning4j-nlp-yarn/deeplearning4j-nlp-yarn.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/deeplearning4j-nlp-yarn/deeplearning4j-nlp-yarn.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-parent.iml" filepath="$PROJECT_DIR$/deeplearning4j-parent.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-akka/deeplearning4j-scaleout-akka.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-akka/deeplearning4j-scaleout-akka.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-api/deeplearning4j-scaleout-api.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-api/deeplearning4j-scaleout-api.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-zookeeper/deeplearning4j-scaleout-zookeeper.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-zookeeper/deeplearning4j-scaleout-zookeeper.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-ui/deeplearning4j-ui.iml" filepath="$PROJECT_DIR$/deeplearning4j-ui/deeplearning4j-ui.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/spark/dl4j-spark/dl4j-spark.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/spark/dl4j-spark/dl4j-spark.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/spark/dl4j-spark-nlp/dl4j-spark-nlp.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/spark/dl4j-spark-nlp/dl4j-spark-nlp.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/hadoop-yarn.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/hadoop-yarn.iml" />
-      <module fileurl="file://$PROJECT_DIR$/deeplearning4j-scaleout/spark/spark.iml" filepath="$PROJECT_DIR$/deeplearning4j-scaleout/spark/spark.iml" />
-    </modules>
+    <modules />
   </component>
 </project>
 
