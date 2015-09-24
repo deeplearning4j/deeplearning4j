@@ -103,11 +103,11 @@ If you have an existing project, you can build Deeplearning4j's source files you
 
 To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
 
-#### <a name="one">Magical One-Line Install</a>
+<!-- #### <a name="one">Magical One-Line Install</a>
 
 For users who have never `git cloned` Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
 
-      git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh
+      git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh -->
 
 ###<a name="eclipse">Eclipse</a> 
 
