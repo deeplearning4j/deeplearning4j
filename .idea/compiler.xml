@@ -22,18 +22,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="cdh4" />
-        <module name="deeplearning4j-aws" />
-        <module name="deeplearning4j-cli-api" />
-        <module name="deeplearning4j-core" />
-        <module name="deeplearning4j-nlp" />
-        <module name="deeplearning4j-nlp-yarn" />
-        <module name="deeplearning4j-scaleout-akka" />
-        <module name="deeplearning4j-scaleout-api" />
-        <module name="deeplearning4j-scaleout-zookeeper" />
-        <module name="deeplearning4j-ui" />
-        <module name="dl4j-spark" />
-        <module name="dl4j-spark-nlp" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
