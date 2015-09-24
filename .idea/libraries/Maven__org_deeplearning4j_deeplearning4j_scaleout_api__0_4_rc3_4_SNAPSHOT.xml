@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.deeplearning4j:deeplearning4j-scaleout-api:.0.4-rc3.4-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/deeplearning4j/deeplearning4j-scaleout-api/.0.4-rc3.4-SNAPSHOT/deeplearning4j-scaleout-api-.0.4-rc3.4-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/deeplearning4j/deeplearning4j-scaleout-api/.0.4-rc3.4-SNAPSHOT/deeplearning4j-scaleout-api-.0.4-rc3.4-SNAPSHOT-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/deeplearning4j/deeplearning4j-scaleout-api/.0.4-rc3.4-SNAPSHOT/deeplearning4j-scaleout-api-.0.4-rc3.4-SNAPSHOT-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

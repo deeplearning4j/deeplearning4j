@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.jodd:jodd-core:3.6.3">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jodd/jodd-core/3.6.3/jodd-core-3.6.3.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jodd/jodd-core/3.6.3/jodd-core-3.6.3-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/jodd/jodd-core/3.6.3/jodd-core-3.6.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
