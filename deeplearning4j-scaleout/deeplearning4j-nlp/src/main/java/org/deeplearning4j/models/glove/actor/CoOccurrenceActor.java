@@ -65,21 +65,18 @@ public class CoOccurrenceActor extends UntypedActor {
             List<String> tokens = tokenizerFactory.create(s).getTokens();
             for(int i = 0; i < tokens.size(); i++) {
                 int wordIdx = cache.indexOf(tokens.get(i));
+                if (wordIdx < 0) continue;
                 String w1 = cache.wordFor(tokens.get(i)).getWord();
 
-                if(wordIdx < 0 || w1.equals(Glove.UNK))
+                if(w1.equals(Glove.UNK))
                     continue;
                 int windowStop = Math.min(i + windowSize + 1,tokens.size());
                 for(int j = i; j < windowStop; j++) {
                     int otherWord = cache.indexOf(tokens.get(j));
+                    if (otherWord < 0) continue;
                     String w2 = cache.wordFor(tokens.get(j)).getWord();
-<<<<<<< HEAD
-                    if(cache.indexOf(tokens.get(j)) < 0 || w2.equals(Glove.UNK))
-=======
                     if(w2.equals(Glove.UNK) || otherWord == wordIdx)
->>>>>>> 9850406... Fixed NullPointerException on onReceive(Object message)
                         continue;
-
                     if(wordIdx < otherWord) {
                         coOCurreneCounts.incrementCount(tokens.get(i), tokens.get(j), 1.0 / (j - i + Nd4j.EPS_THRESHOLD));
                         occurrenceAllocations.incrementCount(work.getId(),1.0);
