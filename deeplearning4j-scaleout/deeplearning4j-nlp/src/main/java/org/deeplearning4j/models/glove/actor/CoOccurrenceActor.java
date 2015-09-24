@@ -73,11 +73,13 @@ public class CoOccurrenceActor extends UntypedActor {
                 for(int j = i; j < windowStop; j++) {
                     int otherWord = cache.indexOf(tokens.get(j));
                     String w2 = cache.wordFor(tokens.get(j)).getWord();
+<<<<<<< HEAD
                     if(cache.indexOf(tokens.get(j)) < 0 || w2.equals(Glove.UNK))
+=======
+                    if(w2.equals(Glove.UNK) || otherWord == wordIdx)
+>>>>>>> 9850406... Fixed NullPointerException on onReceive(Object message)
                         continue;
 
-                    if(otherWord == wordIdx)
-                        continue;
                     if(wordIdx < otherWord) {
                         coOCurreneCounts.incrementCount(tokens.get(i), tokens.get(j), 1.0 / (j - i + Nd4j.EPS_THRESHOLD));
                         occurrenceAllocations.incrementCount(work.getId(),1.0);
