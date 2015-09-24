@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="dl4j-caffe-0.4-rc3.4-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dl4j-caffe/target/dl4j-caffe-0.4-rc3.4-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

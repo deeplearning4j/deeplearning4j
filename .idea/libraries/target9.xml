@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="target9">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-api/target/deeplearning4j-scaleout-api-.0.4-rc3.4-SNAPSHOT.jar!/" />
+      <root url="jar://$PROJECT_DIR$/deeplearning4j-scaleout/deeplearning4j-scaleout-api/target/deeplearning4j-scaleout-api-.0.4-rc3.4-SNAPSHOT-sources.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
