@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="target4">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/deeplearning4j-nlp-yarn/target/deeplearning4j-nlp-yarn-0.4-rc3.4-SNAPSHOT.jar!/" />
+      <root url="jar://$PROJECT_DIR$/deeplearning4j-scaleout/hadoop-yarn/deeplearning4j-nlp-yarn/target/deeplearning4j-nlp-yarn-0.4-rc3.4-SNAPSHOT-sources.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="target13">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/deeplearning4j-cli/deeplearning4j-cli-api/target/deeplearning4j-cli-api-0.4-rc3.4-SNAPSHOT-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/deeplearning4j-cli/deeplearning4j-cli-api/target/deeplearning4j-cli-api-0.4-rc3.4-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
