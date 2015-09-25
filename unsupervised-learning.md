@@ -3,17 +3,15 @@ title:
 layout: default
 ---
 
-# Unsupervised Learning: Use Cases
+# Machine Learning: Use Cases
 
 Contents
 
 * <a href="#visualization">Visualization</a>
 * <a href="#k-means">K-Means Clustering</a>
 * <a href="#transfer">Transfer Learning</a>
-
-**Supervised Learning** 
-
 * <a href="#knn">K-Nearest Neighbors</a>
+* <a href="#vp">VP Tree</a>
 
 The features learned by deep neural networks can be used for the purposes of classification, clustering and regression. 
 
@@ -62,6 +60,10 @@ And finally, if you want to make art with kd-trees, you could do a lot worse tha
 ![Alt text](../img/kd-tree-mondrian.png) 
 
 *(Hat tip to [Andrew Moore of CMU](http://www.autonlab.org/autonweb/14665/version/2/part/5/data/moore-tutorial.pdf?branch=main&language=en) for his excellent diagrams.)*
+
+### <a name="vp">VP Tree</a>
+
+The underlying implementation for K Nearest Neighbors is the [VP Tree](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-core/src/main/java/org/deeplearning4j/clustering/vptree/VPTree.java#L59-59), which we've implemented here. You can think of it as a search engine for coordinate spaces.
 
 ### Other Resources
 
