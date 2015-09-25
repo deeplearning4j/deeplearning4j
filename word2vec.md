@@ -136,11 +136,11 @@ While Word2vec refers to a family of related algorithms, this implementation use
 
 ## <a name="setup">Word2Vec Setup</a> 
 
-Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](../quickstart.html). Then specify these properties and dependencies in the POM.xml file in your project's root directory.
+Create a new project in IntelliJ using Maven. If you don't know how to do that, see our [Quickstart page](../quickstart.html). Then specify these properties and dependencies in the POM.xml file in your project's root directory (You can [check Maven](https://search.maven.org/#search%7Cga%7C1%7Cnd4j) for the most recent versions -- please use those...).
 
                 <properties>
-                  <nd4j.version>0.0.3.5.5.3</nd4j.version> // check Maven Central for latest versions
-                  <dl4j.version>0.0.3.3.3.alpha1</dl4j.version>
+                  <nd4j.version>0.4-rc3.4</nd4j.version> // check Maven Central for latest versions
+                  <dl4j.version>0.4-rc3.3</dl4j.version>
                 </properties>
                 
                 <dependencies>
