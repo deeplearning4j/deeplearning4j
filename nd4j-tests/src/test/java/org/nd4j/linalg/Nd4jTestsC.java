@@ -1963,29 +1963,23 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testInplaceOpsVsNDArrayUtilDoElementWiseOp(){
-
-        //Test standard matrices + two edge cases
-        int[] rowDims = {5,1,5};
-        int[] colDims = {7,7,1};
-
-        for( int x=0; x<rowDims.length; x++ ) {
-            int nRows = rowDims[x];
-            int nColumns = colDims[x];
-
+        for( int t=0; t<=12; t++){
             char[] ops = {'a', 's', 'm', 'd', 'p'};
 
             for (char c : ops) {
 
-                List<Pair<INDArray, String>> testInputsSecond = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                Pair<List<Pair<INDArray,String>>,String> temp = getTestArraysHelper(t,123);
+                String testName = temp.getSecond();
+                List<Pair<INDArray, String>> testInputsSecond = temp.getFirst();  //NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
 
-                List<Pair<INDArray, String>> testInputsOrigCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                List<Pair<INDArray, String>> testInputsOrigCopy = getTestArraysHelper(t,123).getFirst();    //NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
 
                 int count = testInputsSecond.size();
 
                 //Do operation: first.addi(second) etc
                 for (int i = 0; i < count; i++) {
                     //Operations are in place, so don't want to use same input array twice
-                    List<Pair<INDArray, String>> testInputsFirst = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                    List<Pair<INDArray, String>> testInputsFirst = getTestArraysHelper(t, 123).getFirst();    //NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
                     for (int j = 0; j < count; j++) {
                         Pair<INDArray, String> pairFirst = testInputsFirst.get(j);
                         Pair<INDArray, String> pairSecond = testInputsSecond.get(i);
@@ -2023,18 +2017,24 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
                         boolean equals = arrFirst.equals(firstDup);
                         if (!equals) {
+                            System.out.println("Test name: " + testName);
                             System.out.println("Op: " + c);
-                            System.out.println("Shape: ["+nRows+","+nColumns+"]");
+                            System.out.println("Shape: " + Arrays.toString(firstDup.shape()));
                             System.out.println("i=" + i + ", j=" + j);
                             System.out.println("\nOriginal (first):");
-                            CheckUtil.printMatrixFullPrecision(pairFirstOriginal.getFirst());
+                            System.out.println(pairFirstOriginal.getSecond());
+                            CheckUtil.printNDArrayHeader(pairFirstOriginal.getFirst());
+                            System.out.println(pairFirstOriginal.getFirst());
                             System.out.println("\nOriginal (second):");
-                            CheckUtil.printMatrixFullPrecision(pairSecondOriginal.getFirst());
-
+                            System.out.println(pairSecondOriginal.getSecond());
+                            CheckUtil.printNDArrayHeader(pairSecondOriginal.getFirst());
+                            System.out.println(pairSecondOriginal.getFirst());
                             System.out.println("\nExpected:");
-                            CheckUtil.printMatrixFullPrecision(firstDup);
+                            CheckUtil.printNDArrayHeader(firstDup);
+                            System.out.println(firstDup);
                             System.out.println("\nActual:");
-                            CheckUtil.printMatrixFullPrecision(arrFirst);
+                            CheckUtil.printNDArrayHeader(arrFirst);
+                            System.out.println(arrFirst);
                         }
                         assertEquals(arrFirst, firstDup);
 
@@ -2072,6 +2072,40 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                     }
                 }
             }
+        }
+    }
+
+    //Used in testInplaceOpsVsNDArrayUtilDoElementWiseOp()
+    private static Pair<List<Pair<INDArray,String>>,String> getTestArraysHelper(int testNum, int seed){
+        switch(testNum){
+            case 0: //2d standard (shape 5,7)
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed,5,7),"test 0, 2d with shape [5,7]");
+            case 1: //2d edge case 1 (shape 1,7)
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed,1,7),"test 1, 2d with shape [1,7]");
+            case 2: //2d edge case 2 (shape 5,1)
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed,5,1),"test 2, 2d with shape [5,7]");
+            case 3: //3d (shape 4,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,5,6),"test 3, 3d with shape [4,5,6]");
+            case 4: //3d edge case 1 (shape 1,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,1,5,6),"test 4, 3d with shape [1,5,6]");
+            case 5: //3d edge case 2 (shape 4,1,6)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,1,6),"test 5, 3d with shape [4,1,6]");
+            case 6: //3d edge case 3 (shape 4,5,1)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,5,1),"test 6, 3d with shape [4,5,1]");
+            case 7: //3d edge case 4 (shape 4,1,1)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,5,6),"test 7, 3d with shape [4,1,1]");
+            case 8: //4d (shape 3,4,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 4, 5, 6),"test 8, 4d with shape [3,4,5,6]");
+            case 9: //4d edge case 1 (1,4,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed,1,4,5,6),"test 9, 4d with shape [1,4,5,6]");
+            case 10://4d edge case 2 (3,1,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed,3,1,5,6),"test 10, 4d with shape [3,1,5,6]");
+            case 11://4d edge case 3 (3,4,5,1)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed,3,4,5,1),"test 11, 4d with shape [3,4,5,1]");
+            case 12://5d (shape 3,4,5,6,7)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 4, 5, 6, 7),"test 12, 5d with shape [3,4,5,6,7]");
+            //TODO: MORE - 5d edge cases, 6d etc
+            default: throw new RuntimeException("Unknown test number: " + testNum);
         }
     }
 

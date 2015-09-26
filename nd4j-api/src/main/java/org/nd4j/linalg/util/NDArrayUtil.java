@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.util;
 
-import com.google.common.primitives.Ints;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.linalg.api.blas.Level1;
@@ -29,7 +28,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.Indices;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -228,18 +226,18 @@ public class NDArrayUtil {
 
         //Next: Need to work out the separation between the start (first element) of each 1d tensor
         int tensorStartSeparation;
-        int elementStride;  //Separation in buffer between elements in the tensor
+        int elementWiseStride;  //Separation in buffer between elements in the tensor
         if(numTensors == 1){
             tensorStartSeparation = -1; //Not applicable
-            elementStride = array.elementWiseStride();
+            elementWiseStride = array.elementWiseStride();
         } else {
             INDArray secondTensor = array.tensorAlongDimension(1, dimension);
             tensorStartSeparation = secondTensor.offset() - firstTensorOffset;
-            elementStride = secondTensor.elementWiseStride();
+            elementWiseStride = secondTensor.elementWiseStride();
         }
 
         return new Tensor1DStats(firstTensorOffset,tensorStartSeparation,
-                numTensors,tensorLength,elementStride);
+                numTensors,tensorLength,elementWiseStride);
     }
 
     @AllArgsConstructor @Data
@@ -260,29 +258,57 @@ public class NDArrayUtil {
      * 'p': put     first =  second
      */
     public static void doElementWiseOp(INDArray first, INDArray second, char op){
-        if(canDoOpDirectly(first,second)){
+        if(canDoElementWiseOpDirectly(first, second)){
             doOpDirectly(first,second,op);
         } else {
             //Decide which dimension we want to split on
-            int opAlongDimension = chooseElementWiseTensorDimension(first,second);
+            int opAlongDimension = chooseElementWiseTensorDimension(first, second);
 
-            Tensor1DStats fs = get1DTensorStats(first, opAlongDimension);
-            Tensor1DStats ss = get1DTensorStats(second, opAlongDimension);
-            if(fs.tensorStartSeparation == fs.getTensorLength()*fs.getElementWiseStride() &&
-                    ss.tensorStartSeparation == ss.getTensorLength()*ss.getElementWiseStride() ){
-                //One tensor ends and the next begins at same element-wise interval for both
-                doOpDirectly(first,second,op);
+            if(first.rank() == 2) {
+                //Certain optimizations are possible on 2d that are not always possible on 3+d
+                Tensor1DStats fs = get1DTensorStats(first, opAlongDimension);
+                Tensor1DStats ss = get1DTensorStats(second, opAlongDimension);
+                if (fs.tensorStartSeparation == fs.getTensorLength() * fs.getElementWiseStride() &&
+                        ss.tensorStartSeparation == ss.getTensorLength() * ss.getElementWiseStride()) {
+                    //One tensor ends and the next begins at same element-wise interval for both
+                    doOpDirectly(first, second, op);
+                } else {
+                    doOpOnMatrix(first, second, op, fs, ss);
+                }
             } else {
-                doOp(first, second, op, fs, ss);
+                doElementWiseOpGeneral(first,second,op);
             }
         }
+    }
+
+    /** Can we do the element-wise op directly on the arrays without breaking them up into 1d tensors first? */
+    private static boolean canDoElementWiseOpDirectly(INDArray first, INDArray second){
+        if(first.isVector()) return true;
+
+        //Full buffer + matching strides -> implies all elements are contiguous (and match)
+        int l1 = first.length();
+        int dl1 = first.data().length();
+        int l2 = second.length();
+        int dl2 = second.data().length();
+        int[] strides1 = first.stride();
+        int[] strides2 = second.stride();
+        boolean equalStrides = Arrays.equals(strides1, strides2);
+        if(l1==dl1 && l2==dl2 && equalStrides) return true;
+
+        //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
+        int[] shape1 = first.shape();
+        int[] stridesAsInit = (first.ordering()=='c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
+        boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
+        if(equalStrides && stridesSameAsInit) return true;
+
+        return false;
     }
 
     private static int chooseElementWiseTensorDimension(INDArray first, INDArray second){
         //doing argMin(max(first.stride(i),second.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
         //of tiny ops - i.e., addi on NDArrays with shape [5,10^6]
-        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(first.stride(),second.stride());
+        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(first.stride(), second.stride());
 
         //doing argMax on shape gives us smallest number of largest tensors
         //but may not be optimal in terms of element separation (for CPU cache etc)
@@ -299,7 +325,9 @@ public class NDArrayUtil {
     }
 
     /** Do an operation on the entire NDArray instead of breaking it up into tensors.
-     * Can do this under certain circumstances */
+     * Can do this when elements are contiguous in buffer and first/second arrays
+     * have same stride - i.e., when canDoElementWiseOpDirectly(...) returns true
+     * */
     private static void doOpDirectly(INDArray first, INDArray second, char op){
         switch(op){
             case 'a':
@@ -392,7 +420,11 @@ public class NDArrayUtil {
         }
     }
 
-    private static void doOp(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
+    /** For 2d arrays (matrices) we can utilize the fact that each 1d tensor is separated by a fixed amount.
+     * This allows us to avoid the cost of multiple calls to tensorAlongDimension
+     * This does not always hold for 3+d matrices
+     */
+    private static void doOpOnMatrix(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
         DataBuffer df = first.data();
         DataBuffer ds = second.data();
         int n = fs.getTensorLength();
@@ -499,26 +531,80 @@ public class NDArrayUtil {
         }
     }
 
-    private static boolean canDoOpDirectly(INDArray first, INDArray second){
-        if(first.isVector()) return true;
+    private static void doElementWiseOpGeneral(INDArray first, INDArray second, char op){
+        //Decide which dimension we want to split on
+        int opAlongDimension = chooseElementWiseTensorDimension(first, second);
+        int nTensors = first.tensorssAlongDimension(opAlongDimension);
 
-        //Full buffer + matching strides -> implies all elements are contiguous (and match)
-        int l1 = first.length();
-        int dl1 = first.data().length();
-        int l2 = second.length();
-        int dl2 = second.data().length();
-        int[] strides1 = first.stride();
-        int[] strides2 = second.stride();
-        boolean equalStrides = Arrays.equals(strides1, strides2);
-        if(l1==dl1 && l2==dl2 && equalStrides) return true;
+        DataBuffer df = first.data();
+        DataBuffer ds = second.data();
+        Level1 l1Blas = Nd4j.getBlasWrapper().level1();
+        switch(op){
+            case 'a':
+            case 's':
+                //first.addi(second) or first.subi(second)
+                double a = (op == 'a' ? 1.0 : -1.0);
+                for(int i=0; i<nTensors; i++ ) {
+                    INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
+                    INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
+                    l1Blas.axpy(tad1.length(),a,ds,tad2.offset(),tad2.elementWiseStride(),df,tad1.offset(),tad1.elementWiseStride());
+                }
+                break;
+            case 'm':
+                //muli
+                Object arrayFirst = df.array();
+                Object arraySecond = ds.array();
+                if(arrayFirst instanceof float[]) {
+                    float[] f1 = (float[])arrayFirst;
+                    float[] f2 = (float[])arraySecond;
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
+                        INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
+                        muliIncrementOffsetFloat(f1,f2,tad1.length(),tad1.offset(),tad2.offset(),tad1.elementWiseStride(),tad2.elementWiseStride());
+                    }
+                } else {
+                    double[] f1 = (double[])arrayFirst;
+                    double[] f2 = (double[])arraySecond;
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
+                        INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
+                        muliIncrementOffsetDouble(f1, f2, tad1.length(), tad1.offset(), tad2.offset(), tad1.elementWiseStride(), tad2.elementWiseStride());
+                    }
+                }
+                break;
+            case 'd':
+                //divi
+                Object arrayFirstd = first.data().array();
+                Object arraySecondd = second.data().array();
+                if(arrayFirstd instanceof float[]) {
+                    float[] f1 = (float[])arrayFirstd;
+                    float[] f2 = (float[])arraySecondd;
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
+                        INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
+                        diviIncrementOffsetFloat(f1,f2,tad1.length(),tad1.offset(),tad2.offset(),tad1.elementWiseStride(),tad2.elementWiseStride());
+                    }
+                } else {
+                    double[] f1 = (double[])arrayFirstd;
+                    double[] f2 = (double[])arraySecondd;
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
+                        INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
+                        diviIncrementOffsetDouble(f1,f2,tad1.length(),tad1.offset(),tad2.offset(),tad1.elementWiseStride(),tad2.elementWiseStride());
+                    }
+                }
+                break;
+            case 'p':   //put / copy
+                for(int i=0; i<nTensors; i++ ) {
+                    INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
+                    INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
+                    l1Blas.copy(tad1.length(),ds,tad2.offset(),tad2.elementWiseStride(),df,tad1.offset(),tad1.elementWiseStride());
+                }
+                break;
+            default:
+                throw new RuntimeException("Unknown op: " + op);
+        }
 
-        //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
-        int[] shape1 = first.shape();
-        int[] stridesAsInit = (first.ordering()=='c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
-        boolean stridesSameAsInit = Arrays.equals(strides1, stridesAsInit);
-        if(equalStrides && stridesSameAsInit) return true;
-
-        return false;
     }
 
     /** Do element-wise vector operation on an NDArray (using a vector NDArray)
@@ -867,6 +953,5 @@ public class NDArrayUtil {
             first[fIdx] = second[offsetSecond + i] / first[fIdx];
         }
     }
-
 
 }
