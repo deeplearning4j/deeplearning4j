@@ -316,6 +316,9 @@ public class NDArrayUtil {
         //but may not be optimal in terms of element separation (for CPU cache etc)
         int opAlongDimensionMaxLength = ArrayUtil.argMax(first.shape());
 
+        //Edge cases: shapes with 1s in them can have stride of 1 on the dimensions of length 1
+        if(first.size(opAlongDimensionMinStride)==1) return opAlongDimensionMaxLength;
+
         //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
         //dimension vs. the maximum size dimension, use the maximum size dimension instead
         //The idea is to avoid choosing wrong dimension in cases like shape=[10,10^6]
