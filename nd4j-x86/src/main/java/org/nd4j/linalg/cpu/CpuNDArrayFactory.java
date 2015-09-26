@@ -46,6 +46,11 @@ import java.util.List;
 public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public CpuNDArrayFactory() {
     }
+    static {
+        //invoke the override
+        Nd4j.getBlasWrapper();
+    }
+
 
     public CpuNDArrayFactory(DataBuffer.Type dtype, Character order) {
         super(dtype, order);

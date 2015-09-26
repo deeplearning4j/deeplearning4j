@@ -49,7 +49,12 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class NDArray extends BaseNDArray {
-	
+    static {
+        //invoke the override
+        Nd4j.getBlasWrapper();
+    }
+
+
 	public void close() {
 	}
 	
