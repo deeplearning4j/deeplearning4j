@@ -15,7 +15,12 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * Parallel executioner
+ * Parallel executioner.
+ *
+ * Meant for multi threaded
+ * execution of vector and tensor
+ * operations such as dimension wise
+ * or slice wise operations.
  *
  * @author Adam Gibson
  */
@@ -30,11 +35,17 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
     public DefaultParallelExecutioner(ForkJoinPool forkJoinPool) {
         this.enable = getEnabled();
         this.forkJoinPool = forkJoinPool;
+        if(!enable) {
+            log.warn("Nd4j Parallel execution disabled");
+        }
     }
 
     public DefaultParallelExecutioner(ExecutorService executorService) {
         this.executorService = executorService;
         this.enable = getEnabled();
+        if(!enable) {
+            log.warn("Nd4j Parallel execution disabled");
+        }
     }
 
     public DefaultParallelExecutioner() {

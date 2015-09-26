@@ -19,7 +19,9 @@
 
 package org.nd4j.linalg.cpu;
 
+import com.github.fommil.netlib.BLAS;
 import org.nd4j.linalg.factory.BaseBlasWrapper;
+import java.lang.reflect.*;
 
 
 /**
@@ -30,6 +32,28 @@ import org.nd4j.linalg.factory.BaseBlasWrapper;
  * @author Adam Gibson
  */
 public class BlasWrapper extends BaseBlasWrapper {
+    public final static String FORCE_NATIVE = "org.nd4j.linalg.cpu.force_native";
+    static {
+        String forceNative = System.getProperty(FORCE_NATIVE,"true");
+        if(Boolean.parseBoolean(forceNative)) {
+            try {
+                Field blasInstance = BLAS.class.getDeclaredField("INSTANCE");
+                BLAS newInstance = (BLAS) Class.forName("com.github.fommil.netlib.NativeSystemBLAS").newInstance();
+                setFinalStatic(blasInstance,newInstance);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
+    static void setFinalStatic(Field field, Object newValue) throws Exception {
+        field.setAccessible(true);
+
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+        field.set(null, newValue);
+    }
 
 }
