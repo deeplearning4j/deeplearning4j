@@ -76,10 +76,13 @@ public class ConvolutionLayerSetup {
                 if(next instanceof DenseLayer || next instanceof OutputLayer) {
                     //set the feed forward wrt the out channels of the current convolution layer
                     //set the rows and columns (height/width) wrt the kernel size of the current layer
-                    if(i > 0)
-                        conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
-                                convolutionLayer.getKernelSize()[0]
-                                ,convolutionLayer.getKernelSize()[1],convolutionLayer.getNOut()));
+                    if(i > 0) {
+                        int[] outWidthAndHeight = getConvolutionOutputSize(new int[]{lastHeight, lastWidth}, convolutionLayer.getKernelSize(), convolutionLayer.getPadding(), convolutionLayer.getStride());
+
+                        conf.inputPreProcessor(i + 1, new CnnToFeedForwardPreProcessor(
+                                outWidthAndHeight[0]
+                                , outWidthAndHeight[1], convolutionLayer.getNOut()));
+                    }
                     else
                         conf.inputPreProcessor(i + 1,new CnnToFeedForwardPreProcessor(
                                 height
