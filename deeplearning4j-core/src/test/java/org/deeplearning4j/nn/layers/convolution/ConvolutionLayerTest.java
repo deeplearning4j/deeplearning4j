@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
@@ -41,6 +42,54 @@ public class ConvolutionLayerTest {
         Nd4j.factory().setDType(DataBuffer.Type.DOUBLE);
         Nd4j.EPS_THRESHOLD = 1e-4;
     }
+
+    @Test
+    public void testTwdFirstLayer() throws Exception {
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .iterations(5)
+                .batchSize(100)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .constrainGradientToUnitNorm(true)
+                .l2(2e-4)
+                .regularization(true)
+                .useDropConnect(true)
+                .list(4)
+                .layer(0, new ConvolutionLayer.Builder(8, 8) //16 filters kernel size 8 stride 4
+                        .stride(4, 4)
+                        .nOut(16)
+                        .dropOut(0.5)
+                        .activation("relu")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .layer(1, new ConvolutionLayer.Builder(4, 4) //32 filters kernel size 4 stride 2
+                        .stride(2, 2)
+                        .nOut(32)
+                        .dropOut(0.5)
+                        .activation("relu")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .layer(2, new DenseLayer.Builder() //fully connected with 256 rectified units
+                        .nOut(256)
+                        .activation("relu")
+                        .weightInit(WeightInit.XAVIER)
+                        .dropOut(0.5)
+                        .build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS) //output layer
+                        .nOut(10)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .build())
+                .backprop(true).pretrain(false);
+        new ConvolutionLayerSetup(builder,28,28,1);
+        DataSetIterator iter = new MnistDataSetIterator(10,10);
+        MultiLayerConfiguration conf = builder.build();
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        network.fit(iter.next());
+
+    }
+
 
     @Test
     public void testCNNBiasInit() {
