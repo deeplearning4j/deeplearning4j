@@ -349,8 +349,8 @@ public class WordVectorsImpl implements WordVectors {
     public double[] getWordVector(String word) {
         int i = vocab().indexOf(word);
         if(i < 0)
-            return lookupTable.vector(UNK).ravel().data().asDouble();
-        return lookupTable.vector(word).ravel().data().asDouble();
+            return lookupTable.vector(UNK).dup().data().asDouble();
+        return lookupTable.vector(word).dup().data().asDouble();
     }
 
     /**
@@ -406,7 +406,8 @@ public class WordVectorsImpl implements WordVectors {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable();
 
             INDArray syn0 = l.getSyn0();
-            syn0.diviRowVector(syn0.norm2(1));
+            INDArray syn0Norm = syn0.norm2(0);
+            syn0.diviRowVector(syn0Norm);
             INDArray weights = Transforms.unitVec(mean);
 
             INDArray similarity = weights.mmul(syn0.transpose());
