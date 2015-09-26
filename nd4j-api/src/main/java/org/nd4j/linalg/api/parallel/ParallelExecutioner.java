@@ -16,6 +16,13 @@ import java.util.concurrent.Future;
 public interface ParallelExecutioner {
 
     /**
+     * Whether the parallel execution is enabled
+     * @return true if the parallel execution is enabled
+     * false otherwise
+     */
+    boolean parallelEnabled();
+
+    /**
      *
      * @param arr
      * @param task

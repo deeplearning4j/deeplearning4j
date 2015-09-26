@@ -111,8 +111,9 @@ public class CosineSimilarity extends BaseAccumulation {
 
     @Override
     public Op opForDimension(int index, int dimension) {
+        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
         if (y() != null)
-            return new CosineSimilarity(x.vectorAlongDimension(index, dimension), y.vectorAlongDimension(index, dimension), x.length());
+            return new CosineSimilarity(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new CosineSimilarity(x.vectorAlongDimension(index, dimension));
 
@@ -120,8 +121,9 @@ public class CosineSimilarity extends BaseAccumulation {
 
     @Override
     public Op opForDimension(int index, int... dimension) {
+        INDArray xForDimesnion = x.tensorAlongDimension(index, dimension);
         if (y() != null)
-            return new CosineSimilarity(x.tensorAlongDimension(index, dimension), y.tensorAlongDimension(index, dimension), x.length());
+            return new CosineSimilarity(xForDimesnion, y.tensorAlongDimension(index, dimension), xForDimesnion.length());
         else
             return new CosineSimilarity(x.tensorAlongDimension(index, dimension));
     }

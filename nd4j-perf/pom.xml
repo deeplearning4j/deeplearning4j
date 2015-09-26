@@ -2,11 +2,12 @@
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.4-rc4.2-SNAPSHOT</version>
+        <version>0.4-rc4.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-perf</artifactId>
+  <version>0.4-rc4.4-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>nd4j-perf</name>
@@ -35,12 +36,12 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
+            <version>0.4-rc4.4-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
-            <version>${project.version}</version>
+            <version>0.4-rc4.4-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

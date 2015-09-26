@@ -21,6 +21,7 @@ package org.nd4j.linalg;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -47,6 +48,7 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@Ignore
 public  class ComplexNDArrayTestsC extends BaseComplexNDArrayTests  {
 
     private static Logger log = LoggerFactory.getLogger(ComplexNDArrayTestsC.class);

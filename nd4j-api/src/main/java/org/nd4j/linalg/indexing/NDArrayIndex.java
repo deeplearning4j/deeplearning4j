@@ -284,7 +284,7 @@ public class NDArrayIndex implements INDArrayIndex {
                 ret[1] = validate(size , intendedIndexes[0]);
                 return ret;
             }
-            List<INDArrayIndex> retList = new ArrayList<>();
+            List<INDArrayIndex> retList = new ArrayList<>(intendedIndexes.length);
             for (int i = 0; i < intendedIndexes.length; i++) {
                 if(i < shape.length)
                     retList.add(validate(shape[i], intendedIndexes[i]));
@@ -294,13 +294,14 @@ public class NDArrayIndex implements INDArrayIndex {
             return retList.toArray(new INDArrayIndex[retList.size()]);
         }
 
-        List<INDArrayIndex> retList = new ArrayList<>();
+        List<INDArrayIndex> retList = new ArrayList<>(intendedIndexes.length + 1);
         int numNewAxes = 0;
 
         if (Shape.isMatrix(shape) && intendedIndexes.length == 1) {
             retList.add(validate(shape[0], intendedIndexes[0]));
             retList.add(NDArrayIndex.all());
-        } else {
+        }
+        else {
             for (int i = 0; i < intendedIndexes.length; i++) {
                 retList.add(validate(shape[i], intendedIndexes[i]));
                 if (intendedIndexes[i] instanceof NewAxis)
@@ -317,13 +318,12 @@ public class NDArrayIndex implements INDArrayIndex {
     }
 
     protected static INDArrayIndex validate(int size, INDArrayIndex index) {
-/*
         if ((index instanceof IntervalIndex || index instanceof PointIndex) && size <= index.current())
             throw new IllegalArgumentException("NDArrayIndex is out of range. Beginning index:" + index.current() + " must be less than its size:" + size);
         if (index instanceof IntervalIndex && size < index.end()) {
             int begin = ((IntervalIndex) index).begin;
             index = NDArrayIndex.interval(begin, index.stride(), size);
-        }*/
+        }
         return index;
     }
 
