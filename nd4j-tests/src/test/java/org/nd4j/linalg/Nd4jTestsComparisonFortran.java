@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.slf4j.Logger;
@@ -80,8 +81,8 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     
     @Test
     public void testMmulWithOpsCommonsMath(){
-    	List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
-    	List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(5, 4, SEED);
+    	List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+    	List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
 
       	for( int i = 0; i < first.size(); i++ ){
     		for( int j = 0; j < second.size(); j++ ){
@@ -95,10 +96,10 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Test
     public void testGemmWithOpsCommonsMath(){
-        List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
-        List<Pair<INDArray,String>> firstT = CheckUtil.getAllTestMatricesWithShape(5, 3, SEED);
-        List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(5, 4, SEED);
-        List<Pair<INDArray,String>> secondT = CheckUtil.getAllTestMatricesWithShape(4, 5, SEED);
+        List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> firstT = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 3, SEED);
+        List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(5, 4, SEED);
+        List<Pair<INDArray,String>> secondT = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, SEED);
         double[] alpha = {1.0,-0.5,2.5};
         double[] beta = {0.0,-0.25,1.5};
         INDArray cOrig = Nd4j.create(new int[]{3, 4});
@@ -149,8 +150,8 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     
     @Test
     public void testAddSubtractWithOpsCommonsMath() {
-    	List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
-    	List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
+    	List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+    	List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
     	for( int i = 0; i< first.size(); i++) {
     		for( int j = 0; j< second.size(); j++) {
     			Pair<INDArray,String> p1 = first.get(i);
@@ -167,8 +168,8 @@ public  class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Test
     public void testMulDivOnCheckUtilMatrices(){
-        List<Pair<INDArray,String>> first = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
-        List<Pair<INDArray,String>> second = CheckUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> first = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
+        List<Pair<INDArray,String>> second = NDArrayCreationUtil.getAllTestMatricesWithShape(3, 5, SEED);
         for( int i=0; i<first.size(); i++ ){
             for( int j=0; j<second.size(); j++ ){
                 Pair<INDArray,String> p1 = first.get(i);

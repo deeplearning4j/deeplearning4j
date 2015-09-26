@@ -38,11 +38,13 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.checkutil.CheckUtil;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 //import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.util.NDArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -984,7 +986,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         array3d.sum(1);
         array3d.sum(2);
 
-        INDArray array4d = Nd4j.ones(2,10,10,10);
+        INDArray array4d = Nd4j.ones(2, 10, 10, 10);
         array4d.sum(0);
         array4d.sum(1);
         array4d.sum(2);
@@ -1041,18 +1043,18 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testRollAxis() {
-        INDArray toRoll = Nd4j.ones(3,4,5,6);
-        assertArrayEquals(new int[]{3,6,4,5},Nd4j.rollAxis(toRoll,3,1).shape());
+        INDArray toRoll = Nd4j.ones(3, 4, 5, 6);
+        assertArrayEquals(new int[]{3, 6, 4, 5}, Nd4j.rollAxis(toRoll, 3, 1).shape());
         int[] shape = Nd4j.rollAxis(toRoll,3).shape();
-        assertArrayEquals(new int[]{6,3,4,5},shape);
+        assertArrayEquals(new int[]{6, 3, 4, 5}, shape);
     }
 
     @Test
     public void testTensorDot() {
-        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3,4,5);
+        INDArray oneThroughSixty = Nd4j.arange(60).reshape(3, 4, 5);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape(4, 3, 2);
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][]{{1, 0}, {0, 1}});
-        assertArrayEquals(new int[]{5,2},result.shape());
+        assertArrayEquals(new int[]{5, 2}, result.shape());
         INDArray assertion = Nd4j.create(new double[][]{
                 {440., 1232.},
                 {1232., 3752.},
@@ -1069,7 +1071,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
     public void testNegativeShape() {
         INDArray linspace = Nd4j.linspace(1, 4, 4);
         INDArray reshaped = linspace.reshape(-1, 2);
-        assertArrayEquals(new int[]{2,2},reshaped.shape());
+        assertArrayEquals(new int[]{2, 2}, reshaped.shape());
 
         INDArray linspace6 = Nd4j.linspace(1,6,6);
         INDArray reshaped2 = linspace6.reshape(-1, 3);
@@ -1094,7 +1096,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testDupAndDupWithOrder(){
-        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4, 5, 123);
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
         for(Pair<INDArray,String> pair : testInputs ){
 
@@ -1115,7 +1117,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testToOffsetZeroCopy(){
-        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4,5,123);
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
         for(Pair<INDArray,String> pair : testInputs ){
             String msg = pair.getSecond();
@@ -1143,6 +1145,347 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testTensorStats(){
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(9, 13, 123);
+
+        for(Pair<INDArray,String> pair : testInputs ){
+            INDArray arr = pair.getFirst();
+            String msg = pair.getSecond();
+
+            int nTAD0 = arr.tensorssAlongDimension(0);
+            int nTAD1 = arr.tensorssAlongDimension(1);
+
+            NDArrayUtil.Tensor1DStats t0 = NDArrayUtil.get1DTensorStats(arr, 0);
+            NDArrayUtil.Tensor1DStats t1 = NDArrayUtil.get1DTensorStats(arr, 1);
+
+            assertEquals(nTAD0,t0.getNumTensors());
+            assertEquals(nTAD1, t1.getNumTensors());
+
+            INDArray tFirst0 = arr.tensorAlongDimension(0,0);
+            INDArray tSecond0 = arr.tensorAlongDimension(1,0);
+
+            INDArray tFirst1 = arr.tensorAlongDimension(0,1);
+            INDArray tSecond1 = arr.tensorAlongDimension(1,1);
+
+            assertEquals(tFirst0.offset(),t0.getFirstTensorOffset());
+            assertEquals(tFirst1.offset(),t1.getFirstTensorOffset());
+            int separation0 = tSecond0.offset()-tFirst0.offset();
+            int separation1 = tSecond1.offset()-tFirst1.offset();
+            assertEquals(separation0,t0.getTensorStartSeparation());
+            assertEquals(separation1,t1.getTensorStartSeparation());
+
+            for( int i=0; i<nTAD0; i++ ){
+                INDArray tad0 = arr.tensorAlongDimension(i,0);
+                assertEquals(tad0.length(), t0.getTensorLength());
+                assertEquals(tad0.elementWiseStride(),t0.getElementWiseStride());
+
+                int offset = tad0.offset();
+                int calcOffset = t0.getFirstTensorOffset() + i*t0.getTensorStartSeparation();
+                assertEquals(offset,calcOffset);
+            }
+
+            for( int i=0; i<nTAD1; i++ ){
+                INDArray tad1 = arr.tensorAlongDimension(i,1);
+                assertEquals(tad1.length(), t1.getTensorLength());
+                assertEquals(tad1.elementWiseStride(),t1.getElementWiseStride());
+
+                int offset = tad1.offset();
+                int calcOffset = t1.getFirstTensorOffset() + i*t1.getTensorStartSeparation();
+                assertEquals(offset,calcOffset);
+            }
+        }
+    }
+
+    @Test
+    public void testInplaceOpsVsNDArrayUtilDoElementWiseOp(){
+        char[] ops = {'a', 's', 'm', 'd', 'p'};
+
+        for( int t=0; t<=20; t++){
+            for (char c : ops) {
+
+                Pair<List<Pair<INDArray,String>>,String> temp = getTestArraysHelper(t,123);
+                String testName = temp.getSecond();
+                List<Pair<INDArray, String>> testInputsSecond = temp.getFirst();  //NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+
+                List<Pair<INDArray, String>> testInputsOrigCopy = getTestArraysHelper(t,123).getFirst();    //NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+
+                int count = testInputsSecond.size();
+
+                //Do operation: first.addi(second) etc
+                for (int i = 0; i < count; i++) {
+                    //Operations are in place, so don't want to use same input array twice
+                    List<Pair<INDArray, String>> testInputsFirst = getTestArraysHelper(t, 123).getFirst();    //NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                    for (int j = 0; j < count; j++) {
+                        Pair<INDArray, String> pairFirst = testInputsFirst.get(j);
+                        Pair<INDArray, String> pairSecond = testInputsSecond.get(i);
+
+                        Pair<INDArray, String> pairFirstOriginal = testInputsOrigCopy.get(j);
+                        Pair<INDArray, String> pairSecondOriginal = testInputsOrigCopy.get(i);
+
+                        INDArray arrFirst = pairFirst.getFirst();
+                        INDArray arrSecond = pairSecond.getFirst();
+
+                        INDArray firstDup = arrFirst.dup();
+                        INDArray secondDup = arrSecond.dup();
+
+                        switch (c) {
+                            case 'a':
+                                firstDup.addi(secondDup);   //firstDup now has expected values
+                                break;
+                            case 's':
+                                firstDup.subi(secondDup);
+                                break;
+                            case 'm':
+                                firstDup.muli(secondDup);
+                                break;
+                            case 'd':
+                                firstDup.divi(secondDup);
+                                break;
+                            case 'p':
+                                firstDup.assign(secondDup);
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+                        NDArrayUtil.doElementWiseOp(arrFirst, arrSecond, c);
+
+
+                        boolean equals = arrFirst.equals(firstDup);
+                        if (!equals) {
+                            System.out.println("Test name: " + testName);
+                            System.out.println("Op: " + c);
+                            System.out.println("Shape: " + Arrays.toString(firstDup.shape()));
+                            System.out.println("i=" + i + ", j=" + j);
+                            System.out.println("\nOriginal (first):");
+                            System.out.println(pairFirstOriginal.getSecond());
+                            CheckUtil.printNDArrayHeader(pairFirstOriginal.getFirst());
+                            System.out.println(pairFirstOriginal.getFirst());
+                            System.out.println("\nOriginal (second):");
+                            System.out.println(pairSecondOriginal.getSecond());
+                            CheckUtil.printNDArrayHeader(pairSecondOriginal.getFirst());
+                            System.out.println(pairSecondOriginal.getFirst());
+                            System.out.println("\nExpected:");
+                            CheckUtil.printNDArrayHeader(firstDup);
+                            System.out.println(firstDup);
+                            System.out.println("\nActual:");
+                            CheckUtil.printNDArrayHeader(arrFirst);
+                            System.out.println(arrFirst);
+                        }
+                        assertEquals(arrFirst, firstDup);
+
+                        assertEquals(pairSecondOriginal.getFirst(), pairSecond.getFirst());
+
+
+                        //Check that only the expected number of elements have been modified
+                        //i.e., don't want any other elements in buffer to have been changed unintentionally
+                        DataBuffer orig = pairFirstOriginal.getFirst().data();
+                        DataBuffer after = arrFirst.data();
+                        int dataLength = orig.length();
+                        int tensorLength = arrFirst.length();
+                        int countDifferent = 0;
+                        for (int k = 0; k < dataLength; k++) {
+                            if (orig.getDouble(k) != after.getDouble(k)) countDifferent++;
+                        }
+                        if (c == 'p') {
+                            //When doing put: expect at most tensorLength values to be modified
+                            //Could have 0 modified (put on 2 identical arrays)
+                            //Could have one or more elements overlapping on input arrays
+                            assertTrue("Incorrect number of elements changed by operation", countDifferent <= tensorLength);
+                        } else {
+                            //Expect exactly tensorLength values to be modified
+                            assertEquals("Incorrect number of elements changed by operation", tensorLength, countDifferent);
+                        }
+
+                        DataBuffer orig2 = pairSecondOriginal.getFirst().data();
+                        DataBuffer arrSecondAfter = arrSecond.data();
+                        dataLength = orig2.length();
+                        countDifferent = 0;
+                        for (int k = 0; k < dataLength; k++) {
+                            if (orig2.getDouble(k) != arrSecondAfter.getDouble(k)) countDifferent++;
+                        }
+                        assertEquals("array 2 should not be modified", countDifferent, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    //Used in testInplaceOpsVsNDArrayUtilDoElementWiseOp()
+    private static Pair<List<Pair<INDArray,String>>,String> getTestArraysHelper(int testNum, int seed){
+        switch(testNum){
+            case 0: //2d standard (shape 5,7)
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 5, 7),"test 0, 2d with shape [5,7]");
+            case 1: //2d edge case 1 (shape 1,7)
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 1, 7),"test 1, 2d with shape [1,7]");
+            case 2: //2d edge case 2 (shape 5,1)
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 5, 1),"test 2, 2d with shape [5,7]");
+            case 3: //3d (shape 4,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 6),"test 3, 3d with shape [4,5,6]");
+            case 4: //3d edge case 1 (shape 1,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 1, 5, 6),"test 4, 3d with shape [1,5,6]");
+            case 5: //3d edge case 2 (shape 4,1,6)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 1, 6),"test 5, 3d with shape [4,1,6]");
+            case 6: //3d edge case 3 (shape 4,5,1)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 1),"test 6, 3d with shape [4,5,1]");
+            case 7: //3d edge case 4 (shape 4,1,1)
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 6),"test 7, 3d with shape [4,1,1]");
+            case 8: //4d (shape 3,4,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 4, 5, 6),"test 8, 4d with shape [3,4,5,6]");
+            case 9: //4d edge case 1 (1,4,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 1, 4, 5, 6),"test 9, 4d with shape [1,4,5,6]");
+            case 10://4d edge case 2 (3,1,5,6)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 1, 5, 6),"test 10, 4d with shape [3,1,5,6]");
+            case 11://4d edge case 3 (3,4,5,1)
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 4, 5, 1),"test 11, 4d with shape [3,4,5,1]");
+            case 12://5d (shape 3,4,5,6,7)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 4, 5, 6, 7),"test 12, 5d with shape [3,4,5,6,7]");
+            case 13://5d edge case (shape 1,4,5,6,7)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 1, 4, 5, 6, 7),"test 13, 5d with shape [1,4,5,6,7]");
+            case 14://5d edge case (shape 3,4,5,6,1)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 4, 5, 6, 1),"test 14, 5d with shape [3,4,5,6,1]");
+            case 15://5d edge case (shape 3,1,5,6,1)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 1, 5, 6, 7),"test 15, 5d with shape [3,1,5,6,7]");
+            case 16://5d edge case (shape 3,1,1,6,1)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 1, 1, 6, 1),"test 16, 5d with shape [3,1,1,6,1]");
+            case 17://6d (shape 3,4,5,6,7,2)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 5, 6, 7, 2),"test 17, 6d with shape [3,4,5,6,7,2]");
+            case 18://6d (shape 1,4,5,6,7,2)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 1, 4, 5, 6, 7, 2),"test 18, 6d with shape [1,4,5,6,7,2]");
+            case 19://6d (shape 3,4,5,6,7,1)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 5, 6, 7, 1),"test 19, 6d with shape [3,4,5,6,7,1]");
+            case 20://6d (shape 3,4,1,6,7,2)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 1, 6, 7, 2),"test 20, 6d with shape [3,4,1,6,7,2]");
+            default: throw new RuntimeException("Unknown test number: " + testNum);
+        }
+    }
+
+    @Test
+    public void testRowWiseAndColumnWiseOps(){
+        //Test standard matrices + two edge cases
+        int[] rowDims = {5,1,5};
+        int[] colDims = {7,7,1};
+
+        for( int x=0; x<rowDims.length; x++ ) {
+            int nRows = rowDims[x];
+            int nColumns = colDims[x];
+
+            char[] ops = {'a', 's', 'm', 'd', 'h', 't'};
+            boolean[] doRowWise = {true, false};
+
+            for (char c : ops) {
+                for (boolean row : doRowWise) {
+
+                    List<Pair<INDArray, String>> testInputVector;
+                    List<Pair<INDArray, String>> testInputVectorCopy;
+                    if (row) {
+                        testInputVector = NDArrayCreationUtil.getAllTestMatricesWithShape(1, nColumns, 123);
+                        testInputVectorCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(1, nColumns, 123);
+                    } else {
+                        testInputVector = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, 1, 123);
+                        testInputVectorCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, 1, 123);
+                    }
+
+                    List<Pair<INDArray, String>> testInputsOrigCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+
+                    int count = testInputVector.size();
+
+                    //first.addiRowVector(second) etc.
+                    for (int i = 0; i < count; i++) {
+                        //Operations are in place, so don't want to use same input array twice
+                        List<Pair<INDArray, String>> testInputsFirst = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                        for (int j = 0; j < count; j++) {
+                            Pair<INDArray, String> pairFirst = testInputsFirst.get(j);
+                            Pair<INDArray, String> pairSecond = testInputVector.get(i);
+
+                            Pair<INDArray, String> pairFirstOriginal = testInputsOrigCopy.get(j);
+                            Pair<INDArray, String> pairSecondOriginal = testInputVectorCopy.get(i);
+
+                            INDArray arrFirst = pairFirst.getFirst();
+                            INDArray arrSecond = pairSecond.getFirst();
+
+
+                            INDArray firstDup = arrFirst.dup();
+                            INDArray secondDup = arrSecond.dup();
+
+
+                            switch (c) {
+                                case 'a':
+                                    if (row) firstDup.addiRowVector(secondDup);
+                                    else firstDup.addiColumnVector(secondDup);
+                                    break;
+                                case 's':
+                                    if (row) firstDup.subiRowVector(secondDup);
+                                    else firstDup.subiColumnVector(secondDup);
+                                    break;
+                                case 'm':
+                                    if (row) firstDup.muliRowVector(secondDup);
+                                    else firstDup.muliColumnVector(secondDup);
+                                    break;
+                                case 'd':
+                                    if (row) firstDup.diviRowVector(secondDup);
+                                    else firstDup.diviColumnVector(secondDup);
+                                    break;
+                                case 'h':
+                                    if (row) firstDup.rsubiRowVector(secondDup);
+                                    else firstDup.rsubiColumnVector(secondDup);
+                                    break;
+                                case 't':
+                                    if (row) firstDup.rdiviRowVector(secondDup);
+                                    else firstDup.rdiviColumnVector(secondDup);
+                                    break;
+                                default:
+                                    throw new RuntimeException();
+                            }
+                            NDArrayUtil.doVectorOp(arrFirst, arrSecond, c);
+
+
+                            boolean equals = arrFirst.equals(firstDup);
+                            if (!equals) {
+                                System.out.println("Op: " + c + "\t" + (row ? "rowOp" : "colOp"));
+                                System.out.println("i=" + i + ", j=" + j);
+                                System.out.println("\nOriginal (first):");
+                                CheckUtil.printMatrixFullPrecision(pairFirstOriginal.getFirst());
+                                System.out.println("\nOriginal (second):");
+                                CheckUtil.printMatrixFullPrecision(pairSecondOriginal.getFirst());
+
+                                System.out.println("\nExpected:");
+                                CheckUtil.printMatrixFullPrecision(firstDup);
+                                System.out.println("\nActual:");
+                                CheckUtil.printMatrixFullPrecision(arrFirst);
+                            }
+                            assertEquals(arrFirst, firstDup);
+
+                            assertEquals(pairSecondOriginal.getFirst(), pairSecond.getFirst());
+
+
+                            //Check that only the expected number of elements have been modified
+                            //i.e., don't want any other elements in buffer to have been changed unintentionally
+                            DataBuffer orig = pairFirstOriginal.getFirst().data();
+                            DataBuffer after = arrFirst.data();
+                            int dataLength = orig.length();
+                            int arrayLength = arrFirst.length();
+                            int countDifferent = 0;
+                            for (int k = 0; k < dataLength; k++) {
+                                if (orig.getDouble(k) != after.getDouble(k)) countDifferent++;
+                            }
+                            //Expect exactly arrayLength values to be modified
+                            assertEquals("Incorrect number of elements changed by operation", arrayLength, countDifferent);
+
+                            DataBuffer orig2 = pairSecondOriginal.getFirst().data();
+                            DataBuffer arrSecondAfter = arrSecond.data();
+                            dataLength = orig2.length();
+                            countDifferent = 0;
+                            for (int k = 0; k < dataLength; k++) {
+                                if (orig2.getDouble(k) != arrSecondAfter.getDouble(k)) countDifferent++;
+                            }
+                            assertEquals("array 2 should not be modified", countDifferent, 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 
 

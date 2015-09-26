@@ -2,6 +2,7 @@ package org.nd4j.linalg.checkutil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.math3.linear.BlockRealMatrix;
@@ -134,7 +135,7 @@ public class CheckUtil {
             }
         }
         if(!checkShape(expected,result)) return false;
-        boolean ok = checkEntries(expected,result,maxRelativeDifference,minAbsDifference);
+        boolean ok = checkEntries(expected, result, maxRelativeDifference, minAbsDifference);
         if(!ok){
             INDArray onCopies = Shape.toOffsetZeroCopy(first).mul(Shape.toOffsetZeroCopy(second));
             printFailureDetails(first,second,expected,result,onCopies,"mul");
@@ -157,7 +158,7 @@ public class CheckUtil {
             }
         }
         if(!checkShape(expected,result)) return false;
-        boolean ok = checkEntries(expected,result,maxRelativeDifference,minAbsDifference);
+        boolean ok = checkEntries(expected, result, maxRelativeDifference, minAbsDifference);
         if(!ok){
             INDArray onCopies = Shape.toOffsetZeroCopy(first).mul(Shape.toOffsetZeroCopy(second));
             printFailureDetails(first, second, expected, result, onCopies, "div");
@@ -269,9 +270,7 @@ public class CheckUtil {
 
 	public static void printMatrixFullPrecision(INDArray matrix){
 		boolean floatType = (matrix.data().dataType() == DataBuffer.Type.FLOAT);
-		System.out.println(matrix.data().dataType() + " - order=" + matrix.ordering() + ", offset=" + matrix.offset() +
-                ", shape=" + Arrays.toString(matrix.shape()) + ", stride=" + Arrays.toString(matrix.stride())
-                + ", length="+matrix.length() + ", data().length()=" + matrix.data().length() );
+        printNDArrayHeader(matrix);
 		int[] shape = matrix.shape();
 		for( int i=0; i<shape[0]; i++ ){
 			for( int j=0; j<shape[1]; j++ ){
@@ -282,6 +281,12 @@ public class CheckUtil {
 			}
 		}
 	}
+
+    public static void printNDArrayHeader(INDArray array){
+        System.out.println(array.data().dataType() + " - order=" + array.ordering() + ", offset=" + array.offset() +
+                ", shape=" + Arrays.toString(array.shape()) + ", stride=" + Arrays.toString(array.stride())
+                + ", length=" + array.length() + ", data().length()=" + array.data().length());
+    }
 
     public static void printFailureDetails(INDArray first, INDArray second, INDArray expected, INDArray actual, INDArray onCopies, String op){
         System.out.println("\nFactory: " + Nd4j.factory().getClass() + "\n");
@@ -301,7 +306,7 @@ public class CheckUtil {
     public static void printApacheMatrix(RealMatrix matrix){
         int nRows = matrix.getRowDimension();
         int nCols = matrix.getColumnDimension();
-        System.out.println("Apache Commons RealMatrix: Shape: [" + nRows + "," + nCols +"]");
+        System.out.println("Apache Commons RealMatrix: Shape: [" + nRows + "," + nCols + "]");
         for( int i=0; i<nRows; i++ ){
             for( int j=0; j<nCols; j++ ){
                 System.out.print(matrix.getEntry(i,j));
@@ -310,109 +315,4 @@ public class CheckUtil {
             }
         }
     }
-
-
-	/** Get an array of INDArrays (2d) all with the specified shape. Pair<INDArray,String> returned to aid
-	 * debugging: String contains information on how to reproduce the matrix (i.e., which function, and arguments)
-	 * Each NDArray in the returned array has been obtained by applying an operation such as transpose, tensorAlongDimension,
-	 * etc to an original array.
-	 */
-	public static List<Pair<INDArray,String>> getAllTestMatricesWithShape(int rows, int cols, int seed) {
-		List<Pair<INDArray,String>> all = new ArrayList<>();
-		all.add(getTransposedMatrixWithShape(rows,cols,seed));
-
-		all.addAll(getSubMatricesWithShape(rows,cols,seed));
-
-		all.addAll(getTensorAlongDimensionMatricesWithShape(rows, cols,seed));
-
-		all.add(getPermutedWithShape(rows,cols,seed));
-		all.add(getReshapedWithShape(rows,cols,seed));
-
-		return all;
-	}
-
-	public static Pair<INDArray,String> getTransposedMatrixWithShape(int rows, int cols, int seed){
-		Nd4j.getRandom().setSeed(seed);
-		INDArray out = Nd4j.rand(new int[]{cols,rows});
-		return new Pair<>(out.transpose(),"getTransposedMatrixWithShape("+rows+","+cols+","+seed+")");
-	}
-
-	public static List<Pair<INDArray,String>> getSubMatricesWithShape(int rows, int cols, int seed){
-		Nd4j.getRandom().setSeed(seed);
-		INDArray orig = Nd4j.rand(new int[]{2*rows,2*cols});
-		INDArray first = orig.get(NDArrayIndex.interval(0, rows),NDArrayIndex.interval(0, cols));
-		INDArray second = orig.get(NDArrayIndex.interval(3, rows+3),NDArrayIndex.interval(3,cols+3));
-		INDArray third = orig.get(NDArrayIndex.interval(rows,2*rows),NDArrayIndex.interval(cols,2*cols));
-		
-		String baseMsg = "getSubMatricesWithShape("+rows+","+cols+","+seed+")";
-		List<Pair<INDArray,String>> list = new ArrayList<>(3);
-		list.add(new Pair<>(first,baseMsg+".get(0)"));
-		list.add(new Pair<>(second,baseMsg+".get(1)"));
-		list.add(new Pair<>(third,baseMsg+".get(2)"));
-		return list;
-	}
-
-	public static List<Pair<INDArray,String>> getTensorAlongDimensionMatricesWithShape(int rows, int cols, int seed){
-		Nd4j.getRandom().setSeed(seed);
-		//From 3d NDArray: do various tensors. One offset 0, one offset > 0
-		//[0,1], [0,2], [1,0], [1,2], [2,0], [2,1]
-		INDArray[] out = new INDArray[12];
-		INDArray temp01 = Nd4j.rand(new int[]{cols,rows,4});
-		out[0] = temp01.tensorAlongDimension(0, 0,1);
-		out[1] = temp01.tensorAlongDimension(2, 0,1);
-
-		INDArray temp02 = Nd4j.rand(new int[]{cols,4,rows});
-		out[2] = temp02.tensorAlongDimension(0, 0,2);
-		out[3] = temp02.tensorAlongDimension(2, 0,2);
-
-		INDArray temp10 = Nd4j.rand(new int[]{rows,cols,4});
-		out[4] = temp10.tensorAlongDimension(0, 1,0);
-		out[5] = temp10.tensorAlongDimension(2, 1,0);
-
-		INDArray temp12 = Nd4j.rand(new int[]{4,cols,rows});
-		out[6] = temp12.tensorAlongDimension(0, 1,2);
-		out[7] = temp12.tensorAlongDimension(2, 1,2);
-
-		INDArray temp20 = Nd4j.rand(new int[]{rows,4,cols});
-		out[8] = temp20.tensorAlongDimension(0, 2,0);
-		out[9] = temp20.tensorAlongDimension(2, 2,0);
-
-		INDArray temp21 = Nd4j.rand(new int[]{4,rows,cols});
-		out[10] = temp21.tensorAlongDimension(0, 2,1);
-		out[11] = temp21.tensorAlongDimension(2, 2,1);
-		
-		String baseMsg = "getTensorAlongDimensionMatricesWithShape("+rows+","+cols+","+seed+")";
-		List<Pair<INDArray,String>> list = new ArrayList<>(12);
-		
-		for( int i=0; i < out.length; i++ )
-			list.add(new Pair<>(out[i],baseMsg+".get("+i+")"));
-
-		return list;
-	}
-
-	public static Pair<INDArray,String> getPermutedWithShape(int rows, int cols, int seed){
-		Nd4j.getRandom().setSeed(seed);
-		INDArray arr = Nd4j.rand(new int[]{cols,rows});
-		return new Pair<>(arr.permute(1,0),"getPermutedWithShape("+rows+","+cols+","+seed+")");
-	}
-
-	public static Pair<INDArray,String> getReshapedWithShape(int rows, int cols, int seed){
-		Nd4j.getRandom().setSeed(seed);
-		int[] origShape = new int[3];
-		if(rows%2 == 0){
-			origShape[0] = rows/2;
-			origShape[1] = cols;
-			origShape[2] = 2;
-		} else if( cols%2 == 0 ){
-			origShape[0] = rows;
-			origShape[1] = cols/2;
-			origShape[2] = 2;
-		} else {
-			origShape[0] = 1;
-			origShape[1] = rows;
-			origShape[2] = cols;
-		}
-		INDArray orig = Nd4j.rand(origShape);
-		return new Pair<>(orig.reshape(rows,cols),"getReshapedWithShape("+rows+","+cols+","+seed+")");
-	}
 }

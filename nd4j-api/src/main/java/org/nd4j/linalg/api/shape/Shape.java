@@ -1449,11 +1449,13 @@ public class Shape {
         if(order=='c'){	//Expect descending. [100,10,1] etc
             for( int i=1; i<strides.length; i++ ) if(strides[i-1]<=strides[i]) return false;
             return true;
-        } else if(order=='f'){//Expect ascending. [1,10,100] etc
-            for( int i=1; i<strides.length; i++ ) if(strides[i-1]>=strides[i]) return false;
+        } else if(order=='f') {//Expect ascending. [1,10,100] etc
+            for (int i = 1; i < strides.length; i++) if (strides[i - 1] >= strides[i]) return false;
+            return true;
+        } else if(order=='a' ){
             return true;
         } else {
-            throw new RuntimeException("Invalid order: not c or f");
+            throw new RuntimeException("Invalid order: not c or f (is: " + order +")");
         }
     }
 
