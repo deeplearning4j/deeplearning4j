@@ -2326,6 +2326,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addiColumnVector(INDArray columnVector) {
+        if(isVector())
+            return addi(columnVector);
+
         return doColumnWise(columnVector, 'a');
     }
 
@@ -2348,6 +2351,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addiRowVector(INDArray rowVector) {
+        if(isVector())
+            return addi(rowVector);
         return doRowWise(rowVector, 'a');
     }
 
