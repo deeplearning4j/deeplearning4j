@@ -265,6 +265,19 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+
+    @Test
+    public void testAddiRowVectorWithScalar(){
+        INDArray colVector = Nd4j.create(5,1);
+        INDArray scalar = Nd4j.create(1,1);
+        scalar.putScalar(0, 1);
+
+        assertEquals(scalar.getDouble(0), 1.0, 0.0);
+
+        colVector.addiRowVector(scalar);    //colVector is all zeros after this
+        for( int i=0; i<5; i++) assertEquals(colVector.getDouble(i),1.0,0.0);
+    }
+
     @Test
     public void testTADOnVector(){
 
