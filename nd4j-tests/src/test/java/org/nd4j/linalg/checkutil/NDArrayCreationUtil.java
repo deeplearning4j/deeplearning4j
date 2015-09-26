@@ -393,6 +393,7 @@ public class NDArrayCreationUtil {
     }
 
 
+
     public static List<Pair<INDArray,String>> getAll5dTestArraysWithShape(int seed, int... shape){
         if(shape.length != 5) throw new IllegalArgumentException("Shape is not length 5");
 
@@ -520,6 +521,108 @@ public class NDArrayCreationUtil {
         INDArray array3d = Nd4j.rand(shape2d);
         INDArray array5d = array3d.reshape(shape);
         return Collections.singletonList(new Pair<>(array5d, "get5dReshapedWithShape(" + seed + "," +
+                Arrays.toString(shape) + ").get(0)"));
+    }
+
+
+
+    public static List<Pair<INDArray,String>> getAll6dTestArraysWithShape(int seed, int... shape){
+        if(shape.length != 6) throw new IllegalArgumentException("Shape is not length 6");
+
+        List<Pair<INDArray,String>> list = new ArrayList<>();
+
+        String baseMsg = "getAll6dTestArraysWithShape("+seed+","+Arrays.toString(shape)+").get(";
+
+        //Basic 5d in C and F orders:
+        Nd4j.getRandom().setSeed(seed);
+        INDArray stdC = Nd4j.rand(shape,'c');
+        INDArray stdF = Nd4j.rand(shape, 'f');
+        list.add(new Pair<>(stdC,baseMsg+"0)/Nd4j.rand("+Arrays.toString(shape)+",'c')"));
+        list.add(new Pair<>(stdF,baseMsg+"1)/Nd4j.rand("+Arrays.toString(shape)+",'f')"));
+
+        //Various sub arrays:
+        list.addAll(get6dSubArraysWithShape(seed, shape));
+
+        //Permuted
+        list.addAll(get6dPermutedWithShape(seed, shape));
+
+        //Reshaped
+        list.addAll(get6dReshapedWithShape(seed, shape));
+
+        return list;
+    }
+
+    public static List<Pair<INDArray,String>> get6dSubArraysWithShape(int seed, int... shape){
+        List<Pair<INDArray,String>> list = new ArrayList<>();
+        String baseMsg = "get6dSubArraysWithShape("+seed+","+Arrays.toString(shape)+")";
+        //Create and return various sub arrays:
+        Nd4j.getRandom().setSeed(seed);
+        int[] newShape1 = Arrays.copyOf(shape, shape.length);
+        newShape1[0] += 5;
+        INDArray temp1 = Nd4j.rand(newShape1);
+        INDArray subset1 = temp1.get(NDArrayIndex.interval(2, shape[0] + 2), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+        list.add(new Pair<>(subset1, baseMsg + ".get(0)"));
+
+        int[] newShape2 = Arrays.copyOf(shape,shape.length);
+        newShape2[1] += 5;
+        INDArray temp2 = Nd4j.rand(newShape2);
+        INDArray subset2 = temp2.get(NDArrayIndex.all(), NDArrayIndex.interval(3, shape[1] + 3), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+        list.add(new Pair<>(subset2,baseMsg+".get(1)"));
+
+        int[] newShape3 = Arrays.copyOf(shape, shape.length);
+        newShape3[2] += 5;
+        INDArray temp3 = Nd4j.rand(newShape3);
+        INDArray subset3 = temp3.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(4, shape[2] + 4), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+        list.add(new Pair<>(subset3,baseMsg+".get(2)"));
+
+        int[] newShape4 = Arrays.copyOf(shape, shape.length);
+        newShape4[3] += 5;
+        INDArray temp4 = Nd4j.rand(newShape4);
+        INDArray subset4 = temp4.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(3, shape[3] + 3), NDArrayIndex.all(), NDArrayIndex.all());
+        list.add(new Pair<>(subset4,baseMsg+".get(3)"));
+
+        int[] newShape5 = Arrays.copyOf(shape, shape.length);
+        newShape5[4] += 5;
+        INDArray temp5 = Nd4j.rand(newShape5);
+        INDArray subset5 = temp5.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(3, shape[4] + 3), NDArrayIndex.all());
+        list.add(new Pair<>(subset5,baseMsg+".get(4)"));
+
+        int[] newShape6 = Arrays.copyOf(shape, shape.length);
+        newShape6[5] += 5;
+        INDArray temp6 = Nd4j.rand(newShape6);
+        INDArray subset6 = temp6.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(1, shape[5] + 1));
+        list.add(new Pair<>(subset6,baseMsg+".get(5)"));
+
+        int[] newShape7 = Arrays.copyOf(shape, shape.length);
+        newShape7[0] += 5;
+        newShape7[1] += 5;
+        newShape7[2] += 5;
+        newShape7[3] += 5;
+        newShape7[4] += 5;
+        newShape7[5] += 5;
+        INDArray temp7 = Nd4j.rand(newShape7);
+        INDArray subset7 = temp7.get(NDArrayIndex.interval(4, shape[0] + 4), NDArrayIndex.interval(3, shape[1] + 3), NDArrayIndex.interval(2, shape[2] + 2),
+                NDArrayIndex.interval(1,shape[3]+1), NDArrayIndex.interval(2,shape[4]+2), NDArrayIndex.interval(3,shape[5]+3));
+        list.add(new Pair<>(subset7, baseMsg + ".get(6)"));
+
+        return list;
+    }
+
+    public static List<Pair<INDArray,String>> get6dPermutedWithShape(int seed, int... shape){
+        Nd4j.getRandom().setSeed(seed);
+        int[] createdShape = {shape[1],shape[4],shape[5],shape[3],shape[2],shape[0]};
+        INDArray arr = Nd4j.rand(createdShape);
+        INDArray permuted = arr.permute(5, 0, 4, 3, 1, 2);
+        return Collections.singletonList(new Pair<>(permuted, "get6dPermutedWithShape(" + seed + "," +
+                Arrays.toString(shape) + ").get(0)"));
+    }
+
+    public static List<Pair<INDArray,String>> get6dReshapedWithShape(int seed, int... shape){
+        Nd4j.getRandom().setSeed(seed);
+        int[] shape3d = {shape[0]*shape[2],shape[4]*shape[5],shape[1]*shape[3]};
+        INDArray array3d = Nd4j.rand(shape3d);
+        INDArray array6d = array3d.reshape(shape);
+        return Collections.singletonList(new Pair<>(array6d, "get6dReshapedWithShape(" + seed + "," +
                 Arrays.toString(shape) + ").get(0)"));
     }
 }

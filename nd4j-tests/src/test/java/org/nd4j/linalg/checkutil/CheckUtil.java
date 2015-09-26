@@ -135,7 +135,7 @@ public class CheckUtil {
             }
         }
         if(!checkShape(expected,result)) return false;
-        boolean ok = checkEntries(expected,result,maxRelativeDifference,minAbsDifference);
+        boolean ok = checkEntries(expected, result, maxRelativeDifference, minAbsDifference);
         if(!ok){
             INDArray onCopies = Shape.toOffsetZeroCopy(first).mul(Shape.toOffsetZeroCopy(second));
             printFailureDetails(first,second,expected,result,onCopies,"mul");

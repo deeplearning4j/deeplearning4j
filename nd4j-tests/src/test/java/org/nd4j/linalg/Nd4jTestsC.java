@@ -225,10 +225,10 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testReadWrite() throws Exception {
-        INDArray write = Nd4j.linspace(1,4,4);
+        INDArray write = Nd4j.linspace(1, 4, 4);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        Nd4j.write(write,dos);
+        Nd4j.write(write, dos);
 
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         DataInputStream dis = new DataInputStream(bis);
@@ -295,7 +295,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testLength() {
-        INDArray values = Nd4j.create(2,2);
+        INDArray values = Nd4j.create(2, 2);
         INDArray values2 = Nd4j.create(2,2);
 
         values.put(0, 0, 0);
@@ -1165,7 +1165,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testIterator() {
         INDArray x = Nd4j.linspace(1,4,4).reshape(2, 2);
         INDArray repeated = x.repeat(new int[]{2});
-        assertEquals(8,repeated.length());
+        assertEquals(8, repeated.length());
         Iterator<Double> arrayIter = new INDArrayIterator(x);
         double[] vals = Nd4j.linspace(1,4,4).data().asDouble();
         for(int i = 0; i < vals.length; i++)
@@ -1294,7 +1294,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         assertArrayEquals(first.shape(),second.shape());
         assertEquals(first.length(),second.length());
-        assertArrayEquals(first.stride(),second.stride());
+        assertArrayEquals(first.stride(), second.stride());
 
         first.sub(second);  //Exception
     }
@@ -1439,8 +1439,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testMMulColVectorRowVectorMixedOrder(){
-        INDArray colVec = Nd4j.ones(5,1);
-        INDArray rowVec = Nd4j.ones(1,5);
+        INDArray colVec = Nd4j.ones(5, 1);
+        INDArray rowVec = Nd4j.ones(1, 5);
         INDArray out = rowVec.mmul(colVec);
         assertArrayEquals(out.shape(),new int[]{1,1});
         assertTrue(out.equals(Nd4j.ones(1, 1).muli(5)));
@@ -1453,7 +1453,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(rowVec.equals(rowVectorF));
 
         INDArray outCF = rowVectorF.mmul(colVectorC);
-        assertArrayEquals(outCF.shape(),new int[]{1,1});
+        assertArrayEquals(outCF.shape(), new int[]{1, 1});
         assertTrue(outCF.equals(Nd4j.ones(1, 1).muli(5)));
     }
 
@@ -1695,7 +1695,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testRDivi() {
-        INDArray n2 = Nd4j.valueArrayOf(new int[]{1,2}, 4);
+        INDArray n2 = Nd4j.valueArrayOf(new int[]{1, 2}, 4);
         INDArray n2Assertion = Nd4j.valueArrayOf(new int[]{1, 2}, 0.5);
         INDArray nRsubi = n2.rdivi(2);
         assertEquals(n2Assertion, nRsubi);
@@ -1737,7 +1737,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNewAxis() {
-        INDArray arr = Nd4j.linspace(1,12,12).reshape(3,2,2);
+        INDArray arr = Nd4j.linspace(1,12,12).reshape(3, 2, 2);
         INDArray get = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.newAxis(), NDArrayIndex.newAxis());
         int[] shapeAssertion = {3, 2, 1, 1, 2};
         assertArrayEquals(shapeAssertion, get.shape());
@@ -1822,7 +1822,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(0d, lv.getDouble(0), delta);
         assertEquals(1d,lv.getDouble(1),delta);
         assertEquals(2d,lv.getDouble(2),delta);
-        assertEquals(3d,lv.getDouble(3),delta);
+        assertEquals(3d, lv.getDouble(3), delta);
     }
 
     @Test
@@ -1990,7 +1990,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testInplaceOpsVsNDArrayUtilDoElementWiseOp(){
-        for( int t=0; t<=12; t++){
+        for( int t=0; t<=20; t++){
             char[] ops = {'a', 's', 'm', 'd', 'p'};
 
             for (char c : ops) {
@@ -2106,38 +2106,54 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     private static Pair<List<Pair<INDArray,String>>,String> getTestArraysHelper(int testNum, int seed){
         switch(testNum){
             case 0: //2d standard (shape 5,7)
-                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed,5,7),"test 0, 2d with shape [5,7]");
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 5, 7),"test 0, 2d with shape [5,7]");
             case 1: //2d edge case 1 (shape 1,7)
-                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed,1,7),"test 1, 2d with shape [1,7]");
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 1, 7),"test 1, 2d with shape [1,7]");
             case 2: //2d edge case 2 (shape 5,1)
-                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed,5,1),"test 2, 2d with shape [5,7]");
+                return new Pair<>(NDArrayCreationUtil.getAllTestMatricesWithShape(seed, 5, 1),"test 2, 2d with shape [5,7]");
             case 3: //3d (shape 4,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,5,6),"test 3, 3d with shape [4,5,6]");
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 6),"test 3, 3d with shape [4,5,6]");
             case 4: //3d edge case 1 (shape 1,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,1,5,6),"test 4, 3d with shape [1,5,6]");
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 1, 5, 6),"test 4, 3d with shape [1,5,6]");
             case 5: //3d edge case 2 (shape 4,1,6)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,1,6),"test 5, 3d with shape [4,1,6]");
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 1, 6),"test 5, 3d with shape [4,1,6]");
             case 6: //3d edge case 3 (shape 4,5,1)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,5,1),"test 6, 3d with shape [4,5,1]");
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 1),"test 6, 3d with shape [4,5,1]");
             case 7: //3d edge case 4 (shape 4,1,1)
-                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed,4,5,6),"test 7, 3d with shape [4,1,1]");
+                return new Pair<>(NDArrayCreationUtil.getAll3dTestArraysWithShape(seed, 4, 5, 6),"test 7, 3d with shape [4,1,1]");
             case 8: //4d (shape 3,4,5,6)
                 return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 4, 5, 6),"test 8, 4d with shape [3,4,5,6]");
             case 9: //4d edge case 1 (1,4,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed,1,4,5,6),"test 9, 4d with shape [1,4,5,6]");
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 1, 4, 5, 6),"test 9, 4d with shape [1,4,5,6]");
             case 10://4d edge case 2 (3,1,5,6)
-                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed,3,1,5,6),"test 10, 4d with shape [3,1,5,6]");
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 1, 5, 6),"test 10, 4d with shape [3,1,5,6]");
             case 11://4d edge case 3 (3,4,5,1)
-                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed,3,4,5,1),"test 11, 4d with shape [3,4,5,1]");
+                return new Pair<>(NDArrayCreationUtil.getAll4dTestArraysWithShape(seed, 3, 4, 5, 1),"test 11, 4d with shape [3,4,5,1]");
             case 12://5d (shape 3,4,5,6,7)
                 return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 4, 5, 6, 7),"test 12, 5d with shape [3,4,5,6,7]");
-            //TODO: MORE - 5d edge cases, 6d etc
+            case 13://5d edge case (shape 1,4,5,6,7)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 1, 4, 5, 6, 7),"test 13, 5d with shape [1,4,5,6,7]");
+            case 14://5d edge case (shape 3,4,5,6,1)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 4, 5, 6, 1),"test 14, 5d with shape [3,4,5,6,1]");
+            case 15://5d edge case (shape 3,1,5,6,1)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 1, 5, 6, 7),"test 15, 5d with shape [3,1,5,6,7]");
+            case 16://5d edge case (shape 3,1,1,6,1)
+                return new Pair<>(NDArrayCreationUtil.getAll5dTestArraysWithShape(seed, 3, 1, 1, 6, 1),"test 16, 5d with shape [3,1,1,6,1]");
+            case 17://6d (shape 3,4,5,6,7,2)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 5, 6, 7, 2),"test 17, 6d with shape [3,4,5,6,7,2]");
+            case 18://6d (shape 1,4,5,6,7,2)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 1, 4, 5, 6, 7, 2),"test 18, 6d with shape [1,4,5,6,7,2]");
+            case 19://6d (shape 3,4,5,6,7,1)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 5, 6, 7, 1),"test 19, 6d with shape [3,4,5,6,7,1]");
+            case 20://6d (shape 3,4,1,6,7,2)
+                return new Pair<>(NDArrayCreationUtil.getAll6dTestArraysWithShape(seed, 3, 4, 1, 6, 7, 2),"test 20, 6d with shape [3,4,1,6,7,2]");
             default: throw new RuntimeException("Unknown test number: " + testNum);
         }
     }
 
     @Test
     public void testRowWiseAndColumnWiseOps(){
+        fail();
         //Test standard matrices + two edge cases
         int[] rowDims = {5,1,5};
         int[] colDims = {7,7,1};
