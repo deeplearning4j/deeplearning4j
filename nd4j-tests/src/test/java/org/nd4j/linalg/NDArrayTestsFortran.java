@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.checkutil.CheckUtil;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 //import org.nd4j.linalg.jcublas.CublasPointer;
@@ -1095,7 +1096,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testDupAndDupWithOrder(){
-        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4, 5, 123);
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
         for(Pair<INDArray,String> pair : testInputs ){
 
@@ -1116,7 +1117,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testToOffsetZeroCopy(){
-        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(4, 5, 123);
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
         for(Pair<INDArray,String> pair : testInputs ){
             String msg = pair.getSecond();
@@ -1146,7 +1147,7 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
     @Test
     public void testTensorStats(){
-        List<Pair<INDArray,String>> testInputs = CheckUtil.getAllTestMatricesWithShape(9,13,123);
+        List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(9,13,123);
 
         for(Pair<INDArray,String> pair : testInputs ){
             INDArray arr = pair.getFirst();
@@ -1211,16 +1212,16 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
 
             for (char c : ops) {
 
-                List<Pair<INDArray, String>> testInputsSecond = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                List<Pair<INDArray, String>> testInputsSecond = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
 
-                List<Pair<INDArray, String>> testInputsOrigCopy = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                List<Pair<INDArray, String>> testInputsOrigCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
 
                 int count = testInputsSecond.size();
 
                 //Do operation: first.addi(second)
                 for (int i = 0; i < count; i++) {
                     //Operations are in place, so don't want to use same input array twice
-                    List<Pair<INDArray, String>> testInputsFirst = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                    List<Pair<INDArray, String>> testInputsFirst = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
                     for (int j = 0; j < count; j++) {
                         Pair<INDArray, String> pairFirst = testInputsFirst.get(j);
                         Pair<INDArray, String> pairSecond = testInputsSecond.get(i);
@@ -1329,21 +1330,21 @@ public  class NDArrayTestsFortran  extends BaseNd4jTest {
                     List<Pair<INDArray, String>> testInputVector;
                     List<Pair<INDArray, String>> testInputVectorCopy;
                     if (row) {
-                        testInputVector = CheckUtil.getAllTestMatricesWithShape(1, nColumns, 123);
-                        testInputVectorCopy = CheckUtil.getAllTestMatricesWithShape(1, nColumns, 123);
+                        testInputVector = NDArrayCreationUtil.getAllTestMatricesWithShape(1, nColumns, 123);
+                        testInputVectorCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(1, nColumns, 123);
                     } else {
-                        testInputVector = CheckUtil.getAllTestMatricesWithShape(nRows, 1, 123);
-                        testInputVectorCopy = CheckUtil.getAllTestMatricesWithShape(nRows, 1, 123);
+                        testInputVector = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, 1, 123);
+                        testInputVectorCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, 1, 123);
                     }
 
-                    List<Pair<INDArray, String>> testInputsOrigCopy = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                    List<Pair<INDArray, String>> testInputsOrigCopy = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
 
                     int count = testInputVector.size();
 
                     //first.addiRowVector(second) etc.
                     for (int i = 0; i < count; i++) {
                         //Operations are in place, so don't want to use same input array twice
-                        List<Pair<INDArray, String>> testInputsFirst = CheckUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
+                        List<Pair<INDArray, String>> testInputsFirst = NDArrayCreationUtil.getAllTestMatricesWithShape(nRows, nColumns, 123);
                         for (int j = 0; j < count; j++) {
                             Pair<INDArray, String> pairFirst = testInputsFirst.get(j);
                             Pair<INDArray, String> pairSecond = testInputVector.get(i);
