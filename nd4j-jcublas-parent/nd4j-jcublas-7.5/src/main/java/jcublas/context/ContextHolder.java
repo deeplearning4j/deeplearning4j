@@ -19,6 +19,8 @@
 
 package jcublas.context;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import jcuda.CudaException;
 import jcuda.driver.*;
 import jcuda.jcublas.JCublas2;

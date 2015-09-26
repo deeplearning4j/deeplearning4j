@@ -20,6 +20,9 @@
 package jcublas;
 
 
+import jcuda.Pointer;
+import jcuda.cuComplex;
+import jcuda.cuDoubleComplex;
 import jcuda.driver.JCudaDriver;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
@@ -273,6 +276,7 @@ public class SimpleJCublas {
         @Cleanup CublasPointer cAPointer = new CublasPointer(A.offset() > 0 ? A.ravel() : A);
         @Cleanup CublasPointer cBPointer = new CublasPointer(B.offset() > 0 ? B.ravel() : B);
         @Cleanup CublasPointer cCPointer = new CublasPointer(C);
+
 
 
         cuComplex alpha = cuComplex.cuCmplx(a.realComponent().floatValue(), b.imaginaryComponent().floatValue());
