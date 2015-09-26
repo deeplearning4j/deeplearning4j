@@ -2903,13 +2903,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         }
 
-        if(isVector()) {
-            if(this instanceof IComplexNDArray) {
-                IComplexNDArray arrComplex = (IComplexNDArray) this;
-                return Nd4j.scalar(arrComplex.getComplex(slice));
-            }
-            return Nd4j.scalar(getDouble(slice));
-        }
 
         if(slice < 0)
             slice += shape.length;

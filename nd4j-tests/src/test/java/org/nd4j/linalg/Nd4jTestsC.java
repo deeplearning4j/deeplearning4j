@@ -121,7 +121,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testTensorAlongDimension(){
         int[] shape = new int[]{4,5,7};
         int length = ArrayUtil.prod(shape);
-        INDArray arr = Nd4j.linspace(1,length,length).reshape(shape);
+        INDArray arr = Nd4j.linspace(1, length, length).reshape(shape);
 
 
         int[] dim0s = {0,1,2,0,1,2};
@@ -264,6 +264,33 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         INDArray result = Nd4j.create(new float[]{-2, -2, 0, 0}, new int[]{2, 2});
         assertEquals(getFailureMessage(), result, oneThroughFour);
 
+    }
+
+    @Test
+    public void testTADOnVector(){
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray rowVec = Nd4j.rand(1, 10);
+        INDArray thirdElem = rowVec.tensorAlongDimension(2,0);
+
+        assertEquals(rowVec.getDouble(2),thirdElem.getDouble(0),0.0);
+
+        thirdElem.putScalar(0, 5);
+        assertEquals(5, thirdElem.getDouble(0), 0.0);
+
+        assertEquals(5,rowVec.getDouble(2),0.0);    //Both should be modified if thirdElem is a view
+        assertTrue(thirdElem.data() == rowVec.data());    //equivalently: should be same object if a view
+
+        //Same thing for column vector:
+        INDArray colVec = Nd4j.rand(10,1);
+        thirdElem = colVec.tensorAlongDimension(2,1);
+
+        assertEquals(colVec.getDouble(2),thirdElem.getDouble(0),0.0);
+
+        thirdElem.putScalar(0, 5);
+        assertEquals(5, thirdElem.getDouble(0), 0.0);
+        assertEquals(5,colVec.getDouble(2),0.0);
+        assertTrue(thirdElem.data() == colVec.data());    //equivalently: should be same object if a view
     }
 
     @Test
