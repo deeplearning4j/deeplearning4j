@@ -214,6 +214,8 @@ public class NDArrayUtil {
 
     }
 
+    /** Tensor1DStats, used to efficiently iterate through tensors on a matrix (2d NDArray) for element-wise ops
+     */
     public static Tensor1DStats get1DTensorStats(INDArray array, int dimension){
         //As per BaseNDArray.tensorAlongDimension
         int tensorLength = ArrayUtil.prod(ArrayUtil.keep(array.shape(), dimension));
@@ -621,6 +623,7 @@ public class NDArrayUtil {
      * When vector is a column vector: do column-wise instead of row-wise ops
      */
     public static void doVectorOp(INDArray array, INDArray vector, char op){
+        if(array.rank() != 2) throw new IllegalArgumentException("Cannot do row/column operation on non-2d matrix");
         boolean rowOp = Shape.isRowVectorShape(vector.shape());
         //Edge case: 'vector' is actually a scalar
         if(vector.length() == 1){
@@ -631,7 +634,6 @@ public class NDArrayUtil {
                 rowOp = true;
             } else throw new IllegalArgumentException("Invalid input: vector input is a scalar but array is not a vector");
         }
-
 
         Tensor1DStats tensorStats = get1DTensorStats(array, (rowOp ? 1 : 0));
 

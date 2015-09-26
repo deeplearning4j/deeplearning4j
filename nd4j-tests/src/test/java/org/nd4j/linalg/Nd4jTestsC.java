@@ -47,7 +47,6 @@ import java.io.*;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * NDArrayTests
@@ -1990,9 +1989,9 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testInplaceOpsVsNDArrayUtilDoElementWiseOp(){
-        for( int t=0; t<=20; t++){
-            char[] ops = {'a', 's', 'm', 'd', 'p'};
+        char[] ops = {'a', 's', 'm', 'd', 'p'};
 
+        for( int t=0; t<=20; t++){
             for (char c : ops) {
 
                 Pair<List<Pair<INDArray,String>>,String> temp = getTestArraysHelper(t,123);
@@ -2153,7 +2152,6 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testRowWiseAndColumnWiseOps(){
-        fail();
         //Test standard matrices + two edge cases
         int[] rowDims = {5,1,5};
         int[] colDims = {7,7,1};
@@ -2216,7 +2214,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                                     break;
                                 case 'd':
                                     if (row) firstDup.diviRowVector(secondDup);
-                                    else firstDup.diviRowVector(secondDup);
+                                    else firstDup.diviColumnVector(secondDup);
                                     break;
                                 case 'h':
                                     if (row) firstDup.rsubiRowVector(secondDup);
