@@ -1414,7 +1414,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup(char order){
-        return Shape.toOffsetZeroCopy(this,order);
+        return Shape.toOffsetZeroCopy(this, order);
     }
 
     /**
@@ -1931,7 +1931,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doColumnWise(INDArray columnVector, char operation) {
+        if(isVector()) {
+            switch (operation) {
+                case 'a':
+                    addi(columnVector);
+                    break;
+                case 's':
+                    subi(columnVector);
+                    break;
+                case 'm':
+                    muli(columnVector);
+                    break;
+                case 'd':
+                    divi(columnVector);
+                    break;
+                case 'h':
+                    rsubi(columnVector);
+                    break;
+                case 't':
+                    rdivi(columnVector);
+                    break;
+            }
 
+            return this;
+        }
         if (rows() == 1 && columnVector.isScalar()) {
             applyScalarOp(columnVector, operation);
         }
@@ -1978,6 +2001,31 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @return
      */
     protected INDArray doRowWise(final INDArray rowVector, final char operation) {
+        if(isVector()) {
+            switch (operation) {
+                case 'a':
+                    addi(rowVector);
+                    break;
+                case 's':
+                    subi(rowVector);
+                    break;
+                case 'm':
+                    muli(rowVector);
+                    break;
+                case 'd':
+                    divi(rowVector);
+                    break;
+                case 'h':
+                    rsubi(rowVector);
+                    break;
+                case 't':
+                    rdivi(rowVector);
+                    break;
+            }
+
+            return this;
+        }
+
         if (columns() == 1 && rowVector.isScalar()) {
             if (this instanceof IComplexNDArray) {
                 applyScalarOp(rowVector, operation);
@@ -2326,9 +2374,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addiColumnVector(INDArray columnVector) {
-        if(isVector())
-            return addi(columnVector);
-
         return doColumnWise(columnVector, 'a');
     }
 
@@ -2351,8 +2396,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray addiRowVector(INDArray rowVector) {
-        if(isVector())
-            return addi(rowVector);
         return doRowWise(rowVector, 'a');
     }
 
