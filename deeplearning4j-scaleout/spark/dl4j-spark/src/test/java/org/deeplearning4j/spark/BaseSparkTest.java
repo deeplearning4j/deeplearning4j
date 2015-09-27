@@ -53,7 +53,7 @@ public abstract class BaseSparkTest  implements Serializable
             return sc;
         // set to test mode
         SparkConf sparkConf = new SparkConf().set(SparkDl4jMultiLayer.AVERAGE_EACH_ITERATION,"false")
-                .set(SparkDl4jMultiLayer.ACCUM_GRADIENT,"true")
+                .set(SparkDl4jMultiLayer.ACCUM_GRADIENT,"false").set(SparkDl4jMultiLayer.DIVIDE_ACCUM_GRADIENT,"true")
                 .setMaster("local[*]")
                 .setAppName("sparktest");
 
