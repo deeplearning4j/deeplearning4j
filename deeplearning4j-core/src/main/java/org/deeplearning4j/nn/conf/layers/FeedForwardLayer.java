@@ -12,7 +12,7 @@ public abstract class FeedForwardLayer extends Layer {
     protected int nIn;
     protected int nOut;
     
-    public FeedForwardLayer( Builder builder ){
+    public FeedForwardLayer(Builder builder) {
     	super(builder);
     	this.nIn = builder.nIn;
     	this.nOut = builder.nOut;

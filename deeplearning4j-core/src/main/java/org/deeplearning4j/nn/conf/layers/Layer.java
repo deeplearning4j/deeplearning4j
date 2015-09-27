@@ -64,7 +64,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double l2;
     protected double lr;
     
-    public Layer(Builder builder){
+    public Layer(Builder builder) {
     	this.activationFunction = builder.activationFunction;
     	this.weightInit = builder.weightInit;
         this.biasInit = builder.biasInit;
