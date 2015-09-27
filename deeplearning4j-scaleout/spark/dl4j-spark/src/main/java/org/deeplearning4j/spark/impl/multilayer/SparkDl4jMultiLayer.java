@@ -58,6 +58,7 @@ public class SparkDl4jMultiLayer implements Serializable {
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
     public final static String ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.accumgrad";
+    public final static String DIVIDE_ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.dividegrad";
 
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
@@ -213,6 +214,9 @@ public class SparkDl4jMultiLayer implements Serializable {
             GradientAdder a = new GradientAdder(params.length());
             results.foreach(a);
             INDArray accumulatedGradient = a.getAccumulator().value();
+            boolean divideGrad = sc.getConf().getBoolean(DIVIDE_ACCUM_GRADIENT,false);
+            if(divideGrad)
+                accumulatedGradient.divi(results.partitions().size());
             log.info("Accumulated parameters");
             log.info("Summed gradients.");
             network.setParameters(network.params().addi(accumulatedGradient));
