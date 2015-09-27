@@ -26,6 +26,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 
@@ -53,7 +54,7 @@ public class LineGradientDescent extends BaseOptimizer {
 
     @Override
     public void postStep(INDArray gradient) {
-        double norm2 = gradient.norm2(Integer.MAX_VALUE).getDouble(0);
+        double norm2 = Nd4j.getBlasWrapper().level1().nrm2(gradient);
         if(norm2 > stepMax)
             searchState.put(SEARCH_DIR,gradient.dup().muli(stepMax / norm2));
         else

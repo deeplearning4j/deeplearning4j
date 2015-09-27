@@ -28,9 +28,11 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.optimize.api.LineOptimizer;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -160,7 +162,9 @@ public class BackTrackLineSearch implements LineOptimizer {
         double rhs1, rhs2, a, b, disc, score, scoreAtStart, score2;
         minObjectiveFunction = (stepFunction instanceof NegativeDefaultStepFunction || stepFunction instanceof NegativeGradientStepFunction);
 
-        double sum = searchDirection.norm2(Integer.MAX_VALUE).getDouble(0);
+        Level1 l1Blas = Nd4j.getBlasWrapper().level1();
+
+        double sum = l1Blas.nrm2(searchDirection);
         double slope = -1f * Nd4j.getBlasWrapper().dot(searchDirection, gradients);
 
         log.debug("slope = {}", slope);
@@ -180,10 +184,12 @@ public class BackTrackLineSearch implements LineOptimizer {
         double bestStepSize = 1.0;
 
         if (log.isTraceEnabled()) {
+            double norm1 = l1Blas.asum(searchDirection);
+            int infNormIdx = l1Blas.iamax(searchDirection);
+            double infNorm = FastMath.max(Float.NEGATIVE_INFINITY, searchDirection.getDouble(infNormIdx));
             log.trace("ENTERING BACKTRACK\n");
             log.trace("Entering BackTrackLineSearch, value = " + scoreAtStart + ",\ndirection.oneNorm:"
-                    + searchDirection.dup().norm1(Integer.MAX_VALUE) + "  direction.infNorm:" +
-                    FastMath.max(Float.NEGATIVE_INFINITY, abs(searchDirection.dup()).max(Integer.MAX_VALUE).getDouble(0)));
+                    + norm1 + "  direction.infNorm:" + infNorm);
         }
         if (sum > stepMax) {
             log.warn("Attempted step too big. scaling: sum= {}, stepMax= {}", sum, stepMax);
@@ -209,22 +215,18 @@ public class BackTrackLineSearch implements LineOptimizer {
                 throw new IllegalArgumentException("Current step == oldStep");
 
             // step
-            if (candidateParameters == null)
-                candidateParameters = parameters.dup();
-            else
-                candidateParameters.assign(parameters);
-
+            candidateParameters = Shape.toOffsetZeroCopy(parameters,'f');   //Convention: f order for params and gradient flattening
             stepFunction.step(candidateParameters, searchDirection, step);
             oldStep = step;
 
             if (log.isTraceEnabled()) {
-                double norm1 = candidateParameters.norm1(Integer.MAX_VALUE).getDouble(0);
+                double norm1 = l1Blas.asum(candidateParameters);
                 log.trace("after step, x.1norm: " + norm1);
             }
 
             // check for convergence on delta x
             if ((step < stepMin) || Nd4j.getExecutioner().execAndReturn(new Eps(parameters, candidateParameters,
-                    candidateParameters.dup(), candidateParameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
+                    Shape.toOffsetZeroCopy(candidateParameters,'f'), candidateParameters.length())).sum(Integer.MAX_VALUE).getDouble(0) == candidateParameters.length()) {
                 score = setScoreFor(parameters);
                 log.debug("EXITING BACKTRACK: Jump too small (stepMin = {}). Exiting and using original params. Score = {}", stepMin, score);
                 return 0.0;
