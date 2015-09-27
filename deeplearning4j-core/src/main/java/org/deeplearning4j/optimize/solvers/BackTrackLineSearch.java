@@ -275,7 +275,7 @@ public class BackTrackLineSearch implements LineOptimizer {
 
             // backtrack
 
-            else if (minObjectiveFunction){
+            else if (minObjectiveFunction) {
                 if (step == 1.0) // first time through
                     tmpStep = -slope / (2.0 * (score - scoreAtStart - slope));
                 else {
