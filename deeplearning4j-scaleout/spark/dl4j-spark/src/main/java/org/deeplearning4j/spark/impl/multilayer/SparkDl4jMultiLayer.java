@@ -29,14 +29,15 @@ import org.canova.api.records.reader.RecordReader;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.canova.RecordReaderFunction;
-import org.deeplearning4j.spark.impl.common.Add;
 import org.deeplearning4j.spark.impl.common.Adder;
+import org.deeplearning4j.spark.impl.common.gradient.GradientAdder;
+import org.deeplearning4j.spark.impl.multilayer.gradientaccum.GradientAccumFlatMap;
 import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,8 @@ public class SparkDl4jMultiLayer implements Serializable {
     private Broadcast<INDArray> params;
     private boolean averageEachIteration = false;
     public final static String AVERAGE_EACH_ITERATION = "org.deeplearning4j.spark.iteration.average";
+    public final static String ACCUM_GRADIENT = "org.deeplearning4j.spark.iteration.accumgrad";
+
     private static final Logger log = LoggerFactory.getLogger(SparkDl4jMultiLayer.class);
 
     /**
@@ -203,17 +206,33 @@ public class SparkDl4jMultiLayer implements Serializable {
         int paramsLength = network.numParams();
         if(params.length() != paramsLength)
             throw new IllegalStateException("Number of params " + paramsLength + " was not equal to " + params.length());
-        JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params),true).cache();
-        log.info("Ran iterative reduce...averaging results now.");
-        Adder a = new Adder(params.length());
-        results.foreach(a);
-        INDArray newParams = a.getAccumulator().value();
-        log.info("Accumulated parameters");
-        newParams.divi(rdd.partitions().size());
-        log.info("Divided by partitions");
-        network.setParameters(newParams);
-        log.info("Set parameters");
-        this.network = network;
+        boolean accumGrad = sc.getConf().getBoolean(ACCUM_GRADIENT,false);
+        if(accumGrad) {
+            JavaRDD<Gradient> results = rdd.mapPartitions(new GradientAccumFlatMap(conf.toJson(), this.params),true).cache();
+            log.info("Ran iterative reduce...averaging results now.");
+            GradientAdder a = new GradientAdder(params.length());
+            results.foreach(a);
+            INDArray accumulatedGradient = a.getAccumulator().value();
+            log.info("Accumulated parameters");
+            log.info("Summed gradients.");
+            network.setParameters(network.params().addi(accumulatedGradient));
+            log.info("Set parameters");
+            this.network = network;
+        }
+        else {
+            JavaRDD<INDArray> results = rdd.mapPartitions(new IterativeReduceFlatMap(conf.toJson(), this.params),true).cache();
+            log.info("Ran iterative reduce...averaging results now.");
+            Adder a = new Adder(params.length());
+            results.foreach(a);
+            INDArray newParams = a.getAccumulator().value();
+            log.info("Accumulated parameters");
+            newParams.divi(rdd.partitions().size());
+            log.info("Divided by partitions");
+            network.setParameters(newParams);
+            log.info("Set parameters");
+            this.network = network;
+        }
+
     }
 
 
