@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -326,9 +327,28 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         INDArray ret = Nd4j.create(new int[]{1,length},order);
         int linearIndex = 0;
         for(INDArray m : matrices){
-            NdIndexIterator iter = new NdIndexIterator(order,m.shape());
-            while(iter.hasNext()){
-                ret.putScalar(linearIndex++,m.getDouble(iter.next()));
+            if(m.ordering() == order && m.data().allocationMode() == DataBuffer.AllocationMode.HEAP
+                    && Shape.strideDescendingCAscendingF(m) && Shape.isContiguousInBuffer(m) ) {
+                //Can do array copy
+                int retFrom = linearIndex;
+                int mFrom = m.offset();
+                Object arr = m.data().array();
+                if(arr instanceof float[]){
+                    float[] mData = (float[])arr;
+                    float[] retData = (float[])ret.data().array();
+                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
+                } else {
+                    double[] mData = (double[])arr;
+                    double[] retData = (double[])ret.data().array();
+                    System.arraycopy(mData,mFrom,retData,retFrom,m.length());
+                }
+                linearIndex += m.length();
+            } else {
+                //Works for all cases...
+                NdIndexIterator iter = new NdIndexIterator(order, m.shape());
+                while (iter.hasNext()) {
+                    ret.putScalar(linearIndex++, m.getDouble(iter.next()));
+                }
             }
         }
         return ret;
