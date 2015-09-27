@@ -205,8 +205,8 @@ public class AdaGrad implements Serializable,GradientUpdater {
      */
     @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
-    	if(historicalGradient == null) historicalGradient = pow(gradient,2);
-    	else historicalGradient.addi(pow(gradient,2));
+        if(historicalGradient == null) historicalGradient = gradient.mul(gradient);
+        else historicalGradient.addi(gradient.mul(gradient));
 
     	INDArray sqrtHistory = sqrt(historicalGradient.add(1e-8));
     	// lr * gradient / sqrt(sumSquaredGradients + 1e-8)

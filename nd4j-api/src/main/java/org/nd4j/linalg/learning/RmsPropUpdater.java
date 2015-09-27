@@ -46,7 +46,7 @@ public class RmsPropUpdater implements GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         if(lastGradient == null)
             lastGradient = Nd4j.zeros(gradient.shape());
-        lastGradient.muli(rmsDecay).addi(Transforms.pow(gradient, 2).muli(1 - rmsDecay));
+        lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / sqrt(cache + 1e-8)
         INDArray ret = gradient.mul(lr).divi(Transforms.sqrt(lastGradient.add(Nd4j.EPS_THRESHOLD)));
         
