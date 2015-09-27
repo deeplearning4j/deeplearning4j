@@ -168,7 +168,7 @@ public class Shape {
         } else {
 
             if(arr.data().allocationMode() == AllocationMode.HEAP){
-                if(Shape.isContiguousInBuffer(arr) && Shape.strideDescendingCAscendingF(arr.ordering(),arr.stride())
+                if(Shape.isContiguousInBuffer(arr) && Shape.strideDescendingCAscendingF(arr)
                         && (anyOrder || order == arr.ordering()) ){
                     //Can do array copy on data
                     int length = arr.length();
@@ -1441,11 +1441,13 @@ public class Shape {
      * Returns true if c order and strides are descending [100,10,1] etc
      * Returns true if f order and strides are ascending [1,10,100] etc
      * False otherwise.
-     * @param order Order of INDArray
-     * @param strides Strides of INDArray
      * @return true if c+descending, f+ascending, false otherwise
      */
-    public static boolean strideDescendingCAscendingF(char order, int[] strides ){
+    public static boolean strideDescendingCAscendingF(INDArray array){
+        int[] strides = array.stride();
+        if(array.isVector() && strides[0]==1 && strides[1]==1) return true;
+        char order = array.ordering();
+
         if(order=='c'){	//Expect descending. [100,10,1] etc
             for( int i=1; i<strides.length; i++ ) if(strides[i-1]<=strides[i]) return false;
             return true;
