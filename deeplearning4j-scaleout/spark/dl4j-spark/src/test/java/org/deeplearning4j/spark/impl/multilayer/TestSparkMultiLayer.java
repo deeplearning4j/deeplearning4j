@@ -27,6 +27,7 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.mllib.util.MLUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -61,6 +62,53 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
     private static final Logger log = LoggerFactory.getLogger(TestSparkMultiLayer.class);
 
+    @Test
+    public void testFromSvmLightBackprop() throws Exception {
+        JavaRDD<LabeledPoint> data = MLUtils.loadLibSVMFile(sc.sc(), new ClassPathResource("svmLight/iris_svmLight_0.txt").getFile().getAbsolutePath()).toJavaRDD().map(new Function<LabeledPoint, LabeledPoint>() {
+            @Override
+            public LabeledPoint call(LabeledPoint v1) throws Exception {
+                return new LabeledPoint(v1.label(), Vectors.dense(v1.features().toArray()));
+            }
+        }).cache();
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+
+        DataSet d = new IrisDataSetIterator(150,150).next();
+        d.normalizeZeroMeanZeroUnitVariance();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.LBFGS)
+                .iterations(10).regularization(true).l1(2e-4)
+                .l2(2e-4)
+                .constrainGradientToUnitNorm(true)
+                .list(2)
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(4).nOut(3)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("relu")
+                        .build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(3).nOut(3)
+                        .activation("softmax")
+                        .weightInit(WeightInit.XAVIER)
+                        .build())
+                .backprop(true)
+                .build();
+
+
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        System.out.println("Initializing network");
+        SparkDl4jMultiLayer master = new SparkDl4jMultiLayer(sc,conf);
+
+        MultiLayerNetwork network2 = master.fit(data, 10);
+        Evaluation evaluation = new Evaluation();
+        evaluation.eval(d.getLabels(), network2.output(d.getFeatureMatrix()));
+        System.out.println(evaluation.stats());
+
+
+    }
+
 
     @Test
     public void testFromSvmLight() throws Exception {
@@ -73,9 +121,9 @@ public class TestSparkMultiLayer extends BaseSparkTest {
 
         DataSet d = new IrisDataSetIterator(150,150).next();
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .momentum(0.9).seed(123)
+                .seed(123)
                 .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
-                .iterations(100)
+                .iterations(100).miniBatch(true)
                 .maxNumLineSearchIterations(10)
                 .constrainGradientToUnitNorm(true)
                 .list(2)
