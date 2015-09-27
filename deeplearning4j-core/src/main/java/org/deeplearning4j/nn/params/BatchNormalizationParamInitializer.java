@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.params;
 
-import com.sun.xml.internal.fastinfoset.algorithm.BASE64EncodingAlgorithm;
 import org.canova.api.conf.Configuration;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
