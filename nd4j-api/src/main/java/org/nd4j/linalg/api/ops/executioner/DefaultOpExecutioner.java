@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.executioner;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
@@ -31,15 +32,18 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.parallel.DefaultParallelExecutionProvider;
-import org.nd4j.linalg.api.parallel.DefaultParallelExecutioner;
 import org.nd4j.linalg.api.parallel.ParallelExecutionProvider;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
+import org.nd4j.linalg.api.parallel.ops.BufferOps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.RecursiveAction;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -48,6 +52,7 @@ import java.util.Arrays;
  * @author Adam Gibson
  */
 public class DefaultOpExecutioner implements OpExecutioner {
+    protected static final int PARALLEL_THRESHOLD = 2048;
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
     protected ParallelExecutionProvider parallelExecutionProvider;
@@ -81,152 +86,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
         if (op instanceof TransformOp) {
-            final TransformOp t = (TransformOp) op;
-            //make assumption x and z are same type
-            if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
-                throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
-            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int i = 0; i < op.n(); i++) {
-                    op.z().data().put(i, op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
-                }
-
-            }
-            else if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride),op.y().data().getDouble(c * yStride)));
-            }
-            else if(Shape.opIsWholeBufferWithMatchingStrides(op)){
-                for(int i = 0; i < op.n(); i++) {
-                    op.z().data().put(i, op.op(op.x().data().getDouble(i)));
-                }
-            }
-              /*
-            else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.x().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride),op.y().data().getDouble(op.y().offset() + c * yStride)));
-            }
-
-         else if(Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride)));
-            }
-*/
-
-            else if(op.y() != null) {
-                if(Arrays.equals(op.x().shape(),op.y().shape())) {
-                    Shape.iterate(op.x(), new CoordinateFunction() {
-                        @Override
-                        public void process(int[]... coord) {
-                            apply(t,coord[0],coord[0]);
-                        }
-                    });
-                }
-                else
-                    Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
-                        @Override
-                        public void process(int[]... coord) {
-                            apply(t,coord[0],coord[1]);
-                        }
-                    });
-
-            }
-
-            else {
-                NdIndexIterator iter = new NdIndexIterator(op.x().shape());
-                for (int c = 0; c < op.n(); c++) {
-                    apply(t, iter.next());
-                }
-            }
-
+            doTransformOp((TransformOp) op);
+        }else if (op instanceof Accumulation) {
+            doAccumulationOp((Accumulation)op);
+        }else if (op instanceof ScalarOp) {
+            doScalarOp((ScalarOp)op);
         }
-        else if (op instanceof Accumulation) {
-            Accumulation accumulation = (Accumulation) op;
-            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
-                }
-
-            }
-       /*     else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().getDouble(op.x().offset() + i * xStride), op.y().getDouble(op.y().offset() + i * yStride)));
-                }
-            }*/
-            else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().data().getDouble(i)));
-                }
-            }
-
-
-            else if(!(op.x() instanceof IComplexNDArray)) {
-                if(op.y() != null) {
-                    INDArray xLinear = op.x().reshape(1,op.x().length());
-                    INDArray yLinear = op.y().reshape(1,op.y().length());
-                    for(int i = 0; i < op.n(); i++) {
-                        accumulation.update(op.op(xLinear.getDouble(0,i),yLinear.getDouble(0,i)));
-                    }
-                }
-                else {
-                    INDArray xLinear = op.x().reshape(1,op.x().length());
-                    for(int i = 0; i < op.n(); i++) {
-                        accumulation.update(op.op(xLinear.getDouble(0,i)));
-                    }
-                }
-
-            }
-
-
-
-            else {
-                for (int c = 0; c < op.n(); c++) {
-                    apply(accumulation, c);
-                }
-            }
-
-        }
-
-        else if (op instanceof ScalarOp) {
-            ScalarOp scalarOp = (ScalarOp) op;
-            if(op.isPassThrough())
-                return scalarOp;
-            INDArray zLinear = op.z();
-            INDArray xLinear = op.x();
-            if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int c = 0; c < op.n(); c ++)
-                    zLinear.data().put(c, op.op(xLinear.data().getDouble(c)));
-            }
-
-        /*    else if(Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    zLinear.data().put(zLinear.offset() + c * zStride, op.op(xLinear.data().getDouble(xLinear.offset() + c * xStride)));
-            }*/
-
-            else if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray ndArray = (IComplexNDArray) op.z();
-                for(int c = 0; c < op.n(); c++)
-                    ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
-            }
-            else {
-                for(int c = 0; c < op.n(); c++)
-                    zLinear.putScalar(c, op.op(xLinear.getDouble(c)));
-
-            }
-        }
-
-
         return op;
     }
 
@@ -667,9 +532,462 @@ public class DefaultOpExecutioner implements OpExecutioner {
             else
                 op.update(op.op(op.x().getDouble(x)));
         }
+    }
 
+
+
+
+
+
+    private void doTransformOp(TransformOp op){
+        final TransformOp t = (TransformOp) op;
+        //make assumption x and z are same type
+        if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
+            throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
+
+        if(op.y() != null){
+            //Ops with 2 inputs - AddOp, MulOp, GreaterThan, etc
+            if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
+                do2ArgTransformOpOnBuffer(op);
+            } else {
+                if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                    for(int i = 0; i < op.n(); i++) {
+                        op.z().data().put(i, op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+                    }
+                }
+                else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                    int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
+                    int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
+                    int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
+                    for(int c = 0; c < op.n(); c ++)
+                        op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride),op.y().data().getDouble(c * yStride)));
+                } else {
+                    if (Arrays.equals(op.x().shape(), op.y().shape())) {
+                        Shape.iterate(op.x(), new CoordinateFunction() {
+                            @Override
+                            public void process(int[]... coord) {
+                                apply(t, coord[0], coord[0]);
+                            }
+                        });
+                    } else
+                        Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
+                            @Override
+                            public void process(int[]... coord) {
+                                apply(t, coord[0], coord[1]);
+                            }
+                        });
+                }
+            }
+        } else {
+            //Ops with 1 input - Tanh, Sin, etc
+
+            if(Shape.opIsWholeBufferWithMatchingStrides(op)){
+                for(int i = 0; i < op.n(); i++) {
+                    op.z().data().put(i, op.op(op.x().data().getDouble(i)));
+                }
+            } else {
+                NdIndexIterator iter = new NdIndexIterator(op.x().shape());
+                for (int c = 0; c < op.n(); c++) {
+                    apply(t, iter.next());
+                }
+            }
+        }
+    }
+
+
+    private void doAccumulationOp(Accumulation op){
+        Accumulation accumulation = (Accumulation) op;
+        if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+            for(int i = 0; i < op.n(); i++) {
+                accumulation.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+            }
+        } else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
+            for(int i = 0; i < op.n(); i++) {
+                accumulation.update(op.op(op.x().data().getDouble(i)));
+            }
+        } else if(!(op.x() instanceof IComplexNDArray)) {
+            if(op.y() != null) {
+                INDArray xLinear = op.x().reshape(1,op.x().length());
+                INDArray yLinear = op.y().reshape(1,op.y().length());
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(xLinear.getDouble(0,i),yLinear.getDouble(0,i)));
+                }
+            }
+            else {
+                INDArray xLinear = op.x().reshape(1,op.x().length());
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(xLinear.getDouble(0,i)));
+                }
+            }
+        } else {
+            for (int c = 0; c < op.n(); c++) {
+                apply(accumulation, c);
+            }
+        }
 
     }
 
 
+    private void doScalarOp(ScalarOp op){
+        ScalarOp scalarOp = (ScalarOp) op;
+        if(op.isPassThrough()) return;
+        INDArray zLinear = op.z();
+        INDArray xLinear = op.x();
+        if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
+            for(int c = 0; c < op.n(); c ++)
+                zLinear.data().put(c, op.op(xLinear.data().getDouble(c)));
+        }
+        else if (op.x() instanceof IComplexNDArray) {
+            IComplexNDArray ndArray = (IComplexNDArray) op.z();
+            for(int c = 0; c < op.n(); c++)
+                ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
+        }
+        else {
+            for(int c = 0; c < op.n(); c++)
+                zLinear.putScalar(c, op.op(xLinear.getDouble(c)));
+
+        }
+    }
+
+    private void do2ArgTransformOpOnBuffer(TransformOp op){
+
+        INDArray x = op.x();
+        INDArray y = op.y();
+        INDArray z = op.z();
+
+        boolean canDoDirectly = false;
+        if(x == z){
+            canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
+        } else {
+            canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y, z);
+        }
+
+        if(canDoDirectly){
+            //Do parallelism via fork-join, directly on buffer array
+            switch(op.name()){
+                case "add":
+                    new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                    return;
+                case "sub":
+                    new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                    return;
+                case "mul":
+                    new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                    return;
+                case "div":
+                    new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                    return;
+                case "copy":
+                    new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                    return;
+                case "rdiv":
+                case "rsub":
+                default:
+                    throw new UnsupportedOperationException("Not implemented");
+            }
+
+        } else {
+
+            //Do parallelism after splitting into tensors first
+            int tensorDim;
+            if (x == z) {
+                tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y);
+            } else tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y, z);
+
+            int nTensors = x.tensorssAlongDimension(tensorDim);
+            List<RecursiveAction> blockList;
+            if (x.rank() == 2) {
+                blockList = do2ArgTransformOpOnBuffer2d(op, tensorDim, x, y, z);
+            } else {
+                blockList = do2ArgTransformOpOnBufferGeneral(op, tensorDim, x, y, z);
+            }
+
+            //Wait for all tasks for finish...
+            for (RecursiveAction task : blockList) {
+                task.join();
+            }
+        }
+
+    }
+
+    private List<RecursiveAction> do2ArgTransformOpOnBuffer2d(TransformOp op, int tensorDim, INDArray x, INDArray y, INDArray z){
+        List<RecursiveAction> blockList = new ArrayList<>();
+        int nTensors = x.tensorssAlongDimension(tensorDim);
+
+        OpExecutionerUtil.Tensor1DStats tsx = OpExecutionerUtil.get1DTensorStats(x, tensorDim);
+        OpExecutionerUtil.Tensor1DStats tsy = OpExecutionerUtil.get1DTensorStats(y, tensorDim);
+        int n = tsx.getTensorLength();
+        int incrX = tsx.getElementWiseStride();
+        int incrY = tsy.getElementWiseStride();
+
+        DataBuffer dx = x.data();
+        DataBuffer dy = y.data();
+
+        if(x==z){
+            switch(op.name()){
+                case "add":
+                    for(int i=0; i<nTensors; i++){
+                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                                offsetX,offsetY,offsetX,incrX,incrY,incrX);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "sub":
+                    for(int i=0; i<nTensors; i++){
+                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                                offsetX,offsetY,offsetX,incrX,incrY,incrX);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "mul":
+                    for(int i=0; i<nTensors; i++){
+                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                                offsetX,offsetY,offsetX,incrX,incrY,incrX);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "div":
+                    for(int i=0; i<nTensors; i++){
+                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                                offsetX,offsetY,offsetX,incrX,incrY,incrX);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "copy":
+                    for(int i=0; i<nTensors; i++){
+                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                                offsetX,offsetY,offsetX,incrX,incrY,incrX);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "rdiv":
+                case "rsub":
+                default:
+                    throw new UnsupportedOperationException("Not implemented");
+            }
+
+        } else {
+            OpExecutionerUtil.Tensor1DStats tsz = OpExecutionerUtil.get1DTensorStats(z, tensorDim);
+            int incrZ = tsz.getElementWiseStride();
+            DataBuffer dz = z.data();
+
+            switch(op.name()) {
+                case "add":
+                    for (int i = 0; i < nTensors; i++) {
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
+                        int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                                offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "sub":
+                    for (int i = 0; i < nTensors; i++) {
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
+                        int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                                offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "mul":
+                    for (int i = 0; i < nTensors; i++) {
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
+                        int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                                offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "div":
+                    for (int i = 0; i < nTensors; i++) {
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
+                        int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                                offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "copy":
+                    for (int i = 0; i < nTensors; i++) {
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
+                        int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                                offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "rdiv":
+                case "rsub":
+                default:
+                    throw new UnsupportedOperationException("Not implemented");
+            }
+        }
+        return blockList;
+    }
+
+    private List<RecursiveAction> do2ArgTransformOpOnBufferGeneral(TransformOp op, int tensorDim, INDArray x, INDArray y, INDArray z){
+        List<RecursiveAction> blockList = new ArrayList<>();
+        int nTensors = x.tensorssAlongDimension(tensorDim);
+
+        DataBuffer dx = x.data();
+        DataBuffer dy = y.data();
+
+        if(x==z){
+            switch(op.name()){
+                case "add":
+                    for(int i=0; i<nTensors; i++){
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dx,
+                                tadx.offset(),tady.offset(),tadx.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadx.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "sub":
+                    for(int i=0; i<nTensors; i++){
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dx,
+                                tadx.offset(),tady.offset(),tadx.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadx.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "mul":
+                    for(int i=0; i<nTensors; i++){
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dx,
+                                tadx.offset(),tady.offset(),tadx.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadx.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "div":
+                    for(int i=0; i<nTensors; i++){
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dx,
+                                tadx.offset(),tady.offset(),tadx.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadx.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "copy":
+                    for(int i=0; i<nTensors; i++){
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dx,
+                                tadx.offset(),tady.offset(),tadx.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadx.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "rdiv":
+                case "rsub":
+                default:
+                    throw new UnsupportedOperationException("Not implemented");
+            }
+
+        } else {
+            OpExecutionerUtil.Tensor1DStats tsz = OpExecutionerUtil.get1DTensorStats(z, tensorDim);
+            int incrZ = tsz.getElementWiseStride();
+            DataBuffer dz = z.data();
+
+            switch(op.name()) {
+                case "add":
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        INDArray tadz = z.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dz,
+                                tadx.offset(),tady.offset(),tadz.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadz.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "sub":
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        INDArray tadz = z.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dz,
+                                tadx.offset(),tady.offset(),tadz.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadz.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "mul":
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        INDArray tadz = z.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dz,
+                                tadx.offset(),tady.offset(),tadz.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadz.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "div":
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        INDArray tadz = z.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dz,
+                                tadx.offset(),tady.offset(),tadz.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadz.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "copy":
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        INDArray tadz = z.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD,tadx.length(),dx,dy,dz,
+                                tadx.offset(),tady.offset(),tadz.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadz.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
+                    break;
+                case "rdiv":
+                case "rsub":
+                default:
+                    throw new UnsupportedOperationException("Not implemented");
+            }
+        }
+        return blockList;
+    }
 }
