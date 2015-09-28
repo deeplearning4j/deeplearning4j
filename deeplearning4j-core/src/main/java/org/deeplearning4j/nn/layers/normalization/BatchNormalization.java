@@ -4,17 +4,26 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * Created by agibsonccc on 9/27/15.
+ * Batch normalization layer.
+ * http://arxiv.org/pdf/1410.7455v8.pdf
+ *
+ * @author Adam Gibson
  */
 public class BatchNormalization implements Layer {
+    private INDArray std;
+    private NeuralNetConfiguration conf;
+    private INDArray input;
+    private int index = 0;
     @Override
     public double calcL2() {
         return 0;
@@ -27,7 +36,7 @@ public class BatchNormalization implements Layer {
 
     @Override
     public Type type() {
-        return null;
+        return Type.CONVOLUTIONAL;
     }
 
     @Override
@@ -47,6 +56,7 @@ public class BatchNormalization implements Layer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+
         return null;
     }
 
@@ -132,12 +142,12 @@ public class BatchNormalization implements Layer {
 
     @Override
     public NeuralNetConfiguration conf() {
-        return null;
+        return conf;
     }
 
     @Override
     public void setConf(NeuralNetConfiguration conf) {
-
+        this.conf = conf;
     }
 
     @Override
@@ -192,52 +202,92 @@ public class BatchNormalization implements Layer {
 
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
-        return null;
+        int[] activationShape = getShape(x);
+        org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = (org.deeplearning4j.nn.conf.layers.BatchNormalization) conf().getLayer();
+
+        INDArray mean,var;
+        if(training != TrainingMode.TEST && !layerConf.isUseBatchMean()) {
+            mean = x.mean(0, 2);
+            var = x.var(0, 2);
+            var.addi(layerConf.getEps());
+        }
+        else {
+
+            mean = getParam(BatchNormalizationParamInitializer.AVG_MEAN);
+            var = getParam(BatchNormalizationParamInitializer.AVG_VAR);
+        }
+
+        std = Transforms.sqrt(var);
+        INDArray xMu = x.sub(mean);
+        INDArray xHat = xMu.div(std);
+        INDArray out = getParam(BatchNormalizationParamInitializer.GAMMA).add(xHat).addi(getParam(BatchNormalizationParamInitializer.BETA));
+        double decay = 0.0;
+        if(training != TrainingMode.TEST && !layerConf.isUseBatchMean()) {
+            if(layerConf.isFinetune()) {
+                layerConf.setN(layerConf.getN() + 1);
+                decay =  1. / layerConf.getN();
+            }
+            else
+                decay = layerConf.getDecay();
+            int m  = activationShape[0] * activationShape[2];
+            double  adjust = m / Math.max(m - 1., 1.);
+            getParam(BatchNormalizationParamInitializer.AVG_MEAN).muli(decay);
+            getParam(BatchNormalizationParamInitializer.AVG_MEAN).addi(mean.mul((1 - decay)));
+            getParam(BatchNormalizationParamInitializer.AVG_VAR).muli(decay);
+            getParam(BatchNormalizationParamInitializer.AVG_VAR).addi(var.mul((1 - decay) * adjust));
+
+        }
+
+        return out.reshape(x.shape());
     }
 
     @Override
     public INDArray activate(TrainingMode training) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        return null;
+        return preOutput(input,training);
     }
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        return null;
+        return preOutput(x,training ? TrainingMode.TRAIN : TrainingMode.TEST);
     }
 
     @Override
     public INDArray activate(boolean training) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        return null;
+        return preOutput(input,training);
     }
 
     @Override
     public INDArray activate() {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public INDArray activate(INDArray input) {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public Layer transpose() {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
     public Layer clone() {
-        return null;
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -257,17 +307,17 @@ public class BatchNormalization implements Layer {
 
     @Override
     public void setIndex(int index) {
-
+        this.index = index;
     }
 
     @Override
     public int getIndex() {
-        return 0;
+        return index;
     }
 
     @Override
     public void setInput(INDArray input) {
-
+        this.input = input;
     }
 
     @Override
@@ -279,4 +329,15 @@ public class BatchNormalization implements Layer {
     public int getInputMiniBatchSize() {
         return 0;
     }
+
+    public int[] getShape(INDArray x) {
+        int leadDim = x.size(0);
+        int cDim = getParam(BatchNormalizationParamInitializer.GAMMA).length();
+        int rdim = x.length() / (leadDim * cDim);
+        if(leadDim * cDim * rdim != x.length())
+            throw new IllegalArgumentException("Illegal input for batch size");
+        return new int[] {leadDim,cDim,rdim};
+
+    }
+
 }
