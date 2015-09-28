@@ -75,7 +75,7 @@ public class NDArrayUtil {
             return arr;
         for (int i = 0; i < shape.length; i++)
             if (shape[i] < 1)
-               shape[i] = 1;
+                shape[i] = 1;
 
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
         INDArray currShape = ArrayUtil.toNDArray(arr.shape());
@@ -259,7 +259,7 @@ public class NDArrayUtil {
      * 'd': divi    first /= second
      * 'p': put     first =  second
      */
-    public static void doElementWiseOp(INDArray first, INDArray second, char op){
+    public static void doElementWiseOp(INDArray first, INDArray second, char op) {
         if(canDoElementWiseOpDirectly(first, second)){
             doOpDirectly(first,second,op);
         } else {
@@ -352,31 +352,31 @@ public class NDArrayUtil {
                 Object arraySecond = second.data().array();
 
                 if(arrayFirst instanceof float[]) {
-                    float[] fArr1 = (float[])arrayFirst;
-                    float[] fArr2 = (float[])arraySecond;
+                    float[] fArr1 = (float[]) arrayFirst;
+                    float[] fArr2 = (float[]) arraySecond;
                     if(op=='m') {   //muli
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst==0 && offsetSecond == 0) {
                                 muliSimpleFloat(fArr1,fArr2,opLength);
                             } else {
                                 muliOffsetUnitIncrementFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond);
                             }
                         } else {
-                            if(offsetFirst==0 && offsetSecond==0){
+                            if(offsetFirst == 0 && offsetSecond == 0 ) {
                                 muliIncrementNoOffsetFloat(fArr1,fArr2,opLength,incrFirst,incrSecond);
                             } else {
                                 muliIncrementOffsetFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond,incrFirst,incrSecond);
                             }
                         }
                     } else {    //divi
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst == 0 && offsetSecond == 0) {
                                 diviSimpleFloat(fArr1,fArr2,opLength);
                             } else {
                                 diviOffsetUnitIncrementFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond);
                             }
                         } else {
-                            if(offsetFirst==0 && offsetSecond==0){
+                            if(offsetFirst == 0 && offsetSecond == 0) {
                                 diviIncrementNoOffsetFloat(fArr1,fArr2,opLength,incrFirst,incrSecond);
                             } else {
                                 diviIncrementOffsetFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond,incrFirst,incrSecond);
@@ -387,8 +387,8 @@ public class NDArrayUtil {
                     double[] dArr1 = (double[])arrayFirst;
                     double[] dArr2 = (double[])arraySecond;
                     if(op=='m') {   //muli
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst==0 && offsetSecond == 0) {
                                 muliSimpleDouble(dArr1, dArr2, opLength);
                             } else {
                                 muliOffsetUnitIncrementDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond);
@@ -401,14 +401,14 @@ public class NDArrayUtil {
                             }
                         }
                     } else {    //divi
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst==0 && offsetSecond == 0) {
                                 diviSimpleDouble(dArr1, dArr2, opLength);
                             } else {
                                 diviOffsetUnitIncrementDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond);
                             }
                         } else {
-                            if(offsetFirst==0 && offsetSecond==0){
+                            if(offsetFirst == 0 && offsetSecond == 0) {
                                 diviIncrementNoOffsetDouble(dArr1, dArr2, opLength, incrFirst, incrSecond);
                             } else {
                                 diviIncrementOffsetDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond, incrFirst, incrSecond);
@@ -429,7 +429,7 @@ public class NDArrayUtil {
      * This allows us to avoid the cost of multiple calls to tensorAlongDimension
      * This does not always hold for 3+d matrices
      */
-    private static void doOpOnMatrix(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
+    private static void doOpOnMatrix(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss) {
         DataBuffer df = first.data();
         DataBuffer ds = second.data();
         int n = fs.getTensorLength();
@@ -442,7 +442,7 @@ public class NDArrayUtil {
             case 's':
                 //first.addi(second) or first.subi(second)
                 double a = (op == 'a' ? 1.0 : -1.0);
-                for(int i=0; i<nTensors; i++ ) {
+                for(int i = 0; i<nTensors; i++) {
                     int offset1 = fs.getFirstTensorOffset() + i*fs.getTensorStartSeparation();
                     int offset2 = ss.getFirstTensorOffset() + i*ss.getTensorStartSeparation();
                     l1Blas.axpy(n, a, ds, offset2, incrS, df, offset1, incrF);
