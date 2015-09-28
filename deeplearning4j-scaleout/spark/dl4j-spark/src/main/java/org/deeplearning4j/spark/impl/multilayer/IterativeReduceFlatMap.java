@@ -22,6 +22,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -72,6 +73,7 @@ public class IterativeReduceFlatMap implements FlatMapFunction<Iterator<DataSet>
         log.debug("Training on " + data.labelCounts());
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(json));
         network.init();
+        network.setListeners(new ScoreIterationListener(1));
         INDArray val = params.value();
         if(val.length() != network.numParams())
             throw new IllegalStateException("Network did not have same number of parameters as the broadcasted set parameters");
