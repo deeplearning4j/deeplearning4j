@@ -18,6 +18,9 @@ public class BatchNormalization extends Layer {
     private double decay = 0.9;
     private double eps = Nd4j.EPS_THRESHOLD;
     private int size;
+    private boolean finetune;
+    private boolean useBatchMean;
+    private int N;
 
 
 }
