@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.layers.normalization;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
@@ -10,8 +11,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Batch normalization layer.
@@ -22,8 +22,13 @@ import java.util.Map;
 public class BatchNormalization implements Layer {
     private INDArray std;
     private NeuralNetConfiguration conf;
-    private INDArray input;
     private int index = 0;
+    private List<IterationListener> listeners = new ArrayList<>();
+    private Map<String,INDArray> params = new LinkedHashMap<>();
+    private int[] shape;
+    private Gradient gradient;
+    private INDArray xHat;
+
     @Override
     public double calcL2() {
         return 0;
@@ -56,8 +61,25 @@ public class BatchNormalization implements Layer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-
-        return null;
+        epsilon = epsilon.reshape(shape);
+        int m = shape[0] * shape[2];
+        //  gbeta = gy.sum(axis=(0, 2), keepdims=True)
+        INDArray gBeta = epsilon.sum(0,2);
+        getParam(BatchNormalizationParamInitializer.GAMMA_GRADIENT).addi(gBeta);
+        // ggamma = (gy * self.x_hat).sum(axis=(0, 2), keepdims=True)
+        INDArray newGamma = epsilon.mul(xHat).sum(0,2);
+        getParam(BatchNormalizationParamInitializer.GAMMA_GRADIENT).addi(newGamma);
+        //  coeff = self.gamma / self.std
+        INDArray coefficients = getParam(BatchNormalizationParamInitializer.GAMMA).div(std);
+        gBeta.divi(m);
+        getParam(BatchNormalizationParamInitializer.GAMMA_GRADIENT).divi(m);
+        INDArray ret = coefficients.mul(epsilon.sub(xHat).muli(getParam(BatchNormalizationParamInitializer.GAMMA_GRADIENT)).subi(gBeta));
+        ret = ret.reshape(shape);
+        Gradient g = new DefaultGradient();
+        g.setGradientFor(BatchNormalizationParamInitializer.GAMMA_GRADIENT,getParam(BatchNormalizationParamInitializer.GAMMA_GRADIENT));
+        g.setGradientFor(BatchNormalizationParamInitializer.BETA_GRADIENT,getParam(BatchNormalizationParamInitializer.BETA_GRADIENT));
+        this.gradient = g;
+        return new Pair<>(g,ret);
     }
 
     @Override
@@ -127,12 +149,12 @@ public class BatchNormalization implements Layer {
 
     @Override
     public Gradient gradient() {
-        return null;
+        return gradient;
     }
 
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
-        return null;
+        return new Pair<>(gradient(),score());
     }
 
     @Override
@@ -167,7 +189,7 @@ public class BatchNormalization implements Layer {
 
     @Override
     public INDArray getParam(String param) {
-        return null;
+        return params.get(param);
     }
 
     @Override
@@ -177,17 +199,17 @@ public class BatchNormalization implements Layer {
 
     @Override
     public Map<String, INDArray> paramTable() {
-        return null;
+        return params;
     }
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-
+        this.params = paramTable;
     }
 
     @Override
     public void setParam(String key, INDArray val) {
-
+        params.put(key,val);
     }
 
     @Override
@@ -197,14 +219,15 @@ public class BatchNormalization implements Layer {
 
     @Override
     public INDArray preOutput(INDArray x) {
-        return null;
+        return preOutput(x,TrainingMode.TRAIN);
     }
 
     @Override
     public INDArray preOutput(INDArray x, TrainingMode training) {
         int[] activationShape = getShape(x);
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = (org.deeplearning4j.nn.conf.layers.BatchNormalization) conf().getLayer();
-
+        //cache the shape
+        this.shape = activationShape;
         INDArray mean,var;
         if(training != TrainingMode.TEST && !layerConf.isUseBatchMean()) {
             mean = x.mean(0, 2);
@@ -212,14 +235,13 @@ public class BatchNormalization implements Layer {
             var.addi(layerConf.getEps());
         }
         else {
-
             mean = getParam(BatchNormalizationParamInitializer.AVG_MEAN);
             var = getParam(BatchNormalizationParamInitializer.AVG_VAR);
         }
 
         std = Transforms.sqrt(var);
         INDArray xMu = x.sub(mean);
-        INDArray xHat = xMu.div(std);
+        xHat = xMu.div(std);
         INDArray out = getParam(BatchNormalizationParamInitializer.GAMMA).add(xHat).addi(getParam(BatchNormalizationParamInitializer.BETA));
         double decay = 0.0;
         if(training != TrainingMode.TEST && !layerConf.isUseBatchMean()) {
@@ -292,17 +314,17 @@ public class BatchNormalization implements Layer {
 
     @Override
     public Collection<IterationListener> getListeners() {
-        return null;
+        return listeners;
     }
 
     @Override
     public void setListeners(IterationListener... listeners) {
-
+        this.listeners = new ArrayList<>(Arrays.asList(listeners));
     }
 
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
-
+        this.listeners = new ArrayList<>(listeners);
     }
 
     @Override
@@ -317,7 +339,7 @@ public class BatchNormalization implements Layer {
 
     @Override
     public void setInput(INDArray input) {
-        this.input = input;
+
     }
 
     @Override
