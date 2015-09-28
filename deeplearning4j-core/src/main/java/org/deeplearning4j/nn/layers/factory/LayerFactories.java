@@ -58,6 +58,8 @@ public class LayerFactories {
             return new ConvolutionLayerFactory(clazz);
         else if(SubsamplingLayer.class.isAssignableFrom(clazz))
             return new SubsampleLayerFactory(clazz);
+        else if(BatchNormalization.class.isAssignableFrom(clazz))
+            return new BatchNormalizationLayerFactory(clazz);
         return new DefaultLayerFactory(clazz);
     }
 
