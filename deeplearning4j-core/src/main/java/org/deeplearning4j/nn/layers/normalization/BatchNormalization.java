@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
@@ -28,6 +29,10 @@ public class BatchNormalization implements Layer {
     private int[] shape;
     private Gradient gradient;
     private INDArray xHat;
+
+    public BatchNormalization(NeuralNetConfiguration conf) {
+        this.conf = conf;
+    }
 
     @Override
     public double calcL2() {
@@ -124,7 +129,7 @@ public class BatchNormalization implements Layer {
 
     @Override
     public INDArray params() {
-        return null;
+        return Nd4j.create(0);
     }
 
     @Override
@@ -355,7 +360,7 @@ public class BatchNormalization implements Layer {
     public int[] getShape(INDArray x) {
         int leadDim = x.size(0);
         int cDim = getParam(BatchNormalizationParamInitializer.GAMMA).length();
-        int rdim = x.length() / (leadDim * cDim);
+        int rdim = (int) ((double) x.length() / ((double) leadDim * (double) cDim));
         if(leadDim * cDim * rdim != x.length())
             throw new IllegalArgumentException("Illegal input for batch size");
         return new int[] {leadDim,cDim,rdim};
