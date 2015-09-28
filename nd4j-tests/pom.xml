@@ -21,12 +21,12 @@
     <parent>
         <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
-        <version>0.4-rc3.5</version>
+        <version> 0.4-rc3.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-tests</artifactId>
-  <version> 0.4-rc3.5</version>
+  <version> 0.4-rc3.6-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>nd4j-tests</name>
