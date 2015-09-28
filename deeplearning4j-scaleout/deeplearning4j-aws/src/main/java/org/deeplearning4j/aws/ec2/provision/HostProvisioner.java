@@ -96,7 +96,7 @@ public class HostProvisioner implements UserInfo {
 
 
 	public void uploadAndRun(String script,String rootDir) throws Exception {
-		String remoteName = rootDir.isEmpty() ? new File(script).getName() : rootDir + "/" + script;
+		String remoteName = rootDir.isEmpty() ? new File(script).getName() : rootDir + "/" + new File(script).getName();
 		upload(new File(script),remoteName);
 
 		String remoteCommand = remoteName.charAt(0) != '/' ? "./" + remoteName : remoteName;
@@ -118,19 +118,21 @@ public class HostProvisioner implements UserInfo {
 		channel.connect();
 		channel.start();
 		InputStream input = channel.getInputStream();
+
 		//start reading the input from the executed commands on the shell
-		byte[] tmp = new byte[1024];
+		byte[] tmp = new byte[60000];
 		while (true) {
 			while (input.available() > 0) {
-				int i = input.read(tmp, 0, 1024);
-				if (i < 0) break;
+				int i = input.read(tmp, 0, tmp.length);
+				if (i < 0)
+					break;
 				log.info(new String(tmp, 0, i));
 			}
 			if (channel.isClosed()){
 				log.info("exit-status: " + channel.getExitStatus());
 				break;
 			}
-			Thread.sleep(1000);
+
 		}
 
 		channel.disconnect();
@@ -272,7 +274,7 @@ public class HostProvisioner implements UserInfo {
             c.exit();
             session.disconnect();
         }catch(Exception e) {
-            log.info("Session was down...trying again");
+            log.info("Session was down...trying again",e);
             upload(f,remoteFile);
         }
 	}

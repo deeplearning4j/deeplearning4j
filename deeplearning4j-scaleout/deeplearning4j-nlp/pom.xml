@@ -21,24 +21,24 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>deeplearning4j-scaleout</artifactId>
-		<version>0.4-rc3.2-SNAPSHOT</version>
+		<version>0.4-rc3.4-SNAPSHOT</version>
 	</parent>
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.18.1</version>
-                    <configuration>
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.18.1</version>
+					<configuration>
 						<additionalClasspathElements>
 							<additionalClasspathElement>../../dl4j-test-resources/src/main/resources</additionalClasspathElement>
 						</additionalClasspathElements>
-                        <argLine>-Xmx6g</argLine>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+						<argLine>-Xmx6g</argLine>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
 
 	<artifactId>deeplearning4j-nlp</artifactId>
 	<dependencyManagement>
@@ -58,21 +58,21 @@
 
 
 	<dependencies>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-common</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-queryparser</artifactId>
-            <version>${lucene.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analyzers-common</artifactId>
+			<version>${lucene.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+			<version>${lucene.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+			<version>${lucene.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-scaleout-akka</artifactId>
@@ -85,7 +85,12 @@
 			</exclusions>
 		</dependency>
 
-
+		<dependency>
+			<groupId>org.nd4j</groupId>
+			<artifactId>nd4j-x86</artifactId>
+			<version>${nd4j.version}</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.deeplearning4j</groupId>
 			<artifactId>deeplearning4j-core</artifactId>
@@ -116,24 +121,24 @@
 		</dependency>
 
 
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-assets</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>io.dropwizard</groupId>
+			<artifactId>dropwizard-assets</artifactId>
+			<version>${dropwizard.version}</version>
+		</dependency>
 
 
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-views-mustache</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>io.dropwizard</groupId>
+			<artifactId>dropwizard-views-mustache</artifactId>
+			<version>${dropwizard.version}</version>
+		</dependency>
 
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-views-freemarker</artifactId>
-            <version>${dropwizard.version}</version>
-        </dependency>
+		<dependency>
+			<groupId>io.dropwizard</groupId>
+			<artifactId>dropwizard-views-freemarker</artifactId>
+			<version>${dropwizard.version}</version>
+		</dependency>
 
 	</dependencies>
 </project>

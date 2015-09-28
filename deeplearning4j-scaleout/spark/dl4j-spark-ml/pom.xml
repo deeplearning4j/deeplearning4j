@@ -18,7 +18,7 @@
 	<parent>
 		<groupId>org.deeplearning4j</groupId>
 		<artifactId>spark</artifactId>
-		<version>0.4-rc3.2-SNAPSHOT</version>
+		<version>0.4-rc3.4-SNAPSHOT</version>
 	</parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -112,7 +112,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>0.0.0.7</version>
+            <version>${canova.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>

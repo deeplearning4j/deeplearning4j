@@ -214,6 +214,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             getLayers()[i].fit(layerInput);
 
         }
+
+
+
     }
 
 
@@ -1030,9 +1033,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 DataSet next = iter.next();
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
-                if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT ){
+                if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(next.getFeatureMatrix(),next.getLabels());
-                } else {
+                }
+                else {
                     setInput(next.getFeatureMatrix());
                     setLabels(next.getLabels());
                     if( solver == null ){
@@ -1060,7 +1064,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         BaseOutputLayer<?> outputLayer = (BaseOutputLayer<?>) getOutputLayer();
         if(labels == null)
             throw new IllegalStateException("No labels found");
-        if(outputLayer.conf().getLayer().getWeightInit() == WeightInit.ZERO){
+        if(outputLayer.conf().getLayer().getWeightInit() == WeightInit.ZERO) {
             throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
         }
 
@@ -1095,7 +1099,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             currPair = currLayer.backpropGradient(currPair.getSecond());
 
             LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
-            for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
+            for(Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
                 tempList.addFirst(new Pair<>(multiGradientKey,entry.getValue()));
             }
@@ -1107,10 +1111,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         //Add gradients to Gradients, in correct order
-        for( Pair<String,INDArray> pair : gradientList ) gradient.setGradientFor(pair.getFirst(), pair.getSecond());
+        for( Pair<String,INDArray> pair : gradientList)
+            gradient.setGradientFor(pair.getFirst(), pair.getSecond());
     }
 
-    protected void doTruncatedBPTT(INDArray input, INDArray labels){
+    protected void doTruncatedBPTT(INDArray input, INDArray labels) {
         if( input.rank() != 3 || labels.rank() != 3 ){
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength]");
             return;
@@ -1123,7 +1128,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
         int timeSeriesLength = input.size(2);
         int nSubsets = timeSeriesLength / fwdLen;
-        if( fwdLen > timeSeriesLength ){
+        if(fwdLen > timeSeriesLength) {
             log.warn("Cannot do TBPTT: Truncated BPTT forward length > input time series length.");
             return;
         }
@@ -1155,12 +1160,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         rnnClearPreviousState();
     }
 
-    protected void updateRnnStateWithTBPTTState(){
+    protected void updateRnnStateWithTBPTTState() {
         for(int i=0; i<layers.length; i++){
-            if(layers[i] instanceof BaseRecurrentLayer){
+            if(layers[i] instanceof BaseRecurrentLayer) {
                 BaseRecurrentLayer<?> l = ((BaseRecurrentLayer<?>)layers[i]);
                 l.rnnSetPreviousState(l.rnnGetTBPTTState());
-            } else if(layers[i] instanceof MultiLayerNetwork){
+            }
+            else if(layers[i] instanceof MultiLayerNetwork) {
                 ((MultiLayerNetwork)layers[i]).updateRnnStateWithTBPTTState();
             }
         }
@@ -1211,11 +1217,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
 
             LinkedList<Pair<String,INDArray>> tempList = new LinkedList<>();
-            for( Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet() ){
+            for(Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
                 multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
                 tempList.addFirst(new Pair<>(multiGradientKey,entry.getValue()));
             }
-            for(Pair<String,INDArray> pair : tempList) gradientList.addFirst(pair);
+
+            for(Pair<String,INDArray> pair : tempList)
+                gradientList.addFirst(pair);
 
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if(getLayerWiseConfigurations().getInputPreProcess(j) != null)
@@ -1223,7 +1231,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         //Add gradients to Gradients, in correct order
-        for( Pair<String,INDArray> pair : gradientList ) gradient.setGradientFor(pair.getFirst(), pair.getSecond());
+        for( Pair<String,INDArray> pair : gradientList)
+            gradient.setGradientFor(pair.getFirst(), pair.getSecond());
     }
 
 
@@ -1331,8 +1340,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if(layerWiseConfigurations.isBackprop()) {
             if(layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 doTruncatedBPTT(data,labels);
-            } else {
-                if( solver == null ){
+            }
+            else {
+                if( solver == null) {
                     solver = new Solver.Builder()
                             .configure(conf())
                             .listeners(getListeners())
@@ -1780,6 +1790,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
 
+    /**
+     *
+     * @param labels
+     */
     public void setLabels(INDArray labels) {
         this.labels = labels;
     }
@@ -1793,6 +1807,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         return layerWiseConfigurations.getConfs().size();
     }
 
+    /**
+     *
+     * @return
+     */
     public Layer[] getLayers() {
         return layers;
     }

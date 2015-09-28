@@ -20,7 +20,7 @@
     <parent>
         <artifactId>spark</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.2-SNAPSHOT</version>
+        <version>0.4-rc3.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -150,7 +150,7 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-api</artifactId>
-            <version>${project.version}</version>
+            <version>.0.4-rc3.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -163,7 +163,7 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>canova-nd4j-image</artifactId>
-            <version>0.0.0.7</version>
+            <version>${canova.version}</version>
         </dependency>
     </dependencies>
 
