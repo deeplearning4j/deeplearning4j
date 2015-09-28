@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
@@ -154,6 +155,46 @@ public class MultiLayerTest {
 
     }
 
+
+    @Test
+    public void testBatchNorm() {
+        Nd4j.getRandom().setSeed(123);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT)
+                .iterations(5)
+                .seed(123)
+                .list(4)
+                .layer(0, new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER).activation("tanh").build())
+                .layer(1, new DenseLayer.Builder().nIn(3).nOut(2).weightInit(WeightInit.XAVIER).activation("tanh").build())
+                .layer(2, BatchNormalization.builder().shape(new int[]{3,2}).build())
+                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation("softmax")
+                        .nIn(2).nOut(3).build())
+                .backprop(true).pretrain(false).build();
+
+
+        MultiLayerNetwork network = new MultiLayerNetwork(conf);
+        network.init();
+        network.setListeners(Lists.<IterationListener>newArrayList(new ScoreIterationListener(1)));
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+        DataSet next = iter.next();
+        next.normalizeZeroMeanZeroUnitVariance();
+        SplitTestAndTrain trainTest = next.splitTestAndTrain(110);
+        network.setInput(trainTest.getTrain().getFeatureMatrix());
+        network.setLabels(trainTest.getTrain().getLabels());
+        network.init();
+        network.fit(trainTest.getTrain());
+
+        DataSet test = trainTest.getTest();
+        Evaluation eval = new Evaluation();
+        INDArray output = network.output(test.getFeatureMatrix());
+        eval.eval(test.getLabels(), output);
+        log.info("Score " + eval.stats());
+
+    }
 
 
 
