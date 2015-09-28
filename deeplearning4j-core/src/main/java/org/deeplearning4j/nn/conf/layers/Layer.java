@@ -156,6 +156,11 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+
+        public T momentum(double momentum) {
+            this.momentum = momentum;
+        }
+
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return this;
