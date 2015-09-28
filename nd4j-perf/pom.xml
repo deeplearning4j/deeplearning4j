@@ -36,12 +36,12 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version> 0.4-rc3.5</version>
+            <version>${version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-jblas</artifactId>
-            <version> 0.4-rc3.5</version>
+            <version>${version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
