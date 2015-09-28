@@ -712,7 +712,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 task.join();
             }
         }
-
     }
 
     private List<RecursiveAction> do2ArgTransformOpOnBuffer2d(TransformOp op, int tensorDim, INDArray x, INDArray y, INDArray z){
@@ -783,7 +782,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 case "rdiv":
                 case "rsub":
                 default:
-                    throw new UnsupportedOperationException("Not implemented");
+                    for(int i=0; i<nTensors; i++){
+                        int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,n,dx,dy,dx,
+                                offsetX,offsetY,offsetX,incrX,incrY,incrX);
+                        task.fork();
+                        blockList.add(task);
+                    }
             }
 
         } else {
@@ -850,7 +856,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 case "rdiv":
                 case "rsub":
                 default:
-                    throw new UnsupportedOperationException("Not implemented");
+                    for (int i = 0; i < nTensors; i++) {
+                        int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
+                        int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
+                        int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
+                        RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD, n, dx, dy, dz,
+                                offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
+                        task.fork();
+                        blockList.add(task);
+                    }
             }
         }
         return blockList;
@@ -918,7 +932,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 case "rdiv":
                 case "rsub":
                 default:
-                    throw new UnsupportedOperationException("Not implemented");
+                    for(int i=0; i<nTensors; i++){
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,tadx.length(),dx,dy,dx,
+                                tadx.offset(),tady.offset(),tadx.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadx.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
             }
 
         } else {
@@ -985,7 +1006,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 case "rdiv":
                 case "rsub":
                 default:
-                    throw new UnsupportedOperationException("Not implemented");
+                    for (int i = 0; i < nTensors; i++) {
+                        INDArray tadx = x.tensorAlongDimension(i,tensorDim);
+                        INDArray tady = y.tensorAlongDimension(i,tensorDim);
+                        INDArray tadz = z.tensorAlongDimension(i,tensorDim);
+                        RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,tadx.length(),dx,dy,dz,
+                                tadx.offset(),tady.offset(),tadz.offset(),tadx.elementWiseStride(),tady.elementWiseStride(),tadz.elementWiseStride());
+                        task.fork();
+                        blockList.add(task);
+                    }
             }
         }
         return blockList;
