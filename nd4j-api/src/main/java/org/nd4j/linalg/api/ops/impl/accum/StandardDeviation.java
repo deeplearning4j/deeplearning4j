@@ -48,22 +48,6 @@ public class StandardDeviation extends Variance {
     }
 
     @Override
-    public void update(Number result) {
-        super.update(result);
-        if (n() == numProcessed()) {
-            currentResult = FastMath.sqrt(currentResult.doubleValue());
-        }
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-        super.update(result);
-        if (n() == numProcessed())
-            currentComplexResult = ComplexUtil.sqrt(currentComplexResult);
-
-    }
-
-    @Override
     public String name() {
         return "std";
     }
@@ -87,5 +71,26 @@ public class StandardDeviation extends Variance {
             return new StandardDeviation(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new StandardDeviation(xAlongDimension);
+    }
+
+    @Override
+    public double getFinalResult( double accum ){
+        //stdev is sqrt of variance:
+        double d = FastMath.sqrt(super.getFinalResult(accum));
+        this.finalResult = d;
+        return d;
+    }
+
+    @Override
+    public float getFinalResult( float accum ){
+        float f = (float)FastMath.sqrt(super.getFinalResult(accum));
+        this.finalResult = f;
+        return f;
+    }
+
+    @Override
+    public IComplexNumber getFinalResult( IComplexNumber accum ){
+        finalResultComplex = getFinalResult(accum).sqrt();
+        return finalResultComplex;
     }
 }

@@ -34,12 +34,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
-    protected Number currentResult;
-    protected IComplexNumber currentComplexResult;
-    protected List<Number> otherAccum;
-    protected List<IComplexNumber> otherAccumComplex;
-    protected Number initial;
-    protected IComplexNumber initialComplex;
+    protected Number finalResult;
+    protected IComplexNumber finalResultComplex;
 
     public BaseAccumulation() {
     }
@@ -72,10 +68,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     private void init() {
-        currentResult = zero();
-        currentComplexResult = zeroComplex();
-        otherAccum = new ArrayList<>();
-        otherAccumComplex = new ArrayList<>();
         init(x, y, x, x.length());
     }
 
@@ -127,25 +119,19 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         return origin;
     }
 
+    @Override
+    public double zeroDouble() {
+        return 0.0;
+    }
 
     @Override
-    public Number zero() {
-        return initial;
+    public float zeroFloat(){
+        return 0.0f;
     }
 
     @Override
     public IComplexNumber zeroComplex() {
-        return initialComplex.dup();
-    }
-
-    @Override
-    public IComplexNumber currentResultComplex() {
-        return currentComplexResult;
-    }
-
-    @Override
-    public Number currentResult() {
-        return currentResult;
+        return Nd4j.createComplexNumber(0.0,0.0);
     }
 
     @Override
@@ -153,34 +139,52 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         return numProcessed;
     }
 
-
-    @Override
-    public List<IComplexNumber> otherAccumComplex() {
-        return otherAccumComplex;
-    }
-
-    @Override
-    public List<Number> otherAccum() {
-        return otherAccum;
-    }
-
-    @Override
-    public void setCurrentResult(Number number) {
-        this.currentResult = number;
-    }
-
-    @Override
-    public void setCurrentResultComplex(IComplexNumber complexNumber) {
-        this.currentComplexResult = complexNumber;
-    }
-
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        if (initial == null)
-            initial = 0.0;
-        if (initialComplex == null)
-            initialComplex = Nd4j.createComplexNumber(0.0, 0.0);
-        this.extraArgs = new Object[]{zero()};
+        this.extraArgs = new Object[]{zeroDouble()};
+    }
+
+    @Override
+    public double combineSubResults(double first, double second){
+        return update(first, second);
+    }
+
+    @Override
+    public float combineSubResults(float first, float second){
+        return update(first,second);
+    }
+
+    @Override
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+        return update(first,second);
+    }
+
+    @Override
+    public double getFinalResult( double accum ){
+        this.finalResult = accum;
+        return accum;
+    }
+
+    @Override
+    public float getFinalResult( float accum ){
+        this.finalResult = accum;
+        return accum;
+    }
+
+    @Override
+    public IComplexNumber getFinalResult( IComplexNumber accum ){
+        this.finalResultComplex = accum;
+        return accum;
+    }
+
+    @Override
+    public Number getFinalResult(){
+        return finalResult;
+    }
+
+    @Override
+    public IComplexNumber getFinalResultComplex(){
+        return finalResultComplex;
     }
 }

@@ -29,7 +29,7 @@ import org.nd4j.linalg.api.ops.Op;
  *
  * @author Adam Gibson
  */
-public class Mean extends BaseAccumulation {
+public class Mean extends Sum {
 
     public Mean() {
     }
@@ -49,35 +49,6 @@ public class Mean extends BaseAccumulation {
     public Mean(INDArray x, INDArray y) {
         super(x, y);
     }
-
-    @Override
-    public void update(Number result) {
-        if (Double.isInfinite(currentResult.doubleValue()))
-            currentResult = result;
-        else
-            currentResult = currentResult.doubleValue() + result.doubleValue();
-        if (numProcessed() == n())
-            currentResult = currentResult.doubleValue() / (double) n();
-
-
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-        if (currentComplexResult.realComponent().doubleValue() == Double.NEGATIVE_INFINITY)
-            currentComplexResult = result;
-        else
-            currentComplexResult.addi(result);
-        if (numProcessed() == n())
-            currentComplexResult.divi(n);
-
-    }
-
-    @Override
-    public Number zero() {
-        return 0.0;
-    }
-
 
     @Override
     public String name() {
@@ -105,5 +76,25 @@ public class Mean extends BaseAccumulation {
             return new Mean(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Mean(x.tensorAlongDimension(index, dimension));
+    }
+
+    @Override
+    public double getFinalResult( double accum ){
+        double d = accum / n();
+        this.finalResult = d;
+        return d;
+    }
+
+    @Override
+    public float getFinalResult( float accum ){
+        float f = accum / n();
+        this.finalResult = f;
+        return f;
+    }
+
+    @Override
+    public IComplexNumber getFinalResult( IComplexNumber accum ){
+        finalResultComplex = accum.div(n());
+        return finalResultComplex;
     }
 }

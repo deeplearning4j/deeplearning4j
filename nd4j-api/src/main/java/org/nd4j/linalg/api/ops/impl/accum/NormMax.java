@@ -53,28 +53,43 @@ public class NormMax extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        double abs = FastMath.abs(result.doubleValue());
-        currentResult = abs > currentResult.doubleValue() ? abs : currentResult();
-        numProcessed++;
+    public double update(double accum, double x){
+        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        IComplexNumber abs = ComplexUtil.abs(result);
-        if (abs.absoluteValue().doubleValue() > currentComplexResult.absoluteValue().doubleValue())
-            currentComplexResult = abs;
-        numProcessed++;
+    public double update(double accum, double x, double y){
+        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
     }
 
     @Override
-    public Number zero() {
-        return 0.0;
+    public float update(float accum, float x){
+        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
     }
 
     @Override
-    public IComplexNumber zeroComplex() {
-        return Nd4j.createComplexNumber(0.0, 0.0);
+    public float update(float accum, float x, float y){
+        return (x>=0 ? (x>accum?x:accum) : (-x>accum?-x:accum));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accum : Nd4j.createComplexNumber(FastMath.abs(x),0));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return (accum.absoluteValue().doubleValue() >= FastMath.abs(x) ? accum : Nd4j.createComplexNumber(FastMath.abs(x),0));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum : Nd4j.createComplexNumber(x.absoluteValue(),0));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum : Nd4j.createComplexNumber(x.absoluteValue(),0));
     }
 
     @Override
@@ -90,7 +105,6 @@ public class NormMax extends BaseAccumulation {
             return new NormMax(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new NormMax(x.vectorAlongDimension(index, dimension));
-
     }
 
     @Override
@@ -101,6 +115,5 @@ public class NormMax extends BaseAccumulation {
             return new NormMax(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new NormMax(x.tensorAlongDimension(index, dimension));
-
     }
 }

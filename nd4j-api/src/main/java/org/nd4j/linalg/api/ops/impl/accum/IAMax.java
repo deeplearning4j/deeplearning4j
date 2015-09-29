@@ -50,23 +50,63 @@ public class IAMax extends BaseAccumulation {
         super(x, y);
     }
 
-    @Override
-    public void update(Number result) {
-        if(result.doubleValue() > currentResult) {
-            currentResult = result.doubleValue();
-            currIndexOfMax = numProcessed;
-        }
+//    @Override
+//    public void update(Number result) {
+//        if(result.doubleValue() > currentResult) {
+//            currentResult = result.doubleValue();
+//            currIndexOfMax = numProcessed;
+//        }
+//
+//        //done; accumulate final result
+//        if(numProcessed() == n()) {
+//            currentResult = currIndexOfMax;
+//        }
+//    }
+//
+//    @Override
+//    public void update(IComplexNumber result) {
+//        IComplexNDArray complexX = (IComplexNDArray) x;
+//        currentComplexResult = Nd4j.createComplexNumber(Nd4j.getBlasWrapper().iamax(x),0.0);
+//    }
 
-        //done; accumulate final result
-        if(numProcessed() == n()) {
-            currentResult = currIndexOfMax;
-        }
+    @Override
+    public double update(double accum, double x){
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        IComplexNDArray complexX = (IComplexNDArray) x;
-        currentComplexResult = Nd4j.createComplexNumber(Nd4j.getBlasWrapper().iamax(x),0.0);
+    public double update(double accum, double x, double y){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public float update(float accum, float x){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public float update(float accum, float x, float y){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
 
@@ -113,13 +153,6 @@ public class IAMax extends BaseAccumulation {
 
         }
         currentResult = idx;
-    }
-
-    @Override
-    public Number currentResult() {
-        if(currIndexOfMax == 0)
-            return 0;
-        return currIndexOfMax - 1;
     }
 
     @Override

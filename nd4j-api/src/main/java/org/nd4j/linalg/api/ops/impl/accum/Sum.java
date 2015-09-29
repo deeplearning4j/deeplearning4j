@@ -51,15 +51,43 @@ public class Sum extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        currentResult = currentResult.doubleValue() + result.doubleValue();
-        numProcessed++;
+    public double update(double accum, double x){
+        return accum+x;
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        currentComplexResult.addi(result);
-        numProcessed++;
+    public double update(double accum, double x, double y){
+        return accum+x;
+    }
+
+    @Override
+    public float update(float accum, float x){
+        return accum+x;
+    }
+
+    @Override
+    public float update(float accum, float x, float y){
+        return accum+x;
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return accum.add(x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return accum.add(x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return accum.add(x);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return accum.add(x);
     }
 
     @Override

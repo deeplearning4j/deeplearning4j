@@ -77,23 +77,43 @@ public class Bias extends BaseAccumulation {
     }
 
     @Override
-    public void update(Number result) {
-        double dev = result.doubleValue() - mean;
-        currentResult = currentResult().doubleValue() + dev;
-        numProcessed++;
-
+    public double update(double accum, double x){
+        return accum + (x-mean);
     }
 
     @Override
-    public void update(IComplexNumber result) {
-        IComplexNumber dev = result.sub(mean);
-        currentComplexResult.addi(dev);
-        numProcessed++;
+    public double update(double accum, double x, double y){
+        return accum + (x-mean);
     }
 
     @Override
-    public Number zero() {
-        return 0.0;
+    public float update(float accum, float x){
+        return accum + (float)(x-mean);
+    }
+
+    @Override
+    public float update(float accum, float x, float y){
+        return accum + (float)(x-mean);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x){
+        return accum.add(x-mean);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, double x, double y){
+        return accum.add(x-mean);
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x){
+        return accum.add(x.sub(mean));
+    }
+
+    @Override
+    public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return accum.add(x.sub(mean));
     }
 
     @Override
@@ -104,10 +124,23 @@ public class Bias extends BaseAccumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
-        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).currentResult().doubleValue();
-        this.extraArgs = new Object[]{zero(), mean};
-
+        this.mean = Nd4j.getExecutioner().execAndReturn(new Mean(x)).getFinalResult().doubleValue();
+        this.extraArgs = new Object[]{zeroDouble(), mean};
     }
 
+    @Override
+    public double combineSubResults(double first, double second){
+        return first + second;
+    }
+
+    @Override
+    public float combineSubResults(float first, float second){
+        return first + second;
+    }
+
+    @Override
+    public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
+        return first.add(second);
+    }
 
 }

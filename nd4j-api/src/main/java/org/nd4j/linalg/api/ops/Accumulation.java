@@ -49,33 +49,38 @@ import java.util.List;
  * @author Adam Gibson
  */
 public interface Accumulation extends Op {
-    /**
-     * Current accumulated result
-     *
-     * @return
-     */
-    IComplexNumber currentResultComplex();
 
-    /**
-     * Current result
-     *
-     * @return
-     */
-    Number currentResult();
+    double update(double accum, double x);
 
-    /**
-     * Update the current result to be this result
-     *
-     * @param result the result
-     */
-    void update(Number result);
+    double update(double accum, double x, double y);
 
-    /**
-     * Update the current result to be this result
-     *
-     * @param result the result
-     */
-    void update(IComplexNumber result);
+    float update(float accum, float x);
+
+    float update(float accum, float x, float y);
+
+    IComplexNumber update( IComplexNumber accum, double x);
+
+    IComplexNumber update( IComplexNumber accum, double x, double y);
+
+    IComplexNumber update( IComplexNumber accum, IComplexNumber x);
+
+    IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y);
+
+    double combineSubResults(double first, double second);
+
+    float combineSubResults(float first, float second);
+
+    IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second);
+
+    double getFinalResult( double accum );
+
+    float getFinalResult( float accum );
+
+    IComplexNumber getFinalResult( IComplexNumber accum );
+
+    Number getFinalResult();
+
+    IComplexNumber getFinalResultComplex();
 
 
     /**
@@ -83,7 +88,9 @@ public interface Accumulation extends Op {
      *
      * @return the initial value
      */
-    Number zero();
+    double zeroDouble();
+
+    float zeroFloat();
 
     /**
      * Complex initial value
@@ -91,36 +98,4 @@ public interface Accumulation extends Op {
      * @return the complex initial value
      */
     IComplexNumber zeroComplex();
-
-
-    /**
-     * Other accmuluations from the primary
-     *
-     * @return other accumulations from the primary
-     */
-    List<IComplexNumber> otherAccumComplex();
-
-    /**
-     * Other accmuluations from the primary
-     *
-     * @return other accumulations from the primary
-     */
-    List<Number> otherAccum();
-
-    /**
-     * Set the current result
-     *
-     * @param number the result
-     */
-    void setCurrentResult(Number number);
-
-    /**
-     * Set the current complex number
-     * result
-     *
-     * @param complexNumber the current complex number
-     *                      result
-     */
-    void setCurrentResultComplex(IComplexNumber complexNumber);
-
 }
