@@ -254,9 +254,9 @@ public class LayerConfigTest {
 
         assertEquals(conf.getConf(0).getLayer().getUpdater().toString(), "RMSPROP");
         assertEquals(conf.getConf(1).getLayer().getUpdater().toString(), "ADADELTA");
-        assertEquals(conf.getConf(0).getLayer().getRmsDecay(), 2.0, 0.0);
         assertEquals(conf.getConf(1).getLayer().getRho(), 0.5, 0.0);
         assertEquals(conf.getConf(0).getLayer().getRmsDecay(), 1.0, 0.0);
+        assertEquals(conf.getConf(1).getLayer().getRmsDecay(), 2.0, 0.0);
     }
 
 }
