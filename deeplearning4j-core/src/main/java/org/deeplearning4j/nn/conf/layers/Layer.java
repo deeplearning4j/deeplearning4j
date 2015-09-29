@@ -110,7 +110,7 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double dropOut = Double.NaN;
-        protected Updater updater = Updater.ADAGRAD;
+        protected Updater updater = null;
         protected double rho = Double.NaN;
         protected double rmsDecay = Double.NaN;
 
@@ -156,9 +156,9 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
-
         public T momentum(double momentum) {
             this.momentum = momentum;
+            return (T)this;
         }
 
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {

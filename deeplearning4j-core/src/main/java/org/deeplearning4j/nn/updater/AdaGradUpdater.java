@@ -27,7 +27,7 @@ public class AdaGradUpdater extends BaseUpdater {
         if(adaGrad == null) {
             adaGrad = new AdaGrad(gradient.shape());
             updaterForVariable.put(variable, adaGrad);
-            adaGrad.setMasterStepSize(layer.conf().getLr());
+            adaGrad.setMasterStepSize(layer.conf().getLayer().getLearningRate());
         }
 
         return adaGrad;
