@@ -20,7 +20,7 @@
     <parent>
         <artifactId>hadoop-yarn</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.4-rc3.4-SNAPSHOT</version>
+        <version>0.4-rc3.4</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-scaleout-api</artifactId>
-            <version>.0.4-rc3.4-SNAPSHOT</version>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.avro</groupId>
