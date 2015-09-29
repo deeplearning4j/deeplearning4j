@@ -21,8 +21,8 @@ public class RmsPropUpdater extends BaseUpdater {
         if(rmsprop == null) {
             rmsprop = new org.nd4j.linalg.learning.RmsPropUpdater();
             updaterForVariable.put(variable,rmsprop);
-            rmsprop.setRmsDecay(layer.conf().getRmsDecay());
-            rmsprop.setLR(layer.conf().getLr());
+            rmsprop.setRmsDecay(layer.conf().getLayer().getRmsDecay());
+            rmsprop.setLR(layer.conf().getLayer().getLearningRate());
         }
 
         return rmsprop;
