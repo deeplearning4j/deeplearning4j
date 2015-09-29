@@ -11,6 +11,23 @@ import java.util.Arrays;
  */
 public class OpExecutionerUtil {
 
+    /** Can we do the transform op (X = Op(X)) directly on the arrays without breaking X up into 1d tensors first? */
+    public static boolean canDoTransformOpDirectly(INDArray x){
+        if(x.isVector()) return true;
+        //For a single NDArray all we require is that the elements are contiguous in the buffer
+
+        //Full buffer -> implies all elements are contiguous (and match)
+        int l1 = x.length();
+        int dl1 = x.data().length();
+        if(l1 == dl1) return true;
+
+        //Strides are same as a zero offset NDArray -> all elements are contiguous (even if not offset 0)
+        int[] shape1 = x.shape();
+        int[] stridesAsInit = (x.ordering()=='c' ? ArrayUtil.calcStrides(shape1) : ArrayUtil.calcStridesFortran(shape1));
+        boolean stridesSameAsInit = Arrays.equals(x.stride(), stridesAsInit);
+        return stridesSameAsInit;
+    }
+
     /** Can we do the transform op (X = X <op> Y) directly on the arrays without breaking them up into 1d tensors first? */
     public static boolean canDoTransformOpDirectly(INDArray x, INDArray y){
         if(x.isVector()) return true;
@@ -62,6 +79,29 @@ public class OpExecutionerUtil {
         }
 
         return false;
+    }
+
+    public static int chooseElementWiseTensorDimension(INDArray x){
+        //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
+        //separation between elements (helps CPU cache) BUT might result in a huge number
+        //of tiny ops - i.e., addi on NDArrays with shape [5,10^6]
+        int opAlongDimensionMinStride = ArrayUtil.argMin(x.stride());
+
+        //doing argMax on shape gives us smallest number of largest tensors
+        //but may not be optimal in terms of element separation (for CPU cache etc)
+        int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
+
+        //Edge cases: shapes with 1s in them can have stride of 1 on the dimensions of length 1
+        if(x.isVector() || x.size(opAlongDimensionMinStride)==1) return opAlongDimensionMaxLength;
+
+        //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
+        //dimension vs. the maximum size dimension, use the maximum size dimension instead
+        //The idea is to avoid choosing wrong dimension in cases like shape=[10,10^6]
+        //Might be able to do better than this with some additional thought
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMinStride));
+        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMaxLength));
+        if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
+        else return opAlongDimensionMaxLength;
     }
 
 

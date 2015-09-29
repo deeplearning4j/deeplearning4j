@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.parallel.ops;
 
 import lombok.AllArgsConstructor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -25,6 +26,23 @@ public class BufferOps {
         protected final int incrY;
         protected final int incrZ;
 
+        /** Constructor for doing a 1d TAD first. */
+        public BaseDataBufferTask(int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+            INDArray tadX = x.tensorAlongDimension(tadIdx,tadDim);
+            INDArray tadY = (y != null ? y.tensorAlongDimension(tadIdx,tadDim) : null);
+            INDArray tadZ = (z!=x ? z.tensorAlongDimension(tadIdx,tadDim) : tadX);
+            this.x = x.data();
+            this.y = (y!=null ? y.data() : null);
+            this.z = z.data();
+            this.offsetX = tadX.offset();
+            this.offsetY = (y!=null ? tadY.offset() : 0);
+            this.offsetZ = tadZ.offset();
+            this.incrX = tadX.elementWiseStride();
+            this.incrY = (tadY!=null ? tadY.elementWiseStride() : 0);
+            this.incrZ = tadZ.elementWiseStride();
+            this.threshold = threshold;
+            this.n = tadX.length();
+        }
 
         @Override
         protected void compute() {
@@ -58,6 +76,10 @@ public class BufferOps {
     public static class AddOpDataBufferTask extends BaseDataBufferTask{
         public AddOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y, DataBuffer z, int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ){
             super(threshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
+        }
+
+        public AddOpDataBufferTask(int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+            super(tadIdx,tadDim,threshold,x,y,z);
         }
 
         @Override
@@ -109,6 +131,10 @@ public class BufferOps {
             super(threshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
         }
 
+        public SubOpDataBufferTask(int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+            super(tadIdx,tadDim,threshold,x,y,z);
+        }
+
         @Override
         public void doTask() {
             //Task: Z = X+Y
@@ -157,6 +183,10 @@ public class BufferOps {
     public static class MulOpDataBufferTask extends BaseDataBufferTask {
         public MulOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y, DataBuffer z, int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ){
             super(threshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
+        }
+
+        public MulOpDataBufferTask(int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+            super(tadIdx,tadDim,threshold,x,y,z);
         }
 
         @Override
@@ -229,6 +259,10 @@ public class BufferOps {
             super(threshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
         }
 
+        public DivOpDataBufferTask(int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+            super(tadIdx,tadDim,threshold,x,y,z);
+        }
+
         @Override
         public void doTask() {
             //Task: Z = X/Y
@@ -299,6 +333,10 @@ public class BufferOps {
             super(threshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
         }
 
+        public CopyOpDataBufferTask(int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+            super(tadIdx,tadDim,threshold,x,y,z);
+        }
+
         @Override
         public void doTask() {
             //Task: Z = X
@@ -319,64 +357,127 @@ public class BufferOps {
             this.op = op;
         }
 
+        public OpDataBufferTask(Op op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+            super(tadIdx,tadDim,threshold,x,y,z);
+            this.op = op;
+        }
+
         @Override
         public void doTask() {
-            //Task: Z = X/Y
+            if(y != null){
+                //Task: Z = Op(X,Y)
+                if(x.dataType() == DataBuffer.Type.FLOAT){
+                    float[] xf = (float[])x.array();
+                    float[] yf = (float[])y.array();
+                    if(incrX == 1 && incrY == 1 && incrZ == 1) {
+                        if(x==z){
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i;
+                                xf[xIdx] = op.op(xf[xIdx],yf[offsetY + i]);
+                            }
+                        } else {
+                            float[] zf = (float[])z.array();
+                            for (int i = 0; i < n; i++) {
 
-            if(x.dataType() == DataBuffer.Type.FLOAT){
-                float[] xf = (float[])x.array();
-                float[] yf = (float[])y.array();
-                if(incrX == 1 && incrY == 1 && incrZ == 1) {
-                    if(x==z){
-                        for (int i = 0; i < n; i++) {
-                            int xIdx = offsetX + i;
-                            xf[xIdx] = op.op(xf[xIdx],yf[offsetY + i]);
+                                zf[offsetZ + i] = op.op(xf[offsetX + i], yf[offsetY + i]);
+                            }
                         }
                     } else {
-                        float[] zf = (float[])z.array();
-                        for (int i = 0; i < n; i++) {
-
-                            zf[offsetZ + i] = op.op(xf[offsetX + i], yf[offsetY + i]);
+                        if(x==z){
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i * incrX;
+                                xf[xIdx] = op.op(xf[xIdx], yf[offsetY + i * incrY]);
+                            }
+                        } else {
+                            float[] zf = (float[])z.array();
+                            for (int i = 0; i < n; i++) {
+                                zf[offsetZ + i * incrZ] = op.op(xf[offsetX + i * incrX], yf[offsetY + i * incrY]);
+                            }
                         }
                     }
                 } else {
-                    if(x==z){
-                        for (int i = 0; i < n; i++) {
-                            int xIdx = offsetX + i * incrX;
-                            xf[xIdx] = op.op(xf[xIdx], yf[offsetY + i * incrY]);
+                    double[] xd = (double[]) x.array();
+                    double[] yd = (double[]) y.array();
+                    if (incrX == 1 && incrY == 1 && incrZ == 1) {
+                        if (x == z) {
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i;
+                                xd[xIdx] = op.op(xd[xIdx], yd[offsetY + i]);
+                            }
+                        } else {
+                            double[] zd = (double[]) z.array();
+                            for (int i = 0; i < n; i++) {
+                                zd[offsetZ + i] = op.op(xd[offsetX + i], yd[offsetY + i]);
+                            }
                         }
                     } else {
-                        float[] zf = (float[])z.array();
-                        for (int i = 0; i < n; i++) {
-                            zf[offsetZ + i * incrZ] = op.op(xf[offsetX + i * incrX], yf[offsetY + i * incrY]);
+                        if (x == z) {
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i * incrX;
+                                xd[xIdx] = op.op(xd[xIdx], yd[offsetY + i * incrY]);
+                            }
+                        } else {
+                            double[] zd = (double[]) z.array();
+                            for (int i = 0; i < n; i++) {
+                                zd[offsetZ + i * incrZ] = op.op(xd[offsetX + i * incrX], yd[offsetY + i * incrY]);
+                            }
                         }
                     }
                 }
             } else {
-                double[] xd = (double[])x.array();
-                double[] yd = (double[])y.array();
-                if(incrX == 1 && incrY == 1 && incrZ == 1) {
-                    if(x==z){
-                        for (int i = 0; i < n; i++) {
-                            int xIdx = offsetX+i;
-                            xd[xIdx] = op.op(xd[xIdx], yd[offsetY + i]);
+                //Task: Z = Op(X)
+                if(x.dataType() == DataBuffer.Type.FLOAT){
+                    float[] xf = (float[])x.array();
+                    if(incrX == 1 && incrZ == 1) {
+                        if(x==z){
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i;
+                                xf[xIdx] = op.op(xf[xIdx]);
+                            }
+                        } else {
+                            float[] zf = (float[])z.array();
+                            for (int i = 0; i < n; i++) {
+                                zf[offsetZ + i] = op.op(xf[offsetX + i]);
+                            }
                         }
                     } else {
-                        double[] zd = (double[])z.array();
-                        for (int i = 0; i < n; i++) {
-                            zd[offsetZ + i] = op.op(xd[offsetX + i], yd[offsetY + i]);
+                        if(x==z){
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i * incrX;
+                                xf[xIdx] = op.op(xf[xIdx]);
+                            }
+                        } else {
+                            float[] zf = (float[])z.array();
+                            for (int i = 0; i < n; i++) {
+                                zf[offsetZ + i * incrZ] = op.op(xf[offsetX + i * incrX]);
+                            }
                         }
                     }
                 } else {
-                    if(x==z) {
-                        for (int i = 0; i < n; i++) {
-                            int xIdx = offsetX + i * incrX;
-                            xd[xIdx] = op.op(xd[xIdx], yd[offsetY + i * incrY]);
+                    double[] xd = (double[]) x.array();
+                    if (incrX == 1 && incrY == 1 && incrZ == 1) {
+                        if (x == z) {
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i;
+                                xd[xIdx] = op.op(xd[xIdx]);
+                            }
+                        } else {
+                            double[] zd = (double[]) z.array();
+                            for (int i = 0; i < n; i++) {
+                                zd[offsetZ + i] = op.op(xd[offsetX + i]);
+                            }
                         }
                     } else {
-                        double[] zd = (double[])z.array();
-                        for (int i = 0; i < n; i++) {
-                            zd[offsetZ + i * incrZ] = op.op(xd[offsetX + i * incrX],yd[offsetY + i * incrY]);
+                        if (x == z) {
+                            for (int i = 0; i < n; i++) {
+                                int xIdx = offsetX + i * incrX;
+                                xd[xIdx] = op.op(xd[xIdx]);
+                            }
+                        } else {
+                            double[] zd = (double[]) z.array();
+                            for (int i = 0; i < n; i++) {
+                                zd[offsetZ + i * incrZ] = op.op(xd[offsetX + i * incrX]);
+                            }
                         }
                     }
                 }
