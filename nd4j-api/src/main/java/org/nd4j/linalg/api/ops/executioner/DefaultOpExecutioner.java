@@ -81,8 +81,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
         checkOp(op);
 
         if(op.isPassThrough()) {
-            op.exec();
-            return op;
+            throw new UnsupportedOperationException("Not yet implemented");
+//            op.exec();
+//            return op;
         }
         if (op instanceof TransformOp) {
             doTransformOp((TransformOp) op);
@@ -610,48 +611,61 @@ public class DefaultOpExecutioner implements OpExecutioner {
             INDArray x = op.x();
             INDArray y = op.y();
 
-            boolean canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(op.x());
+            boolean canDoDirectly;
+            if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
+            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,y);
 
             if(canDoDirectly){
-                new BufferOps.AccumulationOpDataBufferTask(op,PARALLEL_THRESHOLD,x.length(),x.data(),(y!=null?y.data():null),
-                        x.offset(),y.offset(),x.elementWiseStride(),(y!=null?y.elementWiseStride():0),true).invoke();
+                if(y==null){
+                    new BufferOps.AccumulationOpDataBufferTask(op, PARALLEL_THRESHOLD, x.length(), x.data(), null,
+                            x.offset(), 0, x.elementWiseStride(), 0, true).invoke();
+                } else {
+                    new BufferOps.AccumulationOpDataBufferTask(op, PARALLEL_THRESHOLD, x.length(), x.data(), y.data(),
+                            x.offset(), y.offset(), x.elementWiseStride(), y.elementWiseStride(), true).invoke();
+                }
+                return;
             } else {
-                throw new UnsupportedOperationException("Not yet implemented");
+                //Need to break the accumulation into tensors first
+                new BufferOps.AccumulationViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,y).invoke();
             }
 
         } else {
-            throw new UnsupportedOperationException("Not yet implemented");
-//            if (op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-//                for (int i = 0; i < op.n(); i++) {
-//                    op.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
-//                }
-//            } else if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
-//                for (int i = 0; i < op.n(); i++) {
-//                    op.update(op.op(op.x().data().getDouble(i)));
-//                }
-//            } else if (!(op.x() instanceof IComplexNDArray)) {
-//                if (op.y() != null) {
-//                    INDArray xLinear = op.x().reshape(1, op.x().length());
-//                    INDArray yLinear = op.y().reshape(1, op.y().length());
-//                    for (int i = 0; i < op.n(); i++) {
-//                        op.update(op.op(xLinear.getDouble(0, i), yLinear.getDouble(0, i)));
-//                    }
-//                } else {
-//                    INDArray xLinear = op.x().reshape(1, op.x().length());
-//                    for (int i = 0; i < op.n(); i++) {
-//                        op.update(op.op(xLinear.getDouble(0, i)));
-//                    }
-//                }
-//            } else {
-//                for (int c = 0; c < op.n(); c++) {
-//                    apply(op, c);
-//                }
-//            }
+            if (op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                double accum = op.zeroDouble();
+                DataBuffer dx = op.x().data();
+                DataBuffer dy = op.y().data();
+                for (int i = 0; i < op.n(); i++) {
+                    accum = op.update(accum,dx.getDouble(i),dy.getDouble(i));
+                }
+            } else if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
+                double accum = op.zeroDouble();
+                DataBuffer dx = op.x().data();
+                for (int i = 0; i < op.n(); i++) {
+                    accum = op.update(accum,dx.getDouble(i));
+                }
+            } else if (!(op.x() instanceof IComplexNDArray)) {
+                IComplexNumber accum = op.zeroComplex();
+                if (op.y() != null) {
+                    INDArray xLinear = op.x().reshape(1, op.x().length());
+                    INDArray yLinear = op.y().reshape(1, op.y().length());
+                    for (int i = 0; i < op.n(); i++) {
+                        accum = op.update(accum,xLinear.getDouble(0,i),yLinear.getDouble(0,i));
+                    }
+                } else {
+                    INDArray xLinear = op.x().reshape(1, op.x().length());
+                    for (int i = 0; i < op.n(); i++) {
+                        accum = op.update(accum,xLinear.getDouble(0,i));
+                    }
+                }
+            } else {
+                for (int c = 0; c < op.n(); c++) {
+                    apply(op, c);
+                }
+            }
         }
     }
 
 
-//    private void doScalarOp(ScalarOp op){
     private void doScalarOp(ScalarOp op){
         if(op.isPassThrough()) return;
 

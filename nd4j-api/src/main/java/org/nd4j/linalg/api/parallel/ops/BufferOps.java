@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -95,6 +96,21 @@ public class BufferOps {
         protected final int incrY;
         protected final boolean outerTask;
 
+        public BaseAccumulationDataBufferTask( Accumulation op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, boolean outerTask){
+            this.op = op;
+            this.threshold = threshold;
+            this.outerTask = outerTask;
+            INDArray tadX = x.tensorAlongDimension(tadIdx,tadDim);
+            INDArray tadY = (y!=null ? y.tensorAlongDimension(tadIdx,tadDim) : null);
+            this.x = x.data();
+            this.y = y.data();
+            this.offsetX = tadX.offset();
+            this.offsetY = (tadY != null ? tadY.offset() : 0);
+            this.incrX = tadX.elementWiseStride();
+            this.incrY = (tadY != null ? tadY.elementWiseStride() : 0);
+            this.n = x.length();
+        }
+
         @Override
         protected Double compute() {
             if (n > threshold) {
@@ -123,6 +139,43 @@ public class BufferOps {
 
         public abstract BaseAccumulationDataBufferTask getSubTask(int threshold, int n, DataBuffer x, DataBuffer y,
                                                                   int offsetX, int offsetY, int incrX, int incrY, boolean outerTask);
+    }
+
+    @AllArgsConstructor
+    public static class AccumulationViaTensorDataBufferTask extends RecursiveTask<Double> {
+        protected final Accumulation op;
+        protected final int threshold;
+        protected final INDArray x;
+        protected final INDArray y;
+
+        @Override
+        protected Double compute() {
+            //Break the accumulation op into tensors
+            //Run accumulation on each tensor
+            //And combine the results
+
+            int tensorDim;
+            if(y==null) tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x);
+            else tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x,y);
+
+            int nTensors = x.tensorssAlongDimension(tensorDim);
+            if(nTensors == 1){
+                return new AccumulationOpDataBufferTask(op,0,tensorDim,threshold,x,y,true).invoke();
+            } else {
+                List<AccumulationOpDataBufferTask> blockList = new ArrayList<>(nTensors);
+                for( int i=0; i<nTensors; i++ ){
+                    AccumulationOpDataBufferTask task = new AccumulationOpDataBufferTask(op,i,tensorDim,threshold,x,y,false);
+                    task.fork();
+                }
+
+                double accum = op.zeroDouble();
+                for(AccumulationOpDataBufferTask task : blockList){
+                    double subAccum = task.join();
+                    op.combineSubResults(accum,subAccum);
+                }
+                return op.getFinalResult(accum);
+            }
+        }
     }
 
 
@@ -559,6 +612,10 @@ public class BufferOps {
             super(op, threshold, n, x, y, offsetX, offsetY, incrX, incrY, outerTask);
         }
 
+        public AccumulationOpDataBufferTask(Accumulation op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, boolean outerTask){
+            super(op,tadIdx,tadDim,threshold,x,y,outerTask);
+        }
+
         @Override
         public double doTask() {
             if (y != null) {
@@ -576,7 +633,7 @@ public class BufferOps {
                             accum = op.update(accum, xf[offsetX + i * incrX], yf[offsetY + i * incrY]);
                         }
                     }
-                    return accum;
+                    return (outerTask ? op.getFinalResult(accum) : accum);
                 } else {
                     double[] xd = (double[]) x.array();
                     double[] yd = (double[]) y.array();
@@ -590,7 +647,7 @@ public class BufferOps {
                             accum = op.update(accum, xd[offsetX + i * incrX], yd[offsetY + i * incrY]);
                         }
                     }
-                    return accum;
+                    return (outerTask ? op.getFinalResult(accum) : accum);
                 }
             } else {
                 //Task: accum = update(accum,X)
@@ -606,7 +663,7 @@ public class BufferOps {
                             accum = op.update(accum, xf[offsetX + i * incrX]);
                         }
                     }
-                    return accum;
+                    return (outerTask ? op.getFinalResult(accum) : accum);
                 } else {
                     double[] xd = (double[]) x.array();
                     double accum = op.zeroDouble();
@@ -619,7 +676,7 @@ public class BufferOps {
                             accum = op.update(accum, xd[offsetX + i * incrX]);
                         }
                     }
-                    return accum;
+                    return (outerTask ? op.getFinalResult(accum) : accum);
                 }
             }
         }
