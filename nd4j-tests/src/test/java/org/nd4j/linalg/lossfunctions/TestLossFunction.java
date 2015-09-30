@@ -29,16 +29,6 @@ public class TestLossFunction extends BaseLossFunction {
     }
 
     @Override
-    public void update(Number result) {
-
-    }
-
-    @Override
-    public void update(IComplexNumber result) {
-
-    }
-
-    @Override
     public String name() {
         return "test_loss_function";
     }
@@ -50,6 +40,46 @@ public class TestLossFunction extends BaseLossFunction {
 
     @Override
     public Op opForDimension(int index, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public double update(double accum, double x) {
+        return 0;
+    }
+
+    @Override
+    public double update(double accum, double x, double y) {
+        return 0;
+    }
+
+    @Override
+    public float update(float accum, float x) {
+        return 0;
+    }
+
+    @Override
+    public float update(float accum, float x, float y) {
+        return 0;
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, double x) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, double x, double y) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x) {
+        return null;
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return null;
     }
 }

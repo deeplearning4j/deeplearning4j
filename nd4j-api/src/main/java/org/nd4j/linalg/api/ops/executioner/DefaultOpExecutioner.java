@@ -31,8 +31,6 @@ import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
-import org.nd4j.linalg.api.parallel.DefaultParallelExecutionProvider;
-import org.nd4j.linalg.api.parallel.ParallelExecutionProvider;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 import org.nd4j.linalg.api.parallel.ops.BufferOps;
 import org.nd4j.linalg.api.shape.Shape;
@@ -91,7 +89,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }else if (op instanceof Accumulation) {
             doAccumulationOp((Accumulation)op);
         }else if (op instanceof ScalarOp) {
-            doScalarOp(op);
+            doScalarOp((ScalarOp)op);
         }
         return op;
     }
@@ -105,7 +103,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return execAndReturn((ScalarOp) op);
         }
         else if(op instanceof Accumulation) {
-            return Nd4j.scalar(execAndReturn((Accumulation) op).currentResult());
+            return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
         }
 
         throw new IllegalArgumentException("Illegal type of op " + op.getClass());
@@ -321,8 +319,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         if(dimension[0] == Integer.MAX_VALUE) {
             if(op.x() instanceof IComplexNDArray)
-                return Nd4j.scalar(execAndReturn(op).currentResultComplex());
-            return Nd4j.scalar(execAndReturn(op).currentResult().doubleValue());
+                return Nd4j.scalar(execAndReturn(op).getFinalResultComplex());
+            return Nd4j.scalar(execAndReturn(op).getFinalResult().doubleValue());
         }
 
         if(op instanceof IComplexNDArray) {
@@ -343,7 +341,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             IComplexNDArray linear = ret;
             for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
                 Op op2 = op.opForDimension(i, dimension);
-                IComplexNumber result = execAndReturn((Accumulation) op2).currentResultComplex();
+                IComplexNumber result = execAndReturn((Accumulation) op2).getFinalResultComplex();
                 linear.putScalar(i, result);
 
             }
@@ -517,25 +515,29 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 IComplexNDArray complexX = (IComplexNDArray) op.x();
                 IComplexNDArray complexY = (IComplexNDArray) op.y();
                 IComplexNumber curr = complexX.getComplex(x);
-                if (op.y() instanceof IComplexNDArray)
-                    op.update(op.op(curr, complexY.getComplex(x)));
-
-                else
-                    op.update(op.op(curr, op.y().getDouble(x)));
+                throw new UnsupportedOperationException("not yet implemented");
+//                if (op.y() instanceof IComplexNDArray)
+//                    op.update(op.op(curr, complexY.getComplex(x)));
+//
+//                else
+//                    op.update(op.op(curr, op.y().getDouble(x)));
             }
             //x is real
             else
-                op.update(op.op(op.x().getDouble(x), op.y().getDouble(x)));
+                throw new UnsupportedOperationException("not yet implemented");
+//                op.update(op.op(op.x().getDouble(x), op.y().getDouble(x)));
         }
 
         else {
             //x is complex, y could be complex or real
             if (op.x() instanceof IComplexNDArray) {
                 IComplexNDArray complexX = (IComplexNDArray) op.x();
-                op.update(op.op(complexX.getComplex(x)));
+//                op.update(op.op(complexX.getComplex(x)));
+                throw new UnsupportedOperationException("not yet implemented");
             }
             else
-                op.update(op.op(op.x().getDouble(x)));
+//                op.update(op.op(op.x().getDouble(x)));
+                throw new UnsupportedOperationException("not yet implemented");
         }
     }
 
@@ -586,7 +588,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         } else {
             //Ops with 1 input - Tanh, Sin, ScalarAdd etc. X=OP(X) or Z=OP(X)
             if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP ){
-                doScalarOp(op);
+                throw new UnsupportedOperationException("Not yet implemneted");
             } else {
                 if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
                     for (int i = 0; i < op.n(); i++) {
@@ -604,52 +606,65 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     private void doAccumulationOp(Accumulation op){
-        Accumulation accumulation = (Accumulation) op;
-        if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-            for(int i = 0; i < op.n(); i++) {
-                accumulation.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
-            }
-        } else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-            for(int i = 0; i < op.n(); i++) {
-                accumulation.update(op.op(op.x().data().getDouble(i)));
-            }
-        } else if(!(op.x() instanceof IComplexNDArray)) {
-            if(op.y() != null) {
-                INDArray xLinear = op.x().reshape(1,op.x().length());
-                INDArray yLinear = op.y().reshape(1,op.y().length());
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(xLinear.getDouble(0,i),yLinear.getDouble(0,i)));
-                }
-            }
-            else {
-                INDArray xLinear = op.x().reshape(1,op.x().length());
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(xLinear.getDouble(0,i)));
-                }
-            }
-        } else {
-            for (int c = 0; c < op.n(); c++) {
-                apply(accumulation, c);
-            }
-        }
+        if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
+            INDArray x = op.x();
+            INDArray y = op.y();
 
+            boolean canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(op.x());
+
+            if(canDoDirectly){
+                new BufferOps.AccumulationOpDataBufferTask(op,PARALLEL_THRESHOLD,x.length(),x.data(),(y!=null?y.data():null),
+                        x.offset(),y.offset(),x.elementWiseStride(),(y!=null?y.elementWiseStride():0),true).invoke();
+            } else {
+                throw new UnsupportedOperationException("Not yet implemented");
+            }
+
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented");
+//            if (op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+//                for (int i = 0; i < op.n(); i++) {
+//                    op.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+//                }
+//            } else if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
+//                for (int i = 0; i < op.n(); i++) {
+//                    op.update(op.op(op.x().data().getDouble(i)));
+//                }
+//            } else if (!(op.x() instanceof IComplexNDArray)) {
+//                if (op.y() != null) {
+//                    INDArray xLinear = op.x().reshape(1, op.x().length());
+//                    INDArray yLinear = op.y().reshape(1, op.y().length());
+//                    for (int i = 0; i < op.n(); i++) {
+//                        op.update(op.op(xLinear.getDouble(0, i), yLinear.getDouble(0, i)));
+//                    }
+//                } else {
+//                    INDArray xLinear = op.x().reshape(1, op.x().length());
+//                    for (int i = 0; i < op.n(); i++) {
+//                        op.update(op.op(xLinear.getDouble(0, i)));
+//                    }
+//                }
+//            } else {
+//                for (int c = 0; c < op.n(); c++) {
+//                    apply(op, c);
+//                }
+//            }
+        }
     }
 
 
 //    private void doScalarOp(ScalarOp op){
-    private void doScalarOp(Op op){
+    private void doScalarOp(ScalarOp op){
         if(op.isPassThrough()) return;
 
         INDArray z = op.z();
         INDArray x = op.x();
 
         if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
-            boolean canDoDirectly = false;
+            boolean canDoDirectly;
             if(x==z) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);     //X=OP(X)
             else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,z);       //Z=OP(X)
 
             if(canDoDirectly){
-                new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,op.n(),x.data(),null,z.data(),
+                new BufferOps.OpDataBufferAction(op,PARALLEL_THRESHOLD,op.n(),x.data(),null,z.data(),
                         x.offset(),0,z.offset(),x.elementWiseStride(),0,z.elementWiseStride()).invoke();
                 return;
             } else {
@@ -672,7 +687,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         //X=OP(X)
                         for(int i=0; i<nTensors; i++){
                             int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
-                            RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,n,dx,null,dx,
+                            RecursiveAction task = new BufferOps.OpDataBufferAction(op,PARALLEL_THRESHOLD,n,dx,null,dx,
                                             offsetX,0,offsetX,incrX,0,incrX);
                             task.fork();
                             blockList.add(task);
@@ -685,7 +700,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         for(int i=0; i<nTensors; i++){
                             int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                             int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
-                            RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,n,dx,null,dz,
+                            RecursiveAction task = new BufferOps.OpDataBufferAction(op,PARALLEL_THRESHOLD,n,dx,null,dz,
                                     offsetX,0,offsetZ,incrX,0,incrZ);
                             task.fork();
                             blockList.add(task);
@@ -695,7 +710,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     //3+ dimensions
                     int nTensors = x.tensorssAlongDimension(tensorDim);
                     for( int i=0; i<nTensors; i++ ){
-                        RecursiveAction task = new BufferOps.OpDataBufferTask(op,i,tensorDim,PARALLEL_THRESHOLD,x,null,z);
+                        RecursiveAction task = new BufferOps.OpDataBufferAction(op,i,tensorDim,PARALLEL_THRESHOLD,x,null,z);
                         task.fork();
                         blockList.add(task);
                     }
@@ -727,7 +742,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         INDArray y = op.y();
         INDArray z = op.z();
 
-        boolean canDoDirectly = false;
+        boolean canDoDirectly;
         if(x == z){
             canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
         } else {
@@ -738,27 +753,27 @@ public class DefaultOpExecutioner implements OpExecutioner {
             //Do parallelism via fork-join, directly on buffer array
             switch(op.name()){
                 case "add":
-                    new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                    new BufferOps.AddOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
                             x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
                     return;
                 case "sub":
-                    new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                    new BufferOps.SubOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
                             x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
                     return;
                 case "mul":
-                    new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                    new BufferOps.MulOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
                             x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
                     return;
                 case "div":
-                    new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                    new BufferOps.DivOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
                             x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
                     return;
                 case "copy":
-                    new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                    new BufferOps.CopyOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
                             x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
                     return;
                 default:
-                    new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                    new BufferOps.OpDataBufferAction(op,PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
                             x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
                     return;
             }
@@ -805,7 +820,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     for(int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                        RecursiveAction task = new BufferOps.AddOpDataBufferAction(PARALLEL_THRESHOLD,n,dx,dy,dx,
                                 offsetX,offsetY,offsetX,incrX,incrY,incrX);
                         task.fork();
                         blockList.add(task);
@@ -815,7 +830,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     for(int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                        RecursiveAction task = new BufferOps.SubOpDataBufferAction(PARALLEL_THRESHOLD,n,dx,dy,dx,
                                 offsetX,offsetY,offsetX,incrX,incrY,incrX);
                         task.fork();
                         blockList.add(task);
@@ -825,7 +840,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     for(int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                        RecursiveAction task = new BufferOps.MulOpDataBufferAction(PARALLEL_THRESHOLD,n,dx,dy,dx,
                                 offsetX,offsetY,offsetX,incrX,incrY,incrX);
                         task.fork();
                         blockList.add(task);
@@ -835,7 +850,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     for(int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                        RecursiveAction task = new BufferOps.DivOpDataBufferAction(PARALLEL_THRESHOLD,n,dx,dy,dx,
                                 offsetX,offsetY,offsetX,incrX,incrY,incrX);
                         task.fork();
                         blockList.add(task);
@@ -845,7 +860,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     for(int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD,n,dx,dy,dx,
+                        RecursiveAction task = new BufferOps.CopyOpDataBufferAction(PARALLEL_THRESHOLD,n,dx,dy,dx,
                                 offsetX,offsetY,offsetX,incrX,incrY,incrX);
                         task.fork();
                         blockList.add(task);
@@ -855,7 +870,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     for(int i=0; i<nTensors; i++){
                         int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD,n,dx,dy,dx,
+                        RecursiveAction task = new BufferOps.OpDataBufferAction(op,PARALLEL_THRESHOLD,n,dx,dy,dx,
                                 offsetX,offsetY,offsetX,incrX,incrY,incrX);
                         task.fork();
                         blockList.add(task);
@@ -873,7 +888,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
                         int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.AddOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                        RecursiveAction task = new BufferOps.AddOpDataBufferAction(PARALLEL_THRESHOLD, n, dx, dy, dz,
                                 offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
                         task.fork();
                         blockList.add(task);
@@ -884,7 +899,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
                         int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.SubOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                        RecursiveAction task = new BufferOps.SubOpDataBufferAction(PARALLEL_THRESHOLD, n, dx, dy, dz,
                                 offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
                         task.fork();
                         blockList.add(task);
@@ -895,7 +910,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
                         int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.MulOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                        RecursiveAction task = new BufferOps.MulOpDataBufferAction(PARALLEL_THRESHOLD, n, dx, dy, dz,
                                 offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
                         task.fork();
                         blockList.add(task);
@@ -906,7 +921,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
                         int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.DivOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                        RecursiveAction task = new BufferOps.DivOpDataBufferAction(PARALLEL_THRESHOLD, n, dx, dy, dz,
                                 offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
                         task.fork();
                         blockList.add(task);
@@ -917,7 +932,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
                         int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.CopyOpDataBufferTask(PARALLEL_THRESHOLD, n, dx, dy, dz,
+                        RecursiveAction task = new BufferOps.CopyOpDataBufferAction(PARALLEL_THRESHOLD, n, dx, dy, dz,
                                 offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
                         task.fork();
                         blockList.add(task);
@@ -930,7 +945,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         int offsetX = tsx.getFirstTensorOffset() + i * tsx.getTensorStartSeparation();
                         int offsetY = tsy.getFirstTensorOffset() + i * tsy.getTensorStartSeparation();
                         int offsetZ = tsz.getFirstTensorOffset() + i * tsz.getTensorStartSeparation();
-                        RecursiveAction task = new BufferOps.OpDataBufferTask(op,PARALLEL_THRESHOLD, n, dx, dy, dz,
+                        RecursiveAction task = new BufferOps.OpDataBufferAction(op,PARALLEL_THRESHOLD, n, dx, dy, dz,
                                 offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
                         task.fork();
                         blockList.add(task);
@@ -946,35 +961,35 @@ public class DefaultOpExecutioner implements OpExecutioner {
         switch(op.name()){
             case "add":
                 for(int i=0; i<nTensors; i++){
-                    RecursiveAction task = new BufferOps.AddOpDataBufferTask(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
+                    RecursiveAction task = new BufferOps.AddOpDataBufferAction(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
                     task.fork();
                     blockList.add(task);
                 }
                 break;
             case "sub":
                 for(int i=0; i<nTensors; i++){
-                    RecursiveAction task = new BufferOps.SubOpDataBufferTask(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
+                    RecursiveAction task = new BufferOps.SubOpDataBufferAction(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
                     task.fork();
                     blockList.add(task);
                 }
                 break;
             case "mul":
                 for(int i=0; i<nTensors; i++){
-                    RecursiveAction task = new BufferOps.MulOpDataBufferTask(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
+                    RecursiveAction task = new BufferOps.MulOpDataBufferAction(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
                     task.fork();
                     blockList.add(task);
                 }
                 break;
             case "div":
                 for(int i=0; i<nTensors; i++){
-                    RecursiveAction task = new BufferOps.DivOpDataBufferTask(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
+                    RecursiveAction task = new BufferOps.DivOpDataBufferAction(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
                     task.fork();
                     blockList.add(task);
                 }
                 break;
             case "copy":
                 for(int i=0; i<nTensors; i++){
-                    RecursiveAction task = new BufferOps.CopyOpDataBufferTask(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
+                    RecursiveAction task = new BufferOps.CopyOpDataBufferAction(i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
                     task.fork();
                     blockList.add(task);
                 }
@@ -983,7 +998,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             case "rsub":
             default:
                 for(int i=0; i<nTensors; i++){
-                    RecursiveAction task = new BufferOps.OpDataBufferTask(op,i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
+                    RecursiveAction task = new BufferOps.OpDataBufferAction(op,i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
                     task.fork();
                     blockList.add(task);
                 }

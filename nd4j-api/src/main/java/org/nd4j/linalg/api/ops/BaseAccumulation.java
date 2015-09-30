@@ -179,6 +179,22 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     @Override
+    public Number currentResult(){
+        return finalResult;
+    }
+
+    @Override
+    public void setFinalResult(Number number){
+        this.finalResult = number;
+    }
+
+    @Override
+    public void setFinalResultComplex(IComplexNumber number){
+        this.finalResultComplex = number;
+    }
+
+
+    @Override
     public Number getFinalResult(){
         return finalResult;
     }

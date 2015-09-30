@@ -240,7 +240,7 @@ public class Transforms {
      *
      */
     public static double cosineSim(INDArray d1, INDArray d2) {
-        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).currentResult().doubleValue();
+        return Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(d1, d2, d1.length())).getFinalResult().doubleValue();
     }
 
     /**

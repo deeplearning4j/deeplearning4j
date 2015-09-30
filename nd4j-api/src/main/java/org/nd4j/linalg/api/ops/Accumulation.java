@@ -80,7 +80,13 @@ public interface Accumulation extends Op {
 
     Number getFinalResult();
 
+    Number currentResult(); //Temp
+
     IComplexNumber getFinalResultComplex();
+
+    void setFinalResult(Number number);
+
+    void setFinalResultComplex(IComplexNumber number);
 
 
     /**

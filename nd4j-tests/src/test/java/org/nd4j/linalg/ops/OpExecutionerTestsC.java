@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.exception.IllegalOpException;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
@@ -40,7 +41,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.DataInput;
 import java.io.DataInputStream;
 
 /**
@@ -254,9 +254,10 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testIamax() {
         INDArray linspace = Nd4j.linspace(1, 4, 4);
-        assertEquals(getFailureMessage(),3,Nd4j.getBlasWrapper().iamax(linspace));
-        int iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(linspace)).currentResult().intValue();
-        assertEquals(3,iamax);
+        assertEquals(getFailureMessage(), 3, Nd4j.getBlasWrapper().iamax(linspace));
+//        int iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(linspace)).currentResult().intValue();
+//        assertEquals(3,iamax);
+        throw new UnsupportedOperationException();
     }
 
 

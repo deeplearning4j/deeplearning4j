@@ -158,53 +158,54 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         else {
             checkOp(op);
+            throw new UnsupportedOperationException("Not implemented");
 
-            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if(op.y() != null) {
-                    op.setCurrentResult(loop.reduce3(
-                            op.x().data().asDouble()
-                            ,op.y().data().asDouble()
-                            ,op.n()
-                            ,op.x().offset()
-                            ,op.y().offset()
-                            ,BlasBufferUtil.getBlasStride(op.x())
-                            ,BlasBufferUtil.getBlasStride(op.y())
-                            ,op.name()
-                            , ArgsConverter.convertExtraArgsDouble(op)));
-                }
-                else {
-                    op.setCurrentResult(loop.reduce(
-                            op.x().data().asDouble()
-                            ,op.n()
-                            ,op.x().offset()
-                            ,BlasBufferUtil.getBlasStride(op.x())
-                            ,op.name()
-                            ,ArgsConverter.convertExtraArgsDouble(op)));
-                }
-            }
-            else {
-                if(op.y() != null) {
-                    op.setCurrentResult(loop.reduce3Float(
-                            op.x().data().asFloat()
-                            , op.y().data().asFloat()
-                            , op.n()
-                            , op.x().offset()
-                            , op.y().offset()
-                            , BlasBufferUtil.getBlasStride(op.x())
-                            , BlasBufferUtil.getBlasStride(op.y())
-                            , op.name()
-                            , ArgsConverter.convertExtraArgsFloat(op)));
-                }
-                else {
-                    op.setCurrentResult(loop.reduceFloat(
-                            op.x().data().asFloat()
-                            , op.n()
-                            , op.x().offset()
-                            , BlasBufferUtil.getBlasStride(op.x())
-                            , op.name()
-                            , ArgsConverter.convertExtraArgsFloat(op)));
-                }
-            }
+//            if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+//                if(op.y() != null) {
+//                    op.setCurrentResult(loop.reduce3(
+//                            op.x().data().asDouble()
+//                            ,op.y().data().asDouble()
+//                            ,op.n()
+//                            ,op.x().offset()
+//                            ,op.y().offset()
+//                            ,BlasBufferUtil.getBlasStride(op.x())
+//                            ,BlasBufferUtil.getBlasStride(op.y())
+//                            ,op.name()
+//                            , ArgsConverter.convertExtraArgsDouble(op)));
+//                }
+//                else {
+//                    op.setCurrentResult(loop.reduce(
+//                            op.x().data().asDouble()
+//                            ,op.n()
+//                            ,op.x().offset()
+//                            ,BlasBufferUtil.getBlasStride(op.x())
+//                            ,op.name()
+//                            ,ArgsConverter.convertExtraArgsDouble(op)));
+//                }
+//            }
+//            else {
+//                if(op.y() != null) {
+//                    op.setCurrentResult(loop.reduce3Float(
+//                            op.x().data().asFloat()
+//                            , op.y().data().asFloat()
+//                            , op.n()
+//                            , op.x().offset()
+//                            , op.y().offset()
+//                            , BlasBufferUtil.getBlasStride(op.x())
+//                            , BlasBufferUtil.getBlasStride(op.y())
+//                            , op.name()
+//                            , ArgsConverter.convertExtraArgsFloat(op)));
+//                }
+//                else {
+//                    op.setCurrentResult(loop.reduceFloat(
+//                            op.x().data().asFloat()
+//                            , op.n()
+//                            , op.x().offset()
+//                            , BlasBufferUtil.getBlasStride(op.x())
+//                            , op.name()
+//                            , ArgsConverter.convertExtraArgsFloat(op)));
+//                }
+//            }
         }
     }
 }

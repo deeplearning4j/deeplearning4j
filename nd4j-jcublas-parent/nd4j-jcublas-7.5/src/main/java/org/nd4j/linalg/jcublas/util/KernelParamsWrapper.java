@@ -207,8 +207,8 @@ public class KernelParamsWrapper implements AutoCloseable {
 
 			if(acc instanceof Accumulation) {
 				Accumulation acc2 = (Accumulation) acc;
-				acc2.setCurrentResult(data[0]);
-				acc2.setCurrentResultComplex(new ComplexDouble(data[0],data[1]));
+				acc2.setFinalResult(data[0]);
+				acc2.setFinalResultComplex(new ComplexDouble(data[0],data[1]));
 			}
 
 
@@ -228,8 +228,8 @@ public class KernelParamsWrapper implements AutoCloseable {
 
 			if(acc instanceof Accumulation) {
 				Accumulation acc2 = (Accumulation) acc;
-				acc2.setCurrentResult(data[0]);
-				acc2.setCurrentResultComplex(new ComplexDouble(data[0],data[1]));
+				acc2.setFinalResult(data[0]);
+				acc2.setFinalResultComplex(new ComplexDouble(data[0],data[1]));
 			}
 		}
 	}
