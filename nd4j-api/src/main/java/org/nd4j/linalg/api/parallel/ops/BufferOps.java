@@ -176,12 +176,76 @@ public class BufferOps {
                 new TransformOpDataBufferAction(op,0,tensorDim,threshold,x,y,z).invoke();
             } else {
                 List<TransformOpDataBufferAction> blockList = new ArrayList<>(nTensors);
-                for( int i=0; i<nTensors; i++ ){
-                    TransformOpDataBufferAction task = new TransformOpDataBufferAction(op,i,tensorDim,threshold,x,y,z);
-                    task.fork();
-                    blockList.add(task);
+                if(x.rank() == 2) {
+                    //Use fast tensor calculation for 2d
+                    OpExecutionerUtil.Tensor1DStats tsx = OpExecutionerUtil.get1DTensorStats(x, tensorDim);
+                    int n = tsx.getTensorLength();
+                    int incrX = tsx.getElementWiseStride();
+                    DataBuffer dx = x.data();
+                    if(y==null){
+                        if(x==z){
+                            //x=Op(x)
+                            for( int i=0; i<nTensors; i++){
+                                int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                                TransformOpDataBufferAction task = new TransformOpDataBufferAction(op,threshold,n,dx,null,dx,offsetX,
+                                        0,offsetX,incrX,0,incrX);
+                                task.fork();
+                                blockList.add(task);
+                            }
+                        } else {
+                            //z=Op(x)
+                            DataBuffer dz = z.data();
+                            OpExecutionerUtil.Tensor1DStats tsz = OpExecutionerUtil.get1DTensorStats(z, tensorDim);
+                            int incrZ = tsz.getElementWiseStride();
+                            for( int i=0; i<nTensors; i++){
+                                int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                                int offsetZ = tsz.getFirstTensorOffset() + i*tsz.getTensorStartSeparation();
+                                TransformOpDataBufferAction task = new TransformOpDataBufferAction(op,threshold,n,dx,null,dz,offsetX,
+                                        0,offsetZ,incrX,0,incrZ);
+                                task.fork();
+                                blockList.add(task);
+                            }
+                        }
+                    } else {
+                        DataBuffer dy = y.data();
+                        OpExecutionerUtil.Tensor1DStats tsy = OpExecutionerUtil.get1DTensorStats(y,tensorDim);
+                        int incrY = tsy.elementWiseStride;
+                        if(x==z){
+                            //x=Op(x,y)
+                            for( int i=0; i<nTensors; i++){
+                                int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                                int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                                TransformOpDataBufferAction task = new TransformOpDataBufferAction(op,threshold,n,dx,dy,dx,offsetX,
+                                        offsetY,offsetX,incrX,incrY,incrX);
+                                task.fork();
+                                blockList.add(task);
+                            }
+                        } else {
+                            //z=Op(x,y)
+                            DataBuffer dz = z.data();
+                            OpExecutionerUtil.Tensor1DStats tsz = OpExecutionerUtil.get1DTensorStats(z, tensorDim);
+                            int incrZ = tsz.getElementWiseStride();
+                            for( int i=0; i<nTensors; i++){
+                                int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                                int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                                int offsetZ = tsz.getFirstTensorOffset() + i*tsz.getTensorStartSeparation();
+                                TransformOpDataBufferAction task = new TransformOpDataBufferAction(op,threshold,n,dx,dy,dz,offsetX,
+                                        offsetY,offsetZ,incrX,incrY,incrZ);
+                                task.fork();
+                                blockList.add(task);
+                            }
+                        }
+                    }
+                } else {
+                    //Use general purpose tensor calculation for everything else
+                    for (int i = 0; i < nTensors; i++) {
+                        TransformOpDataBufferAction task = new TransformOpDataBufferAction(op, i, tensorDim, threshold, x, y, z);
+                        task.fork();
+                        blockList.add(task);
+                    }
                 }
 
+                //Block until all are completed
                 for(TransformOpDataBufferAction task : blockList){
                     task.join();
                 }
@@ -211,10 +275,39 @@ public class BufferOps {
                 return new AccumulationOpDataBufferTask(op,0,tensorDim,threshold,x,y,true).invoke();
             } else {
                 List<AccumulationOpDataBufferTask> blockList = new ArrayList<>(nTensors);
-                for( int i=0; i<nTensors; i++ ){
-                    AccumulationOpDataBufferTask task = new AccumulationOpDataBufferTask(op,i,tensorDim,threshold,x,y,false);
-                    task.fork();
-                    blockList.add(task);
+
+                if(x.rank()==2){
+                    //Use fast tensor calculation for 2d
+                    OpExecutionerUtil.Tensor1DStats tsx = OpExecutionerUtil.get1DTensorStats(x, tensorDim);
+                    int n = tsx.getTensorLength();
+                    int incrX = tsx.getElementWiseStride();
+                    DataBuffer dx = x.data();
+                    if(y==null){
+                        for( int i=0; i<nTensors; i++){
+                            int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                            AccumulationOpDataBufferTask task = new AccumulationOpDataBufferTask(op,threshold,n,dx,null,offsetX,0,incrX,0,false);
+                            task.fork();
+                            blockList.add(task);
+                        }
+                    } else {
+                        DataBuffer dy = y.data();
+                        OpExecutionerUtil.Tensor1DStats tsy = OpExecutionerUtil.get1DTensorStats(y,tensorDim);
+                        int incrY = tsy.getElementWiseStride();
+                        for( int i=0; i<nTensors; i++){
+                            int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                            int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                            AccumulationOpDataBufferTask task = new AccumulationOpDataBufferTask(op,threshold,n,dx,dy,offsetX,offsetY,incrX,incrY,false);
+                            task.fork();
+                            blockList.add(task);
+                        }
+                    }
+                } else {
+                    //3+ dimensions
+                    for( int i=0; i<nTensors; i++ ){
+                        AccumulationOpDataBufferTask task = new AccumulationOpDataBufferTask(op,i,tensorDim,threshold,x,y,false);
+                        task.fork();
+                        blockList.add(task);
+                    }
                 }
 
                 double accum = op.zeroDouble();
@@ -314,10 +407,40 @@ public class BufferOps {
                 return new IndexAccumulationOpDataBufferTask(op, 0, tensorDim, threshold, x, y, true).invoke();
             } else {
                 List<IndexAccumulationOpDataBufferTask> blockList = new ArrayList<>(nTensors);
-                for( int i=0; i<nTensors; i++ ){
-                    IndexAccumulationOpDataBufferTask task = new IndexAccumulationOpDataBufferTask(op,i,tensorDim,threshold,x,y,false);
-                    task.fork();
-                    blockList.add(task);
+                if(x.rank()==2){
+                    //Use fast tensor calculation for 2d
+                    OpExecutionerUtil.Tensor1DStats tsx = OpExecutionerUtil.get1DTensorStats(x, tensorDim);
+                    int n = tsx.getTensorLength();
+                    int incrX = tsx.getElementWiseStride();
+                    DataBuffer dx = x.data();
+                    if(y==null){
+                        for( int i=0; i<nTensors; i++){
+                            int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                            int elementOffset = i*tsx.getTensorLength();
+                            IndexAccumulationOpDataBufferTask task = new IndexAccumulationOpDataBufferTask(op,threshold,n,dx,null,offsetX,0,incrX,0,elementOffset,false);
+                            task.fork();
+                            blockList.add(task);
+                        }
+                    } else {
+                        DataBuffer dy = y.data();
+                        OpExecutionerUtil.Tensor1DStats tsy = OpExecutionerUtil.get1DTensorStats(y,tensorDim);
+                        int incrY = tsy.getElementWiseStride();
+                        for( int i=0; i<nTensors; i++){
+                            int offsetX = tsx.getFirstTensorOffset() + i*tsx.getTensorStartSeparation();
+                            int offsetY = tsy.getFirstTensorOffset() + i*tsy.getTensorStartSeparation();
+                            int elementOffset = i*tsx.getTensorLength();
+                            IndexAccumulationOpDataBufferTask task = new IndexAccumulationOpDataBufferTask(op,threshold,n,dx,dy,offsetX,offsetY,incrX,incrY,elementOffset,false);
+                            task.fork();
+                            blockList.add(task);
+                        }
+                    }
+                } else {
+                    //3+ dimensions
+                    for( int i=0; i<nTensors; i++ ){
+                        IndexAccumulationOpDataBufferTask task = new IndexAccumulationOpDataBufferTask(op,i,tensorDim,threshold,x,y,false);
+                        task.fork();
+                        blockList.add(task);
+                    }
                 }
 
                 Pair<Double,Integer> accum = op.zeroPair();

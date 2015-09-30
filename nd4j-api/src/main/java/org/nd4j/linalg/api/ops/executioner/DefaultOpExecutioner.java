@@ -510,7 +510,71 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if(op.y() != null){
             //Ops with 2 inputs - AddOp, MulOp, GreaterThan, etc
             if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
-                do2ArgTransformOpOnBuffer(op);
+
+
+                INDArray x = op.x();
+                INDArray y = op.y();
+                INDArray z = op.z();
+
+                boolean canDoDirectly;
+                if(x == z){
+                    if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
+                    else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
+                } else {
+                    if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,y);
+                    else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y, z);
+                }
+
+                if(canDoDirectly){
+                    //Do parallelism via fork-join, directly on buffer array
+                    switch(op.name()){
+                        case "add":
+                            new BufferOps.AddOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                                    x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                            return;
+                        case "sub":
+                            new BufferOps.SubOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                                    x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                            return;
+                        case "mul":
+                            new BufferOps.MulOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                                    x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                            return;
+                        case "div":
+                            new BufferOps.DivOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                                    x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                            return;
+                        case "copy":
+                            new BufferOps.CopyOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                                    x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                            return;
+                        default:
+                            new BufferOps.TransformOpDataBufferAction(op,PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
+                                    x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
+                            return;
+                    }
+
+                } else {
+                    //Do parallelism after splitting into tensors first
+
+                    int tensorDim;
+                    if (x == z) {
+                        tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y);
+                    } else tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y, z);
+
+                    int nTensors = x.tensorssAlongDimension(tensorDim);
+                    List<RecursiveAction> blockList;
+                    if (x.rank() == 2) {
+                        blockList = do2ArgTransformOpOnBuffer2d(op, tensorDim, x, y, z);
+                    } else {
+                        blockList = do2ArgTransformOpOnBufferGeneral(op, tensorDim, x, y, z);
+                    }
+
+                    //Wait for all tasks for finish...
+                    for (RecursiveAction task : blockList) {
+                        task.join();
+                    }
+                }
             } else {
                 if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
                     for(int i = 0; i < op.n(); i++) {
@@ -774,71 +838,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    private void do2ArgTransformOpOnBuffer(TransformOp op){
-
-        INDArray x = op.x();
-        INDArray y = op.y();
-        INDArray z = op.z();
-
-        boolean canDoDirectly;
-        if(x == z){
-            canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
-        } else {
-            canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y, z);
-        }
-
-        if(canDoDirectly){
-            //Do parallelism via fork-join, directly on buffer array
-            switch(op.name()){
-                case "add":
-                    new BufferOps.AddOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
-                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
-                    return;
-                case "sub":
-                    new BufferOps.SubOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
-                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
-                    return;
-                case "mul":
-                    new BufferOps.MulOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
-                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
-                    return;
-                case "div":
-                    new BufferOps.DivOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
-                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
-                    return;
-                case "copy":
-                    new BufferOps.CopyOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
-                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
-                    return;
-                default:
-                    new BufferOps.TransformOpDataBufferAction(op,PARALLEL_THRESHOLD,op.n(),x.data(),y.data(),z.data(),
-                            x.offset(),y.offset(),z.offset(),x.elementWiseStride(),y.elementWiseStride(),z.elementWiseStride()).invoke();
-                    return;
-            }
-
-        } else {
-
-            //Do parallelism after splitting into tensors first
-            int tensorDim;
-            if (x == z) {
-                tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y);
-            } else tensorDim = OpExecutionerUtil.chooseElementWiseTensorDimension(x, y, z);
-
-            int nTensors = x.tensorssAlongDimension(tensorDim);
-            List<RecursiveAction> blockList;
-            if (x.rank() == 2) {
-                blockList = do2ArgTransformOpOnBuffer2d(op, tensorDim, x, y, z);
-            } else {
-                blockList = do2ArgTransformOpOnBufferGeneral(op, tensorDim, x, y, z);
-            }
-
-            //Wait for all tasks for finish...
-            for (RecursiveAction task : blockList) {
-                task.join();
-            }
-        }
-    }
-
     private List<RecursiveAction> do2ArgTransformOpOnBuffer2d(TransformOp op, int tensorDim, INDArray x, INDArray y, INDArray z){
         List<RecursiveAction> blockList = new ArrayList<>();
         int nTensors = x.tensorssAlongDimension(tensorDim);
@@ -1035,11 +1034,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
             case "rdiv":
             case "rsub":
             default:
-                for(int i=0; i<nTensors; i++){
-                    RecursiveAction task = new BufferOps.TransformOpDataBufferAction(op,i,tensorDim,PARALLEL_THRESHOLD,x,y,z);
-                    task.fork();
-                    blockList.add(task);
-                }
+                RecursiveAction task = new BufferOps.TransformViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,y,z);
+                task.fork();
+                blockList.add(task);
         }
         return blockList;
     }
