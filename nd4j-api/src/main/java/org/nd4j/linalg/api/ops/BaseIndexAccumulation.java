@@ -91,4 +91,9 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         this.finalResult = idx;
     }
 
+    @Override
+    public int getFinalResult(){
+        return finalResult;
+    }
+
 }

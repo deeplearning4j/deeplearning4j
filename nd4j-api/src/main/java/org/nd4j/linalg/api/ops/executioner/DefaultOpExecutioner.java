@@ -105,6 +105,9 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else if(op instanceof Accumulation) {
             return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
         }
+        else if(op instanceof IndexAccumulation) {
+            return Nd4j.scalar(execAndReturn((IndexAccumulation)op).getFinalResult());
+        }
 
         throw new IllegalArgumentException("Illegal type of op " + op.getClass());
     }
@@ -233,6 +236,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public INDArray execAndReturn(ScalarOp op) {
         return exec(op).z();
+    }
+
+    @Override
+    public IndexAccumulation execAndReturn(IndexAccumulation op){
+        return (IndexAccumulation) exec(op);
     }
 
     @Override
@@ -616,7 +624,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
                 if(canDoDirectly){
                     new BufferOps.TransformOpDataBufferAction(op,PARALLEL_THRESHOLD,x.length(),x.data(),null,z.data(),x.offset(),
-                            0,z.offset(),x.elementStride(),0,z.elementWiseStride()).invoke();
+                            0,z.offset(),x.elementWiseStride(),0,z.elementWiseStride()).invoke();
                     return;
                 } else {
                     //Do parallelism after splitting into tensors first

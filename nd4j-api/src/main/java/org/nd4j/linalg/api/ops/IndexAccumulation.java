@@ -32,6 +32,8 @@ public interface IndexAccumulation extends Op {
 
     void setFinalResult( int idx );
 
+    int getFinalResult();
+
     /**Initial value
      *@return the initial value
      */
