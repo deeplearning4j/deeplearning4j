@@ -56,23 +56,6 @@ public class CosineSimilarity extends BaseAccumulation {
         super(x, y);
     }
 
-//    @Override
-//    public void update(Number result) {
-//        currentResult = currentResult.doubleValue() + result.doubleValue();
-//        if (numProcessed() == n()) {
-//            currentResult = currentResult.doubleValue() / constantNormalizedByNorm2X.doubleValue() / constantNormalizedByNorm2Y.doubleValue();
-//        }
-//
-//    }
-//
-//    @Override
-//    public void update(IComplexNumber result) {
-//        currentComplexResult.addi(result);
-//        if (numProcessed() == n()) {
-//            currentComplexResult.set(currentComplexResult.realComponent().doubleValue() / constantNormalizedByNorm2X.doubleValue() / constantNormalizedByNorm2Y.doubleValue(), 0);
-//        }
-//    }
-
     @Override
     public double update(double accum, double x){
         return accum + x;
@@ -110,6 +93,11 @@ public class CosineSimilarity extends BaseAccumulation {
 
     @Override
     public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        return accum.add(x.mul(y));
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
         return accum.add(x.mul(y));
     }
 
@@ -177,19 +165,19 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
-    public double getFinalResult( double accum ){
+    public double getAndSetFinalResult(double accum){
         double d = accum / (constantNormalizedByNorm2X.doubleValue()*constantNormalizedByNorm2Y.doubleValue());
         this.finalResult = d;
         return d;
     }
 
     @Override
-    public float getFinalResult( float accum ){
-        return (float)getFinalResult((double)accum);
+    public float getAndSetFinalResult(float accum){
+        return (float) getAndSetFinalResult((double) accum);
     }
 
     @Override
-    public IComplexNumber getFinalResult( IComplexNumber accum ){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
         finalResultComplex = Nd4j.createComplexNumber(accum.realComponent().doubleValue() / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue()), 0);
         return finalResultComplex;
     }

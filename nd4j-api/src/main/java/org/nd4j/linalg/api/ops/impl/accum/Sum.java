@@ -91,6 +91,12 @@ public class Sum extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x);
+    }
+
+
+    @Override
     public String name() {
         return "sum";
     }

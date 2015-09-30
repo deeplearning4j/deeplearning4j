@@ -88,6 +88,11 @@ public class Max extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return (accum.absoluteValue().doubleValue() > x.absoluteValue().doubleValue() ? accum : x);
+    }
+
+    @Override
     public String name() {
         return "max";
     }

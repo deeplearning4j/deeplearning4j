@@ -51,19 +51,6 @@ public class EuclideanDistance extends BaseAccumulation {
         super(x, y);
     }
 
-//    @Override
-//    public void update(Number result) {
-//        currentResult = currentResult.doubleValue() + FastMath.pow(result.doubleValue(), 2.0);
-//        if(numProcessed() == n) {
-//            currentResult = FastMath.sqrt(currentResult.doubleValue());
-//        }
-//    }
-//
-//    @Override
-//    public void update(IComplexNumber result) {
-//        currentComplexResult.addi(result);
-//    }
-
     @Override
     public double update(double accum, double x){
         return accum;
@@ -104,6 +91,12 @@ public class EuclideanDistance extends BaseAccumulation {
 
     @Override
     public IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y){
+        IComplexNumber c = x.sub(y);
+        return accum.add(c.mul(c));
+    }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
         IComplexNumber c = x.sub(y);
         return accum.add(c.mul(c));
     }
@@ -198,21 +191,21 @@ public class EuclideanDistance extends BaseAccumulation {
     }
 
     @Override
-    public double getFinalResult( double accum ){
+    public double getAndSetFinalResult(double accum){
         double d = FastMath.sqrt(accum);
         this.finalResult = d;
         return d;
     }
 
     @Override
-    public float getFinalResult( float accum ){
+    public float getAndSetFinalResult(float accum){
         float f = (float)FastMath.sqrt(accum);
         this.finalResult = f;
         return f;
     }
 
     @Override
-    public IComplexNumber getFinalResult( IComplexNumber accum ){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
         this.finalResultComplex = accum.sqrt();
         return finalResultComplex;
     }

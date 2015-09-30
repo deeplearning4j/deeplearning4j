@@ -99,6 +99,11 @@ public class Min extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return (accum.absoluteValue().doubleValue() < x.absoluteValue().doubleValue() ? accum : x);
+    }
+
+    @Override
     public double zeroDouble() {
         return Double.MAX_VALUE;
     }

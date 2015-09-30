@@ -69,6 +69,16 @@ public class IAMax extends BaseIndexAccumulation {
         return (accum.absoluteValue().doubleValue()>=x.absoluteValue().doubleValue() ? accumIdx : xIdx);
     }
 
+    @Override
+    public int update(IComplexNumber accum, int accumIdx, double x, int idx) {
+        return (accum.absoluteValue().doubleValue()>=FastMath.abs(x) ? accumIdx : idx);
+    }
+
+    @Override
+    public int update(IComplexNumber accum, int accumIdx, double x, double y, int idx) {
+        return (accum.absoluteValue().doubleValue()>=FastMath.abs(x) ? accumIdx : idx);
+    }
+
     public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, IComplexNumber y, int idx){
         return (accum.absoluteValue().doubleValue()>=x.absoluteValue().doubleValue() ? accumIdx : idx);
     }

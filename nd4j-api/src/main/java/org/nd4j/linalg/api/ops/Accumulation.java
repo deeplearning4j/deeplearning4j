@@ -66,17 +66,19 @@ public interface Accumulation extends Op {
 
     IComplexNumber update( IComplexNumber accum, IComplexNumber x, IComplexNumber y);
 
+    IComplexNumber update( IComplexNumber accum, IComplexNumber x, double y);
+
     double combineSubResults(double first, double second);
 
     float combineSubResults(float first, float second);
 
     IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second);
 
-    double getFinalResult( double accum );
+    double getAndSetFinalResult(double accum);
 
-    float getFinalResult( float accum );
+    float getAndSetFinalResult(float accum);
 
-    IComplexNumber getFinalResult( IComplexNumber accum );
+    IComplexNumber getAndSetFinalResult(IComplexNumber accum);
 
     Number getFinalResult();
 

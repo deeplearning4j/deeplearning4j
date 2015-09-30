@@ -161,6 +161,11 @@ public class Dot extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.mul(y));
+    }
+
+    @Override
     public double combineSubResults(double first, double second){
         return first + second;
     }

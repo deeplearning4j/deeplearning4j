@@ -91,6 +91,11 @@ public class Prod extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.mul(x);
+    }
+
+    @Override
     public String name() {
         return "prod";
     }

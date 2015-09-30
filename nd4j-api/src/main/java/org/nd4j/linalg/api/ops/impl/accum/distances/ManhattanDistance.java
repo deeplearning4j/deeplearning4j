@@ -105,6 +105,11 @@ public class ManhattanDistance extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.sub(y).absoluteValue());
+    }
+
+    @Override
     public double combineSubResults(double first, double second){
         return first + second;
     }

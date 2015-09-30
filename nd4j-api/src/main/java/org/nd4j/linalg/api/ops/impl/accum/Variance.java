@@ -158,6 +158,12 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        IComplexNumber dev = x.sub(mean);
+        return accum.add(dev.mul(dev));
+    }
+
+    @Override
     public String name() {
         return "var";
     }
@@ -167,18 +173,15 @@ public class Variance extends BaseAccumulation {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-
         if (y() != null)
             return new Variance(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Variance(x.vectorAlongDimension(index, dimension));
-
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-
 
         if (y() != null)
             return new Variance(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
@@ -211,7 +214,7 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public double getFinalResult( double accum ){
+    public double getAndSetFinalResult(double accum){
         //accumulation is sum_i (x_i-mean)^2
         double result;
         if (biasCorrected)
@@ -223,12 +226,12 @@ public class Variance extends BaseAccumulation {
     }
 
     @Override
-    public float getFinalResult( float accum ){
-        return (float)getFinalResult((double)accum);
+    public float getAndSetFinalResult(float accum){
+        return (float) getAndSetFinalResult((double) accum);
     }
 
     @Override
-    public IComplexNumber getFinalResult( IComplexNumber accum ){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
         if (biasCorrected)
             finalResultComplex = (accum.sub(ComplexUtil.pow(Nd4j.createComplexNumber(bias, 0), 2.0).div(Nd4j.createComplexNumber(n(), 0))).div(Nd4j.createComplexNumber(n() - 1.0, 0.0)));
         else finalResultComplex = accum.divi(n - 1);

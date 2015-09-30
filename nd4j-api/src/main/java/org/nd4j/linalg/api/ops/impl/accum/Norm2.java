@@ -95,6 +95,11 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.mul(x));
+    }
+
+    @Override
     public double combineSubResults(double first, double second){
         return first + second;
     }
@@ -137,21 +142,21 @@ public class Norm2 extends BaseAccumulation {
     }
 
     @Override
-    public double getFinalResult( double accum ){
+    public double getAndSetFinalResult(double accum){
         double d = FastMath.sqrt(accum);
         this.finalResult = d;
         return d;
     }
 
     @Override
-    public float getFinalResult( float accum ){
+    public float getAndSetFinalResult(float accum){
         float f = (float)FastMath.sqrt(accum);
         this.finalResult = f;
         return f;
     }
 
     @Override
-    public IComplexNumber getFinalResult( IComplexNumber accum ){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
         this.finalResultComplex = accum.sqrt();
         return finalResultComplex;
     }

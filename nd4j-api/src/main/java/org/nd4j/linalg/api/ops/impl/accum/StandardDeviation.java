@@ -23,7 +23,6 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.util.ComplexUtil;
 
 /**
  * Standard deviation (sqrt of variance)
@@ -74,23 +73,23 @@ public class StandardDeviation extends Variance {
     }
 
     @Override
-    public double getFinalResult( double accum ){
+    public double getAndSetFinalResult(double accum){
         //stdev is sqrt of variance:
-        double d = FastMath.sqrt(super.getFinalResult(accum));
+        double d = FastMath.sqrt(super.getAndSetFinalResult(accum));
         this.finalResult = d;
         return d;
     }
 
     @Override
-    public float getFinalResult( float accum ){
-        float f = (float)FastMath.sqrt(super.getFinalResult(accum));
+    public float getAndSetFinalResult(float accum){
+        float f = (float)FastMath.sqrt(super.getAndSetFinalResult(accum));
         this.finalResult = f;
         return f;
     }
 
     @Override
-    public IComplexNumber getFinalResult( IComplexNumber accum ){
-        finalResultComplex = getFinalResult(accum).sqrt();
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
+        finalResultComplex = super.getAndSetFinalResult(accum).sqrt();
         return finalResultComplex;
     }
 }

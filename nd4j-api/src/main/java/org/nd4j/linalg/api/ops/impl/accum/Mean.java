@@ -59,12 +59,10 @@ public class Mean extends Sum {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-
         if (y() != null)
             return new Mean(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Mean(x.vectorAlongDimension(index, dimension));
-
     }
 
     @Override
@@ -79,21 +77,21 @@ public class Mean extends Sum {
     }
 
     @Override
-    public double getFinalResult( double accum ){
+    public double getAndSetFinalResult(double accum){
         double d = accum / n();
         this.finalResult = d;
         return d;
     }
 
     @Override
-    public float getFinalResult( float accum ){
+    public float getAndSetFinalResult(float accum){
         float f = accum / n();
         this.finalResult = f;
         return f;
     }
 
     @Override
-    public IComplexNumber getFinalResult( IComplexNumber accum ){
+    public IComplexNumber getAndSetFinalResult(IComplexNumber accum){
         finalResultComplex = accum.div(n());
         return finalResultComplex;
     }

@@ -83,6 +83,11 @@ public class TestAccumulation extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return null;
+    }
+
+    @Override
     public IComplexNumber zeroComplex() {
         return Nd4j.createComplexNumber(0, 0);
     }

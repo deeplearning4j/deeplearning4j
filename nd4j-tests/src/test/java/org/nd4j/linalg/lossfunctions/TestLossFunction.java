@@ -82,4 +82,9 @@ public class TestLossFunction extends BaseLossFunction {
     public IComplexNumber update(IComplexNumber accum, IComplexNumber x, IComplexNumber y) {
         return null;
     }
+
+    @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return null;
+    }
 }

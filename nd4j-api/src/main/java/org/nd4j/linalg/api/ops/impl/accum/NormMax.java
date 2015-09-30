@@ -93,6 +93,11 @@ public class NormMax extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return (accum.absoluteValue().doubleValue() >= x.absoluteValue().doubleValue() ? accum : Nd4j.createComplexNumber(x.absoluteValue(),0));
+    }
+
+    @Override
     public String name() {
         return "normmax";
     }

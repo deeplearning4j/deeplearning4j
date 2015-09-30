@@ -92,6 +92,11 @@ public class Norm1 extends BaseAccumulation {
     }
 
     @Override
+    public IComplexNumber update(IComplexNumber accum, IComplexNumber x, double y) {
+        return accum.add(x.absoluteValue());
+    }
+
+    @Override
     public IComplexNumber zeroComplex() {
         return Nd4j.createComplexNumber(0.0, 0.0);
     }

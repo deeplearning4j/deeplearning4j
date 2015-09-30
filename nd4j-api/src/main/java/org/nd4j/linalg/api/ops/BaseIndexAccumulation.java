@@ -1,10 +1,12 @@
 package org.nd4j.linalg.api.ops;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
+    protected int finalResult;
 
     public BaseIndexAccumulation() {
     }
@@ -47,6 +49,11 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     }
 
     @Override
+    public Pair<Double,Integer> zeroPair(){
+        return new Pair<>(zeroDouble(),-1);
+    }
+
+    @Override
     public IComplexNumber zeroComplex() {
         return Nd4j.createComplexNumber(0.0, 0.0);
     }
@@ -59,6 +66,29 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     public void init(INDArray x, INDArray y, INDArray z, int n) {
         super.init(x, y, z, n);
         this.extraArgs = new Object[]{zeroDouble()};
+    }
+
+    @Override
+    public int combineSubResults(double first, int idxFirst, double second, int idxSecond){
+        return update(first,idxFirst,second,idxSecond);
+    }
+
+    @Override
+    public int combineSubResults(float first, int idxFirst, float second, int idxSecond){
+        return update(first,idxFirst,second,idxSecond);
+    }
+
+    @Override
+    public Pair<Double,Integer> combineSubResults(Pair<Double,Integer> first, Pair<Double,Integer> second){
+        int idxFirst = first.getSecond();
+        int idxSecond = second.getSecond();
+        int idxOut = update(first.getFirst(),idxFirst,second.getFirst(),idxSecond);
+        return (idxOut == idxFirst ? first : second);
+    }
+
+    @Override
+    public void setFinalResult( int idx ){
+        this.finalResult = idx;
     }
 
 }
