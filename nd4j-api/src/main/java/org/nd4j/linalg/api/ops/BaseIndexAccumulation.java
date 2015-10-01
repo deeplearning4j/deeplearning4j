@@ -5,7 +5,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.impl.IndexAccumulationOpDataBufferTask;
+import org.nd4j.linalg.api.parallel.bufferops.impl.indexaccum.IndexAccumulationOpDataBufferTask;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {

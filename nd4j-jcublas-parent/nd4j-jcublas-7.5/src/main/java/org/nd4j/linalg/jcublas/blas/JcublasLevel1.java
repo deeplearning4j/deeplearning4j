@@ -49,8 +49,12 @@ public class JcublasLevel1 extends BaseLevel1 {
                 incY, result);
         SimpleJCublas.sync();
 
-
         return ret[0];
+    }
+
+    @Override
+    protected float sdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -71,7 +75,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         SimpleJCublas.sync();
 
         return ret[0];
+    }
 
+    @Override
+    protected double ddot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -124,6 +132,11 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float sasum(int N, DataBuffer X, int offsetX, int incX){
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
     protected double dnrm2(int N, INDArray X, int incX) {
         double[] ret = new double[1];
         Pointer result = Pointer.to(ret);
@@ -145,6 +158,11 @@ public class JcublasLevel1 extends BaseLevel1 {
         Pointer result = Pointer.to(ret);
         JCublas2.cublasDasum(ContextHolder.getInstance().getHandle(), N, xCPointer.getDevicePointer(), incX, result);
         return ret[0];
+    }
+
+    @Override
+    protected double dasum(int N, DataBuffer X, int offsetX, int incX){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -196,6 +214,11 @@ public class JcublasLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected int isamax(int N, DataBuffer X, int offsetX, int incX){
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
     protected int idamax(int N, INDArray X, int incX) {
         CublasPointer xCPointer = new CublasPointer(X);
         SimpleJCublas.sync();
@@ -206,6 +229,12 @@ public class JcublasLevel1 extends BaseLevel1 {
         SimpleJCublas.sync();
         return  ret2 - 1;
     }
+
+    @Override
+    protected int idamax(int N, DataBuffer X, int offsetX, int incX){
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
 
     @Override
     protected int icamax(int N, IComplexNDArray X, int incX) {

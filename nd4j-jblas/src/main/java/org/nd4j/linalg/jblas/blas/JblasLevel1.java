@@ -40,12 +40,22 @@ public class JblasLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float sdot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        return JavaBlas.rdot(N,getFloatData(X),offsetX,incX,getFloatData(Y),offsetY,incY);
+    }
+
+    @Override
     protected double ddot(int N, INDArray X, int incX, INDArray Y, int incY) {
         double[] xData = getDoubleData(X);
         double[] yData = getDoubleData(Y);
         int xOffset = getBlasOffset(X);
         int yOffset = getBlasOffset(Y);
         return JavaBlas.rdot(N,xData,xOffset,incX,yData,yOffset,incY);
+    }
+
+    @Override
+    protected double ddot( int N, DataBuffer X, int offsetX, int incX, DataBuffer Y,  int offsetY, int incY){
+        return JavaBlas.rdot(N,getDoubleData(X),offsetX,incX,getDoubleData(Y),offsetY,incY);
     }
 
     @Override
@@ -88,6 +98,11 @@ public class JblasLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected float sasum(int N, DataBuffer X, int offsetX, int incX){
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
     protected double dnrm2(int N, INDArray X, int incX) {
         X = Shape.toOffsetZero(X);
 
@@ -101,6 +116,11 @@ public class JblasLevel1 extends BaseLevel1 {
 
         double[] data = getDoubleData(X);
         return NativeBlas.dasum(N, data, getBlasOffset(X), incX);
+    }
+
+    @Override
+    protected double dasum(int N, DataBuffer X, int offsetX, int incX){
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
     @Override
@@ -131,8 +151,18 @@ public class JblasLevel1 extends BaseLevel1 {
     }
 
     @Override
+    protected int isamax(int N, DataBuffer X, int offsetX, int incX){
+        return NativeBlas.isamax(N, getFloatData(X), offsetX, incX) - 1;
+    }
+
+    @Override
     protected int idamax(int N, INDArray X, int incX) {
         return NativeBlas.idamax(N, getDoubleData(X), getBlasOffset(X), incX) -1;
+    }
+
+    @Override
+    protected int idamax(int N, DataBuffer X,int offsetX, int incX){
+        return NativeBlas.idamax(N, getDoubleData(X), offsetX, incX) - 1;
     }
 
     @Override

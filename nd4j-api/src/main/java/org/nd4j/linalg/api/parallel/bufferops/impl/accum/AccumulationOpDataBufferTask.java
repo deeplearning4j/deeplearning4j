@@ -5,9 +5,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.parallel.bufferops.AccumulationDataBufferTask;
 
-/**
- * Created by Alex on 1/10/2015.
- */
 public class AccumulationOpDataBufferTask extends AccumulationDataBufferTask {
 
     public AccumulationOpDataBufferTask(Accumulation op, int threshold, int n, DataBuffer x, DataBuffer y,
@@ -70,7 +67,7 @@ public class AccumulationOpDataBufferTask extends AccumulationDataBufferTask {
             } else {
                 double[] xd = (double[]) x.array();
                 double accum = op.zeroDouble();
-                if (incrX == 1 && incrY == 1) {
+                if (incrX == 1) {
                     for (int i = 0; i < n; i++) {
                         accum = op.update(accum, xd[offsetX + i]);
                     }

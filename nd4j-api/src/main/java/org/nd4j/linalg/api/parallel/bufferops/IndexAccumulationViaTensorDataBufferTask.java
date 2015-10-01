@@ -6,7 +6,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.bufferops.impl.IndexAccumulationOpDataBufferTask;
+import org.nd4j.linalg.api.parallel.bufferops.impl.indexaccum.IndexAccumulationOpDataBufferTask;
 
 import java.util.ArrayList;
 import java.util.List;

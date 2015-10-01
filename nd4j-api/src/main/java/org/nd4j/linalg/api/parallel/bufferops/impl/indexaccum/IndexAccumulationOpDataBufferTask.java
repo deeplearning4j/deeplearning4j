@@ -1,4 +1,4 @@
-package org.nd4j.linalg.api.parallel.bufferops.impl;
+package org.nd4j.linalg.api.parallel.bufferops.impl.indexaccum;
 
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -6,9 +6,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationDataBufferTask;
 
-/**
- * Created by Alex on 1/10/2015.
- */
 public class IndexAccumulationOpDataBufferTask extends IndexAccumulationDataBufferTask {
 
     public IndexAccumulationOpDataBufferTask(IndexAccumulation op, int threshold, int n, DataBuffer x, DataBuffer y,
@@ -110,5 +107,4 @@ public class IndexAccumulationOpDataBufferTask extends IndexAccumulationDataBuff
                                                           int incrX, int incrY, int elementOffset, boolean outerTask) {
         return new IndexAccumulationOpDataBufferTask(op, threshold, n, x, y, offsetX, offsetY, incrX, incrY, elementOffset, outerTask);
     }
-
 }

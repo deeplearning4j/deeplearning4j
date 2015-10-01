@@ -19,10 +19,13 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.parallel.bufferops.AccumulationDataBufferTask;
+import org.nd4j.linalg.api.parallel.bufferops.impl.accum.SumOpDataBufferTask;
 
 /**
  * Sum the components
@@ -120,5 +123,17 @@ public class Sum extends BaseAccumulation {
             return new Sum(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Sum(xAlongDimension);
+    }
+
+    @Override
+    public AccumulationDataBufferTask getAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
+                                                                      int offsetX, int offsetY, int incrX, int incrY, boolean outerTask){
+        return new SumOpDataBufferTask(this,threshold,n,x,y,offsetX,offsetY,incrX,incrY,outerTask);
+    }
+
+    @Override
+    public AccumulationDataBufferTask getAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
+                                                                      INDArray x, INDArray y, boolean outerTask){
+        return new SumOpDataBufferTask(this,tensorNum,tensorDim,parallelThreshold,x,y,outerTask);
     }
 }

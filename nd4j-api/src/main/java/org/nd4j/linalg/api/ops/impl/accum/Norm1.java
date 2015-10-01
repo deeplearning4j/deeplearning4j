@@ -20,10 +20,13 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.parallel.bufferops.AccumulationDataBufferTask;
+import org.nd4j.linalg.api.parallel.bufferops.impl.accum.Norm1OpDataBufferTask;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -140,5 +143,17 @@ public class Norm1 extends BaseAccumulation {
     @Override
     public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second){
         return first.add(second);
+    }
+
+    @Override
+    public AccumulationDataBufferTask getAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
+                                                                      int offsetX, int offsetY, int incrX, int incrY, boolean outerTask){
+        return new Norm1OpDataBufferTask(this,threshold,n,x,y,offsetX,offsetY,incrX,incrY,outerTask);
+    }
+
+    @Override
+    public AccumulationDataBufferTask getAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
+                                                                      INDArray x, INDArray y, boolean outerTask){
+        return new Norm1OpDataBufferTask(this,tensorNum,tensorDim,parallelThreshold,x,y,outerTask);
     }
 }

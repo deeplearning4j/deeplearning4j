@@ -5,8 +5,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
-import org.nd4j.linalg.api.parallel.bufferops.impl.scalar.ScalarOpDataBufferAction;
-import org.nd4j.linalg.api.parallel.bufferops.impl.transform.TransformOpDataBufferAction;
 
 import java.util.ArrayList;
 import java.util.List;
