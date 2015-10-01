@@ -191,7 +191,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
         INDArray label = null;
-        INDArray featureVector = Nd4j.create(labelIndex >= 0 ? currList.size() - 1 : currList.size());
+        INDArray featureVector = Nd4j.create(labelIndex > 0 ? currList.size() - 1 : currList.size());
         for (int j = 0; j < currList.size(); j++) {
             if (labelIndex >= 0 && j == labelIndex) {
                 if (numPossibleLabels < 1)
