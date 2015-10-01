@@ -1,43 +1,68 @@
 package org.nd4j.linalg.api.parallel.bufferops;
 
 
-import lombok.AllArgsConstructor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 
 import java.util.concurrent.RecursiveAction;
 
-@AllArgsConstructor
 public abstract class ScalarDataBufferAction extends RecursiveAction {
     protected final ScalarOp op;
     protected final int threshold;
-    protected final int n;
+    protected int n;
     protected final DataBuffer x;
     protected final DataBuffer z;
-    protected final int offsetX;
-    protected final int offsetZ;
-    protected final int incrX;
-    protected final int incrZ;
+    protected int offsetX;
+    protected int offsetZ;
+    protected int incrX;
+    protected int incrZ;
 
-    public ScalarDataBufferAction(ScalarOp op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, INDArray z){
+    protected final boolean doTensorFirst;
+    protected INDArray ndx;
+    protected INDArray ndz;
+    protected int tadIdx;
+    protected int tadDim;
+
+
+    public ScalarDataBufferAction(ScalarOp op, int threshold, int n, DataBuffer x, DataBuffer z,
+                                  int offsetX, int offsetZ, int incrX, int incrZ){
         this.op = op;
-        INDArray tadX = x.tensorAlongDimension(tadIdx, tadDim);
-        INDArray tadZ;
-        if(z==null) tadZ = null;
-        else tadZ = (z != x ? z.tensorAlongDimension(tadIdx, tadDim) : tadX);
-        this.x = x.data();
-        this.z = (z!=null ? z.data() : null);
-        this.offsetX = tadX.offset();
-        this.offsetZ = (z!=null ? tadZ.offset() : 0);
-        this.incrX = tadX.elementWiseStride();
-        this.incrZ = (z!=null ? tadZ.elementWiseStride() : 0);
         this.threshold = threshold;
-        this.n = tadX.length();
+        this.n = n;
+        this.x = x;
+        this.z = z;
+        this.offsetX = offsetX;
+        this.offsetZ = offsetZ;
+        this.incrX = incrX;
+        this.incrZ = incrZ;
+        this.doTensorFirst = false;
+    }
+
+
+    public ScalarDataBufferAction(ScalarOp op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray z){
+        this.op = op;
+        this.threshold = threshold;
+        this.x = x.data();
+        this.z = z.data();
+        this.ndx = x;
+        this.ndz = z;
+        this.tadIdx = tadIdx;
+        this.tadDim = tadDim;
+        this.doTensorFirst = true;
     }
 
     @Override
     protected void compute() {
+        if(doTensorFirst){
+            INDArray tadX = ndx.tensorAlongDimension(tadIdx, tadDim);
+            INDArray tadZ = (ndz != ndx ? ndz.tensorAlongDimension(tadIdx, tadDim) : tadX);
+            this.offsetX = tadX.offset();
+            this.offsetZ = tadZ.offset();
+            this.incrX = tadX.elementWiseStride();
+            this.incrZ = tadZ.elementWiseStride();
+            this.n = tadX.length();
+        }
         if (n > threshold) {
             //Split task
             int nFirst = n / 2;

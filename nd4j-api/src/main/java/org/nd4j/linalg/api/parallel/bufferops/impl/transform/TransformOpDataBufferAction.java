@@ -5,9 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.parallel.bufferops.TransformDataBufferAction;
 
-/**
- * Created by Alex on 1/10/2015.
- */
+
 public class TransformOpDataBufferAction extends TransformDataBufferAction {
     public TransformOpDataBufferAction(TransformOp op, int threshold, int n, DataBuffer x, DataBuffer y, DataBuffer z, int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ) {
         super(op,threshold, n, x, y, z, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
@@ -24,7 +22,7 @@ public class TransformOpDataBufferAction extends TransformDataBufferAction {
             if (x.dataType() == DataBuffer.Type.FLOAT) {
                 float[] xf = (float[]) x.array();
                 float[] yf = (float[]) y.array();
-                if (incrX == 1 && incrY == 1 && incrZ == 1) {
+                if (incrX == 1 && incrY == 1 && (x==z ||incrZ == 1)) {
                     if (x == z) {
                         for (int i = 0; i < n; i++) {
                             int xIdx = offsetX + i;
@@ -53,7 +51,7 @@ public class TransformOpDataBufferAction extends TransformDataBufferAction {
             } else {
                 double[] xd = (double[]) x.array();
                 double[] yd = (double[]) y.array();
-                if (incrX == 1 && incrY == 1 && incrZ == 1) {
+                if (incrX == 1 && incrY == 1 && (x==z || incrZ == 1)) {
                     if (x == z) {
                         for (int i = 0; i < n; i++) {
                             int xIdx = offsetX + i;
@@ -83,7 +81,7 @@ public class TransformOpDataBufferAction extends TransformDataBufferAction {
             //Task: Z = Op(X)
             if (x.dataType() == DataBuffer.Type.FLOAT) {
                 float[] xf = (float[]) x.array();
-                if (incrX == 1 && incrZ == 1) {
+                if (incrX == 1 && (x==z || incrZ == 1)) {
                     if (x == z) {
                         for (int i = 0; i < n; i++) {
                             int xIdx = offsetX + i;
@@ -110,7 +108,7 @@ public class TransformOpDataBufferAction extends TransformDataBufferAction {
                 }
             } else {
                 double[] xd = (double[]) x.array();
-                if (incrX == 1 && incrZ == 1) {
+                if (incrX == 1 && (x==z || incrZ == 1)) {
                     if (x == z) {
                         for (int i = 0; i < n; i++) {
                             int xIdx = offsetX + i;

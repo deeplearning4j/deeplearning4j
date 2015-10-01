@@ -25,7 +25,7 @@ public class DivOpDataBufferAction extends TransformDataBufferAction {
         if (x.dataType() == DataBuffer.Type.FLOAT) {
             float[] xf = (float[]) x.array();
             float[] yf = (float[]) y.array();
-            if (incrX == 1 && incrY == 1 && incrZ == 1) {
+            if (incrX == 1 && incrY == 1 && (x==z || incrZ == 1)) {
                 if (x == z) {
                     for (int i = 0; i < n; i++) {
                         xf[offsetX + i] /= yf[offsetY + i];
@@ -51,7 +51,7 @@ public class DivOpDataBufferAction extends TransformDataBufferAction {
         } else {
             double[] xd = (double[]) x.array();
             double[] yd = (double[]) y.array();
-            if (incrX == 1 && incrY == 1 && incrZ == 1) {
+            if (incrX == 1 && incrY == 1 && (x==z || incrZ == 1)) {
                 if (x == z) {
                     for (int i = 0; i < n; i++) {
                         xd[offsetX + i] /= yd[offsetY + i];

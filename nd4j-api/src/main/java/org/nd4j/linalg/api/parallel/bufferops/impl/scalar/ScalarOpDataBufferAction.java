@@ -13,7 +13,7 @@ public class ScalarOpDataBufferAction extends ScalarDataBufferAction {
     }
 
     public ScalarOpDataBufferAction(ScalarOp op, int tensorNum, int tensorDim, int threshold, INDArray x, INDArray z){
-        super(op, tensorNum,tensorDim,threshold,x,null,z);
+        super(op, tensorNum,tensorDim,threshold,x,z);
     }
 
     @Override
@@ -21,7 +21,7 @@ public class ScalarOpDataBufferAction extends ScalarDataBufferAction {
         //Task: Z = Op(X)
         if (x.dataType() == DataBuffer.Type.FLOAT) {
             float[] xf = (float[]) x.array();
-            if (incrX == 1 && incrZ == 1) {
+            if (incrX == 1 && (x==z || incrZ == 1)) {
                 if (x == z) {
                     for (int i = 0; i < n; i++) {
                         int xIdx = offsetX + i;

@@ -1,42 +1,69 @@
 package org.nd4j.linalg.api.parallel.bufferops;
 
-import lombok.AllArgsConstructor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 
 import java.util.concurrent.RecursiveTask;
 
-@AllArgsConstructor
 public abstract class AccumulationDataBufferTask extends RecursiveTask<Double> {
     protected final Accumulation op;
     protected final int threshold;
-    protected final int n;
+    protected int n;
     protected final DataBuffer x;
     protected final DataBuffer y;
-    protected final int offsetX;
-    protected final int offsetY;
-    protected final int incrX;
-    protected final int incrY;
+    protected int offsetX;
+    protected int offsetY;
+    protected int incrX;
+    protected int incrY;
     protected final boolean outerTask;
+
+    protected final boolean doTensorFirst;
+    protected INDArray ndx;
+    protected INDArray ndy;
+    protected int tadIdx;
+    protected int tadDim;
+
+    public AccumulationDataBufferTask(Accumulation op, int threshold, int n, DataBuffer x, DataBuffer y,
+                                      int offsetX, int offsetY, int incrX, int incrY, boolean outerTask ){
+        this.op = op;
+        this.threshold = threshold;
+        this.n = n;
+        this.x = x;
+        this.y = y;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.incrX = incrX;
+        this.incrY = incrY;
+        this.outerTask = outerTask;
+        this.doTensorFirst = false;
+    }
 
     public AccumulationDataBufferTask( Accumulation op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, boolean outerTask){
         this.op = op;
         this.threshold = threshold;
         this.outerTask = outerTask;
-        INDArray tadX = x.tensorAlongDimension(tadIdx,tadDim);
-        INDArray tadY = (y!=null ? y.tensorAlongDimension(tadIdx,tadDim) : null);
         this.x = x.data();
         this.y = (y != null ? y.data() : null);
-        this.offsetX = tadX.offset();
-        this.offsetY = (tadY != null ? tadY.offset() : 0);
-        this.incrX = tadX.elementWiseStride();
-        this.incrY = (tadY != null ? tadY.elementWiseStride() : 0);
-        this.n = tadX.length();
+        this.ndx = x;
+        this.ndy = y;
+        this.tadIdx = tadIdx;
+        this.tadDim = tadDim;
+        this.doTensorFirst = true;
     }
 
     @Override
     protected Double compute() {
+        if(doTensorFirst){
+            INDArray tadX = ndx.tensorAlongDimension(tadIdx,tadDim);
+            INDArray tadY = (ndy!=null ? ndy.tensorAlongDimension(tadIdx,tadDim) : null);
+            this.offsetX = tadX.offset();
+            this.offsetY = (tadY != null ? tadY.offset() : 0);
+            this.incrX = tadX.elementWiseStride();
+            this.incrY = (tadY != null ? tadY.elementWiseStride() : 0);
+            this.n = tadX.length();
+        }
+
         if (n > threshold) {
             //Split task
             int nFirst = n / 2;
