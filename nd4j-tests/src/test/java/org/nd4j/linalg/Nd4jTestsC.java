@@ -275,7 +275,8 @@ public  class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(scalar.getDouble(0), 1.0, 0.0);
 
         colVector.addiRowVector(scalar);    //colVector is all zeros after this
-        for( int i=0; i<5; i++) assertEquals(colVector.getDouble(i),1.0,0.0);
+        for( int i = 0; i < 5; i++)
+            assertEquals(colVector.getDouble(i),1.0,0.0);
     }
 
     @Test
@@ -2051,6 +2052,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                             default:
                                 throw new RuntimeException();
                         }
+
                         NDArrayUtil.doElementWiseOp(arrFirst, arrSecond, c);
 
 
@@ -2075,6 +2077,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
                             CheckUtil.printNDArrayHeader(arrFirst);
                             System.out.println(arrFirst);
                         }
+
                         assertEquals(arrFirst, firstDup);
 
                         assertEquals(pairSecondOriginal.getFirst(), pairSecond.getFirst());
