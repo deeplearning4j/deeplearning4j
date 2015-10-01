@@ -19,8 +19,11 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.parallel.bufferops.AccumulationDataBufferTask;
+import org.nd4j.linalg.api.parallel.bufferops.impl.accum.AccumulationOpDataBufferTask;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -202,5 +205,17 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public IComplexNumber getFinalResultComplex(){
         return finalResultComplex;
+    }
+
+    @Override
+    public AccumulationDataBufferTask getAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
+                                                                      int offsetX, int offsetY, int incrX, int incrY, boolean outerTask){
+        return new AccumulationOpDataBufferTask(this,threshold,n,x,y,offsetX,offsetY,incrX,incrY,outerTask);
+    }
+
+    @Override
+    public AccumulationDataBufferTask getAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
+                                                               INDArray x, INDArray y, boolean outerTask){
+        return new AccumulationOpDataBufferTask(this,tensorNum,tensorDim,parallelThreshold,x,y,outerTask);
     }
 }

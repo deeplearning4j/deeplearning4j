@@ -19,8 +19,11 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Ones;
+import org.nd4j.linalg.api.parallel.bufferops.TransformDataBufferAction;
+import org.nd4j.linalg.api.parallel.bufferops.impl.transform.TransformOpDataBufferAction;
 
 /**
  * A base op for basic getters and setters
@@ -52,5 +55,17 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         return new Ones(x, y, z, n);
     }
 
+    @Override
+    public TransformDataBufferAction getTransformOpDataBufferAction( int parallelThreshold, int n, DataBuffer x, DataBuffer y,
+                                                                          DataBuffer z, int offsetX, int offsetY, int offsetZ,
+                                                                          int incrX, int incrY, int incrZ){
+        return new TransformOpDataBufferAction(this,parallelThreshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
+    }
+
+    @Override
+    public TransformDataBufferAction getTransformOpDataBufferAction( int tensorNum, int tensorDim, int parallelThreshold,
+                                                                     INDArray x, INDArray y, INDArray z){
+        return new TransformOpDataBufferAction(this,tensorNum,tensorDim,parallelThreshold,x,y,z);
+    }
 
 }

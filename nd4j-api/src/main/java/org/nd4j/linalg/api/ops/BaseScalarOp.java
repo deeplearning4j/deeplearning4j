@@ -19,9 +19,12 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.parallel.bufferops.ScalarDataBufferAction;
+import org.nd4j.linalg.api.parallel.bufferops.impl.scalar.ScalarOpDataBufferAction;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -79,5 +82,17 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public IComplexNumber complexScalar() {
         return complexNumber;
+    }
+
+    @Override
+    public ScalarDataBufferAction getScalarOpDataBufferAction(int parallelThreshold, int n, DataBuffer x, DataBuffer z,
+                                                       int offsetX, int offsetZ, int incrX, int incrZ){
+        return new ScalarOpDataBufferAction(this,parallelThreshold,n,x,z,offsetX,offsetZ,incrX,incrZ);
+    }
+
+    @Override
+    public ScalarDataBufferAction getScalarOpDataBufferAction(int tensorNum, int tensorDim, int parallelThreshold,
+                                                              INDArray x, INDArray z){
+        return new ScalarOpDataBufferAction(this,tensorNum,tensorDim,parallelThreshold,x,z);
     }
 }

@@ -19,6 +19,10 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.parallel.bufferops.TransformDataBufferAction;
+
 /**
  * Transform operation:
  * stores the result in an ndarray
@@ -35,5 +39,11 @@ public interface TransformOp extends Op {
      */
     TransformOp derivative();
 
+    TransformDataBufferAction getTransformOpDataBufferAction( int parallelThreshold, int n, DataBuffer x, DataBuffer y,
+                                                                   DataBuffer z, int offsetX, int offsetY, int offsetZ,
+                                                                   int incrX, int incrY, int incrZ);
+
+    TransformDataBufferAction getTransformOpDataBufferAction( int tensorNum, int tensorDim, int parallelThreshold,
+                                                              INDArray x, INDArray y, INDArray z);
 
 }

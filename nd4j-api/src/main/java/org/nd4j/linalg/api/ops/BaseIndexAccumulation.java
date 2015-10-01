@@ -1,8 +1,11 @@
 package org.nd4j.linalg.api.ops;
 
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationDataBufferTask;
+import org.nd4j.linalg.api.parallel.bufferops.impl.IndexAccumulationOpDataBufferTask;
 import org.nd4j.linalg.factory.Nd4j;
 
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {
@@ -96,4 +99,16 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         return finalResult;
     }
 
+    @Override
+    public IndexAccumulationDataBufferTask getIndexAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
+                                                                         int offsetX, int offsetY, int incrX, int incrY,
+                                                                         int elementOffset, boolean outerTask){
+        return new IndexAccumulationOpDataBufferTask(this,threshold,n,x,y,offsetX,offsetY,incrX,incrY,elementOffset,outerTask);
+    }
+
+    @Override
+    public IndexAccumulationDataBufferTask getIndexAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
+                                                                         INDArray x, INDArray y, boolean outerTask){
+        return new IndexAccumulationOpDataBufferTask(this,tensorNum,tensorDim,parallelThreshold,x,y,outerTask);
+    }
 }

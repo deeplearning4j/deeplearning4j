@@ -2,8 +2,11 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.math3.util.Pair;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationDataBufferTask;
 
 
 public interface IndexAccumulation extends Op {
@@ -47,4 +50,12 @@ public interface IndexAccumulation extends Op {
      * @return the complex initial value
      */
     IComplexNumber zeroComplex();
+
+    IndexAccumulationDataBufferTask getIndexAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
+                                                                         int offsetX, int offsetY, int incrX, int incrY,
+                                                                         int elementOffset, boolean outerTask);
+
+    IndexAccumulationDataBufferTask getIndexAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
+                                                                         INDArray x, INDArray y, boolean outerTask);
+
 }

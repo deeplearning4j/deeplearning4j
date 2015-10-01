@@ -20,7 +20,10 @@
 package org.nd4j.linalg.api.ops;
 
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.parallel.bufferops.AccumulationDataBufferTask;
 
 import java.util.List;
 
@@ -106,4 +109,10 @@ public interface Accumulation extends Op {
      * @return the complex initial value
      */
     IComplexNumber zeroComplex();
+
+    AccumulationDataBufferTask getAccumulationOpDataBufferTask(int threshold, int n, DataBuffer x, DataBuffer y,
+                                                               int offsetX, int offsetY, int incrX, int incrY, boolean outerTask);
+
+    AccumulationDataBufferTask getAccumulationOpDataBufferTask(int tensorNum, int tensorDim, int parallelThreshold,
+                                                               INDArray x, INDArray y, boolean outerTask);
 }
