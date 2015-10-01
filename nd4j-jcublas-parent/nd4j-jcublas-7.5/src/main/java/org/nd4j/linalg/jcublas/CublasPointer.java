@@ -23,6 +23,7 @@ import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
 
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -166,7 +167,7 @@ public class CublasPointer  implements AutoCloseable {
                 , array.data().getElementSize()
                 , buffer.getHostPointer()
                 , 1
-                , buffer.getPointersToContexts().get(name, new Pair<>(0,buffer.length())).getPointer()
+                , buffer.getPointersToContexts().get(name, Triple.of(0, buffer.length(), 1)).getPointer()
                 , 1
                 , ContextHolder.getInstance().getCudaStream());
         //mark the buffer copied

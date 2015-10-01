@@ -4,6 +4,7 @@ import com.google.common.collect.Table;
 import jcuda.Pointer;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
@@ -24,7 +25,7 @@ public class PageableDirectBufferMemoryStrategy implements MemoryStrategy {
     @Override
     public Object copyToHost(DataBuffer copy,int offset) {
         JCudaBuffer buf2 = (JCudaBuffer) copy;
-        Table<String, Pair<Integer,Integer>, BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
+        Table<String, Triple<Integer,Integer,Integer>, BaseCudaDataBuffer.DevicePointerInfo> pointersToContexts = buf2.getPointersToContexts();
 
         BaseCudaDataBuffer.DevicePointerInfo devicePointerInfo = pointersToContexts.get(Thread.currentThread().getName(),new Pair<>(offset,buf2.length()));
         if(devicePointerInfo != null) {

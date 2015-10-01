@@ -26,6 +26,7 @@ import java.util.Map;
 import com.google.common.collect.Table;
 import jcuda.Pointer;
 
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -108,7 +109,7 @@ public interface JCudaBuffer extends DataBuffer {
      * mapping thread name to offset
      * @return the pointer info containing allocated poitners
      */
-    Table<String, Pair<Integer, Integer>, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
+    Table<String, Triple<Integer, Integer, Integer>, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
 
     /**
      * Returns true if the buffer has
