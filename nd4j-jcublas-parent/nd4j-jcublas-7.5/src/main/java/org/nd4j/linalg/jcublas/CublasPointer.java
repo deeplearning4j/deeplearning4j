@@ -22,16 +22,14 @@ package org.nd4j.linalg.jcublas;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas;
 import jcuda.jcublas.JCublas2;
-
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 
@@ -140,7 +138,7 @@ public class CublasPointer  implements AutoCloseable {
         String name = Thread.currentThread().getName();
         this.arr = array;
         int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
-        int stride = 1;
+        int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
         //no striding for upload if we are using the whole buffer
 
         this.devicePointer = buffer
@@ -167,7 +165,7 @@ public class CublasPointer  implements AutoCloseable {
                 , array.data().getElementSize()
                 , buffer.getHostPointer()
                 , 1
-                , buffer.getPointersToContexts().get(name, Triple.of(0, buffer.length(), 1)).getPointer()
+                , buffer.getPointersToContexts().get(name, new Pair<>(0,buffer.length())).getPointer()
                 , 1
                 , ContextHolder.getInstance().getCudaStream());
         //mark the buffer copied

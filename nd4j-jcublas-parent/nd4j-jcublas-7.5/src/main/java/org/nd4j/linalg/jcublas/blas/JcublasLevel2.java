@@ -4,18 +4,20 @@ import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
+import jcuda.jcublas.cublasOperation;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.util.OpUtil;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
-import org.nd4j.linalg.api.shape.Shape;
 
 /**
  * @author Adam Gibson
@@ -31,7 +33,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(TransA),
+                cublasOperation.CUBLAS_OP_N,
                 M,
                 N,
                 Pointer.to(new float[]{alpha}),
@@ -99,7 +101,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasDgemv(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(TransA),
+                cublasOperation.CUBLAS_OP_N,
                 M,
                 N,
                 Pointer.to(new double[]{alpha}),
@@ -171,7 +173,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasCgemv(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(TransA),
+                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
                 M,  // m
                 N, // n
                 PointerUtil.getPointer(alpha2),
@@ -248,7 +250,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasZgemv(
                 ContextHolder.getInstance().getHandle(),
-                OpUtil.getOp(TransA),
+                OpUtil.getOp(BlasBufferUtil.getCharForTranspose(A)),
                 M,  // m
                 N, // n
                 PointerUtil.getPointer(alpha2),

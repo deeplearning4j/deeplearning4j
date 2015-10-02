@@ -20,9 +20,7 @@
 package org.nd4j.linalg.jcublas.kernel;
 
 
-
 import jcuda.utils.KernelLauncher;
-
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.slf4j.Logger;
@@ -188,7 +186,7 @@ public class KernelFunctionLoader {
      * This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
      *
      * @return The name of the PTX file
-     * @throws java.io.IOException If an I/O error occurs
+     * @throws IOException If an I/O error occurs
      */
     private void compileAndLoad(Properties props, String key, String dataType) throws IOException {
         compileAndLoad(props, key, dataType,0);
@@ -219,7 +217,7 @@ public class KernelFunctionLoader {
      * This will allow you to bypass the compiler restrictions. Again, do so at your own risk.
      *
      * @return The name of the PTX file
-     * @throws java.io.IOException If an I/O error occurs
+     * @throws IOException If an I/O error occurs
      */
     private void compileAndLoad(Properties props, String key, String dataType,int compiledAttempts) throws IOException {
         String f = props.getProperty(key);

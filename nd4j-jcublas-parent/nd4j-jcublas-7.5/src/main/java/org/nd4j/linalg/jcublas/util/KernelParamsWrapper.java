@@ -19,17 +19,12 @@
 
 package org.nd4j.linalg.jcublas.util;
 
-import static jcuda.driver.JCudaDriver.cuMemGetInfo;
-
-import java.util.*;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaMemcpyKind;
-
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -37,9 +32,12 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.complex.ComplexDouble;
-import org.nd4j.linalg.jcublas.complex.ComplexFloat;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
-import org.nd4j.linalg.jcublas.ops.executioner.JCudaExecutioner;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static jcuda.driver.JCudaDriver.cuMemGetInfo;
 
 /**
  * Wraps the generation of kernel parameters

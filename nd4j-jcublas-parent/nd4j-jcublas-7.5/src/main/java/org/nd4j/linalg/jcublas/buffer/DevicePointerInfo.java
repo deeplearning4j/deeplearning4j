@@ -1,4 +1,4 @@
-package jcublas.buffer;
+package org.nd4j.linalg.jcublas.buffer;
 
 import jcuda.Pointer;
 

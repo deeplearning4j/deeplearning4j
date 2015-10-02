@@ -20,14 +20,9 @@
 package org.nd4j.linalg.jcublas.kernel;
 
 
-import jcuda.Pointer;
 import jcuda.Sizeof;
-import jcuda.driver.CUfunction;
 import jcuda.driver.CUstream;
-import jcuda.runtime.JCuda;
-import jcuda.runtime.cudaMemcpyKind;
 import jcuda.utils.KernelLauncher;
-import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
@@ -38,9 +33,6 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-
-import static jcuda.driver.JCudaDriver.cuCtxSynchronize;
-import static jcuda.driver.JCudaDriver.cuLaunchKernel;
 
 /**
  * Kernel functions.

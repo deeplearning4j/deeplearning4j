@@ -19,17 +19,14 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.util.Map;
-
 import com.google.common.collect.Table;
 import jcuda.Pointer;
-
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 
 /**
  * A Jcuda buffer
@@ -77,7 +74,7 @@ public interface JCudaBuffer extends DataBuffer {
      * offset and stride
      * @param length the length of the pointer
      */
-    Pointer getDevicePointer(INDArray arr,int stride, int offset,int length);
+    Pointer getDevicePointer(INDArray arr, int stride, int offset, int length);
 
     /**
      * Get the device pointer with the given offset and stride
@@ -87,7 +84,7 @@ public interface JCudaBuffer extends DataBuffer {
      * offset and stride
      * @param length the length of the pointer
      */
-    Pointer getDevicePointer(int stride, int offset,int length);
+    Pointer getDevicePointer(int stride, int offset, int length);
 
     /**
      * Sets the data for this pointer
@@ -101,7 +98,7 @@ public interface JCudaBuffer extends DataBuffer {
 
     boolean freeDevicePointer(int offset, int length);
 
-    void copyToHost(int offset,int length);
+    void copyToHost(int offset, int length);
 
     /**
      * Pointer to context map.
@@ -109,7 +106,7 @@ public interface JCudaBuffer extends DataBuffer {
      * mapping thread name to offset
      * @return the pointer info containing allocated poitners
      */
-    Table<String, Triple<Integer, Integer, Integer>, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
+    Table<String, Triple<Integer, Integer, Integer>, DevicePointerInfo> getPointersToContexts();
 
     /**
      * Returns true if the buffer has

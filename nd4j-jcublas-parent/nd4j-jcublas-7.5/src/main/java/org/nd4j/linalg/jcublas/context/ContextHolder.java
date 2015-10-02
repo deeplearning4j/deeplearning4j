@@ -19,33 +19,28 @@
 
 package org.nd4j.linalg.jcublas.context;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.common.collect.*;
-
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+import jcuda.CudaException;
+import jcuda.driver.*;
 import jcuda.jcublas.JCublas2;
 import jcuda.jcublas.cublasHandle;
-import jcuda.CudaException;
-import jcuda.driver.CUcontext;
-import jcuda.driver.CUdevice;
-import jcuda.driver.CUresult;
-import jcuda.driver.CUstream;
-import jcuda.driver.CUstream_flags;
-import jcuda.driver.JCudaDriver;
-import jcuda.jcufft.JCufft;
 import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
-
 import org.nd4j.linalg.api.buffer.allocation.MemoryStrategy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.device.conf.DeviceConfiguration;
-import org.nd4j.linalg.jcublas.fft.JcudaFft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static jcuda.driver.JCudaDriver.*;
 

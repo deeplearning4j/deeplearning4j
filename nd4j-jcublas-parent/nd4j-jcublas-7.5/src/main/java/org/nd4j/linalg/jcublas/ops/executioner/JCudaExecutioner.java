@@ -20,12 +20,9 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
 
-
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
-import org.nd4j.linalg.api.complex.IComplexNumber;
-import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -38,9 +35,8 @@ import org.nd4j.linalg.jcublas.SimpleJCublas;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctionLoader;
 import org.nd4j.linalg.jcublas.kernel.KernelFunctions;
-import org.nd4j.linalg.jcublas.util.PointerUtil;
 import org.nd4j.linalg.jcublas.util.KernelParamsWrapper;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.jcublas.util.PointerUtil;
 
 
 /**

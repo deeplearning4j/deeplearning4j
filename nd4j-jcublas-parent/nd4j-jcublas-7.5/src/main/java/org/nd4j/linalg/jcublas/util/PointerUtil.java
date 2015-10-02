@@ -25,7 +25,6 @@ import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.driver.CUdeviceptr;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.ops.ScalarOp;
