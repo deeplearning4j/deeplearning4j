@@ -26,7 +26,6 @@ import io.netty.buffer.Unpooled;
 import jcuda.Pointer;
 import jcuda.jcublas.JCublas2;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -200,7 +199,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         modified.set(true);
         if (dataType() == DataBuffer.Type.FLOAT) {
             JCublas2.cublasSetVector(
-                    (int) length(),
+                     length(),
                     getElementSize(),
                     PointerUtil.getPointer(CudaComplexConversion.toComplex(result.asFloat()))
                     , 1
@@ -209,7 +208,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
         else {
             JCublas2.cublasSetVector(
-                    (int) length(),
+                   length(),
                     getElementSize(),
                     PointerUtil.getPointer(CudaComplexConversion.toComplexDouble(result.asDouble()))
                     , 1
@@ -224,7 +223,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer getDevicePointer(int stride, int offset,int length) {
         String name = Thread.currentThread().getName();
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,new Pair<>(offset,length));
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,1));
         if(devicePointerInfo == null) {
             int devicePointerLength = getElementSize() * length;
             allocated.addAndGet(devicePointerLength);
@@ -245,7 +244,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                  *
                  */
 
-                if(!pointersToContexts.contains(name,new Pair<>(0,this.length))) {
+                if(!pointersToContexts.contains(name,Triple.of(0,this.length,1))) {
                     devicePointerInfo = (DevicePointerInfo)
                             ContextHolder.getInstance()
                                     .getConf()
@@ -275,8 +274,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                      * for this particular offset and buffer.
                      *
                      */
-                    Pointer zero = pointersToContexts.get(name,0).getPointer();
-                    Pointer ret =  pointersToContexts.get(name,0).getPointer().withByteOffset(offset * getElementSize());
+                    Pointer zero = pointersToContexts.get(name,Triple.of(0,length,1)).getPointer();
+                    Pointer ret = zero.withByteOffset(offset * getElementSize());
                     devicePointerInfo = new DevicePointerInfo(zero,length,stride,offset);
                     pointersToContexts.put(name, Triple.of(offset, length, 1), devicePointerInfo);
                     return ret;
