@@ -4,7 +4,6 @@ import jcuda.Pointer;
 import jcuda.cuComplex;
 import jcuda.cuDoubleComplex;
 import jcuda.jcublas.JCublas2;
-import jcuda.jcublas.cublasOperation;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -33,7 +32,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasSgemv(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(TransA),
                 M,
                 N,
                 Pointer.to(new float[]{alpha}),
@@ -101,7 +100,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         JCublas2.cublasDgemv(
                 ContextHolder.getInstance().getHandle(),
-                cublasOperation.CUBLAS_OP_N,
+                OpUtil.getOp(TransA),
                 M,
                 N,
                 Pointer.to(new double[]{alpha}),

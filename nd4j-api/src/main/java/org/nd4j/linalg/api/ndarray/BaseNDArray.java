@@ -2559,14 +2559,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray otherArray = other;
         INDArray resultArray = result;
 
-        if (other.shape().length > 2) {
-            for (int i = 0; i < other.slices(); i++) {
-                result.putSlice(i, slice(i).mmul(other.slice(i)));
-            }
-
-            return result;
-        }
-
         LinAlgExceptions.assertMultiplies(this, other);
 
 
