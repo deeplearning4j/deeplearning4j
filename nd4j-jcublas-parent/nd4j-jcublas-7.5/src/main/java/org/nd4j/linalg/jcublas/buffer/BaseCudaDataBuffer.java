@@ -306,7 +306,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public Pointer getDevicePointer(INDArray arr,int stride, int offset,int length) {
         String name = Thread.currentThread().getName();
-        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset,length,stride));
+        DevicePointerInfo devicePointerInfo = pointersToContexts.get(name,Triple.of(offset, length, stride));
         if(devicePointerInfo == null) {
             int devicePointerLength = getElementSize() * length;
             allocated.addAndGet(devicePointerLength);
@@ -403,7 +403,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
          * not the array's underlying buffer.
          */
         if(devicePointerInfo == null && offset == 0 && length < length()) {
-            DevicePointerInfo origin = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(0,length(),stride));
+            DevicePointerInfo origin = pointersToContexts.get(Thread.currentThread().getName(),Triple.of(0, length(), stride));
             DevicePointerInfo newInfo = new DevicePointerInfo(origin.getPointer(),length,stride,0);
             return newInfo.getPointer();
         }
@@ -522,7 +522,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         //nothing to free, there was no copy. Only the gpu pointer was reused with a different offset.
         if(offset != 0)
-            pointersToContexts.remove(name,offset);
+            pointersToContexts.remove(name,Triple.of(offset,length,1));
         else if(offset == 0 && isPersist) {
             return true;
         }
@@ -532,7 +532,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             ContextHolder.getInstance().getMemoryStrategy().free(this,offset,length);
             freed.set(true);
             copied.remove(name);
-            pointersToContexts.remove(name,offset);
+            pointersToContexts.remove(name,Triple.of(offset,length,1));
             return true;
 
 
