@@ -106,7 +106,7 @@ public interface JCudaBuffer extends DataBuffer {
      * mapping thread name to offset
      * @return the pointer info containing allocated poitners
      */
-    Table<String, Pair<Integer, Integer>, BaseCudaDataBuffer.DevicePointerInfo> getPointersToContexts();
+    Table<String, Pair<Integer, Integer>, DevicePointerInfo> getPointersToContexts();
 
     /**
      * Returns true if the buffer has
