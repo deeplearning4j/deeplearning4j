@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.parallel.bufferops.impl.transform;
 
+import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.TransformOp;
@@ -18,56 +19,117 @@ public class MulOpDataBufferAction extends TransformDataBufferAction {
     @Override
     public void doTask() {
         //Task: Z = X*Y
-
-        if (x.dataType() == DataBuffer.Type.FLOAT) {
-            float[] xf = (float[]) x.array();
-            float[] yf = (float[]) y.array();
-            if (incrX == 1 && incrY == 1 && (x==z || incrZ == 1)) {
-                if (x == z) {
-                    for (int i = 0; i < n; i++) {
-                        xf[offsetX + i] *= yf[offsetY + i];
+        if (x.allocationMode() == DataBuffer.AllocationMode.HEAP) {
+            if (x.dataType() == DataBuffer.Type.FLOAT) {
+                float[] xf = (float[]) x.array();
+                float[] yf = (float[]) y.array();
+                if (incrX == 1 && incrY == 1 && (x == z || incrZ == 1)) {
+                    if (x == z) {
+                        for (int i = 0; i < n; i++) {
+                            xf[offsetX + i] *= yf[offsetY + i];
+                        }
+                    } else {
+                        float[] zf = (float[]) z.array();
+                        for (int i = 0; i < n; i++) {
+                            zf[offsetZ + i] = xf[offsetX + i] * yf[offsetY + i];
+                        }
                     }
                 } else {
-                    float[] zf = (float[]) z.array();
-                    for (int i = 0; i < n; i++) {
-                        zf[offsetZ + i] = xf[offsetX + i] * yf[offsetY + i];
+                    if (x == z) {
+                        for (int i = 0; i < n; i++) {
+                            xf[offsetX + i * incrX] *= yf[offsetY + i * incrY];
+                        }
+                    } else {
+                        float[] zf = (float[]) z.array();
+                        for (int i = 0; i < n; i++) {
+                            zf[offsetZ + i * incrZ] = xf[offsetX + i * incrX] * yf[offsetY + i * incrY];
+                        }
                     }
                 }
             } else {
-                if (x == z) {
-                    for (int i = 0; i < n; i++) {
-                        xf[offsetX + i * incrX] *= yf[offsetY + i * incrY];
+                double[] xd = (double[]) x.array();
+                double[] yd = (double[]) y.array();
+                if (incrX == 1 && incrY == 1 && (x == z || incrZ == 1)) {
+                    if (x == z) {
+                        for (int i = 0; i < n; i++) {
+                            xd[offsetX + i] *= yd[offsetY + i];
+                        }
+                    } else {
+                        double[] zd = (double[]) z.array();
+                        for (int i = 0; i < n; i++) {
+                            zd[offsetZ + i] = xd[offsetX + i] * yd[offsetY + i];
+                        }
                     }
                 } else {
-                    float[] zf = (float[]) z.array();
-                    for (int i = 0; i < n; i++) {
-                        zf[offsetZ + i * incrZ] = xf[offsetX + i * incrX] * yf[offsetY + i * incrY];
+                    if (x == z) {
+                        for (int i = 0; i < n; i++) {
+                            xd[offsetX + i * incrX] *= yd[offsetY + i * incrY];
+                        }
+                    } else {
+                        double[] zd = (double[]) z.array();
+                        for (int i = 0; i < n; i++) {
+                            zd[offsetZ + i * incrZ] = xd[offsetX + i * incrX] * yd[offsetY + i * incrY];
+                        }
                     }
                 }
             }
         } else {
-            double[] xd = (double[]) x.array();
-            double[] yd = (double[]) y.array();
-            if (incrX == 1 && incrY == 1 && (x==z || incrZ == 1)) {
-                if (x == z) {
-                    for (int i = 0; i < n; i++) {
-                        xd[offsetX + i] *= yd[offsetY + i];
+            //Direct allocation (FloatBuffer / DoubleBuffer backed by a Netty ByteBuf)
+            ByteBuf nbbx = x.asNetty();
+            ByteBuf nbby = y.asNetty();
+            ByteBuf nbbz = z.asNetty();
+            if (x.dataType() == DataBuffer.Type.FLOAT) {
+                int byteOffsetX = 4 * offsetX;
+                int byteOffsetY = 4 * offsetY;
+                int byteOffsetZ = 4 * offsetZ;
+                if (incrX == 1 && incrY == 1 && (x == z || incrZ == 1)) {
+                    if (x == z) {
+                        for (int i = 0; i < n; i += 4) {
+                            int xbIdx = byteOffsetX + i;
+                            nbbx.setFloat(xbIdx, nbbx.getFloat(xbIdx) * nbby.getFloat(byteOffsetY + i));
+                        }
+                    } else {
+                        for (int i = 0; i < n; i += 4) {
+                            nbbz.setFloat(byteOffsetZ + i, nbbx.getFloat(byteOffsetX + i) * nbby.getFloat(byteOffsetY + i));
+                        }
                     }
                 } else {
-                    double[] zd = (double[]) z.array();
-                    for (int i = 0; i < n; i++) {
-                        zd[offsetZ + i] = xd[offsetX + i] * yd[offsetY + i];
+                    if (x == z) {
+                        for (int i = 0; i < n; i += 4) {
+                            int xbIdx = byteOffsetX + i * incrX;
+                            nbbx.setFloat(xbIdx, nbbx.getFloat(xbIdx) * nbby.getFloat(byteOffsetY + i * incrY));
+                        }
+                    } else {
+                        for (int i = 0; i < n; i += 4) {
+                            nbbz.setFloat(byteOffsetZ + i * incrZ, x.getFloat(byteOffsetX + i * incrX) * y.getFloat(byteOffsetY + i * incrY));
+                        }
                     }
                 }
             } else {
-                if (x == z) {
-                    for (int i = 0; i < n; i++) {
-                        xd[offsetX + i * incrX] *= yd[offsetY + i * incrY];
+                int byteOffsetX = 8 * offsetX;
+                int byteOffsetY = 8 * offsetY;
+                int byteOffsetZ = 8 * offsetZ;
+                if (incrX == 1 && incrY == 1 && (x == z || incrZ == 1)) {
+                    if (x == z) {
+                        for (int i = 0; i < n; i += 8) {
+                            int xbIdx = byteOffsetX + i;
+                            nbbx.setDouble(xbIdx, nbbx.getDouble(xbIdx) * nbby.getDouble(byteOffsetY + i));
+                        }
+                    } else {
+                        for (int i = 0; i < n; i += 8) {
+                            nbbz.setDouble(byteOffsetZ + i, nbbx.getDouble(byteOffsetX + i) * nbby.getDouble(byteOffsetY + i));
+                        }
                     }
                 } else {
-                    double[] zd = (double[]) z.array();
-                    for (int i = 0; i < n; i++) {
-                        zd[offsetZ + i * incrZ] = xd[offsetX + i * incrX] * yd[offsetY + i * incrY];
+                    if (x == z) {
+                        for (int i = 0; i < n; i += 8) {
+                            int xbIdx = byteOffsetX + i * incrX;
+                            nbbx.setDouble(xbIdx, nbbx.getDouble(xbIdx) * nbby.getDouble(byteOffsetY + i * incrY));
+                        }
+                    } else {
+                        for (int i = 0; i < n; i += 8) {
+                            nbbz.setDouble(byteOffsetZ + i * incrZ, nbbx.getDouble(byteOffsetX + i * incrX) * nbby.getDouble(byteOffsetY + i * incrY));
+                        }
                     }
                 }
             }

@@ -129,7 +129,7 @@ public class OpExecutionerUtil {
     }
 
     public static int chooseElementWiseTensorDimension(INDArray x, INDArray y, INDArray z){
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("not yet implemented");
     }
 
 

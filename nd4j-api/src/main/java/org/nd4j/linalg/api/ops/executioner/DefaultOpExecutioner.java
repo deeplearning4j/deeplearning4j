@@ -33,16 +33,12 @@ import org.nd4j.linalg.api.parallel.bufferops.AccumulationViaTensorDataBufferTas
 import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationViaTensorDataBufferTask;
 import org.nd4j.linalg.api.parallel.bufferops.ScalarViaTensorDataBufferAction;
 import org.nd4j.linalg.api.parallel.bufferops.TransformViaTensorDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.impl.transform.TransformOpDataBufferAction;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.RecursiveAction;
 
 /**
  * Basic op executioner. Knows how to iterate over
@@ -228,7 +224,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         Op result = exec(op);
         TransformOp t = (TransformOp) result;
         return t.z();
-
     }
 
 
@@ -343,7 +338,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     retShape = new int[] {1,retShape[0]};
                 else
                     retShape = new int[] {retShape[0],1};
-
             }
             else if(retShape.length == 0) {
                 retShape = new int[] {1,1};
@@ -355,24 +349,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 Op op2 = op.opForDimension(i, dimension);
                 IComplexNumber result = execAndReturn((Accumulation) op2).getFinalResultComplex();
                 linear.putScalar(i, result);
-
             }
 
             if(ret.ordering() == 'c')
                 ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
-
 
             return ret;
         }
 
         else
             return parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this,dimension);
-
-
-
-
     }
-
 
     @Override
     public INDArray execAndReturn(final TransformOp op, int...dimension) {
@@ -383,7 +370,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         else {
             parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
             return op.z();
-
         }
     }
 
@@ -394,7 +380,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
 
         parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
-
         return op.z();
     }
 
@@ -413,132 +398,26 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public void setExecutionMode(ExecutionMode executionMode) {
         this.executionMode = executionMode;
     }
-    //apply a pairwise op to x and store the result
-    private void apply(TransformOp op, int[] c,int[] c2) {
-        if(op.isPassThrough())
-            return;
-        if (op.y() != null) {
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                IComplexNumber curr = complexX.getComplex(c);
-                if (op.y() instanceof IComplexNDArray) {
-                    IComplexNDArray complexY = (IComplexNDArray) op.y();
-                    complexZ.putScalar(c, op.op(curr, complexY.getComplex(c)));
-                } else
-                    complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
-            }
-            //x is real
-            else {
-                INDArray zLinear = op.z();
-                INDArray xLinear = op.x();
-                INDArray yLinear = op.y();
-                zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c2)));
-
-            }
-
-        }
-
-        else {
-
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                if (op.y() instanceof IComplexNDArray)
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-
-                else
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-            }
-            //x is real
-            else
-                op.z().putScalar(c, op.op(op.x().getDouble(c)));
-        }
-
-    }
-
-
-
-
-    //apply a pairwise op to x and store the result
-    private void apply(TransformOp op, int[] c) {
-        if(op.isPassThrough())
-            return;
-        if (op.y() != null) {
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                IComplexNumber curr = complexX.getComplex(c);
-                if (op.y() instanceof IComplexNDArray) {
-                    IComplexNDArray complexY = (IComplexNDArray) op.y();
-                    complexZ.putScalar(c, op.op(curr, complexY.getComplex(c)));
-                } else
-                    complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
-            }
-            //x is real
-            else {
-                INDArray zLinear = op.z();
-                INDArray xLinear = op.x();
-                INDArray yLinear = op.y();
-                zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c)));
-
-            }
-
-        }
-
-        else {
-
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                if (op.y() instanceof IComplexNDArray)
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-
-                else
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-            }
-            //x is real
-            else
-                op.z().putScalar(c, op.op(op.x().getDouble(c)));
-        }
-
-    }
-
 
     private void doTransformOp(TransformOp op){
-        final TransformOp t = op;
-        //make assumption x and z are same type
-        if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
-            throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
+        INDArray x = op.x();
+        INDArray y = op.y();
+        INDArray z = op.z();
 
-        if(op.y() != null){
+        if(y != null){
             //Ops with 2 inputs - AddOp, MulOp, GreaterThan, etc
-            if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
-
-
-                INDArray x = op.x();
-                INDArray y = op.y();
-                INDArray z = op.z();
-
+            if(!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray) ){
                 boolean canDoDirectly;
                 if(x == z){
                     if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
                     else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
                 } else {
-                    if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,y);
+                    if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,z);
                     else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y, z);
                 }
 
                 if(canDoDirectly){
-                    //Do parallelism via fork-join, directly on buffer array
+                    //Do parallelism via fork-join, directly on buffer
                     op.getTransformOpDataBufferAction(PARALLEL_THRESHOLD, op.n(), x.data(), y.data(), z.data(),
                             x.offset(), y.offset(), z.offset(), x.elementWiseStride(), y.elementWiseStride(), z.elementWiseStride()).invoke();
                 } else {
@@ -546,40 +425,12 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     new TransformViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,y,z).invoke();
                 }
             } else {
-                if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                    for(int i = 0; i < op.n(); i++) {
-                        op.z().data().put(i, op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
-                    }
-                }
-                else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                    int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                    int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                    int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                    for(int c = 0; c < op.n(); c ++)
-                        op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride),op.y().data().getDouble(c * yStride)));
-                } else {
-                    if (Arrays.equals(op.x().shape(), op.y().shape())) {
-                        Shape.iterate(op.x(), new CoordinateFunction() {
-                            @Override
-                            public void process(int[]... coord) {
-                                apply(t, coord[0], coord[0]);
-                            }
-                        });
-                    } else
-                        Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
-                            @Override
-                            public void process(int[]... coord) {
-                                apply(t, coord[0], coord[1]);
-                            }
-                        });
-                }
+                //Complex
+                throw new UnsupportedOperationException("Not yet implemented");
             }
         } else {
             //Ops with 1 input - Tanh, Sin, etc. X=OP(X) or Z=OP(X)
-            if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP ){
-                INDArray x = op.x();
-                INDArray z = op.z();
-
+            if(!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray) ){
                 boolean canDoDirectly;
                 if(x==z) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
                 else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,z);
@@ -594,26 +445,17 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     return;
                 }
             } else {
-                if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                    for (int i = 0; i < op.n(); i++) {
-                        op.z().data().put(i, op.op(op.x().data().getDouble(i)));
-                    }
-                } else {
-                    NdIndexIterator iter = new NdIndexIterator(op.x().shape());
-                    for (int c = 0; c < op.n(); c++) {
-                        apply(t, iter.next());
-                    }
-                }
+                //Complex
+                throw new UnsupportedOperationException("Not yet implemented");
             }
         }
     }
 
 
     private void doAccumulationOp(Accumulation op){
-        if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
-            INDArray x = op.x();
-            INDArray y = op.y();
-
+        INDArray x = op.x();
+        INDArray y = op.y();
+        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)){
             boolean canDoDirectly;
             if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
             else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,y);
@@ -634,104 +476,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
 
         } else {
-            if (op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                double accum = op.zeroDouble();
-                DataBuffer dx = op.x().data();
-                DataBuffer dy = op.y().data();
-                for (int i = 0; i < op.n(); i++) {
-                    accum = op.update(accum,dx.getDouble(i),dy.getDouble(i));
-                }
-                op.getAndSetFinalResult(accum);
-                return;
-            } else if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                double accum = op.zeroDouble();
-                DataBuffer dx = op.x().data();
-                for (int i = 0; i < op.n(); i++) {
-                    accum = op.update(accum,dx.getDouble(i));
-                }
-            } else if (!(op.x() instanceof IComplexNDArray)) {
-                IComplexNumber accum = op.zeroComplex();
-                if (op.y() != null) {
-                    INDArray xLinear = op.x().reshape(1, op.x().length());
-                    INDArray yLinear = op.y().reshape(1, op.y().length());
-                    for (int i = 0; i < op.n(); i++) {
-                        accum = op.update(accum,xLinear.getDouble(0,i),yLinear.getDouble(0,i));
-                    }
-                } else {
-                    INDArray xLinear = op.x().reshape(1, op.x().length());
-                    for (int i = 0; i < op.n(); i++) {
-                        accum = op.update(accum,xLinear.getDouble(0,i));
-                    }
-                }
-                op.getAndSetFinalResult(accum);
-                return;
-            } else {
-                if(op.isPassThrough()) throw new RuntimeException("Not yet implemented");
-
-                if(op.y() != null){
-                    if(op.x() instanceof IComplexNDArray){
-                        //x is complex, y could be complex or real
-                        IComplexNDArray cx = (IComplexNDArray)op.x();
-                        if(op.y() instanceof IComplexNDArray){
-                            IComplexNDArray cy = (IComplexNDArray)op.y();
-                            IComplexNumber accum = op.zeroComplex();
-                            for( int i=0; i<op.n(); i++){
-                                accum = op.update(accum,cx.getComplex(i),cy.getComplex(i));
-                            }
-                            op.getAndSetFinalResult(accum);
-                            return;
-                        } else {
-                            INDArray y = op.y();
-                            IComplexNumber accum = op.zeroComplex();
-                            for( int i=0; i<op.n(); i++){
-                                accum = op.update(accum,cx.getComplex(i),y.getDouble(i));
-                            }
-                            op.getAndSetFinalResult(accum);
-                            return;
-                        }
-                    } else {
-                        //x is real
-                        INDArray x = op.x();
-                        INDArray y = op.y();
-                        double accum = op.zeroDouble();
-                        for( int i=0; i<op.n(); i++ ){
-                            accum = op.update(accum,x.getDouble(i),y.getDouble(i));
-                        }
-                        op.getAndSetFinalResult(accum);
-                        return;
-                    }
-                } else {
-                    //x could be complex or real
-                    if(op.x() instanceof IComplexNDArray){
-                        IComplexNDArray cx = (IComplexNDArray)op.x();
-                        IComplexNumber accum = op.zeroComplex();
-                        for( int i=0; i<op.n(); i++){
-                            accum = op.update(accum,cx.getComplex(i));
-                        }
-                        op.getAndSetFinalResult(accum);
-                        return;
-                    } else {
-                        INDArray x = op.x();
-                        double accum = op.zeroDouble();
-                        for( int i=0; i<op.n(); i++){
-                            accum = op.update(accum,x.getDouble(i));
-                        }
-                        op.getAndSetFinalResult(accum);
-                        return;
-                    }
-                }
-            }
+            //Complex
+            throw new UnsupportedOperationException("Not yet implemented");
         }
     }
 
-
     private void doScalarOp(ScalarOp op){
-        if(op.isPassThrough()) return;
-
-        INDArray z = op.z();
         INDArray x = op.x();
+        INDArray z = op.z();
 
-        if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
+        if(!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)){
             boolean canDoDirectly;
             if(x==z) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);     //X=OP(X)
             else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,z);       //Z=OP(X)
@@ -746,26 +500,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return;
             }
         } else {
-            if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for (int c = 0; c < op.n(); c++)
-                    z.data().put(c, op.op(x.data().getDouble(c)));
-            } else if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray ndArray = (IComplexNDArray) op.z();
-                for (int c = 0; c < op.n(); c++)
-                    ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
-            } else {
-                for (int c = 0; c < op.n(); c++)
-                    z.putScalar(c, op.op(x.getDouble(c)));
-
-            }
+            //Complex
+            throw new UnsupportedOperationException("Not yet implemented");
         }
     }
 
     private void doIndexAccumulationOp(IndexAccumulation op){
-        if(op.x().data().allocationMode() == DataBuffer.AllocationMode.HEAP){
-            INDArray x = op.x();
-            INDArray y = op.y();
+        INDArray x = op.x();
+        INDArray y = op.y();
 
+        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)){
             boolean canDoDirectly;
             if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
             else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,y);
@@ -786,45 +530,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
 
         } else {
-            if (op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                double accum = op.zeroDouble();
-                int accumIdx = -1;
-                DataBuffer dx = op.x().data();
-                DataBuffer dy = op.y().data();
-                for (int i = 0; i < op.n(); i++) {
-                    accumIdx = op.update(accum,accumIdx,dx.getDouble(i),dy.getDouble(i),i);
-                    if(accumIdx==i) accum = op.op(dx.getDouble(i),dy.getDouble(i));
-                }
-                op.setFinalResult(accumIdx);
-            } else if (Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                double accum = op.zeroDouble();
-                int accumIdx = -1;
-                DataBuffer dx = op.x().data();
-                for (int i = 0; i < op.n(); i++) {
-                    accumIdx = op.update(accum,accumIdx,dx.getDouble(i),i);
-                    if(accumIdx==i) accum = op.op(dx.getDouble(i));
-                }
-                op.setFinalResult(accumIdx);
-            } else if (!(op.x() instanceof IComplexNDArray)) {
-                INDArray x = op.x();
-                INDArray y = op.y();
-                double accum = op.zeroDouble();
-                int accumIdx = -1;
-                if (op.y() != null) {
-                    for (int i = 0; i < op.n(); i++) {
-                        accumIdx = op.update(accum,accumIdx,x.getDouble(i),y.getDouble(i),i);
-                        if(accumIdx==i) accum = op.op(x.getDouble(i),y.getDouble(i));
-                    }
-                } else {
-                    for (int i = 0; i < op.n(); i++) {
-                        accumIdx = op.update(accum,accumIdx,x.getDouble(i),i);
-                        if(accumIdx==i) accum = op.op(x.getDouble(i));
-                    }
-                }
-                op.setFinalResult(accumIdx);
-            } else {
-                throw new UnsupportedOperationException("Not yet implemented");
-            }
+            //Complex
+            throw new UnsupportedOperationException("not yet implemented");
         }
     }
 }

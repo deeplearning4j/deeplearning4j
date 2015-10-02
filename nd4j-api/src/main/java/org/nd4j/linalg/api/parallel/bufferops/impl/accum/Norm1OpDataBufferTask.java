@@ -13,19 +13,19 @@ public class Norm1OpDataBufferTask extends AccumulationDataBufferTask {
         super(op, threshold, n, x, y, offsetX, offsetY, incrX, incrY, outerTask);
     }
 
-    public Norm1OpDataBufferTask(Accumulation op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, boolean outerTask){
-        super(op,tadIdx,tadDim,threshold,x,y,outerTask);
+    public Norm1OpDataBufferTask(Accumulation op, int tadIdx, int tadDim, int threshold, INDArray x, INDArray y, boolean outerTask) {
+        super(op, tadIdx, tadDim, threshold, x, y, outerTask);
     }
 
     @Override
     public double doTask() {
         //Task: sum_i |x_i|
-        return Nd4j.getBlasWrapper().level1().asum(n,x,offsetX,incrX);
+        return Nd4j.getBlasWrapper().level1().asum(n, x, offsetX, incrX);
     }
 
     @Override
     public AccumulationDataBufferTask getSubTask(int threshold, int n, DataBuffer x, DataBuffer y, int offsetX, int offsetY,
-                                                     int incrX, int incrY, boolean outerTask) {
+                                                 int incrX, int incrY, boolean outerTask) {
         return new Norm1OpDataBufferTask(op, threshold, n, x, y, offsetX, offsetY, incrX, incrY, outerTask);
     }
 }

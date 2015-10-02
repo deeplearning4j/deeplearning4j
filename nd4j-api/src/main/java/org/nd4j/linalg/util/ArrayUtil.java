@@ -1343,6 +1343,24 @@ public class ArrayUtil {
         return minIdx;
     }
 
+    public static int argMinOfMax(int[]... arrays){
+        int minIdx = 0;
+        int maxAtMinIdx = Integer.MIN_VALUE;
+
+        for( int i=0; i<arrays[0].length; i++ ){
+            int maxAtIndex = Integer.MIN_VALUE;
+            for( int j=0; j<arrays.length; j++ ){
+                maxAtIndex = Math.max(maxAtIndex,arrays[j][i]);
+            }
+
+            if(maxAtMinIdx > maxAtIndex){
+                maxAtMinIdx = maxAtIndex;
+                minIdx = i;
+            }
+        }
+        return minIdx;
+    }
+
     public static int argMinOfSum(int[] first, int[] second){
         int minIdx = 0;
         int sumAtMinIdx = first[0]+second[0];
