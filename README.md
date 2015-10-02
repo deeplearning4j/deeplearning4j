@@ -5,7 +5,7 @@ Deeplearning4J: Neural Net Platform
 
 Deeplearning4J is an Apache 2.0-licensed, open-source, distributed neural net library written in Java and Scala.
 
-Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPus. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
+Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping. 
 
 Current version in maven central is `0.4-rc0`.
 
@@ -21,7 +21,7 @@ Current version in maven central is `0.4-rc0`.
 - core = core neural net structures and supporting components such as datasets, iterators, clustering algorithms, optimization methods, evaluation tools and plots.
 - scaleout = integrations
     - aws = loading data to and from aws resources EC2 and S3
-    - nlp = natural language processing components including vecotrizers, models, sample datasets and renders
+    - nlp = natural language processing components including vectorizers, models, sample datasets and renderers
     - akka = setup concurrent and distributed applications on the JVM
     - api = core components like workers and multi-threading
     - zookeeper = maintain configuration for distributed systems
@@ -52,7 +52,7 @@ Deeplearning4J is being actively developed and you can clone the repository, com
 
 For users who have never git cloned Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
 
-   git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh
+    $ git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j; ./setup.sh
 
 This command will also get you ND4J and Canova, which you need. 
 
@@ -79,9 +79,7 @@ Create a yum repo and run yum install to load the Red Hat Package Management (RP
 
     $ sudo vi /etc/yum.repos.d/dl4j.repo 
 
-Add the following to the dl4j.repo file:
-
-'''
+Add the following to the `dl4j.repo` file:
 
     [dl4j.repo]
 
@@ -89,7 +87,6 @@ Add the following to the dl4j.repo file:
     baseurl=http://ec2-52-5-255-24.compute-1.amazonaws.com/repo/RPMS
     enabled=1
     gpgcheck=0
-'''
 
 Then run the following command on the dl4j repo packages to install them on your machine:
 
