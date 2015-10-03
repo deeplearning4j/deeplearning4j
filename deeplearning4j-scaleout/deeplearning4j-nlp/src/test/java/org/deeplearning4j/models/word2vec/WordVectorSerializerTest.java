@@ -62,6 +62,7 @@ public class WordVectorSerializerTest {
         INDArray vec = Nd4j.create(new double[]{0.002001,0.002210,-0.001915,-0.001639,0.000683,0.001511,0.000470,0.000106,-0.001802,0.001109,-0.002178,0.000625,-0.000376,-0.000479,-0.001658,-0.000941,0.001290,0.001513,0.001485,0.000799,0.000772,-0.001901,-0.002048,0.002485,0.001901,0.001545,-0.000302,0.002008,-0.000247,0.000367,-0.000075,-0.001492,0.000656,-0.000669,-0.001913,0.002377,0.002190,-0.000548,-0.000113,0.000255,-0.001819,-0.002004,0.002277,0.000032,-0.001291,-0.001521,-0.001538,0.000848,0.000101,0.000666,-0.002107,-0.001904,-0.000065,0.000572,0.001275,-0.001585,0.002040,0.000463,0.000560,-0.000304,0.001493,-0.001144,-0.001049,0.001079,-0.000377,0.000515,0.000902,-0.002044,-0.000992,0.001457,0.002116,0.001966,-0.001523,-0.001054,-0.000455,0.001001,-0.001894,0.001499,0.001394,-0.000799,-0.000776,-0.001119,0.002114,0.001956,-0.000590,0.002107,0.002410,0.000908,0.002491,-0.001556,-0.000766,-0.001054,-0.001454,0.001407,0.000790,0.000212,-0.001097,0.000762,0.001530,0.000097,0.001140,-0.002476,0.002157,0.000240,-0.000916,-0.001042,-0.000374,-0.001468,-0.002185,-0.001419,0.002139,-0.000885,-0.001340,0.001159,-0.000852,0.002378,-0.000802,-0.002294,0.001358,-0.000037,-0.001744,0.000488,0.000721,-0.000241,0.000912,-0.001979,0.000441,0.000908,-0.001505,0.000071,-0.000030,-0.001200,-0.001416,-0.002347,0.000011,0.000076,0.000005,-0.001967,-0.002481,-0.002373,-0.002163,-0.000274,0.000696,0.000592,-0.001591,0.002499,-0.001006,-0.000637,-0.000702,0.002366,-0.001882,0.000581,-0.000668,0.001594,0.000020,0.002135,-0.001410,-0.001303,-0.002096,-0.001833,-0.001600,-0.001557,0.001222,-0.000933,0.001340,0.001845,0.000678,0.001475,0.001238,0.001170,-0.001775,-0.001717,-0.001828,-0.000066,0.002065,-0.001368,-0.001530,-0.002098,0.001653,-0.002089,-0.000290,0.001089,-0.002309,-0.002239,0.000721,0.001762,0.002132,0.001073,0.001581,-0.001564,-0.001820,0.001987,-0.001382,0.000877,0.000287,0.000895,-0.000591,0.000099,-0.000843,-0.000563});
         WordVectors vecModel = WordVectorSerializer.loadGoogleModel(new ClassPathResource("word2vec/googleload/sample_vec.txt").getFile(),false,false);
         assertEquals(vec, vecModel.getWordVectorMatrix("</s>"));
+
     }
 
     @Test
@@ -132,83 +133,5 @@ public class WordVectorSerializerTest {
         assertEquals(Doubles.asList(wordVector2).get(0), 0.051964, 1e-3);
     }
 
-//    @Test
-//    public void testTsne() throws Exception {
-//        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
-//        ClassPathResource resource = new ClassPathResource("words.txt");
-//        BarnesHutTsne tsne = new BarnesHutTsne.Builder()
-//                .theta(0.5).learningRate(500).setMaxIter(2).build();
-//        WordVectors vec = WordVectorSerializer.loadTxtVectors(resource.getFile());
-//        InMemoryLookupTable table = (InMemoryLookupTable) vec.lookupTable();
-//        List<String> labels = new ArrayList<>(vec.vocab().words());
-//        tsne.plot(table.getSyn0().divRowVector(table.getSyn0().norm2(0)), 2, labels);
-//    }
 
-//    public static float readFloat(InputStream is) throws IOException {
-//        byte[] bytes = new byte[4];
-//        is.read(bytes);
-//        return getFloat(bytes);
-//    }
-//    public static float getFloat(byte[] b) {
-//        int accum = 0;
-//        accum = accum | (b[0] & 0xff) << 0;
-//        accum = accum | (b[1] & 0xff) << 8;
-//        accum = accum | (b[2] & 0xff) << 16;
-//        accum = accum | (b[3] & 0xff) << 24;
-//        return Float.intBitsToFloat(accum);
-//    }
-//   Will take a long time to actually to load the whole model
-//    @Test
-//    public void testBinaryDryRun() throws Exception {
-//        double vector;
-//        int words, size;
-//        String url = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz";
-//
-//        String path = "GoogleNews-vectors-negative300.bin.gz";
-//        File modelFile = new File(path);
-//        if(!modelFile.exists()) {
-//            FileUtils.copyURLToFile(new URL(url),modelFile);
-//        }
-//        try (BufferedInputStream bis =
-//                     new BufferedInputStream(GzipUtils.isCompressedFilename(modelFile.getName()) ?
-//                             new GZIPInputStream(new FileInputStream(modelFile)) :
-//                             new FileInputStream(modelFile));
-//             DataInputStream dis = new DataInputStream(bis)) {
-//            words = Integer.parseInt(WordVectorSerializer.readString(dis));
-//            size = Integer.parseInt(WordVectorSerializer.readString(dis));
-//            int wordsLoaded = 0;
-//            String word;
-//
-//            for (int i = 0; i < words; i++) {
-//
-//                word = WordVectorSerializer.readString(dis);
-//                if (word.isEmpty()) {
-//                    continue;
-//                }
-//
-//                for (int j = 0; j < size; j++) {
-//                    vector = readFloat(dis);
-//                    System.out.println(vector);
-//                }
-//
-//                wordsLoaded++;
-//                System.out.println("Loaded " + word + " and num words " + wordsLoaded + " out of " + words);
-//            }
-//
-//            assertEquals(wordsLoaded, 3000000);
-//        }
-//    }
-//    @Test
-//    public void testCurrentFile() throws Exception {
-//        Nd4j.dtype = DataBuffer.Type.FLOAT;
-//        String url = "https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz";
-//        String path = "GoogleNews-vectors-negative300.bin.gz";
-//        File toDl = new File(path);
-//        if(!toDl.exists()) {
-//            FileUtils.copyURLToFile(new URL(url),toDl);
-//        }
-//        Word2Vec vec = WordVectorSerializer.loadGoogleModel(toDl, true);
-//        assertEquals(3000000,vec.vocab().numWords());
-//
-//    }
 }
