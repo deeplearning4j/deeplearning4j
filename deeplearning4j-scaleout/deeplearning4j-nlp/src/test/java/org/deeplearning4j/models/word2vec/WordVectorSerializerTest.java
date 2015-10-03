@@ -66,6 +66,7 @@ public class WordVectorSerializerTest {
         WordVectors vectorsBinary = WordVectorSerializer.loadGoogleModel(new ClassPathResource("word2vec/googleload/sample_vec.bin").getFile(),true,true);
         assertEquals(vecModel.similarity(w1,w2),vectorsBinary.similarity(w1,w2),1e-1);
         assertEquals(vec, vecModel.getWordVectorMatrix("</s>"));
+        assertEquals(vecModel.wordsNearest("database",10),vectorsBinary.wordsNearest("database",10));
     }
 
     @Test
