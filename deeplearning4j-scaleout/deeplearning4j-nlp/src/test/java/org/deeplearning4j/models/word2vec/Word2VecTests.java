@@ -55,7 +55,7 @@ public class Word2VecTests {
 
     private File inputFile;
     private String pathToWriteto;
-    private Word2Vec googleModel;
+    private WordVectors googleModel;
 
     @Before
     public void before() throws Exception {
@@ -140,35 +140,5 @@ public class Word2VecTests {
         System.out.println(Arrays.toString(lst.toArray()));
     }
 
-//    @Test
-//    public void testWord2VecRunThroughVectorsTsne() throws Exception {
-//        ClassPathResource resource = new ClassPathResource("/basic2/line2.txt");
-//        File file = resource.getFile().getParentFile();
-//        SentenceIterator iter = UimaSentenceIterator.createWithPath(file.getAbsolutePath());
-//        new File("cache.ser").delete();
 //
-//        TokenizerFactory t = new UimaTokenizerFactory();
-//
-//        Word2Vec vec = new Word2Vec.Builder()
-//                .minWordFrequency(1).iterations(5)
-//                .layerSize(100)
-//                .stopWords(new ArrayList<String>())
-//                .windowSize(5).iterate(iter).tokenizerFactory(t).build();
-//
-//        assertEquals(new ArrayList<String>(), vec.getStopWords());
-//
-//        vec.fit();
-//        Tsne calculation = new Tsne.Builder().setMaxIter(1).usePca(false).setSwitchMomentumIteration(20)
-//                .normalize(true).useAdaGrad(true).learningRate(500f).perplexity(20f).minGain(1e-1f)
-//                .build();
-//
-//        vec.lookupTable().plotVocab(calculation);
-//        WordVectorSerializer.writeTsneFormat(vec,calculation.getY(),new File("test.csv"));
-//        double sim = vec.similarity("Adam","deeplearning4j");
-//        new File("cache.ser").delete();
-//
-//
-//
-//    }
-
 }
