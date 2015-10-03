@@ -55,7 +55,7 @@ public class Word2VecTests {
 
     private File inputFile;
     private String pathToWriteto;
-    private Word2Vec googleModel;
+    private WordVectors googleModel;
 
     @Before
     public void before() throws Exception {
