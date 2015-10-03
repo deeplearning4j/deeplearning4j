@@ -21,6 +21,9 @@ package org.nd4j.linalg.cpu;
 
 import com.github.fommil.netlib.BLAS;
 import org.nd4j.linalg.factory.BaseBlasWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.*;
 
 
@@ -32,6 +35,9 @@ import java.lang.reflect.*;
  * @author Adam Gibson
  */
 public class BlasWrapper extends BaseBlasWrapper {
+
+    private static final Logger log = LoggerFactory.getLogger(BlasWrapper.class);
+
     public final static String FORCE_NATIVE = "org.nd4j.linalg.cpu.force_native";
     static {
         String forceNative = System.getProperty(FORCE_NATIVE,"true");
@@ -39,9 +45,11 @@ public class BlasWrapper extends BaseBlasWrapper {
             try {
                 Field blasInstance = BLAS.class.getDeclaredField("INSTANCE");
                 BLAS newInstance = (BLAS) Class.forName("com.github.fommil.netlib.NativeSystemBLAS").newInstance();
-                setFinalStatic(blasInstance,newInstance);
+                setFinalStatic(blasInstance, newInstance);
+            } catch(ClassNotFoundException e) {
+                log.warn("Native BLAS not available on classpath");
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                log.warn("unable to force native BLAS", e);
             }
         }
     }
