@@ -101,118 +101,7 @@ public class NDArrayUtil {
         }
     }
 
-    /**
-     * Truncates an INDArray to the specified shape.
-     * If the shape is the same or greater, it just returns
-     * the original array
-     *
-     * @param nd the INDArray to truncate
-     * @param n  the number of elements to truncate to
-     * @return the truncated ndarray
-     */
-    public static INDArray truncate(INDArray nd, final int n, int dimension) {
 
-        if (nd.isVector()) {
-            INDArray truncated = Nd4j.create(new int[]{n});
-            for (int i = 0; i < n; i++)
-                truncated.put(i, nd.getScalar(i));
-            return truncated;
-        }
-
-        if (nd.size(dimension) > n) {
-            int[] targetShape = ArrayUtil.copy(nd.shape());
-            targetShape[dimension] = n;
-            int numRequired = ArrayUtil.prod(targetShape);
-            if (nd.isVector()) {
-                INDArray ret = Nd4j.create(targetShape);
-                int count = 0;
-                for (int i = 0; i < nd.length(); i += nd.stride()[dimension]) {
-                    ret.put(count++, nd.getScalar(i));
-
-                }
-                return ret;
-            } else if (nd.isMatrix()) {
-                List<Double> list = new ArrayList<>();
-                //row
-                if (dimension == 0) {
-                    for (int i = 0; i < nd.rows(); i++) {
-                        INDArray row = nd.getRow(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-                            list.add((Double) row.getScalar(j).element());
-                        }
-                    }
-                } else if (dimension == 1) {
-                    for (int i = 0; i < nd.columns(); i++) {
-                        INDArray row = nd.getColumn(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-                            list.add((Double) row.getScalar(j).element());
-                        }
-                    }
-                } else
-                    throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
-
-
-                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-            }
-
-
-            if (dimension == 0) {
-                List<INDArray> slices = new ArrayList<>();
-                for (int i = 0; i < n; i++) {
-                    INDArray slice = nd.slice(i);
-                    slices.add(slice);
-                }
-
-                return Nd4j.create(slices, targetShape);
-
-            } else {
-                List<Double> list = new ArrayList<>();
-                int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape, 0));
-                for (int i = 0; i < nd.slices(); i++) {
-                    INDArray slice = nd.slice(i).ravel();
-                    for (int j = 0; j < numElementsPerSlice; j++)
-                        list.add((Double) slice.getScalar(j).element());
-                }
-
-                assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
-
-                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-            }
-
-
-        }
-
-        return nd;
-
-    }
-
-    /**
-     * Pads an INDArray with zeros
-     *
-     * @param nd          the INDArray to pad
-     * @param targetShape the the new shape
-     * @return the padded ndarray
-     */
-    public static INDArray padWithZeros(INDArray nd, int[] targetShape) {
-        if (Arrays.equals(nd.shape(), targetShape))
-            return nd;
-        //no padding required
-        if (ArrayUtil.prod(nd.shape()) >= ArrayUtil.prod(targetShape))
-            return nd;
-
-        INDArray ret = Nd4j.create(targetShape);
-        System.arraycopy(nd.data(), 0, ret.data(), 0, (int) nd.data().length());
-        return ret;
-
-    }
 
     /** Tensor1DStats, used to efficiently iterate through tensors on a matrix (2d NDArray) for element-wise ops
      */
@@ -333,7 +222,7 @@ public class NDArrayUtil {
      * Can do this when elements are contiguous in buffer and first/second arrays
      * have same stride - i.e., when canDoElementWiseOpDirectly(...) returns true
      * */
-    private static void doOpDirectly(INDArray first, INDArray second, char op){
+    private static void doOpDirectly(INDArray first, INDArray second, char op) {
         switch(op){
             case 'a':
             case 's':
