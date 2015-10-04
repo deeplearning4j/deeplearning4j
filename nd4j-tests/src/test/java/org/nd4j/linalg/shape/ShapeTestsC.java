@@ -4,8 +4,13 @@ import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -27,6 +32,40 @@ public class ShapeTestsC extends BaseNd4jTest {
 
     public ShapeTestsC(String name) {
         super(name);
+    }
+
+
+    @Test
+    public void testIterateOffsets() {
+        INDArray arr = Nd4j.linspace(1,8,8).reshape(2, 2, 2);
+        INDArray tad = arr.tensorAlongDimension(1,0,1);
+        final int[] assertions = {1,3,5,7};
+        final AtomicInteger atomicInteger = new AtomicInteger(0);
+        CoordinateFunction function = new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                assertEquals(assertions[atomicInteger.getAndIncrement()],coord[0][0]);
+
+            }
+        };
+
+        Shape.forEachOffset(tad, function);
+
+
+        INDArray tensor2 = tad.tensorAlongDimension(0,1);
+        INDArray tad3 = tad.tensorAlongDimension(1,1);
+        Shape.forEachOffset(new INDArray[]{tensor2,tad3}, new CoordinateFunction() {
+            @Override
+            public void process(int[]... coord) {
+                for(int i = 0; i < coord.length; i++) {
+                    System.out.println(Arrays.toString(coord[i]));
+                }
+            }
+        });
+
+
+
+        System.out.println("test");
     }
 
     @Test
