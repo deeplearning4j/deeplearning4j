@@ -43,7 +43,8 @@ import java.util.Arrays;
 
 /**
  * Basic op executioner. Knows how to iterate over
- * the buffers of each respective ndarray and apply transformations
+ * the buffers of each respective ndarray
+ * and apply transformations
  *
  * @author Adam Gibson
  */
@@ -85,112 +86,31 @@ public class DefaultOpExecutioner implements OpExecutioner {
             //make assumption x and z are same type
             if (!op.x().getClass().equals(t.z().getClass()) && !(op.x() instanceof LinearViewNDArray) && !(t.z() instanceof LinearViewNDArray))
                 throw new IllegalArgumentException("Illegal operation. Origin and output ndarray must be same types. op.x was " + op.x().getClass().getName() + " while t.z was " + t.z().getClass().getName());
-            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int i = 0; i < op.n(); i++) {
-                    op.z().data().put(i, op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
-                }
-
-            }
-            else if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(c * zStride, op.op(op.x().data().getDouble(c * xStride),op.y().data().getDouble(c * yStride)));
-            }
-            else if(Shape.opIsWholeBufferWithMatchingStrides(op)){
-                for(int i = 0; i < op.n(); i++) {
-                    op.z().data().put(i, op.op(op.x().data().getDouble(i)));
+            if(op.y() != null) {
+                int length = op.n();
+                for(int i = 0; i < length; i++)  {
+                    t.z().data().put(op.z().offset() + i * op.z().elementStride(), t.op(t.x().data().getDouble(op.x().offset() + i * op.x().elementStride()),t.y().data().getDouble(t.y().offset() + i * t.y().elementStride())));
                 }
             }
-              /*
-            else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.x().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride),op.y().data().getDouble(op.y().offset() + c * yStride)));
-            }
-
-         else if(Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    op.z().data().put(op.z().offset() + c * zStride, op.op(op.x().data().getDouble(op.x().offset() + c * xStride)));
-            }
-*/
-
-            else if(op.y() != null) {
-                if(Arrays.equals(op.x().shape(),op.y().shape())) {
-                    Shape.iterate(op.x(), new CoordinateFunction() {
-                        @Override
-                        public void process(int[]... coord) {
-                            apply(t,coord[0],coord[0]);
-                        }
-                    });
-                }
-                else
-                    Shape.iterate(op.x(), op.y(), new CoordinateFunction() {
-                        @Override
-                        public void process(int[]... coord) {
-                            apply(t,coord[0],coord[1]);
-                        }
-                    });
-
-            }
-
             else {
-                NdIndexIterator iter = new NdIndexIterator(op.x().shape());
-                for (int c = 0; c < op.n(); c++) {
-                    apply(t, iter.next());
+                int length = op.n();
+                for(int i = 0; i < length; i++)  {
+                    t.z().data().put(op.z().offset() + i * op.z().elementStride(), t.op(t.x().data().getDouble(op.x().offset() + i * op.x().elementStride())));
                 }
             }
 
         }
         else if (op instanceof Accumulation) {
             Accumulation accumulation = (Accumulation) op;
-            if(op.y() != null && Shape.opIsWholeBufferWithMatchingStrides(op)) {
+            if(op.y() != null) {
                 for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().data().getDouble(i), op.y().data().getDouble(i)));
+                    accumulation.update(op.op(op.x().data().getDouble(op.x().offset() + i * op.x().elementStride()), op.y().data().getDouble(op.y().offset() + i * op.y().elementStride())));
                 }
 
             }
-       /*     else if(op.y() != null && Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int yStride = op.y().ordering() == 'f' ? op.y().stride(-1) : op.y().stride(0);
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().getDouble(op.x().offset() + i * xStride), op.y().getDouble(op.y().offset() + i * yStride)));
-                }
-            }*/
-            else if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int i = 0; i < op.n(); i++) {
-                    accumulation.update(op.op(op.x().data().getDouble(i)));
-                }
-            }
-
-
-            else if(!(op.x() instanceof IComplexNDArray)) {
-                if(op.y() != null) {
-                    INDArray xLinear = op.x().reshape(1,op.x().length());
-                    INDArray yLinear = op.y().reshape(1,op.y().length());
-                    for(int i = 0; i < op.n(); i++) {
-                        accumulation.update(op.op(xLinear.getDouble(0,i),yLinear.getDouble(0,i)));
-                    }
-                }
-                else {
-                    INDArray xLinear = op.x().reshape(1,op.x().length());
-                    for(int i = 0; i < op.n(); i++) {
-                        accumulation.update(op.op(xLinear.getDouble(0,i)));
-                    }
-                }
-
-            }
-
-
-
             else {
-                for (int c = 0; c < op.n(); c++) {
-                    apply(accumulation, c);
+                for(int i = 0; i < op.n(); i++) {
+                    accumulation.update(op.op(op.x().data().getDouble(op.x().offset() + i * op.x().elementStride())));
                 }
             }
 
@@ -202,28 +122,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return scalarOp;
             INDArray zLinear = op.z();
             INDArray xLinear = op.x();
-            if(Shape.opIsWholeBufferWithMatchingStrides(op)) {
-                for(int c = 0; c < op.n(); c ++)
-                    zLinear.data().put(c, op.op(xLinear.data().getDouble(c)));
-            }
-
-        /*    else if(Shape.opIsWithMatchingStrides(op)) {
-                int xStride = op.x().ordering() == 'f' ? op.x().stride(-1) : op.x().stride(0);
-                int zStride = op.z().ordering() == 'f' ? op.z().stride(-1) : op.z().stride(0);
-                for(int c = 0; c < op.n(); c ++)
-                    zLinear.data().put(zLinear.offset() + c * zStride, op.op(xLinear.data().getDouble(xLinear.offset() + c * xStride)));
-            }*/
-
-            else if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray ndArray = (IComplexNDArray) op.z();
-                for(int c = 0; c < op.n(); c++)
-                    ndArray.putScalar(c, op.op(((IComplexNDArray) op.x()).getComplex(c)));
-            }
-            else {
-                for(int c = 0; c < op.n(); c++)
-                    zLinear.putScalar(c, op.op(xLinear.getDouble(c)));
-
-            }
+            for(int c = 0; c < op.n(); c ++)
+                zLinear.data().put(zLinear.offset() + c * zLinear.elementStride(), op.op(xLinear.data().getDouble(xLinear.offset() + c * xLinear.elementStride())));
         }
 
 
@@ -405,18 +305,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Accumulation a = (Accumulation) op;
             return exec(a);
         }
-/*
-        for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-            Op op2 = op.opForDimension(i, dimension);
-            exec(op2);
-            if (op instanceof TransformOp) {
-                TransformOp t = (TransformOp) op;
-                TransformOp t2 = (TransformOp) op2;
-                t.z().tensorAlongDimension(i, dimension).assign(t2.z());
-            }
 
-
-        }*/
         parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
 
         return op;
@@ -532,143 +421,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void setExecutionMode(ExecutionMode executionMode) {
         this.executionMode = executionMode;
-    }
-    //apply a pairwise op to x and store the result
-    private void apply(TransformOp op, int[] c,int[] c2) {
-        if(op.isPassThrough())
-            return;
-        if (op.y() != null) {
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                IComplexNumber curr = complexX.getComplex(c);
-                if (op.y() instanceof IComplexNDArray) {
-                    IComplexNDArray complexY = (IComplexNDArray) op.y();
-                    complexZ.putScalar(c, op.op(curr, complexY.getComplex(c)));
-                } else
-                    complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
-            }
-            //x is real
-            else {
-                INDArray zLinear = op.z();
-                INDArray xLinear = op.x();
-                INDArray yLinear = op.y();
-                zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c2)));
-
-            }
-
-        }
-
-        else {
-
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                if (op.y() instanceof IComplexNDArray)
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-
-                else
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-            }
-            //x is real
-            else
-                op.z().putScalar(c, op.op(op.x().getDouble(c)));
-        }
-
-    }
-
-
-
-
-    //apply a pairwise op to x and store the result
-    private void apply(TransformOp op, int[] c) {
-        if(op.isPassThrough())
-            return;
-        if (op.y() != null) {
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                IComplexNumber curr = complexX.getComplex(c);
-                if (op.y() instanceof IComplexNDArray) {
-                    IComplexNDArray complexY = (IComplexNDArray) op.y();
-                    complexZ.putScalar(c, op.op(curr, complexY.getComplex(c)));
-                } else
-                    complexZ.putScalar(c, op.op(curr, op.y().getDouble(c)));
-            }
-            //x is real
-            else {
-                INDArray zLinear = op.z();
-                INDArray xLinear = op.x();
-                INDArray yLinear = op.y();
-                zLinear.putScalar(c, op.op(xLinear.getDouble(c),yLinear.getDouble(c)));
-
-            }
-
-        }
-
-        else {
-
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexZ = (IComplexNDArray) op.z();
-
-                if (op.y() instanceof IComplexNDArray)
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-
-                else
-                    complexZ.putScalar(c, op.op(complexX.getComplex(c)));
-            }
-            //x is real
-            else
-                op.z().putScalar(c, op.op(op.x().getDouble(c)));
-        }
-
-    }
-
-
-
-
-
-    private void apply(Accumulation op, int x) {
-        if(op.isPassThrough())
-            return;
-
-        if (op.y() != null) {
-
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                IComplexNDArray complexY = (IComplexNDArray) op.y();
-                IComplexNumber curr = complexX.getComplex(x);
-                if (op.y() instanceof IComplexNDArray)
-                    op.update(op.op(curr, complexY.getComplex(x)));
-
-                else
-                    op.update(op.op(curr, op.y().getDouble(x)));
-            }
-            //x is real
-            else
-                op.update(op.op(op.x().getDouble(x), op.y().getDouble(x)));
-        }
-
-        else {
-            //x is complex, y could be complex or real
-            if (op.x() instanceof IComplexNDArray) {
-                IComplexNDArray complexX = (IComplexNDArray) op.x();
-                op.update(op.op(complexX.getComplex(x)));
-            }
-            else
-                op.update(op.op(op.x().getDouble(x)));
-        }
-
-
     }
 
 
