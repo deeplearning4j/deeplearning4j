@@ -25,11 +25,10 @@ import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.parallel.DefaultParallelExecutionProvider;
+import org.nd4j.linalg.api.parallel.ParallelExecutionProvider;
 import org.nd4j.linalg.api.parallel.ParallelExecutioner;
-import org.nd4j.linalg.api.parallel.bufferops.AccumulationViaTensorDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationViaTensorDataBufferTask;
-import org.nd4j.linalg.api.parallel.bufferops.ScalarViaTensorDataBufferAction;
-import org.nd4j.linalg.api.parallel.bufferops.TransformViaTensorDataBufferTask;
+import org.nd4j.linalg.api.parallel.bufferops.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -45,11 +44,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
     protected static final int PARALLEL_THRESHOLD = 2048;
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
-//    protected ParallelExecutionProvider parallelExecutionProvider;
-//    protected ParallelExecutioner executorService;
+    protected ParallelExecutionProvider parallelExecutionProvider;
+    protected ParallelExecutioner executorService;
 
     public DefaultOpExecutioner() {
-        /*
         String provider = System.getProperty(ParallelExecutionProvider.EXECUTOR_SERVICE_PROVIDER,DefaultParallelExecutionProvider.class.getName());
         try {
             Class<? extends ParallelExecutionProvider> executorServiceProvider = (Class<? extends ParallelExecutionProvider>) Class.forName(provider);
@@ -59,7 +57,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             e.printStackTrace();
         }
 
-        this.executorService = parallelExecutionProvider.getService();*/
+        this.executorService = parallelExecutionProvider.getService();
     }
 
     public static int getParallelThreshold(){
@@ -68,8 +66,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public ParallelExecutioner parallelExecutioner() {
-//        return executorService;
-        throw new UnsupportedOperationException();
+        return executorService;
     }
 
     @Override
@@ -107,13 +104,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return Nd4j.scalar(execAndReturn((IndexAccumulation)op).getFinalResult());
         }
 
-        throw new IllegalArgumentException("Illegal type of op " + op.getClass());
+        throw new IllegalArgumentException("Illegal type of op: " + op.getClass());
     }
 
     @Override
     public void iterateOverAllRows(Op op) {
-        throw new UnsupportedOperationException();
-        /*
         //column and row vectors should be treated the same
         if(op.x().isVector()) {
             //reset the op in case
@@ -158,36 +153,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     zRow.assign(op.z());
                 }
             }
-
-        }
-        else {
+        } else {
             INDArray originalX = op.x();
             INDArray originalZ = op.z();
             for(int i = 0; i < originalX.slices(); i++) {
-
                 INDArray slice = originalX.slice(i);
                 INDArray zSlice = originalZ.slice(i);
                 op.setX(slice);
                 op.setZ(zSlice);
                 iterateOverAllRows(op);
             }
-
-
-        }*/
+        }
     }
 
     @Override
     public void iterateOverAllColumns(Op op) {
-        throw new UnsupportedOperationException();
-        /*
         if(op.x().isVector()) {
             exec(op);
         }
         //execute row wise
         else if(op.x().isMatrix() || op.x().isColumnVector()) {
             exec(op,1);
-        }
-        else {
+        } else {
             if(op.x() instanceof IComplexNDArray) {
                 IComplexNDArray originalX = (IComplexNDArray) op.x();
                 IComplexNDArray originalZ = (IComplexNDArray) op.z();
@@ -199,8 +186,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                         op.setY(y.getColumn(i));
                     iterateOverAllColumns(op);
                 }
-            }
-            else {
+            } else {
                 INDArray originalX = op.x();
                 INDArray originalZ = op.z();
                 INDArray y = op.y();
@@ -212,8 +198,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     iterateOverAllColumns(op);
                 }
             }
-
-        }*/
+        }
     }
 
 
@@ -252,35 +237,26 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return op;
         }
 
-        if(dimension.length == 1)
-            return exec(op,dimension[0]);
+        if(dimension.length == 1) {
+            //only accumulate along a particular dimension
+            if (op instanceof Accumulation) {
+                Accumulation a = (Accumulation) op;
+                return exec(a);
+            }
+
+            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
+            return op;
+        }
         else {
             //only accumulate along a particular dimension
             if (op instanceof Accumulation) {
                 throw new IllegalStateException("Should never be invoked");
             }
 
-
             parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
 
             return op;
         }
-    }
-
-    protected Op exec(Op op,int dimension) {
-        if(op.isPassThrough()) {
-            op.exec();
-            return op;
-        }
-
-        //only accumulate along a particular dimension
-        if (op instanceof Accumulation) {
-            Accumulation a = (Accumulation) op;
-            return exec(a);
-        }
-
-        parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
-        return op;
     }
 
 
@@ -293,7 +269,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 || op.z() != null && op.z() instanceof LinearViewComplexNDArray ||
                 op.x() != null && op.x().isScalar() || op.y() != null && op.y().isScalar() || op.z() != null && op.z().isScalar())
             return;
-
     }
 
 
@@ -343,8 +318,58 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return ret;
         }
 
-        else
-            return parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this,dimension);
+        else{
+            return new AccumulationAlongDimensionDataBufferTask(op,PARALLEL_THRESHOLD,dimension).invoke();
+        }
+    }
+
+    @Override
+    public INDArray exec(IndexAccumulation op, int...dimension) {
+        //do op along all dimensions
+        if(dimension.length == op.x().rank())
+            dimension = new int[] {Integer.MAX_VALUE};
+
+
+        if(op.isPassThrough()) {
+            op.exec(dimension);
+            return op.z();
+        }
+
+
+        if(dimension[0] == Integer.MAX_VALUE) {
+            return Nd4j.scalar(execAndReturn(op).getFinalResult());
+        }
+
+        if(op instanceof IComplexNDArray) {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+            //ensure vector is proper shape
+            if(retShape.length == 1) {
+                if(dimension[0] == 0)
+                    retShape = new int[] {1,retShape[0]};
+                else
+                    retShape = new int[] {retShape[0],1};
+            }
+            else if(retShape.length == 0) {
+                retShape = new int[] {1,1};
+            }
+
+            IComplexNDArray ret = Nd4j.createComplex(retShape);
+            IComplexNDArray linear = ret;
+            for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
+                Op op2 = op.opForDimension(i, dimension);
+                int result = execAndReturn((IndexAccumulation) op2).getFinalResult();
+                linear.putScalar(i, result);
+            }
+
+            if(ret.ordering() == 'c')
+                ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
+
+            return ret;
+        }
+
+        else{
+            return new IndexAccumulationAlongDimensionDataBufferTask(op,PARALLEL_THRESHOLD,dimension).invoke();
+        }
     }
 
     @Override

@@ -112,4 +112,15 @@ public class TestArrayUtils {
         assertArrayEquals(ArrayUtil.arrayShape(new String[3][2][1]),new int[]{3,2,1});
     }
 
+    @Test
+    public void testArgMinOfMaxMethods(){
+        int[] first = {1,5,2,4};
+        int[] second = {4,6,3,2};
+
+        assertEquals(2,ArrayUtil.argMinOfMax(first,second));
+
+        int[] third = {7,3,8,10};
+        assertEquals(1,ArrayUtil.argMinOfMax(first,second,third));
+    }
+
 }

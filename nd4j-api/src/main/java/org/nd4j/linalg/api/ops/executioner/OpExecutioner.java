@@ -32,7 +32,7 @@ import org.nd4j.linalg.api.parallel.ParallelExecutioner;
 public interface OpExecutioner {
 
     enum ExecutionMode {
-        JAVA,NATIVE
+        JAVA, NATIVE
     }
 
     ParallelExecutioner parallelExecutioner();
@@ -106,7 +106,12 @@ public interface OpExecutioner {
      */
     INDArray exec(Accumulation accumulation, int...dimension);
 
-
+    /** Execute and index accumulation along a dimension
+     * @param indexAccum the index accumulation operation
+     * @param dimension the dimension/s to execute along
+     * @return result
+     */
+    INDArray exec(IndexAccumulation indexAccum, int... dimension);
 
     /**
      * Execute the operation

@@ -1345,7 +1345,7 @@ public class ArrayUtil {
 
     public static int argMinOfMax(int[]... arrays){
         int minIdx = 0;
-        int maxAtMinIdx = Integer.MIN_VALUE;
+        int maxAtMinIdx = Integer.MAX_VALUE;
 
         for( int i=0; i<arrays[0].length; i++ ){
             int maxAtIndex = Integer.MIN_VALUE;

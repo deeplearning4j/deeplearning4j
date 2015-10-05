@@ -115,8 +115,9 @@ public class OpExecutionerUtil {
         //but may not be optimal in terms of element separation (for CPU cache etc)
         int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
 
-        //Edge cases: shapes with 1s in them can have stride of 1 on the dimensions of length 1
-        if(x.size(opAlongDimensionMinStride)==1) return opAlongDimensionMaxLength;
+        //Edge case: shapes with 1s in them can have stride of 1 on the dimensions of length 1
+        if(opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride)==1)
+            return opAlongDimensionMaxLength;
 
         //Using a heuristic approach here: basically if we get >= 10x as many tensors using the minimum stride
         //dimension vs. the maximum size dimension, use the maximum size dimension instead
@@ -129,7 +130,17 @@ public class OpExecutionerUtil {
     }
 
     public static int chooseElementWiseTensorDimension(INDArray x, INDArray y, INDArray z){
-        throw new UnsupportedOperationException("not yet implemented");
+        int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(),y.stride(),z.stride());
+
+        int opAlongDimensionMaxLength = ArrayUtil.argMax(x.shape());
+        //Edge case: shapes with 1s in them can have stride of 1 on the dimensions of length 1
+        if(opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride)==1)
+            return opAlongDimensionMaxLength;
+
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMinStride));
+        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMaxLength));
+        if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
+        else return opAlongDimensionMaxLength;
     }
 
 
