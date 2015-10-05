@@ -70,6 +70,10 @@ public class RectifedLinear extends BaseTransformOp {
         super(x, y, z, n);
     }
 
+    public RectifedLinear(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
+    }
+
     public RectifedLinear(INDArray x) {
         super(x);
     }

@@ -50,22 +50,22 @@ public class SumOpDataBufferTask extends AccumulationDataBufferTask {
             if (x.dataType() == DataBuffer.Type.FLOAT) {
                 int byteOffsetX = 4 * offsetX;
                 if (incrX == 1) {
-                    for (int i = 0; i < n; i += 4) {
+                    for (int i = 0; i < 4 * n; i += 4) {
                         sum += nbbx.getFloat(byteOffsetX + i);
                     }
                 } else {
-                    for (int i = 0; i < n; i += 4) {
+                    for (int i = 0; i < 4 * n; i += 4) {
                         sum += nbbx.getFloat(byteOffsetX + i * incrX);
                     }
                 }
             } else {
                 int byteOffsetX = 8 * offsetX;
                 if (incrX == 1) {
-                    for (int i = 0; i < n; i += 8) {
+                    for (int i = 0; i < 8 * n; i += 8) {
                         sum += nbbx.getDouble(byteOffsetX + i);
                     }
                 } else {
-                    for (int i = 0; i < n; i += 8) {
+                    for (int i = 0; i < 8 * n; i += 8) {
                         sum += nbbx.getDouble(byteOffsetX + i * incrX);
                     }
                 }

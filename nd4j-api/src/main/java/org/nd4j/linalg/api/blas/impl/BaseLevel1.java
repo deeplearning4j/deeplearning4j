@@ -313,9 +313,9 @@ public abstract  class BaseLevel1 extends BaseLevel implements Level1 {
             int[] shapex = {1,n};
             int[] shapey = {1,n};
             int[] stridex = {incrX,incrX};
-            int[] strideY = {incrY,incrY};
+            int[] stridey = {incrY,incrY};
             INDArray arrX = Nd4j.create(x,shapex,stridex,offsetX,'c');
-            INDArray arrY = Nd4j.create(x,shapex,stridex,offsetX,'c');
+            INDArray arrY = Nd4j.create(x,shapey,stridey,offsetY,'c');
             axpy(n,alpha,arrX,arrY);
         }
     }

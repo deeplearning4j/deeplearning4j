@@ -52,8 +52,8 @@ public class MulOp extends BaseTransformOp {
         super(x, z, n);
     }
 
-    public MulOp(INDArray x, INDArray xDup, INDArray x1) {
-        super(x, xDup, x1, x.length());
+    public MulOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     @Override
@@ -133,9 +133,9 @@ public class MulOp extends BaseTransformOp {
     }
 
     @Override
-    public TransformDataBufferAction getTransformOpDataBufferAction( int parallelThreshold, int n, DataBuffer x, DataBuffer y,
-                                                                     DataBuffer z, int offsetX, int offsetY, int offsetZ,
-                                                                     int incrX, int incrY, int incrZ){
-        return new MulOpDataBufferAction(this,parallelThreshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
+    public TransformDataBufferAction getTransformOpDataBufferAction(int parallelThreshold, int n, DataBuffer x, DataBuffer y,
+                                                                    DataBuffer z, int offsetX, int offsetY, int offsetZ,
+                                                                    int incrX, int incrY, int incrZ) {
+        return new MulOpDataBufferAction(this, parallelThreshold, n, x, y, z, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
     }
 }

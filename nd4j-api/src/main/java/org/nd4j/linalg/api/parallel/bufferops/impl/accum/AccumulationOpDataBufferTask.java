@@ -61,11 +61,11 @@ public class AccumulationOpDataBufferTask extends AccumulationDataBufferTask {
                     int byteOffsetY = 4 * offsetY;
                     float accum = op.zeroFloat();
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             accum = op.update(accum, nbbx.getFloat(byteOffsetX + i), nbby.getFloat(byteOffsetY + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             accum = op.update(accum, nbbx.getFloat(byteOffsetX + i * incrX), nbby.getFloat(byteOffsetY + i * incrY));
                         }
                     }
@@ -75,11 +75,11 @@ public class AccumulationOpDataBufferTask extends AccumulationDataBufferTask {
                     int byteOffsetY = 8 * offsetY;
                     double accum = op.zeroDouble();
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             accum = op.update(accum, nbbx.getDouble(byteOffsetX + i), nbby.getDouble(byteOffsetY + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             accum = op.update(accum, nbbx.getDouble(byteOffsetX + i * incrX), nbby.getDouble(byteOffsetY + i * incrY));
                         }
                     }
@@ -123,11 +123,11 @@ public class AccumulationOpDataBufferTask extends AccumulationDataBufferTask {
                     int byteOffsetX = 4 * offsetX;
                     float accum = op.zeroFloat();
                     if (incrX == 1) {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             accum = op.update(accum, nbbx.getFloat(byteOffsetX + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             accum = op.update(accum, nbbx.getFloat(byteOffsetX + i * incrX));
                         }
                     }
@@ -136,11 +136,11 @@ public class AccumulationOpDataBufferTask extends AccumulationDataBufferTask {
                     int byteOffsetX = 8 * offsetX;
                     double accum = op.zeroDouble();
                     if (incrX == 1) {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             accum = op.update(accum, nbbx.getDouble(byteOffsetX + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             accum = op.update(accum, nbbx.getDouble(byteOffsetX + i * incrX));
                         }
                     }

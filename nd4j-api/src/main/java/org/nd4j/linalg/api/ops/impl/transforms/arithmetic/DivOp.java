@@ -52,6 +52,10 @@ public class DivOp extends BaseTransformOp {
         super(x, z, n);
     }
 
+    public DivOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
+    }
+
     @Override
     public String name() {
         return "div";
@@ -128,9 +132,9 @@ public class DivOp extends BaseTransformOp {
     }
 
     @Override
-    public TransformDataBufferAction getTransformOpDataBufferAction( int parallelThreshold, int n, DataBuffer x, DataBuffer y,
-                                                                     DataBuffer z, int offsetX, int offsetY, int offsetZ,
-                                                                     int incrX, int incrY, int incrZ){
-        return new DivOpDataBufferAction(this,parallelThreshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
+    public TransformDataBufferAction getTransformOpDataBufferAction(int parallelThreshold, int n, DataBuffer x, DataBuffer y,
+                                                                    DataBuffer z, int offsetX, int offsetY, int offsetZ,
+                                                                    int incrX, int incrY, int incrZ) {
+        return new DivOpDataBufferAction(this, parallelThreshold, n, x, y, z, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
     }
 }

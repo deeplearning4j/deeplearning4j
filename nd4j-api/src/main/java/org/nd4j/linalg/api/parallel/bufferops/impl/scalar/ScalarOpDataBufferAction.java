@@ -86,23 +86,23 @@ public class ScalarOpDataBufferAction extends ScalarDataBufferAction {
                 int byteOffsetZ = 4 * offsetZ;
                 if (incrX == 1 && (x == z || incrZ == 1)) {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             int xbIdx = byteOffsetX + i;
                             nbbx.setFloat(xbIdx, op.op(nbbx.getFloat(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             nbbz.setFloat(byteOffsetZ + i, op.op(nbbx.getFloat(byteOffsetX + i)));
                         }
                     }
                 } else {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             int xbIdx = byteOffsetX + i * incrX;
                             nbbx.setFloat(xbIdx, op.op(nbbx.getFloat(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             nbbz.setFloat(byteOffsetZ + i * incrZ, op.op(nbbx.getFloat(byteOffsetX + i * incrX)));
                         }
                     }
@@ -112,23 +112,23 @@ public class ScalarOpDataBufferAction extends ScalarDataBufferAction {
                 int byteOffsetZ = 8 * offsetZ;
                 if (incrX == 1 && (x == z || incrZ == 1)) {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             int xbIdx = byteOffsetX + i;
                             nbbx.setDouble(xbIdx, op.op(nbbx.getDouble(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             nbbz.setDouble(byteOffsetZ + i, op.op(nbbx.getDouble(byteOffsetX + i)));
                         }
                     }
                 } else {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             int xbIdx = byteOffsetX + i * incrX;
                             nbbx.setDouble(xbIdx, op.op(nbbx.getDouble(xbIdx)));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             nbbz.setDouble(byteOffsetZ + i * incrZ, op.op(nbbx.getDouble(byteOffsetX + i * incrX)));
                         }
                     }

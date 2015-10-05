@@ -14,7 +14,6 @@ import java.util.concurrent.RecursiveTask;
 
 @AllArgsConstructor
 public class AccumulationAlongDimensionDataBufferTask extends RecursiveTask<INDArray> {
-
     protected final Accumulation op;
     protected final int parallelThreshold;
     protected final int[] dimensions;

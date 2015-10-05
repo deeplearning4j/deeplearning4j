@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.parallel.bufferops.TransformDataBufferAction;
-import org.nd4j.linalg.api.parallel.bufferops.impl.transform.AddOpDataBufferAction;
 import org.nd4j.linalg.api.parallel.bufferops.impl.transform.RSubOpDataBufferAction;
 
 /**
@@ -51,6 +50,10 @@ public class RSubOp extends BaseTransformOp {
 
     public RSubOp(INDArray x, INDArray z, int n) {
         super(x, z, n);
+    }
+
+    public RSubOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     @Override

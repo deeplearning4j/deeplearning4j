@@ -132,6 +132,21 @@ public class IAMax extends BaseIndexAccumulation {
     }
 
     @Override
+    public double zeroDouble(){
+        return -Double.MAX_VALUE;
+    }
+
+    @Override
+    public float zeroFloat(){
+        return -Float.MAX_VALUE;
+    }
+
+    @Override
+    public IComplexNumber zeroComplex(){
+        return Nd4j.createComplexNumber(-Double.MAX_VALUE,0);
+    }
+
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 

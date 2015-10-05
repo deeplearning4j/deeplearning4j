@@ -41,7 +41,7 @@ import java.util.Arrays;
  * @author Adam Gibson
  */
 public class DefaultOpExecutioner implements OpExecutioner {
-    protected static final int PARALLEL_THRESHOLD = 2048;
+    protected static int PARALLEL_THRESHOLD = 2048;
 
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
     protected ParallelExecutionProvider parallelExecutionProvider;
@@ -62,6 +62,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     public static int getParallelThreshold(){
         return PARALLEL_THRESHOLD;
+    }
+
+    public static void setParallelThreshold(int threshold){
+        PARALLEL_THRESHOLD = threshold;
     }
 
     @Override

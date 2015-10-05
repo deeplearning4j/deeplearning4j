@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.parallel.bufferops.impl.transform;
 
+import io.netty.buffer.ByteBuf;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.TransformOp;
@@ -19,19 +20,52 @@ public class CopyOpDataBufferAction extends TransformDataBufferAction {
     public void doTask() {
         //Task: Z = X
         if (x == z) return;    //No op
-        if(incrX == 1 && incrZ == 1 && x.allocationMode() == DataBuffer.AllocationMode.HEAP){
-            if(x.dataType() == DataBuffer.Type.FLOAT){
-                float[] fx = (float[])x.array();
-                float[] fz = (float[])z.array();
-                System.arraycopy(fx,offsetX,fz,offsetZ,n);  //z = x
+        if (x.allocationMode() == DataBuffer.AllocationMode.HEAP) {
+            if (incrX == 1 && incrZ == 1) {
+                if (x.dataType() == DataBuffer.Type.FLOAT) {
+                    float[] fx = (float[]) x.array();
+                    float[] fz = (float[]) z.array();
+                    System.arraycopy(fx, offsetX, fz, offsetZ, n);  //z = x
+                } else {
+                    double[] dx = (double[]) x.array();
+                    double[] dz = (double[]) z.array();
+                    System.arraycopy(dx, offsetX, dz, offsetZ, n);  //z = x
+                }
+                return;
             } else {
-                double[] dx = (double[])x.array();
-                double[] dz = (double[])z.array();
-                System.arraycopy(dx,offsetX,dz,offsetZ,n);  //z = x
+                Nd4j.getBlasWrapper().level1().copy(n, x, offsetX, incrX, z, offsetZ, incrZ);
             }
-            return;
+        } else {
+            //Direct allocation (FloatBuffer / DoubleBuffer backed by a Netty ByteBuf)
+            ByteBuf nbbx = x.asNetty();
+            ByteBuf nbbz = z.asNetty();
+            if (x.dataType() == DataBuffer.Type.FLOAT) {
+                int byteOffsetX = 4 * offsetX;
+                int byteOffsetZ = 4 * offsetZ;
+                if (incrX == 1 && incrZ == 1) {
+                    for (int i = 0; i < 4 * n; i += 4) {
+                        nbbz.setFloat(byteOffsetZ + i, nbbx.getFloat(byteOffsetX + i));
+                    }
+                } else {
+                    for (int i = 0; i < 4 * n; i += 4) {
+                        nbbz.setFloat(byteOffsetZ + i * incrZ, x.getFloat(byteOffsetX + i * incrX));
+                    }
+                }
+            } else {
+                int byteOffsetX = 8 * offsetX;
+                int byteOffsetZ = 8 * offsetZ;
+                if (incrX == 1 && incrZ == 1) {
+                    for (int i = 0; i < 8 * n; i += 8) {
+                        nbbz.setDouble(byteOffsetZ + i, nbbx.getDouble(byteOffsetX + i));
+                    }
+                } else {
+                    for (int i = 0; i < 8 * n; i += 8) {
+                        nbbz.setDouble(byteOffsetZ + i * incrZ, nbbx.getDouble(byteOffsetX + i * incrX));
+                    }
+                }
+            }
         }
-        Nd4j.getBlasWrapper().level1().copy(n, x, offsetX, incrX, z, offsetZ, incrZ);
+
     }
 
     @Override

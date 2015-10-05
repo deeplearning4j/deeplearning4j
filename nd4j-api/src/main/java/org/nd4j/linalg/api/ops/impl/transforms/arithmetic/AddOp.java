@@ -50,11 +50,11 @@ public class AddOp extends BaseTransformOp {
     }
 
     public AddOp(INDArray x) {
-        super(x,x);
+        super(x, x);
     }
 
-    public AddOp(INDArray x, INDArray xDup, INDArray z) {
-        super(x, xDup, z, x.length());
+    public AddOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
     }
 
     @Override
@@ -132,9 +132,9 @@ public class AddOp extends BaseTransformOp {
     }
 
     @Override
-    public TransformDataBufferAction getTransformOpDataBufferAction( int parallelThreshold, int n, DataBuffer x, DataBuffer y,
-                                                                          DataBuffer z, int offsetX, int offsetY, int offsetZ,
-                                                                          int incrX, int incrY, int incrZ){
-        return new AddOpDataBufferAction(this,parallelThreshold,n,x,y,z,offsetX,offsetY,offsetZ,incrX,incrY,incrZ);
+    public TransformDataBufferAction getTransformOpDataBufferAction(int parallelThreshold, int n, DataBuffer x, DataBuffer y,
+                                                                    DataBuffer z, int offsetX, int offsetY, int offsetZ,
+                                                                    int incrX, int incrY, int incrZ) {
+        return new AddOpDataBufferAction(this, parallelThreshold, n, x, y, z, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
     }
 }

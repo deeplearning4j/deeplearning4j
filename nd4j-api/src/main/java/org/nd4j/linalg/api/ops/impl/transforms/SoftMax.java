@@ -60,6 +60,10 @@ public class SoftMax extends BaseTransformOp {
         super(x, y, z, n);
     }
 
+    public SoftMax(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.length());
+    }
+
     public SoftMax(INDArray x) {
         super(x);
     }

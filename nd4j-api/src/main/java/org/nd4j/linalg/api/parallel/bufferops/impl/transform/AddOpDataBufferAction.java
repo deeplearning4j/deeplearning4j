@@ -22,10 +22,46 @@ public class AddOpDataBufferAction extends TransformDataBufferAction {
     public void doTask() {
         //Task: Z = X+Y
         if (x == z) {
-            //can use axpy
-            Nd4j.getBlasWrapper().level1().axpy(n, 1.0, y, offsetY, incrY, z, offsetZ, incrZ);
+            //X += Y
+            if (x.allocationMode() == DataBuffer.AllocationMode.HEAP) {
+                //can use axpy (but only for heap allocated -> need double[] or float[])
+                Nd4j.getBlasWrapper().level1().axpy(n, 1.0, y, offsetY, incrY, x, offsetX, incrX);
+            } else {
+                //Direct allocation (FloatBuffer / DoubleBuffer backed by a Netty ByteBuf)
+                ByteBuf nbbx = x.asNetty();
+                ByteBuf nbby = y.asNetty();
+                if (x.dataType() == DataBuffer.Type.FLOAT) {
+                    int byteOffsetX = 4 * offsetX;
+                    int byteOffsetY = 4 * offsetY;
+                    if (incrX == 1 && incrY == 1 && incrZ == 1) {
+                        for (int i = 0; i < 4 * n; i += 4) {
+                            int ox = byteOffsetX + i;
+                            nbbx.setFloat(ox, nbbx.getFloat(ox) + nbby.getFloat(byteOffsetY + i));
+                        }
+                    } else {
+                        for (int i = 0; i < 4 * n; i += 4) {
+                            int ox = byteOffsetX + i * incrX;
+                            nbbx.setFloat(ox, x.getFloat(ox) + y.getFloat(byteOffsetY + i * incrY));
+                        }
+                    }
+                } else {
+                    int byteOffsetX = 8 * offsetX;
+                    int byteOffsetY = 8 * offsetY;
+                    if (incrX == 1 && incrY == 1) {
+                        for (int i = 0; i < 8 * n; i += 8) {
+                            int ox = byteOffsetX + i;
+                            nbbx.setDouble(ox, nbbx.getDouble(ox) + nbby.getDouble(byteOffsetY + i));
+                        }
+                    } else {
+                        for (int i = 0; i < 8 * n; i += 8) {
+                            int ox = byteOffsetX + i * incrX;
+                            nbbx.setDouble(ox, nbbx.getDouble(ox) + nbby.getDouble(byteOffsetY + i * incrY));
+                        }
+                    }
+                }
+            }
         } else {
-            //use loop
+            //Z = X+Y
             if (x.allocationMode() == DataBuffer.AllocationMode.HEAP) {
                 //Heap allocation (float[] or double[])
                 if (x.dataType() == DataBuffer.Type.FLOAT) {
@@ -65,11 +101,11 @@ public class AddOpDataBufferAction extends TransformDataBufferAction {
                     int byteOffsetY = 4 * offsetY;
                     int byteOffsetZ = 4 * offsetZ;
                     if (incrX == 1 && incrY == 1 && incrZ == 1) {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             nbbz.setFloat(byteOffsetZ + i, nbbx.getFloat(byteOffsetX + i) + nbby.getFloat(byteOffsetY + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             nbbz.setFloat(byteOffsetZ + i * incrZ, x.getFloat(byteOffsetX + i * incrX) + y.getFloat(byteOffsetY + i * incrY));
                         }
                     }
@@ -78,13 +114,11 @@ public class AddOpDataBufferAction extends TransformDataBufferAction {
                     int byteOffsetY = 8 * offsetY;
                     int byteOffsetZ = 8 * offsetZ;
                     if (incrX == 1 && incrY == 1 && incrZ == 1) {
-                        for (int i = 0; i < n; i += 8) {
-                            z.put(offsetZ + i, x.getDouble(offsetX + i) + y.getDouble(offsetY + i));
+                        for (int i = 0; i < 8 * n; i += 8) {
                             nbbz.setDouble(byteOffsetZ + i, nbbx.getDouble(byteOffsetX + i) + nbby.getDouble(byteOffsetY + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8) {
-                            z.put(offsetZ + i * incrZ, x.getDouble(offsetX + i * incrZ) + y.getDouble(offsetY + i * incrZ));
+                        for (int i = 0; i < 8 * n; i += 8) {
                             nbbz.setDouble(byteOffsetZ + i * incrZ, nbbx.getDouble(byteOffsetX + i * incrX) + nbby.getDouble(byteOffsetY + i * incrY));
                         }
                     }

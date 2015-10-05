@@ -72,14 +72,14 @@ public class IndexAccumulationOpDataBufferTask extends IndexAccumulationDataBuff
                     int idxAccum = -1;
                     int idx = 0;
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < n; i += 4, idx++) {
+                        for (int i = 0; i < 4 * n; i += 4, idx++) {
                             float fx = nbbx.getFloat(byteOffsetX + i);
                             float fy = nbby.getFloat(byteOffsetY + i);
                             idxAccum = op.update(accum, idxAccum, fx, fy, idx);
                             if (idxAccum == idx) accum = op.op(fx, fy);
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4, idx++) {
+                        for (int i = 0; i < 4 * n; i += 4, idx++) {
                             float fx = nbbx.getFloat(byteOffsetX + i * incrX);
                             float fy = nbby.getFloat(byteOffsetY + i * incrY);
                             idxAccum = op.update(accum, idxAccum, fx, fy, idx);
@@ -96,14 +96,14 @@ public class IndexAccumulationOpDataBufferTask extends IndexAccumulationDataBuff
                     int idxAccum = -1;
                     int idx = 0;
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < n; i += 8, idx++) {
+                        for (int i = 0; i < 8 * n; i += 8, idx++) {
                             double dx = nbbx.getDouble(byteOffsetX + i);
                             double dy = nbby.getDouble(byteOffsetY + i);
                             idxAccum = op.update(accum, idxAccum, dx, dy, idx);
                             if (idxAccum == idx) accum = op.op(dx, dy);
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8, idx++) {
+                        for (int i = 0; i < 8 * n; i += 8, idx++) {
                             double dx = nbbx.getDouble(byteOffsetX + i * incrX);
                             double dy = nbby.getDouble(byteOffsetY + i * incrY);
                             idxAccum = op.update(accum, idxAccum, dx, dy, idx);
@@ -163,13 +163,13 @@ public class IndexAccumulationOpDataBufferTask extends IndexAccumulationDataBuff
                     int idxAccum = -1;
                     int idx = 0;
                     if (incrX == 1) {
-                        for (int i = 0; i < n; i += 4, idx++) {
+                        for (int i = 0; i < 4 * n; i += 4, idx++) {
                             float fx = nbbx.getFloat(byteOffsetX + i);
                             idxAccum = op.update(accum, idxAccum, fx, idx);
                             if (idxAccum == idx) accum = op.op(fx);
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4, idx++) {
+                        for (int i = 0; i < 4 * n; i += 4, idx++) {
                             float fx = nbbx.getFloat(byteOffsetX + i * incrX);
                             idxAccum = op.update(accum, idxAccum, fx, idx);
                             if (idxAccum == idx) accum = op.op(fx);
@@ -184,13 +184,13 @@ public class IndexAccumulationOpDataBufferTask extends IndexAccumulationDataBuff
                     int idxAccum = -1;
                     int idx = 0;
                     if (incrX == 1 && incrY == 1) {
-                        for (int i = 0; i < n; i += 8, idx++) {
+                        for (int i = 0; i < 8 * n; i += 8, idx++) {
                             double dx = nbbx.getDouble(byteOffsetX + i);
                             idxAccum = op.update(accum, idxAccum, dx, idx);
                             if (idxAccum == idx) accum = op.op(dx);
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8, idx++) {
+                        for (int i = 0; i < 8 * n; i += 8, idx++) {
                             double dx = nbbx.getDouble(byteOffsetX + i * incrX);
                             idxAccum = op.update(accum, idxAccum, dx, idx);
                             if (idxAccum == idx) accum = op.op(dx);

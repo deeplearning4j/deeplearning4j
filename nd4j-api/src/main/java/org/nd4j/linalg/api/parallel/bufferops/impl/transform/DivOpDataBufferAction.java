@@ -84,23 +84,23 @@ public class DivOpDataBufferAction extends TransformDataBufferAction {
                 int byteOffsetZ = 4 * offsetZ;
                 if (incrX == 1 && incrY == 1 && (x == z || incrZ == 1)) {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             int xbIdx = byteOffsetX + i;
                             nbbx.setFloat(xbIdx, nbbx.getFloat(xbIdx) / nbby.getFloat(byteOffsetY + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             nbbz.setFloat(byteOffsetZ + i, nbbx.getFloat(byteOffsetX + i) / nbby.getFloat(byteOffsetY + i));
                         }
                     }
                 } else {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             int xbIdx = byteOffsetX + i * incrX;
                             nbbx.setFloat(xbIdx, nbbx.getFloat(xbIdx) / nbby.getFloat(byteOffsetY + i * incrY));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 4) {
+                        for (int i = 0; i < 4 * n; i += 4) {
                             nbbz.setFloat(byteOffsetZ + i * incrZ, nbbx.getFloat(byteOffsetX + i * incrX) / nbby.getFloat(byteOffsetY + i * incrY));
                         }
                     }
@@ -111,23 +111,23 @@ public class DivOpDataBufferAction extends TransformDataBufferAction {
                 int byteOffsetZ = 8 * offsetZ;
                 if (incrX == 1 && incrY == 1 && (x == z || incrZ == 1)) {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             int xbIdx = byteOffsetX + i;
                             nbbx.setDouble(xbIdx, nbbx.getDouble(xbIdx) / nbby.getDouble(byteOffsetY + i));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             nbbz.setDouble(byteOffsetZ + i, nbbx.getDouble(byteOffsetX + i) / nbby.getDouble(byteOffsetY + i));
                         }
                     }
                 } else {
                     if (x == z) {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             int xbIdx = byteOffsetX + i * incrX;
                             nbbx.setDouble(xbIdx, nbbx.getDouble(xbIdx) / nbby.getDouble(byteOffsetY + i * incrY));
                         }
                     } else {
-                        for (int i = 0; i < n; i += 8) {
+                        for (int i = 0; i < 8 * n; i += 8) {
                             nbbz.setDouble(byteOffsetZ + i * incrZ, nbbx.getDouble(byteOffsetX + i * incrX) / nbby.getDouble(byteOffsetY + i * incrY));
                         }
                     }

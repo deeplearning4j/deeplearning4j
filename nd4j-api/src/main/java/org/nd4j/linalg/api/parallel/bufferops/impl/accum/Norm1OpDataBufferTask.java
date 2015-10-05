@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.parallel.bufferops.impl.accum;
 
+import io.netty.buffer.ByteBuf;
+import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
@@ -20,7 +22,42 @@ public class Norm1OpDataBufferTask extends AccumulationDataBufferTask {
     @Override
     public double doTask() {
         //Task: sum_i |x_i|
-        return Nd4j.getBlasWrapper().level1().asum(n, x, offsetX, incrX);
+        if (x.allocationMode() == DataBuffer.AllocationMode.HEAP) {
+            double accum = Nd4j.getBlasWrapper().level1().asum(n, x, offsetX, incrX);
+            if(outerTask) return op.getAndSetFinalResult(accum);
+            return accum;
+        } else {
+            ByteBuf nbbx = x.asNetty();
+            if (x.dataType() == DataBuffer.Type.FLOAT) {
+                float accum = op.zeroFloat();
+                int byteOffsetX = 4 * offsetX;
+                if (incrX == 1) {
+                    for (int i = 0; i < 4 * n; i += 4) {
+                        accum = op.update(accum, FastMath.abs(nbbx.getFloat(byteOffsetX + i)));
+                    }
+                } else {
+                    for (int i = 0; i < 4 * n; i += 4) {
+                        accum = op.update(accum, FastMath.abs(nbbx.getFloat(byteOffsetX + i * incrX)));
+                    }
+                }
+                if(outerTask) return op.getAndSetFinalResult(accum);
+                return accum;
+            } else {
+                double accum = op.zeroDouble();
+                int byteOffsetX = 8 * offsetX;
+                if (incrX == 1) {
+                    for (int i = 0; i < 8 * n; i += 8) {
+                        accum = op.update(accum, FastMath.abs(nbbx.getDouble(byteOffsetX + i)));
+                    }
+                } else {
+                    for (int i = 0; i < 8 * n; i += 8) {
+                        accum = op.update(accum, FastMath.abs(nbbx.getDouble(byteOffsetX + i * incrX)));
+                    }
+                }
+                if(outerTask) return op.getAndSetFinalResult(accum);
+                return accum;
+            }
+        }
     }
 
     @Override
