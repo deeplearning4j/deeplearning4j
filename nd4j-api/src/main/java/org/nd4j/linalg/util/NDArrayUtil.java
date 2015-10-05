@@ -75,7 +75,7 @@ public class NDArrayUtil {
             return arr;
         for (int i = 0; i < shape.length; i++)
             if (shape[i] < 1)
-               shape[i] = 1;
+                shape[i] = 1;
 
         INDArray shapeMatrix = ArrayUtil.toNDArray(shape);
         INDArray currShape = ArrayUtil.toNDArray(arr.shape());
@@ -101,118 +101,7 @@ public class NDArrayUtil {
         }
     }
 
-    /**
-     * Truncates an INDArray to the specified shape.
-     * If the shape is the same or greater, it just returns
-     * the original array
-     *
-     * @param nd the INDArray to truncate
-     * @param n  the number of elements to truncate to
-     * @return the truncated ndarray
-     */
-    public static INDArray truncate(INDArray nd, final int n, int dimension) {
 
-        if (nd.isVector()) {
-            INDArray truncated = Nd4j.create(new int[]{n});
-            for (int i = 0; i < n; i++)
-                truncated.put(i, nd.getScalar(i));
-            return truncated;
-        }
-
-        if (nd.size(dimension) > n) {
-            int[] targetShape = ArrayUtil.copy(nd.shape());
-            targetShape[dimension] = n;
-            int numRequired = ArrayUtil.prod(targetShape);
-            if (nd.isVector()) {
-                INDArray ret = Nd4j.create(targetShape);
-                int count = 0;
-                for (int i = 0; i < nd.length(); i += nd.stride()[dimension]) {
-                    ret.put(count++, nd.getScalar(i));
-
-                }
-                return ret;
-            } else if (nd.isMatrix()) {
-                List<Double> list = new ArrayList<>();
-                //row
-                if (dimension == 0) {
-                    for (int i = 0; i < nd.rows(); i++) {
-                        INDArray row = nd.getRow(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-                            list.add((Double) row.getScalar(j).element());
-                        }
-                    }
-                } else if (dimension == 1) {
-                    for (int i = 0; i < nd.columns(); i++) {
-                        INDArray row = nd.getColumn(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-                            list.add((Double) row.getScalar(j).element());
-                        }
-                    }
-                } else
-                    throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
-
-
-                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-            }
-
-
-            if (dimension == 0) {
-                List<INDArray> slices = new ArrayList<>();
-                for (int i = 0; i < n; i++) {
-                    INDArray slice = nd.slice(i);
-                    slices.add(slice);
-                }
-
-                return Nd4j.create(slices, targetShape);
-
-            } else {
-                List<Double> list = new ArrayList<>();
-                int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape, 0));
-                for (int i = 0; i < nd.slices(); i++) {
-                    INDArray slice = nd.slice(i).ravel();
-                    for (int j = 0; j < numElementsPerSlice; j++)
-                        list.add((Double) slice.getScalar(j).element());
-                }
-
-                assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
-
-                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-            }
-
-
-        }
-
-        return nd;
-
-    }
-
-    /**
-     * Pads an INDArray with zeros
-     *
-     * @param nd          the INDArray to pad
-     * @param targetShape the the new shape
-     * @return the padded ndarray
-     */
-    public static INDArray padWithZeros(INDArray nd, int[] targetShape) {
-        if (Arrays.equals(nd.shape(), targetShape))
-            return nd;
-        //no padding required
-        if (ArrayUtil.prod(nd.shape()) >= ArrayUtil.prod(targetShape))
-            return nd;
-
-        INDArray ret = Nd4j.create(targetShape);
-        System.arraycopy(nd.data(), 0, ret.data(), 0, (int) nd.data().length());
-        return ret;
-
-    }
 
     /** Tensor1DStats, used to efficiently iterate through tensors on a matrix (2d NDArray) for element-wise ops
      */
@@ -259,7 +148,7 @@ public class NDArrayUtil {
      * 'd': divi    first /= second
      * 'p': put     first =  second
      */
-    public static void doElementWiseOp(INDArray first, INDArray second, char op){
+    public static void doElementWiseOp(INDArray first, INDArray second, char op) {
         if(canDoElementWiseOpDirectly(first, second)){
             doOpDirectly(first,second,op);
         } else {
@@ -333,7 +222,7 @@ public class NDArrayUtil {
      * Can do this when elements are contiguous in buffer and first/second arrays
      * have same stride - i.e., when canDoElementWiseOpDirectly(...) returns true
      * */
-    private static void doOpDirectly(INDArray first, INDArray second, char op){
+    private static void doOpDirectly(INDArray first, INDArray second, char op) {
         switch(op){
             case 'a':
             case 's':
@@ -352,31 +241,31 @@ public class NDArrayUtil {
                 Object arraySecond = second.data().array();
 
                 if(arrayFirst instanceof float[]) {
-                    float[] fArr1 = (float[])arrayFirst;
-                    float[] fArr2 = (float[])arraySecond;
+                    float[] fArr1 = (float[]) arrayFirst;
+                    float[] fArr2 = (float[]) arraySecond;
                     if(op=='m') {   //muli
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst==0 && offsetSecond == 0) {
                                 muliSimpleFloat(fArr1,fArr2,opLength);
                             } else {
                                 muliOffsetUnitIncrementFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond);
                             }
                         } else {
-                            if(offsetFirst==0 && offsetSecond==0){
+                            if(offsetFirst == 0 && offsetSecond == 0 ) {
                                 muliIncrementNoOffsetFloat(fArr1,fArr2,opLength,incrFirst,incrSecond);
                             } else {
                                 muliIncrementOffsetFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond,incrFirst,incrSecond);
                             }
                         }
                     } else {    //divi
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst == 0 && offsetSecond == 0) {
                                 diviSimpleFloat(fArr1,fArr2,opLength);
                             } else {
                                 diviOffsetUnitIncrementFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond);
                             }
                         } else {
-                            if(offsetFirst==0 && offsetSecond==0){
+                            if(offsetFirst == 0 && offsetSecond == 0) {
                                 diviIncrementNoOffsetFloat(fArr1,fArr2,opLength,incrFirst,incrSecond);
                             } else {
                                 diviIncrementOffsetFloat(fArr1,fArr2,opLength,offsetFirst,offsetSecond,incrFirst,incrSecond);
@@ -387,8 +276,8 @@ public class NDArrayUtil {
                     double[] dArr1 = (double[])arrayFirst;
                     double[] dArr2 = (double[])arraySecond;
                     if(op=='m') {   //muli
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst==0 && offsetSecond == 0) {
                                 muliSimpleDouble(dArr1, dArr2, opLength);
                             } else {
                                 muliOffsetUnitIncrementDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond);
@@ -401,14 +290,14 @@ public class NDArrayUtil {
                             }
                         }
                     } else {    //divi
-                        if(incrFirst == 1 && incrSecond == 1 ){
-                            if(offsetFirst==0 && offsetSecond==0){
+                        if(incrFirst == 1 && incrSecond == 1) {
+                            if(offsetFirst==0 && offsetSecond == 0) {
                                 diviSimpleDouble(dArr1, dArr2, opLength);
                             } else {
                                 diviOffsetUnitIncrementDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond);
                             }
                         } else {
-                            if(offsetFirst==0 && offsetSecond==0){
+                            if(offsetFirst == 0 && offsetSecond == 0) {
                                 diviIncrementNoOffsetDouble(dArr1, dArr2, opLength, incrFirst, incrSecond);
                             } else {
                                 diviIncrementOffsetDouble(dArr1, dArr2, opLength, offsetFirst, offsetSecond, incrFirst, incrSecond);
@@ -429,7 +318,7 @@ public class NDArrayUtil {
      * This allows us to avoid the cost of multiple calls to tensorAlongDimension
      * This does not always hold for 3+d matrices
      */
-    private static void doOpOnMatrix(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss ){
+    private static void doOpOnMatrix(INDArray first, INDArray second, char op, Tensor1DStats fs, Tensor1DStats ss) {
         DataBuffer df = first.data();
         DataBuffer ds = second.data();
         int n = fs.getTensorLength();
@@ -442,7 +331,7 @@ public class NDArrayUtil {
             case 's':
                 //first.addi(second) or first.subi(second)
                 double a = (op == 'a' ? 1.0 : -1.0);
-                for(int i=0; i<nTensors; i++ ) {
+                for(int i = 0; i<nTensors; i++) {
                     int offset1 = fs.getFirstTensorOffset() + i*fs.getTensorStartSeparation();
                     int offset2 = ss.getFirstTensorOffset() + i*ss.getTensorStartSeparation();
                     l1Blas.axpy(n, a, ds, offset2, incrS, df, offset1, incrF);

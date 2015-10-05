@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>0.4-rc4.4-SNAPSHOT</version>
+    <version> 0.4-rc3.6-SNAPSHOT</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -134,7 +134,7 @@
         <connection>scm:git@github.com:SkymindIO/nd4j.git</connection>
         <developerConnection>scm:git:git@github.com:SkymindIO/nd4j.git</developerConnection>
         <url>git@github.com:deeplearning4j/nd4j.git</url>
-        <tag>HEAD</tag>
+        <tag> HEAD</tag>
     </scm>
 
 
@@ -298,7 +298,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>11.0</version>
+                <version>18.0</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
