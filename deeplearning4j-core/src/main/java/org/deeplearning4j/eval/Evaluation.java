@@ -33,13 +33,14 @@ import org.slf4j.LoggerFactory;
  * @author Adam Gibson
  *
  */
-public class Evaluation implements Serializable {
+public class Evaluation<T extends Comparable<? super T>> implements Serializable {
 
     private Counter<Integer> truePositives = new Counter<>();
     private Counter<Integer> falsePositives = new Counter<>();
     private Counter<Integer> trueNegatives = new Counter<>();
     private Counter<Integer> falseNegatives = new Counter<>();
     private ConfusionMatrix<Integer> confusion;
+    private ConfusionMatrix<String> confusion2;
     private int numRowCounter;
     private List<Integer> classLabels = new ArrayList<>();
     private static Logger log = LoggerFactory.getLogger(Evaluation.class);
@@ -52,6 +53,11 @@ public class Evaluation implements Serializable {
         for(int i = 0; i < numClasses; i++)
             classLabels.add(i);
         confusion = new ConfusionMatrix<>(classLabels);
+        numRowCounter = 0;
+    }
+
+    public Evaluation(List<String> numClasses) {
+        confusion2 = new ConfusionMatrix<>(numClasses);
         numRowCounter = 0;
     }
 
