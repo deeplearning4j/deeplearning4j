@@ -115,12 +115,6 @@ public class IAMax extends BaseAccumulation {
         currentResult = idx;
     }
 
-    @Override
-    public Number currentResult() {
-        if(currIndexOfMax == 0)
-            return 0;
-        return currIndexOfMax - 1;
-    }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
