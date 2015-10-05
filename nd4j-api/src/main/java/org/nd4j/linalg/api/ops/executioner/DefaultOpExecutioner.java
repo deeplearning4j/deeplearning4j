@@ -425,8 +425,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
                     new TransformViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,y,z).invoke();
                 }
             } else {
-                //Complex
-                throw new UnsupportedOperationException("Not yet implemented");
+                //Complex: x, y and/or z are complex
+                if(z instanceof IComplexNDArray) {
+                    IComplexNDArray cz = (IComplexNDArray) z;
+                    if(x instanceof IComplexNDArray){
+                        IComplexNDArray cx = (IComplexNDArray)x;
+                        if(y instanceof IComplexNDArray){
+                            IComplexNDArray cy = (IComplexNDArray)y;
+                            //x,y,z all complex
+                            for( int i=0; i<op.n(); i++ ){
+                                cz.putScalar(i,op.op(cx.getComplex(i),cy.getComplex(i)));
+                            }
+                        } else {
+                            //x,z complex, y real
+                            for( int i=0; i<op.n(); i++ ){
+                                cz.putScalar(i,op.op(cx.getComplex(i),y.getDouble(i)));
+                            }
+                        }
+                    }
+                } else {
+                    //IComplexNDArray in, but real out
+                    throw new UnsupportedOperationException("Invalid op: z is real but x.class="+x.getClass().getName() + ", y.class="+y.getClass().getName());
+                }
             }
         } else {
             //Ops with 1 input - Tanh, Sin, etc. X=OP(X) or Z=OP(X)
@@ -446,7 +466,19 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 }
             } else {
                 //Complex
-                throw new UnsupportedOperationException("Not yet implemented");
+                if(z instanceof IComplexNDArray){
+                    IComplexNDArray cz = (IComplexNDArray) z;
+                    if(x instanceof IComplexNDArray){
+                        IComplexNDArray cx = (IComplexNDArray) x;
+                        for( int i=0; i<op.n(); i++ ){
+                            cz.putScalar(i, op.op(cx.getComplex(i)));
+                        }
+                    } else {
+                        for( int i=0; i<op.n(); i++ ){
+                            cz.putScalar(i,op.op(x.getDouble(i)));
+                        }
+                    }
+                }
             }
         }
     }
@@ -477,7 +509,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         } else {
             //Complex
-            throw new UnsupportedOperationException("Not yet implemented");
+            if(y==null){
+                //Accumulation(x)
+                //x must be complex
+                IComplexNDArray cx = (IComplexNDArray)x;
+                IComplexNumber accum = op.zeroComplex();
+                for( int i=0; i<op.n(); i++ ){
+                    accum = op.update(accum,cx.getComplex(i),i);
+                }
+                op.setFinalResultComplex(accum);
+            } else {
+                //Accumulation(x,y)
+                if(!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)){
+                    throw new UnsupportedOperationException("Invalid input for accumulation op: x.class="+x.getClass().getName() + ", y.class="+y.getClass().getName());
+                }
+                IComplexNDArray cx = (IComplexNDArray)x;
+                IComplexNDArray cy = (IComplexNDArray)y;
+                IComplexNumber accum = op.zeroComplex();
+                for( int i=0; i<op.n(); i++ ){
+                    accum= op.update(accum,cx.getComplex(i),cy.getComplex(i));
+                }
+                op.setFinalResultComplex(accum);
+            }
         }
     }
 
@@ -501,7 +554,18 @@ public class DefaultOpExecutioner implements OpExecutioner {
             }
         } else {
             //Complex
-            throw new UnsupportedOperationException("Not yet implemented");
+            if(z instanceof IComplexNDArray){
+                IComplexNDArray cz = (IComplexNDArray)z;
+                if(x instanceof IComplexNDArray){
+                    IComplexNDArray cx = (IComplexNDArray)x;
+                    for( int i=0; i<op.n(); i++ ) cz.putScalar(i,op.op(cx.getComplex(i)));
+                } else {
+                    for( int i=0; i<op.n(); i++ ) cz.putScalar(i,op.op(x.getDouble(i)));
+                }
+            } else {
+                //Put complex into real -> not supported
+                throw new UnsupportedOperationException("Scalar op with complex x but real z: not supported");
+            }
         }
     }
 
@@ -531,7 +595,32 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
         } else {
             //Complex
-            throw new UnsupportedOperationException("not yet implemented");
+            if(y==null){
+                //IndexAccumulation(x)
+                //x must be complex
+                int accumIdx = -1;
+                IComplexNDArray cx = (IComplexNDArray)x;
+                IComplexNumber accum = op.zeroComplex();
+                for( int i=0; i<op.n(); i++ ){
+                    accumIdx = op.update(accum,accumIdx,cx.getComplex(i),i);
+                    if(accumIdx==i) accum = op.op(cx.getComplex(i));
+                }
+                op.setFinalResult(accumIdx);
+            } else {
+                //IndexAccumulation(x,y)
+                if(!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)){
+                    throw new UnsupportedOperationException("Invalid input for index accumulation op: x.class="+x.getClass().getName() + ", y.class="+y.getClass().getName());
+                }
+                int accumIdx = -1;
+                IComplexNDArray cx = (IComplexNDArray)x;
+                IComplexNDArray cy = (IComplexNDArray)y;
+                IComplexNumber accum = op.zeroComplex();
+                for( int i=0; i<op.n(); i++ ){
+                    accumIdx = op.update(accum,accumIdx,cx.getComplex(i),cy.getComplex(i),i);
+                    if(accumIdx==i) accum = op.op(cx.getComplex(i),cy.getComplex(i));
+                }
+                op.setFinalResult(accumIdx);
+            }
         }
     }
 }
