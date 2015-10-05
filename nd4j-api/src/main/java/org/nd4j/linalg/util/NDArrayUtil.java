@@ -24,9 +24,7 @@ import lombok.Data;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.Indices;
@@ -103,118 +101,7 @@ public class NDArrayUtil {
         }
     }
 
-    /**
-     * Truncates an INDArray to the specified shape.
-     * If the shape is the same or greater, it just returns
-     * the original array
-     *
-     * @param nd the INDArray to truncate
-     * @param n  the number of elements to truncate to
-     * @return the truncated ndarray
-     */
-    public static INDArray truncate(INDArray nd, final int n, int dimension) {
 
-        if (nd.isVector()) {
-            INDArray truncated = Nd4j.create(new int[]{n});
-            for (int i = 0; i < n; i++)
-                truncated.put(i, nd.getScalar(i));
-            return truncated;
-        }
-
-        if (nd.size(dimension) > n) {
-            int[] targetShape = ArrayUtil.copy(nd.shape());
-            targetShape[dimension] = n;
-            int numRequired = ArrayUtil.prod(targetShape);
-            if (nd.isVector()) {
-                INDArray ret = Nd4j.create(targetShape);
-                int count = 0;
-                for (int i = 0; i < nd.length(); i += nd.stride()[dimension]) {
-                    ret.put(count++, nd.getScalar(i));
-
-                }
-                return ret;
-            } else if (nd.isMatrix()) {
-                List<Double> list = new ArrayList<>();
-                //row
-                if (dimension == 0) {
-                    for (int i = 0; i < nd.rows(); i++) {
-                        INDArray row = nd.getRow(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-                            list.add((Double) row.getScalar(j).element());
-                        }
-                    }
-                } else if (dimension == 1) {
-                    for (int i = 0; i < nd.columns(); i++) {
-                        INDArray row = nd.getColumn(i);
-                        for (int j = 0; j < row.length(); j++) {
-                            if (list.size() == numRequired)
-                                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-                            list.add((Double) row.getScalar(j).element());
-                        }
-                    }
-                } else
-                    throw new IllegalArgumentException("Illegal dimension for matrix " + dimension);
-
-
-                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-            }
-
-
-            if (dimension == 0) {
-                List<INDArray> slices = new ArrayList<>();
-                for (int i = 0; i < n; i++) {
-                    INDArray slice = nd.slice(i);
-                    slices.add(slice);
-                }
-
-                return Nd4j.create(slices, targetShape);
-
-            } else {
-                List<Double> list = new ArrayList<>();
-                int numElementsPerSlice = ArrayUtil.prod(ArrayUtil.removeIndex(targetShape, 0));
-                for (int i = 0; i < nd.slices(); i++) {
-                    INDArray slice = nd.slice(i).ravel();
-                    for (int j = 0; j < numElementsPerSlice; j++)
-                        list.add((Double) slice.getScalar(j).element());
-                }
-
-                assert list.size() == ArrayUtil.prod(targetShape) : "Illegal shape for length " + list.size();
-
-                return Nd4j.create(ArrayUtil.toArrayDouble(list), targetShape);
-
-            }
-
-
-        }
-
-        return nd;
-
-    }
-
-    /**
-     * Pads an INDArray with zeros
-     *
-     * @param nd          the INDArray to pad
-     * @param targetShape the the new shape
-     * @return the padded ndarray
-     */
-    public static INDArray padWithZeros(INDArray nd, int[] targetShape) {
-        if (Arrays.equals(nd.shape(), targetShape))
-            return nd;
-        //no padding required
-        if (ArrayUtil.prod(nd.shape()) >= ArrayUtil.prod(targetShape))
-            return nd;
-
-        INDArray ret = Nd4j.create(targetShape);
-        System.arraycopy(nd.data(), 0, ret.data(), 0, (int) nd.data().length());
-        return ret;
-
-    }
 
     /** Tensor1DStats, used to efficiently iterate through tensors on a matrix (2d NDArray) for element-wise ops
      */
@@ -268,12 +155,12 @@ public class NDArrayUtil {
             //Decide which dimension we want to split on
             int opAlongDimension = chooseElementWiseTensorDimension(first, second);
 
-            if(first.rank() == 2 &&  canDoElementWiseOpDirectly(first, second)) {
+            if(first.rank() == 2) {
                 //Certain optimizations are possible on 2d that are not always possible on 3+d
                 Tensor1DStats fs = get1DTensorStats(first, opAlongDimension);
                 Tensor1DStats ss = get1DTensorStats(second, opAlongDimension);
                 if (fs.tensorStartSeparation == fs.getTensorLength() * fs.getElementWiseStride() &&
-                        ss.tensorStartSeparation == ss.getTensorLength() * ss.getElementWiseStride() && canDoElementWiseOpDirectly(first, second)) {
+                        ss.tensorStartSeparation == ss.getTensorLength() * ss.getElementWiseStride()) {
                     //One tensor ends and the next begins at same element-wise interval for both
                     doOpDirectly(first, second, op);
                 } else {
@@ -286,12 +173,8 @@ public class NDArrayUtil {
     }
 
     /** Can we do the element-wise op directly on the arrays without breaking them up into 1d tensors first? */
-    private static boolean canDoElementWiseOpDirectly(INDArray first, INDArray second) {
-        if(first.data().allocationMode() != DataBuffer.AllocationMode.HEAP || second.data().allocationMode()  != DataBuffer.AllocationMode.HEAP)
-            return false;
-
-        if(first.isVector())
-            return true;
+    private static boolean canDoElementWiseOpDirectly(INDArray first, INDArray second){
+        if(first.isVector()) return true;
 
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
         int l1 = first.length();
@@ -301,8 +184,7 @@ public class NDArrayUtil {
         int[] strides1 = first.stride();
         int[] strides2 = second.stride();
         boolean equalStrides = Arrays.equals(strides1, strides2);
-        if(l1 == dl1 && l2 == dl2 && equalStrides)
-            return true;
+        if(l1==dl1 && l2==dl2 && equalStrides) return true;
 
         //Strides match + are same as a zero offset NDArray -> all elements are contiguous (and match)
         int[] shape1 = first.shape();
@@ -340,7 +222,7 @@ public class NDArrayUtil {
      * Can do this when elements are contiguous in buffer and first/second arrays
      * have same stride - i.e., when canDoElementWiseOpDirectly(...) returns true
      * */
-    private static void doOpDirectly(final INDArray first, final INDArray second, char op) {
+    private static void doOpDirectly(INDArray first, INDArray second, char op) {
         switch(op){
             case 'a':
             case 's':
@@ -425,16 +307,7 @@ public class NDArrayUtil {
                 }
                 break;
             case 'p':   //put / copy
-                if(first.data().allocationMode() == DataBuffer.AllocationMode.HEAP && first.data().allocationMode() == DataBuffer.AllocationMode.HEAP)
-                    Nd4j.getBlasWrapper().level1().copy(second,first); //first = second
-                else {
-                    Shape.iterate(first, new CoordinateFunction() {
-                        @Override
-                        public void process(int[]... coord) {
-                            first.putScalar(coord[0], second.getDouble(coord[0]));
-                        }
-                    });
-                }
+                Nd4j.getBlasWrapper().level1().copy(second,first); //first = second
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
@@ -541,7 +414,7 @@ public class NDArrayUtil {
                 }
                 break;
             case 'p':   //put / copy
-                for(int i = 0; i< nTensors; i++ ) {
+                for(int i=0; i<nTensors; i++ ) {
                     int offset1 = fs.getFirstTensorOffset() + i*fs.getTensorStartSeparation();
                     int offset2 = ss.getFirstTensorOffset() + i*ss.getTensorStartSeparation();
                     l1Blas.copy(n,ds,offset2,incrS,df,offset1,incrF);
@@ -552,50 +425,20 @@ public class NDArrayUtil {
         }
     }
 
-    private static void doElementWiseOpGeneral(INDArray first, INDArray second, char op) {
+    private static void doElementWiseOpGeneral(INDArray first, INDArray second, char op){
         //Decide which dimension we want to split on
         int opAlongDimension = chooseElementWiseTensorDimension(first, second);
         int nTensors = first.tensorssAlongDimension(opAlongDimension);
 
         DataBuffer df = first.data();
         DataBuffer ds = second.data();
-        if(df.allocationMode() != DataBuffer.AllocationMode.HEAP || ds.allocationMode() != DataBuffer.AllocationMode.HEAP) {
-            switch(op) {
-                case 'a':
-                    Nd4j.getExecutioner().exec(new AddOp(first,second,second));
-                    break;
-                case 's':
-                    Nd4j.getExecutioner().exec(new SubOp(first,second,second));
-                    break;
-                case 'm' :
-                    Nd4j.getExecutioner().exec(new MulOp(first,second,second));
-                    break;
-                case 'd' :
-                    Nd4j.getExecutioner().exec(new DivOp(first,second,second));
-                    break;
-                case 'h' :
-                    Nd4j.getExecutioner().exec(new RSubOp(first,second,second));
-                    break;
-                case 't' :
-                    Nd4j.getExecutioner().exec(new RDivOp(first,second,second));
-                    break;
-                case 'p' :
-                    Nd4j.getExecutioner().exec(new CopyOp(first, second, second));
-                    break;
-            }
-
-            return;
-        }
-
         Level1 l1Blas = Nd4j.getBlasWrapper().level1();
-        switch(op) {
-            case 'h' : throw new IllegalStateException("Reverse subtraction not supported");
-            case 't' : throw new IllegalStateException("Reverse division not supported");
+        switch(op){
             case 'a':
             case 's':
                 //first.addi(second) or first.subi(second)
                 double a = (op == 'a' ? 1.0 : -1.0);
-                for(int i = 0; i < nTensors; i++ ) {
+                for(int i=0; i<nTensors; i++ ) {
                     INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
                     INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
                     l1Blas.axpy(tad1.length(),a,ds,tad2.offset(),tad2.elementWiseStride(),df,tad1.offset(),tad1.elementWiseStride());
@@ -606,8 +449,8 @@ public class NDArrayUtil {
                 Object arrayFirst = df.array();
                 Object arraySecond = ds.array();
                 if(arrayFirst instanceof float[]) {
-                    float[] f1 = (float[]) arrayFirst;
-                    float[] f2 = (float[]) arraySecond;
+                    float[] f1 = (float[])arrayFirst;
+                    float[] f2 = (float[])arraySecond;
                     for (int i = 0; i < nTensors; i++) {
                         INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
                         INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
@@ -646,7 +489,7 @@ public class NDArrayUtil {
                 }
                 break;
             case 'p':   //put / copy
-                for(int i = 0; i < nTensors; i++ ) {
+                for(int i=0; i<nTensors; i++ ) {
                     INDArray tad1 = first.tensorAlongDimension(i,opAlongDimension);
                     INDArray tad2 = second.tensorAlongDimension(i,opAlongDimension);
                     l1Blas.copy(tad1.length(),ds,tad2.offset(),tad2.elementWiseStride(),df,tad1.offset(),tad1.elementWiseStride());

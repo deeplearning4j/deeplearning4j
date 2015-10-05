@@ -30,7 +30,6 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
-import org.nd4j.linalg.api.shape.loop.coordinatefunction.CopyCoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.four.LoopFunction4;
 import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
 import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
@@ -335,6 +334,38 @@ public class Shape {
             }
         }
     }
+
+    /**
+     * Iterates over each possible offset of an ndarray
+     * @param arr
+     * @param coordinateFunction
+     */
+    public static void forEachOffset(INDArray[] arr,CoordinateFunction coordinateFunction) {
+        int[] offset = new int[arr.length];
+        int length = arr[0].length();
+        for(int i = 0; i < length; i++)  {
+            for(int j = 0; j < offset.length; j++) {
+                offset[j] = arr[j].offset() + i * arr[j].elementStride();
+            }
+            coordinateFunction.process(offset);
+        }
+    }
+
+    /**
+     * Iterates over each possible offset of an ndarray
+     * @param arr
+     * @param coordinateFunction
+     */
+    public static void forEachOffset(INDArray arr,CoordinateFunction coordinateFunction) {
+        int[] offset = new int[1];
+        INDArray reshape = arr.reshape(1,arr.length());
+        for(int i = 0; i < reshape.length(); i++)  {
+            offset[0] = reshape.offset() + i * reshape.stride(-1);
+            coordinateFunction.process(offset);
+        }
+    }
+
+
     /**
      * Iterate over a pair of coordinates
      * @param dimension
