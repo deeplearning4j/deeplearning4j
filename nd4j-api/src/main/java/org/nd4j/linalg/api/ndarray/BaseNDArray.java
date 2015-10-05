@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -43,6 +44,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.parallel.TaskCreator;
+import org.nd4j.linalg.api.parallel.bufferops.VectorOpDataBufferAction;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
 import org.nd4j.linalg.api.shape.loop.two.RawArrayIterationInformation2;
@@ -2034,7 +2036,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         else {
             assertRowVector(rowVector);
             applyVectorOp(rowVector, operation);
-
         }
 
         return this;
@@ -2073,49 +2074,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
                 if(currVectorPosition >= vector.length())
                     currVectorPosition = 0;
-
             }
-
         }
         else {
-            int dimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
-
+            int dimension = Shape.isRowVectorShape(vector.shape()) ? 0 : 1;
             final INDArray op;
-            if(vector.data() == data())
-                op = vector.dup();
-            else
-                op = vector;
-            //a column vector iterates row wise a row vector iterates column wise
-            Nd4j.getExecutioner().parallelExecutioner().execBasedOnArraysAlongDimension(this, new TaskCreator.INDArrayTask() {
-                @Override
-                public void perform(INDArray... arr) {
-                    for (int i = 0; i < arr[0].length(); i++) {
-                        switch (operation) {
-                            case 'a':
-                                arr[0].putScalar(i, arr[0].getDouble(i) + op.getDouble(i));
-                                break;
-                            case 's':
-                                arr[0].putScalar(i, arr[0].getDouble(i) - op.getDouble(i));
-                                break;
-                            case 'm':
-                                arr[0].putScalar(i, arr[0].getDouble(i) * op.getDouble(i));
-                                break;
-                            case 'd':
-                                arr[0].putScalar(i, arr[0].getDouble(i) / op.getDouble(i));
-                                break;
-                            case 'h':
-                                arr[0].putScalar(i, op.getDouble(i) - arr[0].getDouble(i));
-                                break;
-                            case 't':
-                                arr[0].putScalar(i, op.getDouble(i) / arr[0].getDouble(i));
-                                break;
-                        }
-                    }
+            if(vector.data() == data()) op = vector.dup();
+            else op = vector;
 
-
-
-                }
-            },dimension);
+            new VectorOpDataBufferAction(op,this,operation,dimension, DefaultOpExecutioner.getParallelThreshold()).invoke();
         }
     }
 
@@ -2142,7 +2109,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     rdivi(row.getComplex(0));
                     break;
             }
-
         }
         else {
             switch (operation) {

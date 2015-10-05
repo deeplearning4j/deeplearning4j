@@ -62,6 +62,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
         this.executorService = parallelExecutionProvider.getService();*/
     }
 
+    public static int getParallelThreshold(){
+        return PARALLEL_THRESHOLD;
+    }
+
     @Override
     public ParallelExecutioner parallelExecutioner() {
 //        return executorService;

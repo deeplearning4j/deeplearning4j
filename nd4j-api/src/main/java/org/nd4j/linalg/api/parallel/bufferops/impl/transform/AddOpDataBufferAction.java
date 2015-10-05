@@ -9,7 +9,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public class AddOpDataBufferAction extends TransformDataBufferAction {
 
-    public AddOpDataBufferAction(TransformOp op, int threshold, int n, DataBuffer x, DataBuffer y, DataBuffer z, int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ) {
+    public AddOpDataBufferAction(TransformOp op, int threshold, int n, DataBuffer x, DataBuffer y, DataBuffer z,
+                                 int offsetX, int offsetY, int offsetZ, int incrX, int incrY, int incrZ) {
         super(op, threshold, n, x, y, z, offsetX, offsetY, offsetZ, incrX, incrY, incrZ);
     }
 
