@@ -336,7 +336,9 @@ public class Shape {
     }
 
     /**
-     * Iterates over each possible offset of an ndarray
+     * Iterates over
+     * each possible
+     * offset of an ndarray
      * @param arr
      * @param coordinateFunction
      */
@@ -345,7 +347,7 @@ public class Shape {
         int length = arr[0].length();
         for(int i = 0; i < length; i++)  {
             for(int j = 0; j < offset.length; j++) {
-                offset[j] = arr[j].offset() + i * arr[j].elementStride();
+                offset[j] = arr[j].offset() + i * arr[j].elementWiseStride();
             }
             coordinateFunction.process(offset);
         }

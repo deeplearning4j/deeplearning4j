@@ -98,14 +98,10 @@ public class IAMax extends BaseAccumulation {
 
     }
 
-    @Override
-    public boolean isPassThrough() {
-        return true;
-    }
+
 
     @Override
     public void exec() {
-  /*      Nd4j.getBlasWrapper().iamax(x());
         int idx = 0;
         double max = Double.MIN_VALUE;
         for(int i = 0; i < x.length(); i++) {
@@ -115,8 +111,8 @@ public class IAMax extends BaseAccumulation {
                 idx = i;
             }
 
-        }*/
-        currentResult =  Nd4j.getBlasWrapper().iamax(x());
+        }
+        currentResult = idx;
     }
 
     @Override

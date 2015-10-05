@@ -3300,8 +3300,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray ret = Nd4j.create(shape,order);
         ret.assign(this);
-        //Shape.assignArray(ret,this);
         return ret;
+    }
+
+    @Override
+    public double getDoubleUnsafe(int offset) {
+        return data().getDouble(this.offset + offset);
+    }
+
+    @Override
+    public INDArray putScalarUnsafe(int offset, double value) {
+        data().put(this.offset + offset,value);
+        return this;
     }
 
     @Override
