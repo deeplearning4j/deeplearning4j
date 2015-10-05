@@ -29,7 +29,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         B = Shape.toOffsetZero(B);
 
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
         CublasPointer cCPointer = new CublasPointer(C);
@@ -53,7 +53,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
 
         cCPointer.copyToHost();
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
     }
 
@@ -102,7 +102,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         DataTypeValidation.assertDouble(A, B, C);
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
         CublasPointer cAPointer = new CublasPointer(A);
@@ -127,7 +127,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                 ldc); // incy
 
         cCPointer.copyToHost();
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
 
     }
@@ -214,7 +214,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                 cCPointer.getDevicePointer(), // y
                 ldc); // ldc
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         cCPointer.copyToHost();
     }
@@ -265,7 +265,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
     @Override
     protected void zgemm(char Order, char TransA, char TransB, int M, int N, int K, IComplexDouble alpha, IComplexNDArray A, int lda, IComplexNDArray B, int ldb, IComplexDouble beta, IComplexNDArray C, int ldc) {
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         CublasPointer cAPointer = new CublasPointer(A);
         CublasPointer cBPointer = new CublasPointer(B);
@@ -292,7 +292,7 @@ public class JcublasLevel3 extends BaseLevel3 {
                 cCPointer.getDevicePointer(), // y
                 ldc); // ldc
 
-        SimpleJCublas.sync();
+        //SimpleJCublas.sync();
 
         cCPointer.copyToHost();
 

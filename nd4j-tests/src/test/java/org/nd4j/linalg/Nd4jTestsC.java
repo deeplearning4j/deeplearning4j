@@ -117,7 +117,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
-    public void testTensorAlongDimension(){
+    public void testTensorAlongDimension() {
         int[] shape = new int[]{4,5,7};
         int length = ArrayUtil.prod(shape);
         INDArray arr = Nd4j.linspace(1, length, length).reshape(shape);

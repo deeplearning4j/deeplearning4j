@@ -1041,7 +1041,7 @@ public class KernelLauncher {
 
         ContextHolder.syncStream();
         try {
-            SimpleJCublas.sync();
+            //SimpleJCublas.sync();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
