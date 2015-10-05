@@ -19,12 +19,9 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.complex.LinearViewComplexNDArray;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.LinearViewNDArray;
 import org.nd4j.linalg.api.ops.*;
@@ -33,8 +30,6 @@ import org.nd4j.linalg.api.parallel.bufferops.AccumulationViaTensorDataBufferTas
 import org.nd4j.linalg.api.parallel.bufferops.IndexAccumulationViaTensorDataBufferTask;
 import org.nd4j.linalg.api.parallel.bufferops.ScalarViaTensorDataBufferAction;
 import org.nd4j.linalg.api.parallel.bufferops.TransformViaTensorDataBufferTask;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -78,9 +73,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
         checkOp(op);
 
         if(op.isPassThrough()) {
-            throw new UnsupportedOperationException("Not yet implemented");
-//            op.exec();
-//            return op;
+            op.exec();
+            return op;
         }
         if (op instanceof TransformOp) {
             doTransformOp((TransformOp) op);
@@ -280,20 +274,8 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Accumulation a = (Accumulation) op;
             return exec(a);
         }
-/*
-        for (int i = 0; i < op.x().tensorssAlongDimension(dimension); i++) {
-            Op op2 = op.opForDimension(i, dimension);
-            exec(op2);
-            if (op instanceof TransformOp) {
-                TransformOp t = (TransformOp) op;
-                TransformOp t2 = (TransformOp) op2;
-                t.z().tensorAlongDimension(i, dimension).assign(t2.z());
-            }
 
-
-        }*/
         parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
-
         return op;
     }
 

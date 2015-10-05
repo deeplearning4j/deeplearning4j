@@ -51,6 +51,9 @@ public abstract class TransformDataBufferAction extends RecursiveAction {
         this.op = op;
         this.tadIdx = tadIdx;
         this.tadDim = tadDim;
+        this.ndx = x;
+        this.ndy = y;
+        this.ndz = z;
         this.x = x.data();
         this.y = (y!=null ? y.data() : null);
         this.z = z.data();
