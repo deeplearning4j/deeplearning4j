@@ -128,21 +128,11 @@ public  class Nd4jTestsC extends BaseNd4jTest {
 
         double[] sums = {1350.,  1350.,  1582,  1582,  630,  630};
 
-        for( int i = 0; i < dim0s.length; i++ ) {
+        for( int i = 0; i < dim0s.length; i++) {
             int firstDim = dim0s[i];
             int secondDim = dim1s[i];
             INDArray tad = arr.tensorAlongDimension(0, firstDim, secondDim);
             assertEquals("I " + i + " failed ",sums[i],tad.sumNumber().doubleValue(),1e-1);
-            char order = tad.ordering();
-            int[] stride = tad.stride();
-
-//          System.out.println("tensorAlongDimension(0," + firstDim + "," + secondDim + ")");
-//          System.out.println(tad);
-//          System.out.println("Order: " + order);
-//          System.out.println("Shape: " + Arrays.toString(tad.shape()));
-//          System.out.println("Stride: " + Arrays.toString(stride));
-//          System.out.println();
-
         }
     }
 

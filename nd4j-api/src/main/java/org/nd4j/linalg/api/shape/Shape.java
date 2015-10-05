@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.coordinatefunction.CopyCoordinateFunction;
 import org.nd4j.linalg.api.shape.loop.four.LoopFunction4;
 import org.nd4j.linalg.api.shape.loop.four.RawArrayIterationInformation4;
+import org.nd4j.linalg.api.shape.loop.one.RawArrayIterationInformation1;
 import org.nd4j.linalg.api.shape.loop.three.LoopFunction3;
 import org.nd4j.linalg.api.shape.loop.three.RawArrayIterationInformation3;
 import org.nd4j.linalg.api.shape.loop.two.CopyLoopFunction;
@@ -853,6 +854,17 @@ public class Shape {
     }
 
 
+    /**
+     * Prepares two arrays for
+     * raw iteration linearly through the data.
+     * It uses the same data for allocation
+     * @param dst the first array
+     */
+    public static RawArrayIterationInformation1 prepareRawArrayIter(INDArray dst) {
+        return RawArrayIterationInformation1.builder().aOffset(dst.offset()).a(dst.data())
+                .aStrides(dst.stride())
+                .nDim(dst.rank()).shape(dst.shape()).build().computeOut();
+    }
 
 
     /**
