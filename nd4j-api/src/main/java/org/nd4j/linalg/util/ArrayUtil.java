@@ -572,8 +572,8 @@ public class ArrayUtil {
     }
 
     /**
-     * Return a copy of this array with the
-     * given index omitted
+     * Return a copy of this array with only the
+     * given index(es) remaining
      *
      * @param data  the data to copy
      * @param index the index of the item to remove
@@ -586,7 +586,6 @@ public class ArrayUtil {
         for(int i = 0; i < data.length; i++)
             if(Ints.contains(index,i))
                 ret[count++] = data[i];
-
 
         return ret;
     }
@@ -607,7 +606,6 @@ public class ArrayUtil {
         for(int i = 0; i < data.length; i++)
             if(!Ints.contains(index,i))
                 ret[count++] = data[i];
-
 
         return ret;
     }

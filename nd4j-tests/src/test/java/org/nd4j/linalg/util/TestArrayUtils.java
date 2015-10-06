@@ -5,8 +5,9 @@ import static org.junit.Assert.*;
 import java.util.Random;
 
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 
-public class TestArrayUtils {
+public class TestArrayUtils extends BaseNd4jTest {
 
 
 
@@ -117,10 +118,14 @@ public class TestArrayUtils {
         int[] first = {1,5,2,4};
         int[] second = {4,6,3,2};
 
-        assertEquals(2,ArrayUtil.argMinOfMax(first,second));
+        assertEquals(2, ArrayUtil.argMinOfMax(first, second));
 
         int[] third = {7,3,8,10};
-        assertEquals(1,ArrayUtil.argMinOfMax(first,second,third));
+        assertEquals(1, ArrayUtil.argMinOfMax(first, second, third));
     }
 
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 }

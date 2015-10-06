@@ -113,8 +113,8 @@ public class OpExecutionerUtil {
         //dimension vs. the maximum size dimension, use the maximum size dimension instead
         //The idea is to avoid choosing wrong dimension in cases like shape=[10,10^6]
         //Might be able to do better than this with some additional thought
-        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMinStride));
-        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMaxLength));
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
+        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
         if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
         else return opAlongDimensionMaxLength;
     }
@@ -141,8 +141,8 @@ public class OpExecutionerUtil {
         //dimension vs. the maximum size dimension, use the maximum size dimension instead
         //The idea is to avoid choosing wrong dimension in cases like shape=[10,10^6]
         //Might be able to do better than this with some additional thought
-        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMinStride));
-        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMaxLength));
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
+        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
         if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
         else return opAlongDimensionMaxLength;
     }
@@ -158,8 +158,8 @@ public class OpExecutionerUtil {
         if(opAlongDimensionMinStride == opAlongDimensionMaxLength || x.size(opAlongDimensionMinStride)==1)
             return opAlongDimensionMaxLength;
 
-        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMinStride));
-        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.keep(x.shape(), opAlongDimensionMaxLength));
+        int nOpsAlongMinStride = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMinStride));
+        int nOpsAlongMaxLength = ArrayUtil.prod(ArrayUtil.removeIndex(x.shape(), opAlongDimensionMaxLength));
         if(nOpsAlongMinStride <= 10*nOpsAlongMaxLength) return opAlongDimensionMinStride;
         else return opAlongDimensionMaxLength;
     }
@@ -173,7 +173,7 @@ public class OpExecutionerUtil {
      */
     public static Tensor1DStats get1DTensorStats(INDArray array, int dimension){
         //As per BaseNDArray.tensorAlongDimension
-        int tensorLength = ArrayUtil.prod(ArrayUtil.keep(array.shape(), dimension));
+        int tensorLength = ArrayUtil.prod(ArrayUtil.removeIndex(array.shape(), dimension));
 
         //As per tensorssAlongDimension:
         int numTensors = array.length() / tensorLength;

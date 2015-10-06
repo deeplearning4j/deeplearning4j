@@ -51,8 +51,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             super.exec(op);
         }
         else {
-            checkOp(op);
-
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 loop.execScalarDouble(
                         op.x().data().asDouble()
@@ -84,11 +82,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private void exec(TransformOp op) {
         if(op.x() instanceof IComplexNDArray || op.x() instanceof LinearViewNDArray ||   executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-
         }
         else {
-            checkOp(op);
-
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     loop.execDoubleTransform(
@@ -158,8 +153,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         }
         else {
-            checkOp(op);
-
             if(op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if(op.y() != null) {
                     op.setFinalResult(loop.reduce3(
