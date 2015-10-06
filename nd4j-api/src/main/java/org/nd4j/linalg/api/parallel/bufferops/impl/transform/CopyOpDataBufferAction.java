@@ -55,6 +55,9 @@ public class CopyOpDataBufferAction extends TransformDataBufferAction {
                 int byteOffsetX = 8 * offsetX;
                 int byteOffsetZ = 8 * offsetZ;
                 if (incrX == 1 && incrZ == 1) {
+                    if(nbbx == null || nbbz == null){
+                        System.out.println();
+                    }
                     for (int i = 0; i < 8 * n; i += 8) {
                         nbbz.setDouble(byteOffsetZ + i, nbbx.getDouble(byteOffsetX + i));
                     }

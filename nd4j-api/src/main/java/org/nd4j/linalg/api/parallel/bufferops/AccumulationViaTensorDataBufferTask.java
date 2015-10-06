@@ -36,9 +36,8 @@ public class AccumulationViaTensorDataBufferTask extends RecursiveTask<Double> {
             int offsetY = (y!=null ? ty.offset() : 0);
             int incrX = tx.elementWiseStride();
             int incrY = (y!=null ? ty.elementWiseStride() : 0);
-            double accum = op.getAccumulationOpDataBufferTask(threshold,tx.length(),x.data(),(y!=null?y.data():null),
+            return op.getAccumulationOpDataBufferTask(threshold,tx.length(),x.data(),(y!=null?y.data():null),
                     offsetX,offsetY,incrX,incrY,true).invoke();
-            return op.getAndSetFinalResult(accum);
         } else {
             List<AccumulationDataBufferTask> blockList = new ArrayList<>(nTensors);
 

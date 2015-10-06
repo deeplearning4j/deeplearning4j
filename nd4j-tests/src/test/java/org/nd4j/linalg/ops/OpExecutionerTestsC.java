@@ -58,6 +58,8 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * Created by agibsonccc on 2/22/15.
  */
@@ -138,7 +140,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         Sigmoid sigmoid = new Sigmoid(arr.dup());
         Nd4j.getExecutioner().exec(sigmoid,1);
         INDArray sigmoidREsult = Transforms.sigmoid(arr);
-        assertEquals(sigmoidREsult,sigmoid.z());
+        assertEquals(sigmoidREsult, sigmoid.z());
     }
 
 
@@ -462,6 +464,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
         for(DataBuffer.Type dtype : DataBuffer.Type.values() ) {
 
+            Nd4j.dtype = dtype;
+            Nd4j.factory().setDType(dtype);
+
             Nd4j.getRandom().setSeed(12345);
             INDArray origFirst = Nd4j.rand(shape);
             INDArray origSecond = Nd4j.rand(shape);
@@ -472,6 +477,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- First: serial, heap, x =/= z and x == z ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray y1 = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
@@ -491,26 +497,31 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(x2, z1);
 
                 //Same thing, but split via tensors first:
-                INDArray x1a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
-                INDArray y1a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
-                INDArray z1a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
+                if(!op.isPassThrough()) {
+                    //have to execute passthrough ops via OpExecutioner
+                    INDArray x1a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
+                    INDArray y1a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
+                    INDArray z1a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
 
-                op = xyzConstructor.newInstance(x1a, y1a, z1a);
-                new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x1a, y1a, z1a).invoke();
-                assertEquals(msg, x1a, origFirst);
-                assertEquals(msg, y1a, origSecond);
-                assertEquals(msg, z1a, z1);
+                    op = xyzConstructor.newInstance(x1a, y1a, z1a);
+                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x1a, y1a, z1a).invoke();
+                    assertEquals(msg, x1a, origFirst);
+                    assertEquals(msg, y1a, origSecond);
+                    assertEquals(msg, z1a, z1);
 
-                INDArray x2a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
-                INDArray y2a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
-                op = xyzConstructor.newInstance(x2a, y2a, x2a);
-                new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x2a, y2a, x2a).invoke();
-                assertEquals(msg, y2a, origSecond);
-                assertEquals(msg, x2a, z1);
+                    INDArray x2a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
+                    INDArray y2a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
+                    op = xyzConstructor.newInstance(x2a, y2a, x2a);
+                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x2a, y2a, x2a).invoke();
+                    assertEquals(msg, y2a, origSecond);
+                    assertEquals(msg, x2a, z1);
+                }
 
 
                 // --- Second: parallel, heap ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
                 INDArray x3 = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray y3 = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray z3 = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
@@ -529,26 +540,30 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, x4, z1);
 
                 //Same thing, but split via tensors first:
-                INDArray x3a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
-                INDArray y3a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
-                INDArray z3a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
+                if(!op.isPassThrough()) {
+                    //have to execute passthrough ops via OpExecutioner
+                    INDArray x3a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
+                    INDArray y3a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
+                    INDArray z3a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
 
-                op = xyzConstructor.newInstance(x3a, y3a, z3a);
-                new TransformViaTensorDataBufferTask(op, 5, x3a, y3a, z3a).invoke();
-                assertEquals(msg, x3a, origFirst);
-                assertEquals(msg, y3a, origSecond);
-                assertEquals(msg, z3a, z1);
+                    op = xyzConstructor.newInstance(x3a, y3a, z3a);
+                    new TransformViaTensorDataBufferTask(op, 5, x3a, y3a, z3a).invoke();
+                    assertEquals(msg, x3a, origFirst);
+                    assertEquals(msg, y3a, origSecond);
+                    assertEquals(msg, z3a, z1);
 
-                INDArray x4a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
-                INDArray y4a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
-                op = xyzConstructor.newInstance(x4a, y4a, x4a);
-                new TransformViaTensorDataBufferTask(op, 5, x4a, y4a, x4a).invoke();
-                assertEquals(msg, y4a, origSecond);
-                assertEquals(msg, x4a, z1);
+                    INDArray x4a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
+                    INDArray y4a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
+                    op = xyzConstructor.newInstance(x4a, y4a, x4a);
+                    new TransformViaTensorDataBufferTask(op, 5, x4a, y4a, x4a).invoke();
+                    assertEquals(msg, y4a, origSecond);
+                    assertEquals(msg, x4a, z1);
+                }
 
 
                 // --- Third: serial, direct ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray y5 = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -569,26 +584,30 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, x6, z1);
 
                 //Same thing, but split via tensors first:
-                INDArray x5a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
-                INDArray y5a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
-                INDArray z5a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
+                if(!op.isPassThrough()) {
+                    //have to execute passthrough ops via OpExecutioner
+                    INDArray x5a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
+                    INDArray y5a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
+                    INDArray z5a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
 
-                op = xyzConstructor.newInstance(x5a, y5a, z5a);
-                new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x5a, y5a, z5a).invoke();
-                assertEquals(msg, x5a, origFirst);
-                assertEquals(msg, y5a, origSecond);
-                assertEquals(msg, z5a, z5);
+                    op = xyzConstructor.newInstance(x5a, y5a, z5a);
+                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x5a, y5a, z5a).invoke();
+                    assertEquals(msg, x5a, origFirst);
+                    assertEquals(msg, y5a, origSecond);
+                    assertEquals(msg, z5a, z5);
 
-                INDArray x6a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
-                INDArray y6a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
-                op = xyzConstructor.newInstance(x6a, y6a, x6a);
-                new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x6a, y6a, x6a).invoke();
-                assertEquals(msg, y6a, origSecond);
-                assertEquals(msg, x6a, z1);
+                    INDArray x6a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
+                    INDArray y6a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
+                    op = xyzConstructor.newInstance(x6a, y6a, x6a);
+                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x6a, y6a, x6a).invoke();
+                    assertEquals(msg, y6a, origSecond);
+                    assertEquals(msg, x6a, z1);
+                }
 
 
                 // --- Fourth: parallel, direct ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray y7 = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -610,22 +629,25 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg, x8, z1);
 
                 //Same thing, but split via tensors first:
-                INDArray x7a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
-                INDArray y7a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
-                INDArray z7a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
+                if(!op.isPassThrough()) {
+                    //have to execute passthrough ops via OpExecutioner
+                    INDArray x7a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
+                    INDArray y7a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
+                    INDArray z7a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
 
-                op = xyzConstructor.newInstance(x7a, y7a, z7a);
-                new TransformViaTensorDataBufferTask(op, 5, x7a, y7a, z7a).invoke();
-                assertEquals(msg, x7a, origFirst);
-                assertEquals(msg, y7a, origSecond);
-                assertEquals(msg, z7a, z1);
+                    op = xyzConstructor.newInstance(x7a, y7a, z7a);
+                    new TransformViaTensorDataBufferTask(op, 5, x7a, y7a, z7a).invoke();
+                    assertEquals(msg, x7a, origFirst);
+                    assertEquals(msg, y7a, origSecond);
+                    assertEquals(msg, z7a, z1);
 
-                INDArray x8a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
-                INDArray y8a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
-                op = xyzConstructor.newInstance(x8a, y8a, x8a);
-                new TransformViaTensorDataBufferTask(op, 5, x8a, y8a, x8a).invoke();
-                assertEquals(msg, y8a, origSecond);
-                assertEquals(msg, x8a, z1);
+                    INDArray x8a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
+                    INDArray y8a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
+                    op = xyzConstructor.newInstance(x8a, y8a, x8a);
+                    new TransformViaTensorDataBufferTask(op, 5, x8a, y8a, x8a).invoke();
+                    assertEquals(msg, y8a, origSecond);
+                    assertEquals(msg, x8a, z1);
+                }
             }
         }
 
@@ -656,6 +678,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
         for(DataBuffer.Type dtype : DataBuffer.Type.values() ) {
 
+            Nd4j.dtype = dtype;
+            Nd4j.factory().setDType(dtype);
+
             Nd4j.getRandom().setSeed(12345);
             INDArray origX = Nd4j.rand(shape);
             INDArray origZ = Nd4j.zeros(shape);
@@ -667,6 +692,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- First: serial, heap, x =/= z and x == z ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray z1 = getCopyOf(origZ, DataBuffer.AllocationMode.HEAP, dtype);
@@ -698,6 +724,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Second: parallel, heap ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray z3 = getCopyOf(origZ, DataBuffer.AllocationMode.HEAP, dtype);
                 op = xyzConstructor.newInstance(x3, null, z3, x3.length(), 0.4);
@@ -728,6 +756,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Third: serial, direct ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray z5 = getCopyOf(origZ, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -760,6 +789,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Fourth: parallel, direct ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray z7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -819,6 +849,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
         for(DataBuffer.Type dtype : DataBuffer.Type.values() ) {
 
+            Nd4j.dtype = dtype;
+            Nd4j.factory().setDType(dtype);
+
             Nd4j.getRandom().setSeed(12345);
             INDArray origX = Nd4j.rand(shape);
             INDArray origY = Nd4j.rand(shape);
@@ -829,6 +862,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- First: serial, heap ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray y1 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
@@ -850,6 +884,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Second: parallel, heap ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray y3 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
                 op = xyConstructor.newInstance(x3, y3);
@@ -869,6 +905,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Third: serial, direct ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray y5 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -890,6 +927,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Fourth: parallel, direct ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray y7 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -930,6 +968,9 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
         for(DataBuffer.Type dtype : DataBuffer.Type.values() ) {
 
+            Nd4j.dtype = dtype;
+            Nd4j.factory().setDType(dtype);
+
             Nd4j.getRandom().setSeed(12345);
             INDArray origX = Nd4j.rand(shape);
             INDArray origY = Nd4j.rand(shape);
@@ -940,6 +981,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- First: serial, heap ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
 
                 INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray y1 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
@@ -961,6 +1003,8 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Second: parallel, heap ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
                 INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
                 INDArray y3 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
                 op = xyConstructor.newInstance(x3, y3);
@@ -980,6 +1024,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Third: serial, direct ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray y5 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1001,6 +1046,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
 
                 // --- Fourth: parallel, direct ---
                 DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
 
                 INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
                 INDArray y7 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
@@ -1018,6 +1064,112 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 new IndexAccumulationViaTensorDataBufferTask(op, 5, x7a, y7a).invoke();
                 assertEquals(msg, x7a, origX);
                 assertEquals(msg, result1, op.getFinalResult());
+            }
+        }
+
+        Nd4j.alloc = origAlloc;
+    }
+
+
+    @Test
+    public void testOpExecutionerAccumulationOpsAlongDimensions() throws Exception {
+        //Test accumulation ops along dimensions
+        //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
+        // or direct execution vs. split via tensors
+        final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
+        DefaultOpExecutioner opExec = (DefaultOpExecutioner)Nd4j.getExecutioner();
+
+        List<Class<? extends Accumulation>> testClasses = new ArrayList<>();
+        testClasses.add(Bias.class);
+        testClasses.add(Dot.class);
+        testClasses.add(Max.class);
+        testClasses.add(Mean.class);
+        testClasses.add(Min.class);
+        testClasses.add(Norm1.class);
+        testClasses.add(Norm2.class);
+        testClasses.add(NormMax.class);
+        testClasses.add(Prod.class);
+        testClasses.add(StandardDeviation.class);
+        testClasses.add(Sum.class);
+        testClasses.add(Variance.class);
+
+        int[] shape = {30,50};
+        int[] shape0 = {1,shape[1]};
+        int[] shape1 = {1,shape[0]};
+
+        for(DataBuffer.Type dtype : DataBuffer.Type.values() ) {
+
+            Nd4j.dtype = dtype;
+            Nd4j.factory().setDType(dtype);
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray origX = Nd4j.rand(shape);
+            INDArray origY = Nd4j.rand(shape);
+
+            for (Class<? extends Accumulation> opClass : testClasses) {
+                String msg = "class: " + opClass.getName() + ", dtype="+dtype;
+                Constructor<? extends Accumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
+
+                // --- First: serial, heap ---
+                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
+                INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y1 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
+
+                //Along d0
+                Accumulation op = xyConstructor.newInstance(x1, y1);
+                INDArray out0 = opExec.exec(op, 0);
+                assertArrayEquals(msg,shape0,out0.shape());
+                assertEquals(msg,x1, origX);
+
+                //Along d1
+                op = xyConstructor.newInstance(x1, y1);
+                INDArray out1 = opExec.exec(op,1);
+                assertArrayEquals(msg, shape1, out1.shape());
+                assertEquals(msg, x1, origX);
+
+                // --- Second: parallel, heap ---
+                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
+                INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y3 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x3, y3);
+                INDArray out = opExec.exec(op, 0);
+                assertEquals(msg,out0,out);
+                out = opExec.exec(op, 1);
+                assertEquals(msg,out1,out);
+
+                // --- Third: serial, direct ---
+                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
+
+                INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y5 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x5, y5);
+                out = opExec.exec(op, 0);
+                assertEquals(msg,out0, out);
+                out = opExec.exec(op, 1);
+                assertEquals(msg,out1,out);
+
+                // --- Fourth: parallel, direct ---
+                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
+
+                INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y7 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x7, y7);
+                out = opExec.exec(op, 0);
+                assertEquals(msg, out0, out);
+                out = opExec.exec(op, 1);
+                assertEquals(msg,out1,out);
             }
         }
 

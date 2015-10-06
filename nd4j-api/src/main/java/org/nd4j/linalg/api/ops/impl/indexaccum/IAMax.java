@@ -118,32 +118,32 @@ public class IAMax extends BaseIndexAccumulation {
 
     @Override
     public double op(double origin) {
-        return 0;
+        return origin;
     }
 
     @Override
     public float op(float origin) {
-        return 0;
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return null;
+        return origin;
     }
 
     @Override
     public double zeroDouble(){
-        return -Double.MAX_VALUE;
+        return 0.0;
     }
 
     @Override
     public float zeroFloat(){
-        return -Float.MAX_VALUE;
+        return 0.0f;
     }
 
     @Override
     public IComplexNumber zeroComplex(){
-        return Nd4j.createComplexNumber(-Double.MAX_VALUE,0);
+        return Nd4j.createComplexNumber(0,0);
     }
 
     @Override

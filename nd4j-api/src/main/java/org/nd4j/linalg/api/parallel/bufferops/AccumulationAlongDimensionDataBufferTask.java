@@ -45,14 +45,15 @@ public class AccumulationAlongDimensionDataBufferTask extends RecursiveTask<INDA
             RecursiveTask<Double> task;
             if(canDoDirectly){
                 if(y!=null){
-                    task = opOnDimension.getAccumulationOpDataBufferTask(0,opOnDimension.n(),dx,dy,x2.offset(),y2.offset(),
+                    task = opOnDimension.getAccumulationOpDataBufferTask(parallelThreshold,opOnDimension.n(),dx,dy,x2.offset(),y2.offset(),
                             x2.elementWiseStride(),y2.elementWiseStride(),true);
                 } else {
-                    task = opOnDimension.getAccumulationOpDataBufferTask(0,opOnDimension.n(),dx,null,x2.offset(),0,x2.elementWiseStride(),0,true);
+                    task = opOnDimension.getAccumulationOpDataBufferTask(parallelThreshold,opOnDimension.n(),dx,null,x2.offset(),0,x2.elementWiseStride(),0,true);
                 }
             } else {
                 task = new AccumulationViaTensorDataBufferTask(opOnDimension,parallelThreshold,x2,y2);
             }
+
             task.fork();
             taskList.add(task);
         }
