@@ -172,8 +172,7 @@ public class OpExecutionerUtil {
      * be in increasing order
      */
     public static Tensor1DStats get1DTensorStats(INDArray array, int dimension){
-        //As per BaseNDArray.tensorAlongDimension
-        int tensorLength = ArrayUtil.prod(ArrayUtil.removeIndex(array.shape(), dimension));
+        int tensorLength = array.size(dimension);
 
         //As per tensorssAlongDimension:
         int numTensors = array.length() / tensorLength;
