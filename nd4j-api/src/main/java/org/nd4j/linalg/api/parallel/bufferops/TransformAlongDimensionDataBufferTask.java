@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RecursiveTask;
 
+/** DataBufferAction for executing TransformOps along one or more dimensions in parallel
+ * @author Alex Black
+ */
 @AllArgsConstructor
 public class TransformAlongDimensionDataBufferTask extends RecursiveTask<INDArray> {
     protected final TransformOp op;
@@ -56,8 +59,8 @@ public class TransformAlongDimensionDataBufferTask extends RecursiveTask<INDArra
             INDArray z2 = opOnDimension.z();
 
             boolean canDoDirectly;
-            if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2);
-            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2,y2);
+            if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2);
+            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
 
             RecursiveAction task;
             if(canDoDirectly){

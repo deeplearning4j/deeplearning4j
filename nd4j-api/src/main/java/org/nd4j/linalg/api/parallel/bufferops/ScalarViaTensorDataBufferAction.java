@@ -10,6 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RecursiveAction;
 
+/**A DataBufferAction for executing ScalarOps on a buffer in parallel.
+ * The 'via tensor' designation in the name reflects the fact that this is done
+ * by breaking the INDArray down into 1d tensors (which is necessary for example
+ * when the elements of the x and z NDArrays are not contiguous in their DataBuffers)
+ * @author Alex Black
+ * @see ScalarDataBufferAction
+ */
 @AllArgsConstructor
 public class ScalarViaTensorDataBufferAction extends RecursiveAction {
     protected final ScalarOp op;

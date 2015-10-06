@@ -20,14 +20,14 @@
 package org.nd4j.linalg.api.ops.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
-import org.nd4j.linalg.api.ops.LossFunction;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
@@ -167,6 +167,34 @@ public class DefaultOpFactory implements OpFactory {
 
             default:
                 throw new IllegalArgumentException("Illegal name " + name);
+        }
+    }
+
+    @Override
+    public IndexAccumulation createIndexAccum(String name, INDArray x){
+        switch(name){
+            case "iamax":
+                return new IAMax(x);
+            case "imax":
+                return new IMax(x);
+            case "imin":
+                return new IMin(x);
+            default:
+                throw new IllegalArgumentException("Illegal name: " + name);
+        }
+    }
+
+    @Override
+    public IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y){
+        switch(name){
+            case "iamax":
+                return new IAMax(x,y);
+            case "imax":
+                return new IMax(x,y);
+            case "imin":
+                return new IMin(x,y);
+            default:
+                throw new IllegalArgumentException("Illegal name: " + name);
         }
     }
 

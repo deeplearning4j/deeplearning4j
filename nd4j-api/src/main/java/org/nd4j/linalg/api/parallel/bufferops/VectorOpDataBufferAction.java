@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RecursiveAction;
 
-/**VectorOpDataBufferAction: Implements parallel addiRowVector, muliColumnVector, etc operations
+/**VectorOpDataBufferAction: for executing row/column vector operations on a DataBuffer in parallel.
+ * Implements parallel addiRowVector, muliColumnVector, etc operations
+ * @author Alex Black
  */
 @AllArgsConstructor
 public class VectorOpDataBufferAction extends RecursiveAction {

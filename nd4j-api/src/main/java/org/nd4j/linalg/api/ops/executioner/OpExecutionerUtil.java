@@ -7,14 +7,19 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
 
-/**@author Alex Black
+/**Utility functions for the DefaultOpExecutioner
+ * @author Alex Black
  */
 public class OpExecutionerUtil {
 
-    /** Can we do the transform op (X = Op(X)) directly on the arrays without breaking X up into 1d tensors first? */
-    public static boolean canDoTransformOpDirectly(INDArray x){
+    /** Can we do the op (X = Op(X)) directly on the arrays without breaking X up into 1d tensors first?
+     * In general, this is possible if the elements of X are contiguous in the buffer, OR if every element
+     * of X is at position offset+i*elementWiseStride in the buffer
+     * */
+    public static boolean canDoOpDirectly(INDArray x){
         if(x.isVector()) return true;
-        //For a single NDArray all we require is that the elements are contiguous in the buffer
+
+        //For a single NDArray all we require is that the elements are contiguous in the buffer or every nth element
 
         //Full buffer -> implies all elements are contiguous (and match)
         int l1 = x.length();
@@ -28,11 +33,12 @@ public class OpExecutionerUtil {
         return stridesSameAsInit;
     }
 
-    /** Can we do the transform op (X = X <op> Y) directly on the arrays without breaking them up into 1d tensors first? */
-    public static boolean canDoTransformOpDirectly(INDArray x, INDArray y){
+    /** Can we do the transform op (X = Op(X,Y)) directly on the arrays without breaking them up into 1d tensors first? */
+    public static boolean canDoOpDirectly(INDArray x, INDArray y){
         if(x.isVector()) return true;
 
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
+        //Need strides to match, otherwise elements in buffer won't line up (i.e., c vs. f order arrays)
         int l1 = x.length();
         int dl1 = x.data().length();
         int l2 = y.length();
@@ -53,8 +59,8 @@ public class OpExecutionerUtil {
         return false;
     }
 
-    /** Can we do the transform op (Z = X <op> Y) directly on the arrays without breaking them up into 1d tensors first? */
-    public static boolean canDoTransformOpDirectly(INDArray x, INDArray y, INDArray z){
+    /** Can we do the transform op (Z = Op(X,Y)) directly on the arrays without breaking them up into 1d tensors first? */
+    public static boolean canDoOpDirectly(INDArray x, INDArray y, INDArray z){
         if(x.isVector()) return true;
 
         //Full buffer + matching strides -> implies all elements are contiguous (and match)
@@ -81,6 +87,15 @@ public class OpExecutionerUtil {
         return false;
     }
 
+    /**Choose tensor dimension for operations with one argument: x=Op(x) or similar<br>
+     * When doing some operations in parallel, it is necessary to break up operations along a dimension to
+     * give a set of 1d tensors. The dimension that this is done on is important for performance reasons;
+     * in summary we want to both minimize the number of tensors, but also minimize the separation between
+     * elements in the buffer (so the resulting operation is efficient - i.e., avoids cache thrashing).
+     * However, achieving both minimal number of tensors and are not always possible.
+     * @param x NDArray that we want to split
+     * @return The best dimension to split on
+     */
     public static int chooseElementWiseTensorDimension(INDArray x){
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
@@ -105,6 +120,9 @@ public class OpExecutionerUtil {
     }
 
 
+    /**Choose tensor dimension for operations with 2 arguments: x=Op(x,y) or similar<br>
+     * @see #chooseElementWiseTensorDimension(INDArray)
+     */
     public static int chooseElementWiseTensorDimension(INDArray x, INDArray y){
         //doing argMin(max(x.stride(i),y.stride(i))) minimizes the maximum
         //separation between elements (helps CPU cache) BUT might result in a huge number
@@ -129,6 +147,9 @@ public class OpExecutionerUtil {
         else return opAlongDimensionMaxLength;
     }
 
+    /**Choose tensor dimension for operations with 3 arguments: z=Op(x,y) or similar<br>
+     * @see #chooseElementWiseTensorDimension(INDArray)
+     */
     public static int chooseElementWiseTensorDimension(INDArray x, INDArray y, INDArray z){
         int opAlongDimensionMinStride = ArrayUtil.argMinOfMax(x.stride(),y.stride(),z.stride());
 
@@ -145,6 +166,10 @@ public class OpExecutionerUtil {
 
 
     /** Tensor1DStats, used to efficiently iterate through tensors on a matrix (2d NDArray) for element-wise ops
+     * For example, the offset of each 1d tensor can be calculated using only a single tensorAlongDimension method call,
+     * hence is potentially faster than approaches requiring multiple tensorAlongDimension calls.<br>
+     * Note that this can only (generally) be used for 2d NDArrays. For certain 3+d NDArrays, the tensor starts may not
+     * be in increasing order
      */
     public static Tensor1DStats get1DTensorStats(INDArray array, int dimension){
         //As per BaseNDArray.tensorAlongDimension
@@ -172,6 +197,12 @@ public class OpExecutionerUtil {
                 numTensors,tensorLength,elementWiseStride);
     }
 
+    /** Simple class containing values used for calculating various quantities related to 1d tensors.<br>
+     * offset of ith tensor: firstTensorOffset + i * tensorStartSeparation<br>
+     * separation between elements in tensor: elementWiseStride<br>
+     * number of elements in each 1d tensor: tensorLength<br>
+     * number of 1d tensors: numTensors<br>
+     */
     @AllArgsConstructor
     @Data
     public static class Tensor1DStats {

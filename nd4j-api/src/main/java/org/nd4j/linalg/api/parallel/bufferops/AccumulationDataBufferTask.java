@@ -6,6 +6,9 @@ import org.nd4j.linalg.api.ops.Accumulation;
 
 import java.util.concurrent.RecursiveTask;
 
+/**A DataBufferTask for executing accumulation ops on a buffer in parallel
+ * @author Alex Black
+ */
 public abstract class AccumulationDataBufferTask extends RecursiveTask<Double> {
     protected final Accumulation op;
     protected final int threshold;

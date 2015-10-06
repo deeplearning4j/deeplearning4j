@@ -7,6 +7,9 @@ import org.nd4j.linalg.api.ops.IndexAccumulation;
 
 import java.util.concurrent.RecursiveTask;
 
+/**A DataBufferTask for executing index accumulation ops on a buffer in parallel
+ * @author Alex Black
+ */
 public abstract class IndexAccumulationDataBufferTask extends RecursiveTask<Pair<Double,Integer>> {
     protected final IndexAccumulation op;
     protected final int threshold;

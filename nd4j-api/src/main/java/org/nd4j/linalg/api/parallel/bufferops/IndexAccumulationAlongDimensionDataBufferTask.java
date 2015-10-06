@@ -2,9 +2,7 @@ package org.nd4j.linalg.api.parallel.bufferops;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.math3.util.Pair;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -14,6 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RecursiveTask;
 
+/** DataBufferTask for executing index accumulations along one or more dimensions in parallel
+ * @author Alex Black
+ */
 @AllArgsConstructor
 public class IndexAccumulationAlongDimensionDataBufferTask extends RecursiveTask<INDArray> {
 
@@ -59,8 +60,8 @@ public class IndexAccumulationAlongDimensionDataBufferTask extends RecursiveTask
             INDArray y2 = opOnDimension.y();
 
             boolean canDoDirectly;
-            if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2);
-            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2,y2);
+            if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2);
+            else canDoDirectly = OpExecutionerUtil.canDoOpDirectly(x2, y2);
 
             RecursiveTask<Pair<Double,Integer>> task;
             if(canDoDirectly){

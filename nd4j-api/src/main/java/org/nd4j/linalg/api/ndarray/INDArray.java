@@ -1183,7 +1183,7 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * in place (element wise) division of two matrices
+     * Copy (element wise) division of two NDArrays
      *
      * @param other the second ndarray to divide
      * @return the result of the divide
@@ -1191,7 +1191,7 @@ public interface INDArray extends Serializable  {
     INDArray div(INDArray other);
 
     /**
-     * copy (element wise) division of two matrices
+     * copy (element wise) division of two NDArrays
      *
      * @param other  the second ndarray to divide
      * @param result the result ndarray
@@ -1201,7 +1201,7 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * copy (element wise) multiplication of two matrices
+     * copy (element wise) multiplication of two NDArrays
      *
      * @param other the second ndarray to multiply
      * @return the result of the addition
@@ -1209,7 +1209,7 @@ public interface INDArray extends Serializable  {
     INDArray mul(INDArray other);
 
     /**
-     * copy (element wise) multiplication of two matrices
+     * copy (element wise) multiplication of two NDArrays
      *
      * @param other  the second ndarray to multiply
      * @param result the result ndarray
@@ -1218,7 +1218,7 @@ public interface INDArray extends Serializable  {
     INDArray mul(INDArray other, INDArray result);
 
     /**
-     * copy subtraction of two matrices
+     * copy subtraction of two NDArrays
      *
      * @param other the second ndarray to subtract
      * @return the result of the addition
@@ -1226,7 +1226,7 @@ public interface INDArray extends Serializable  {
     INDArray sub(INDArray other);
 
     /**
-     * copy subtraction of two matrices
+     * copy subtraction of two NDArrays
      *
      * @param other  the second ndarray to subtract
      * @param result the result ndarray
@@ -1235,7 +1235,7 @@ public interface INDArray extends Serializable  {
     INDArray sub(INDArray other, INDArray result);
 
     /**
-     * copy addition of two matrices
+     * copy addition of two NDArrays
      *
      * @param other the second ndarray to add
      * @return the result of the addition
@@ -1243,7 +1243,7 @@ public interface INDArray extends Serializable  {
     INDArray add(INDArray other);
 
     /**
-     * copy addition of two matrices
+     * copy addition of two NDArrays
      *
      * @param other  the second ndarray to add
      * @param result the result ndarray
@@ -1253,7 +1253,7 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * Perform an copy matrix multiplication
+     * Perform an inplace matrix multiplication
      *
      * @param other the other matrix to perform matrix multiply with
      * @return the result of the matrix multiplication
@@ -1262,7 +1262,7 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * Perform an copy matrix multiplication
+     * Perform an inplace matrix multiplication
      *
      * @param other  the other matrix to perform matrix multiply with
      * @param result the result ndarray
@@ -1272,7 +1272,7 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * in place (element wise) division of two matrices
+     * in place (element wise) division of two NDArrays
      *
      * @param other the second ndarray to divide
      * @return the result of the divide
@@ -1280,7 +1280,7 @@ public interface INDArray extends Serializable  {
     INDArray divi(INDArray other);
 
     /**
-     * in place (element wise) division of two matrices
+     * in place (element wise) division of two NDArrays
      *
      * @param other  the second ndarray to divide
      * @param result the result ndarray
@@ -1290,7 +1290,7 @@ public interface INDArray extends Serializable  {
 
 
     /**
-     * in place (element wise) multiplication of two matrices
+     * in place (element wise) multiplication of two NDArrays
      *
      * @param other the second ndarray to multiply
      * @return the result of the addition
@@ -1298,7 +1298,7 @@ public interface INDArray extends Serializable  {
     INDArray muli(INDArray other);
 
     /**
-     * in place (element wise) multiplication of two matrices
+     * in place (element wise) multiplication of two NDArrays
      *
      * @param other  the second ndarray to multiply
      * @param result the result ndarray
@@ -1307,7 +1307,7 @@ public interface INDArray extends Serializable  {
     INDArray muli(INDArray other, INDArray result);
 
     /**
-     * in place subtraction of two matrices
+     * in place subtraction of two NDArrays
      *
      * @param other the second ndarray to subtract
      * @return the result of the addition
@@ -1315,7 +1315,7 @@ public interface INDArray extends Serializable  {
     INDArray subi(INDArray other);
 
     /**
-     * in place subtraction of two matrices
+     * in place subtraction of two NDArrays
      *
      * @param other  the second ndarray to subtract
      * @param result the result ndarray
@@ -1324,7 +1324,7 @@ public interface INDArray extends Serializable  {
     INDArray subi(INDArray other, INDArray result);
 
     /**
-     * in place addition of two matrices
+     * in place addition of two NDArrays
      *
      * @param other the second ndarray to add
      * @return the result of the addition
@@ -1332,7 +1332,7 @@ public interface INDArray extends Serializable  {
     INDArray addi(INDArray other);
 
     /**
-     * in place addition of two matrices
+     * in place addition of two NDArrays
      *
      * @param other  the second ndarray to add
      * @param result the result ndarray

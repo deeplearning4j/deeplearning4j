@@ -58,31 +58,26 @@ public interface OpExecutioner {
      */
     void iterateOverAllColumns(Op op);
 
-    /**
-     * Execute the operation
-     *
+    /**Execute a TransformOp and return the result
      * @param op the operation to execute
      */
     INDArray execAndReturn(TransformOp op);
 
 
-    /**
-     * Execute and return the result from an accumulation
+    /**Execute and return the result from an accumulation
      *
      * @param op the operation to execute
      * @return the accumulated result
      */
     Accumulation execAndReturn(Accumulation op);
 
-    /**
-     * Execute and return the result from an index accumulation
-     * @param op the operation to execute
+    /**Execute and return the result from an index accumulation
+     * @param op the index accumulation operation to execute
      * @return the accumulated index
      */
     IndexAccumulation execAndReturn(IndexAccumulation op);
 
-    /**
-     * Execute and return the result from an accumulation
+    /**Execute and return the result from a scalar op
      *
      * @param op the operation to execute
      * @return the accumulated result
@@ -90,8 +85,7 @@ public interface OpExecutioner {
     INDArray execAndReturn(ScalarOp op);
 
 
-    /**
-     * Execute the operation
+    /**Execute the operation along 1 or more dimensions
      *
      * @param op the operation to execute
      */
@@ -99,22 +93,21 @@ public interface OpExecutioner {
 
 
     /**
-     * Execute an accumulation along a dimension
+     * Execute an accumulation along one or more dimensions
      * @param accumulation the accumulation
      * @param dimension the dimension
      * @return the accmulation op
      */
     INDArray exec(Accumulation accumulation, int...dimension);
 
-    /** Execute and index accumulation along a dimension
+    /** Execute an index accumulation along one or more dimensions
      * @param indexAccum the index accumulation operation
      * @param dimension the dimension/s to execute along
      * @return result
      */
     INDArray exec(IndexAccumulation indexAccum, int... dimension);
 
-    /**
-     * Execute the operation
+    /**Execute a transform operation along one or more dimensions
      *
      * @param op the operation to execute
      */
@@ -122,16 +115,14 @@ public interface OpExecutioner {
 
 
 
-    /**
-     * Execute and return  a result
+    /**Execute and return  a result
      * ndarray from the given op
      * @param op the operation to execute
      * @return the result from the operation
      */
     INDArray execAndReturn(Op op);
 
-    /**
-     * Execute and return the result from an accumulation
+    /**Execute and return the result from an scalar op
      *
      * @param op the operation to execute
      * @return the accumulated result
@@ -139,15 +130,13 @@ public interface OpExecutioner {
     INDArray execAndReturn(ScalarOp op, int... dimension);
 
 
-    /**
-     * Get the execution mode for this
+    /**Get the execution mode for this
      * execuioner
      * @return the execution mode for this executioner
      */
     ExecutionMode executionMode();
 
-    /**
-     * Set the execution mode
+    /**Set the execution mode
      * @param executionMode the execution mode
      */
     void setExecutionMode(ExecutionMode executionMode);

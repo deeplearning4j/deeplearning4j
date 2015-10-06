@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
+import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.api.ops.TransformOp;
 
@@ -67,6 +68,23 @@ public interface OpFactory {
      * @return
      */
     Accumulation createAccum(String name, INDArray x, INDArray y);
+
+    /**
+     * Index accumulation operation
+     *
+     * @param name the name of the function to create
+     * @param x    the input to the function
+     * @return the operation
+     */
+    IndexAccumulation createIndexAccum(String name, INDArray x);
+
+    /**Index accumulation operation
+     * @param name
+     * @param x
+     * @param y
+     * @return
+     */
+    IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y);
 
     /**
      * @param name
