@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.concurrent.RecursiveAction;
 
 @AllArgsConstructor
-public class TransformViaTensorDataBufferTask extends RecursiveAction {
+public class TransformViaTensorDataBufferAction extends RecursiveAction {
     protected final TransformOp op;
     protected final int threshold;
     protected final INDArray x;

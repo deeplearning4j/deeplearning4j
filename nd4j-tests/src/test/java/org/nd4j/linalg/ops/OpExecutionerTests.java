@@ -24,7 +24,6 @@ package org.nd4j.linalg.ops;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
@@ -422,7 +421,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray z1a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
 
                     op = xyzConstructor.newInstance(x1a, y1a, z1a);
-                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x1a, y1a, z1a).invoke();
+                    new TransformViaTensorDataBufferAction(op, Integer.MAX_VALUE, x1a, y1a, z1a).invoke();
                     assertEquals(msg, x1a, origFirst);
                     assertEquals(msg, y1a, origSecond);
                     assertEquals(msg, z1a, z1);
@@ -430,7 +429,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray x2a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
                     INDArray y2a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
                     op = xyzConstructor.newInstance(x2a, y2a, x2a);
-                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x2a, y2a, x2a).invoke();
+                    new TransformViaTensorDataBufferAction(op, Integer.MAX_VALUE, x2a, y2a, x2a).invoke();
                     assertEquals(msg, y2a, origSecond);
                     assertEquals(msg, x2a, z1);
                 }
@@ -465,7 +464,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray z3a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
 
                     op = xyzConstructor.newInstance(x3a, y3a, z3a);
-                    new TransformViaTensorDataBufferTask(op, 5, x3a, y3a, z3a).invoke();
+                    new TransformViaTensorDataBufferAction(op, 5, x3a, y3a, z3a).invoke();
                     assertEquals(msg, x3a, origFirst);
                     assertEquals(msg, y3a, origSecond);
                     assertEquals(msg, z3a, z1);
@@ -473,7 +472,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray x4a = getCopyOf(origFirst, DataBuffer.AllocationMode.HEAP, dtype);
                     INDArray y4a = getCopyOf(origSecond, DataBuffer.AllocationMode.HEAP, dtype);
                     op = xyzConstructor.newInstance(x4a, y4a, x4a);
-                    new TransformViaTensorDataBufferTask(op, 5, x4a, y4a, x4a).invoke();
+                    new TransformViaTensorDataBufferAction(op, 5, x4a, y4a, x4a).invoke();
                     assertEquals(msg, y4a, origSecond);
                     assertEquals(msg, x4a, z1);
                 }
@@ -509,7 +508,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray z5a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
 
                     op = xyzConstructor.newInstance(x5a, y5a, z5a);
-                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x5a, y5a, z5a).invoke();
+                    new TransformViaTensorDataBufferAction(op, Integer.MAX_VALUE, x5a, y5a, z5a).invoke();
                     assertEquals(msg, x5a, origFirst);
                     assertEquals(msg, y5a, origSecond);
                     assertEquals(msg, z5a, z5);
@@ -517,7 +516,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray x6a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
                     INDArray y6a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
                     op = xyzConstructor.newInstance(x6a, y6a, x6a);
-                    new TransformViaTensorDataBufferTask(op, Integer.MAX_VALUE, x6a, y6a, x6a).invoke();
+                    new TransformViaTensorDataBufferAction(op, Integer.MAX_VALUE, x6a, y6a, x6a).invoke();
                     assertEquals(msg, y6a, origSecond);
                     assertEquals(msg, x6a, z1);
                 }
@@ -554,7 +553,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray z7a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
 
                     op = xyzConstructor.newInstance(x7a, y7a, z7a);
-                    new TransformViaTensorDataBufferTask(op, 5, x7a, y7a, z7a).invoke();
+                    new TransformViaTensorDataBufferAction(op, 5, x7a, y7a, z7a).invoke();
                     assertEquals(msg, x7a, origFirst);
                     assertEquals(msg, y7a, origSecond);
                     assertEquals(msg, z7a, z1);
@@ -562,7 +561,7 @@ public  class OpExecutionerTests extends BaseNd4jTest {
                     INDArray x8a = getCopyOf(origFirst, DataBuffer.AllocationMode.DIRECT, dtype);
                     INDArray y8a = getCopyOf(origSecond, DataBuffer.AllocationMode.DIRECT, dtype);
                     op = xyzConstructor.newInstance(x8a, y8a, x8a);
-                    new TransformViaTensorDataBufferTask(op, 5, x8a, y8a, x8a).invoke();
+                    new TransformViaTensorDataBufferAction(op, 5, x8a, y8a, x8a).invoke();
                     assertEquals(msg, y8a, origSecond);
                     assertEquals(msg, x8a, z1);
                 }

@@ -32,8 +32,6 @@ import org.nd4j.linalg.api.parallel.bufferops.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.Arrays;
-
 /**
  * Basic op executioner. Knows how to iterate over
  * the buffers of each respective ndarray and apply transformations
@@ -48,7 +46,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     protected ParallelExecutioner executorService;
 
     public DefaultOpExecutioner() {
-        String provider = System.getProperty(ParallelExecutionProvider.EXECUTOR_SERVICE_PROVIDER,DefaultParallelExecutionProvider.class.getName());
+        String provider = System.getProperty(ParallelExecutionProvider.EXECUTOR_SERVICE_PROVIDER, DefaultParallelExecutionProvider.class.getName());
         try {
             Class<? extends ParallelExecutionProvider> executorServiceProvider = (Class<? extends ParallelExecutionProvider>) Class.forName(provider);
             this.parallelExecutionProvider = executorServiceProvider.newInstance();
@@ -60,11 +58,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
         this.executorService = parallelExecutionProvider.getService();
     }
 
-    public static int getParallelThreshold(){
+    public static int getParallelThreshold() {
         return PARALLEL_THRESHOLD;
     }
 
-    public static void setParallelThreshold(int threshold){
+    public static void setParallelThreshold(int threshold) {
         PARALLEL_THRESHOLD = threshold;
     }
 
@@ -77,35 +75,33 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public Op exec(Op op) {
         checkOp(op);
 
-        if(op.isPassThrough()) {
+        if (op.isPassThrough()) {
             op.exec();
             return op;
         }
+
         if (op instanceof TransformOp) {
             doTransformOp((TransformOp) op);
-        }else if (op instanceof Accumulation) {
-            doAccumulationOp((Accumulation)op);
-        }else if (op instanceof ScalarOp) {
-            doScalarOp((ScalarOp)op);
-        }else if (op instanceof IndexAccumulation){
-            doIndexAccumulationOp((IndexAccumulation)op);
+        } else if (op instanceof Accumulation) {
+            doAccumulationOp((Accumulation) op);
+        } else if (op instanceof ScalarOp) {
+            doScalarOp((ScalarOp) op);
+        } else if (op instanceof IndexAccumulation) {
+            doIndexAccumulationOp((IndexAccumulation) op);
         }
         return op;
     }
 
     @Override
     public INDArray execAndReturn(Op op) {
-        if(op instanceof TransformOp) {
+        if (op instanceof TransformOp) {
             return execAndReturn((TransformOp) op);
-        }
-        else if(op instanceof ScalarOp) {
+        } else if (op instanceof ScalarOp) {
             return execAndReturn((ScalarOp) op);
-        }
-        else if(op instanceof Accumulation) {
+        } else if (op instanceof Accumulation) {
             return Nd4j.scalar(execAndReturn((Accumulation) op).getFinalResult());
-        }
-        else if(op instanceof IndexAccumulation) {
-            return Nd4j.scalar(execAndReturn((IndexAccumulation)op).getFinalResult());
+        } else if (op instanceof IndexAccumulation) {
+            return Nd4j.scalar(execAndReturn((IndexAccumulation) op).getFinalResult());
         }
 
         throw new IllegalArgumentException("Illegal type of op: " + op.getClass());
@@ -114,44 +110,43 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public void iterateOverAllRows(Op op) {
         //column and row vectors should be treated the same
-        if(op.x().isVector()) {
+        if (op.x().isVector()) {
             //reset the op in case
             op.setX(op.x());
-            if(op.y() != null)
+            if (op.y() != null)
                 op.setY(op.y());
             op.setZ(op.z());
             exec(op);
         }
         //execute row wise
-        else if(op.x().isMatrix()) {
-            if(op.x() instanceof IComplexNDArray) {
+        else if (op.x().isMatrix()) {
+            if (op.x() instanceof IComplexNDArray) {
                 IComplexNDArray original = (IComplexNDArray) op.x();
                 IComplexNDArray originalZ = (IComplexNDArray) op.z();
                 IComplexNDArray y = (IComplexNDArray) op.y();
 
-                for(int i = 0; i < original.rows(); i++) {
+                for (int i = 0; i < original.rows(); i++) {
                     IComplexNDArray row = original.slice(i);
                     IComplexNDArray zRow = originalZ.slice(i);
                     op.setX(row.dup());
                     op.setZ(zRow.dup());
-                    if(y != null)
+                    if (y != null)
                         op.setY(y.slice(i));
                     exec(op);
                     originalZ.slice(i).assign(op.z());
 
                 }
-            }
-            else {
+            } else {
                 INDArray original = op.x();
                 INDArray originalZ = op.z();
                 INDArray y = op.y();
 
-                for(int i = 0; i < original.rows(); i++) {
+                for (int i = 0; i < original.rows(); i++) {
                     INDArray row = original.getRow(i);
                     INDArray zRow = originalZ.getRow(i);
                     op.setX(row.dup());
                     op.setZ(zRow.dup());
-                    if(y != null)
+                    if (y != null)
                         op.setY(y.getRow(i).dup());
                     exec(op);
                     zRow.assign(op.z());
@@ -160,7 +155,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         } else {
             INDArray originalX = op.x();
             INDArray originalZ = op.z();
-            for(int i = 0; i < originalX.slices(); i++) {
+            for (int i = 0; i < originalX.slices(); i++) {
                 INDArray slice = originalX.slice(i);
                 INDArray zSlice = originalZ.slice(i);
                 op.setX(slice);
@@ -172,21 +167,21 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void iterateOverAllColumns(Op op) {
-        if(op.x().isVector()) {
+        if (op.x().isVector()) {
             exec(op);
         }
         //execute row wise
-        else if(op.x().isMatrix() || op.x().isColumnVector()) {
-            exec(op,1);
+        else if (op.x().isMatrix() || op.x().isColumnVector()) {
+            exec(op, 1);
         } else {
-            if(op.x() instanceof IComplexNDArray) {
+            if (op.x() instanceof IComplexNDArray) {
                 IComplexNDArray originalX = (IComplexNDArray) op.x();
                 IComplexNDArray originalZ = (IComplexNDArray) op.z();
                 IComplexNDArray y = (IComplexNDArray) op.y();
-                for(int i = 0; i < op.x().slices(); i++) {
+                for (int i = 0; i < op.x().slices(); i++) {
                     op.setX(originalX.getColumn(i));
                     op.setZ(originalZ.getColumn(i));
-                    if(y != null)
+                    if (y != null)
                         op.setY(y.getColumn(i));
                     iterateOverAllColumns(op);
                 }
@@ -194,10 +189,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 INDArray originalX = op.x();
                 INDArray originalZ = op.z();
                 INDArray y = op.y();
-                for(int i = 0; i < op.x().slices(); i++) {
+                for (int i = 0; i < op.x().slices(); i++) {
                     op.setX(originalX.getColumn(i));
                     op.setZ(originalZ.getColumn(i));
-                    if(y != null)
+                    if (y != null)
                         op.setY(y.getColumn(i));
                     iterateOverAllColumns(op);
                 }
@@ -225,47 +220,39 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public IndexAccumulation execAndReturn(IndexAccumulation op){
+    public IndexAccumulation execAndReturn(IndexAccumulation op) {
         return (IndexAccumulation) exec(op);
     }
 
     @Override
-    public Op exec(Op op, int...dimension) {
+    public Op exec(Op op, int... dimension) {
         //do op along all dimensions
-        if(dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
 
-
-        if(op.isPassThrough()) {
+        if (op.isPassThrough()) {
             op.exec(dimension);
             return op;
         }
 
-        if(dimension.length == 1) {
-            //only accumulate along a particular dimension
-            if (op instanceof Accumulation) {
-                Accumulation a = (Accumulation) op;
-                return exec(a);
-            }
-
-            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
+        if (op instanceof Accumulation || op instanceof IndexAccumulation) {
+            //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
+            throw new IllegalStateException("exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+        } else if (op instanceof TransformOp) {
+            execAndReturn((TransformOp) op);
             return op;
-        }
-        else {
-            //only accumulate along a particular dimension
-            if (op instanceof Accumulation) {
-                throw new IllegalStateException("Should never be invoked");
-            }
-
-            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
-
+        } else if (op instanceof ScalarOp) {
+            //Scalar op along dimension should be same as on the entire NDArray
+            doScalarOp((ScalarOp) op);
             return op;
+        } else {
+            throw new UnsupportedOperationException("Unknown op type");
         }
     }
 
 
     protected void checkOp(Op op) {
-        if(        op.x() instanceof LinearViewNDArray
+        if (op.x() instanceof LinearViewNDArray
                 || op.y() != null && op.y() instanceof LinearViewNDArray
                 || op.z() != null && op.z() instanceof LinearViewNDArray
                 || op.x() != null && op.x() instanceof LinearViewComplexNDArray
@@ -277,35 +264,33 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     @Override
-    public INDArray exec(Accumulation op, int...dimension) {
+    public INDArray exec(Accumulation op, int... dimension) {
         //do op along all dimensions
-        if(dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
 
-
-        if(op.isPassThrough()) {
+        if (op.isPassThrough()) {
             op.exec(dimension);
             return op.z();
         }
 
 
-        if(dimension[0] == Integer.MAX_VALUE) {
-            if(op.x() instanceof IComplexNDArray)
+        if (dimension[0] == Integer.MAX_VALUE) {
+            if (op.x() instanceof IComplexNDArray)
                 return Nd4j.scalar(execAndReturn(op).getFinalResultComplex());
             return Nd4j.scalar(execAndReturn(op).getFinalResult().doubleValue());
         }
 
-        if(op instanceof IComplexNDArray) {
-            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+        if (op instanceof IComplexNDArray) {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
             //ensure vector is proper shape
-            if(retShape.length == 1) {
-                if(dimension[0] == 0)
-                    retShape = new int[] {1,retShape[0]};
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new int[]{1, retShape[0]};
                 else
-                    retShape = new int[] {retShape[0],1};
-            }
-            else if(retShape.length == 0) {
-                retShape = new int[] {1,1};
+                    retShape = new int[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new int[]{1, 1};
             }
 
             IComplexNDArray ret = Nd4j.createComplex(retShape);
@@ -316,45 +301,42 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 linear.putScalar(i, result);
             }
 
-            if(ret.ordering() == 'c')
+            if (ret.ordering() == 'c')
                 ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
 
             return ret;
-        }
-
-        else{
-            return new AccumulationAlongDimensionDataBufferTask(op,PARALLEL_THRESHOLD,dimension).invoke();
+        } else {
+            return new AccumulationAlongDimensionDataBufferTask(op, PARALLEL_THRESHOLD, dimension).invoke();
         }
     }
 
     @Override
-    public INDArray exec(IndexAccumulation op, int...dimension) {
+    public INDArray exec(IndexAccumulation op, int... dimension) {
         //do op along all dimensions
-        if(dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+        if (dimension.length == op.x().rank())
+            dimension = new int[]{Integer.MAX_VALUE};
 
 
-        if(op.isPassThrough()) {
+        if (op.isPassThrough()) {
             op.exec(dimension);
             return op.z();
         }
 
 
-        if(dimension[0] == Integer.MAX_VALUE) {
+        if (dimension[0] == Integer.MAX_VALUE) {
             return Nd4j.scalar(execAndReturn(op).getFinalResult());
         }
 
-        if(op instanceof IComplexNDArray) {
-            int[] retShape = ArrayUtil.removeIndex(op.x().shape(),dimension);
+        if (op instanceof IComplexNDArray) {
+            int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
             //ensure vector is proper shape
-            if(retShape.length == 1) {
-                if(dimension[0] == 0)
-                    retShape = new int[] {1,retShape[0]};
+            if (retShape.length == 1) {
+                if (dimension[0] == 0)
+                    retShape = new int[]{1, retShape[0]};
                 else
-                    retShape = new int[] {retShape[0],1};
-            }
-            else if(retShape.length == 0) {
-                retShape = new int[] {1,1};
+                    retShape = new int[]{retShape[0], 1};
+            } else if (retShape.length == 0) {
+                retShape = new int[]{1, 1};
             }
 
             IComplexNDArray ret = Nd4j.createComplex(retShape);
@@ -365,39 +347,24 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 linear.putScalar(i, result);
             }
 
-            if(ret.ordering() == 'c')
+            if (ret.ordering() == 'c')
                 ret.setStride(ArrayUtil.reverseCopy(ret.stride()));
 
             return ret;
-        }
-
-        else{
-            return new IndexAccumulationAlongDimensionDataBufferTask(op,PARALLEL_THRESHOLD,dimension).invoke();
+        } else {
+            return new IndexAccumulationAlongDimensionDataBufferTask(op, PARALLEL_THRESHOLD, dimension).invoke();
         }
     }
 
     @Override
-    public INDArray execAndReturn(final TransformOp op, int...dimension) {
-        if(dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
-        if(dimension.length == 1)
-            return execAndReturnVector(op,dimension[0]);
-        else {
-            parallelExecutioner().execBasedOnArraysAlongDimension(op.x(), op, this, dimension);
-            return op.z();
-        }
-    }
-
-    protected INDArray execAndReturnVector(TransformOp op,int dimension) {
-        if(op.isPassThrough()) {
-            op.exec(dimension);
-            return op.z();
+    public INDArray execAndReturn(final TransformOp op, int... dimension) {
+        if (dimension.length == op.x().rank()) {
+            dimension = new int[]{Integer.MAX_VALUE};
         }
 
-        parallelExecutioner().execBasedOnArraysAlongDimension(op.x(),op,this,dimension);
+        new TransformAlongDimensionDataBufferTask(op, PARALLEL_THRESHOLD, dimension).invoke();
         return op.z();
     }
-
 
     @Override
     public INDArray execAndReturn(ScalarOp op, int... dimension) {
@@ -414,83 +381,83 @@ public class DefaultOpExecutioner implements OpExecutioner {
         this.executionMode = executionMode;
     }
 
-    private void doTransformOp(TransformOp op){
+    private void doTransformOp(TransformOp op) {
         INDArray x = op.x();
         INDArray y = op.y();
         INDArray z = op.z();
 
-        if(y != null){
+        if (y != null) {
             //Ops with 2 inputs - AddOp, MulOp, GreaterThan, etc
-            if(!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray) ){
+            if (!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
                 boolean canDoDirectly;
-                if(x == z){
-                    if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
+                if (x == z) {
+                    if (y == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
                     else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
                 } else {
-                    if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,z);
+                    if (y == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, z);
                     else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y, z);
                 }
 
-                if(canDoDirectly){
+                if (canDoDirectly) {
                     //Do parallelism via fork-join, directly on buffer
                     op.getTransformOpDataBufferAction(PARALLEL_THRESHOLD, op.n(), x.data(), y.data(), z.data(),
                             x.offset(), y.offset(), z.offset(), x.elementWiseStride(), y.elementWiseStride(), z.elementWiseStride()).invoke();
                 } else {
                     //Do parallelism after splitting into tensors first
-                    new TransformViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,y,z).invoke();
+                    new TransformViaTensorDataBufferAction(op, PARALLEL_THRESHOLD, x, y, z).invoke();
                 }
             } else {
                 //Complex: x, y and/or z are complex
-                if(z instanceof IComplexNDArray) {
+                if (z instanceof IComplexNDArray) {
                     IComplexNDArray cz = (IComplexNDArray) z;
-                    if(x instanceof IComplexNDArray){
-                        IComplexNDArray cx = (IComplexNDArray)x;
-                        if(y instanceof IComplexNDArray){
-                            IComplexNDArray cy = (IComplexNDArray)y;
+                    if (x instanceof IComplexNDArray) {
+                        IComplexNDArray cx = (IComplexNDArray) x;
+                        if (y instanceof IComplexNDArray) {
+                            IComplexNDArray cy = (IComplexNDArray) y;
                             //x,y,z all complex
-                            for( int i=0; i<op.n(); i++ ){
-                                cz.putScalar(i,op.op(cx.getComplex(i),cy.getComplex(i)));
+                            for (int i = 0; i < op.n(); i++) {
+                                cz.putScalar(i, op.op(cx.getComplex(i), cy.getComplex(i)));
                             }
                         } else {
                             //x,z complex, y real
-                            for( int i=0; i<op.n(); i++ ){
-                                cz.putScalar(i,op.op(cx.getComplex(i),y.getDouble(i)));
+                            for (int i = 0; i < op.n(); i++) {
+                                cz.putScalar(i, op.op(cx.getComplex(i), y.getDouble(i)));
                             }
                         }
                     }
                 } else {
                     //IComplexNDArray in, but real out
-                    throw new UnsupportedOperationException("Invalid op: z is real but x.class="+x.getClass().getName() + ", y.class="+y.getClass().getName());
+                    throw new UnsupportedOperationException("Invalid op: z is real but x.class=" + x.getClass().getName() + ", y.class=" + y.getClass().getName());
                 }
             }
         } else {
             //Ops with 1 input - Tanh, Sin, etc. X=OP(X) or Z=OP(X)
-            if(!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray) ){
+            if (!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
                 boolean canDoDirectly;
-                if(x==z) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
-                else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,z);
+                if (x == z) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
+                else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, z);
 
-                if(canDoDirectly){
-                    op.getTransformOpDataBufferAction(PARALLEL_THRESHOLD,x.length(),x.data(),null,z.data(),x.offset(),
-                            0,z.offset(),x.elementWiseStride(),0,z.elementWiseStride()).invoke();
+                if (canDoDirectly) {
+                    op.getTransformOpDataBufferAction(PARALLEL_THRESHOLD, x.length(), x.data(), null, z.data(), x.offset(),
+                            0, z.offset(), x.elementWiseStride(), 0, z.elementWiseStride()).invoke();
                     return;
                 } else {
                     //Do parallelism after splitting into tensors first
-                    new TransformViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,null,z).invoke();
+                    new TransformViaTensorDataBufferAction(op, PARALLEL_THRESHOLD, x, null, z).invoke();
                     return;
                 }
             } else {
                 //Complex
-                if(z instanceof IComplexNDArray){
+                if (z instanceof IComplexNDArray) {
                     IComplexNDArray cz = (IComplexNDArray) z;
-                    if(x instanceof IComplexNDArray){
+                    if (x instanceof IComplexNDArray) {
                         IComplexNDArray cx = (IComplexNDArray) x;
-                        for( int i=0; i<op.n(); i++ ){
+                        for (int i = 0; i < op.n(); i++) {
                             cz.putScalar(i, op.op(cx.getComplex(i)));
                         }
                     } else {
-                        for( int i=0; i<op.n(); i++ ){
-                            cz.putScalar(i,op.op(x.getDouble(i)));
+                        for (int i = 0; i < op.n(); i++) {
+                            cz.putScalar(i, op.op(x.getDouble(i)));
                         }
                     }
                 }
@@ -499,16 +466,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-    private void doAccumulationOp(Accumulation op){
+    private void doAccumulationOp(Accumulation op) {
         INDArray x = op.x();
         INDArray y = op.y();
-        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)){
+        if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
             boolean canDoDirectly;
-            if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
-            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,y);
+            if (y == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
+            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
 
-            if(canDoDirectly){
-                if(y==null){
+            if (canDoDirectly) {
+                if (y == null) {
                     op.getAccumulationOpDataBufferTask(PARALLEL_THRESHOLD, x.length(), x.data(), null,
                             x.offset(), 0, x.elementWiseStride(), 0, true).invoke();
                 } else {
@@ -518,64 +485,64 @@ public class DefaultOpExecutioner implements OpExecutioner {
                 return;
             } else {
                 //Need to break the accumulation into tensors first
-                new AccumulationViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,y).invoke();
+                new AccumulationViaTensorDataBufferTask(op, PARALLEL_THRESHOLD, x, y).invoke();
                 return;
             }
 
         } else {
             //Complex
-            if(y==null){
+            if (y == null) {
                 //Accumulation(x)
                 //x must be complex
-                IComplexNDArray cx = (IComplexNDArray)x;
+                IComplexNDArray cx = (IComplexNDArray) x;
                 IComplexNumber accum = op.zeroComplex();
-                for( int i=0; i<op.n(); i++ ){
-                    accum = op.update(accum,cx.getComplex(i),i);
+                for (int i = 0; i < op.n(); i++) {
+                    accum = op.update(accum, cx.getComplex(i), i);
                 }
                 op.setFinalResultComplex(accum);
             } else {
                 //Accumulation(x,y)
-                if(!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)){
-                    throw new UnsupportedOperationException("Invalid input for accumulation op: x.class="+x.getClass().getName() + ", y.class="+y.getClass().getName());
+                if (!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)) {
+                    throw new UnsupportedOperationException("Invalid input for accumulation op: x.class=" + x.getClass().getName() + ", y.class=" + y.getClass().getName());
                 }
-                IComplexNDArray cx = (IComplexNDArray)x;
-                IComplexNDArray cy = (IComplexNDArray)y;
+                IComplexNDArray cx = (IComplexNDArray) x;
+                IComplexNDArray cy = (IComplexNDArray) y;
                 IComplexNumber accum = op.zeroComplex();
-                for( int i=0; i<op.n(); i++ ){
-                    accum= op.update(accum,cx.getComplex(i),cy.getComplex(i));
+                for (int i = 0; i < op.n(); i++) {
+                    accum = op.update(accum, cx.getComplex(i), cy.getComplex(i));
                 }
                 op.setFinalResultComplex(accum);
             }
         }
     }
 
-    private void doScalarOp(ScalarOp op){
+    private void doScalarOp(ScalarOp op) {
         INDArray x = op.x();
         INDArray z = op.z();
 
-        if(!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)){
+        if (!(x instanceof IComplexNDArray) && !(z instanceof IComplexNDArray)) {
             boolean canDoDirectly;
-            if(x==z) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);     //X=OP(X)
-            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,z);       //Z=OP(X)
+            if (x == z) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);     //X=OP(X)
+            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, z);       //Z=OP(X)
 
-            if(canDoDirectly){
-                op.getScalarOpDataBufferAction(PARALLEL_THRESHOLD,op.n(),x.data(),z.data(),x.offset(),z.offset(),
-                        x.elementWiseStride(),z.elementWiseStride()).invoke();
+            if (canDoDirectly) {
+                op.getScalarOpDataBufferAction(PARALLEL_THRESHOLD, op.n(), x.data(), z.data(), x.offset(), z.offset(),
+                        x.elementWiseStride(), z.elementWiseStride()).invoke();
                 return;
             } else {
                 //Break into tensors
-                new ScalarViaTensorDataBufferAction(op,PARALLEL_THRESHOLD,x,z).invoke();
+                new ScalarViaTensorDataBufferAction(op, PARALLEL_THRESHOLD, x, z).invoke();
                 return;
             }
         } else {
             //Complex
-            if(z instanceof IComplexNDArray){
-                IComplexNDArray cz = (IComplexNDArray)z;
-                if(x instanceof IComplexNDArray){
-                    IComplexNDArray cx = (IComplexNDArray)x;
-                    for( int i=0; i<op.n(); i++ ) cz.putScalar(i,op.op(cx.getComplex(i)));
+            if (z instanceof IComplexNDArray) {
+                IComplexNDArray cz = (IComplexNDArray) z;
+                if (x instanceof IComplexNDArray) {
+                    IComplexNDArray cx = (IComplexNDArray) x;
+                    for (int i = 0; i < op.n(); i++) cz.putScalar(i, op.op(cx.getComplex(i)));
                 } else {
-                    for( int i=0; i<op.n(); i++ ) cz.putScalar(i,op.op(x.getDouble(i)));
+                    for (int i = 0; i < op.n(); i++) cz.putScalar(i, op.op(x.getDouble(i)));
                 }
             } else {
                 //Put complex into real -> not supported
@@ -584,55 +551,55 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    private void doIndexAccumulationOp(IndexAccumulation op){
+    private void doIndexAccumulationOp(IndexAccumulation op) {
         INDArray x = op.x();
         INDArray y = op.y();
 
-        if(!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)){
+        if (!(x instanceof IComplexNDArray) && !(y instanceof IComplexNDArray)) {
             boolean canDoDirectly;
-            if(y==null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
-            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x,y);
+            if (y == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x);
+            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x, y);
 
-            if(canDoDirectly){
-                if(y==null){
-                    op.getIndexAccumulationOpDataBufferTask(PARALLEL_THRESHOLD,x.length(),x.data(),null,x.offset(),0,
-                            x.elementWiseStride(),0,0,true).invoke();
+            if (canDoDirectly) {
+                if (y == null) {
+                    op.getIndexAccumulationOpDataBufferTask(PARALLEL_THRESHOLD, x.length(), x.data(), null, x.offset(), 0,
+                            x.elementWiseStride(), 0, 0, true).invoke();
                 } else {
-                    op.getIndexAccumulationOpDataBufferTask(PARALLEL_THRESHOLD,x.length(),x.data(),y.data(),x.offset(),y.offset(),
-                            x.elementWiseStride(),y.elementWiseStride(),0,true).invoke();
+                    op.getIndexAccumulationOpDataBufferTask(PARALLEL_THRESHOLD, x.length(), x.data(), y.data(), x.offset(), y.offset(),
+                            x.elementWiseStride(), y.elementWiseStride(), 0, true).invoke();
                 }
                 return;
             } else {
                 //Need to break the accumulation into tensors first
-                new IndexAccumulationViaTensorDataBufferTask(op,PARALLEL_THRESHOLD,x,y).invoke();
+                new IndexAccumulationViaTensorDataBufferTask(op, PARALLEL_THRESHOLD, x, y).invoke();
                 return;
             }
 
         } else {
             //Complex
-            if(y==null){
+            if (y == null) {
                 //IndexAccumulation(x)
                 //x must be complex
                 int accumIdx = -1;
-                IComplexNDArray cx = (IComplexNDArray)x;
+                IComplexNDArray cx = (IComplexNDArray) x;
                 IComplexNumber accum = op.zeroComplex();
-                for( int i=0; i<op.n(); i++ ){
-                    accumIdx = op.update(accum,accumIdx,cx.getComplex(i),i);
-                    if(accumIdx==i) accum = op.op(cx.getComplex(i));
+                for (int i = 0; i < op.n(); i++) {
+                    accumIdx = op.update(accum, accumIdx, cx.getComplex(i), i);
+                    if (accumIdx == i) accum = op.op(cx.getComplex(i));
                 }
                 op.setFinalResult(accumIdx);
             } else {
                 //IndexAccumulation(x,y)
-                if(!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)){
-                    throw new UnsupportedOperationException("Invalid input for index accumulation op: x.class="+x.getClass().getName() + ", y.class="+y.getClass().getName());
+                if (!(x instanceof IComplexNDArray) || !(y instanceof IComplexNDArray)) {
+                    throw new UnsupportedOperationException("Invalid input for index accumulation op: x.class=" + x.getClass().getName() + ", y.class=" + y.getClass().getName());
                 }
                 int accumIdx = -1;
-                IComplexNDArray cx = (IComplexNDArray)x;
-                IComplexNDArray cy = (IComplexNDArray)y;
+                IComplexNDArray cx = (IComplexNDArray) x;
+                IComplexNDArray cy = (IComplexNDArray) y;
                 IComplexNumber accum = op.zeroComplex();
-                for( int i=0; i<op.n(); i++ ){
-                    accumIdx = op.update(accum,accumIdx,cx.getComplex(i),cy.getComplex(i),i);
-                    if(accumIdx==i) accum = op.op(cx.getComplex(i),cy.getComplex(i));
+                for (int i = 0; i < op.n(); i++) {
+                    accumIdx = op.update(accum, accumIdx, cx.getComplex(i), cy.getComplex(i), i);
+                    if (accumIdx == i) accum = op.op(cx.getComplex(i), cy.getComplex(i));
                 }
                 op.setFinalResult(accumIdx);
             }

@@ -21,45 +21,17 @@ public class AccumulationAlongDimensionDataBufferTask extends RecursiveTask<INDA
 
     @Override
     protected INDArray compute() {
-        INDArray x = op.x();
-        INDArray y = op.y();
-
-        DataBuffer dx = x.data();
-        DataBuffer dy = (y != null ? y.data() : null);
-
-        int nTensors = x.tensorssAlongDimension(dimensions);
+        int nTensors = op.x().tensorssAlongDimension(dimensions);
         List<RecursiveTask<Double>> taskList = new ArrayList<>(nTensors);
 
-        boolean canDoDirectly = false;
         for( int i=0; i<nTensors; i++ ){
-            //TODO: Push this tensor calculation into forked thread (instead of this thread)
-            Accumulation opOnDimension = (Accumulation)op.opForDimension(i,dimensions);
-            INDArray x2 = opOnDimension.x();
-            INDArray y2 = opOnDimension.y();
-
-            if(i==0){
-                if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2);
-                else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2,y2);
-            }
-
-            RecursiveTask<Double> task;
-            if(canDoDirectly){
-                if(y!=null){
-                    task = opOnDimension.getAccumulationOpDataBufferTask(parallelThreshold,opOnDimension.n(),dx,dy,x2.offset(),y2.offset(),
-                            x2.elementWiseStride(),y2.elementWiseStride(),true);
-                } else {
-                    task = opOnDimension.getAccumulationOpDataBufferTask(parallelThreshold,opOnDimension.n(),dx,null,x2.offset(),0,x2.elementWiseStride(),0,true);
-                }
-            } else {
-                task = new AccumulationViaTensorDataBufferTask(opOnDimension,parallelThreshold,x2,y2);
-            }
-
+            RecursiveTask<Double> task = new TensorCalculator(i);
             task.fork();
             taskList.add(task);
         }
 
         //Allocate return array + assign elements
-        int[] retShape = ArrayUtil.removeIndex(x.shape(), dimensions);
+        int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimensions);
         INDArray out = Nd4j.create(retShape);
         int i=0;
         for(RecursiveTask<Double> task : taskList ){
@@ -67,5 +39,39 @@ public class AccumulationAlongDimensionDataBufferTask extends RecursiveTask<INDA
         }
 
         return out;
+    }
+
+    /** This TensorCalculator class is used to shift the tensor calculation from the original thread
+     * to the forked thread, so all tensor calculations can be done in parallel
+     *  */
+    @AllArgsConstructor
+    private class TensorCalculator extends RecursiveTask<Double>{
+        private final int tensorNum;
+
+        @Override
+        protected Double compute() {
+            Accumulation opOnDimension = (Accumulation)op.opForDimension(tensorNum,dimensions);
+            INDArray x2 = opOnDimension.x();
+            INDArray y2 = opOnDimension.y();
+
+            boolean canDoDirectly;
+            if(y2 == null) canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2);
+            else canDoDirectly = OpExecutionerUtil.canDoTransformOpDirectly(x2,y2);
+
+            RecursiveTask<Double> task;
+            if(canDoDirectly){
+                if(y2!=null){
+                    task = opOnDimension.getAccumulationOpDataBufferTask(parallelThreshold,opOnDimension.n(),x2.data(),y2.data(),
+                            x2.offset(),y2.offset(),x2.elementWiseStride(),y2.elementWiseStride(),true);
+                } else {
+                    task = opOnDimension.getAccumulationOpDataBufferTask(parallelThreshold,opOnDimension.n(),x2.data(),null,
+                            x2.offset(),0,x2.elementWiseStride(),0,true);
+                }
+            } else {
+                task = new AccumulationViaTensorDataBufferTask(opOnDimension,parallelThreshold,x2,y2);
+            }
+
+            return task.invoke();
+        }
     }
 }

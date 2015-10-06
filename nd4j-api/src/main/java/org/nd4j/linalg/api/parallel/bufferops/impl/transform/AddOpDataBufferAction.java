@@ -41,7 +41,7 @@ public class AddOpDataBufferAction extends TransformDataBufferAction {
                     } else {
                         for (int i = 0; i < 4 * n; i += 4) {
                             int ox = byteOffsetX + i * incrX;
-                            nbbx.setFloat(ox, x.getFloat(ox) + y.getFloat(byteOffsetY + i * incrY));
+                            nbbx.setFloat(ox, nbbx.getFloat(ox) + nbby.getFloat(byteOffsetY + i * incrY));
                         }
                     }
                 } else {
@@ -106,7 +106,7 @@ public class AddOpDataBufferAction extends TransformDataBufferAction {
                         }
                     } else {
                         for (int i = 0; i < 4 * n; i += 4) {
-                            nbbz.setFloat(byteOffsetZ + i * incrZ, x.getFloat(byteOffsetX + i * incrX) + y.getFloat(byteOffsetY + i * incrY));
+                            nbbz.setFloat(byteOffsetZ + i * incrZ, nbbx.getFloat(byteOffsetX + i * incrX) + nbby.getFloat(byteOffsetY + i * incrY));
                         }
                     }
                 } else {
