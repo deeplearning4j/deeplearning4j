@@ -60,6 +60,14 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
 
 
     @Override
+    public void setParallelEnabled(boolean parallelEnabled) {
+        this.enable = parallelEnabled;
+        if(parallelEnabled) {
+            this.forkJoinPool = null;
+        }
+    }
+
+    @Override
     public boolean parallelEnabled() {
         return enable;
     }
@@ -318,7 +326,7 @@ public class DefaultParallelExecutioner implements ParallelExecutioner {
                 try {
                     task2.get();
                 } catch (InterruptedException e) {
-                   Thread.currentThread().interrupt();
+                    Thread.currentThread().interrupt();
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                 }

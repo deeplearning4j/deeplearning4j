@@ -33,7 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 public class IAMax extends BaseAccumulation {
     private int currIndexOfMax = 0;
-    private double currentResult = Double.MIN_VALUE;
 
     public IAMax() {
     }
@@ -52,7 +51,7 @@ public class IAMax extends BaseAccumulation {
 
     @Override
     public void update(Number result) {
-        if(result.doubleValue() > currentResult) {
+        if(result.doubleValue() > currentResult().doubleValue()) {
             currentResult = result.doubleValue();
             currIndexOfMax = numProcessed;
         }

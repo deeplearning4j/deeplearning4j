@@ -38,6 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.complex.CudaComplexConversion;
 import org.nd4j.linalg.jcublas.context.ContextHolder;
 import org.nd4j.linalg.jcublas.util.PointerUtil;
+import org.nd4j.linalg.util.SynchronizedTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,18 +84,24 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     public BaseCudaDataBuffer(ByteBuf buf, int length) {
         super(buf, length);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
     public BaseCudaDataBuffer(float[] data, boolean copy) {
         super(data, copy);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+
     }
 
     public BaseCudaDataBuffer(double[] data, boolean copy) {
         super(data, copy);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
     public BaseCudaDataBuffer(int[] data, boolean copy) {
         super(data, copy);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+
     }
 
     /**
@@ -105,26 +112,37 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     public BaseCudaDataBuffer(int length, int elementSize) {
         super(length,elementSize);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+
     }
 
     public BaseCudaDataBuffer(int length) {
         super(length);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+
     }
 
     public BaseCudaDataBuffer(float[] data) {
         super(data);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+
     }
 
     public BaseCudaDataBuffer(int[] data) {
         super(data);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+
     }
 
     public BaseCudaDataBuffer(double[] data) {
         super(data);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
+
     }
 
     public BaseCudaDataBuffer(byte[] data, int length) {
         super(data,length);
+      //  pointersToContexts = new SynchronizedTable<>(pointersToContexts);
     }
 
     @Override
@@ -374,6 +392,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             else if(offset == 0 && compareLength < arr.data().length()) {
                 DevicePointerInfo info2 = pointersToContexts.get(name, Triple.of(0, this.length,1));
+                if(info2 == null) {
+                    throw new IllegalStateException("No pointer found for name " + name + " and offset/length " + offset + " / " + length);
+                }
                 DevicePointerInfo info3 = new DevicePointerInfo(info2.getPointer(),this.length, BlasBufferUtil.getBlasStride(arr),arr.offset());
                 int compareLength2 = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
 

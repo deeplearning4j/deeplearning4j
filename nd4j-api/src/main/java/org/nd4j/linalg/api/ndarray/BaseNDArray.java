@@ -110,7 +110,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean isWrapAround = false;
     protected int linearStride = -1;
     protected int elementWiseStride = -1;
-
+    protected boolean attemptedToFindElementWiseStride = false;
     public BaseNDArray() {
     }
 
@@ -437,7 +437,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param order
      */
     public BaseNDArray(DataBuffer floatBuffer, char order) {
-        this(floatBuffer, new int[]{(int) floatBuffer.length()}, Nd4j.getStrides(new int[]{(int) floatBuffer.length()}, order), 0, order);
+        this(floatBuffer, new int[]{floatBuffer.length()}, Nd4j.getStrides(new int[]{floatBuffer.length()}, order), 0, order);
     }
 
     /**
@@ -680,8 +680,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
-        if(elementWiseStride < 0)
-            elementWiseStride = reshape(1,length()).stride(-1);
+        if(elementWiseStride < 0 && !attemptedToFindElementWiseStride) {
+            INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,length()}, ordering() == 'f');
+            if(reshapeAttempt != null)
+                elementWiseStride = reshapeAttempt.stride(-1);
+            attemptedToFindElementWiseStride = true;
+
+        }
+
         return elementWiseStride;
     }
 

@@ -48,6 +48,7 @@ __device__ void transform(int n, int xOffset,double *dx,int incx,double *extraPa
           if(curr > sum) {
                index = i * incx;
           }
+          
 		  sum = update(sum,op(curr,extraParams),extraParams);
 
     }

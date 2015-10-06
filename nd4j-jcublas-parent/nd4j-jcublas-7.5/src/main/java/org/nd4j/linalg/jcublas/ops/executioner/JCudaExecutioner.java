@@ -57,6 +57,7 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         }
         dummyFloatPointer = KernelFunctions.alloc(new float[]{1});
         dummyDoublePointer =KernelFunctions.alloc(new double[]{1});
+        parallelExecutioner().setParallelEnabled(false);
     }
 
     @Override
@@ -123,12 +124,29 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
         checkOp(op);
         if(!KernelFunctionLoader.getInstance().exists(op.name()) || executionMode() == ExecutionMode.JAVA || op.isPassThrough())
             super.exec(op);
-
+        if(op.x().ordering() == 'f') {
+            op.setX(op.x().dup('c'));
+        }
+        if(op.y() != null && op.y().ordering() == 'f') {
+            op.setY(op.y().dup('c'));
+        }
+        if(op.z().ordering() == 'f') {
+            op.setZ(op.z().dup('c'));
+        }
 
         INDArray result = Nd4j.create(2);
 
 
         if (op.y() != null) {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int yStride = BlasBufferUtil.getBlasStride(op.y());
+            if(yStride < 0) {
+                op.setY(op.y().dup());
+            }
 
             //int n,int xOffset,int yOffset, double *dx, double *dy,int incx,int incy,double *result
             Object[] kernelParams = new Object[] {
@@ -155,6 +173,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
         } else {
             //int n, int xOffset,double *dx,int incx,double result
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
             Object[] kernelParams = new Object[] {
                     op.n(),
                     op.x().offset(),
@@ -206,6 +229,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             super.exec(op);
 
         if (op.y() != null) {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int yStride = BlasBufferUtil.getBlasStride(op.y());
+            if(yStride < 0) {
+                op.setY(op.y().dup());
+            }
 
             Object[] kernelParams = new Object[]{
                     op.n(),
@@ -228,6 +260,12 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
 
 
         } else {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+
             Object[] kernelParams = new Object[]{
                     op.n(),
                     op.x().offset(),
@@ -266,6 +304,15 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
             return;
         }
         if (op.y() != null) {
+            int xStride = BlasBufferUtil.getBlasStride(op.x());
+            if(xStride < 0) {
+                op.setX(op.x().dup());
+            }
+
+            int yStride = BlasBufferUtil.getBlasStride(op.y());
+            if(yStride < 0) {
+                op.setY(op.y().dup());
+            }
 
             /**
              * Construct pointer arguments in the following order:
