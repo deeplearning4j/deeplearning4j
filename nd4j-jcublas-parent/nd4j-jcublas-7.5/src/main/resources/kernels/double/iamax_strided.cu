@@ -3,6 +3,7 @@ extern "C"
 #include <stdio.h>
 #include <stdlib.h>
 #include <cublas_v2.h>
+
 __device__ double merge(double old,double opOutput,double *extraParams) {
       return fmaxf(old,opOutput);
  }
@@ -67,6 +68,7 @@ __device__ void transform(int n, int xOffset,double *dx,int incx,double *extraPa
 		while ( floorPow2 & (floorPow2 - 1) ) {
 			floorPow2 &= floorPow2 - 1;
 		}
+
 		if (tid >= floorPow2) {
 			double sPartialBack = sPartials[tid - floorPow2];
 			double currTid = sPartials[tid];
@@ -81,10 +83,11 @@ __device__ void transform(int n, int xOffset,double *dx,int incx,double *extraPa
 	}
 
 	for (int activeThreads = floorPow2 >> 1;activeThreads;	activeThreads >>= 1) {
-		if (tid < activeThreads) {
+		if (tid <= activeThreads) {
 		    if(sPartials[tid] > sPartials[tid + activeThreads]) {
 		        indexes[tid] = indexes[tid + activeThreads];
 		    }
+
 			sPartials[tid] = merge(sPartials[tid],sPartials[tid + activeThreads],extraParams);
 
 		}
@@ -94,7 +97,8 @@ __device__ void transform(int n, int xOffset,double *dx,int incx,double *extraPa
 	if ( tid == 0 ) {
 		result[blockIdx.x] = postProcess(sPartials[0],n,xOffset,dx,incx,extraParams,result);
 		double val5 = indexes[0];
-		result[blockIdx.x] = indexes[0];
+		//stride is compounded
+		result[blockIdx.x] = indexes[0] / incx;
 	}
 
 }

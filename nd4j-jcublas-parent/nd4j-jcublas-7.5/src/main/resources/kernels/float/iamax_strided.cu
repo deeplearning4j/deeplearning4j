@@ -92,7 +92,8 @@ __device__ void transform(int n, int xOffset,float *dx,int incx,float *extraPara
 
 	if ( tid == 0 ) {
 		result[blockIdx.x] = postProcess(sPartials[0],n,xOffset,dx,incx,extraParams,result);
-		result[blockIdx.x] = indexes[0];
+		//stride is compounded
+		result[blockIdx.x] = indexes[0] / incx;
 	}
 
 }

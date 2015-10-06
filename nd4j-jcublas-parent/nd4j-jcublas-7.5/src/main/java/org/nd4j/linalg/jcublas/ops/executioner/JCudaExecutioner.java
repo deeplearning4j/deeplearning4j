@@ -207,8 +207,11 @@ public class JCudaExecutioner extends DefaultOpExecutioner {
          *
          */
         String functionName = op instanceof TransformOp || op instanceof Accumulation ? op.name() + "_strided" : op.name();
-        int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
-        int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
+        //int blocks = PointerUtil.getNumBlocks(op.n(), KernelFunctions.BLOCKS, KernelFunctions.THREADS);
+        //int threads = PointerUtil.getNumThreads(op.n(), KernelFunctions.THREADS);
+        int blocks = 1;
+        int threads = 1;
+
         KernelFunctions.invoke(
                 blocks
                 ,threads
