@@ -89,27 +89,27 @@ public class IMax extends BaseIndexAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return (origin.absoluteValue().doubleValue()>=other ? origin : Nd4j.createComplexNumber(other,0));
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return (origin.absoluteValue().doubleValue()>=other ? origin : Nd4j.createComplexNumber(other,0));
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return (origin.absoluteValue().doubleValue()>=other.absoluteValue().doubleValue() ? origin : other);
+        return origin;
     }
 
     @Override
     public float op(float origin, float other) {
-        return (origin>=other ? origin : other);
+        return origin;
     }
 
     @Override
     public double op(double origin, double other) {
-        return (origin>=other ? origin : other);
+        return origin;
     }
 
     @Override
@@ -125,6 +125,21 @@ public class IMax extends BaseIndexAccumulation {
     @Override
     public IComplexNumber op(IComplexNumber origin) {
         return origin;
+    }
+
+    @Override
+    public float zeroFloat(){
+        return -Float.MAX_VALUE;
+    }
+
+    @Override
+    public double zeroDouble(){
+        return -Double.MAX_VALUE;
+    }
+
+    @Override
+    public IComplexNumber zeroComplex(){
+        return Nd4j.createComplexNumber(-Double.MAX_VALUE,0);
     }
 
     @Override

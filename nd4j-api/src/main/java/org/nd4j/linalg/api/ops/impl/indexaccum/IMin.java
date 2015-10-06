@@ -48,19 +48,19 @@ public class IMin extends BaseIndexAccumulation {
 
 
     public int update(double accum, int accumIdx, double x, int xIdx){
-        return (accum>=x ? accumIdx : xIdx);
+        return (accum<=x ? accumIdx : xIdx);
     }
 
     public int update(float accum, int accumIdx, float x, int xIdx){
-        return (accum>=x ? accumIdx : xIdx);
+        return (accum<=x ? accumIdx : xIdx);
     }
 
     public int update(double accum, int accumIdx, double x, double y, int idx){
-        return (accum>=x ? accumIdx : idx);
+        return (accum<=x ? accumIdx : idx);
     }
 
     public int update(float accum, int accumIdx, float x, float y, int idx){
-        return (accum>=x ? accumIdx : idx);
+        return (accum<=x ? accumIdx : idx);
     }
 
     public int update(IComplexNumber accum, int accumIdx, IComplexNumber x, int xIdx){
@@ -89,27 +89,27 @@ public class IMin extends BaseIndexAccumulation {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return (origin.absoluteValue().doubleValue()<=other ? origin : Nd4j.createComplexNumber(other,0));
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return (origin.absoluteValue().doubleValue()<=other ? origin : Nd4j.createComplexNumber(other,0));
+        return origin;
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return (origin.absoluteValue().doubleValue()<=other.absoluteValue().doubleValue() ? origin : other);
+        return origin;
     }
 
     @Override
     public float op(float origin, float other) {
-        return (origin<=other ? origin : other);
+        return origin;
     }
 
     @Override
     public double op(double origin, double other) {
-        return (origin<=other ? origin : other);
+        return origin;
     }
 
     @Override

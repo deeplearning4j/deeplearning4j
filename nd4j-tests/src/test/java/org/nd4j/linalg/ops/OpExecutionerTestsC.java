@@ -380,7 +380,7 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6);
         SoftMax softMax = new SoftMax(arr);
         opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(),1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
 
         INDArray linspace = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         SoftMax softmax = new SoftMax(linspace.dup());
@@ -433,6 +433,30 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray sum = Nd4j.linspace(1,2, 2).reshape(2, 1);
         INDArray same = sum.dup();
         assertEquals(same.sum(1), sum);
+    }
+
+    @Test
+    public void testIMax(){
+        INDArray arr = Nd4j.linspace(1, 10, 10);
+        IMax imax = new IMax(arr);
+        assertEquals(9, ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult());
+
+        arr.muli(-1);
+        imax = new IMax(arr);
+        int maxIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imax)).getFinalResult();
+        assertEquals(0,maxIdx);
+    }
+
+    @Test
+    public void testIMin(){
+        INDArray arr = Nd4j.linspace(1, 10, 10);
+        IMin imin = new IMin(arr);
+        assertEquals(0, ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult());
+
+        arr.muli(-1);
+        imin = new IMin(arr);
+        int minIdx = ((IndexAccumulation) Nd4j.getExecutioner().exec(imin)).getFinalResult();
+        assertEquals(9, minIdx);
     }
 
 
@@ -1138,6 +1162,103 @@ public  class OpExecutionerTestsC extends BaseNd4jTest {
                 assertEquals(msg,out0,out);
                 out = opExec.exec(op, 1);
                 assertEquals(msg,out1,out);
+
+                // --- Third: serial, direct ---
+                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
+
+                INDArray x5 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y5 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x5, y5);
+                out = opExec.exec(op, 0);
+                assertEquals(msg,out0, out);
+                out = opExec.exec(op, 1);
+                assertEquals(msg,out1,out);
+
+                // --- Fourth: parallel, direct ---
+                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.DIRECT;
+
+                INDArray x7 = getCopyOf(origX, DataBuffer.AllocationMode.DIRECT, dtype);
+                INDArray y7 = getCopyOf(origY, DataBuffer.AllocationMode.DIRECT, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x7, y7);
+                out = opExec.exec(op, 0);
+                assertEquals(msg, out0, out);
+                out = opExec.exec(op, 1);
+                assertEquals(msg,out1,out);
+            }
+        }
+
+        Nd4j.alloc = origAlloc;
+    }
+
+    @Test
+    public void testOpExecutionerIndexAccumulationOpsAlongDimensions() throws Exception {
+        //Test index accumulation ops along dimensions
+        //Basic idea: results should be identical, whether executed in serial vs. parallel, heap vs. direct,
+        // or direct execution vs. split via tensors
+        final DataBuffer.AllocationMode origAlloc = Nd4j.alloc;
+        DefaultOpExecutioner opExec = (DefaultOpExecutioner)Nd4j.getExecutioner();
+
+        List<Class<? extends IndexAccumulation>> testClasses = new ArrayList<>();
+        testClasses.add(IAMax.class);
+        testClasses.add(IMax.class);
+        testClasses.add(IMin.class);
+
+        int[] shape = {30,50};
+        int[] shape0 = {1,shape[1]};
+        int[] shape1 = {1,shape[0]};
+
+        for(DataBuffer.Type dtype : DataBuffer.Type.values() ) {
+
+            Nd4j.dtype = dtype;
+            Nd4j.factory().setDType(dtype);
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray origX = Nd4j.rand(shape);
+            INDArray origY = Nd4j.rand(shape);
+
+            for (Class<? extends IndexAccumulation> opClass : testClasses) {
+                String msg = "class: " + opClass.getName() + ", dtype="+dtype;
+                Constructor<? extends IndexAccumulation> xyConstructor = opClass.getConstructor(INDArray.class, INDArray.class);
+
+                // --- First: serial, heap ---
+                DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
+                INDArray x1 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y1 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
+
+                //Along d0
+                IndexAccumulation op = xyConstructor.newInstance(x1, y1);
+                INDArray out0 = opExec.exec(op, 0);
+                assertArrayEquals(msg,shape0,out0.shape());
+                assertEquals(msg,x1, origX);
+
+                //Along d1
+                op = xyConstructor.newInstance(x1, y1);
+                INDArray out1 = opExec.exec(op,1);
+                assertArrayEquals(msg, shape1, out1.shape());
+                assertEquals(msg, x1, origX);
+
+                // --- Second: parallel, heap ---
+                DefaultOpExecutioner.setParallelThreshold(5);
+                Nd4j.alloc = DataBuffer.AllocationMode.HEAP;
+
+                INDArray x3 = getCopyOf(origX, DataBuffer.AllocationMode.HEAP, dtype);
+                INDArray y3 = getCopyOf(origY, DataBuffer.AllocationMode.HEAP, dtype);
+
+                //Along d0 then d1
+                op = xyConstructor.newInstance(x3, y3);
+                INDArray out = opExec.exec(op, 0);
+                assertEquals(msg,out0,out);
+                out = opExec.exec(op, 1);
+                assertEquals(msg,out1,out);
+
 
                 // --- Third: serial, direct ---
                 DefaultOpExecutioner.setParallelThreshold(Integer.MAX_VALUE);

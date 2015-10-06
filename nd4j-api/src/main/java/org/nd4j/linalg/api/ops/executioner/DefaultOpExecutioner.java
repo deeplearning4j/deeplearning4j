@@ -327,7 +327,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
             return Nd4j.scalar(execAndReturn(op).getFinalResult());
         }
 
-        if (op instanceof IComplexNDArray) {
+        if (op.x() instanceof IComplexNDArray) {
             int[] retShape = ArrayUtil.removeIndex(op.x().shape(), dimension);
             //ensure vector is proper shape
             if (retShape.length == 1) {
