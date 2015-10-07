@@ -1898,7 +1898,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testDupAndDupWithOrder(){
         List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
-        for(Pair<INDArray,String> pair : testInputs ){
+        for(Pair<INDArray,String> pair : testInputs) {
 
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
@@ -1918,7 +1918,7 @@ public  class Nd4jTestsC extends BaseNd4jTest {
     public void testToOffsetZeroCopy(){
         List<Pair<INDArray,String>> testInputs = NDArrayCreationUtil.getAllTestMatricesWithShape(4, 5, 123);
 
-        for(Pair<INDArray,String> pair : testInputs ){
+        for(Pair<INDArray,String> pair : testInputs) {
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
             INDArray dup = Shape.toOffsetZeroCopy(in);
